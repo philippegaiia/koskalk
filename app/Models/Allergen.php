@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use Database\Factories\AllergenFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'source_name',
@@ -17,7 +20,15 @@ use Illuminate\Database\Eloquent\Model;
 ])]
 class Allergen extends Model
 {
+    /** @use HasFactory<AllergenFactory> */
+    use HasFactory;
+
     protected $table = 'allergen_catalog';
+
+    public function ingredientEntries(): HasMany
+    {
+        return $this->hasMany(IngredientAllergenEntry::class);
+    }
 
     protected function casts(): array
     {

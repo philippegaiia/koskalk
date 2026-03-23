@@ -19,10 +19,11 @@ class DatabaseSeeder extends Seeder
             IngredientCatalogSeeder::class,
         ]);
 
-        User::query()->firstOrCreate(
+        User::query()->updateOrCreate(
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
+                'is_admin' => true,
                 'password' => Hash::make('password'),
             ]
         );

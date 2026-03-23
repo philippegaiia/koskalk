@@ -1,5 +1,6 @@
 <?php
 
+use App\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\Ingredient;
 use App\Models\IngredientVersion;
@@ -118,11 +119,54 @@ it('classifies imported ingredients by code prefix and does not assume soap elig
     $oil = Ingredient::query()->where('source_key', 'OB1')->firstOrFail();
     $essentialOil = Ingredient::query()->where('source_key', 'EO1')->firstOrFail();
 
-    expect($oil->ingredient_family)->toBe('oil')
+    expect($oil->category)->toBe(IngredientCategory::CarrierOil)
         ->and($oil->is_potentially_saponifiable)->toBeTrue()
         ->and($oil->requires_admin_review)->toBeTrue()
-        ->and($essentialOil->ingredient_family)->toBe('essential_oil')
+        ->and($oil->isAvailableForInitialSoapCalculation())->toBeTrue()
+        ->and($essentialOil->category)->toBe(IngredientCategory::EssentialOil)
         ->and($essentialOil->is_potentially_saponifiable)->toBeFalse();
+});
+
+it('does not seed platform fragrance oils from the starter catalog', function () {
+    [, $ingredientPath] = writeCatalogFixtures(
+        $this->catalogFixtureDirectory,
+        allergenRows: [
+            ['Nom INCI (à étiqueter)', 'Numéro CAS (International)', 'Numéro CE (Européen)', '', ''],
+        ],
+        ingredientRows: [
+            ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
+            ['FR1', 'Parfum test', '', 'kg', '', '0.000', 'Yes', 'No', 'Parfum', '', '', '', '', '', 'Test fragrance oil'],
+            ['EO1', 'Huile essentielle de lavande', '', 'kg', '', '0.000', 'Yes', 'No', 'Lavandula angustifolia oil', '', '', '', '', '', 'Lavender essential oil'],
+        ],
+    );
+
+    config()->set('catalog-imports.ingredients.path', $ingredientPath);
+
+    $this->seed(IngredientCatalogSeeder::class);
+
+    expect(Ingredient::query()->pluck('source_key')->all())
+        ->toBe(['EO1']);
+});
+
+it('classifies botanical and co2 extracts for later aromatic compliance enrichment', function () {
+    [, $ingredientPath] = writeCatalogFixtures(
+        $this->catalogFixtureDirectory,
+        allergenRows: [
+            ['Nom INCI (à étiqueter)', 'Numéro CAS (International)', 'Numéro CE (Européen)', '', ''],
+        ],
+        ingredientRows: [
+            ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
+            ['BE1', 'Extrait de calendula', '', 'kg', '', '0.000', 'Yes', 'No', 'Calendula officinalis extract', '', '', '', '', '', 'Calendula extract'],
+            ['AR1', 'Romarin CO2 extract', '', 'kg', '', '0.000', 'Yes', 'No', 'Rosmarinus officinalis CO2 extract', '', '', '', '', '', 'Rosemary CO2 extract'],
+        ],
+    );
+
+    config()->set('catalog-imports.ingredients.path', $ingredientPath);
+
+    $this->seed(IngredientCatalogSeeder::class);
+
+    expect(Ingredient::query()->where('source_key', 'BE1')->firstOrFail()->category)->toBe(IngredientCategory::BotanicalExtract)
+        ->and(Ingredient::query()->where('source_key', 'AR1')->firstOrFail()->category)->toBe(IngredientCategory::Co2Extract);
 });
 
 it('preserves multi-value cas strings and keeps allergen imports out of ingredient tables', function () {

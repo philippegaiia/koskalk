@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientVersion;
 use Illuminate\Database\Seeder;
@@ -24,6 +25,16 @@ class IngredientCatalogSeeder extends Seeder
             }
 
             $sourceCodePrefix = $this->sourceCodePrefix($sourceKey);
+            $category = $this->ingredientCategory(
+                $sourceCodePrefix,
+                $this->value($row, 'INCI'),
+                $this->value($row, 'Name'),
+            );
+
+            if ($category === IngredientCategory::FragranceOil) {
+                continue;
+            }
+
             $soapInciNaohName = $this->value($row, 'INCI NaOH');
             $soapInciKohName = $this->value($row, 'INCI KOH');
             $displayNameEn = $this->value($row, 'Nom EN');
@@ -36,7 +47,7 @@ class IngredientCatalogSeeder extends Seeder
                 ],
                 [
                     'source_code_prefix' => $sourceCodePrefix,
-                    'ingredient_family' => $this->ingredientFamily($sourceCodePrefix),
+                    'category' => $category,
                     'is_potentially_saponifiable' => $soapInciNaohName !== null || $soapInciKohName !== null,
                     'requires_admin_review' => true,
                     'is_active' => $this->yesNoToBool($this->value($row, 'Active'), default: true),
@@ -157,18 +168,24 @@ class IngredientCatalogSeeder extends Seeder
         return $matches[0] ?? null;
     }
 
-    private function ingredientFamily(?string $sourceCodePrefix): string
+    private function ingredientCategory(?string $sourceCodePrefix, ?string $inciName, ?string $ingredientName): IngredientCategory
     {
+        $searchText = strtolower(trim(($inciName ?? '').' '.($ingredientName ?? '')));
+
         return match ($sourceCodePrefix) {
-            'OB' => 'oil',
-            'EO' => 'essential_oil',
-            'CH' => 'chemical',
-            'BE' => 'botanical',
-            'EC' => 'mineral',
-            'CO' => 'colorant',
-            'FR' => 'fragrance',
-            'WA' => 'wax',
-            default => 'additive',
+            'OB' => IngredientCategory::CarrierOil,
+            'EO' => IngredientCategory::EssentialOil,
+            'FR' => IngredientCategory::FragranceOil,
+            'BE' => IngredientCategory::BotanicalExtract,
+            'CO' => IngredientCategory::Colorant,
+            'CH' => str_contains($searchText, 'hydroxide') ? IngredientCategory::Alkali : IngredientCategory::Liquid,
+            default => str_contains($searchText, 'co2') && str_contains($searchText, 'extract')
+                ? IngredientCategory::Co2Extract
+                : (str_contains($searchText, 'extract')
+                    ? IngredientCategory::BotanicalExtract
+                    : (str_contains($searchText, 'preserv')
+                        ? IngredientCategory::Preservative
+                        : IngredientCategory::Additive)),
         };
     }
 

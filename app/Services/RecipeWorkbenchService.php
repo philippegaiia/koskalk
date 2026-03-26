@@ -145,77 +145,53 @@ class RecipeWorkbenchService
         $version = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
             ->where('is_draft', true)
-            ->with([
-                'recipe',
-                'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
-                'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
-                'phases.items.ingredientVersion.ingredient',
-                'phases.items.ingredientVersion.sapProfile',
-                'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
-            ])
+            ->with($this->versionWorkbenchRelations())
             ->first()
             ?? RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $recipe->id)
-                ->with([
-                    'recipe',
-                    'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
-                    'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
-                    'phases.items.ingredientVersion.ingredient',
-                    'phases.items.ingredientVersion.sapProfile',
-                    'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
-                ])
+                ->with($this->versionWorkbenchRelations())
                 ->orderByDesc('version_number')
                 ->first();
 
-        if (! $version instanceof RecipeVersion) {
+        return $version instanceof RecipeVersion ? $this->workbenchPayloadFromVersion($version) : null;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function versionOptions(Recipe $recipe): array
+    {
+        return RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $recipe->id)
+            ->where('is_draft', false)
+            ->orderByDesc('version_number')
+            ->get()
+            ->map(fn (RecipeVersion $version): array => [
+                'id' => $version->id,
+                'version_number' => $version->version_number,
+                'name' => $version->name,
+                'saved_at' => $version->saved_at?->toIso8601String(),
+                'label' => 'v'.$version->version_number.' · '.$version->name,
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function versionPayload(?Recipe $recipe, int $versionId): ?array
+    {
+        if ($recipe === null) {
             return null;
         }
 
-        $phaseRows = collect($this->phaseBlueprints())
-            ->keyBy('key')
-            ->map(fn (array $phase): array => [$phase['key'] => []])
-            ->collapse()
-            ->all();
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $recipe->id)
+            ->whereKey($versionId)
+            ->with($this->versionWorkbenchRelations())
+            ->first();
 
-        $version->phases
-            ->sortBy('sort_order')
-            ->each(function (RecipePhase $phase) use (&$phaseRows): void {
-                $phaseRows[$phase->slug] = $phase->items
-                    ->sortBy('position')
-                    ->map(fn (RecipeItem $item): array => $this->mapItemToWorkbenchRow($item))
-                    ->filter(fn (array $row): bool => $row['ingredient_version_id'] !== null)
-                    ->values()
-                    ->all();
-            });
-
-        /** @var array<string, mixed> $waterSettings */
-        $waterSettings = $version->water_settings ?? [];
-        /** @var array<string, mixed> $calculationContext */
-        $calculationContext = $version->calculation_context ?? [];
-
-        return [
-            'recipe' => [
-                'id' => $version->recipe_id,
-                'draft_version_id' => $version->id,
-                'version_number' => $version->version_number,
-            ],
-            'formulaName' => $version->name,
-            'oilUnit' => (string) ($calculationContext['oil_unit'] ?? $version->batch_unit),
-            'oilWeight' => (float) ($calculationContext['oil_weight'] ?? $version->batch_size),
-            'editMode' => $calculationContext['editing_mode'] === 'weight' ? 'weight' : 'percentage',
-            'lyeType' => in_array($calculationContext['lye_type'] ?? 'naoh', ['naoh', 'koh', 'dual'], true)
-                ? $calculationContext['lye_type']
-                : 'naoh',
-            'kohPurity' => (float) ($calculationContext['koh_purity_percentage'] ?? 90),
-            'dualKohPercentage' => (float) ($calculationContext['dual_lye_koh_percentage'] ?? 40),
-            'waterMode' => in_array($waterSettings['mode'] ?? 'percent_of_oils', ['percent_of_oils', 'lye_ratio', 'lye_concentration'], true)
-                ? $waterSettings['mode']
-                : 'percent_of_oils',
-            'waterValue' => (float) ($waterSettings['value'] ?? 38),
-            'superfat' => (float) ($calculationContext['superfat'] ?? 5),
-            'selectedIfraProductCategoryId' => $version->ifra_product_category_id,
-            'phaseItems' => $phaseRows,
-        ];
+        return $version instanceof RecipeVersion ? $this->workbenchPayloadFromVersion($version) : null;
     }
 
     public function saveDraft(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
@@ -413,6 +389,73 @@ class RecipeWorkbenchService
                 }, is_array($rows) ? $rows : []),
             ];
         }, $this->phaseBlueprints());
+    }
+
+    /**
+     * @return array<int, string|callable>
+     */
+    private function versionWorkbenchRelations(): array
+    {
+        return [
+            'recipe',
+            'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
+            'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
+            'phases.items.ingredientVersion.ingredient',
+            'phases.items.ingredientVersion.sapProfile',
+            'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function workbenchPayloadFromVersion(RecipeVersion $version): array
+    {
+        $phaseRows = collect($this->phaseBlueprints())
+            ->keyBy('key')
+            ->map(fn (array $phase): array => [$phase['key'] => []])
+            ->collapse()
+            ->all();
+
+        $version->phases
+            ->sortBy('sort_order')
+            ->each(function (RecipePhase $phase) use (&$phaseRows): void {
+                $phaseRows[$phase->slug] = $phase->items
+                    ->sortBy('position')
+                    ->map(fn (RecipeItem $item): array => $this->mapItemToWorkbenchRow($item))
+                    ->filter(fn (array $row): bool => $row['ingredient_version_id'] !== null)
+                    ->values()
+                    ->all();
+            });
+
+        /** @var array<string, mixed> $waterSettings */
+        $waterSettings = $version->water_settings ?? [];
+        /** @var array<string, mixed> $calculationContext */
+        $calculationContext = $version->calculation_context ?? [];
+
+        return [
+            'recipe' => [
+                'id' => $version->recipe_id,
+                'draft_version_id' => $version->id,
+                'version_number' => $version->version_number,
+            ],
+            'formulaName' => $version->name,
+            'oilUnit' => (string) ($calculationContext['oil_unit'] ?? $version->batch_unit),
+            'oilWeight' => (float) ($calculationContext['oil_weight'] ?? $version->batch_size),
+            'editMode' => $calculationContext['editing_mode'] === 'weight' ? 'weight' : 'percentage',
+            'lyeType' => in_array($calculationContext['lye_type'] ?? 'naoh', ['naoh', 'koh', 'dual'], true)
+                ? $calculationContext['lye_type']
+                : 'naoh',
+            'kohPurity' => (float) ($calculationContext['koh_purity_percentage'] ?? 90),
+            'dualKohPercentage' => (float) ($calculationContext['dual_lye_koh_percentage'] ?? 40),
+            'waterMode' => in_array($waterSettings['mode'] ?? 'percent_of_oils', ['percent_of_oils', 'lye_ratio', 'lye_concentration'], true)
+                ? $waterSettings['mode']
+                : 'percent_of_oils',
+            'waterValue' => (float) ($waterSettings['value'] ?? 38),
+            'superfat' => (float) ($calculationContext['superfat'] ?? 5),
+            'selectedIfraProductCategoryId' => $version->ifra_product_category_id,
+            'phaseItems' => $phaseRows,
+        ];
     }
 
     /**

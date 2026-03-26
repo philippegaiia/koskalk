@@ -148,6 +148,42 @@ class RecipeWorkbench extends Component
         ];
     }
 
+    public function comparisonVersion(int $versionId, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        $recipe = $this->currentRecipe();
+
+        if (! $recipe instanceof Recipe) {
+            return [
+                'ok' => false,
+                'message' => 'No saved recipe is available for comparison.',
+            ];
+        }
+
+        $draft = $recipeWorkbenchService->versionPayload($recipe, $versionId);
+
+        if ($draft === null) {
+            return [
+                'ok' => false,
+                'message' => 'The selected version could not be loaded.',
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'draft' => $draft,
+            'calculation' => $recipeWorkbenchService->previewSoapCalculation([
+                'oil_weight' => $draft['oilWeight'] ?? 0,
+                'lye_type' => $draft['lyeType'] ?? 'naoh',
+                'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
+                'dual_lye_koh_percentage' => $draft['dualKohPercentage'] ?? 40,
+                'water_mode' => $draft['waterMode'] ?? 'percent_of_oils',
+                'water_value' => $draft['waterValue'] ?? 38,
+                'superfat' => $draft['superfat'] ?? 5,
+                'phase_items' => $draft['phaseItems'] ?? [],
+            ]),
+        ];
+    }
+
     public function render(RecipeWorkbenchService $recipeWorkbenchService): View
     {
         $soapFamily = $this->soapFamily();
@@ -173,6 +209,9 @@ class RecipeWorkbench extends Component
                     'superfat' => $savedDraft['superfat'] ?? 5,
                     'phase_items' => $savedDraft['phaseItems'] ?? [],
                 ]),
+                'versionOptions' => $this->currentRecipe() instanceof Recipe
+                    ? $recipeWorkbenchService->versionOptions($this->currentRecipe())
+                    : [],
                 'phases' => $recipeWorkbenchService->phaseBlueprints(),
                 'ingredients' => $this->ingredientCatalog(),
                 'ifraProductCategories' => IfraProductCategory::query()

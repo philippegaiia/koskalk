@@ -18,6 +18,9 @@ window.recipeWorkbench = (payload) => ({
     ifraProductCategories: payload.ifraProductCategories ?? [],
     selectedIfraProductCategoryId: payload.ifraProductCategories[0]?.id ?? null,
     ingredients: payload.ingredients ?? [],
+    versionOptions: payload.versionOptions ?? [],
+    selectedComparisonVersionId: payload.versionOptions?.[0]?.id ?? null,
+    comparisonMessage: '',
     backendCalculation: payload.initialCalculation ?? null,
     baselineCalculation: payload.initialCalculation ?? null,
     baselineDraft: payload.savedDraft ?? null,
@@ -304,6 +307,30 @@ window.recipeWorkbench = (payload) => ({
 
     async duplicateFormula() {
         await this.persist('duplicateFormula');
+    },
+
+    async loadComparisonVersion() {
+        if (!this.selectedComparisonVersionId || !this.hasSavedRecipe) {
+            return;
+        }
+
+        this.comparisonMessage = '';
+
+        try {
+            const response = await this.$wire.comparisonVersion(this.selectedComparisonVersionId);
+
+            if (!response?.ok) {
+                this.comparisonMessage = response?.message ?? 'Comparison version could not be loaded.';
+
+                return;
+            }
+
+            this.baselineDraft = response.draft ?? null;
+            this.baselineCalculation = response.calculation ?? null;
+            this.baselineFormulaName = response.draft?.formulaName ?? 'Saved version';
+        } catch (error) {
+            this.comparisonMessage = 'Comparison version could not be loaded.';
+        }
     },
 
     async persist(method) {

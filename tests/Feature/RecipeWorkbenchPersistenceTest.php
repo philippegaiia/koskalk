@@ -148,6 +148,57 @@ it('returns backend soap calculation preview data for the workbench', function (
         ->and($result['calculation']['properties']['qualities'])->toHaveKey('unmolding_firmness');
 });
 
+it('loads a saved version for comparison', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredientVersion = makeCarrierOilIngredientVersion();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_version_id' => $ingredientVersion->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->saveDraft(
+        $user,
+        $soapFamily,
+        soapDraftPayload($ingredientVersion, name: 'Baseline Draft'),
+    );
+
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $savedDraft = $service->saveAsNewVersion(
+        $user,
+        $soapFamily,
+        soapDraftPayload($ingredientVersion, name: 'Published Formula'),
+        $recipe,
+    );
+
+    $publishedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_draft', false)
+        ->latest('version_number')
+        ->firstOrFail();
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->recipeId = $savedDraft->recipe_id;
+    $component->mount($recipe);
+
+    $result = $component->comparisonVersion(
+        $publishedVersion->id,
+        app(RecipeWorkbenchService::class),
+    );
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['draft']['formulaName'])->toBe('Published Formula')
+        ->and($result['calculation'])->not->toBeNull();
+});
+
 function makeCarrierOilIngredientVersion(): IngredientVersion
 {
     $ingredient = Ingredient::factory()->create([

@@ -379,13 +379,27 @@
 
                 <template x-if="hasComparisonBaseline">
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                        <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div>
                                 <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula comparison</p>
                                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Current workbench vs saved baseline: <span class="font-medium text-[var(--color-ink-strong)]" x-text="baselineFormulaName"></span></p>
                             </div>
-                            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Live delta view</span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <template x-if="versionOptions.length > 0">
+                                    <select x-model="selectedComparisonVersionId" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] outline-none">
+                                        <template x-for="option in versionOptions" :key="option.id">
+                                            <option :value="option.id" x-text="option.label"></option>
+                                        </template>
+                                    </select>
+                                </template>
+                                <button type="button" @click="loadComparisonVersion()" class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">Load baseline</button>
+                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Live delta view</span>
+                            </div>
                         </div>
+
+                        <template x-if="comparisonMessage">
+                            <div class="mt-3 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700" x-text="comparisonMessage"></div>
+                        </template>
 
                         <div class="mt-4 grid gap-3 xl:grid-cols-2">
                             <template x-for="row in currentComparisonRows()" :key="row.label">

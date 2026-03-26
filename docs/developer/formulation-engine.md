@@ -23,6 +23,7 @@ Current responsibilities:
 - support a compact frontend presentation based on default quality cards plus advanced disclosure
 - expose a backend preview payload so the workbench consumes server-side fatty-acid profiles, lye outputs, and quality metrics as the live source of truth
 - keep compact Koskalk quality indices normalized to a 0-100 display range even when underlying chemistry helpers exceed that range
+- benchmark quality behavior against archetypes like castile, high-coconut, balanced palm/olive/coconut, and high-shea profiles before further UI expansion
 
 ### `RecipeNormalizationService`
 

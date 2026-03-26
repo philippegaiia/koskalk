@@ -1,6 +1,6 @@
 # Formulation Workbench Spec
 
-Last updated: 2026-03-23
+Last updated: 2026-03-25
 
 ## Goal
 
@@ -135,8 +135,10 @@ Live soap outputs must include:
 - superfat effect
 - iodine
 - INS
-- fatty acid profile
-- soap qualities
+- fatty acid profile (show only acids actually present by default)
+- grouped fatty-acid buckets available to the frontend
+- compact default Koskalk qualities
+- advanced soap chemistry metrics behind progressive disclosure
 
 ## INCI requirement
 

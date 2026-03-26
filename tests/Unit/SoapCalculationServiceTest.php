@@ -59,6 +59,18 @@ it('calculates soap lye, water, glycerine, and quality metrics from oil data', f
         ->and($result['properties']['qualities']['conditioning'])->toBe(45.5)
         ->and($result['properties']['qualities']['bubbly'])->toBe(33.5)
         ->and($result['properties']['qualities']['creamy'])->toBe(13.5)
+        ->and($result['properties']['qualities']['unmolding_firmness'])->toBe(43.5)
+        ->and($result['properties']['qualities']['cured_hardness'])->toBe(28.425)
+        ->and($result['properties']['qualities']['longevity'])->toBe(17.0)
+        ->and($result['properties']['qualities']['cleansing_strength'])->toBe(49.7975)
+        ->and($result['properties']['qualities']['mildness'])->toBe(34.5925)
+        ->and($result['properties']['qualities']['bubble_volume'])->toBe(31.125)
+        ->and($result['properties']['qualities']['creamy_lather'])->toBe(14.12)
+        ->and($result['properties']['qualities']['lather_stability'])->toBe(18.56)
+        ->and($result['properties']['qualities']['conditioning_feel'])->toBe(27.3161)
+        ->and($result['properties']['qualities']['dos_risk'])->toBe(8.1)
+        ->and($result['properties']['qualities']['slime_risk'])->toBe(9.51)
+        ->and($result['properties']['qualities']['cure_speed'])->toBe(35.385)
         ->and($result['properties']['qualities']['iodine'])->toBe(44.362)
         ->and($result['properties']['qualities']['ins'])->toBe(178.138);
 });

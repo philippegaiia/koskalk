@@ -162,7 +162,10 @@ Only the minimum data needed for fast formulation:
 - Switch between percent and weight mode
 - Change batch size and have all weights update
 - See INS and Iodine values live
-- See fatty acid profile live
+- See fatty acid profile live, with only present acids shown by default
+- Support a normalized fatty-acid catalog and per-ingredient-version fatty-acid rows
+- Expose grouped fatty-acid buckets and superfat behavior outputs in the calculation engine
+- Keep legacy soap-quality outputs during transition while introducing compact Koskalk qualities
 - NaOH and KOH calculated simultaneously
 - Water mode options: percent of oils / lye:water ratio / lye concentration
 - Superfat / lye discount

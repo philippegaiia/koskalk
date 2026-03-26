@@ -116,7 +116,7 @@ class SoapCalculationService
         $fattyAcidProfile = $this->averageProfile($fattyAcidTotals, $oilsWeight);
         $fattyAcidGroups = $this->deriveFattyAcidGroups($fattyAcidProfile);
         $superfatEffects = $this->calculateSuperfatEffects($fattyAcidProfile, $fattyAcidGroups, $superfat);
-        $qualities = $this->calculateQualityMetrics($fattyAcidProfile, $oilsWeight, $kohTheoretical);
+        $qualities = $this->calculateQualityMetrics($fattyAcidProfile, $oilsWeight, $kohTheoretical, $superfat);
 
         return [
             'totals' => [
@@ -228,7 +228,7 @@ class SoapCalculationService
      * @param  array<string, float>  $fattyAcidProfile
      * @return array<string, float>
      */
-    private function calculateQualityMetrics(array $fattyAcidProfile, float $oilsWeight, float $kohTheoretical): array
+    private function calculateQualityMetrics(array $fattyAcidProfile, float $oilsWeight, float $kohTheoretical, float $superfat): array
     {
         $lauric = $fattyAcidProfile['lauric'] ?? 0.0;
         $myristic = $fattyAcidProfile['myristic'] ?? 0.0;
@@ -241,6 +241,14 @@ class SoapCalculationService
 
         $iodine = $this->calculateIodineValue($fattyAcidProfile);
         $ins = $oilsWeight <= 0 ? 0.0 : (($kohTheoretical / $oilsWeight) * 1000) - $iodine;
+        $groups = $this->deriveFattyAcidGroups($fattyAcidProfile);
+        $superfatEffects = $this->calculateSuperfatEffects($fattyAcidProfile, $groups, $superfat);
+        $effectiveCleansing = $superfatEffects['effective_cleansing'];
+        $hs = $groups['hs'] ?? 0.0;
+        $mu = $groups['mu'] ?? 0.0;
+        $pu = $groups['pu'] ?? 0.0;
+        $sp = $groups['sp'] ?? 0.0;
+        $vs = $groups['vs'] ?? 0.0;
 
         return [
             'hardness' => $this->roundValue($lauric + $myristic + $palmitic + $stearic),
@@ -248,6 +256,18 @@ class SoapCalculationService
             'conditioning' => $this->roundValue($oleic + $ricinoleic + $linoleic + $linolenic),
             'bubbly' => $this->roundValue($lauric + $myristic + $ricinoleic),
             'creamy' => $this->roundValue($palmitic + $stearic + $ricinoleic),
+            'unmolding_firmness' => $this->roundValue(max(0.0, min(100.0, (0.85 * $vs) + (0.95 * $hs) - (0.40 * $mu) + 18))),
+            'cured_hardness' => $this->roundValue(max(0.0, min(100.0, (1.15 * $hs) + (0.20 * $mu) - (0.50 * $pu) + 8))),
+            'longevity' => $this->roundValue(max(0.0, min(100.0, (1.10 * $hs) - (0.70 * $vs) - (0.45 * $sp) - (0.40 * $pu) + 28))),
+            'cleansing_strength' => $this->roundValue($effectiveCleansing),
+            'mildness' => $this->roundValue(max(0.0, min(100.0, 78 - (1.00 * $effectiveCleansing) + (0.18 * $mu) - (0.12 * $pu)))),
+            'bubble_volume' => $this->roundValue(max(0.0, min(100.0, (1.05 * $vs) + (1.05 * $sp) - (0.30 * $hs)))),
+            'creamy_lather' => $this->roundValue(max(0.0, min(100.0, (0.95 * $hs) + (0.90 * $sp) + (0.16 * $mu) - (0.15 * $vs)))),
+            'lather_stability' => $this->roundValue(max(0.0, min(100.0, (1.00 * $sp) + (0.68 * $hs) + (0.28 * $vs)))),
+            'conditioning_feel' => $this->roundValue(max(0.0, min(100.0, (0.35 * $mu) + (0.15 * $pu) + (0.15 * $sp) - (0.45 * $effectiveCleansing) + 35))),
+            'dos_risk' => $this->roundValue(max(0.0, min(100.0, (1.35 * $pu)))),
+            'slime_risk' => $this->roundValue(max(0.0, min(100.0, (0.72 * $mu) - (0.42 * $vs) - (0.36 * $hs) + (($mu > 65 && $vs < 12 && $hs < 20) ? 8 : 0)))), 
+            'cure_speed' => $this->roundValue(max(0.0, min(100.0, (0.75 * $vs) + (0.80 * $hs) - (0.52 * $mu) + 20))),
             'iodine' => $this->roundValue($iodine),
             'ins' => $this->roundValue($ins),
         ];

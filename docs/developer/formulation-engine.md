@@ -1,6 +1,6 @@
 # Formulation Engine
 
-Last updated: 2026-03-23
+Last updated: 2026-03-25
 
 ## Current services
 
@@ -15,7 +15,11 @@ Current responsibilities:
 - calculate water for supported water modes
 - estimate produced glycerine
 - aggregate fatty acid profiles
-- derive core soap quality metrics transparently from fatty acids and KOH SAP
+- prefer normalized table-driven fatty-acid entries when available, with legacy SAP-column fallback
+- derive grouped fatty-acid buckets (`vs`, `hs`, `mu`, `pu`, `sp`, `sat`, `unsat`)
+- expose superfat behavior outputs (`base_cleansing_potential`, `superfat_buffer`, `effective_cleansing`, `dos_risk_modifier`)
+- keep legacy SoapCalc-style outputs during transition
+- expose the first parallel Koskalk quality metrics alongside legacy keys
 
 ### `RecipeNormalizationService`
 
@@ -77,5 +81,8 @@ Recipe media is a later concern. The current domain target is to support one fea
 - KOH SAP is the only persisted SAP source value
 - KOH SAP can be entered in professional format (`245`) or decimal format (`0.245`)
 - NaOH SAP is always derived using the fixed `0.713` ratio
-- carrier oils use a fixed core fatty-acid set
+- the legacy SAP profile still exists, but the future direction is a normalized fatty-acid catalog plus per-ingredient-version fatty-acid rows
+- the workbench now prefers normalized fatty-acid rows when they exist
 - soap qualities are derived outputs, not manually persisted inputs
+- superfat is moving toward a practical behavior model rather than a guessed unsaponified-fatty-acid model
+- soap molecule density remains a future research idea, not a v1 dependency

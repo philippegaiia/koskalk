@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-03-23
+Last updated: 2026-03-25
 
 ## Stack
 
@@ -17,6 +17,8 @@ Last updated: 2026-03-23
 - `ingredients`
 - `ingredient_versions`
 - `ingredient_sap_profiles`
+- `fatty_acids`
+- `ingredient_version_fatty_acids`
 - `allergen_catalog`
 - `ingredient_allergen_entries`
 - `ifra_product_categories`
@@ -36,7 +38,9 @@ The data is intentionally split into three layers:
 
 - `Ingredient`: category, stewardship flags, source identity
 - `IngredientVersion`: display names, INCI names, CAS / EC, unit, price, source version data
-- `IngredientSapProfile`: KOH SAP, derived NaOH SAP, fixed core fatty-acid values, source notes
+- `IngredientSapProfile`: KOH SAP, derived NaOH SAP, legacy fixed fatty-acid values, source notes
+- `FattyAcid`: normalized fatty-acid catalog with core and extended acids
+- `IngredientVersionFattyAcid`: normalized fatty-acid percentages by ingredient version
 
 For aromatic materials, there is now an additional compliance layer:
 
@@ -74,7 +78,10 @@ These currently cover:
 - water modes
 - produced glycerine estimation
 - fatty acid aggregation
-- transparent soap quality metrics derived from fatty acids and KOH SAP
+- transparent legacy soap quality metrics derived from fatty acids and KOH SAP
+- grouped fatty-acid buckets (`vs`, `hs`, `mu`, `pu`, `sp`, `sat`, `unsat`)
+- superfat behavior outputs (`base_cleansing_potential`, `superfat_buffer`, `effective_cleansing`, `dos_risk_modifier`)
+- first parallel Koskalk quality outputs alongside the legacy SoapCalc-style keys
 - soap recipe normalization on an oil-weight basis
 
 The next normalization change already agreed in the specs is:

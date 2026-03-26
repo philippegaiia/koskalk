@@ -20,6 +20,7 @@ Current responsibilities:
 - expose superfat behavior outputs (`base_cleansing_potential`, `superfat_buffer`, `effective_cleansing`, `dos_risk_modifier`)
 - keep legacy SoapCalc-style outputs during transition
 - expose the first parallel Koskalk quality metrics alongside legacy keys
+- support a compact frontend presentation based on default quality cards plus advanced disclosure
 
 ### `RecipeNormalizationService`
 

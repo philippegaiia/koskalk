@@ -166,6 +166,7 @@ Only the minimum data needed for fast formulation:
 - Support a normalized fatty-acid catalog and per-ingredient-version fatty-acid rows
 - Expose grouped fatty-acid buckets and superfat behavior outputs in the calculation engine
 - Keep legacy soap-quality outputs during transition while introducing compact Koskalk qualities
+- Present only a small default quality set first, with lather summary and advanced disclosure for deeper metrics
 - NaOH and KOH calculated simultaneously
 - Water mode options: percent of oils / lye:water ratio / lye concentration
 - Superfat / lye discount

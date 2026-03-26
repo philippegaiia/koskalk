@@ -332,21 +332,168 @@ window.recipeWorkbench = (payload) => ({
 
     get fattyAcidProfileRows() {
         const profile = this.averageFattyAcidProfile();
+        const labels = {
+            caprylic: 'Caprylic',
+            capric: 'Capric',
+            lauric: 'Lauric',
+            myristic: 'Myristic',
+            palmitic: 'Palmitic',
+            palmitoleic: 'Palmitoleic',
+            stearic: 'Stearic',
+            ricinoleic: 'Ricinoleic',
+            oleic: 'Oleic',
+            linoleic: 'Linoleic',
+            linolenic: 'Linolenic',
+            arachidic: 'Arachidic',
+            gondoic: 'Gondoic',
+            behenic: 'Behenic',
+            erucic: 'Erucic',
+        };
 
-        return [
-            ['Lauric', profile.lauric ?? 0],
-            ['Myristic', profile.myristic ?? 0],
-            ['Palmitic', profile.palmitic ?? 0],
-            ['Stearic', profile.stearic ?? 0],
-            ['Ricinoleic', profile.ricinoleic ?? 0],
-            ['Oleic', profile.oleic ?? 0],
-            ['Linoleic', profile.linoleic ?? 0],
-            ['Linolenic', profile.linolenic ?? 0],
-        ];
+        return Object.entries(labels)
+            .map(([key, label]) => [label, profile[key] ?? 0])
+            .filter(([, value]) => this.number(value) > 0);
     },
 
     get hasFattyAcidProfileData() {
-        return this.fattyAcidProfileRows.some(([, value]) => this.number(value) > 0);
+        return this.fattyAcidProfileRows.length > 0;
+    },
+
+    qualityMetrics() {
+        const profile = this.averageFattyAcidProfile();
+        const caprylic = profile.caprylic ?? 0;
+        const capric = profile.capric ?? 0;
+        const lauric = profile.lauric ?? 0;
+        const myristic = profile.myristic ?? 0;
+        const palmitic = profile.palmitic ?? 0;
+        const palmitoleic = profile.palmitoleic ?? 0;
+        const stearic = profile.stearic ?? 0;
+        const ricinoleic = profile.ricinoleic ?? 0;
+        const oleic = profile.oleic ?? 0;
+        const linoleic = profile.linoleic ?? 0;
+        const linolenic = profile.linolenic ?? 0;
+        const arachidic = profile.arachidic ?? 0;
+        const gondoic = profile.gondoic ?? 0;
+        const behenic = profile.behenic ?? 0;
+        const erucic = profile.erucic ?? 0;
+        const iodine = (ricinoleic * 0.901) + (oleic * 0.86) + (linoleic * 1.732) + (linolenic * 2.616) + (palmitoleic * 0.995) + (gondoic * 0.786) + (erucic * 0.723);
+        const kohTheoretical = this.lyeBreakdown().koh_theoretical;
+        const oilsWeight = this.oilWeightTotal();
+        const ins = oilsWeight <= 0 ? 0 : ((kohTheoretical / oilsWeight) * 1000) - iodine;
+        const vs = caprylic + capric + lauric + myristic;
+        const hs = palmitic + stearic + arachidic + behenic;
+        const mu = oleic + palmitoleic + gondoic + erucic;
+        const pu = linoleic + linolenic;
+        const sp = ricinoleic;
+        const baseCleansingPotential = Math.max(0, (1.55 * (lauric + myristic)) + (1.00 * capric) + (0.65 * caprylic) + (0.20 * vs) - (0.10 * hs));
+        const superfatBuffer = Math.max(0, this.number(this.superfat) * (0.35 + (0.020 * baseCleansingPotential)));
+        const effectiveCleansing = Math.max(0, baseCleansingPotential - superfatBuffer);
+
+        return {
+            hardness: lauric + myristic + palmitic + stearic,
+            cleansing: lauric + myristic,
+            conditioning: oleic + ricinoleic + linoleic + linolenic,
+            bubbly: lauric + myristic + ricinoleic,
+            creamy: palmitic + stearic + ricinoleic,
+            unmolding_firmness: Math.max(0, Math.min(100, (0.85 * vs) + (0.95 * hs) - (0.40 * mu) + 18)),
+            cured_hardness: Math.max(0, Math.min(100, (1.15 * hs) + (0.20 * mu) - (0.50 * pu) + 8)),
+            longevity: Math.max(0, Math.min(100, (1.10 * hs) - (0.70 * vs) - (0.45 * sp) - (0.40 * pu) + 28)),
+            cleansing_strength: effectiveCleansing,
+            mildness: Math.max(0, Math.min(100, 78 - effectiveCleansing + (0.18 * mu) - (0.12 * pu))),
+            bubble_volume: Math.max(0, Math.min(100, (1.05 * vs) + (1.05 * sp) - (0.30 * hs))),
+            creamy_lather: Math.max(0, Math.min(100, (0.95 * hs) + (0.90 * sp) + (0.16 * mu) - (0.15 * vs))),
+            lather_stability: Math.max(0, Math.min(100, (1.00 * sp) + (0.68 * hs) + (0.28 * vs))),
+            conditioning_feel: Math.max(0, Math.min(100, (0.35 * mu) + (0.15 * pu) + (0.15 * sp) - (0.45 * effectiveCleansing) + 35)),
+            dos_risk: Math.max(0, Math.min(100, (1.35 * pu))),
+            slime_risk: Math.max(0, Math.min(100, (0.72 * mu) - (0.42 * vs) - (0.36 * hs) + ((mu > 65 && vs < 12 && hs < 20) ? 8 : 0))),
+            cure_speed: Math.max(0, Math.min(100, (0.75 * vs) + (0.80 * hs) - (0.52 * mu) + 20)),
+            iodine,
+            ins,
+        };
+    },
+
+    qualityLabel(value) {
+        const numeric = this.number(value);
+
+        if (numeric < 20) return 'Very low';
+        if (numeric < 40) return 'Low';
+        if (numeric < 60) return 'Moderate';
+        if (numeric < 80) return 'High';
+
+        return 'Very high';
+    },
+
+    latherProfileSummary() {
+        const quality = this.qualityMetrics();
+
+        if (quality.bubble_volume >= 60 && quality.creamy_lather < 45) {
+            return 'Quick and bubbly';
+        }
+
+        if (quality.creamy_lather >= 55 && quality.lather_stability >= 50) {
+            return 'Creamy and stable';
+        }
+
+        if (quality.bubble_volume < 30 && quality.creamy_lather < 35) {
+            return 'Low bubbles, gentle foam';
+        }
+
+        return 'Balanced lather';
+    },
+
+    defaultQualityRows() {
+        const quality = this.qualityMetrics();
+
+        return [
+            ['Unmolding firmness', 'unmolding_firmness'],
+            ['Cured hardness', 'cured_hardness'],
+            ['Longevity', 'longevity'],
+            ['Cleansing strength', 'cleansing_strength'],
+            ['Mildness', 'mildness'],
+        ].map(([label, key]) => ({
+            label,
+            key,
+            value: quality[key],
+            level: this.qualityLabel(quality[key]),
+        }));
+    },
+
+    advancedQualityRows() {
+        const quality = this.qualityMetrics();
+
+        return [
+            ['Bubble volume', 'bubble_volume'],
+            ['Creamy lather', 'creamy_lather'],
+            ['Lather stability', 'lather_stability'],
+            ['Conditioning feel', 'conditioning_feel'],
+            ['DOS risk', 'dos_risk'],
+            ['Slime risk', 'slime_risk'],
+            ['Cure speed', 'cure_speed'],
+            ['Iodine', 'iodine'],
+            ['INS', 'ins'],
+        ].map(([label, key]) => ({
+            label,
+            key,
+            value: quality[key],
+            level: ['iodine', 'ins'].includes(key) ? null : this.qualityLabel(quality[key]),
+        }));
+    },
+
+    qualityFlags() {
+        const quality = this.qualityMetrics();
+        const profile = this.averageFattyAcidProfile();
+        const vs = (profile.caprylic ?? 0) + (profile.capric ?? 0) + (profile.lauric ?? 0) + (profile.myristic ?? 0);
+        const hs = (profile.palmitic ?? 0) + (profile.stearic ?? 0) + (profile.arachidic ?? 0) + (profile.behenic ?? 0);
+        const mu = (profile.oleic ?? 0) + (profile.palmitoleic ?? 0) + (profile.gondoic ?? 0) + (profile.erucic ?? 0);
+        const flags = [];
+
+        if (quality.cure_speed < 35) flags.push('Slow cure');
+        if (quality.dos_risk >= 35) flags.push('DOS risk');
+        if (quality.slime_risk >= 35) flags.push('Slime tendency');
+        if (quality.cleansing_strength >= 45) flags.push('High cleansing');
+        if (mu > 65 && vs < 12 && hs < 20) flags.push('Castile-like');
+
+        return flags;
     },
 
     totalAdditionPercentage() {

@@ -383,15 +383,52 @@
                     </div>
 
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Soap qualities</p>
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Koskalk qualities</p>
+                                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Compact interpretation first, deeper chemistry second.</p>
+                            </div>
+                            <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="latherProfileSummary()"></span>
+                        </div>
+
                         <div class="mt-4 grid gap-2">
-                            <template x-for="[label, key] in [['Hardness', 'hardness'], ['Cleansing', 'cleansing'], ['Conditioning', 'conditioning'], ['Bubbly', 'bubbly'], ['Creamy', 'creamy'], ['Iodine', 'iodine'], ['INS', 'ins']]" :key="key">
-                                <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
-                                    <span class="text-[var(--color-ink-soft)]" x-text="label"></span>
-                                    <span class="font-medium text-[var(--color-ink-strong)]" x-text="format(qualityMetrics()[key], 1)"></span>
+                            <template x-for="row in defaultQualityRows()" :key="row.key">
+                                <div class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                        <div class="text-right">
+                                            <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
+                                            <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </template>
                         </div>
+
+                        <template x-if="qualityFlags().length > 0">
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                <template x-for="flag in qualityFlags()" :key="flag">
+                                    <span class="rounded-full border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-3 py-1 text-xs font-medium text-[var(--color-ink-strong)]" x-text="flag"></span>
+                                </template>
+                            </div>
+                        </template>
+
+                        <details class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+                            <summary class="cursor-pointer text-sm font-medium text-[var(--color-ink-strong)]">Advanced metrics</summary>
+                            <div class="mt-3 grid gap-2">
+                                <template x-for="row in advancedQualityRows()" :key="row.key">
+                                    <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm">
+                                        <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                        <div class="text-right">
+                                            <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
+                                            <template x-if="row.level">
+                                                <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </details>
                     </div>
 
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">

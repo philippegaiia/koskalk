@@ -137,7 +137,8 @@ Live soap outputs must include:
 - INS
 - fatty acid profile (show only acids actually present by default)
 - grouped fatty-acid buckets available to the frontend
-- compact default Koskalk qualities
+- compact default Koskalk qualities (`unmolding_firmness`, `cured_hardness`, `longevity`, `cleansing_strength`, `mildness`)
+- lather shown as a compact summary first, with advanced lather metrics behind progressive disclosure
 - advanced soap chemistry metrics behind progressive disclosure
 
 ## INCI requirement

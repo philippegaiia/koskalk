@@ -37,8 +37,8 @@ CSV seeders are in place for:
 The data is intentionally split into three layers:
 
 - `Ingredient`: category, stewardship flags, source identity
-- `IngredientVersion`: display names, INCI names, CAS / EC, unit, price, source version data
-- `IngredientSapProfile`: KOH SAP, derived NaOH SAP, legacy fixed fatty-acid values, source notes
+- `IngredientVersion`: display names, INCI names, CAS / EC, unit, price, source version data, normalized fatty-acid row editing for saponifiable oils
+- `IngredientSapProfile`: KOH SAP, derived NaOH SAP, legacy fixed fatty-acid fallback values, source notes
 - `FattyAcid`: normalized fatty-acid catalog with core and extended acids
 - `IngredientVersionFattyAcid`: normalized fatty-acid percentages by ingredient version
 

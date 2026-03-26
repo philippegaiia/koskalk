@@ -3,8 +3,10 @@
 namespace App\Filament\Resources\IngredientVersions\Schemas;
 
 use App\IngredientCategory;
+use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientVersion;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -93,6 +95,56 @@ class IngredientVersionForm
                     ->columns([
                         'md' => 4,
                     ]),
+                Section::make('Soap Calculation Data')
+                    ->description('For saponifiable carrier oils, manage the normalized fatty-acid entries here. KOH SAP still lives in the SAP profile resource.')
+                    ->icon(Heroicon::Beaker)
+                    ->visible(fn (Get $get, ?IngredientVersion $record): bool => self::supportsSoapCalculation($get, $record))
+                    ->schema([
+                        Placeholder::make('fatty_acid_entry_hint')
+                            ->hiddenLabel()
+                            ->content('Use the normalized fatty-acid list below as the main source of truth. The older SAP-profile fatty-acid columns remain only as legacy fallback data.'),
+                        Placeholder::make('fatty_acid_total')
+                            ->label('Fatty acid total')
+                            ->content(function (Get $get): string {
+                                $total = collect($get('fattyAcidEntries') ?? [])
+                                    ->sum(fn (array $row): float => max(0, (float) ($row['percentage'] ?? 0)));
+
+                                return number_format($total, 2, '.', '').'%';
+                            }),
+                        Repeater::make('fattyAcidEntries')
+                            ->relationship()
+                            ->schema([
+                                Select::make('fatty_acid_id')
+                                    ->label('Fatty acid')
+                                    ->options(fn (): array => FattyAcid::query()
+                                        ->where('is_active', true)
+                                        ->orderBy('display_order')
+                                        ->pluck('name', 'id')
+                                        ->all())
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                TextInput::make('percentage')
+                                    ->numeric()
+                                    ->inputMode('decimal')
+                                    ->suffix('%')
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->required(),
+                                Textarea::make('source_notes')
+                                    ->rows(2)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns([
+                                'md' => 2,
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable(false)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns([
+                        'md' => 2,
+                    ]),
                 Section::make('Aromatic Compliance')
                     ->description('For essential oils and other aromatic materials, allergen composition belongs directly on the ingredient version so the source percentages stay versioned.')
                     ->icon(Heroicon::Sparkles)
@@ -111,6 +163,7 @@ class IngredientVersionForm
                                     ->numeric()
                                     ->inputMode('decimal')
                                     ->suffix('%')
+                                    ->minValue(0)
                                     ->required(),
                                 Textarea::make('source_notes')
                                     ->rows(3)
@@ -138,6 +191,17 @@ class IngredientVersionForm
                         'md' => 2,
                     ]),
             ]);
+    }
+
+    private static function supportsSoapCalculation(Get $get, ?IngredientVersion $record): bool
+    {
+        $ingredientId = $get('ingredient_id');
+
+        if (filled($ingredientId)) {
+            return Ingredient::query()->find($ingredientId)?->isAvailableForInitialSoapCalculation() ?? false;
+        }
+
+        return $record?->ingredient?->isAvailableForInitialSoapCalculation() ?? false;
     }
 
     private static function supportsAromaticCompliance(Get $get, ?IngredientVersion $record): bool

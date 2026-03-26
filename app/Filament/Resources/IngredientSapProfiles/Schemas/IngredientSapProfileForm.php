@@ -49,15 +49,19 @@ class IngredientSapProfileForm
                     ->columns([
                         'md' => 3,
                     ]),
-                Section::make('Fatty Acid Profile')
-                    ->description('Carrier oils use a fixed core fatty-acid set so calculations stay consistent and comparable.')
+                Section::make('Legacy Fatty Acid Fallback')
+                    ->description('These old core fatty-acid columns remain only as fallback data. Prefer editing the normalized fatty-acid entries on the ingredient version whenever possible.')
                     ->icon(Heroicon::ChartPie)
                     ->schema([
+                        Placeholder::make('legacy_fatty_acid_hint')
+                            ->hiddenLabel()
+                            ->content('If normalized fatty-acid rows exist on the ingredient version, Koskalk will use those first and ignore these legacy columns.'),
                         ...collect(SoapFattyAcid::coreSet())
                             ->map(fn (SoapFattyAcid $fattyAcid): TextInput => TextInput::make($fattyAcid->value)
                                 ->label($fattyAcid->getLabel())
                                 ->numeric()
                                 ->inputMode('decimal')
+                                ->minValue(0)
                                 ->suffix('%'))
                             ->all(),
                     ]),

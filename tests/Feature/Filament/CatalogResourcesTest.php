@@ -79,7 +79,7 @@ it('renders the catalog create forms in the admin panel', function () {
     $this->get(IngredientSapProfileResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Saponification Data')
-        ->assertSee('Fatty Acid Profile');
+        ->assertSee('Legacy Fatty Acid Fallback');
 });
 
 it('renders the compliance resources in the admin panel', function () {

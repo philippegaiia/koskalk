@@ -171,6 +171,7 @@ Only the minimum data needed for fast formulation:
 - Tune Koskalk quality formulas against benchmark archetypes (castile, high coconut, balanced palm/olive/coconut, high shea, tallow-style)
 - Add short explanation text for quality cards and warning flags so the UI teaches tradeoffs instead of showing bare numbers only
 - Compare the current workbench against the loaded saved baseline with deltas on totals and key quality metrics
+- Improve admin data entry so normalized fatty-acid rows are edited directly on ingredient versions, with SAP-profile fatty-acid columns treated as legacy fallback only
 - NaOH and KOH calculated simultaneously
 - Water mode options: percent of oils / lye:water ratio / lye concentration
 - Superfat / lye discount

@@ -333,6 +333,42 @@ window.recipeWorkbench = (payload) => ({
         }
     },
 
+    async openSelectedVersion() {
+        if (!this.selectedComparisonVersionId || !this.hasSavedRecipe) {
+            return;
+        }
+
+        this.comparisonMessage = '';
+
+        try {
+            const response = await this.$wire.loadVersion(this.selectedComparisonVersionId);
+
+            if (!response?.ok) {
+                this.comparisonMessage = response?.message ?? 'Saved version could not be opened.';
+
+                return;
+            }
+
+            if (response.draft) {
+                this.applySavedDraft(response.draft, { resetBaseline: false });
+            }
+
+            this.backendCalculation = response.calculation ?? this.backendCalculation;
+            this.saveStatus = 'success';
+            this.saveMessage = response.message ?? 'Saved version loaded.';
+        } catch (error) {
+            this.comparisonMessage = 'Saved version could not be opened.';
+        }
+    },
+
+    comparisonSummaryItems() {
+        return this.currentComparisonRows()
+            .filter((row) => Math.abs(row.delta) >= 0.01)
+            .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+            .slice(0, 3)
+            .map((row) => `${row.label}: ${row.directionLabel.toLowerCase()} (${row.delta >= 0 ? '+' : ''}${this.format(row.delta, 1)})`);
+    },
+
     async persist(method) {
         this.isSaving = true;
         this.saveStatus = null;

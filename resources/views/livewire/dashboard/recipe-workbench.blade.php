@@ -16,10 +16,10 @@
         </div>
 
         <div class="rounded-[2rem] border border-[var(--color-line-strong)] bg-[var(--color-panel-strong)] p-5">
-            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Draft status</p>
-            <h3 class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="hasSavedRecipe ? 'Draft connected' : 'Ready to save'"></h3>
+            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Save status</p>
+            <h3 class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="hasSavedRecipe ? 'Working draft connected' : 'Ready to save' "></h3>
             <div class="mt-4 space-y-3 text-sm text-[var(--color-ink-soft)]">
-                <p x-text="hasSavedRecipe ? 'This workbench is now tied to a real recipe draft and can be versioned or duplicated.' : 'Save the first draft once the oils reach 100% to turn this into a persistent formula.'"></p>
+                <p x-text="hasSavedRecipe ? 'You are editing the current working draft. Use Save as new version to create a numbered snapshot you can reopen or compare later.' : 'Save the first draft once the oils reach 100% to turn this into a persistent formula.'"></p>
                 <div :class="saveStatus === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)]'" class="rounded-[1.5rem] border px-4 py-3">
                     <p class="font-medium" x-text="saveMessage || 'Draft and version actions stay disabled until the saponified oils reach exactly 100%.'"></p>
                 </div>
@@ -381,8 +381,8 @@
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
                         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula comparison</p>
-                                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Current workbench vs saved baseline: <span class="font-medium text-[var(--color-ink-strong)]" x-text="baselineFormulaName"></span></p>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Saved versions</p>
+                                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Pick a numbered snapshot to compare against or load into the workbench.</p>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
                                 <template x-if="versionOptions.length > 0">
@@ -392,14 +392,25 @@
                                         </template>
                                     </select>
                                 </template>
-                                <button type="button" @click="loadComparisonVersion()" class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">Load baseline</button>
-                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Live delta view</span>
+                                <button type="button" @click="loadComparisonVersion()" class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">Compare</button>
+                                <button type="button" @click="openSelectedVersion()" class="rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">Open version</button>
                             </div>
                         </div>
 
                         <template x-if="comparisonMessage">
                             <div class="mt-3 rounded-[1.25rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700" x-text="comparisonMessage"></div>
                         </template>
+
+                        <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+                            <div class="text-sm text-[var(--color-ink-soft)]">Baseline now loaded: <span class="font-medium text-[var(--color-ink-strong)]" x-text="baselineFormulaName"></span></div>
+                            <template x-if="comparisonSummaryItems().length > 0">
+                                <div class="mt-2 flex flex-wrap gap-2">
+                                    <template x-for="item in comparisonSummaryItems()" :key="item">
+                                        <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs text-[var(--color-ink-soft)]" x-text="item"></span>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
 
                         <div class="mt-4 grid gap-3 xl:grid-cols-2">
                             <template x-for="row in currentComparisonRows()" :key="row.label">

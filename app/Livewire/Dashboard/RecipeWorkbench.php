@@ -184,6 +184,43 @@ class RecipeWorkbench extends Component
         ];
     }
 
+    public function loadVersion(int $versionId, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        $recipe = $this->currentRecipe();
+
+        if (! $recipe instanceof Recipe) {
+            return [
+                'ok' => false,
+                'message' => 'No saved recipe is available to load.',
+            ];
+        }
+
+        $draft = $recipeWorkbenchService->versionPayload($recipe, $versionId);
+
+        if ($draft === null) {
+            return [
+                'ok' => false,
+                'message' => 'The selected version could not be loaded.',
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Saved version loaded into the workbench. Save when you want to keep changes.',
+            'draft' => $draft,
+            'calculation' => $recipeWorkbenchService->previewSoapCalculation([
+                'oil_weight' => $draft['oilWeight'] ?? 0,
+                'lye_type' => $draft['lyeType'] ?? 'naoh',
+                'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
+                'dual_lye_koh_percentage' => $draft['dualKohPercentage'] ?? 40,
+                'water_mode' => $draft['waterMode'] ?? 'percent_of_oils',
+                'water_value' => $draft['waterValue'] ?? 38,
+                'superfat' => $draft['superfat'] ?? 5,
+                'phase_items' => $draft['phaseItems'] ?? [],
+            ]),
+        ];
+    }
+
     public function render(RecipeWorkbenchService $recipeWorkbenchService): View
     {
         $soapFamily = $this->soapFamily();

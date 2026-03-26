@@ -402,17 +402,46 @@ window.recipeWorkbench = (payload) => ({
     qualityBarStyle(value, color = 'var(--color-line-strong)') {
         const width = Math.max(0, Math.min(100, this.number(value)));
 
-        return `width: ${width}%; background: ${color};`;
+        return `width: ${width}%; background: linear-gradient(90deg, color-mix(in srgb, ${color} 72%, white 28%) 0%, ${color} 100%);`;
+    },
+
+    qualityTargetZone(key) {
+        const zones = {
+            unmolding_firmness: { start: 45, end: 70 },
+            cured_hardness: { start: 45, end: 70 },
+            longevity: { start: 40, end: 70 },
+            cleansing_strength: { start: 18, end: 40 },
+            mildness: { start: 50, end: 75 },
+            bubble_volume: { start: 25, end: 55 },
+            creamy_lather: { start: 25, end: 55 },
+            lather_stability: { start: 25, end: 55 },
+            conditioning_feel: { start: 35, end: 65 },
+            dos_risk: { start: 0, end: 20 },
+            slime_risk: { start: 0, end: 20 },
+            cure_speed: { start: 35, end: 60 },
+        };
+
+        return zones[key] ?? null;
+    },
+
+    targetZoneStyle(key) {
+        const zone = this.qualityTargetZone(key);
+
+        if (!zone) {
+            return null;
+        }
+
+        return `left: ${zone.start}%; width: ${Math.max(0, zone.end - zone.start)}%;`;
     },
 
     fattyAcidGroupSegments() {
         const groups = this.backendCalculation?.properties?.fatty_acid_groups ?? {};
         const segments = [
-            { key: 'vs', label: 'VS', value: groups.vs ?? 0, color: '#d97706' },
-            { key: 'hs', label: 'HS', value: groups.hs ?? 0, color: '#92400e' },
-            { key: 'mu', label: 'MU', value: groups.mu ?? 0, color: '#4d7c0f' },
-            { key: 'pu', label: 'PU', value: groups.pu ?? 0, color: '#4338ca' },
-            { key: 'sp', label: 'SP', value: groups.sp ?? 0, color: '#a21caf' },
+            { key: 'vs', shortLabel: 'VS', label: 'Quick-cleansing sats', value: groups.vs ?? 0, color: '#d97706' },
+            { key: 'hs', shortLabel: 'HS', label: 'Hard sats', value: groups.hs ?? 0, color: '#92400e' },
+            { key: 'mu', shortLabel: 'MU', label: 'Monounsaturated', value: groups.mu ?? 0, color: '#4d7c0f' },
+            { key: 'pu', shortLabel: 'PU', label: 'Polyunsaturated', value: groups.pu ?? 0, color: '#4338ca' },
+            { key: 'sp', shortLabel: 'SP', label: 'Special lather', value: groups.sp ?? 0, color: '#a21caf' },
         ].filter((segment) => this.number(segment.value) > 0);
 
         const total = segments.reduce((sum, segment) => sum + this.number(segment.value), 0);

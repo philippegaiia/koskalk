@@ -398,6 +398,9 @@
                                                 <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
                                             </div>
                                         </div>
+                                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
+                                            <div class="h-full rounded-full" :style="qualityBarStyle(row.value)"></div>
+                                        </div>
                                         <template x-if="row.explanation">
                                             <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="row.explanation"></p>
                                         </template>
@@ -451,13 +454,38 @@
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
                         <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Fatty acid profile</p>
                         <template x-if="hasFattyAcidProfileData">
-                            <div class="mt-4 grid gap-2">
-                                <template x-for="[label, value] in fattyAcidProfileRows" :key="label">
-                                    <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
-                                        <span class="text-[var(--color-ink-soft)]" x-text="label"></span>
-                                        <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(value, 1)}%`"></span>
+                            <div class="mt-4 space-y-4">
+                                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Grouped profile</p>
+                                    <div class="mt-3 flex h-3 overflow-hidden rounded-full bg-white/80">
+                                        <template x-for="segment in fattyAcidGroupSegments()" :key="segment.key">
+                                            <div :style="`width: ${segment.percent}%; background: ${segment.color};`"></div>
+                                        </template>
                                     </div>
-                                </template>
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        <template x-for="segment in fattyAcidGroupSegments()" :key="`${segment.key}-legend`">
+                                            <div class="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs">
+                                                <span class="inline-block h-2.5 w-2.5 rounded-full" :style="`background: ${segment.color};`"></span>
+                                                <span class="font-medium text-[var(--color-ink-strong)]" x-text="segment.label"></span>
+                                                <span class="text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <template x-for="row in fattyAcidProfileRows" :key="row.key">
+                                        <div class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                                <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
+                                            </div>
+                                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
+                                                <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="qualityBarStyle(row.value, 'var(--color-ink-strong)')"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
                             </div>
                         </template>
                         <template x-if="!hasFattyAcidProfileData">

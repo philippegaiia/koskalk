@@ -399,6 +399,30 @@ window.recipeWorkbench = (payload) => ({
         return this.additiveRows.length > 0 || this.fragranceRows.length > 0;
     },
 
+    qualityBarStyle(value, color = 'var(--color-line-strong)') {
+        const width = Math.max(0, Math.min(100, this.number(value)));
+
+        return `width: ${width}%; background: ${color};`;
+    },
+
+    fattyAcidGroupSegments() {
+        const groups = this.backendCalculation?.properties?.fatty_acid_groups ?? {};
+        const segments = [
+            { key: 'vs', label: 'VS', value: groups.vs ?? 0, color: '#d97706' },
+            { key: 'hs', label: 'HS', value: groups.hs ?? 0, color: '#92400e' },
+            { key: 'mu', label: 'MU', value: groups.mu ?? 0, color: '#4d7c0f' },
+            { key: 'pu', label: 'PU', value: groups.pu ?? 0, color: '#4338ca' },
+            { key: 'sp', label: 'SP', value: groups.sp ?? 0, color: '#a21caf' },
+        ].filter((segment) => this.number(segment.value) > 0);
+
+        const total = segments.reduce((sum, segment) => sum + this.number(segment.value), 0);
+
+        return segments.map((segment) => ({
+            ...segment,
+            percent: total > 0 ? (this.number(segment.value) / total) * 100 : 0,
+        }));
+    },
+
     get totalSummaryCards() {
         return [
             {
@@ -445,8 +469,12 @@ window.recipeWorkbench = (payload) => ({
         };
 
         return Object.entries(labels)
-            .map(([key, label]) => [label, profile[key] ?? 0])
-            .filter(([, value]) => this.number(value) > 0);
+            .map(([key, label]) => ({
+                key,
+                label,
+                value: profile[key] ?? 0,
+            }))
+            .filter((row) => this.number(row.value) > 0);
     },
 
     get hasFattyAcidProfileData() {

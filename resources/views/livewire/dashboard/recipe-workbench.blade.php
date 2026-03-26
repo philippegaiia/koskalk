@@ -362,26 +362,22 @@
                     </div>
                 </div>
 
-                <div class="grid gap-4 xl:grid-cols-3">
-                    <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Fatty acid profile</p>
-                        <template x-if="hasFattyAcidProfileData">
-                            <div class="mt-4 grid gap-2">
-                                <template x-for="[label, value] in fattyAcidProfileRows" :key="label">
-                                    <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
-                                        <span class="text-[var(--color-ink-soft)]" x-text="label"></span>
-                                        <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(value, 1)}%`"></span>
-                                    </div>
-                                </template>
-                            </div>
-                        </template>
-                        <template x-if="!hasFattyAcidProfileData">
-                            <div class="mt-4 rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
-                                Fill the fatty acid profile on the selected carrier oils to see the blended profile here.
-                            </div>
-                        </template>
-                    </div>
+                <div class="grid gap-4 xl:grid-cols-4">
+                    <template x-for="card in totalSummaryCards" :key="card.id">
+                        <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
+                            <p class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
+                        </div>
+                    </template>
+                </div>
 
+                <template x-if="Math.abs(totalOilPercentage() - 100) > 0.01">
+                    <div class="rounded-[1.5rem] border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink-strong)]">
+                        The saponified oils should total 100% on the oil basis before the formula is considered balanced.
+                    </div>
+                </template>
+
+                <div class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
                         <div class="flex items-center justify-between gap-3">
                             <div>
@@ -442,25 +438,20 @@
                     </div>
 
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Totals</p>
-                        <div class="mt-4 space-y-3 text-sm">
-                            <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
-                                <span class="text-[var(--color-ink-soft)]">Oils basis total</span>
-                                <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(totalOilPercentage(), 1)}%`"></span>
+                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Fatty acid profile</p>
+                        <template x-if="hasFattyAcidProfileData">
+                            <div class="mt-4 grid gap-2">
+                                <template x-for="[label, value] in fattyAcidProfileRows" :key="label">
+                                    <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
+                                        <span class="text-[var(--color-ink-soft)]" x-text="label"></span>
+                                        <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(value, 1)}%`"></span>
+                                    </div>
+                                </template>
                             </div>
-                            <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
-                                <span class="text-[var(--color-ink-soft)]">Post-reaction additions</span>
-                                <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(totalAdditionPercentage(), 1)}% of oils`"></span>
-                            </div>
-                            <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
-                                <span class="text-[var(--color-ink-soft)]">Final batch estimate</span>
-                                <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(finalBatchWeight(), 1)} ${oilUnit}`"></span>
-                            </div>
-                        </div>
-
-                        <template x-if="Math.abs(totalOilPercentage() - 100) > 0.01">
-                            <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink-strong)]">
-                                The saponified oils should total 100% on the oil basis before the formula is considered balanced.
+                        </template>
+                        <template x-if="!hasFattyAcidProfileData">
+                            <div class="mt-4 rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
+                                Fill the fatty acid profile on the selected carrier oils to see the blended profile here.
                             </div>
                         </template>
                     </div>

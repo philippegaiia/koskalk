@@ -14,7 +14,7 @@ window.recipeWorkbench = (payload) => ({
     waterValue: 38,
     superfat: 5,
     search: '',
-    activeCategory: 'carrier_oil',
+    activeCategory: 'all',
     ifraProductCategories: payload.ifraProductCategories ?? [],
     selectedIfraProductCategoryId: payload.ifraProductCategories[0]?.id ?? null,
     ingredients: payload.ingredients ?? [],
@@ -48,6 +48,7 @@ window.recipeWorkbench = (payload) => ({
 
     get categoryOptions() {
         return [
+            { value: 'all', label: 'All' },
             { value: 'carrier_oil', label: 'Carrier Oils' },
             { value: 'essential_oil', label: 'Essential Oils' },
             { value: 'botanical_extract', label: 'Botanical Extracts' },
@@ -62,7 +63,7 @@ window.recipeWorkbench = (payload) => ({
         const search = this.search.trim().toLowerCase();
 
         return this.ingredients.filter((ingredient) => {
-            const matchesCategory = ingredient.category === this.activeCategory;
+            const matchesCategory = this.activeCategory === 'all' || ingredient.category === this.activeCategory;
             const matchesSearch = search === ''
                 || ingredient.name.toLowerCase().includes(search)
                 || (ingredient.inci_name ?? '').toLowerCase().includes(search);
@@ -123,18 +124,11 @@ window.recipeWorkbench = (payload) => ({
                 );
             }
 
-            cards.push(
-                {
-                    id: 'water',
-                    label: 'Water',
-                    value: backendLye.water?.weight ?? 0,
-                },
-                {
-                    id: 'glycerine',
-                    label: 'Produced glycerine',
-                    value: backendLye.selected?.glycerine_weight ?? 0,
-                },
-            );
+            cards.push({
+                id: 'water',
+                label: 'Water',
+                value: backendLye.water?.weight ?? 0,
+            });
 
             return cards;
         }
@@ -168,18 +162,11 @@ window.recipeWorkbench = (payload) => ({
             );
         }
 
-        cards.push(
-            {
-                id: 'water',
-                label: 'Water',
-                value: lye.water_weight,
-            },
-            {
-                id: 'glycerine',
-                label: 'Produced glycerine',
-                value: lye.glycerine_weight,
-            },
-        );
+        cards.push({
+            id: 'water',
+            label: 'Water',
+            value: lye.water_weight,
+        });
 
         return cards;
     },
@@ -410,6 +397,31 @@ window.recipeWorkbench = (payload) => ({
 
     get hasPostReactionRows() {
         return this.additiveRows.length > 0 || this.fragranceRows.length > 0;
+    },
+
+    get totalSummaryCards() {
+        return [
+            {
+                id: 'oils-basis-total',
+                label: 'Oils basis total',
+                value: `${this.format(this.totalOilPercentage(), 1)}%`,
+            },
+            {
+                id: 'post-reaction-additions',
+                label: 'Post-reaction additions',
+                value: `${this.format(this.totalAdditionPercentage(), 1)}% of oils`,
+            },
+            {
+                id: 'produced-glycerine',
+                label: 'Produced glycerine',
+                value: `${this.format(this.backendCalculation?.lye?.selected?.glycerine_weight ?? this.lyeBreakdown().glycerine_weight, 1)} ${this.oilUnit}`,
+            },
+            {
+                id: 'final-batch-estimate',
+                label: 'Final batch estimate',
+                value: `${this.format(this.finalBatchWeight(), 1)} ${this.oilUnit}`,
+            },
+        ];
     },
 
     get fattyAcidProfileRows() {

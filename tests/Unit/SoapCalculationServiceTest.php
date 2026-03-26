@@ -175,3 +175,30 @@ it('supports dual lye selection and koh purity adjustments', function () {
         ->and($result['lye']['selected']['total_active_lye_weight'])->toBe(192.6705)
         ->and($result['lye']['water']['weight'])->toBe(385.341);
 });
+
+it('caps cleansing strength at 100 for very cleansing formulas', function () {
+    $service = new SoapCalculationService;
+
+    $result = $service->calculate([
+        [
+            'weight' => 1000,
+            'koh_sap_value' => 0.257,
+            'fatty_acid_profile' => [
+                'caprylic' => 8,
+                'capric' => 7,
+                'lauric' => 48,
+                'myristic' => 19,
+                'palmitic' => 9,
+                'stearic' => 3,
+                'oleic' => 8,
+                'linoleic' => 2,
+            ],
+        ],
+    ], [
+        'superfat' => 5,
+    ]);
+
+    expect($result['properties']['superfat_effects']['effective_cleansing'])->toBeGreaterThan(100)
+        ->and($result['properties']['qualities']['cleansing_strength'])->toBe(100.0)
+        ->and($result['properties']['qualities']['mildness'])->toBe(0.0);
+});

@@ -22,6 +22,7 @@ Current responsibilities:
 - expose the first parallel Koskalk quality metrics alongside legacy keys
 - support a compact frontend presentation based on default quality cards plus advanced disclosure
 - expose a backend preview payload so the workbench consumes server-side fatty-acid profiles, lye outputs, and quality metrics as the live source of truth
+- keep compact Koskalk quality indices normalized to a 0-100 display range even when underlying chemistry helpers exceed that range
 
 ### `RecipeNormalizationService`
 

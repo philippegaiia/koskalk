@@ -138,7 +138,8 @@ Live soap outputs must include:
 - fatty acid profile (show only acids actually present by default)
 - grouped fatty-acid buckets available to the frontend
 - backend preview payload drives live fatty-acid profile, lye summary, and Koskalk quality rendering
-- compact default Koskalk qualities (`unmolding_firmness`, `cured_hardness`, `longevity`, `cleansing_strength`, `mildness`)
+- compact default Koskalk qualities (`unmolding_firmness`, `cured_hardness`, `longevity`, `cleansing_strength`, `mildness`) rendered as normalized 0-100 indices
+- totals appear as a horizontal summary row above the quality and fatty-acid panels, including produced glycerine
 - lather shown as a compact summary first, with advanced lather metrics behind progressive disclosure
 - advanced soap chemistry metrics behind progressive disclosure
 

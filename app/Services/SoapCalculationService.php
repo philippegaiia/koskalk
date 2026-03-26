@@ -244,6 +244,7 @@ class SoapCalculationService
         $groups = $this->deriveFattyAcidGroups($fattyAcidProfile);
         $superfatEffects = $this->calculateSuperfatEffects($fattyAcidProfile, $groups, $superfat);
         $effectiveCleansing = $superfatEffects['effective_cleansing'];
+        $cleansingStrength = max(0.0, min(100.0, $effectiveCleansing));
         $hs = $groups['hs'] ?? 0.0;
         $mu = $groups['mu'] ?? 0.0;
         $pu = $groups['pu'] ?? 0.0;
@@ -259,12 +260,12 @@ class SoapCalculationService
             'unmolding_firmness' => $this->roundValue(max(0.0, min(100.0, (0.85 * $vs) + (0.95 * $hs) - (0.40 * $mu) + 18))),
             'cured_hardness' => $this->roundValue(max(0.0, min(100.0, (1.15 * $hs) + (0.20 * $mu) - (0.50 * $pu) + 8))),
             'longevity' => $this->roundValue(max(0.0, min(100.0, (1.10 * $hs) - (0.70 * $vs) - (0.45 * $sp) - (0.40 * $pu) + 28))),
-            'cleansing_strength' => $this->roundValue($effectiveCleansing),
-            'mildness' => $this->roundValue(max(0.0, min(100.0, 78 - (1.00 * $effectiveCleansing) + (0.18 * $mu) - (0.12 * $pu)))),
+            'cleansing_strength' => $this->roundValue($cleansingStrength),
+            'mildness' => $this->roundValue(max(0.0, min(100.0, 78 - (1.00 * $cleansingStrength) + (0.18 * $mu) - (0.12 * $pu)))),
             'bubble_volume' => $this->roundValue(max(0.0, min(100.0, (1.05 * $vs) + (1.05 * $sp) - (0.30 * $hs)))),
             'creamy_lather' => $this->roundValue(max(0.0, min(100.0, (0.95 * $hs) + (0.90 * $sp) + (0.16 * $mu) - (0.15 * $vs)))),
             'lather_stability' => $this->roundValue(max(0.0, min(100.0, (1.00 * $sp) + (0.68 * $hs) + (0.28 * $vs)))),
-            'conditioning_feel' => $this->roundValue(max(0.0, min(100.0, (0.35 * $mu) + (0.15 * $pu) + (0.15 * $sp) - (0.45 * $effectiveCleansing) + 35))),
+            'conditioning_feel' => $this->roundValue(max(0.0, min(100.0, (0.35 * $mu) + (0.15 * $pu) + (0.15 * $sp) - (0.45 * $cleansingStrength) + 35))),
             'dos_risk' => $this->roundValue(max(0.0, min(100.0, (1.35 * $pu)))),
             'slime_risk' => $this->roundValue(max(0.0, min(100.0, (0.72 * $mu) - (0.42 * $vs) - (0.36 * $hs) + (($mu > 65 && $vs < 12 && $hs < 20) ? 8 : 0)))), 
             'cure_speed' => $this->roundValue(max(0.0, min(100.0, (0.75 * $vs) + (0.80 * $hs) - (0.52 * $mu) + 20))),

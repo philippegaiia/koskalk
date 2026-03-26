@@ -45,6 +45,11 @@ class IngredientVersion extends Model
         return $this->hasOne(IngredientSapProfile::class);
     }
 
+    public function fattyAcidEntries(): HasMany
+    {
+        return $this->hasMany(IngredientVersionFattyAcid::class);
+    }
+
     public function allergenEntries(): HasMany
     {
         return $this->hasMany(IngredientAllergenEntry::class);
@@ -58,6 +63,29 @@ class IngredientVersion extends Model
     public function recipeItems(): HasMany
     {
         return $this->hasMany(RecipeItem::class);
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function normalizedFattyAcidProfile(): array
+    {
+        $profile = $this->fattyAcidEntries()
+            ->with('fattyAcid:id,key,display_order')
+            ->get()
+            ->sortBy(fn (IngredientVersionFattyAcid $entry): int => $entry->fattyAcid?->display_order ?? PHP_INT_MAX)
+            ->mapWithKeys(function (IngredientVersionFattyAcid $entry): array {
+                $key = $entry->fattyAcid?->key;
+
+                return $key === null ? [] : [$key => round((float) $entry->percentage, 5)];
+            })
+            ->all();
+
+        if ($profile !== []) {
+            return $profile;
+        }
+
+        return $this->sapProfile?->fattyAcidProfile() ?? [];
     }
 
     protected function casts(): array

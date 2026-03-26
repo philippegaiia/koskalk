@@ -53,6 +53,8 @@ class SoapCalculationService
      *     },
      *     properties: array{
      *         fatty_acid_profile: array<string, float>,
+     *         fatty_acid_groups: array<string, float>,
+     *         superfat_effects: array<string, float>,
      *         qualities: array<string, float>
      *     }
      * }
@@ -112,6 +114,8 @@ class SoapCalculationService
         );
 
         $fattyAcidProfile = $this->averageProfile($fattyAcidTotals, $oilsWeight);
+        $fattyAcidGroups = $this->deriveFattyAcidGroups($fattyAcidProfile);
+        $superfatEffects = $this->calculateSuperfatEffects($fattyAcidProfile, $fattyAcidGroups, $superfat);
         $qualities = $this->calculateQualityMetrics($fattyAcidProfile, $oilsWeight, $kohTheoretical);
 
         return [
@@ -143,6 +147,8 @@ class SoapCalculationService
             ],
             'properties' => [
                 'fatty_acid_profile' => $fattyAcidProfile,
+                'fatty_acid_groups' => $fattyAcidGroups,
+                'superfat_effects' => $superfatEffects,
                 'qualities' => $qualities,
             ],
         ];
@@ -220,7 +226,6 @@ class SoapCalculationService
 
     /**
      * @param  array<string, float>  $fattyAcidProfile
-     * @param  array<string, float>  $qualityProfile
      * @return array<string, float>
      */
     private function calculateQualityMetrics(array $fattyAcidProfile, float $oilsWeight, float $kohTheoretical): array
@@ -245,6 +250,77 @@ class SoapCalculationService
             'creamy' => $this->roundValue($palmitic + $stearic + $ricinoleic),
             'iodine' => $this->roundValue($iodine),
             'ins' => $this->roundValue($ins),
+        ];
+    }
+
+    /**
+     * @param  array<string, float>  $fattyAcidProfile
+     * @return array<string, float>
+     */
+    private function deriveFattyAcidGroups(array $fattyAcidProfile): array
+    {
+        $caprylic = $fattyAcidProfile['caprylic'] ?? 0.0;
+        $capric = $fattyAcidProfile['capric'] ?? 0.0;
+        $lauric = $fattyAcidProfile['lauric'] ?? 0.0;
+        $myristic = $fattyAcidProfile['myristic'] ?? 0.0;
+        $palmitic = $fattyAcidProfile['palmitic'] ?? 0.0;
+        $stearic = $fattyAcidProfile['stearic'] ?? 0.0;
+        $arachidic = $fattyAcidProfile['arachidic'] ?? 0.0;
+        $behenic = $fattyAcidProfile['behenic'] ?? 0.0;
+        $oleic = $fattyAcidProfile['oleic'] ?? 0.0;
+        $palmitoleic = $fattyAcidProfile['palmitoleic'] ?? 0.0;
+        $gondoic = $fattyAcidProfile['gondoic'] ?? 0.0;
+        $erucic = $fattyAcidProfile['erucic'] ?? 0.0;
+        $linoleic = $fattyAcidProfile['linoleic'] ?? 0.0;
+        $linolenic = $fattyAcidProfile['linolenic'] ?? 0.0;
+        $ricinoleic = $fattyAcidProfile['ricinoleic'] ?? 0.0;
+
+        $vs = $caprylic + $capric + $lauric + $myristic;
+        $hs = $palmitic + $stearic + $arachidic + $behenic;
+        $mu = $oleic + $palmitoleic + $gondoic + $erucic;
+        $pu = $linoleic + $linolenic;
+        $sp = $ricinoleic;
+
+        return [
+            'vs' => $this->roundValue($vs),
+            'hs' => $this->roundValue($hs),
+            'mu' => $this->roundValue($mu),
+            'pu' => $this->roundValue($pu),
+            'sp' => $this->roundValue($sp),
+            'sat' => $this->roundValue($vs + $hs),
+            'unsat' => $this->roundValue($mu + $pu + $sp),
+        ];
+    }
+
+    /**
+     * @param  array<string, float>  $fattyAcidProfile
+     * @param  array<string, float>  $fattyAcidGroups
+     * @return array<string, float>
+     */
+    private function calculateSuperfatEffects(array $fattyAcidProfile, array $fattyAcidGroups, float $superfat): array
+    {
+        $lauric = $fattyAcidProfile['lauric'] ?? 0.0;
+        $myristic = $fattyAcidProfile['myristic'] ?? 0.0;
+        $capric = $fattyAcidProfile['capric'] ?? 0.0;
+        $caprylic = $fattyAcidProfile['caprylic'] ?? 0.0;
+        $hs = $fattyAcidGroups['hs'] ?? 0.0;
+
+        $baseCleansingPotential = $this->roundValue(
+            max(0.0, (1.55 * ($lauric + $myristic)) + (1.00 * $capric) + (0.65 * $caprylic) + (0.20 * ($fattyAcidGroups['vs'] ?? 0.0)) - (0.10 * $hs))
+        );
+
+        $superfatBuffer = $this->roundValue(
+            max(0.0, $superfat * (0.35 + (0.020 * $baseCleansingPotential)))
+        );
+
+        $effectiveCleansing = $this->roundValue(max(0.0, $baseCleansingPotential - $superfatBuffer));
+        $dosRiskModifier = $this->roundValue(($fattyAcidGroups['pu'] ?? 0.0) * ($superfat / 100));
+
+        return [
+            'base_cleansing_potential' => $baseCleansingPotential,
+            'superfat_buffer' => $superfatBuffer,
+            'effective_cleansing' => $effectiveCleansing,
+            'dos_risk_modifier' => $dosRiskModifier,
         ];
     }
 

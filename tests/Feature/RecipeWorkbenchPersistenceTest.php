@@ -2,8 +2,11 @@
 
 use App\IngredientCategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
+use App\Models\FattyAcid;
 use App\Models\Ingredient;
+use App\Models\IngredientSapProfile;
 use App\Models\IngredientVersion;
+use App\Models\IngredientVersionFattyAcid;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -96,6 +99,53 @@ it('can still save a draft from a mounted component after the auth session is go
     expect($recipe->owner_id)->toBe($user->id)
         ->and($recipe->name)->toBe('Fallback Draft')
         ->and($soapFamily->id)->toBe($recipe->product_family_id);
+});
+
+it('returns backend soap calculation preview data for the workbench', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $ingredientVersion = makeCarrierOilIngredientVersion();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_version_id' => $ingredientVersion->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $oleic = FattyAcid::factory()->create([
+        'key' => 'oleic',
+        'name' => 'Oleic',
+    ]);
+    $palmitic = FattyAcid::factory()->create([
+        'key' => 'palmitic',
+        'name' => 'Palmitic',
+    ]);
+
+    IngredientVersionFattyAcid::factory()->create([
+        'ingredient_version_id' => $ingredientVersion->id,
+        'fatty_acid_id' => $oleic->id,
+        'percentage' => 71,
+    ]);
+    IngredientVersionFattyAcid::factory()->create([
+        'ingredient_version_id' => $ingredientVersion->id,
+        'fatty_acid_id' => $palmitic->id,
+        'percentage' => 13,
+    ]);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation(
+        soapDraftPayload($ingredientVersion, oilWeight: 1000),
+        app(RecipeWorkbenchService::class),
+    );
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation'])->not->toBeNull()
+        ->and($result['calculation']['properties']['fatty_acid_profile']['oleic'])->toBe(71.0)
+        ->and($result['calculation']['properties']['qualities'])->toHaveKey('unmolding_firmness');
 });
 
 function makeCarrierOilIngredientVersion(): IngredientVersion

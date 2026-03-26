@@ -136,9 +136,22 @@ class RecipeWorkbench extends Component
         ];
     }
 
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    public function previewCalculation(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        return [
+            'ok' => true,
+            'calculation' => $recipeWorkbenchService->previewSoapCalculation($draft),
+        ];
+    }
+
     public function render(RecipeWorkbenchService $recipeWorkbenchService): View
     {
         $soapFamily = $this->soapFamily();
+        $savedDraft = $recipeWorkbenchService->draftPayload($this->currentRecipe());
 
         return view('livewire.dashboard.recipe-workbench', [
             'workbench' => [
@@ -149,7 +162,17 @@ class RecipeWorkbench extends Component
                     'calculation_basis' => $soapFamily->calculation_basis,
                 ],
                 'recipe' => $this->currentRecipeData(),
-                'savedDraft' => $recipeWorkbenchService->draftPayload($this->currentRecipe()),
+                'savedDraft' => $savedDraft,
+                'initialCalculation' => $savedDraft === null ? null : $recipeWorkbenchService->previewSoapCalculation([
+                    'oil_weight' => $savedDraft['oilWeight'] ?? 0,
+                    'lye_type' => $savedDraft['lyeType'] ?? 'naoh',
+                    'koh_purity_percentage' => $savedDraft['kohPurity'] ?? 90,
+                    'dual_lye_koh_percentage' => $savedDraft['dualKohPercentage'] ?? 40,
+                    'water_mode' => $savedDraft['waterMode'] ?? 'percent_of_oils',
+                    'water_value' => $savedDraft['waterValue'] ?? 38,
+                    'superfat' => $savedDraft['superfat'] ?? 5,
+                    'phase_items' => $savedDraft['phaseItems'] ?? [],
+                ]),
                 'phases' => $recipeWorkbenchService->phaseBlueprints(),
                 'ingredients' => $this->ingredientCatalog(),
                 'ifraProductCategories' => IfraProductCategory::query()

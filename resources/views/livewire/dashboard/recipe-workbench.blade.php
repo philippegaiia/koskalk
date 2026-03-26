@@ -388,22 +388,30 @@
                                 <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Koskalk qualities</p>
                                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Compact interpretation first, deeper chemistry second.</p>
                             </div>
-                            <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="latherProfileSummary()"></span>
+                            <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isPreviewingCalculation ? 'Updating…' : latherProfileSummary()"></span>
                         </div>
 
-                        <div class="mt-4 grid gap-2">
-                            <template x-for="row in defaultQualityRows()" :key="row.key">
-                                <div class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
-                                    <div class="flex items-center justify-between gap-4">
-                                        <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                                        <div class="text-right">
-                                            <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
-                                            <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+                        <template x-if="hasQualityMetricsData">
+                            <div class="mt-4 grid gap-2">
+                                <template x-for="row in defaultQualityRows()" :key="row.key">
+                                    <div class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
+                                        <div class="flex items-center justify-between gap-4">
+                                            <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                            <div class="text-right">
+                                                <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
+                                                <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </template>
-                        </div>
+                                </template>
+                            </div>
+                        </template>
+
+                        <template x-if="!hasQualityMetricsData">
+                            <div class="mt-4 rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
+                                Add saponifiable oils with SAP data to see backend-calculated Koskalk qualities here.
+                            </div>
+                        </template>
 
                         <template x-if="qualityFlags().length > 0">
                             <div class="mt-4 flex flex-wrap gap-2">
@@ -413,22 +421,24 @@
                             </div>
                         </template>
 
-                        <details class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
-                            <summary class="cursor-pointer text-sm font-medium text-[var(--color-ink-strong)]">Advanced metrics</summary>
-                            <div class="mt-3 grid gap-2">
-                                <template x-for="row in advancedQualityRows()" :key="row.key">
-                                    <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm">
-                                        <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                                        <div class="text-right">
-                                            <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
-                                            <template x-if="row.level">
-                                                <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
-                                            </template>
+                        <template x-if="hasQualityMetricsData">
+                            <details class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
+                                <summary class="cursor-pointer text-sm font-medium text-[var(--color-ink-strong)]">Advanced metrics</summary>
+                                <div class="mt-3 grid gap-2">
+                                    <template x-for="row in advancedQualityRows()" :key="row.key">
+                                        <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm">
+                                            <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                            <div class="text-right">
+                                                <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
+                                                <template x-if="row.level">
+                                                    <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+                                                </template>
+                                            </div>
                                         </div>
-                                    </div>
-                                </template>
-                            </div>
-                        </details>
+                                    </template>
+                                </div>
+                            </details>
+                        </template>
                     </div>
 
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">

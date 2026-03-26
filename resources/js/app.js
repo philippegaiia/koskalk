@@ -18,6 +18,9 @@ window.recipeWorkbench = (payload) => ({
     ifraProductCategories: payload.ifraProductCategories ?? [],
     selectedIfraProductCategoryId: payload.ifraProductCategories[0]?.id ?? null,
     ingredients: payload.ingredients ?? [],
+    backendCalculation: payload.initialCalculation ?? null,
+    calculationPreviewTimer: null,
+    isPreviewingCalculation: false,
     phaseOrder: payload.phases ?? [],
     saveStatus: null,
     saveMessage: '',
@@ -34,6 +37,13 @@ window.recipeWorkbench = (payload) => ({
         if (this.filteredIngredients.length > 0 && this.phaseItems.saponified_oils.length === 0) {
             this.addIngredient(this.filteredIngredients[0]);
         }
+
+        ['oilWeight', 'lyeType', 'kohPurity', 'dualKohPercentage', 'waterMode', 'waterValue', 'superfat', 'selectedIfraProductCategoryId'].forEach((key) => {
+            this.$watch(key, () => this.scheduleCalculationPreview());
+        });
+
+        this.$watch('phaseItems', () => this.scheduleCalculationPreview());
+        this.scheduleCalculationPreview();
     },
 
     get categoryOptions() {
@@ -82,8 +92,54 @@ window.recipeWorkbench = (payload) => ({
     },
 
     get lyeSummaryCards() {
-        const lye = this.lyeBreakdown();
+        const backendLye = this.backendCalculation?.lye ?? null;
         const cards = [];
+
+        if (backendLye) {
+            if (this.lyeType === 'naoh') {
+                cards.push({
+                    id: 'naoh-to-weigh',
+                    label: 'NaOH to weigh',
+                    value: backendLye.selected?.naoh_weight ?? 0,
+                });
+            } else if (this.lyeType === 'koh') {
+                cards.push({
+                    id: 'koh-to-weigh',
+                    label: this.kohPurity === 90 ? 'KOH to weigh (90%)' : 'KOH to weigh',
+                    value: backendLye.selected?.koh_to_weigh ?? 0,
+                });
+            } else {
+                cards.push(
+                    {
+                        id: 'dual-naoh-to-weigh',
+                        label: 'NaOH to weigh',
+                        value: backendLye.selected?.naoh_weight ?? 0,
+                    },
+                    {
+                        id: 'dual-koh-to-weigh',
+                        label: this.kohPurity === 90 ? 'KOH to weigh (90%)' : 'KOH to weigh',
+                        value: backendLye.selected?.koh_to_weigh ?? 0,
+                    },
+                );
+            }
+
+            cards.push(
+                {
+                    id: 'water',
+                    label: 'Water',
+                    value: backendLye.water?.weight ?? 0,
+                },
+                {
+                    id: 'glycerine',
+                    label: 'Produced glycerine',
+                    value: backendLye.selected?.glycerine_weight ?? 0,
+                },
+            );
+
+            return cards;
+        }
+
+        const lye = this.lyeBreakdown();
 
         if (this.lyeType === 'naoh') {
             cards.push({
@@ -176,6 +232,32 @@ window.recipeWorkbench = (payload) => ({
             additives: draft.phaseItems?.additives ?? [],
             fragrance: draft.phaseItems?.fragrance ?? [],
         };
+    },
+
+    scheduleCalculationPreview() {
+        if (this.calculationPreviewTimer) {
+            clearTimeout(this.calculationPreviewTimer);
+        }
+
+        this.isPreviewingCalculation = true;
+        this.calculationPreviewTimer = setTimeout(() => {
+            this.refreshCalculationPreview();
+        }, 120);
+    },
+
+    async refreshCalculationPreview() {
+        try {
+            const response = await this.$wire.previewCalculation(this.serializeDraft());
+
+            if (response?.ok) {
+                this.backendCalculation = response.calculation ?? null;
+            }
+        } catch (error) {
+            this.backendCalculation = null;
+        } finally {
+            this.isPreviewingCalculation = false;
+            this.calculationPreviewTimer = null;
+        }
     },
 
     serializeDraft() {
@@ -331,7 +413,7 @@ window.recipeWorkbench = (payload) => ({
     },
 
     get fattyAcidProfileRows() {
-        const profile = this.averageFattyAcidProfile();
+        const profile = this.backendCalculation?.properties?.fatty_acid_profile ?? this.averageFattyAcidProfile();
         const labels = {
             caprylic: 'Caprylic',
             capric: 'Capric',
@@ -359,57 +441,12 @@ window.recipeWorkbench = (payload) => ({
         return this.fattyAcidProfileRows.length > 0;
     },
 
-    qualityMetrics() {
-        const profile = this.averageFattyAcidProfile();
-        const caprylic = profile.caprylic ?? 0;
-        const capric = profile.capric ?? 0;
-        const lauric = profile.lauric ?? 0;
-        const myristic = profile.myristic ?? 0;
-        const palmitic = profile.palmitic ?? 0;
-        const palmitoleic = profile.palmitoleic ?? 0;
-        const stearic = profile.stearic ?? 0;
-        const ricinoleic = profile.ricinoleic ?? 0;
-        const oleic = profile.oleic ?? 0;
-        const linoleic = profile.linoleic ?? 0;
-        const linolenic = profile.linolenic ?? 0;
-        const arachidic = profile.arachidic ?? 0;
-        const gondoic = profile.gondoic ?? 0;
-        const behenic = profile.behenic ?? 0;
-        const erucic = profile.erucic ?? 0;
-        const iodine = (ricinoleic * 0.901) + (oleic * 0.86) + (linoleic * 1.732) + (linolenic * 2.616) + (palmitoleic * 0.995) + (gondoic * 0.786) + (erucic * 0.723);
-        const kohTheoretical = this.lyeBreakdown().koh_theoretical;
-        const oilsWeight = this.oilWeightTotal();
-        const ins = oilsWeight <= 0 ? 0 : ((kohTheoretical / oilsWeight) * 1000) - iodine;
-        const vs = caprylic + capric + lauric + myristic;
-        const hs = palmitic + stearic + arachidic + behenic;
-        const mu = oleic + palmitoleic + gondoic + erucic;
-        const pu = linoleic + linolenic;
-        const sp = ricinoleic;
-        const baseCleansingPotential = Math.max(0, (1.55 * (lauric + myristic)) + (1.00 * capric) + (0.65 * caprylic) + (0.20 * vs) - (0.10 * hs));
-        const superfatBuffer = Math.max(0, this.number(this.superfat) * (0.35 + (0.020 * baseCleansingPotential)));
-        const effectiveCleansing = Math.max(0, baseCleansingPotential - superfatBuffer);
+    get hasQualityMetricsData() {
+        return Object.keys(this.qualityMetrics()).length > 0;
+    },
 
-        return {
-            hardness: lauric + myristic + palmitic + stearic,
-            cleansing: lauric + myristic,
-            conditioning: oleic + ricinoleic + linoleic + linolenic,
-            bubbly: lauric + myristic + ricinoleic,
-            creamy: palmitic + stearic + ricinoleic,
-            unmolding_firmness: Math.max(0, Math.min(100, (0.85 * vs) + (0.95 * hs) - (0.40 * mu) + 18)),
-            cured_hardness: Math.max(0, Math.min(100, (1.15 * hs) + (0.20 * mu) - (0.50 * pu) + 8)),
-            longevity: Math.max(0, Math.min(100, (1.10 * hs) - (0.70 * vs) - (0.45 * sp) - (0.40 * pu) + 28)),
-            cleansing_strength: effectiveCleansing,
-            mildness: Math.max(0, Math.min(100, 78 - effectiveCleansing + (0.18 * mu) - (0.12 * pu))),
-            bubble_volume: Math.max(0, Math.min(100, (1.05 * vs) + (1.05 * sp) - (0.30 * hs))),
-            creamy_lather: Math.max(0, Math.min(100, (0.95 * hs) + (0.90 * sp) + (0.16 * mu) - (0.15 * vs))),
-            lather_stability: Math.max(0, Math.min(100, (1.00 * sp) + (0.68 * hs) + (0.28 * vs))),
-            conditioning_feel: Math.max(0, Math.min(100, (0.35 * mu) + (0.15 * pu) + (0.15 * sp) - (0.45 * effectiveCleansing) + 35)),
-            dos_risk: Math.max(0, Math.min(100, (1.35 * pu))),
-            slime_risk: Math.max(0, Math.min(100, (0.72 * mu) - (0.42 * vs) - (0.36 * hs) + ((mu > 65 && vs < 12 && hs < 20) ? 8 : 0))),
-            cure_speed: Math.max(0, Math.min(100, (0.75 * vs) + (0.80 * hs) - (0.52 * mu) + 20)),
-            iodine,
-            ins,
-        };
+    qualityMetrics() {
+        return this.backendCalculation?.properties?.qualities ?? {};
     },
 
     qualityLabel(value) {
@@ -481,10 +518,10 @@ window.recipeWorkbench = (payload) => ({
 
     qualityFlags() {
         const quality = this.qualityMetrics();
-        const profile = this.averageFattyAcidProfile();
-        const vs = (profile.caprylic ?? 0) + (profile.capric ?? 0) + (profile.lauric ?? 0) + (profile.myristic ?? 0);
-        const hs = (profile.palmitic ?? 0) + (profile.stearic ?? 0) + (profile.arachidic ?? 0) + (profile.behenic ?? 0);
-        const mu = (profile.oleic ?? 0) + (profile.palmitoleic ?? 0) + (profile.gondoic ?? 0) + (profile.erucic ?? 0);
+        const groups = this.backendCalculation?.properties?.fatty_acid_groups ?? {};
+        const vs = groups.vs ?? 0;
+        const hs = groups.hs ?? 0;
+        const mu = groups.mu ?? 0;
         const flags = [];
 
         if (quality.cure_speed < 35) flags.push('Slow cure');

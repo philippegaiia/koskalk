@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\IngredientVersion;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
@@ -19,7 +20,77 @@ class RecipeWorkbenchService
 {
     public function __construct(
         private readonly RecipeNormalizationService $recipeNormalizationService,
+        private readonly SoapCalculationService $soapCalculationService,
     ) {}
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>|null
+     */
+    public function previewSoapCalculation(array $payload): ?array
+    {
+        $oilRows = collect($payload['phase_items']['saponified_oils'] ?? [])
+            ->filter(fn (mixed $row): bool => is_array($row))
+            ->values();
+
+        if ($oilRows->isEmpty()) {
+            return null;
+        }
+
+        $ingredientVersions = IngredientVersion::query()
+            ->with(['sapProfile', 'fattyAcidEntries.fattyAcid'])
+            ->whereKey($oilRows->pluck('ingredient_version_id')->filter()->map(fn (mixed $id): int => (int) $id)->all())
+            ->get()
+            ->keyBy('id');
+
+        $oils = $oilRows
+            ->map(function (array $row) use ($ingredientVersions, $payload): ?array {
+                $ingredientVersionId = isset($row['ingredient_version_id']) ? (int) $row['ingredient_version_id'] : null;
+
+                if ($ingredientVersionId === null) {
+                    return null;
+                }
+
+                $version = $ingredientVersions->get($ingredientVersionId);
+
+                if (! $version instanceof IngredientVersion) {
+                    return null;
+                }
+
+                $weight = $this->previewRowWeight($row, $payload);
+
+                if ($weight <= 0) {
+                    return null;
+                }
+
+                return [
+                    'name' => $version->display_name,
+                    'weight' => $weight,
+                    'koh_sap_value' => $version->sapProfile?->koh_sap_value ?? 0,
+                    'fatty_acid_profile' => $version->normalizedFattyAcidProfile(),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        if ($oils === []) {
+            return null;
+        }
+
+        try {
+            return $this->soapCalculationService->calculate($oils, [
+                'superfat' => (float) ($payload['superfat'] ?? 5),
+                'lye_type' => $payload['lye_type'] ?? 'naoh',
+                'dual_lye_koh_percentage' => (float) ($payload['dual_lye_koh_percentage'] ?? 40),
+                'koh_purity_percentage' => (float) ($payload['koh_purity_percentage'] ?? 90),
+                'water_mode' => $payload['water_mode'] ?? 'percent_of_oils',
+                'water_value' => (float) ($payload['water_value'] ?? 38),
+            ]);
+        } catch (InvalidArgumentException) {
+            return null;
+        }
+    }
 
     /**
      * @return array<int, array<string, mixed>>
@@ -342,6 +413,28 @@ class RecipeWorkbenchService
                 }, is_array($rows) ? $rows : []),
             ];
         }, $this->phaseBlueprints());
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     * @param  array<string, mixed>  $payload
+     */
+    private function previewRowWeight(array $row, array $payload): float
+    {
+        $explicitWeight = (float) ($row['weight'] ?? 0);
+
+        if ($explicitWeight > 0) {
+            return $explicitWeight;
+        }
+
+        $oilWeight = (float) ($payload['oil_weight'] ?? 0);
+        $percentage = (float) ($row['percentage'] ?? 0);
+
+        if ($oilWeight <= 0 || $percentage <= 0) {
+            return 0;
+        }
+
+        return $oilWeight * ($percentage / 100);
     }
 
     private function createRecipe(User $user, ProductFamily $productFamily, string $name): Recipe

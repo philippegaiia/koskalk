@@ -141,6 +141,7 @@ Live soap outputs must include:
 - compact default Koskalk qualities (`unmolding_firmness`, `cured_hardness`, `longevity`, `cleansing_strength`, `mildness`) rendered as normalized 0-100 indices
 - totals appear as a horizontal summary row above the quality and fatty-acid panels, including produced glycerine
 - lather shown as a compact summary first, with advanced lather metrics behind progressive disclosure
+- main quality cards and warning flags include short human-readable interpretation text, not only scores
 - advanced soap chemistry metrics behind progressive disclosure
 
 ## INCI requirement

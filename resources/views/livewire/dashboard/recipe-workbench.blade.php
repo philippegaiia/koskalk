@@ -398,6 +398,9 @@
                                                 <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
                                             </div>
                                         </div>
+                                        <template x-if="row.explanation">
+                                            <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="row.explanation"></p>
+                                        </template>
                                     </div>
                                 </template>
                             </div>
@@ -411,8 +414,11 @@
 
                         <template x-if="qualityFlags().length > 0">
                             <div class="mt-4 flex flex-wrap gap-2">
-                                <template x-for="flag in qualityFlags()" :key="flag">
-                                    <span class="rounded-full border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-3 py-1 text-xs font-medium text-[var(--color-ink-strong)]" x-text="flag"></span>
+                                <template x-for="flag in qualityFlags()" :key="flag.label">
+                                    <div class="rounded-2xl border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-3 py-2">
+                                        <div class="text-xs font-medium text-[var(--color-ink-strong)]" x-text="flag.label"></div>
+                                        <div class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="flag.explanation"></div>
+                                    </div>
                                 </template>
                             </div>
                         </template>
@@ -422,14 +428,19 @@
                                 <summary class="cursor-pointer text-sm font-medium text-[var(--color-ink-strong)]">Advanced metrics</summary>
                                 <div class="mt-3 grid gap-2">
                                     <template x-for="row in advancedQualityRows()" :key="row.key">
-                                        <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm">
-                                            <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                                            <div class="text-right">
-                                                <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
-                                                <template x-if="row.level">
-                                                    <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
-                                                </template>
+                                        <div class="rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                                <div class="text-right">
+                                                    <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
+                                                    <template x-if="row.level">
+                                                        <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+                                                    </template>
+                                                </div>
                                             </div>
+                                            <template x-if="row.explanation">
+                                                <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="row.explanation"></p>
+                                            </template>
                                         </div>
                                     </template>
                                 </div>

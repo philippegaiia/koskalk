@@ -169,6 +169,7 @@ Only the minimum data needed for fast formulation:
 - Present only a small default quality set first, with lather summary and advanced disclosure for deeper metrics
 - Drive live workbench fatty-acid, lye, and quality displays from a backend preview payload instead of duplicated frontend chemistry formulas
 - Tune Koskalk quality formulas against benchmark archetypes (castile, high coconut, balanced palm/olive/coconut, high shea, tallow-style)
+- Add short explanation text for quality cards and warning flags so the UI teaches tradeoffs instead of showing bare numbers only
 - NaOH and KOH calculated simultaneously
 - Water mode options: percent of oils / lye:water ratio / lye concentration
 - Superfat / lye discount

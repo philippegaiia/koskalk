@@ -472,6 +472,93 @@ window.recipeWorkbench = (payload) => ({
         return 'Very high';
     },
 
+    qualityExplanation(key, value) {
+        const numeric = this.number(value);
+
+        const ranges = {
+            unmolding_firmness: [
+                [20, 'Likely soft at unmolding. Expect more patience, support molds, or a longer wait before cutting.'],
+                [40, 'Reasonably manageable, but still on the softer side when first unmolded.'],
+                [65, 'Should unmold with decent confidence for most everyday bar formulas.'],
+                [101, 'Very quick to firm up and likely easy to unmold early.'],
+            ],
+            cured_hardness: [
+                [25, 'Will likely remain a softer bar even after cure.'],
+                [45, 'Moderately firm after cure, but not especially hard.'],
+                [70, 'A solid cured bar with good firmness for regular handling and use.'],
+                [101, 'Very firm cured bar territory.'],
+            ],
+            longevity: [
+                [25, 'May disappear quickly in use, especially if kept wet between washes.'],
+                [45, 'Average staying power in the shower or at the sink.'],
+                [70, 'Should hold up well with decent lifespan in normal use.'],
+                [101, 'Strong longevity profile for a long-lasting bar.'],
+            ],
+            cleansing_strength: [
+                [20, 'Very gentle cleansing profile. Better for mild facial or low-stripping styles.'],
+                [40, 'Balanced cleansing for many body bars.'],
+                [65, 'Noticeably cleansing. Good for heavy-duty use but may feel drying on some skin.'],
+                [101, 'Extremely cleansing profile. Usually wants extra care with superfat and positioning.'],
+            ],
+            mildness: [
+                [20, 'Low mildness. This may feel harsh unless the formula intent is very cleansing.'],
+                [40, 'Somewhat mild, but still more functional than gentle.'],
+                [65, 'A balanced mildness level for many everyday soaps.'],
+                [101, 'Very gentle-leaning profile.'],
+            ],
+            bubble_volume: [
+                [20, 'Low big-bubble output. Foam may feel restrained or compact.'],
+                [45, 'Moderate bubble lift.'],
+                [70, 'Good bubbly character.'],
+                [101, 'Very bubbly and quick-foaming.'],
+            ],
+            creamy_lather: [
+                [20, 'Lather may feel light rather than creamy.'],
+                [45, 'Some creaminess, but not especially rich.'],
+                [70, 'A nicely creamy foam profile.'],
+                [101, 'Very creamy lather character.'],
+            ],
+            lather_stability: [
+                [20, 'Foam may collapse fairly quickly.'],
+                [45, 'Moderate stability once lather is built.'],
+                [70, 'Good staying power in the lather.'],
+                [101, 'Very stable foam profile.'],
+            ],
+            conditioning_feel: [
+                [20, 'More functional than cushiony in skin feel.'],
+                [45, 'Moderately conditioned skin feel.'],
+                [70, 'Should leave a pleasant conditioned feel after washing.'],
+                [101, 'Strong conditioning feel profile.'],
+            ],
+            dos_risk: [
+                [20, 'Low DOS tendency from the fatty-acid profile.'],
+                [40, 'Some DOS sensitivity. Storage and antioxidants matter more.'],
+                [60, 'Elevated DOS risk. Consider antioxidants, fresher oils, and careful storage.'],
+                [101, 'High DOS risk territory. Formula and storage discipline matter a lot.'],
+            ],
+            slime_risk: [
+                [20, 'Low slime tendency.'],
+                [40, 'A little early-use sliminess is possible.'],
+                [60, 'Noticeable slime tendency is plausible, especially in high-oleic styles.'],
+                [101, 'Strong slime tendency signal, often seen in castile-like profiles before long cure.'],
+            ],
+            cure_speed: [
+                [20, 'Slow cure expected. This style benefits from patience.'],
+                [40, 'Moderate cure speed, but not especially fast.'],
+                [65, 'Reasonable cure progression for most bars.'],
+                [101, 'Fast-curing profile.'],
+            ],
+        };
+
+        const entries = ranges[key];
+
+        if (!entries) {
+            return null;
+        }
+
+        return entries.find(([limit]) => numeric < limit)?.[1] ?? null;
+    },
+
     latherProfileSummary() {
         const quality = this.qualityMetrics();
 
@@ -504,6 +591,7 @@ window.recipeWorkbench = (payload) => ({
             key,
             value: quality[key],
             level: this.qualityLabel(quality[key]),
+            explanation: this.qualityExplanation(key, quality[key]),
         }));
     },
 
@@ -525,6 +613,7 @@ window.recipeWorkbench = (payload) => ({
             key,
             value: quality[key],
             level: ['iodine', 'ins'].includes(key) ? null : this.qualityLabel(quality[key]),
+            explanation: ['iodine', 'ins'].includes(key) ? null : this.qualityExplanation(key, quality[key]),
         }));
     },
 
@@ -536,11 +625,40 @@ window.recipeWorkbench = (payload) => ({
         const mu = groups.mu ?? 0;
         const flags = [];
 
-        if (quality.cure_speed < 35) flags.push('Slow cure');
-        if (quality.dos_risk >= 35) flags.push('DOS risk');
-        if (quality.slime_risk >= 35) flags.push('Slime tendency');
-        if (quality.cleansing_strength >= 45) flags.push('High cleansing');
-        if (mu > 65 && vs < 12 && hs < 20) flags.push('Castile-like');
+        if (quality.cure_speed < 35) {
+            flags.push({
+                label: 'Slow cure',
+                explanation: 'This bar likely benefits from a longer cure before it shows its best hardness, feel, and lather.',
+            });
+        }
+
+        if (quality.dos_risk >= 35) {
+            flags.push({
+                label: 'DOS risk',
+                explanation: 'Higher unsaturation means storage conditions, fresh oils, and antioxidants matter more here.',
+            });
+        }
+
+        if (quality.slime_risk >= 35) {
+            flags.push({
+                label: 'Slime tendency',
+                explanation: 'High-oleic styles can feel slimy early on, especially before a long cure has finished smoothing them out.',
+            });
+        }
+
+        if (quality.cleansing_strength >= 45) {
+            flags.push({
+                label: 'High cleansing',
+                explanation: 'This should clean strongly, but may feel drying unless balanced carefully with superfat and formula positioning.',
+            });
+        }
+
+        if (mu > 65 && vs < 12 && hs < 20) {
+            flags.push({
+                label: 'Castile-like',
+                explanation: 'This profile behaves like a high-oleic soap: gentle and slow, often improving dramatically with a long cure.',
+            });
+        }
 
         return flags;
     },

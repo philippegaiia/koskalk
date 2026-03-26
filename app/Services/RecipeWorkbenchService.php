@@ -80,6 +80,7 @@ class RecipeWorkbenchService
                 'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
                 'phases.items.ingredientVersion.ingredient',
                 'phases.items.ingredientVersion.sapProfile',
+                'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
             ])
             ->first()
             ?? RecipeVersion::withoutGlobalScopes()
@@ -90,6 +91,7 @@ class RecipeWorkbenchService
                     'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
                     'phases.items.ingredientVersion.ingredient',
                     'phases.items.ingredientVersion.sapProfile',
+                    'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
                 ])
                 ->orderByDesc('version_number')
                 ->first();
@@ -173,6 +175,7 @@ class RecipeWorkbenchService
                 'recipe',
                 'phases.items.ingredientVersion.ingredient',
                 'phases.items.ingredientVersion.sapProfile',
+                'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
             ]);
         });
     }
@@ -219,6 +222,7 @@ class RecipeWorkbenchService
                 'recipe',
                 'phases.items.ingredientVersion.ingredient',
                 'phases.items.ingredientVersion.sapProfile',
+                'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
             ]);
         });
     }
@@ -509,7 +513,7 @@ class RecipeWorkbenchService
             'soap_inci_koh_name' => $ingredientVersion?->soap_inci_koh_name,
             'koh_sap_value' => $sapProfile?->koh_sap_value === null ? null : (float) $sapProfile->koh_sap_value,
             'naoh_sap_value' => $sapProfile?->naoh_sap_value,
-            'fatty_acid_profile' => $sapProfile?->fattyAcidProfile() ?? [],
+            'fatty_acid_profile' => $ingredientVersion?->normalizedFattyAcidProfile() ?? [],
             'percentage' => (float) $item->percentage,
             'note' => $item->note,
         ];

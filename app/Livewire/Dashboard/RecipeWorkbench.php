@@ -179,7 +179,7 @@ class RecipeWorkbench extends Component
     private function ingredientCatalog(): array
     {
         return IngredientVersion::query()
-            ->with(['ingredient', 'sapProfile'])
+            ->with(['ingredient', 'sapProfile', 'fattyAcidEntries.fattyAcid'])
             ->where('is_current', true)
             ->where('is_active', true)
             ->whereHas('ingredient', function (Builder $query): void {
@@ -220,7 +220,7 @@ class RecipeWorkbench extends Component
                     'needs_compliance' => $category !== null && in_array($category->value, IngredientCategory::aromaticValues(), true),
                     'koh_sap_value' => $sapProfile?->koh_sap_value === null ? null : (float) $sapProfile->koh_sap_value,
                     'naoh_sap_value' => $sapProfile?->naoh_sap_value,
-                    'fatty_acid_profile' => $sapProfile?->fattyAcidProfile() ?? [],
+                    'fatty_acid_profile' => $version->normalizedFattyAcidProfile(),
                 ];
             })
             ->sortBy('name')

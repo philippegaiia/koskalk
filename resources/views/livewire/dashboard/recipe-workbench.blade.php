@@ -377,6 +377,34 @@
                     </div>
                 </template>
 
+                <template x-if="hasComparisonBaseline">
+                    <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                        <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula comparison</p>
+                                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Current workbench vs saved baseline: <span class="font-medium text-[var(--color-ink-strong)]" x-text="baselineFormulaName"></span></p>
+                            </div>
+                            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Live delta view</span>
+                        </div>
+
+                        <div class="mt-4 grid gap-3 xl:grid-cols-2">
+                            <template x-for="row in currentComparisonRows()" :key="row.label">
+                                <div class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
+                                    <div class="flex items-start justify-between gap-4">
+                                        <div>
+                                            <div class="font-medium text-[var(--color-ink-strong)]" x-text="row.label"></div>
+                                            <div class="mt-1 text-xs text-[var(--color-ink-soft)]">
+                                                Saved: <span x-text="format(row.baseline, 1)"></span> · Current: <span x-text="format(row.current, 1)"></span>
+                                            </div>
+                                        </div>
+                                        <span :class="row.pillClass" class="rounded-full border px-3 py-1 text-xs font-medium" x-text="`${row.directionLabel} (${row.delta >= 0 ? '+' : ''}${format(row.delta, 1)})`"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+
                 <div class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
                         <div class="flex items-center justify-between gap-3">

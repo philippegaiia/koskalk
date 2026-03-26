@@ -143,6 +143,7 @@ Live soap outputs must include:
 - lather shown as a compact summary first, with advanced lather metrics behind progressive disclosure
 - main quality cards and warning flags include short human-readable interpretation text, not only scores
 - quality bars use subtle fills and, where useful, show target zones instead of implying every metric should simply be maximized
+- compare the current live formula against the loaded saved baseline with delta rows for key totals and quality metrics
 - advanced soap chemistry metrics behind progressive disclosure
 
 ## INCI requirement

@@ -19,6 +19,9 @@ window.recipeWorkbench = (payload) => ({
     selectedIfraProductCategoryId: payload.ifraProductCategories[0]?.id ?? null,
     ingredients: payload.ingredients ?? [],
     backendCalculation: payload.initialCalculation ?? null,
+    baselineCalculation: payload.initialCalculation ?? null,
+    baselineDraft: payload.savedDraft ?? null,
+    baselineFormulaName: payload.savedDraft?.formulaName ?? payload.recipe?.name ?? 'Saved draft',
     calculationPreviewTimer: null,
     isPreviewingCalculation: false,
     phaseOrder: payload.phases ?? [],
@@ -32,7 +35,7 @@ window.recipeWorkbench = (payload) => ({
     },
 
     init() {
-        this.applySavedDraft(payload.savedDraft ?? null);
+        this.applySavedDraft(payload.savedDraft ?? null, { resetBaseline: false });
 
         if (this.filteredIngredients.length > 0 && this.phaseItems.saponified_oils.length === 0) {
             this.addIngredient(this.filteredIngredients[0]);
@@ -196,10 +199,12 @@ window.recipeWorkbench = (payload) => ({
         });
     },
 
-    applySavedDraft(draft) {
+    applySavedDraft(draft, options = {}) {
         if (!draft) {
             return;
         }
+
+        const { resetBaseline = true } = options;
 
         this.recipeId = draft.recipe?.id ?? this.recipeId;
         this.draftVersionId = draft.recipe?.draft_version_id ?? this.draftVersionId;
@@ -219,25 +224,35 @@ window.recipeWorkbench = (payload) => ({
             additives: draft.phaseItems?.additives ?? [],
             fragrance: draft.phaseItems?.fragrance ?? [],
         };
+
+        if (resetBaseline) {
+            this.baselineDraft = JSON.parse(JSON.stringify(draft));
+            this.baselineFormulaName = draft.formulaName ?? this.formulaName;
+            this.scheduleCalculationPreview(true);
+        }
     },
 
-    scheduleCalculationPreview() {
+    scheduleCalculationPreview(resetBaseline = false) {
         if (this.calculationPreviewTimer) {
             clearTimeout(this.calculationPreviewTimer);
         }
 
         this.isPreviewingCalculation = true;
         this.calculationPreviewTimer = setTimeout(() => {
-            this.refreshCalculationPreview();
+            this.refreshCalculationPreview(resetBaseline);
         }, 120);
     },
 
-    async refreshCalculationPreview() {
+    async refreshCalculationPreview(resetBaseline = false) {
         try {
             const response = await this.$wire.previewCalculation(this.serializeDraft());
 
             if (response?.ok) {
                 this.backendCalculation = response.calculation ?? null;
+
+                if (resetBaseline) {
+                    this.baselineCalculation = response.calculation ?? null;
+                }
             }
         } catch (error) {
             this.backendCalculation = null;
@@ -454,6 +469,101 @@ window.recipeWorkbench = (payload) => ({
             ...segment,
             percent: total > 0 ? (this.number(segment.value) / total) * 100 : 0,
         }));
+    },
+
+    get hasComparisonBaseline() {
+        return this.hasSavedRecipe && this.baselineCalculation !== null;
+    },
+
+    comparisonDelta(current, baseline) {
+        return this.number(current) - this.number(baseline);
+    },
+
+    comparisonDirection(delta) {
+        if (Math.abs(delta) < 0.01) return 'unchanged';
+        return delta > 0 ? 'up' : 'down';
+    },
+
+    comparisonDirectionLabel(delta) {
+        const direction = this.comparisonDirection(delta);
+
+        if (direction === 'unchanged') return 'No change';
+        return direction === 'up' ? 'Higher now' : 'Lower now';
+    },
+
+    comparisonPillClass(delta) {
+        const direction = this.comparisonDirection(delta);
+
+        if (direction === 'unchanged') return 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)]';
+        return direction === 'up'
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            : 'border-amber-200 bg-amber-50 text-amber-700';
+    },
+
+    currentComparisonRows() {
+        if (!this.hasComparisonBaseline || !this.backendCalculation) {
+            return [];
+        }
+
+        const currentQualities = this.backendCalculation.properties?.qualities ?? {};
+        const baselineQualities = this.baselineCalculation.properties?.qualities ?? {};
+        const currentLye = this.backendCalculation.lye ?? {};
+        const baselineLye = this.baselineCalculation.lye ?? {};
+
+        return [
+            ['Wet weight', this.finalBatchWeight(), this.baselineWetWeight()],
+            ['Weight after cure', this.curedBatchWeight(), this.baselineCuredWeight()],
+            ['Lye / Potash total', currentLye.selected?.total_active_lye_weight ?? 0, baselineLye.selected?.total_active_lye_weight ?? 0],
+            ['Water', currentLye.water?.weight ?? 0, baselineLye.water?.weight ?? 0],
+            ['Cleansing strength', currentQualities.cleansing_strength ?? 0, baselineQualities.cleansing_strength ?? 0],
+            ['Mildness', currentQualities.mildness ?? 0, baselineQualities.mildness ?? 0],
+            ['Longevity', currentQualities.longevity ?? 0, baselineQualities.longevity ?? 0],
+            ['Creamy lather', currentQualities.creamy_lather ?? 0, baselineQualities.creamy_lather ?? 0],
+        ].map(([label, current, baseline]) => {
+            const delta = this.comparisonDelta(current, baseline);
+
+            return {
+                label,
+                current,
+                baseline,
+                delta,
+                directionLabel: this.comparisonDirectionLabel(delta),
+                pillClass: this.comparisonPillClass(delta),
+            };
+        });
+    },
+
+    baselineAdditionWeightTotal() {
+        const rows = [
+            ...(this.baselineDraft?.phaseItems?.additives ?? []),
+            ...(this.baselineDraft?.phaseItems?.fragrance ?? []),
+        ];
+        const oilWeight = this.nonNegativeNumber(this.baselineDraft?.oilWeight ?? 0);
+
+        return rows.reduce((total, row) => total + (oilWeight * (this.nonNegativeNumber(row.percentage) / 100)), 0);
+    },
+
+    baselineWetWeight() {
+        if (!this.baselineCalculation) {
+            return 0;
+        }
+
+        const baselineLye = this.baselineCalculation.lye ?? {};
+        const selected = baselineLye.selected ?? {};
+        const lyeToWeigh = (selected.naoh_weight ?? 0) + (selected.koh_to_weigh ?? 0);
+
+        return (this.baselineCalculation.totals?.oils_weight ?? 0)
+            + this.baselineAdditionWeightTotal()
+            + (baselineLye.water?.weight ?? 0)
+            + lyeToWeigh;
+    },
+
+    baselineCuredWeight() {
+        const wetWeight = this.baselineWetWeight();
+        const waterWeight = this.baselineCalculation?.lye?.water?.weight ?? 0;
+        const nonWaterWeight = Math.max(0, wetWeight - waterWeight);
+
+        return nonWaterWeight / (1 - 0.11);
     },
 
     get totalSummaryCards() {

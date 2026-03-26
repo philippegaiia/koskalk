@@ -613,32 +613,6 @@ window.recipeWorkbench = (payload) => ({
         }, {});
     },
 
-    qualityMetrics() {
-        const profile = this.averageFattyAcidProfile();
-        const lauric = profile.lauric ?? 0;
-        const myristic = profile.myristic ?? 0;
-        const palmitic = profile.palmitic ?? 0;
-        const stearic = profile.stearic ?? 0;
-        const ricinoleic = profile.ricinoleic ?? 0;
-        const oleic = profile.oleic ?? 0;
-        const linoleic = profile.linoleic ?? 0;
-        const linolenic = profile.linolenic ?? 0;
-        const iodine = (ricinoleic * 0.901) + (oleic * 0.86) + (linoleic * 1.732) + (linolenic * 2.616);
-        const kohTheoretical = this.lyeBreakdown().koh_theoretical;
-        const oilsWeight = this.oilWeightTotal();
-        const ins = oilsWeight <= 0 ? 0 : ((kohTheoretical / oilsWeight) * 1000) - iodine;
-
-        return {
-            hardness: lauric + myristic + palmitic + stearic,
-            cleansing: lauric + myristic,
-            conditioning: oleic + ricinoleic + linoleic + linolenic,
-            bubbly: lauric + myristic + ricinoleic,
-            creamy: palmitic + stearic + ricinoleic,
-            iodine,
-            ins,
-        };
-    },
-
     finalBatchWeight() {
         const lye = this.lyeBreakdown();
         const lyeToWeigh = this.lyeType === 'naoh'

@@ -3,8 +3,8 @@
         <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Soap formula</p>
-                    <input x-model="formulaName" type="text" class="mt-2 w-full border-0 bg-transparent p-0 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)] focus:outline-none" />
+                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula name</p>
+                    <input x-model="formulaName" type="text" placeholder="Untitled soap formula" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]" />
                 </div>
 
                 <div class="flex flex-wrap gap-2">
@@ -198,7 +198,7 @@
                                     </div>
                                     <div class="bg-white px-3 py-3">
                                         <template x-if="editMode === 'percentage'">
-                                            <input x-model.number="row.percentage" type="number" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                            <input x-model.number="row.percentage" @input="row.percentage = nonNegativeNumber($event.target.value)" type="number" min="0" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                         </template>
                                         <template x-if="editMode !== 'percentage'">
                                             <span class="inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -206,7 +206,7 @@
                                     </div>
                                     <div class="bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
                                         <template x-if="editMode === 'weight'">
-                                            <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" type="number" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                            <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" type="number" min="0" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                         </template>
                                         <template x-if="editMode !== 'weight'">
                                             <span class="inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)} ${oilUnit}`"></span>
@@ -284,7 +284,7 @@
                                             </div>
                                             <div class="bg-white px-3 py-3">
                                                 <template x-if="editMode === 'percentage'">
-                                                    <input x-model.number="row.percentage" type="number" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                                    <input x-model.number="row.percentage" @input="row.percentage = nonNegativeNumber($event.target.value)" type="number" min="0" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                                 </template>
                                                 <template x-if="editMode !== 'percentage'">
                                                     <span class="inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -292,7 +292,7 @@
                                             </div>
                                             <div class="bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
                                                 <template x-if="editMode === 'weight'">
-                                                    <input :value="format(rowWeight(row), 1)" @input="updatePercentageFromWeight(row, $event.target.value)" type="number" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                                    <input :value="format(rowWeight(row), 1)" @input="updatePercentageFromWeight(row, $event.target.value)" type="number" min="0" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                                 </template>
                                                 <template x-if="editMode !== 'weight'">
                                                     <span class="inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)} ${oilUnit}`"></span>
@@ -329,7 +329,7 @@
                                             </div>
                                             <div class="bg-white px-3 py-3">
                                                 <template x-if="editMode === 'percentage'">
-                                                    <input x-model.number="row.percentage" type="number" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                                    <input x-model.number="row.percentage" @input="row.percentage = nonNegativeNumber($event.target.value)" type="number" min="0" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                                 </template>
                                                 <template x-if="editMode !== 'percentage'">
                                                     <span class="inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -337,7 +337,7 @@
                                             </div>
                                             <div class="bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
                                                 <template x-if="editMode === 'weight'">
-                                                    <input :value="format(rowWeight(row), 1)" @input="updatePercentageFromWeight(row, $event.target.value)" type="number" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                                    <input :value="format(rowWeight(row), 1)" @input="updatePercentageFromWeight(row, $event.target.value)" type="number" min="0" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                                 </template>
                                                 <template x-if="editMode !== 'weight'">
                                                     <span class="inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)} ${oilUnit}`"></span>

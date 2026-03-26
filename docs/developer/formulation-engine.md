@@ -10,6 +10,8 @@ Current responsibilities:
 
 - calculate theoretical and adjusted KOH
 - derive theoretical and adjusted NaOH from KOH
+- support NaOH-only, KOH-only, and dual-lye selection
+- adjust KOH-to-weigh output for 90% purity when requested
 - calculate water for supported water modes
 - estimate produced glycerine
 - aggregate fatty acid profiles
@@ -46,6 +48,7 @@ That means normalization has to be product-family aware, not just recipe-phase a
 - produced glycerine must be part of finished-soap INCI generation
 - phases are first-class and must support soap and cosmetic workflows
 - initial soap calculation only shows carrier oils that can saponify
+- professional SAP input like `245` should be normalized automatically to `0.245`
 
 ## Planned UI direction
 
@@ -72,6 +75,7 @@ Recipe media is a later concern. The current domain target is to support one fea
 ## Current chemistry strategy
 
 - KOH SAP is the only persisted SAP source value
+- KOH SAP can be entered in professional format (`245`) or decimal format (`0.245`)
 - NaOH SAP is always derived using the fixed `0.713` ratio
 - carrier oils use a fixed core fatty-acid set
 - soap qualities are derived outputs, not manually persisted inputs

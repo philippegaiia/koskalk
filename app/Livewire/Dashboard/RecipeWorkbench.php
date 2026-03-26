@@ -6,27 +6,151 @@ use App\IngredientCategory;
 use App\Models\IfraProductCategory;
 use App\Models\IngredientVersion;
 use App\Models\ProductFamily;
+use App\Models\Recipe;
+use App\Models\User;
+use App\Services\CurrentAppUserResolver;
+use App\Services\RecipeWorkbenchService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class RecipeWorkbench extends Component
 {
-    public function render(): View
+    #[Locked]
+    public ?int $actorUserId = null;
+
+    public ?int $recipeId = null;
+
+    public function mount(?Recipe $recipe = null): void
     {
-        $soapFamily = ProductFamily::query()
-            ->where('slug', 'soap')
-            ->first();
+        $this->actorUserId = $this->currentUser()?->id;
+        $this->recipeId = $recipe?->id;
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    public function saveDraft(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return [
+                'ok' => false,
+                'message' => 'You need to be signed in before a formula can be saved.',
+            ];
+        }
+
+        try {
+            $recipeVersion = $recipeWorkbenchService->saveDraft(
+                $user,
+                $this->soapFamily(),
+                $draft,
+                $this->currentRecipe(),
+            );
+        } catch (ValidationException|InvalidArgumentException $exception) {
+            return $this->saveErrorResponse($exception);
+        }
+
+        $this->recipeId = $recipeVersion->recipe_id;
+        $recipe = Recipe::withoutGlobalScopes()->find($recipeVersion->recipe_id);
+
+        return [
+            'ok' => true,
+            'message' => 'Draft saved.',
+            'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
+            'draft' => $recipeWorkbenchService->draftPayload($recipe),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    public function saveAsNewVersion(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return [
+                'ok' => false,
+                'message' => 'You need to be signed in before a formula can be versioned.',
+            ];
+        }
+
+        try {
+            $recipeVersion = $recipeWorkbenchService->saveAsNewVersion(
+                $user,
+                $this->soapFamily(),
+                $draft,
+                $this->currentRecipe(),
+            );
+        } catch (ValidationException|InvalidArgumentException $exception) {
+            return $this->saveErrorResponse($exception);
+        }
+
+        $this->recipeId = $recipeVersion->recipe_id;
+        $recipe = Recipe::withoutGlobalScopes()->find($recipeVersion->recipe_id);
+
+        return [
+            'ok' => true,
+            'message' => 'Version saved. A new draft is open for continued editing.',
+            'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
+            'draft' => $recipeWorkbenchService->draftPayload($recipe),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    public function duplicateFormula(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return [
+                'ok' => false,
+                'message' => 'You need to be signed in before a formula can be duplicated.',
+            ];
+        }
+
+        try {
+            $recipeVersion = $recipeWorkbenchService->duplicate(
+                $user,
+                $this->soapFamily(),
+                $draft,
+            );
+        } catch (ValidationException|InvalidArgumentException $exception) {
+            return $this->saveErrorResponse($exception);
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Formula duplicated into a new draft.',
+            'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
+        ];
+    }
+
+    public function render(RecipeWorkbenchService $recipeWorkbenchService): View
+    {
+        $soapFamily = $this->soapFamily();
 
         return view('livewire.dashboard.recipe-workbench', [
             'workbench' => [
-                'productFamily' => $soapFamily === null ? null : [
+                'productFamily' => [
                     'id' => $soapFamily->id,
                     'name' => $soapFamily->name,
                     'slug' => $soapFamily->slug,
                     'calculation_basis' => $soapFamily->calculation_basis,
                 ],
-                'phases' => $this->phaseBlueprints(),
+                'recipe' => $this->currentRecipeData(),
+                'savedDraft' => $recipeWorkbenchService->draftPayload($this->currentRecipe()),
+                'phases' => $recipeWorkbenchService->phaseBlueprints(),
                 'ingredients' => $this->ingredientCatalog(),
                 'ifraProductCategories' => IfraProductCategory::query()
                     ->where('is_active', true)
@@ -40,6 +164,13 @@ class RecipeWorkbench extends Component
                     ->all(),
             ],
         ]);
+    }
+
+    private function soapFamily(): ProductFamily
+    {
+        return ProductFamily::query()
+            ->where('slug', 'soap')
+            ->firstOrFail();
     }
 
     /**
@@ -97,35 +228,73 @@ class RecipeWorkbench extends Component
             ->all();
     }
 
-    /**
-     * @return array<int, array<string, mixed>>
-     */
-    private function phaseBlueprints(): array
+    private function currentRecipe(): ?Recipe
     {
+        if ($this->recipeId === null) {
+            return null;
+        }
+
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        $recipe = Recipe::withoutGlobalScopes()
+            ->whereKey($this->recipeId)
+            ->first();
+
+        if (! $recipe instanceof Recipe || ! $recipe->isAccessibleBy($user)) {
+            return null;
+        }
+
+        return $recipe;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function currentRecipeData(): ?array
+    {
+        $recipe = $this->currentRecipe();
+
+        if (! $recipe instanceof Recipe) {
+            return null;
+        }
+
         return [
-            [
-                'key' => 'saponified_oils',
-                'name' => 'Saponified Oils',
-                'phase_group' => 'reaction_core',
-                'description' => 'Carrier oils and butters that drive the soap calculation itself.',
-            ],
-            [
-                'key' => 'lye_water',
-                'name' => 'Lye Water',
-                'phase_group' => 'reaction_core',
-                'description' => 'The reaction medium: alkali, water mode, and superfat settings.',
-            ],
-            [
-                'key' => 'additives',
-                'name' => 'Additives',
-                'phase_group' => 'post_reaction',
-                'description' => 'Colorants, preservatives, and functional additions added after the core soap calculation.',
-            ],
-            [
-                'key' => 'fragrance',
-                'name' => 'Fragrance And Aromatics',
-                'phase_group' => 'post_reaction',
-                'description' => 'Essential oils, aromatic extracts, and later user-authored fragrance oils.',
+            'id' => $recipe->id,
+            'name' => $recipe->name,
+        ];
+    }
+
+    private function currentUser(): ?User
+    {
+        return app(CurrentAppUserResolver::class)->resolve($this->actorUserId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function saveErrorResponse(ValidationException|InvalidArgumentException $exception): array
+    {
+        if ($exception instanceof ValidationException) {
+            $message = collect($exception->errors())
+                ->flatten()
+                ->first() ?? $exception->getMessage();
+
+            return [
+                'ok' => false,
+                'message' => $message,
+                'errors' => $exception->errors(),
+            ];
+        }
+
+        return [
+            'ok' => false,
+            'message' => $exception->getMessage(),
+            'errors' => [
+                'draft' => [$exception->getMessage()],
             ],
         ];
     }

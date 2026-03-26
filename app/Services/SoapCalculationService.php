@@ -21,6 +21,9 @@ class SoapCalculationService
      * }>  $oils
      * @param  array{
      *     superfat?: float|int|string,
+     *     lye_type?: 'naoh'|'koh'|'dual',
+     *     dual_lye_koh_percentage?: float|int|string,
+     *     koh_purity_percentage?: float|int|string,
      *     water_mode?: 'percent_of_oils'|'lye_ratio'|'lye_concentration',
      *     water_value?: float|int|string
      * }  $settings
@@ -35,6 +38,16 @@ class SoapCalculationService
      *             naoh_adjusted: float,
      *             koh_theoretical: float,
      *             koh_adjusted: float
+     *         },
+     *         selected: array{
+     *             type: string,
+     *             dual_lye_koh_percentage: float,
+     *             koh_purity_percentage: float,
+     *             naoh_weight: float,
+     *             koh_weight: float,
+     *             koh_to_weigh: float,
+     *             total_active_lye_weight: float,
+     *             glycerine_weight: float
      *         },
      *         superfat_percentage: float
      *     },
@@ -58,6 +71,9 @@ class SoapCalculationService
 
         $waterMode = (string) ($settings['water_mode'] ?? 'percent_of_oils');
         $waterValue = $this->normalizeNumericValue($settings['water_value'] ?? 38, 'water value');
+        $lyeType = (string) ($settings['lye_type'] ?? 'naoh');
+        $dualLyeKohPercentage = $this->normalizeNumericValue($settings['dual_lye_koh_percentage'] ?? 50, 'dual lye KOH percentage');
+        $kohPurityPercentage = $this->normalizeNumericValue($settings['koh_purity_percentage'] ?? 100, 'KOH purity percentage');
 
         $oilsWeight = 0.0;
         $naohTheoretical = 0.0;
@@ -87,6 +103,13 @@ class SoapCalculationService
 
         $naohAdjusted = $naohTheoretical * (1 - ($superfat / 100));
         $kohAdjusted = $kohTheoretical * (1 - ($superfat / 100));
+        $selectedLye = $this->selectedLyeProfile(
+            $lyeType,
+            $naohAdjusted,
+            $kohAdjusted,
+            $dualLyeKohPercentage,
+            $kohPurityPercentage,
+        );
 
         $fattyAcidProfile = $this->averageProfile($fattyAcidTotals, $oilsWeight);
         $qualities = $this->calculateQualityMetrics($fattyAcidProfile, $oilsWeight, $kohTheoretical);
@@ -107,7 +130,7 @@ class SoapCalculationService
                 'water' => [
                     'mode' => $waterMode,
                     'value' => $this->roundValue($waterValue),
-                    'weight' => $this->roundValue($this->calculateWaterWeight($waterMode, $waterValue, $oilsWeight, $naohAdjusted)),
+                    'weight' => $this->roundValue($this->calculateWaterWeight($waterMode, $waterValue, $oilsWeight, $selectedLye['total_active_lye_weight'])),
                 ],
                 'glycerine' => [
                     'naoh_theoretical' => $this->roundValue($naohTheoretical * self::GLYCERINE_FROM_NAOH_RATIO),
@@ -115,6 +138,7 @@ class SoapCalculationService
                     'koh_theoretical' => $this->roundValue($kohTheoretical * self::GLYCERINE_FROM_KOH_RATIO),
                     'koh_adjusted' => $this->roundValue($kohAdjusted * self::GLYCERINE_FROM_KOH_RATIO),
                 ],
+                'selected' => $selectedLye,
                 'superfat_percentage' => $this->roundValue($superfat),
             ],
             'properties' => [
@@ -132,6 +156,66 @@ class SoapCalculationService
             'lye_concentration' => $this->waterFromLyeConcentration($value, $naohAdjusted),
             default => throw new InvalidArgumentException('Unsupported water mode.'),
         };
+    }
+
+    /**
+     * @return array{
+     *     type: string,
+     *     dual_lye_koh_percentage: float,
+     *     koh_purity_percentage: float,
+     *     naoh_weight: float,
+     *     koh_weight: float,
+     *     koh_to_weigh: float,
+     *     total_active_lye_weight: float,
+     *     glycerine_weight: float
+     * }
+     */
+    private function selectedLyeProfile(
+        string $lyeType,
+        float $naohAdjusted,
+        float $kohAdjusted,
+        float $dualLyeKohPercentage,
+        float $kohPurityPercentage,
+    ): array {
+        if (! in_array($lyeType, ['naoh', 'koh', 'dual'], true)) {
+            throw new InvalidArgumentException('Unsupported lye type.');
+        }
+
+        if ($dualLyeKohPercentage < 0 || $dualLyeKohPercentage > 100) {
+            throw new InvalidArgumentException('Dual lye KOH percentage must be between 0 and 100.');
+        }
+
+        if ($kohPurityPercentage <= 0 || $kohPurityPercentage > 100) {
+            throw new InvalidArgumentException('KOH purity percentage must be between 0 and 100.');
+        }
+
+        $kohRatio = match ($lyeType) {
+            'naoh' => 0.0,
+            'koh' => 1.0,
+            'dual' => $dualLyeKohPercentage / 100,
+        };
+
+        $naohRatio = 1 - $kohRatio;
+        $selectedNaohWeight = $naohAdjusted * $naohRatio;
+        $selectedKohWeight = $kohAdjusted * $kohRatio;
+
+        return [
+            'type' => $lyeType,
+            'dual_lye_koh_percentage' => $this->roundValue($dualLyeKohPercentage),
+            'koh_purity_percentage' => $this->roundValue($kohPurityPercentage),
+            'naoh_weight' => $this->roundValue($selectedNaohWeight),
+            'koh_weight' => $this->roundValue($selectedKohWeight),
+            'koh_to_weigh' => $this->roundValue(
+                $selectedKohWeight <= 0
+                    ? 0
+                    : SoapSap::adjustKohForPurity($selectedKohWeight, $kohPurityPercentage)
+            ),
+            'total_active_lye_weight' => $this->roundValue($selectedNaohWeight + $selectedKohWeight),
+            'glycerine_weight' => $this->roundValue(
+                ($selectedNaohWeight * self::GLYCERINE_FROM_NAOH_RATIO)
+                + ($selectedKohWeight * self::GLYCERINE_FROM_KOH_RATIO)
+            ),
+        ];
     }
 
     /**

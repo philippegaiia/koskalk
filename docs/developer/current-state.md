@@ -67,7 +67,10 @@ The first calculation services already exist:
 These currently cover:
 
 - KOH-first SAP handling with derived NaOH
+- professional-style SAP normalization such as `245` => `0.245`
 - superfat
+- NaOH, KOH, and dual-lye selection
+- KOH purity handling for 90% commercial KOH
 - water modes
 - produced glycerine estimation
 - fatty acid aggregation

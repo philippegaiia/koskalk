@@ -44,6 +44,9 @@ it('calculates soap lye, water, glycerine, and quality metrics from oil data', f
         ->and($result['lye']['koh']['adjusted'])->toBe(211.375)
         ->and($result['lye']['water']['weight'])->toBe(380.0)
         ->and($result['lye']['glycerine']['naoh_adjusted'])->toBe(115.67)
+        ->and($result['lye']['selected']['type'])->toBe('naoh')
+        ->and($result['lye']['selected']['naoh_weight'])->toBe(150.7104)
+        ->and($result['lye']['selected']['koh_weight'])->toBe(0.0)
         ->and($result['properties']['fatty_acid_profile']['lauric'])->toBe(24.0)
         ->and($result['properties']['fatty_acid_profile']['oleic'])->toBe(39.5)
         ->and($result['properties']['qualities']['hardness'])->toBe(47.0)
@@ -129,4 +132,29 @@ it('accepts professional-scale koh sap values in calculations', function () {
     expect($result['lye']['koh']['theoretical'])->toBe(245.0)
         ->and($result['lye']['koh']['adjusted'])->toBe(232.75)
         ->and($result['lye']['naoh']['adjusted'])->toBe(165.9507);
+});
+
+it('supports dual lye selection and koh purity adjustments', function () {
+    $service = new SoapCalculationService;
+
+    $result = $service->calculate([
+        [
+            'weight' => 1000,
+            'koh_sap_value' => 0.245,
+        ],
+    ], [
+        'superfat' => 5,
+        'lye_type' => 'dual',
+        'dual_lye_koh_percentage' => 40,
+        'koh_purity_percentage' => 90,
+        'water_mode' => 'lye_ratio',
+        'water_value' => 2,
+    ]);
+
+    expect($result['lye']['selected']['type'])->toBe('dual')
+        ->and($result['lye']['selected']['naoh_weight'])->toBe(99.5704)
+        ->and($result['lye']['selected']['koh_weight'])->toBe(93.1)
+        ->and($result['lye']['selected']['koh_to_weigh'])->toBe(103.4444)
+        ->and($result['lye']['selected']['total_active_lye_weight'])->toBe(192.6705)
+        ->and($result['lye']['water']['weight'])->toBe(385.341);
 });

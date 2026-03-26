@@ -14,4 +14,5 @@ Route::controller(RecipeController::class)
     ->group(function (): void {
         Route::get('/', 'index')->name('index');
         Route::get('/new', 'create')->name('create');
+        Route::get('/{recipe}', 'edit')->name('edit');
     });

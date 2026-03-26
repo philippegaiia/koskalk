@@ -1,12 +1,15 @@
 import './bootstrap';
 
 window.recipeWorkbench = (payload) => ({
+    recipeId: payload.recipe?.id ?? null,
+    draftVersionId: payload.recipe?.draft_version_id ?? null,
     formulaName: 'New Soap Formula',
     oilUnit: 'g',
     oilWeight: 1000,
     editMode: 'percentage',
     lyeType: 'naoh',
     kohPurity: 90,
+    dualKohPercentage: 40,
     waterMode: 'percent_of_oils',
     waterValue: 38,
     superfat: 5,
@@ -16,6 +19,9 @@ window.recipeWorkbench = (payload) => ({
     selectedIfraProductCategoryId: payload.ifraProductCategories[0]?.id ?? null,
     ingredients: payload.ingredients ?? [],
     phaseOrder: payload.phases ?? [],
+    saveStatus: null,
+    saveMessage: '',
+    isSaving: false,
     phaseItems: {
         saponified_oils: [],
         additives: [],
@@ -23,6 +29,8 @@ window.recipeWorkbench = (payload) => ({
     },
 
     init() {
+        this.applySavedDraft(payload.savedDraft ?? null);
+
         if (this.filteredIngredients.length > 0 && this.phaseItems.saponified_oils.length === 0) {
             this.addIngredient(this.filteredIngredients[0]);
         }
@@ -69,6 +77,57 @@ window.recipeWorkbench = (payload) => ({
         return this.oilRows.filter((row) => this.normalizeSapValue(row.koh_sap_value) <= 0);
     },
 
+    get dualNaohPercentage() {
+        return 100 - this.number(this.dualKohPercentage);
+    },
+
+    get lyeSummaryCards() {
+        const lye = this.lyeBreakdown();
+        const cards = [];
+
+        if (this.lyeType === 'naoh') {
+            cards.push({
+                id: 'naoh-to-weigh',
+                label: 'NaOH to weigh',
+                value: lye.selected_naoh_weight,
+            });
+        } else if (this.lyeType === 'koh') {
+            cards.push({
+                id: 'koh-to-weigh',
+                label: this.kohPurity === 90 ? 'KOH to weigh (90%)' : 'KOH to weigh',
+                value: lye.koh_to_weigh,
+            });
+        } else {
+            cards.push(
+                {
+                    id: 'dual-naoh-to-weigh',
+                    label: 'NaOH to weigh',
+                    value: lye.selected_naoh_weight,
+                },
+                {
+                    id: 'dual-koh-to-weigh',
+                    label: this.kohPurity === 90 ? 'KOH to weigh (90%)' : 'KOH to weigh',
+                    value: lye.koh_to_weigh,
+                },
+            );
+        }
+
+        cards.push(
+            {
+                id: 'water',
+                label: 'Water',
+                value: lye.water_weight,
+            },
+            {
+                id: 'glycerine',
+                label: 'Produced glycerine',
+                value: lye.glycerine_weight,
+            },
+        );
+
+        return cards;
+    },
+
     addIngredient(ingredient) {
         const targetPhase = this.targetPhaseForCategory(ingredient.category);
         const existingRow = this.phaseItems[targetPhase].find((row) => row.ingredient_version_id === ingredient.id);
@@ -92,6 +151,108 @@ window.recipeWorkbench = (payload) => ({
             percentage: targetPhase === 'saponified_oils' && this.phaseItems[targetPhase].length === 0 ? 100 : 0,
             note: '',
         });
+    },
+
+    applySavedDraft(draft) {
+        if (!draft) {
+            return;
+        }
+
+        this.recipeId = draft.recipe?.id ?? this.recipeId;
+        this.draftVersionId = draft.recipe?.draft_version_id ?? this.draftVersionId;
+        this.formulaName = draft.formulaName ?? this.formulaName;
+        this.oilUnit = draft.oilUnit ?? this.oilUnit;
+        this.oilWeight = this.number(draft.oilWeight ?? this.oilWeight);
+        this.editMode = draft.editMode === 'weight' ? 'weight' : 'percentage';
+        this.lyeType = ['naoh', 'koh', 'dual'].includes(draft.lyeType) ? draft.lyeType : this.lyeType;
+        this.kohPurity = this.number(draft.kohPurity ?? this.kohPurity);
+        this.dualKohPercentage = this.number(draft.dualKohPercentage ?? this.dualKohPercentage);
+        this.waterMode = ['percent_of_oils', 'lye_ratio', 'lye_concentration'].includes(draft.waterMode) ? draft.waterMode : this.waterMode;
+        this.waterValue = this.number(draft.waterValue ?? this.waterValue);
+        this.superfat = this.number(draft.superfat ?? this.superfat);
+        this.selectedIfraProductCategoryId = draft.selectedIfraProductCategoryId ?? this.selectedIfraProductCategoryId;
+        this.phaseItems = {
+            saponified_oils: draft.phaseItems?.saponified_oils ?? [],
+            additives: draft.phaseItems?.additives ?? [],
+            fragrance: draft.phaseItems?.fragrance ?? [],
+        };
+    },
+
+    serializeDraft() {
+        return {
+            name: this.formulaName,
+            oil_unit: this.oilUnit,
+            oil_weight: this.oilWeight,
+            editing_mode: this.editMode,
+            lye_type: this.lyeType,
+            koh_purity_percentage: this.kohPurity,
+            dual_lye_koh_percentage: this.dualKohPercentage,
+            water_mode: this.waterMode,
+            water_value: this.waterValue,
+            superfat: this.superfat,
+            ifra_product_category_id: this.selectedIfraProductCategoryId,
+            phase_items: {
+                saponified_oils: this.oilRows.map((row) => this.serializeRow(row)),
+                additives: this.additiveRows.map((row) => this.serializeRow(row)),
+                fragrance: this.fragranceRows.map((row) => this.serializeRow(row)),
+            },
+        };
+    },
+
+    serializeRow(row) {
+        return {
+            id: row.id,
+            ingredient_id: row.ingredient_id,
+            ingredient_version_id: row.ingredient_version_id,
+            percentage: this.number(row.percentage),
+            weight: this.rowWeight(row),
+            note: row.note ?? null,
+        };
+    },
+
+    async saveDraft() {
+        await this.persist('saveDraft');
+    },
+
+    async saveAsNewVersion() {
+        await this.persist('saveAsNewVersion');
+    },
+
+    async duplicateFormula() {
+        await this.persist('duplicateFormula');
+    },
+
+    async persist(method) {
+        this.isSaving = true;
+        this.saveStatus = null;
+        this.saveMessage = '';
+
+        try {
+            const response = await this.$wire[method](this.serializeDraft());
+
+            if (!response?.ok) {
+                this.saveStatus = 'error';
+                this.saveMessage = response?.message ?? 'The formula could not be saved.';
+
+                return;
+            }
+
+            this.saveStatus = 'success';
+            this.saveMessage = response.message ?? 'Formula saved.';
+
+            if (response.draft) {
+                this.applySavedDraft(response.draft);
+            }
+
+            if (response.redirect) {
+                window.location.href = response.redirect;
+            }
+        } catch (error) {
+            this.saveStatus = 'error';
+            this.saveMessage = 'The formula could not be saved.';
+        } finally {
+            this.isSaving = false;
+        }
     },
 
     removeIngredient(phaseKey, rowId) {
@@ -122,8 +283,70 @@ window.recipeWorkbench = (payload) => ({
         row.percentage = (this.number(weightValue) / totalOilWeight) * 100;
     },
 
+    updateOilPercentagesFromWeights(row, weightValue) {
+        const weightsByRowId = new Map(
+            this.oilRows.map((oilRow) => [oilRow.id, this.rowWeight(oilRow)]),
+        );
+
+        weightsByRowId.set(row.id, this.number(weightValue));
+
+        const totalOilWeight = Array.from(weightsByRowId.values())
+            .reduce((total, currentWeight) => total + this.number(currentWeight), 0);
+
+        this.oilWeight = totalOilWeight;
+
+        if (totalOilWeight <= 0) {
+            this.oilRows.forEach((oilRow) => {
+                oilRow.percentage = 0;
+            });
+
+            return;
+        }
+
+        this.oilRows.forEach((oilRow) => {
+            const rowWeight = weightsByRowId.get(oilRow.id) ?? 0;
+
+            oilRow.percentage = (this.number(rowWeight) / totalOilWeight) * 100;
+        });
+    },
+
     totalOilPercentage() {
         return this.sumPercentages(this.oilRows);
+    },
+
+    get oilPercentageIsBalanced() {
+        return Math.abs(this.totalOilPercentage() - 100) <= 0.01;
+    },
+
+    get oilPercentageStatusLabel() {
+        return this.oilPercentageIsBalanced ? 'Oil basis balanced' : 'Oil basis must reach 100%';
+    },
+
+    get hasSavedRecipe() {
+        return this.recipeId !== null;
+    },
+
+    get hasPostReactionRows() {
+        return this.additiveRows.length > 0 || this.fragranceRows.length > 0;
+    },
+
+    get fattyAcidProfileRows() {
+        const profile = this.averageFattyAcidProfile();
+
+        return [
+            ['Lauric', profile.lauric ?? 0],
+            ['Myristic', profile.myristic ?? 0],
+            ['Palmitic', profile.palmitic ?? 0],
+            ['Stearic', profile.stearic ?? 0],
+            ['Ricinoleic', profile.ricinoleic ?? 0],
+            ['Oleic', profile.oleic ?? 0],
+            ['Linoleic', profile.linoleic ?? 0],
+            ['Linolenic', profile.linolenic ?? 0],
+        ];
+    },
+
+    get hasFattyAcidProfileData() {
+        return this.fattyAcidProfileRows.some(([, value]) => this.number(value) > 0);
     },
 
     totalAdditionPercentage() {
@@ -150,8 +373,12 @@ window.recipeWorkbench = (payload) => ({
                 naoh_adjusted: 0,
                 koh_theoretical: 0,
                 koh_adjusted: 0,
+                selected_naoh_weight: 0,
+                selected_koh_weight: 0,
                 water_weight: this.waterWeightFor(0),
                 glycerine_weight: 0,
+                koh_to_weigh: 0,
+                selected_total_active_lye: 0,
                 fatty_acids: {},
             };
         }
@@ -178,18 +405,27 @@ window.recipeWorkbench = (payload) => ({
         const superfatMultiplier = 1 - (this.number(this.superfat) / 100);
         const naohAdjusted = totals.naoh_theoretical * superfatMultiplier;
         const kohAdjusted = totals.koh_theoretical * superfatMultiplier;
-        const selectedLye = this.lyeType === 'koh' ? kohAdjusted : naohAdjusted;
-        const waterWeight = this.waterWeightFor(selectedLye);
-        const kohToWeigh = this.kohPurity === 90 ? kohAdjusted / 0.9 : kohAdjusted;
+        const kohRatio = this.lyeType === 'dual'
+            ? this.number(this.dualKohPercentage) / 100
+            : (this.lyeType === 'koh' ? 1 : 0);
+        const naohRatio = 1 - kohRatio;
+        const selectedNaohWeight = naohAdjusted * naohRatio;
+        const selectedKohWeight = kohAdjusted * kohRatio;
+        const selectedTotalActiveLye = selectedNaohWeight + selectedKohWeight;
+        const waterWeight = this.waterWeightFor(selectedTotalActiveLye);
+        const kohToWeigh = selectedKohWeight > 0 && this.kohPurity === 90 ? selectedKohWeight / 0.9 : selectedKohWeight;
 
         return {
             naoh_theoretical: totals.naoh_theoretical,
             naoh_adjusted: naohAdjusted,
             koh_theoretical: totals.koh_theoretical,
             koh_adjusted: kohAdjusted,
+            selected_naoh_weight: selectedNaohWeight,
+            selected_koh_weight: selectedKohWeight,
             koh_to_weigh: kohToWeigh,
+            selected_total_active_lye: selectedTotalActiveLye,
             water_weight: waterWeight,
-            glycerine_weight: kohAdjusted * (92.09382 / 168.3168),
+            glycerine_weight: (selectedNaohWeight * (92.09382 / 119.9922)) + (selectedKohWeight * (92.09382 / 168.3168)),
             fatty_acids: totals.fatty_acids,
         };
     },
@@ -258,8 +494,11 @@ window.recipeWorkbench = (payload) => ({
 
     finalBatchWeight() {
         const lye = this.lyeBreakdown();
+        const lyeToWeigh = this.lyeType === 'naoh'
+            ? lye.selected_naoh_weight
+            : (this.lyeType === 'koh' ? lye.koh_to_weigh : lye.selected_naoh_weight + lye.koh_to_weigh);
 
-        return this.oilWeightTotal() + this.additionWeightTotal() + lye.water_weight + (this.lyeType === 'koh' ? lye.koh_adjusted : lye.naoh_adjusted);
+        return this.oilWeightTotal() + this.additionWeightTotal() + lye.water_weight + lyeToWeigh;
     },
 
     totalFormulaPercentage(row) {

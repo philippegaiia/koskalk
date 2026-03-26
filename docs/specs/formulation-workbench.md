@@ -52,6 +52,8 @@ For small option sets, prefer tick-style controls, toggle buttons, or radios ove
 This preference applies especially to:
 
 - lye type
+- dual-lye split
+- KOH purity
 - water mode
 - edit mode
 - other two-to-four-option settings such as oil weight entry modes
@@ -127,6 +129,8 @@ This basis must be driven by product family and not hard-coded into one generic 
 Live soap outputs must include:
 
 - NaOH and KOH requirements
+- dual lye support
+- KOH 90% purity option
 - water calculation
 - superfat effect
 - iodine

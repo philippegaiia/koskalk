@@ -5,90 +5,137 @@
 
 @section('content')
     <div class="space-y-8">
-        <section class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_22rem]">
-            <div class="grid gap-4 md:grid-cols-3">
-                <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Recipes</p>
-                    <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">0</p>
-                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">The dashboard now hands off to a real recipe workspace shell for soap formulation.</p>
-                    <a href="{{ route('recipes.index') }}" wire:navigate class="mt-4 inline-flex rounded-full border border-[var(--color-line-strong)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">Open recipes</a>
+        <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-6">
+            <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Workspace</p>
+                    <h3 class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">Create formulas, reopen drafts, and keep your own ingredients in reach.</h3>
+                    <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
+                        The dashboard is the real home for the formulation app. It should show what matters immediately: what you can create, what is already saved, and what personal ingredients belong to you.
+                    </p>
                 </div>
-                <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Carrier oils</p>
-                    <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">Trusted</p>
-                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Initial soap calculation will only pull from properly classified saponifiable carrier oils.</p>
-                </div>
-                <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Essential oils</p>
-                    <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">Growing</p>
-                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">The platform catalog is expected to support a large, curated essential-oil library.</p>
-                </div>
-            </div>
 
-            <div class="rounded-[2rem] border border-[var(--color-line-strong)] bg-[var(--color-panel-strong)] p-5">
-                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Public shell direction</p>
-                <h3 class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]">Tailwind-driven, not generic SaaS UI</h3>
-                <p class="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">
-                    This dashboard is being built as the companion shell for a dense formulation workspace. The goal is a fast working surface, not card-heavy filler.
-                </p>
-                <a href="{{ route('recipes.create') }}" wire:navigate class="mt-5 inline-flex rounded-full bg-[var(--color-ink-strong)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">Start a soap draft</a>
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('recipes.create') }}" wire:navigate class="inline-flex rounded-full bg-[var(--color-ink-strong)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
+                        Create soap formula
+                    </a>
+                    <button type="button" disabled class="inline-flex cursor-not-allowed rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)]">
+                        Create formula
+                    </button>
+                </div>
             </div>
         </section>
 
-        <section class="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,0.9fr)]">
+        <section class="grid gap-4 lg:grid-cols-3">
+            <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Saved recipes</p>
+                <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">{{ $recipeCount }}</p>
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Every saved draft should come back here without needing to open a separate recipes page first.</p>
+            </div>
+            <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Current drafts</p>
+                <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">{{ $draftCount }}</p>
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Drafts are editable. Published versions remain history, while the working draft stays live.</p>
+            </div>
+            <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Published versions</p>
+                <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">{{ $publishedVersionCount }}</p>
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Versioning stays explicit, so history remains clean and meaningful.</p>
+            </div>
+        </section>
+
+        <section class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_24rem]">
             <div class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
                 <div class="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-4">
                     <div>
-                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Planned workbench flow</p>
-                        <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Formulation workspace map</h3>
+                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Recipes</p>
+                        <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Your saved formulas and their statuses</h3>
                     </div>
-                    <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Shell preview</span>
+                    <a href="{{ route('recipes.index') }}" wire:navigate class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                        View all
+                    </a>
                 </div>
 
-                <div class="grid gap-px bg-[var(--color-line)] sm:grid-cols-2">
-                    <div class="space-y-3 bg-white p-5">
-                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Left column</p>
-                        <div class="rounded-2xl bg-[var(--color-panel)] p-4">
-                            <p class="font-medium text-[var(--color-ink-strong)]">Ingredient search</p>
-                            <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">Instant search, category ticks, and click-to-add interaction.</p>
-                        </div>
-                        <div class="rounded-2xl bg-[var(--color-panel)] p-4">
-                            <p class="font-medium text-[var(--color-ink-strong)]">Role-based filters</p>
-                            <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">Carrier oils, essential oils, colorants, preservatives, additives.</p>
-                        </div>
+                @if (! $currentUser)
+                    <div class="p-8 text-center">
+                        <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">No connected workspace yet</h4>
+                        <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Once you open the dashboard from your signed-in app or admin session, your saved formulas will appear here automatically.</p>
                     </div>
-                    <div class="space-y-3 bg-white p-5">
-                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Right column</p>
-                        <div class="rounded-2xl bg-[var(--color-panel)] p-4">
-                            <p class="font-medium text-[var(--color-ink-strong)]">Formula table</p>
-                            <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">Percent and weight editing, phase totals, and save-state visibility.</p>
-                        </div>
-                        <div class="rounded-2xl bg-[var(--color-panel)] p-4">
-                            <p class="font-medium text-[var(--color-ink-strong)]">Soap engine block</p>
-                            <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">KOH-first SAP, derived NaOH, water modes, glycerine, and live soap qualities.</p>
-                        </div>
+                @elseif ($recipes->isEmpty())
+                    <div class="p-8 text-center">
+                        <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">No saved formulas yet</h4>
+                        <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Create the first soap formula, give it a name in the workbench header, and save the draft. It will then show up here with its current status.</p>
                     </div>
-                </div>
+                @else
+                    <div class="divide-y divide-[var(--color-line)]">
+                        @foreach ($recipes as $recipe)
+                            <article class="px-5 py-4">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h4 class="truncate text-lg font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
+                                            @if ($recipe->currentDraftVersion && $recipe->published_versions_count > 0)
+                                                <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">Draft + versioned</span>
+                                            @elseif ($recipe->currentDraftVersion)
+                                                <span class="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">Draft</span>
+                                            @else
+                                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Versioned</span>
+                                            @endif
+                                        </div>
+                                        <div class="mt-3 flex flex-wrap gap-2">
+                                            <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
+                                                {{ $recipe->productFamily?->name ?? 'Formula' }}
+                                            </span>
+                                            @if ($recipe->currentDraftVersion)
+                                                <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
+                                                    Draft v{{ $recipe->currentDraftVersion->version_number }}
+                                                </span>
+                                            @endif
+                                            @if ($recipe->published_versions_count > 0)
+                                                <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
+                                                    {{ $recipe->published_versions_count }} {{ \Illuminate\Support\Str::plural('version', $recipe->published_versions_count) }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="inline-flex items-center rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2 text-sm text-[var(--color-ink-soft)]">
+                                            Updated {{ $recipe->updated_at?->diffForHumans() ?? 'just now' }}
+                                        </span>
+                                        <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate class="inline-flex rounded-full border border-[var(--color-line-strong)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                                            Open draft
+                                        </a>
+                                    </div>
+                                </div>
+                            </article>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <div class="rounded-[2rem] border border-[var(--color-line)] bg-white">
                 <div class="border-b border-[var(--color-line)] px-5 py-4">
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Decision board</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Domain details still being locked</h3>
+                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Personal ingredients</p>
+                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Your private ingredient library</h3>
                 </div>
 
-                <div class="space-y-3 p-5">
-                    @foreach ([
-                        'Fixed fatty-acid key set for carrier oils',
-                        'Versioned soap-quality calculation strategy',
-                        'Essential-oil enrichment path for allergens and compliance',
-                        'Formulation page save workflow and navigation guard',
-                    ] as $decision)
-                        <div class="flex gap-3 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-ink-soft)]">
-                            <span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-strong)]">•</span>
-                            <span>{{ $decision }}</span>
-                        </div>
-                    @endforeach
+                <div class="space-y-4 p-5">
+                    <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Current count</p>
+                        <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $personalIngredientCount }}</p>
+                    </div>
+
+                    <div class="rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-white p-5">
+                        <p class="font-medium text-[var(--color-ink-strong)]">No personal ingredients yet</p>
+                        <p class="mt-2 text-sm leading-7 text-[var(--color-ink-soft)]">
+                            Public user-owned ingredient authoring is the next slice to implement. This panel will eventually hold your private fragrance oils, custom extracts, additives, and other proprietary materials.
+                        </p>
+                    </div>
+
+                    <button type="button" disabled class="inline-flex w-full cursor-not-allowed justify-center rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)]">
+                        Personal ingredients coming next
+                    </button>
                 </div>
             </div>
         </section>

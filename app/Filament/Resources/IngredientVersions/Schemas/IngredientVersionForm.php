@@ -2,16 +2,15 @@
 
 namespace App\Filament\Resources\IngredientVersions\Schemas;
 
-use App\IngredientCategory;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientVersion;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -19,12 +18,14 @@ use Filament\Support\Icons\Heroicon;
 
 class IngredientVersionForm
 {
+    private static array $ingredientCache = [];
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
             ->components([
                 Section::make('Version Identity')
-                    ->description('Keep the version attached to its ingredient so naming and legal text can evolve without losing history.')
+                    ->description('Keep the current naming and regulatory snapshot attached to the ingredient so stewardship stays traceable without dominating the main ingredient UX.')
                     ->icon(Heroicon::Identification)
                     ->schema([
                         Select::make('ingredient_id')
@@ -76,7 +77,7 @@ class IngredientVersionForm
                         'md' => 2,
                     ]),
                 Section::make('Commercial Data')
-                    ->description('Keep stock and sourcing metadata here. Soap chemistry belongs in the SAP profile resource.')
+                    ->description('Keep naming, sourcing, and commercial details here. Chemistry and compliance stay conditional on the material type.')
                     ->icon(Heroicon::CurrencyEuro)
                     ->schema([
                         TextInput::make('unit')
@@ -96,21 +97,16 @@ class IngredientVersionForm
                         'md' => 4,
                     ]),
                 Section::make('Soap Calculation Data')
-                    ->description('For saponifiable carrier oils, manage the normalized fatty-acid entries here. KOH SAP still lives in the SAP profile resource.')
+                    ->description('For carrier oils trusted in saponified soap math, manage the normalized fatty-acid entries here. KOH SAP still lives in the SAP profile resource.')
                     ->icon(Heroicon::Beaker)
                     ->visible(fn (Get $get, ?IngredientVersion $record): bool => self::supportsSoapCalculation($get, $record))
                     ->schema([
-                        Placeholder::make('fatty_acid_entry_hint')
+                        TextEntry::make('fatty_acid_entry_hint')
                             ->hiddenLabel()
-                            ->content('Use the normalized fatty-acid list below as the main source of truth. The older SAP-profile fatty-acid columns remain only as legacy fallback data.'),
-                        Placeholder::make('fatty_acid_total')
+                            ->state('Use the normalized fatty-acid list below as the main source of truth. The older SAP-profile fatty-acid columns remain only as legacy fallback data.'),
+                        TextEntry::make('fatty_acid_total')
                             ->label('Fatty acid total')
-                            ->content(function (Get $get): string {
-                                $total = collect($get('fattyAcidEntries') ?? [])
-                                    ->sum(fn (array $row): float => max(0, (float) ($row['percentage'] ?? 0)));
-
-                                return number_format($total, 2, '.', '').'%';
-                            }),
+                            ->state(fn (Get $get): string => number_format(collect($get('fattyAcidEntries') ?? [])->sum(fn (array $row): float => max(0, (float) ($row['percentage'] ?? 0))), 2, '.', '').'%'),
                         Repeater::make('fattyAcidEntries')
                             ->relationship()
                             ->schema([
@@ -146,7 +142,7 @@ class IngredientVersionForm
                         'md' => 2,
                     ]),
                 Section::make('Aromatic Compliance')
-                    ->description('For essential oils and other aromatic materials, allergen composition belongs directly on the ingredient version so the source percentages stay versioned.')
+                    ->description('For essential oils, fragrance oils, CO2 extracts, and related aromatics, keep the current allergen declaration attached to this version.')
                     ->icon(Heroicon::Sparkles)
                     ->visible(fn (Get $get, ?IngredientVersion $record): bool => self::supportsAromaticCompliance($get, $record))
                     ->schema([
@@ -175,9 +171,11 @@ class IngredientVersionForm
                             ->defaultItems(0)
                             ->columnSpanFull(),
                     ]),
-                Section::make('Source Traceability')
-                    ->description('Preserve source references for imported versions or use a stable admin key for new entries.')
+                Section::make('Internal Metadata')
+                    ->description('Preserve source references for imported versions or use a stable admin key for new entries, while keeping them secondary in normal stewardship.')
                     ->icon(Heroicon::DocumentText)
+                    ->collapsible()
+                    ->collapsed()
                     ->schema([
                         TextInput::make('source_key')
                             ->required()
@@ -193,29 +191,32 @@ class IngredientVersionForm
             ]);
     }
 
-    private static function supportsSoapCalculation(Get $get, ?IngredientVersion $record): bool
+    private static function resolveIngredient(Get $get, ?IngredientVersion $record): ?Ingredient
     {
         $ingredientId = $get('ingredient_id');
 
-        if (filled($ingredientId)) {
-            return Ingredient::query()->find($ingredientId)?->isAvailableForInitialSoapCalculation() ?? false;
+        if (blank($ingredientId) && $record?->relationLoaded('ingredient') && $record->ingredient) {
+            $ingredientId = $record->ingredient->id;
         }
 
-        return $record?->ingredient?->isAvailableForInitialSoapCalculation() ?? false;
+        if (blank($ingredientId)) {
+            return $record?->ingredient;
+        }
+
+        $key = (int) $ingredientId;
+
+        return static::$ingredientCache[$key] ??= Ingredient::query()
+            ->select('id', 'category', 'is_potentially_saponifiable')
+            ->find($key);
+    }
+
+    private static function supportsSoapCalculation(Get $get, ?IngredientVersion $record): bool
+    {
+        return static::resolveIngredient($get, $record)?->canDriveSoapSaponification() ?? false;
     }
 
     private static function supportsAromaticCompliance(Get $get, ?IngredientVersion $record): bool
     {
-        $ingredientId = $get('ingredient_id');
-
-        if (filled($ingredientId)) {
-            $category = Ingredient::query()->find($ingredientId)?->category;
-
-            return $category !== null && in_array($category->value, IngredientCategory::aromaticValues(), true);
-        }
-
-        $recordCategory = $record?->ingredient?->category;
-
-        return $recordCategory !== null && in_array($recordCategory->value, IngredientCategory::aromaticValues(), true);
+        return static::resolveIngredient($get, $record)?->requiresAromaticCompliance() ?? false;
     }
 }

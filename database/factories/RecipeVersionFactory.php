@@ -31,10 +31,14 @@ class RecipeVersionFactory extends Factory
             'name' => fake()->words(3, true),
             'batch_size' => 1000,
             'batch_unit' => 'g',
+            'manufacturing_mode' => 'saponify_in_formula',
+            'exposure_mode' => 'rinse_off',
+            'regulatory_regime' => 'eu',
             'notes' => null,
             'water_settings' => null,
             'calculation_context' => null,
             'saved_at' => null,
+            'catalog_reviewed_at' => now(),
             'archived_at' => null,
         ];
     }

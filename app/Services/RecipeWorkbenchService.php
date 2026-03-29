@@ -11,6 +11,7 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\OwnerType;
 use App\Visibility;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -29,6 +30,10 @@ class RecipeWorkbenchService
      */
     public function previewSoapCalculation(array $payload): ?array
     {
+        if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') !== 'saponify_in_formula') {
+            return null;
+        }
+
         $oilRows = collect($payload['phase_items']['saponified_oils'] ?? [])
             ->filter(fn (mixed $row): bool => is_array($row))
             ->values();
@@ -157,6 +162,33 @@ class RecipeWorkbenchService
     }
 
     /**
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null}|null
+     */
+    public function draftSnapshot(?Recipe $recipe): ?array
+    {
+        if ($recipe === null) {
+            return null;
+        }
+
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $recipe->id)
+            ->where('is_draft', true)
+            ->with($this->versionWorkbenchRelations())
+            ->first()
+            ?? RecipeVersion::withoutGlobalScopes()
+                ->where('recipe_id', $recipe->id)
+                ->with($this->versionWorkbenchRelations())
+                ->orderByDesc('version_number')
+                ->first();
+
+        if (! $version instanceof RecipeVersion) {
+            return null;
+        }
+
+        return $this->workbenchSnapshotFromVersion($version);
+    }
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public function versionOptions(Recipe $recipe): array
@@ -192,6 +224,37 @@ class RecipeWorkbenchService
             ->first();
 
         return $version instanceof RecipeVersion ? $this->workbenchPayloadFromVersion($version) : null;
+    }
+
+    /**
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null}|null
+     */
+    public function versionSnapshot(?Recipe $recipe, int $versionId): ?array
+    {
+        if ($recipe === null) {
+            return null;
+        }
+
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $recipe->id)
+            ->whereKey($versionId)
+            ->with($this->versionWorkbenchRelations())
+            ->first();
+
+        if (! $version instanceof RecipeVersion) {
+            return null;
+        }
+
+        return $this->workbenchSnapshotFromVersion($version);
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>|null
+     */
+    public function calculationFromWorkbenchDraft(array $draft): ?array
+    {
+        return $this->previewSoapCalculation($this->previewPayloadFromWorkbenchDraft($draft));
     }
 
     public function saveDraft(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
@@ -288,6 +351,9 @@ class RecipeWorkbenchService
      *     name: string,
      *     oil_weight: float,
      *     oil_unit: string,
+     *     manufacturing_mode: string,
+     *     exposure_mode: string,
+     *     regulatory_regime: string,
      *     editing_mode: string,
      *     ifra_product_category_id: int|null,
      *     water_settings: array{mode: string, value: float},
@@ -323,6 +389,9 @@ class RecipeWorkbenchService
             'name' => $name !== '' ? $name : 'Untitled Soap Formula',
             'oil_weight' => $normalizedRecipe['oil_weight'],
             'oil_unit' => in_array($payload['oil_unit'] ?? 'g', ['g', 'oz', 'lb'], true) ? $payload['oil_unit'] : 'g',
+            'manufacturing_mode' => $this->normalizeManufacturingMode($payload['manufacturing_mode'] ?? 'saponify_in_formula'),
+            'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'rinse_off'),
+            'regulatory_regime' => $this->normalizeRegulatoryRegime($payload['regulatory_regime'] ?? 'eu'),
             'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
             'ifra_product_category_id' => isset($payload['ifra_product_category_id']) && is_numeric($payload['ifra_product_category_id'])
                 ? (int) $payload['ifra_product_category_id']
@@ -403,6 +472,8 @@ class RecipeWorkbenchService
             'phases.items.ingredientVersion.ingredient',
             'phases.items.ingredientVersion.sapProfile',
             'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
+            'phases.items.ingredientVersion.allergenEntries',
+            'phases.items.ingredientVersion.ifraCertificates.limits',
         ];
     }
 
@@ -442,6 +513,9 @@ class RecipeWorkbenchService
             'formulaName' => $version->name,
             'oilUnit' => (string) ($calculationContext['oil_unit'] ?? $version->batch_unit),
             'oilWeight' => (float) ($calculationContext['oil_weight'] ?? $version->batch_size),
+            'manufacturingMode' => $this->normalizeManufacturingMode($version->manufacturing_mode),
+            'exposureMode' => $this->normalizeExposureMode($version->exposure_mode),
+            'regulatoryRegime' => $this->normalizeRegulatoryRegime($version->regulatory_regime),
             'editMode' => $calculationContext['editing_mode'] === 'weight' ? 'weight' : 'percentage',
             'lyeType' => in_array($calculationContext['lye_type'] ?? 'naoh', ['naoh', 'koh', 'dual'], true)
                 ? $calculationContext['lye_type']
@@ -455,6 +529,39 @@ class RecipeWorkbenchService
             'superfat' => (float) ($calculationContext['superfat'] ?? 5),
             'selectedIfraProductCategoryId' => $version->ifra_product_category_id,
             'phaseItems' => $phaseRows,
+            'catalogReview' => $this->catalogReviewState($version),
+        ];
+    }
+
+    /**
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null}
+     */
+    private function workbenchSnapshotFromVersion(RecipeVersion $version): array
+    {
+        $draft = $this->workbenchPayloadFromVersion($version);
+
+        return [
+            'draft' => $draft,
+            'calculation' => $this->calculationFromWorkbenchDraft($draft),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    private function previewPayloadFromWorkbenchDraft(array $draft): array
+    {
+        return [
+            'manufacturing_mode' => $draft['manufacturingMode'] ?? 'saponify_in_formula',
+            'oil_weight' => $draft['oilWeight'] ?? 0,
+            'lye_type' => $draft['lyeType'] ?? 'naoh',
+            'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
+            'dual_lye_koh_percentage' => $draft['dualKohPercentage'] ?? 40,
+            'water_mode' => $draft['waterMode'] ?? 'percent_of_oils',
+            'water_value' => $draft['waterValue'] ?? 38,
+            'superfat' => $draft['superfat'] ?? 5,
+            'phase_items' => $draft['phaseItems'] ?? [],
         ];
     }
 
@@ -521,10 +628,14 @@ class RecipeWorkbenchService
         $recipeVersion->name = $normalizedPayload['name'];
         $recipeVersion->batch_size = $normalizedPayload['oil_weight'];
         $recipeVersion->batch_unit = $normalizedPayload['oil_unit'];
+        $recipeVersion->manufacturing_mode = $normalizedPayload['manufacturing_mode'];
+        $recipeVersion->exposure_mode = $normalizedPayload['exposure_mode'];
+        $recipeVersion->regulatory_regime = $normalizedPayload['regulatory_regime'];
         $recipeVersion->ifra_product_category_id = $normalizedPayload['ifra_product_category_id'];
         $recipeVersion->water_settings = $normalizedPayload['water_settings'];
         $recipeVersion->calculation_context = $normalizedPayload['calculation_context'];
         $recipeVersion->saved_at = $isDraft ? null : ($recipeVersion->saved_at ?? now());
+        $recipeVersion->catalog_reviewed_at = now();
         $recipeVersion->archived_at = null;
     }
 
@@ -653,5 +764,77 @@ class RecipeWorkbenchService
             'percentage' => (float) $item->percentage,
             'note' => $item->note,
         ];
+    }
+
+    private function normalizeManufacturingMode(?string $value): string
+    {
+        return in_array($value, ['saponify_in_formula', 'blend_only'], true)
+            ? $value
+            : 'saponify_in_formula';
+    }
+
+    private function normalizeExposureMode(?string $value): string
+    {
+        return in_array($value, ['rinse_off', 'leave_on'], true)
+            ? $value
+            : 'rinse_off';
+    }
+
+    private function normalizeRegulatoryRegime(?string $value): string
+    {
+        return in_array($value, ['eu'], true)
+            ? $value
+            : 'eu';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function catalogReviewState(RecipeVersion $version): array
+    {
+        $reviewedAt = $version->catalog_reviewed_at;
+        $latestIngredientChangeAt = $version->phases
+            ->flatMap(fn (RecipePhase $phase) => $phase->items)
+            ->map(fn (RecipeItem $item): ?\Illuminate\Support\Carbon => $this->latestIngredientChangeAt($item))
+            ->filter()
+            ->sortDesc()
+            ->first();
+
+        $needsReview = $reviewedAt === null
+            || ($latestIngredientChangeAt !== null && $latestIngredientChangeAt->gt($reviewedAt));
+
+        return [
+            'needs_review' => $needsReview,
+            'reviewed_at' => $reviewedAt?->toIso8601String(),
+            'latest_ingredient_change_at' => $latestIngredientChangeAt?->toIso8601String(),
+            'message' => $needsReview
+                ? 'One or more linked ingredients changed after this formula was last reviewed. Recheck INCI and compliance before export.'
+                : 'Ingredient-linked data matches the last recorded catalog review for this formula version.',
+        ];
+    }
+
+    private function latestIngredientChangeAt(RecipeItem $item): ?Carbon
+    {
+        $ingredientVersion = $item->ingredientVersion;
+
+        if (! $ingredientVersion instanceof IngredientVersion) {
+            return null;
+        }
+
+        return collect([
+            $ingredientVersion->updated_at,
+            $ingredientVersion->ingredient?->updated_at,
+            $ingredientVersion->sapProfile?->updated_at,
+            $ingredientVersion->allergenEntries->max('updated_at'),
+            $ingredientVersion->ifraCertificates->max('updated_at'),
+            $ingredientVersion->ifraCertificates
+                ->flatMap(fn ($certificate) => $certificate->limits)
+                ->max('updated_at'),
+            $ingredientVersion->fattyAcidEntries->max('updated_at'),
+        ])
+            ->filter()
+            ->map(fn ($value) => $value instanceof Carbon ? $value : Carbon::parse($value))
+            ->sortDesc()
+            ->first();
     }
 }

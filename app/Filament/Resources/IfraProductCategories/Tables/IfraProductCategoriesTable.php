@@ -5,6 +5,7 @@ namespace App\Filament\Resources\IfraProductCategories\Tables;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -31,6 +32,10 @@ class IfraProductCategoriesTable
                     ->label('Product families')
                     ->counts('productFamilies')
                     ->sortable(),
+            ])
+            ->filters([
+                TernaryFilter::make('is_active')
+                    ->label('Active'),
             ])
             ->recordActions([
                 EditAction::make(),

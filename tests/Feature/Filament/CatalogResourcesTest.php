@@ -52,6 +52,12 @@ it('renders the catalog list resources in the admin panel', function () {
         ->assertSee('Olive Oil')
         ->assertSee('Carrier Oil');
 
+    $this->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Soap Chemistry')
+        ->assertSee('Fatty acid profile')
+        ->assertSee('Ingredient guidance');
+
     $this->get(IngredientVersionResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Olive Oil');
@@ -69,7 +75,12 @@ it('renders the catalog create forms in the admin panel', function () {
     $this->get(IngredientResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Ingredient category')
-        ->assertSee('Source Traceability');
+        ->assertSee('Material Identity')
+        ->assertSee('Guidance &amp; Media', false)
+        ->assertSee('Ingredient guidance')
+        ->assertSee('Ingredient image')
+        ->assertSee('Composite Components')
+        ->assertDontSee('Internal Metadata');
 
     $this->get(IngredientVersionResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
@@ -162,6 +173,13 @@ it('renders the compliance resources in the admin panel', function () {
         ->assertSuccessful()
         ->assertSee('Aromatic Compliance')
         ->assertSee('LINALOOL');
+
+    $this->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Lavender Essential Oil')
+        ->assertSee('Material Identity')
+        ->assertSee('Guidance &amp; Media', false)
+        ->assertSee('Composite Components');
 });
 
 it('renders the compliance create forms in the admin panel', function () {
@@ -190,7 +208,8 @@ it('renders the compliance create forms in the admin panel', function () {
 
     $this->get(IfraCertificateResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
-        ->assertSee('Certificate Identity')
+        ->assertSee('Current IFRA Guidance')
+        ->assertSee('Optional Reference Metadata')
         ->assertSee('Category Limits');
 });
 

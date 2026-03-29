@@ -18,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'display_name_en',
     'display_name_fr',
     'inci_name',
+    'supplier_name',
+    'supplier_reference',
     'soap_inci_naoh_name',
     'soap_inci_koh_name',
     'cas_number',

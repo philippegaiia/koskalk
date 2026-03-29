@@ -18,6 +18,7 @@ class IngredientVersionsTable
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['ingredient', 'sapProfile'])->withCount(['allergenEntries', 'ifraCertificates']))
             ->columns([
                 TextColumn::make('display_name')
+                    ->label(__('Ingredient'))
                     ->searchable()
                     ->sortable()
                     ->description(fn (IngredientVersion $record): ?string => $record->ingredient?->source_key),

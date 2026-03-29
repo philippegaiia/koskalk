@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Services\CurrentAppUserResolver;
 use Illuminate\Contracts\View\View;
@@ -15,6 +16,8 @@ class DashboardController extends Controller
         $recipeCount = 0;
         $draftCount = 0;
         $publishedVersionCount = 0;
+        $personalIngredients = collect();
+        $personalIngredientCount = 0;
 
         if ($currentUser !== null) {
             $recipes = Recipe::query()
@@ -33,6 +36,18 @@ class DashboardController extends Controller
             $recipeCount = $recipes->count();
             $draftCount = $recipes->filter(fn (Recipe $recipe): bool => $recipe->currentDraftVersion !== null)->count();
             $publishedVersionCount = (int) $recipes->sum('published_versions_count');
+
+            $personalIngredients = Ingredient::query()
+                ->ownedByUser($currentUser)
+                ->with('currentVersion')
+                ->withCount('components')
+                ->latest()
+                ->limit(4)
+                ->get();
+
+            $personalIngredientCount = Ingredient::query()
+                ->ownedByUser($currentUser)
+                ->count();
         }
 
         return view('dashboard', [
@@ -41,7 +56,8 @@ class DashboardController extends Controller
             'recipeCount' => $recipeCount,
             'draftCount' => $draftCount,
             'publishedVersionCount' => $publishedVersionCount,
-            'personalIngredientCount' => 0,
+            'personalIngredients' => $personalIngredients,
+            'personalIngredientCount' => $personalIngredientCount,
         ]);
     }
 }

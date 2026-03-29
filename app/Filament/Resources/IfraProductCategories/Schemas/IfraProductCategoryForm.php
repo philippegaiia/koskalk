@@ -23,7 +23,7 @@ class IfraProductCategoryForm
                     ->schema([
                         TextInput::make('code')
                             ->required()
-                            ->unique(ignoreRecord: true)
+                            ->unique()
                             ->maxLength(255),
                         TextInput::make('name')
                             ->required()

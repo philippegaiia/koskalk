@@ -18,6 +18,8 @@ class IngredientAllergenEntryResource extends Resource
 {
     protected static ?string $model = IngredientAllergenEntry::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Sparkles;
 
     protected static ?int $navigationSort = 50;

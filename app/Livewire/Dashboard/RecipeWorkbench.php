@@ -9,7 +9,14 @@ use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
+use App\Services\MediaStorage;
 use App\Services\RecipeWorkbenchService;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
@@ -17,17 +24,29 @@ use InvalidArgumentException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
-class RecipeWorkbench extends Component
+class RecipeWorkbench extends Component implements HasForms
 {
+    use InteractsWithForms;
+
     #[Locked]
     public ?int $actorUserId = null;
 
     public ?int $recipeId = null;
 
+    /**
+     * @var array<string, mixed>|null
+     */
+    public ?array $data = [];
+
+    public ?string $recipeContentMessage = null;
+
+    public string $recipeContentStatus = 'idle';
+
     public function mount(?Recipe $recipe = null): void
     {
         $this->actorUserId = $this->currentUser()?->id;
         $this->recipeId = $recipe?->id;
+        $this->form->fill($this->recipeContentFormState($recipe));
     }
 
     /**
@@ -58,12 +77,14 @@ class RecipeWorkbench extends Component
 
         $this->recipeId = $recipeVersion->recipe_id;
         $recipe = Recipe::withoutGlobalScopes()->find($recipeVersion->recipe_id);
+        $snapshot = $recipeWorkbenchService->draftSnapshot($recipe);
+        $this->refreshRecipeContentForm($recipe);
 
         return [
             'ok' => true,
             'message' => 'Draft saved.',
             'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
-            'draft' => $recipeWorkbenchService->draftPayload($recipe),
+            'snapshot' => $snapshot,
         ];
     }
 
@@ -95,12 +116,14 @@ class RecipeWorkbench extends Component
 
         $this->recipeId = $recipeVersion->recipe_id;
         $recipe = Recipe::withoutGlobalScopes()->find($recipeVersion->recipe_id);
+        $snapshot = $recipeWorkbenchService->draftSnapshot($recipe);
+        $this->refreshRecipeContentForm($recipe);
 
         return [
             'ok' => true,
             'message' => 'Version saved. A new draft is open for continued editing.',
             'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
-            'draft' => $recipeWorkbenchService->draftPayload($recipe),
+            'snapshot' => $snapshot,
         ];
     }
 
@@ -159,9 +182,9 @@ class RecipeWorkbench extends Component
             ];
         }
 
-        $draft = $recipeWorkbenchService->versionPayload($recipe, $versionId);
+        $snapshot = $recipeWorkbenchService->versionSnapshot($recipe, $versionId);
 
-        if ($draft === null) {
+        if ($snapshot === null) {
             return [
                 'ok' => false,
                 'message' => 'The selected version could not be loaded.',
@@ -170,17 +193,7 @@ class RecipeWorkbench extends Component
 
         return [
             'ok' => true,
-            'draft' => $draft,
-            'calculation' => $recipeWorkbenchService->previewSoapCalculation([
-                'oil_weight' => $draft['oilWeight'] ?? 0,
-                'lye_type' => $draft['lyeType'] ?? 'naoh',
-                'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
-                'dual_lye_koh_percentage' => $draft['dualKohPercentage'] ?? 40,
-                'water_mode' => $draft['waterMode'] ?? 'percent_of_oils',
-                'water_value' => $draft['waterValue'] ?? 38,
-                'superfat' => $draft['superfat'] ?? 5,
-                'phase_items' => $draft['phaseItems'] ?? [],
-            ]),
+            'snapshot' => $snapshot,
         ];
     }
 
@@ -195,9 +208,9 @@ class RecipeWorkbench extends Component
             ];
         }
 
-        $draft = $recipeWorkbenchService->versionPayload($recipe, $versionId);
+        $snapshot = $recipeWorkbenchService->versionSnapshot($recipe, $versionId);
 
-        if ($draft === null) {
+        if ($snapshot === null) {
             return [
                 'ok' => false,
                 'message' => 'The selected version could not be loaded.',
@@ -207,24 +220,104 @@ class RecipeWorkbench extends Component
         return [
             'ok' => true,
             'message' => 'Saved version loaded into the workbench. Save when you want to keep changes.',
-            'draft' => $draft,
-            'calculation' => $recipeWorkbenchService->previewSoapCalculation([
-                'oil_weight' => $draft['oilWeight'] ?? 0,
-                'lye_type' => $draft['lyeType'] ?? 'naoh',
-                'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
-                'dual_lye_koh_percentage' => $draft['dualKohPercentage'] ?? 40,
-                'water_mode' => $draft['waterMode'] ?? 'percent_of_oils',
-                'water_value' => $draft['waterValue'] ?? 38,
-                'superfat' => $draft['superfat'] ?? 5,
-                'phase_items' => $draft['phaseItems'] ?? [],
-            ]),
+            'snapshot' => $snapshot,
         ];
+    }
+
+    public function saveRecipeContent(): void
+    {
+        $recipe = $this->currentRecipe();
+
+        if (! $recipe instanceof Recipe) {
+            $this->recipeContentStatus = 'error';
+            $this->recipeContentMessage = 'Save the first draft before adding recipe content and images.';
+
+            return;
+        }
+
+        /** @var array{description:?string, featured_image_path:?string} $state */
+        $state = $this->form->getState();
+
+        $recipe->fill([
+            'description' => $state['description'] ?? null,
+            'featured_image_path' => $state['featured_image_path'] ?? null,
+        ]);
+        $recipe->save();
+
+        $this->recipeContentStatus = 'success';
+        $this->recipeContentMessage = 'Recipe content saved.';
+        $this->refreshRecipeContentForm($recipe->fresh());
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components([
+                Section::make('Recipe content')
+                    ->description('Use rich text for the process story, instructions, and in-process photos. Images stay constrained through Filament upload and editor controls.')
+                    ->columns([
+                        'lg' => 12,
+                    ])
+                    ->schema([
+                        RichEditor::make('description')
+                            ->label('Description and instructions')
+                            ->helperText('Use this for process steps, instructions, and publication-ready recipe notes.')
+                            ->toolbarButtons([
+                                ['bold', 'italic', 'underline', 'strike', 'link'],
+                                ['h2', 'h3', 'blockquote', 'bulletList', 'orderedList'],
+                                ['attachFiles', 'undo', 'redo'],
+                            ])
+                            ->fileAttachmentsDisk(MediaStorage::publicDisk())
+                            ->fileAttachmentsDirectory('recipes/rich-content')
+                            ->fileAttachmentsVisibility('public')
+                            ->fileAttachmentsAcceptedFileTypes([
+                                'image/jpeg',
+                                'image/webp',
+                            ])
+                            ->fileAttachmentsMaxSize(3072)
+                            ->resizableImages()
+                            ->columnSpan([
+                                'lg' => 7,
+                            ]),
+                        FileUpload::make('featured_image_path')
+                            ->label('Finished product image')
+                            ->image()
+                            ->disk(MediaStorage::publicDisk())
+                            ->directory('recipes/featured-images')
+                            ->visibility('public')
+                            ->imagePreviewHeight('20rem')
+                            ->panelLayout('integrated')
+                            ->panelAspectRatio('4:3')
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/webp',
+                            ])
+                            ->maxSize(3072)
+                            ->automaticallyResizeImagesMode('cover')
+                            ->automaticallyResizeImagesToHeight('1400')
+                            ->automaticallyResizeImagesToWidth('1400')
+                            ->automaticallyUpscaleImagesWhenResizing(false)
+                            ->imageEditor()
+                            ->imageAspectRatio('4:3')
+                            ->imageEditorAspectRatioOptions([
+                                '4:3',
+                                '1:1',
+                            ])
+                            ->automaticallyOpenImageEditorForAspectRatio()
+                            ->helperText('Allowed: JPG or WebP, up to 3 MB. Square and 4:3 crops stay large enough for recipe cards and future thumbnails.')
+                            ->columnSpan([
+                                'lg' => 5,
+                            ]),
+                    ]),
+            ])
+            ->statePath('data')
+            ->model($this->currentRecipe() ?? Recipe::class);
     }
 
     public function render(RecipeWorkbenchService $recipeWorkbenchService): View
     {
         $soapFamily = $this->soapFamily();
-        $savedDraft = $recipeWorkbenchService->draftPayload($this->currentRecipe());
+        $savedSnapshot = $recipeWorkbenchService->draftSnapshot($this->currentRecipe());
 
         return view('livewire.dashboard.recipe-workbench', [
             'workbench' => [
@@ -235,17 +328,7 @@ class RecipeWorkbench extends Component
                     'calculation_basis' => $soapFamily->calculation_basis,
                 ],
                 'recipe' => $this->currentRecipeData(),
-                'savedDraft' => $savedDraft,
-                'initialCalculation' => $savedDraft === null ? null : $recipeWorkbenchService->previewSoapCalculation([
-                    'oil_weight' => $savedDraft['oilWeight'] ?? 0,
-                    'lye_type' => $savedDraft['lyeType'] ?? 'naoh',
-                    'koh_purity_percentage' => $savedDraft['kohPurity'] ?? 90,
-                    'dual_lye_koh_percentage' => $savedDraft['dualKohPercentage'] ?? 40,
-                    'water_mode' => $savedDraft['waterMode'] ?? 'percent_of_oils',
-                    'water_value' => $savedDraft['waterValue'] ?? 38,
-                    'superfat' => $savedDraft['superfat'] ?? 5,
-                    'phase_items' => $savedDraft['phaseItems'] ?? [],
-                ]),
+                'savedSnapshot' => $savedSnapshot,
                 'versionOptions' => $this->currentRecipe() instanceof Recipe
                     ? $recipeWorkbenchService->versionOptions($this->currentRecipe())
                     : [],
@@ -277,49 +360,55 @@ class RecipeWorkbench extends Component
      */
     private function ingredientCatalog(): array
     {
+        $user = $this->currentUser();
+
         return IngredientVersion::query()
             ->with(['ingredient', 'sapProfile', 'fattyAcidEntries.fattyAcid'])
             ->where('is_current', true)
             ->where('is_active', true)
-            ->whereHas('ingredient', function (Builder $query): void {
+            ->whereHas('ingredient', function (Builder $query) use ($user): void {
                 $query->where('is_active', true)
+                    ->accessibleTo($user)
                     ->whereIn('category', [
                         IngredientCategory::CarrierOil->value,
                         IngredientCategory::EssentialOil->value,
+                        IngredientCategory::FragranceOil->value,
                         IngredientCategory::BotanicalExtract->value,
                         IngredientCategory::Co2Extract->value,
+                        IngredientCategory::Clay->value,
+                        IngredientCategory::Glycol->value,
                         IngredientCategory::Colorant->value,
                         IngredientCategory::Preservative->value,
                         IngredientCategory::Additive->value,
                     ]);
             })
             ->get()
-            ->filter(function (IngredientVersion $version): bool {
-                $category = $version->ingredient?->category;
-
-                if ($category === IngredientCategory::CarrierOil) {
-                    return $version->ingredient?->isAvailableForInitialSoapCalculation() ?? false;
-                }
-
-                return $category !== null;
-            })
+            ->filter(fn (IngredientVersion $version): bool => $version->ingredient !== null && $version->ingredient->availableWorkbenchPhases() !== [])
             ->map(function (IngredientVersion $version): array {
-                $category = $version->ingredient?->category;
+                $ingredient = $version->ingredient;
+                $category = $ingredient?->category;
                 $sapProfile = $version->sapProfile;
+                $availablePhases = $ingredient?->availableWorkbenchPhases() ?? [];
 
                 return [
                     'id' => $version->id,
                     'ingredient_id' => $version->ingredient_id,
                     'name' => $version->display_name,
                     'inci_name' => $version->inci_name,
+                    'image_url' => $ingredient?->featuredImageUrl(),
                     'category' => $category?->value,
                     'category_label' => $category?->getLabel(),
                     'soap_inci_naoh_name' => $version->soap_inci_naoh_name,
                     'soap_inci_koh_name' => $version->soap_inci_koh_name,
-                    'needs_compliance' => $category !== null && in_array($category->value, IngredientCategory::aromaticValues(), true),
+                    'needs_compliance' => $ingredient?->requiresAromaticCompliance() ?? false,
                     'koh_sap_value' => $sapProfile?->koh_sap_value === null ? null : (float) $sapProfile->koh_sap_value,
                     'naoh_sap_value' => $sapProfile?->naoh_sap_value,
                     'fatty_acid_profile' => $version->normalizedFattyAcidProfile(),
+                    'available_phases' => $availablePhases,
+                    'default_phase' => $ingredient?->preferredWorkbenchPhase(),
+                    'can_add_to_saponified_oils' => in_array('saponified_oils', $availablePhases, true),
+                    'can_add_to_additives' => in_array('additives', $availablePhases, true),
+                    'can_add_to_fragrance' => in_array('fragrance', $availablePhases, true),
                 ];
             })
             ->sortBy('name')
@@ -364,7 +453,31 @@ class RecipeWorkbench extends Component
         return [
             'id' => $recipe->id,
             'name' => $recipe->name,
+            'description' => $recipe->description,
+            'featured_image_url' => $recipe->featuredImageUrl(),
         ];
+    }
+
+    /**
+     * @return array{description:?string, featured_image_path:?string}
+     */
+    private function recipeContentFormState(?Recipe $recipe = null): array
+    {
+        $recipe ??= $this->currentRecipe();
+
+        return [
+            'description' => $recipe?->description,
+            'featured_image_path' => $recipe?->featured_image_path,
+        ];
+    }
+
+    private function refreshRecipeContentForm(?Recipe $recipe = null): void
+    {
+        $recipe ??= $this->currentRecipe();
+
+        $this->form
+            ->model($recipe ?? Recipe::class)
+            ->fill($this->recipeContentFormState($recipe));
     }
 
     private function currentUser(): ?User

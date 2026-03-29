@@ -20,8 +20,8 @@ class IfraCertificateForm
     {
         return $schema
             ->components([
-                Section::make('Certificate Identity')
-                    ->description('Store the source IFRA document against the exact aromatic ingredient version so compliance runs stay auditable.')
+                Section::make('Current IFRA Guidance')
+                    ->description('Enter the current IFRA amendment and category limits for the aromatic ingredient version. Reference files can stay outside the normal admin workflow.')
                     ->icon(Heroicon::DocumentCheck)
                     ->schema([
                         Select::make('ingredient_version_id')
@@ -37,30 +37,25 @@ class IfraCertificateForm
                             ->preload()
                             ->required(),
                         TextInput::make('certificate_name')
+                            ->label('Reference label')
+                            ->helperText('Use a short human label for the current IFRA set, such as the supplier name or material reference.')
                             ->required()
-                            ->maxLength(255),
-                        TextInput::make('document_name')
-                            ->maxLength(255),
-                        TextInput::make('document_path')
-                            ->maxLength(255),
-                        TextInput::make('issuer')
-                            ->maxLength(255),
-                        TextInput::make('reference_code')
                             ->maxLength(255),
                         TextInput::make('ifra_amendment')
                             ->label('IFRA amendment')
+                            ->helperText('Keep the current amendment reference here, for example 51.')
                             ->maxLength(255),
                         DatePicker::make('published_at'),
                         DatePicker::make('valid_from'),
                         Toggle::make('is_current')
-                            ->label('Current certificate')
+                            ->label('Current set')
                             ->default(true),
                     ])
                     ->columns([
                         'md' => 2,
                     ]),
                 Section::make('Category Limits')
-                    ->description('Each certificate carries percentage limits by IFRA product category, which the formulation will evaluate against its selected product context.')
+                    ->description('Capture the indicative limits by IFRA category so the formulation can compare aromatic usage against the current supplier guidance.')
                     ->icon(Heroicon::Squares2x2)
                     ->schema([
                         Repeater::make('limits')
@@ -86,7 +81,25 @@ class IfraCertificateForm
                             ->defaultItems(0)
                             ->columnSpanFull(),
                     ]),
-                Section::make('Source Notes')
+                Section::make('Optional Reference Metadata')
+                    ->description('Keep optional issuer and file references here when they help auditability, without forcing document uploads into the daily flow.')
+                    ->collapsible()
+                    ->collapsed()
+                    ->schema([
+                        TextInput::make('document_name')
+                            ->maxLength(255),
+                        TextInput::make('document_path')
+                            ->maxLength(255),
+                        TextInput::make('issuer')
+                            ->maxLength(255),
+                        TextInput::make('reference_code')
+                            ->maxLength(255),
+                    ])
+                    ->columns([
+                        'md' => 2,
+                    ]),
+                Section::make('Notes')
+                    ->description('Use notes for supplier nuances or hand-entered clarifications. Final validation still belongs with the responsible toxicologist or compliance reviewer.')
                     ->schema([
                         Textarea::make('source_notes')
                             ->rows(4)

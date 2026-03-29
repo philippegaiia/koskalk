@@ -24,11 +24,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name',
     'batch_size',
     'batch_unit',
+    'manufacturing_mode',
+    'exposure_mode',
+    'regulatory_regime',
     'ifra_product_category_id',
     'notes',
     'water_settings',
     'calculation_context',
     'saved_at',
+    'catalog_reviewed_at',
     'archived_at',
 ])]
 class RecipeVersion extends Model
@@ -73,6 +77,7 @@ class RecipeVersion extends Model
             'water_settings' => 'array',
             'calculation_context' => 'array',
             'saved_at' => 'datetime',
+            'catalog_reviewed_at' => 'datetime',
             'archived_at' => 'datetime',
         ];
     }

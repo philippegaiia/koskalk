@@ -36,6 +36,9 @@ class RecipesIndex extends Component
                 ->count(),
             'additives' => Ingredient::query()
                 ->whereIn('category', [
+                    IngredientCategory::BotanicalExtract->value,
+                    IngredientCategory::Clay->value,
+                    IngredientCategory::Glycol->value,
                     IngredientCategory::Additive->value,
                     IngredientCategory::Colorant->value,
                     IngredientCategory::Preservative->value,

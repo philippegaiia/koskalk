@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
 use App\OwnerType;
+use App\Services\MediaStorage;
 use App\Visibility;
 use Database\Factories\RecipeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'workspace_id',
     'visibility',
     'name',
+    'description',
+    'featured_image_path',
     'slug',
     'archived_at',
 ])]
@@ -49,6 +52,11 @@ class Recipe extends Model
     public function currentDraftVersion(): HasOne
     {
         return $this->hasOne(RecipeVersion::class)->where('is_draft', true);
+    }
+
+    public function featuredImageUrl(): ?string
+    {
+        return MediaStorage::publicUrl($this->featured_image_path);
     }
 
     protected function casts(): array

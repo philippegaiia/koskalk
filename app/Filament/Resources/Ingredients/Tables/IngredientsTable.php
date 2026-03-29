@@ -20,18 +20,20 @@ class IngredientsTable
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('currentVersion'))
             ->columns([
                 TextColumn::make('currentVersion.display_name')
-                    ->label('Display name')
+                    ->label(__('Ingredient'))
+                    ->searchable()
+                    ->sortable()
                     ->description(fn (Ingredient $record): ?string => $record->currentVersion?->inci_name)
                     ->wrap(),
                 TextColumn::make('source_key')
-                    ->label('Source key')
+                    ->label(__('Code'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('category')
                     ->badge()
                     ->sortable(),
                 IconColumn::make('is_potentially_saponifiable')
-                    ->label('Soap calc')
+                    ->label('Soap oil')
                     ->boolean(),
                 IconColumn::make('requires_admin_review')
                     ->label('Review')
@@ -46,9 +48,10 @@ class IngredientsTable
             ])
             ->filters([
                 SelectFilter::make('category')
+                    ->multiple()
                     ->options(IngredientCategory::class),
                 TernaryFilter::make('is_potentially_saponifiable')
-                    ->label('Potentially saponifiable'),
+                    ->label('Trusted for soap saponification'),
                 TernaryFilter::make('requires_admin_review')
                     ->label('Requires review'),
                 TernaryFilter::make('is_active')

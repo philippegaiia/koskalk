@@ -5,6 +5,7 @@ namespace App\Filament\Resources\IfraCertificates\Tables;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -16,12 +17,12 @@ class IfraCertificatesTable
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['ingredientVersion.ingredient'])->withCount('limits'))
             ->columns([
                 TextColumn::make('certificate_name')
-                    ->label('Certificate')
+                    ->label('Current IFRA set')
                     ->searchable()
                     ->sortable()
                     ->wrap(),
                 TextColumn::make('ingredientVersion.display_name')
-                    ->label('Ingredient version')
+                    ->label('Ingredient')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('ifra_amendment')
@@ -39,12 +40,16 @@ class IfraCertificatesTable
                     ->date()
                     ->sortable(),
             ])
+            ->filters([
+                TernaryFilter::make('is_current')
+                    ->label('Current'),
+            ])
             ->recordActions([
                 EditAction::make(),
             ])
             ->defaultSort('published_at', 'desc')
-            ->emptyStateHeading('No IFRA certificates yet')
-            ->emptyStateDescription('Add certificate versions for aromatic materials and capture their per-category limits here.')
+            ->emptyStateHeading('No IFRA sets yet')
+            ->emptyStateDescription('Add the current IFRA amendment and category limits for aromatic materials here. Reference files can stay external.')
             ->paginated([25, 50, 100]);
     }
 }

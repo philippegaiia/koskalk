@@ -18,6 +18,8 @@ class IngredientSapProfileResource extends Resource
 {
     protected static ?string $model = IngredientSapProfile::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::Beaker;
 
     protected static ?int $navigationSort = 30;

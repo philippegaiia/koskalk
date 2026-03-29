@@ -31,12 +31,12 @@ class IfraCertificateResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return 'IFRA certificate';
+        return 'IFRA set';
     }
 
     public static function getPluralModelLabel(): string
     {
-        return 'IFRA certificates';
+        return 'IFRA sets';
     }
 
     public static function form(Schema $schema): Schema

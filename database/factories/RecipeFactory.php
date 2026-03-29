@@ -30,6 +30,8 @@ class RecipeFactory extends Factory
             'workspace_id' => null,
             'visibility' => Visibility::Private,
             'name' => $name,
+            'description' => null,
+            'featured_image_path' => null,
             'slug' => Str::slug($name),
             'archived_at' => null,
         ];

@@ -1,5 +1,8 @@
 <?php
 
+use App\IngredientCategory;
+use App\Models\Ingredient;
+use App\Models\IngredientVersion;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -95,4 +98,42 @@ it('does not show recipes from another user on the dashboard', function () {
         ->assertSuccessful()
         ->assertSee('Visible Dashboard Formula')
         ->assertDontSee('Hidden Dashboard Formula');
+});
+
+it('shows the current users personal ingredient summary on the dashboard', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    $visibleIngredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Clay,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'source_file' => 'user',
+        'source_key' => 'USR-CLAY',
+    ]);
+
+    IngredientVersion::factory()->for($visibleIngredient)->create([
+        'display_name' => 'French Green Clay',
+    ]);
+
+    $hiddenIngredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Glycol,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+        'visibility' => Visibility::Private,
+        'source_file' => 'user',
+        'source_key' => 'USR-GLY',
+    ]);
+
+    IngredientVersion::factory()->for($hiddenIngredient)->create([
+        'display_name' => 'Propylene Glycol',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertSuccessful()
+        ->assertSee('French Green Clay')
+        ->assertDontSee('Propylene Glycol')
+        ->assertSee('Browse my ingredients');
 });

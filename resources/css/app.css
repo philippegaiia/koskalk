@@ -1,4 +1,9 @@
 @import 'tailwindcss';
+@custom-variant dark (&:where(.dark, .dark *));
+@import '../../vendor/filament/support/resources/css/index.css';
+@import '../../vendor/filament/schemas/resources/css/index.css';
+@import '../../vendor/filament/actions/resources/css/index.css';
+@import '../../vendor/filament/forms/resources/css/index.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -8,16 +13,45 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
-    --color-surface: oklch(0.978 0.01 84);
-    --color-surface-strong: oklch(0.958 0.015 84);
-    --color-panel: oklch(0.968 0.018 84);
-    --color-panel-strong: oklch(0.944 0.024 84);
-    --color-line: oklch(0.848 0.016 78);
-    --color-line-strong: oklch(0.66 0.03 72);
-    --color-ink: oklch(0.265 0.02 56);
-    --color-ink-strong: oklch(0.18 0.018 54);
-    --color-ink-soft: oklch(0.44 0.02 58);
-    --color-accent: oklch(0.56 0.085 154);
-    --color-accent-soft: oklch(0.93 0.03 87);
-    --color-accent-strong: oklch(0.43 0.09 154);
+
+    --color-surface: oklch(96% .010 82);
+    --color-surface-strong: oklch(26% .030 158);
+    --color-panel: oklch(99% .008 82);
+    --color-panel-strong: oklch(93% .018 80);
+
+    --color-line: oklch(85% .014 78);
+    --color-line-strong: oklch(68% .022 72);
+
+    --color-ink: oklch(28% .016 55);
+    --color-ink-strong: oklch(14% .010 50);
+    --color-ink-soft: oklch(50% .016 58);
+
+    --color-ink-sidebar: oklch(90% .020 158);
+    --color-ink-sidebar-soft: oklch(68% .025 158);
+
+    --color-accent: oklch(46% .100 154);
+    --color-accent-soft: oklch(92% .035 154);
+    --color-accent-strong: oklch(34% .085 154);
+
+    --color-success: oklch(52% .140 154);
+    --color-success-soft: oklch(95% .040 154);
+    --color-success-strong: oklch(35% .120 154);
+    --color-warning: oklch(75% .150 75);
+    --color-warning-soft: oklch(95% .040 75);
+    --color-warning-strong: oklch(55% .130 75);
+    --color-danger: oklch(55% .200 25);
+    --color-danger-soft: oklch(95% .050 25);
+    --color-danger-strong: oklch(45% .180 25);
+}
+
+@layer base {
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+        border-radius: 0.25rem;
+    }
 }

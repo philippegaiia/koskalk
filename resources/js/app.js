@@ -6,6 +6,9 @@ window.recipeWorkbench = (payload) => ({
     formulaName: 'New Soap Formula',
     oilUnit: 'g',
     oilWeight: 1000,
+    manufacturingMode: 'saponify_in_formula',
+    exposureMode: 'rinse_off',
+    regulatoryRegime: 'eu',
     editMode: 'percentage',
     lyeType: 'naoh',
     kohPurity: 90,
@@ -21,10 +24,9 @@ window.recipeWorkbench = (payload) => ({
     versionOptions: payload.versionOptions ?? [],
     selectedComparisonVersionId: payload.versionOptions?.[0]?.id ?? null,
     comparisonMessage: '',
-    backendCalculation: payload.initialCalculation ?? null,
-    baselineCalculation: payload.initialCalculation ?? null,
-    baselineDraft: payload.savedDraft ?? null,
-    baselineFormulaName: payload.savedDraft?.formulaName ?? payload.recipe?.name ?? 'Saved draft',
+    backendCalculation: payload.savedSnapshot?.calculation ?? null,
+    baselineSnapshot: payload.savedSnapshot ?? null,
+    catalogReview: payload.savedSnapshot?.draft?.catalogReview ?? null,
     calculationPreviewTimer: null,
     isPreviewingCalculation: false,
     phaseOrder: payload.phases ?? [],
@@ -38,13 +40,17 @@ window.recipeWorkbench = (payload) => ({
     },
 
     init() {
-        this.applySavedDraft(payload.savedDraft ?? null, { resetBaseline: false });
+        this.applySnapshot(payload.savedSnapshot ?? null);
 
-        if (this.filteredIngredients.length > 0 && this.phaseItems.saponified_oils.length === 0) {
-            this.addIngredient(this.filteredIngredients[0]);
+        if (this.phaseItems.saponified_oils.length === 0) {
+            const defaultOil = this.filteredIngredients.find((ingredient) => ingredient.can_add_to_saponified_oils);
+
+            if (defaultOil) {
+                this.addIngredient(defaultOil, 'saponified_oils');
+            }
         }
 
-        ['oilWeight', 'lyeType', 'kohPurity', 'dualKohPercentage', 'waterMode', 'waterValue', 'superfat', 'selectedIfraProductCategoryId'].forEach((key) => {
+        ['oilWeight', 'manufacturingMode', 'lyeType', 'kohPurity', 'dualKohPercentage', 'waterMode', 'waterValue', 'superfat', 'selectedIfraProductCategoryId'].forEach((key) => {
             this.$watch(key, () => this.scheduleCalculationPreview());
         });
 
@@ -57,6 +63,7 @@ window.recipeWorkbench = (payload) => ({
             { value: 'all', label: 'All' },
             { value: 'carrier_oil', label: 'Carrier Oils' },
             { value: 'essential_oil', label: 'Essential Oils' },
+            { value: 'fragrance_oil', label: 'Fragrance Oils' },
             { value: 'botanical_extract', label: 'Botanical Extracts' },
             { value: 'co2_extract', label: 'CO2 Extracts' },
             { value: 'colorant', label: 'Colorants' },
@@ -76,6 +83,101 @@ window.recipeWorkbench = (payload) => ({
 
             return matchesCategory && matchesSearch;
         });
+    },
+
+    ingredientMonogram(ingredient) {
+        const name = `${ingredient?.name ?? ''}`.trim();
+
+        if (name === '') {
+            return 'IN';
+        }
+
+        const words = name.split(/\s+/).filter(Boolean);
+
+        if (words.length >= 2) {
+            return `${words[0][0] ?? ''}${words[1][0] ?? ''}`.toUpperCase();
+        }
+
+        const compact = name.replace(/[^a-z0-9]/gi, '');
+
+        return (compact.slice(0, 2) || 'IN').toUpperCase();
+    },
+
+    ingredientCategoryCode(ingredient) {
+        const codes = {
+            carrier_oil: 'CA',
+            essential_oil: 'EO',
+            fragrance_oil: 'FO',
+            botanical_extract: 'BE',
+            co2_extract: 'CO2',
+            colorant: 'CL',
+            preservative: 'PR',
+            additive: 'AD',
+        };
+
+        return codes[ingredient?.category] ?? this.ingredientMonogram(ingredient);
+    },
+
+    ingredientHasInspector(ingredient) {
+        return this.ingredientInspectorRows(ingredient).length > 0
+            || this.ingredientFattyAcidRows(ingredient).length > 0;
+    },
+
+    ingredientInspectorRows(ingredient) {
+        const rows = [];
+
+        if (this.number(ingredient?.koh_sap_value) > 0) {
+            rows.push({
+                label: 'KOH SAP',
+                value: this.format(ingredient.koh_sap_value, 3),
+            });
+        }
+
+        if (this.number(ingredient?.naoh_sap_value) > 0) {
+            rows.push({
+                label: 'NaOH SAP',
+                value: this.format(ingredient.naoh_sap_value, 3),
+            });
+        }
+
+        return rows;
+    },
+
+    ingredientFattyAcidRows(ingredient) {
+        return Object.entries(ingredient?.fatty_acid_profile ?? {})
+            .map(([key, value]) => ({
+                key,
+                label: this.fattyAcidLabels()[key] ?? this.humanizeKey(key),
+                value: this.number(value),
+            }))
+            .filter((row) => row.value > 0)
+            .sort((left, right) => right.value - left.value);
+    },
+
+    fattyAcidLabels() {
+        return {
+            caprylic: 'Caprylic',
+            capric: 'Capric',
+            lauric: 'Lauric',
+            myristic: 'Myristic',
+            palmitic: 'Palmitic',
+            palmitoleic: 'Palmitoleic',
+            stearic: 'Stearic',
+            ricinoleic: 'Ricinoleic',
+            oleic: 'Oleic',
+            linoleic: 'Linoleic',
+            linolenic: 'Linolenic',
+            arachidic: 'Arachidic',
+            gondoic: 'Gondoic',
+            behenic: 'Behenic',
+            erucic: 'Erucic',
+        };
+    },
+
+    humanizeKey(value) {
+        return `${value ?? ''}`
+            .replace(/_/g, ' ')
+            .replace(/\b\w/g, (character) => character.toUpperCase());
     },
 
     get oilRows() {
@@ -177,8 +279,13 @@ window.recipeWorkbench = (payload) => ({
         return cards;
     },
 
-    addIngredient(ingredient) {
-        const targetPhase = this.targetPhaseForCategory(ingredient.category);
+    addIngredient(ingredient, requestedPhase = null) {
+        const targetPhase = this.resolveTargetPhase(ingredient, requestedPhase);
+
+        if (!targetPhase) {
+            return;
+        }
+
         const existingRow = this.phaseItems[targetPhase].find((row) => row.ingredient_version_id === ingredient.id);
 
         if (existingRow) {
@@ -202,18 +309,34 @@ window.recipeWorkbench = (payload) => ({
         });
     },
 
-    applySavedDraft(draft, options = {}) {
-        if (!draft) {
+    applySnapshot(snapshot, options = {}) {
+        if (!snapshot?.draft) {
             return;
         }
 
         const { resetBaseline = true } = options;
+
+        this.applyDraft(snapshot.draft);
+        this.backendCalculation = snapshot.calculation ?? null;
+
+        if (resetBaseline) {
+            this.baselineSnapshot = JSON.parse(JSON.stringify(snapshot));
+        }
+    },
+
+    applyDraft(draft) {
+        if (!draft) {
+            return;
+        }
 
         this.recipeId = draft.recipe?.id ?? this.recipeId;
         this.draftVersionId = draft.recipe?.draft_version_id ?? this.draftVersionId;
         this.formulaName = draft.formulaName ?? this.formulaName;
         this.oilUnit = draft.oilUnit ?? this.oilUnit;
         this.oilWeight = this.number(draft.oilWeight ?? this.oilWeight);
+        this.manufacturingMode = ['saponify_in_formula', 'blend_only'].includes(draft.manufacturingMode) ? draft.manufacturingMode : this.manufacturingMode;
+        this.exposureMode = ['rinse_off', 'leave_on'].includes(draft.exposureMode) ? draft.exposureMode : this.exposureMode;
+        this.regulatoryRegime = ['eu'].includes(draft.regulatoryRegime) ? draft.regulatoryRegime : this.regulatoryRegime;
         this.editMode = draft.editMode === 'weight' ? 'weight' : 'percentage';
         this.lyeType = ['naoh', 'koh', 'dual'].includes(draft.lyeType) ? draft.lyeType : this.lyeType;
         this.kohPurity = this.number(draft.kohPurity ?? this.kohPurity);
@@ -227,12 +350,7 @@ window.recipeWorkbench = (payload) => ({
             additives: draft.phaseItems?.additives ?? [],
             fragrance: draft.phaseItems?.fragrance ?? [],
         };
-
-        if (resetBaseline) {
-            this.baselineDraft = JSON.parse(JSON.stringify(draft));
-            this.baselineFormulaName = draft.formulaName ?? this.formulaName;
-            this.scheduleCalculationPreview(true);
-        }
+        this.catalogReview = draft.catalogReview ?? this.catalogReview;
     },
 
     scheduleCalculationPreview(resetBaseline = false) {
@@ -252,10 +370,6 @@ window.recipeWorkbench = (payload) => ({
 
             if (response?.ok) {
                 this.backendCalculation = response.calculation ?? null;
-
-                if (resetBaseline) {
-                    this.baselineCalculation = response.calculation ?? null;
-                }
             }
         } catch (error) {
             this.backendCalculation = null;
@@ -270,6 +384,9 @@ window.recipeWorkbench = (payload) => ({
             name: this.formulaName,
             oil_unit: this.oilUnit,
             oil_weight: this.oilWeight,
+            manufacturing_mode: this.manufacturingMode,
+            exposure_mode: this.exposureMode,
+            regulatory_regime: this.regulatoryRegime,
             editing_mode: this.editMode,
             lye_type: this.lyeType,
             koh_purity_percentage: this.kohPurity,
@@ -325,9 +442,9 @@ window.recipeWorkbench = (payload) => ({
                 return;
             }
 
-            this.baselineDraft = response.draft ?? null;
-            this.baselineCalculation = response.calculation ?? null;
-            this.baselineFormulaName = response.draft?.formulaName ?? 'Saved version';
+            if (response.snapshot) {
+                this.baselineSnapshot = JSON.parse(JSON.stringify(response.snapshot));
+            }
         } catch (error) {
             this.comparisonMessage = 'Comparison version could not be loaded.';
         }
@@ -349,11 +466,10 @@ window.recipeWorkbench = (payload) => ({
                 return;
             }
 
-            if (response.draft) {
-                this.applySavedDraft(response.draft, { resetBaseline: false });
+            if (response.snapshot) {
+                this.applySnapshot(response.snapshot, { resetBaseline: false });
             }
 
-            this.backendCalculation = response.calculation ?? this.backendCalculation;
             this.saveStatus = 'success';
             this.saveMessage = response.message ?? 'Saved version loaded.';
         } catch (error) {
@@ -387,8 +503,8 @@ window.recipeWorkbench = (payload) => ({
             this.saveStatus = 'success';
             this.saveMessage = response.message ?? 'Formula saved.';
 
-            if (response.draft) {
-                this.applySavedDraft(response.draft);
+            if (response.snapshot) {
+                this.applySnapshot(response.snapshot);
             }
 
             if (response.redirect) {
@@ -404,6 +520,24 @@ window.recipeWorkbench = (payload) => ({
 
     removeIngredient(phaseKey, rowId) {
         this.phaseItems[phaseKey] = this.phaseItems[phaseKey].filter((row) => row.id !== rowId);
+    },
+
+    resolveTargetPhase(ingredient, requestedPhase = null) {
+        const availablePhases = Array.isArray(ingredient.available_phases) ? ingredient.available_phases : [];
+
+        if (requestedPhase && availablePhases.includes(requestedPhase)) {
+            return requestedPhase;
+        }
+
+        if (ingredient.default_phase && availablePhases.includes(ingredient.default_phase)) {
+            return ingredient.default_phase;
+        }
+
+        if (availablePhases.length > 0) {
+            return availablePhases[0];
+        }
+
+        return this.targetPhaseForCategory(ingredient.category);
     },
 
     targetPhaseForCategory(category) {
@@ -477,6 +611,18 @@ window.recipeWorkbench = (payload) => ({
         return this.recipeId !== null;
     },
 
+    get needsCatalogReview() {
+        return Boolean(this.catalogReview?.needs_review);
+    },
+
+    get manufacturingModeLabel() {
+        return this.manufacturingMode === 'blend_only' ? 'Blend only' : 'Saponify in formula';
+    },
+
+    get exposureModeLabel() {
+        return this.exposureMode === 'leave_on' ? 'Leave-on' : 'Rinse-off';
+    },
+
     get hasPostReactionRows() {
         return this.additiveRows.length > 0 || this.fragranceRows.length > 0;
     },
@@ -536,6 +682,18 @@ window.recipeWorkbench = (payload) => ({
 
     get hasComparisonBaseline() {
         return this.hasSavedRecipe && this.baselineCalculation !== null;
+    },
+
+    get baselineDraft() {
+        return this.baselineSnapshot?.draft ?? null;
+    },
+
+    get baselineCalculation() {
+        return this.baselineSnapshot?.calculation ?? null;
+    },
+
+    get baselineFormulaName() {
+        return this.baselineDraft?.formulaName ?? payload.recipe?.name ?? 'Saved draft';
     },
 
     comparisonDelta(current, baseline) {
@@ -661,23 +819,7 @@ window.recipeWorkbench = (payload) => ({
 
     get fattyAcidProfileRows() {
         const profile = this.backendCalculation?.properties?.fatty_acid_profile ?? this.averageFattyAcidProfile();
-        const labels = {
-            caprylic: 'Caprylic',
-            capric: 'Capric',
-            lauric: 'Lauric',
-            myristic: 'Myristic',
-            palmitic: 'Palmitic',
-            palmitoleic: 'Palmitoleic',
-            stearic: 'Stearic',
-            ricinoleic: 'Ricinoleic',
-            oleic: 'Oleic',
-            linoleic: 'Linoleic',
-            linolenic: 'Linolenic',
-            arachidic: 'Arachidic',
-            gondoic: 'Gondoic',
-            behenic: 'Behenic',
-            erucic: 'Erucic',
-        };
+        const labels = this.fattyAcidLabels();
 
         return Object.entries(labels)
             .map(([key, label]) => ({

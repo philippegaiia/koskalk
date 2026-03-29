@@ -26,6 +26,8 @@ class IngredientVersionFactory extends Factory
             'display_name_en' => fake()->words(2, true),
             'display_name_fr' => fake()->words(2, true),
             'inci_name' => fake()->words(3, true),
+            'supplier_name' => fake()->company(),
+            'supplier_reference' => fake()->optional()->bothify('REF-###'),
             'soap_inci_naoh_name' => null,
             'soap_inci_koh_name' => null,
             'cas_number' => fake()->optional()->numerify('####-##-##'),

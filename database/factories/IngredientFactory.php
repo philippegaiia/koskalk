@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\IngredientCategory;
 use App\Models\Ingredient;
+use App\Visibility;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -23,10 +24,16 @@ class IngredientFactory extends Factory
             'source_key' => fake()->unique()->bothify('ING###'),
             'source_code_prefix' => 'ING',
             'category' => IngredientCategory::Additive,
+            'owner_type' => null,
+            'owner_id' => null,
+            'workspace_id' => null,
+            'visibility' => Visibility::Public,
             'is_potentially_saponifiable' => false,
             'requires_admin_review' => true,
             'is_active' => true,
             'source_data' => null,
+            'info_markdown' => null,
+            'featured_image_path' => null,
         ];
     }
 }

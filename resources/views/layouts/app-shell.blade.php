@@ -2,33 +2,61 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="viewport" content="width=device-width, initial-scale=1">
 
         <title>@yield('title', config('app.name', 'Koskalk'))</title>
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700" rel="stylesheet" />
+        <style>
+            [x-cloak] {
+                display: none !important;
+            }
 
+            :root {
+                color-scheme: light;
+            }
+        </style>
+
+        <script>
+            document.documentElement.classList.remove('dark')
+            document.documentElement.style.colorScheme = 'light'
+        </script>
+
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&display=swap" rel="stylesheet" />
+
+        @filamentStyles
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @livewireStyles
     </head>
-    <body class="min-h-screen bg-[var(--color-surface-strong)] text-[var(--color-ink)] antialiased">
-        <div class="grid min-h-screen lg:grid-cols-[17rem_minmax(0,1fr)]">
-            <aside class="border-b border-[var(--color-line)] bg-[var(--color-panel-strong)] px-5 py-6 lg:border-r lg:border-b-0">
-                <div class="flex items-center gap-3">
-                    <span class="grid size-10 place-items-center rounded-full border border-[var(--color-line-strong)] bg-white text-xs font-semibold tracking-[0.22em] uppercase text-[var(--color-ink-strong)]">KK</span>
-                    <div>
-                        <p class="text-xs font-semibold tracking-[0.2em] text-[var(--color-ink-soft)] uppercase">Workspace</p>
-                        <h1 class="text-base font-semibold text-[var(--color-ink-strong)]">Koskalk</h1>
+    <body x-data="{ mobileNavOpen: false }" class="min-h-screen bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
+        <div class="relative min-h-screen lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
+            <div x-cloak x-show="mobileNavOpen" x-transition.opacity class="fixed inset-0 z-40 bg-black/35 lg:hidden" @click="mobileNavOpen = false"></div>
+
+            <aside :class="mobileNavOpen ? 'translate-x-0' : ''" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-[var(--color-line)] bg-[var(--color-panel-strong)] px-5 py-6 transition duration-300 lg:static lg:z-auto lg:w-auto lg:translate-x-0 lg:border-b-0">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <span class="grid size-10 place-items-center rounded-full border border-[var(--color-line-strong)] bg-white text-xs font-semibold tracking-[0.22em] uppercase text-[var(--color-ink-strong)]">KK</span>
+                        <div>
+                            <p class="text-xs font-semibold tracking-[0.2em] text-[var(--color-ink-soft)] uppercase">Workspace</p>
+                            <h1 class="text-base font-semibold text-[var(--color-ink-strong)]">Koskalk</h1>
+                        </div>
                     </div>
+
+                    <button type="button" @click="mobileNavOpen = false" class="grid size-10 place-items-center rounded-2xl border border-[var(--color-line)] bg-white text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)] lg:hidden">
+                        <span class="sr-only">Close menu</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18 18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
 
                 <nav class="mt-8 grid gap-2 text-sm">
-                    <a href="{{ route('dashboard') }}" wire:navigate class="{{ request()->routeIs('dashboard') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Dashboard</a>
-                    <a href="{{ route('recipes.index') }}" wire:navigate class="{{ request()->routeIs('recipes.*') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Recipes</a>
-                    <a href="#" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Ingredients</a>
-                    <a href="#" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Compliance</a>
-                    <a href="/admin" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Admin</a>
+                    <a href="{{ route('dashboard') }}" wire:navigate @click="mobileNavOpen = false" class="{{ request()->routeIs('dashboard') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Dashboard</a>
+                    <a href="{{ route('recipes.index') }}" wire:navigate @click="mobileNavOpen = false" class="{{ request()->routeIs('recipes.*') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Recipes</a>
+                    <a href="{{ route('ingredients.index') }}" wire:navigate @click="mobileNavOpen = false" class="{{ request()->routeIs('ingredients.*') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Ingredients</a>
+                    <a href="#" @click="mobileNavOpen = false" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Compliance</a>
+                    <a href="/admin" @click="mobileNavOpen = false" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Admin</a>
                 </nav>
 
                 <div class="mt-8 rounded-3xl border border-[var(--color-line)] bg-white p-4">
@@ -40,12 +68,20 @@
             <div class="flex min-h-screen flex-col">
                 <header class="border-b border-[var(--color-line)] bg-white/92 px-6 py-4 backdrop-blur lg:px-8">
                     <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Public app shell</p>
+                        <div class="flex items-center gap-3">
+                            <button type="button" @click="mobileNavOpen = true" class="grid size-11 place-items-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-strong)] transition hover:bg-white lg:hidden">
+                                <span class="sr-only">Open menu</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 7h16M4 12h16M4 17h16" />
+                                </svg>
+                            </button>
+
+                            <div>
                             <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">@yield('page_heading', 'Dashboard')</h2>
                         </div>
+                        </div>
 
-                        <a href="{{ route('home') }}" class="rounded-full border border-[var(--color-line-strong)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">Back To Home</a>
+                        <a href="{{ route('home') }}" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Home</a>
                     </div>
                 </header>
 
@@ -55,6 +91,6 @@
             </div>
         </div>
 
-        @livewireScripts
+        @filamentScripts
     </body>
 </html>

@@ -1,4 +1,4 @@
-<div class="space-y-8">
+<div class="mx-auto max-w-[90rem] xl:max-w-[90rem] space-y-8">
     <section class="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_22rem]">
         <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -10,7 +10,7 @@
                     </p>
                 </div>
 
-                <a href="{{ route('recipes.create') }}" wire:navigate class="inline-flex shrink-0 rounded-full bg-[var(--color-ink-strong)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
+                <a href="{{ route('recipes.create') }}" wire:navigate class="inline-flex shrink-0 rounded-full bg-[var(--color-accent-strong)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
                     Create soap formula
                 </a>
             </div>
@@ -83,12 +83,18 @@
             <div class="grid gap-4 xl:grid-cols-2">
                 @foreach ($recipes as $recipe)
                     <article class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                        @if ($recipe->featuredImageUrl())
+                            <div class="mb-4 overflow-hidden rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)]">
+                                <img src="{{ $recipe->featuredImageUrl() }}" alt="{{ $recipe->name }}" class="h-44 w-full object-cover" />
+                            </div>
+                        @endif
+
                         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <h4 class="truncate text-xl font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
                                     @if ($recipe->currentDraftVersion)
-                                        <span class="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">Draft</span>
+                                        <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Draft</span>
                                     @endif
                                     @if ($recipe->published_versions_count > 0)
                                         <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
@@ -123,6 +129,12 @@
                                 <p class="mt-2 text-sm font-medium text-[var(--color-ink-strong)]">{{ $recipe->name }}</p>
                             </div>
                         </div>
+
+                        @if ($recipe->description)
+                            <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+                                {{ \Illuminate\Support\Str::limit(strip_tags($recipe->description), 220) }}
+                            </div>
+                        @endif
                     </article>
                 @endforeach
             </div>

@@ -4,10 +4,10 @@ namespace App\Filament\Resources\IngredientSapProfiles\Schemas;
 
 use App\SoapFattyAcid;
 use App\SoapSap;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -38,13 +38,9 @@ class IngredientSapProfileForm
                                 ? null
                                 : SoapSap::normalizeKohSapInput((float) $state))
                             ->helperText('You can enter professional-style KOH SAP like 245 or decimal-style 0.245. NaOH SAP is derived automatically.'),
-                        Placeholder::make('naoh_sap_value')
+                        TextEntry::make('naoh_sap_value')
                             ->label('Derived NaOH SAP')
-                            ->content(fn (Get $get, $record): ?string => ($get('koh_sap_value') === null || $get('koh_sap_value') === '')
-                                ? ($record?->naoh_sap_value === null
-                                    ? null
-                                    : number_format((float) $record->naoh_sap_value, 6, '.', ''))
-                                : number_format(SoapSap::deriveNaohFromKoh((float) $get('koh_sap_value')), 6, '.', '')),
+                            ->state(fn (Get $get, $record): ?string => blank($get('koh_sap_value')) ? ($record?->naoh_sap_value === null ? null : number_format((float) $record->naoh_sap_value, 6, '.', '')) : number_format(SoapSap::deriveNaohFromKoh((float) $get('koh_sap_value')), 6, '.', '')),
                     ])
                     ->columns([
                         'md' => 3,
@@ -53,9 +49,9 @@ class IngredientSapProfileForm
                     ->description('These old core fatty-acid columns remain only as fallback data. Prefer editing the normalized fatty-acid entries on the ingredient version whenever possible.')
                     ->icon(Heroicon::ChartPie)
                     ->schema([
-                        Placeholder::make('legacy_fatty_acid_hint')
+                        TextEntry::make('legacy_fatty_acid_hint')
                             ->hiddenLabel()
-                            ->content('If normalized fatty-acid rows exist on the ingredient version, Koskalk will use those first and ignore these legacy columns.'),
+                            ->state('If normalized fatty-acid rows exist on the ingredient version, Koskalk will use those first and ignore these legacy columns.'),
                         ...collect(SoapFattyAcid::coreSet())
                             ->map(fn (SoapFattyAcid $fattyAcid): TextInput => TextInput::make($fattyAcid->value)
                                 ->label($fattyAcid->getLabel())

@@ -18,6 +18,8 @@ class IngredientVersionResource extends Resource
 {
     protected static ?string $model = IngredientVersion::class;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $recordTitleAttribute = 'display_name';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ClipboardDocumentList;

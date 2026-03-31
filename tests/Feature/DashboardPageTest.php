@@ -2,7 +2,6 @@
 
 use App\IngredientCategory;
 use App\Models\Ingredient;
-use App\Models\IngredientVersion;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -106,6 +105,7 @@ it('shows the current users personal ingredient summary on the dashboard', funct
 
     $visibleIngredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Clay,
+        'display_name' => 'French Green Clay',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
@@ -113,21 +113,14 @@ it('shows the current users personal ingredient summary on the dashboard', funct
         'source_key' => 'USR-CLAY',
     ]);
 
-    IngredientVersion::factory()->for($visibleIngredient)->create([
-        'display_name' => 'French Green Clay',
-    ]);
-
     $hiddenIngredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Glycol,
+        'display_name' => 'Propylene Glycol',
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
         'source_file' => 'user',
         'source_key' => 'USR-GLY',
-    ]);
-
-    IngredientVersion::factory()->for($hiddenIngredient)->create([
-        'display_name' => 'Propylene Glycol',
     ]);
 
     $this->actingAs($user)

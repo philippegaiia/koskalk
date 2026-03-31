@@ -2,7 +2,6 @@
 
 use App\IngredientCategory;
 use App\Models\Ingredient;
-use App\Models\IngredientVersion;
 use App\Models\User;
 use App\OwnerType;
 use App\Visibility;
@@ -16,6 +15,8 @@ it('renders the public ingredients index with only the current users private ing
 
     $ownedIngredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Additive,
+        'display_name' => 'My Glycerin',
+        'inci_name' => 'GLYCERIN',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
@@ -23,23 +24,15 @@ it('renders the public ingredients index with only the current users private ing
         'source_key' => 'USR-OWNED',
     ]);
 
-    IngredientVersion::factory()->for($ownedIngredient)->create([
-        'display_name' => 'My Glycerin',
-        'inci_name' => 'GLYCERIN',
-    ]);
-
     $hiddenIngredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Additive,
+        'display_name' => 'Hidden Glycerin',
+        'inci_name' => 'GLYCERIN',
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
         'source_file' => 'user',
         'source_key' => 'USR-HIDDEN',
-    ]);
-
-    IngredientVersion::factory()->for($hiddenIngredient)->create([
-        'display_name' => 'Hidden Glycerin',
-        'inci_name' => 'GLYCERIN',
     ]);
 
     $this->actingAs($user)
@@ -56,15 +49,12 @@ it('does not allow editing another users private ingredient', function () {
 
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Additive,
+        'display_name' => 'Other User Ingredient',
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
         'source_file' => 'user',
         'source_key' => 'USR-OTHER',
-    ]);
-
-    IngredientVersion::factory()->for($ingredient)->create([
-        'display_name' => 'Other User Ingredient',
     ]);
 
     $this->actingAs($user)

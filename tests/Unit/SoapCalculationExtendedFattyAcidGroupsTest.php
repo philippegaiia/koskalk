@@ -22,9 +22,13 @@ it('derives grouped fatty acid buckets including extended acids', function () {
                 'palmitoleic' => 2,
                 'gondoic' => 2,
                 'erucic' => 1,
+                'nervonic' => 2,
                 'linoleic' => 10,
                 'linolenic' => 2,
+                'gamma_linolenic' => 1,
+                'punicic' => 1,
                 'ricinoleic' => 6,
+                'lignoceric' => 1,
             ],
         ],
     ], [
@@ -34,15 +38,15 @@ it('derives grouped fatty acid buckets including extended acids', function () {
     expect($result['properties']['fatty_acid_groups'])
         ->toBe([
             'vs' => 19.0,
-            'hs' => 18.0,
-            'mu' => 45.0,
-            'pu' => 12.0,
+            'hs' => 19.0,
+            'mu' => 47.0,
+            'pu' => 14.0,
             'sp' => 6.0,
-            'sat' => 37.0,
-            'unsat' => 63.0,
+            'sat' => 38.0,
+            'unsat' => 67.0,
         ])
-        ->and($result['properties']['superfat_effects']['base_cleansing_potential'])->toBe(28.9)
-        ->and($result['properties']['superfat_effects']['superfat_buffer'])->toBe(7.424)
-        ->and($result['properties']['superfat_effects']['effective_cleansing'])->toBe(21.476)
-        ->and($result['properties']['superfat_effects']['dos_risk_modifier'])->toBe(0.96);
+        ->and($result['properties']['superfat_effects']['base_cleansing_potential'])->toBe(28.8)
+        ->and($result['properties']['superfat_effects']['superfat_buffer'])->toBe(7.408)
+        ->and($result['properties']['superfat_effects']['effective_cleansing'])->toBe(21.392)
+        ->and($result['properties']['superfat_effects']['dos_risk_modifier'])->toBe(1.12);
 });

@@ -2,11 +2,14 @@
 
 use App\IngredientCategory;
 use App\Models\Allergen;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
-use App\Models\IngredientVersion;
+use App\Models\IngredientFunction;
 use App\Models\ProductFamily;
 use Database\Seeders\AllergenCatalogSeeder;
+use Database\Seeders\IfraProductCategorySeeder;
 use Database\Seeders\IngredientCatalogSeeder;
+use Database\Seeders\IngredientFunctionSeeder;
 use Database\Seeders\ProductFamilySeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -53,17 +56,15 @@ it('seeds the initial catalog from both csv files', function () {
 
     expect(ProductFamily::query()->where('slug', 'soap')->exists())->toBeTrue()
         ->and(Allergen::query()->count())->toBe(2)
-        ->and(Ingredient::query()->count())->toBe(2)
-        ->and(IngredientVersion::query()->count())->toBe(2);
+        ->and(Ingredient::query()->count())->toBe(2);
 
-    $oliveOilVersion = IngredientVersion::query()->where('source_key', 'OB1')->firstOrFail();
+    $oliveOil = Ingredient::query()->where('source_key', 'OB1')->firstOrFail();
 
-    expect($oliveOilVersion->display_name)->toBe('Olive oil virgin')
-        ->and($oliveOilVersion->display_name_fr)->toBe("Huile d'olive vierge")
-        ->and($oliveOilVersion->display_name_en)->toBe('Olive oil virgin')
-        ->and($oliveOilVersion->inci_name)->toBe('Olea europaea fruit oil')
-        ->and($oliveOilVersion->soap_inci_naoh_name)->toBe('Sodium olivate')
-        ->and($oliveOilVersion->soap_inci_koh_name)->toBe('Potassium olivate');
+    expect($oliveOil->display_name)->toBe('Olive oil virgin')
+        ->and($oliveOil->display_name_en)->toBe('Olive oil virgin')
+        ->and($oliveOil->inci_name)->toBe('Olea europaea fruit oil')
+        ->and($oliveOil->soap_inci_naoh_name)->toBe('Sodium olivate')
+        ->and($oliveOil->soap_inci_koh_name)->toBe('Potassium olivate');
 });
 
 it('updates existing ingredient rows without duplicating them on reseed', function () {
@@ -95,8 +96,7 @@ it('updates existing ingredient rows without duplicating them on reseed', functi
     $this->seed(IngredientCatalogSeeder::class);
 
     expect(Ingredient::query()->count())->toBe(1)
-        ->and(IngredientVersion::query()->count())->toBe(1)
-        ->and(IngredientVersion::query()->firstOrFail()->price_eur)->toBe('3.10');
+        ->and(Ingredient::query()->firstOrFail()->price_eur)->toBe('3.10');
 });
 
 it('classifies imported ingredients by code prefix and does not assume soap eligibility without soap names', function () {
@@ -191,6 +191,23 @@ it('preserves multi-value cas strings and keeps allergen imports out of ingredie
     expect(Allergen::query()->count())->toBe(1)
         ->and($allergen->cas_number)->toBe('104-46-1 / 4180-23-8')
         ->and(Ingredient::query()->count())->toBe(0);
+});
+
+it('seeds official ingredient functions and ifra product categories', function () {
+    $this->seed([
+        IngredientFunctionSeeder::class,
+        IfraProductCategorySeeder::class,
+    ]);
+
+    $emollient = IngredientFunction::query()->where('key', 'emollient')->firstOrFail();
+    $category9 = IfraProductCategory::query()->where('code', '9')->firstOrFail();
+
+    expect(IngredientFunction::query()->count())->toBeGreaterThan(20)
+        ->and($emollient->name)->toBe('Emollient')
+        ->and($emollient->description)->toContain('Softens')
+        ->and(IfraProductCategory::query()->count())->toBe(18)
+        ->and($category9->short_name)->toBe('Soap / shower gel / rinse-off')
+        ->and($category9->description)->toContain('primarily rinse-off');
 });
 
 function writeCatalogFixtures(string $directory, array $allergenRows, array $ingredientRows): array

@@ -267,7 +267,7 @@ class SoapCalculationService
             'lather_stability' => $this->roundValue(max(0.0, min(100.0, (1.00 * $sp) + (0.68 * $hs) + (0.28 * $vs)))),
             'conditioning_feel' => $this->roundValue(max(0.0, min(100.0, (0.35 * $mu) + (0.15 * $pu) + (0.15 * $sp) - (0.45 * $cleansingStrength) + 35))),
             'dos_risk' => $this->roundValue(max(0.0, min(100.0, (1.35 * $pu)))),
-            'slime_risk' => $this->roundValue(max(0.0, min(100.0, (0.72 * $mu) - (0.42 * $vs) - (0.36 * $hs) + (($mu > 65 && $vs < 12 && $hs < 20) ? 8 : 0)))), 
+            'slime_risk' => $this->roundValue(max(0.0, min(100.0, (0.72 * $mu) - (0.42 * $vs) - (0.36 * $hs) + (($mu > 65 && $vs < 12 && $hs < 20) ? 8 : 0)))),
             'cure_speed' => $this->roundValue(max(0.0, min(100.0, (0.75 * $vs) + (0.80 * $hs) - (0.52 * $mu) + 20))),
             'iodine' => $this->roundValue($iodine),
             'ins' => $this->roundValue($ins),
@@ -288,18 +288,22 @@ class SoapCalculationService
         $stearic = $fattyAcidProfile['stearic'] ?? 0.0;
         $arachidic = $fattyAcidProfile['arachidic'] ?? 0.0;
         $behenic = $fattyAcidProfile['behenic'] ?? 0.0;
+        $lignoceric = $fattyAcidProfile['lignoceric'] ?? 0.0;
         $oleic = $fattyAcidProfile['oleic'] ?? 0.0;
         $palmitoleic = $fattyAcidProfile['palmitoleic'] ?? 0.0;
         $gondoic = $fattyAcidProfile['gondoic'] ?? 0.0;
         $erucic = $fattyAcidProfile['erucic'] ?? 0.0;
+        $nervonic = $fattyAcidProfile['nervonic'] ?? 0.0;
         $linoleic = $fattyAcidProfile['linoleic'] ?? 0.0;
         $linolenic = $fattyAcidProfile['linolenic'] ?? 0.0;
+        $gammaLinolenic = $fattyAcidProfile['gamma_linolenic'] ?? 0.0;
+        $punicic = $fattyAcidProfile['punicic'] ?? 0.0;
         $ricinoleic = $fattyAcidProfile['ricinoleic'] ?? 0.0;
 
         $vs = $caprylic + $capric + $lauric + $myristic;
-        $hs = $palmitic + $stearic + $arachidic + $behenic;
-        $mu = $oleic + $palmitoleic + $gondoic + $erucic;
-        $pu = $linoleic + $linolenic;
+        $hs = $palmitic + $stearic + $arachidic + $behenic + $lignoceric;
+        $mu = $oleic + $palmitoleic + $gondoic + $erucic + $nervonic;
+        $pu = $linoleic + $linolenic + $gammaLinolenic + $punicic;
         $sp = $ricinoleic;
 
         return [

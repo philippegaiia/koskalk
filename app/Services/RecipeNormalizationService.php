@@ -12,7 +12,6 @@ class RecipeNormalizationService
      *     name?: string,
      *     items?: array<int, array{
      *         ingredient_id?: int,
-     *         ingredient_version_id?: int,
      *         percentage?: float|int|string|null,
      *         weight?: float|int|string|null,
      *         note?: ?string
@@ -26,7 +25,6 @@ class RecipeNormalizationService
      *         name: string,
      *         items: array<int, array{
      *             ingredient_id: int|null,
-     *             ingredient_version_id: int|null,
      *             percentage: float,
      *             weight: float,
      *             note: string|null
@@ -86,7 +84,6 @@ class RecipeNormalizationService
 
                 $normalizedItems[] = [
                     'ingredient_id' => isset($item['ingredient_id']) ? (int) $item['ingredient_id'] : null,
-                    'ingredient_version_id' => isset($item['ingredient_version_id']) ? (int) $item['ingredient_version_id'] : null,
                     'percentage' => $this->roundValue($percentage),
                     'weight' => $this->roundValue($weight),
                     'note' => $item['note'] ?? null,

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'ingredient_version_id',
+    'ingredient_id',
     'certificate_name',
     'document_name',
     'document_path',
@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'ifra_amendment',
     'published_at',
     'valid_from',
+    'peroxide_value',
     'is_current',
     'source_notes',
     'source_data',
@@ -28,9 +29,9 @@ class IfraCertificate extends Model
     /** @use HasFactory<IfraCertificateFactory> */
     use HasFactory;
 
-    public function ingredientVersion(): BelongsTo
+    public function ingredient(): BelongsTo
     {
-        return $this->belongsTo(IngredientVersion::class);
+        return $this->belongsTo(Ingredient::class);
     }
 
     public function limits(): HasMany
@@ -43,6 +44,7 @@ class IfraCertificate extends Model
         return [
             'published_at' => 'date',
             'valid_from' => 'date',
+            'peroxide_value' => 'decimal:3',
             'is_current' => 'bool',
             'source_data' => 'array',
         ];

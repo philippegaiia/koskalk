@@ -123,15 +123,21 @@ it('calculates iodine and ins transparently from fatty acids and koh sap', funct
             'weight' => 1000,
             'koh_sap_value' => 0.196,
             'fatty_acid_profile' => [
+                'palmitoleic' => 2,
                 'oleic' => 35,
+                'gondoic' => 1,
+                'erucic' => 1,
+                'nervonic' => 1,
                 'linoleic' => 20,
                 'linolenic' => 5,
+                'gamma_linolenic' => 4,
+                'punicic' => 3,
             ],
         ],
     ]);
 
-    expect($result['properties']['qualities']['iodine'])->toBe(77.82)
-        ->and($result['properties']['qualities']['ins'])->toBe(118.18);
+    expect($result['properties']['qualities']['iodine'])->toBe(100.293)
+        ->and($result['properties']['qualities']['ins'])->toBe(95.707);
 });
 
 it('accepts professional-scale koh sap values in calculations', function () {

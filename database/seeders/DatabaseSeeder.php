@@ -17,7 +17,10 @@ class DatabaseSeeder extends Seeder
             ProductFamilySeeder::class,
             FattyAcidSeeder::class,
             AllergenCatalogSeeder::class,
+            IngredientFunctionSeeder::class,
+            IfraProductCategorySeeder::class,
             IngredientCatalogSeeder::class,
+            CarrierOilChemistrySeeder::class,
         ]);
 
         User::query()->updateOrCreate(

@@ -6,7 +6,6 @@ use App\Filament\Resources\IfraProductCategories\IfraProductCategoryResource;
 use App\Filament\Resources\IngredientAllergenEntries\IngredientAllergenEntryResource;
 use App\Filament\Resources\Ingredients\IngredientResource;
 use App\Filament\Resources\IngredientSapProfiles\IngredientSapProfileResource;
-use App\Filament\Resources\IngredientVersions\IngredientVersionResource;
 use App\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\IfraCertificate;
@@ -15,7 +14,6 @@ use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientSapProfile;
-use App\Models\IngredientVersion;
 use App\Models\ProductFamily;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,22 +25,16 @@ it('renders the catalog list resources in the admin panel', function () {
 
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive Oil',
         'is_potentially_saponifiable' => true,
         'source_key' => 'OB1',
     ]);
 
-    $ingredientVersion = IngredientVersion::factory()
-        ->for($ingredient)
-        ->create([
-            'display_name' => 'Olive Oil',
-            'source_key' => 'OB1',
-        ]);
-
     IngredientSapProfile::factory()
-        ->for($ingredientVersion, 'ingredientVersion')
+        ->for($ingredient, 'ingredient')
         ->create([
             'koh_sap_value' => 0.188,
-            'oleic' => 70,
+            'iodine_value' => 84.500,
         ]);
 
     $this->actingAs($user);
@@ -56,11 +48,8 @@ it('renders the catalog list resources in the admin panel', function () {
         ->assertSuccessful()
         ->assertSee('Soap Chemistry')
         ->assertSee('Fatty acid profile')
-        ->assertSee('Ingredient guidance');
-
-    $this->get(IngredientVersionResource::getUrl(panel: 'admin'))
-        ->assertSuccessful()
-        ->assertSee('Olive Oil');
+        ->assertSee('Ingredient guidance')
+        ->assertSee('EU / COSING functions');
 
     $this->get(IngredientSapProfileResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
@@ -79,18 +68,15 @@ it('renders the catalog create forms in the admin panel', function () {
         ->assertSee('Guidance &amp; Media', false)
         ->assertSee('Ingredient guidance')
         ->assertSee('Ingredient image')
+        ->assertSee('EU / COSING functions')
         ->assertSee('Composite Components')
         ->assertDontSee('Internal Metadata');
-
-    $this->get(IngredientVersionResource::getUrl('create', panel: 'admin'))
-        ->assertSuccessful()
-        ->assertSee('Version Identity')
-        ->assertSee('Display And Regulatory Names');
 
     $this->get(IngredientSapProfileResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Saponification Data')
-        ->assertSee('Legacy Fatty Acid Fallback');
+        ->assertSee('Iodine')
+        ->assertSee('INS');
 });
 
 it('renders the compliance resources in the admin panel', function () {
@@ -98,22 +84,16 @@ it('renders the compliance resources in the admin panel', function () {
 
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Lavender Essential Oil',
         'source_key' => 'EO1',
     ]);
-
-    $ingredientVersion = IngredientVersion::factory()
-        ->for($ingredient)
-        ->create([
-            'display_name' => 'Lavender Essential Oil',
-            'source_key' => 'EO1',
-        ]);
 
     $allergen = Allergen::factory()->create([
         'inci_name' => 'LINALOOL',
     ]);
 
     IngredientAllergenEntry::factory()
-        ->for($ingredientVersion, 'ingredientVersion')
+        ->for($ingredient, 'ingredient')
         ->for($allergen, 'allergen')
         ->create([
             'concentration_percent' => 0.85000,
@@ -136,7 +116,7 @@ it('renders the compliance resources in the admin panel', function () {
     ]);
 
     $ifraCertificate = IfraCertificate::factory()
-        ->for($ingredientVersion, 'ingredientVersion')
+        ->for($ingredient, 'ingredient')
         ->create([
             'certificate_name' => 'Lavender High Alt IFRA',
             'ifra_amendment' => '51',
@@ -169,15 +149,12 @@ it('renders the compliance resources in the admin panel', function () {
         ->assertSee('Lavender High Alt IFRA')
         ->assertSee('Lavender Essential Oil');
 
-    $this->get(IngredientVersionResource::getUrl('edit', ['record' => $ingredientVersion], panel: 'admin'))
-        ->assertSuccessful()
-        ->assertSee('Aromatic Compliance')
-        ->assertSee('LINALOOL');
-
     $this->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Lavender Essential Oil')
         ->assertSee('Material Identity')
+        ->assertSee('Aromatic Compliance')
+        ->assertSee('LINALOOL')
         ->assertSee('Guidance &amp; Media', false)
         ->assertSee('Composite Components');
 });
@@ -204,11 +181,14 @@ it('renders the compliance create forms in the admin panel', function () {
     $this->get(IfraProductCategoryResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Category Identity')
+        ->assertSee('Short label')
+        ->assertSee('Full description')
         ->assertSee('Product Family Mapping');
 
     $this->get(IfraCertificateResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Current IFRA Guidance')
+        ->assertSee('Peroxide value')
         ->assertSee('Optional Reference Metadata')
         ->assertSee('Category Limits');
 });

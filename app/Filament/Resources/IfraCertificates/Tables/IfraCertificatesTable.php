@@ -14,20 +14,25 @@ class IfraCertificatesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['ingredientVersion.ingredient'])->withCount('limits'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('ingredient')->withCount('limits'))
             ->columns([
                 TextColumn::make('certificate_name')
                     ->label('Current IFRA set')
                     ->searchable()
                     ->sortable()
                     ->wrap(),
-                TextColumn::make('ingredientVersion.display_name')
+                TextColumn::make('ingredient.display_name')
                     ->label('Ingredient')
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('ifra_amendment')
                     ->label('Amendment')
                     ->sortable(),
+                TextColumn::make('peroxide_value')
+                    ->label('Peroxide')
+                    ->numeric(decimalPlaces: 3)
+                    ->suffix(' meq O2/kg')
+                    ->toggleable(),
                 IconColumn::make('is_current')
                     ->label('Current')
                     ->boolean(),

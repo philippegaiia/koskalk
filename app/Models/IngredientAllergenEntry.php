@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'ingredient_version_id',
+    'ingredient_id',
     'allergen_id',
     'concentration_percent',
     'source_notes',
@@ -20,9 +20,9 @@ class IngredientAllergenEntry extends Model
     /** @use HasFactory<IngredientAllergenEntryFactory> */
     use HasFactory;
 
-    public function ingredientVersion(): BelongsTo
+    public function ingredient(): BelongsTo
     {
-        return $this->belongsTo(IngredientVersion::class);
+        return $this->belongsTo(Ingredient::class);
     }
 
     public function allergen(): BelongsTo

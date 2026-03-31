@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\IfraCertificate;
-use App\Models\IngredientVersion;
+use App\Models\Ingredient;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,7 +19,7 @@ class IfraCertificateFactory extends Factory
     public function definition(): array
     {
         return [
-            'ingredient_version_id' => IngredientVersion::factory(),
+            'ingredient_id' => Ingredient::factory(),
             'certificate_name' => fake()->words(3, true).' IFRA Certificate',
             'document_name' => fake()->words(3, true).'.pdf',
             'document_path' => null,

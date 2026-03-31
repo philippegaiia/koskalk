@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
-use App\Models\IngredientVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -19,16 +19,10 @@ class IngredientSapProfileFactory extends Factory
     public function definition(): array
     {
         return [
-            'ingredient_version_id' => IngredientVersion::factory(),
+            'ingredient_id' => Ingredient::factory(),
             'koh_sap_value' => fake()->randomFloat(6, 0.14, 0.42),
-            'lauric' => null,
-            'myristic' => null,
-            'palmitic' => null,
-            'stearic' => null,
-            'ricinoleic' => null,
-            'oleic' => null,
-            'linoleic' => null,
-            'linolenic' => null,
+            'iodine_value' => null,
+            'ins_value' => null,
             'source_notes' => fake()->sentence(),
         ];
     }

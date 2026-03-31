@@ -2,28 +2,29 @@
 
 namespace App\Filament\Resources\Ingredients\Tables;
 
+use App\Filament\Exports\IngredientExporter;
 use App\IngredientCategory;
 use App\Models\Ingredient;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportBulkAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 class IngredientsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('currentVersion'))
             ->columns([
-                TextColumn::make('currentVersion.display_name')
+                TextColumn::make('display_name')
                     ->label(__('Ingredient'))
                     ->searchable()
                     ->sortable()
-                    ->description(fn (Ingredient $record): ?string => $record->currentVersion?->inci_name)
+                    ->description(fn (Ingredient $record): ?string => $record->inci_name)
                     ->wrap(),
                 TextColumn::make('source_key')
                     ->label(__('Code'))
@@ -59,6 +60,12 @@ class IngredientsTable
             ])
             ->recordActions([
                 EditAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    ExportBulkAction::make()
+                        ->exporter(IngredientExporter::class),
+                ]),
             ])
             ->defaultSort('source_key')
             ->emptyStateHeading('No ingredients yet')

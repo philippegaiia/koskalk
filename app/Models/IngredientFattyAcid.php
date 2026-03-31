@@ -2,27 +2,27 @@
 
 namespace App\Models;
 
-use Database\Factories\IngredientVersionFattyAcidFactory;
+use Database\Factories\IngredientFattyAcidFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'ingredient_version_id',
+    'ingredient_id',
     'fatty_acid_id',
     'percentage',
     'source_notes',
     'source_data',
 ])]
-class IngredientVersionFattyAcid extends Model
+class IngredientFattyAcid extends Model
 {
-    /** @use HasFactory<IngredientVersionFattyAcidFactory> */
+    /** @use HasFactory<IngredientFattyAcidFactory> */
     use HasFactory;
 
-    public function ingredientVersion(): BelongsTo
+    public function ingredient(): BelongsTo
     {
-        return $this->belongsTo(IngredientVersion::class);
+        return $this->belongsTo(Ingredient::class);
     }
 
     public function fattyAcid(): BelongsTo

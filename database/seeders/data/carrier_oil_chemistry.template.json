@@ -1,0 +1,60 @@
+[
+    {
+        "source_key": "OB123",
+        "koh_sap_value": 0.188,
+        "iodine_value": 86.4,
+        "ins_value": 102.8,
+        "source_notes": "Example structure only. Replace source_key with a real ingredient source_key from your catalog.",
+        "fatty_acids": {
+            "palmitic": 12.0,
+            "stearic": 2.8,
+            "palmitoleic": 1.1,
+            "oleic": 68.5,
+            "gondoic": 0.4,
+            "linoleic": 10.2,
+            "linolenic": 0.7,
+            "gamma_linolenic": 0.3,
+            "punicic": 0.2,
+            "lignoceric": 0.1,
+            "nervonic": 0.2
+        }
+    },
+    {
+        "source_key": "OB456",
+        "koh_sap_value": 0.257,
+        "iodine_value": null,
+        "ins_value": null,
+        "source_notes": "Example structure only. Include only the fatty acids you want to seed.",
+        "fatty_acids": {
+            "caprylic": 7.5,
+            "capric": 6.2,
+            "lauric": 48.0,
+            "myristic": 18.0,
+            "palmitic": 8.9,
+            "stearic": 2.7,
+            "oleic": 6.5,
+            "linoleic": 1.4,
+            "lignoceric": 0.1
+        }
+    },
+    {
+        "source_key": "OB789",
+        "koh_sap_value": 0.201,
+        "iodine_value": null,
+        "ins_value": null,
+        "source_notes": "Example structure only. This row shows where the newly added extended acids fit when an oil profile includes them.",
+        "fatty_acids": {
+            "palmitic": 6.0,
+            "stearic": 4.0,
+            "oleic": 24.0,
+            "linoleic": 38.0,
+            "linolenic": 8.0,
+            "gamma_linolenic": 6.0,
+            "punicic": 5.0,
+            "arachidic": 1.0,
+            "behenic": 0.8,
+            "lignoceric": 0.5,
+            "nervonic": 0.7
+        }
+    }
+]

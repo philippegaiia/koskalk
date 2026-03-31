@@ -5,7 +5,7 @@ use App\Livewire\Dashboard\IngredientEditor;
 use App\Models\Allergen;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
-use App\Models\IngredientVersion;
+use App\Models\IngredientFunction;
 use App\Models\User;
 use App\OwnerType;
 use App\Services\UserIngredientAuthoringService;
@@ -38,8 +38,8 @@ it('creates a minimal private user ingredient from the public editor', function 
     expect($ingredient)->not->toBeNull()
         ->and($ingredient->visibility)->toBe(Visibility::Private)
         ->and($ingredient->is_potentially_saponifiable)->toBeFalse()
-        ->and($ingredient->currentVersion?->display_name)->toBe('French Green Clay')
-        ->and($ingredient->currentVersion?->inci_name)->toBe('ILLITE');
+        ->and($ingredient->display_name)->toBe('French Green Clay')
+        ->and($ingredient->inci_name)->toBe('ILLITE');
 });
 
 it('persists optional allergen and current ifra data for aromatic user ingredients', function () {
@@ -48,6 +48,16 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
 
     $linalool = Allergen::factory()->create(['inci_name' => 'LINALOOL']);
     $limonene = Allergen::factory()->create(['inci_name' => 'LIMONENE']);
+    $perfuming = IngredientFunction::factory()->create([
+        'key' => 'perfuming',
+        'name' => 'Perfuming',
+        'sort_order' => 10,
+    ]);
+    $skinConditioning = IngredientFunction::factory()->create([
+        'key' => 'skin_conditioning',
+        'name' => 'Skin conditioning',
+        'sort_order' => 20,
+    ]);
     $category3 = IfraProductCategory::factory()->create([
         'code' => '3',
         'name' => 'Soap products',
@@ -56,6 +66,8 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
 
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Rose Essential Oil',
+        'inci_name' => 'ROSA DAMASCENA FLOWER OIL',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
@@ -63,16 +75,11 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         'source_key' => 'USR-EO',
     ]);
 
-    IngredientVersion::factory()->for($ingredient)->create([
-        'display_name' => 'Rose Essential Oil',
-        'inci_name' => 'ROSA DAMASCENA FLOWER OIL',
-        'is_current' => true,
-    ]);
-
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->set('data.name', 'Rose Essential Oil')
         ->set('data.category', IngredientCategory::EssentialOil->value)
         ->set('data.inci_name', 'ROSA DAMASCENA FLOWER OIL')
+        ->set('data.function_ids', [$skinConditioning->id, $perfuming->id])
         ->set('data.allergen_entries', [
             [
                 'allergen_id' => $linalool->id,
@@ -87,6 +94,7 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         ])
         ->set('data.ifra.reference_label', 'Current supplier IFRA')
         ->set('data.ifra.ifra_amendment', '51')
+        ->set('data.ifra.peroxide_value', 2.5)
         ->set('data.ifra.source_notes', 'Indicative only')
         ->set('data.ifra.limits', [
             [
@@ -97,13 +105,15 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         ])
         ->call('save');
 
-    $freshIngredient = $ingredient->fresh(['currentVersion.allergenEntries', 'currentVersion.ifraCertificates.limits']);
-    $currentVersion = $freshIngredient->currentVersion;
-    $currentIfra = $currentVersion?->ifraCertificates->first();
+    $freshIngredient = $ingredient->fresh(['allergenEntries', 'functions', 'ifraCertificates.limits']);
+    $currentIfra = $freshIngredient?->ifraCertificates->first();
 
-    expect($currentVersion?->allergenEntries)->toHaveCount(2)
-        ->and($currentVersion?->allergenEntries->pluck('allergen_id')->all())->toEqualCanonicalizing([$linalool->id, $limonene->id])
+    expect($freshIngredient?->allergenEntries)->toHaveCount(2)
+        ->and($freshIngredient?->functions)->toHaveCount(2)
+        ->and($freshIngredient?->functions->pluck('id')->all())->toEqual([$perfuming->id, $skinConditioning->id])
+        ->and($freshIngredient?->allergenEntries->pluck('allergen_id')->all())->toEqualCanonicalizing([$linalool->id, $limonene->id])
         ->and($currentIfra?->ifra_amendment)->toBe('51')
+        ->and((float) $currentIfra?->peroxide_value)->toBe(2.5)
         ->and($currentIfra?->limits)->toHaveCount(1)
         ->and((float) $currentIfra?->limits->first()->max_percentage)->toBe(0.8);
 });

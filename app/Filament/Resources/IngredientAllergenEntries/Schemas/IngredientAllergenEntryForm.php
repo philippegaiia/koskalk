@@ -21,14 +21,11 @@ class IngredientAllergenEntryForm
                     ->description('Attach declarable allergen percentages to aromatic ingredient versions so formulation compliance can use versioned source data.')
                     ->icon(Heroicon::Sparkles)
                     ->schema([
-                        Select::make('ingredient_version_id')
+                        Select::make('ingredient_id')
                             ->relationship(
-                                name: 'ingredientVersion',
+                                name: 'ingredient',
                                 titleAttribute: 'display_name',
-                                modifyQueryUsing: fn (Builder $query): Builder => $query->whereHas(
-                                    'ingredient',
-                                    fn (Builder $ingredientQuery): Builder => $ingredientQuery->whereIn('category', IngredientCategory::aromaticValues())
-                                )
+                                modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn('category', IngredientCategory::aromaticValues())
                             )
                             ->searchable()
                             ->preload()

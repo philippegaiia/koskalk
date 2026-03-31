@@ -18,7 +18,6 @@ class IngredientsIndex extends Component
         if ($currentUser instanceof User) {
             $ingredients = Ingredient::query()
                 ->ownedByUser($currentUser)
-                ->with('currentVersion')
                 ->withCount('components')
                 ->latest()
                 ->get();

@@ -85,6 +85,10 @@ window.recipeWorkbench = (payload) => ({
         });
     },
 
+    get selectedIfraProductCategory() {
+        return this.ifraProductCategories.find((category) => category.id === this.selectedIfraProductCategoryId) ?? null;
+    },
+
     ingredientMonogram(ingredient) {
         const name = `${ingredient?.name ?? ''}`.trim();
 
@@ -286,7 +290,7 @@ window.recipeWorkbench = (payload) => ({
             return;
         }
 
-        const existingRow = this.phaseItems[targetPhase].find((row) => row.ingredient_version_id === ingredient.id);
+        const existingRow = this.phaseItems[targetPhase].find((row) => row.ingredient_id === ingredient.id);
 
         if (existingRow) {
             return;
@@ -294,8 +298,7 @@ window.recipeWorkbench = (payload) => ({
 
         this.phaseItems[targetPhase].push({
             id: `${ingredient.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            ingredient_version_id: ingredient.id,
-            ingredient_id: ingredient.ingredient_id,
+            ingredient_id: ingredient.id,
             name: ingredient.name,
             inci_name: ingredient.inci_name,
             category: ingredient.category,
@@ -407,7 +410,6 @@ window.recipeWorkbench = (payload) => ({
         return {
             id: row.id,
             ingredient_id: row.ingredient_id,
-            ingredient_version_id: row.ingredient_version_id,
             percentage: this.nonNegativeNumber(row.percentage),
             weight: this.rowWeight(row),
             note: row.note ?? null,

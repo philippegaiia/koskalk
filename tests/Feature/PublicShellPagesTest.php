@@ -3,8 +3,8 @@
 it('renders the public home page', function () {
     $this->get(route('home'))
         ->assertSuccessful()
-        ->assertSee('Clearer than SoapCalc')
-        ->assertSee('Preview The App Shell');
+        ->assertSee('Fast drafting, clean chemistry, and a compliance-ready handoff.')
+        ->assertSee('Preview workspace');
 });
 
 it('renders the public dashboard shell page', function () {

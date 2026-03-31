@@ -5,7 +5,6 @@ namespace App\Services;
 use App\IngredientCategory;
 use App\Models\IfraCertificateLimit;
 use App\Models\Ingredient;
-use App\Models\IngredientVersion;
 use App\Models\User;
 use App\OwnerType;
 use App\Visibility;
@@ -31,11 +30,13 @@ class UserIngredientAuthoringService
             'supplier_reference' => null,
             'featured_image_path' => null,
             'info_markdown' => null,
+            'function_ids' => [],
             'allergen_entries' => [],
             'components' => [],
             'ifra' => [
                 'reference_label' => null,
                 'ifra_amendment' => null,
+                'peroxide_value' => null,
                 'source_notes' => null,
                 'limits' => [],
             ],
@@ -48,10 +49,7 @@ class UserIngredientAuthoringService
     public function formData(Ingredient $ingredient): array
     {
         $entryData = $this->ingredientDataEntryService->formData($ingredient);
-        $currentVersion = $ingredient->currentVersion()->first()
-            ?? $ingredient->versions()->where('is_current', true)->first()
-            ?? $ingredient->versions()->latest('version')->first();
-        $currentIfra = $currentVersion?->ifraCertificates()
+        $currentIfra = $ingredient->ifraCertificates()
             ->with('limits')
             ->where('is_current', true)
             ->latest('id')
@@ -65,11 +63,13 @@ class UserIngredientAuthoringService
             'supplier_reference' => data_get($entryData, 'current_version.supplier_reference'),
             'featured_image_path' => $ingredient->featured_image_path,
             'info_markdown' => $ingredient->info_markdown,
+            'function_ids' => $entryData['function_ids'] ?? [],
             'allergen_entries' => $entryData['allergen_entries'] ?? [],
             'components' => $entryData['components'] ?? [],
             'ifra' => [
                 'reference_label' => $currentIfra?->certificate_name,
                 'ifra_amendment' => $currentIfra?->ifra_amendment,
+                'peroxide_value' => $currentIfra?->peroxide_value === null ? null : (float) $currentIfra->peroxide_value,
                 'source_notes' => $currentIfra?->source_notes,
                 'limits' => $currentIfra?->limits
                     ->sortBy('ifra_product_category_id')
@@ -129,11 +129,13 @@ class UserIngredientAuthoringService
             'supplier_reference' => $state['supplier_reference'] ?? null,
             'featured_image_path' => null,
             'info_markdown' => null,
+            'function_ids' => [],
             'allergen_entries' => [],
             'components' => [],
             'ifra' => [
                 'reference_label' => null,
                 'ifra_amendment' => null,
+                'peroxide_value' => null,
                 'source_notes' => null,
                 'limits' => [],
             ],
@@ -164,7 +166,7 @@ class UserIngredientAuthoringService
      */
     private function syncState(Ingredient $ingredient, array $state): Ingredient
     {
-        $currentVersion = $this->ingredientDataEntryService->syncCurrentData($ingredient, [
+        $ingredient = $this->ingredientDataEntryService->syncCurrentData($ingredient, [
             'current_version' => [
                 'display_name' => Arr::get($state, 'name'),
                 'inci_name' => Arr::get($state, 'inci_name'),
@@ -173,6 +175,7 @@ class UserIngredientAuthoringService
                 'is_active' => true,
                 'is_manufactured' => false,
             ],
+            'function_ids' => Arr::get($state, 'function_ids', []),
             'sap_profile' => [],
             'fatty_acid_entries' => [],
             'allergen_entries' => Arr::get($state, 'allergen_entries', []),
@@ -180,23 +183,24 @@ class UserIngredientAuthoringService
         ]);
 
         if ($ingredient->requiresAromaticCompliance()) {
-            $this->syncIfraState($currentVersion, Arr::get($state, 'ifra', []));
+            $this->syncIfraState($ingredient, Arr::get($state, 'ifra', []));
         } else {
-            $currentVersion->allergenEntries()->delete();
-            $currentVersion->ifraCertificates()->delete();
+            $ingredient->allergenEntries()->delete();
+            $ingredient->ifraCertificates()->delete();
         }
 
         return $ingredient->fresh([
-            'components.componentIngredient.currentVersion',
-            'currentVersion.allergenEntries.allergen',
-            'currentVersion.ifraCertificates.limits.ifraProductCategory',
+            'components.componentIngredient',
+            'allergenEntries.allergen',
+            'functions',
+            'ifraCertificates.limits.ifraProductCategory',
         ]);
     }
 
     /**
      * @param  array<string, mixed>  $state
      */
-    private function syncIfraState(IngredientVersion $currentVersion, array $state): void
+    private function syncIfraState(Ingredient $ingredient, array $state): void
     {
         $limitsState = collect(Arr::get($state, 'limits', []))
             ->filter(fn (mixed $row): bool => is_array($row))
@@ -211,18 +215,20 @@ class UserIngredientAuthoringService
 
         $hasMeaningfulIfra = filled($state['reference_label'] ?? null)
             || filled($state['ifra_amendment'] ?? null)
+            || filled($state['peroxide_value'] ?? null)
             || filled($state['source_notes'] ?? null)
             || $limitsState->isNotEmpty();
 
-        $currentVersion->ifraCertificates()->delete();
+        $ingredient->ifraCertificates()->delete();
 
         if (! $hasMeaningfulIfra) {
             return;
         }
 
-        $certificate = $currentVersion->ifraCertificates()->make([
-            'certificate_name' => ($state['reference_label'] ?? null) ?: sprintf('%s current IFRA guidance', $currentVersion->display_name),
+        $certificate = $ingredient->ifraCertificates()->make([
+            'certificate_name' => ($state['reference_label'] ?? null) ?: sprintf('%s current IFRA guidance', $ingredient->display_name),
             'ifra_amendment' => $state['ifra_amendment'] ?? null,
+            'peroxide_value' => filled($state['peroxide_value'] ?? null) ? (float) $state['peroxide_value'] : null,
             'source_notes' => $state['source_notes'] ?? null,
             'document_name' => null,
             'document_path' => null,

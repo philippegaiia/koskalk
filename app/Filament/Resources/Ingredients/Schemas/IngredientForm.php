@@ -6,6 +6,7 @@ use App\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
+use App\Models\IngredientFunction;
 use App\Services\MediaStorage;
 use App\SoapSap;
 use Closure;
@@ -57,6 +58,19 @@ class IngredientForm
                         Toggle::make('is_active')
                             ->label('Active')
                             ->default(true),
+                        Select::make('function_ids')
+                            ->label('EU / COSING functions')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->options(fn (): array => IngredientFunction::query()
+                                ->where('is_active', true)
+                                ->orderBy('sort_order')
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->helperText('Optional official ingredient functions. One ingredient can carry multiple COSING functions.')
+                            ->columnSpanFull(),
                     ])
                     ->columns([
                         'md' => 3,
@@ -71,9 +85,6 @@ class IngredientForm
                             ->maxLength(255),
                         TextInput::make('current_version.display_name_en')
                             ->label('Display name EN')
-                            ->maxLength(255),
-                        TextInput::make('current_version.display_name_fr')
-                            ->label('Display name FR')
                             ->maxLength(255),
                         TextInput::make('current_version.inci_name')
                             ->label('INCI')
@@ -99,9 +110,6 @@ class IngredientForm
                             ->label('Price EUR')
                             ->numeric()
                             ->inputMode('decimal'),
-                        Toggle::make('current_version.is_active')
-                            ->label('Current material active')
-                            ->default(true),
                         Toggle::make('current_version.is_manufactured')
                             ->label('Manufactured')
                             ->default(false),
@@ -135,7 +143,7 @@ class IngredientForm
                         'md' => 2,
                     ]),
                 Section::make('Soap Chemistry')
-                    ->description('For carrier oils and butters, keep the current SAP and fatty-acid profile directly on the ingredient workflow.')
+                    ->description('For carrier oils and butters, keep the current SAP, optional iodine and INS references, and fatty-acid profile directly on the ingredient workflow.')
                     ->icon(Heroicon::Beaker)
                     ->visible(fn (Get $get): bool => static::isCategory($get('category'), IngredientCategory::CarrierOil))
                     ->schema([
@@ -148,6 +156,14 @@ class IngredientForm
                         TextEntry::make('sap_profile.naoh_sap_value')
                             ->label('Derived NaOH SAP')
                             ->state(fn (Get $get): ?string => blank($get('sap_profile.koh_sap_value')) ? null : number_format(SoapSap::deriveNaohFromKoh((float) $get('sap_profile.koh_sap_value')), 6, '.', '')),
+                        TextInput::make('sap_profile.iodine_value')
+                            ->label('Iodine')
+                            ->numeric()
+                            ->inputMode('decimal'),
+                        TextInput::make('sap_profile.ins_value')
+                            ->label('INS')
+                            ->numeric()
+                            ->inputMode('decimal'),
                         Textarea::make('sap_profile.source_notes')
                             ->label('Soap notes')
                             ->rows(3)
@@ -287,14 +303,13 @@ class IngredientForm
         }
 
         return static::$cachedComponentOptions = Ingredient::query()
-            ->with('currentVersion:id,ingredient_id,display_name,inci_name')
             ->where('is_active', true)
             ->when($record?->exists, fn ($query) => $query->whereKeyNot($record?->getKey()))
             ->get()
-            ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->currentVersion?->display_name ?? $ingredient->source_key))
+            ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->display_name ?? $ingredient->source_key))
             ->mapWithKeys(function (Ingredient $ingredient): array {
-                $label = $ingredient->currentVersion?->display_name ?? $ingredient->source_key;
-                $inciName = $ingredient->currentVersion?->inci_name;
+                $label = $ingredient->display_name ?? $ingredient->source_key;
+                $inciName = $ingredient->inci_name;
 
                 if (filled($inciName)) {
                     $label .= sprintf(' (%s)', $inciName);

@@ -39,6 +39,13 @@ class IfraProductCategory extends Model
         )->withPivot(['is_default', 'sort_order'])->withTimestamps();
     }
 
+    public function optionLabel(): string
+    {
+        $label = $this->short_name ?: $this->name;
+
+        return sprintf('%s - %s', $this->code, $label);
+    }
+
     protected function casts(): array
     {
         return [

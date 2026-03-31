@@ -39,7 +39,6 @@ class DashboardController extends Controller
 
             $personalIngredients = Ingredient::query()
                 ->ownedByUser($currentUser)
-                ->with('currentVersion')
                 ->withCount('components')
                 ->latest()
                 ->limit(4)

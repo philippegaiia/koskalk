@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\IngredientCategory;
 use App\Models\Ingredient;
-use App\Models\IngredientVersion;
 use Illuminate\Database\Seeder;
 use RuntimeException;
 
@@ -48,25 +47,8 @@ class IngredientCatalogSeeder extends Seeder
                 [
                     'source_code_prefix' => $sourceCodePrefix,
                     'category' => $category,
-                    'is_potentially_saponifiable' => $soapInciNaohName !== null || $soapInciKohName !== null,
-                    'requires_admin_review' => true,
-                    'is_active' => $this->yesNoToBool($this->value($row, 'Active'), default: true),
-                    'source_data' => $row,
-                ]
-            );
-
-            IngredientVersion::query()->updateOrCreate(
-                [
-                    'source_file' => $path,
-                    'source_key' => $sourceKey,
-                    'version' => 1,
-                ],
-                [
-                    'ingredient_id' => $ingredient->id,
-                    'is_current' => true,
                     'display_name' => $displayNameEn ?? $displayNameFr ?? $this->value($row, 'INCI') ?? $sourceKey,
                     'display_name_en' => $displayNameEn,
-                    'display_name_fr' => $displayNameFr,
                     'inci_name' => $this->value($row, 'INCI'),
                     'soap_inci_naoh_name' => $soapInciNaohName,
                     'soap_inci_koh_name' => $soapInciKohName,
@@ -74,6 +56,8 @@ class IngredientCatalogSeeder extends Seeder
                     'ec_number' => $this->value($row, 'EINECS') ?? $this->value($row, 'CAS EINECS'),
                     'unit' => $this->value($row, 'Unit'),
                     'price_eur' => $this->decimalOrNull($this->value($row, 'Prix (€)')),
+                    'is_potentially_saponifiable' => $soapInciNaohName !== null || $soapInciKohName !== null,
+                    'requires_admin_review' => true,
                     'is_active' => $this->yesNoToBool($this->value($row, 'Active'), default: true),
                     'is_manufactured' => $this->yesNoToBool($this->value($row, 'Fabriqué'), default: false),
                     'source_data' => $row,

@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\IngredientSapProfiles\Schemas;
 
-use App\SoapFattyAcid;
 use App\SoapSap;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -20,11 +19,11 @@ class IngredientSapProfileForm
         return $schema
             ->components([
                 Section::make('Saponification Data')
-                    ->description('KOH SAP is the single stored source value. NaOH SAP is always derived from the fixed 0.713 ratio.')
+                    ->description('KOH SAP is the single stored source value. Optional iodine and INS references can live here too. NaOH SAP is always derived from the fixed 0.713 ratio.')
                     ->icon(Heroicon::Beaker)
                     ->schema([
-                        Select::make('ingredient_version_id')
-                            ->relationship(name: 'ingredientVersion', titleAttribute: 'display_name')
+                        Select::make('ingredient_id')
+                            ->relationship(name: 'ingredient', titleAttribute: 'display_name')
                             ->searchable()
                             ->preload()
                             ->required(),
@@ -41,28 +40,20 @@ class IngredientSapProfileForm
                         TextEntry::make('naoh_sap_value')
                             ->label('Derived NaOH SAP')
                             ->state(fn (Get $get, $record): ?string => blank($get('koh_sap_value')) ? ($record?->naoh_sap_value === null ? null : number_format((float) $record->naoh_sap_value, 6, '.', '')) : number_format(SoapSap::deriveNaohFromKoh((float) $get('koh_sap_value')), 6, '.', '')),
+                        TextInput::make('iodine_value')
+                            ->label('Iodine')
+                            ->numeric()
+                            ->inputMode('decimal'),
+                        TextInput::make('ins_value')
+                            ->label('INS')
+                            ->numeric()
+                            ->inputMode('decimal'),
                     ])
                     ->columns([
                         'md' => 3,
                     ]),
-                Section::make('Legacy Fatty Acid Fallback')
-                    ->description('These old core fatty-acid columns remain only as fallback data. Prefer editing the normalized fatty-acid entries on the ingredient version whenever possible.')
-                    ->icon(Heroicon::ChartPie)
-                    ->schema([
-                        TextEntry::make('legacy_fatty_acid_hint')
-                            ->hiddenLabel()
-                            ->state('If normalized fatty-acid rows exist on the ingredient version, Koskalk will use those first and ignore these legacy columns.'),
-                        ...collect(SoapFattyAcid::coreSet())
-                            ->map(fn (SoapFattyAcid $fattyAcid): TextInput => TextInput::make($fattyAcid->value)
-                                ->label($fattyAcid->getLabel())
-                                ->numeric()
-                                ->inputMode('decimal')
-                                ->minValue(0)
-                                ->suffix('%'))
-                            ->all(),
-                    ]),
                 Section::make('Calculation Notes')
-                    ->description('Soap qualities are derived from the stored KOH SAP and fixed fatty-acid inputs, not entered manually.')
+                    ->description('Fatty-acid percentages live on the ingredient itself. This profile only stores SAP-centric reference data and notes.')
                     ->icon(Heroicon::ClipboardDocumentList)
                     ->schema([
                         Textarea::make('source_notes')

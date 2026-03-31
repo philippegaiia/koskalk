@@ -6,6 +6,7 @@ use App\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
+use App\Models\IngredientFunction;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
@@ -150,6 +151,19 @@ class IngredientEditor extends Component implements HasActions, HasForms
                             ->label('Notes and formulation info')
                             ->rows(4)
                             ->columnSpanFull(),
+                        Select::make('function_ids')
+                            ->label('EU / COSING functions')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->options(fn (): array => IngredientFunction::query()
+                                ->where('is_active', true)
+                                ->orderBy('sort_order')
+                                ->orderBy('name')
+                                ->pluck('name', 'id')
+                                ->all())
+                            ->helperText('Optional official functions for this ingredient. One ingredient can carry several COSING functions.')
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Composition')
                     ->description('Use this when the raw material is a blend, macerate, soap base, or any other composite ingredient.')
@@ -243,6 +257,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                 TextInput::make('ifra.ifra_amendment')
                                     ->label('IFRA amendment')
                                     ->maxLength(255),
+                                TextInput::make('ifra.peroxide_value')
+                                    ->label('Peroxide value')
+                                    ->numeric()
+                                    ->inputMode('decimal')
+                                    ->suffix('meq O2/kg'),
                                 Textarea::make('ifra.source_notes')
                                     ->label('Notes')
                                     ->rows(3)
@@ -257,7 +276,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 ->orderBy('code')
                                                 ->get()
                                                 ->mapWithKeys(fn (IfraProductCategory $category): array => [
-                                                    $category->id => sprintf('%s — %s', $category->code, $category->name),
+                                                    $category->id => $category->optionLabel(),
                                                 ])
                                                 ->all())
                                             ->searchable()
@@ -321,14 +340,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         return Ingredient::query()
             ->accessibleTo($this->currentUser())
-            ->with('currentVersion:id,ingredient_id,display_name,inci_name')
             ->where('is_active', true)
             ->when($currentIngredient?->exists, fn ($query) => $query->whereKeyNot($currentIngredient?->getKey()))
             ->get()
-            ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->currentVersion?->display_name ?? $ingredient->source_key))
+            ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->display_name ?? $ingredient->source_key))
             ->mapWithKeys(function (Ingredient $ingredient): array {
-                $label = $ingredient->currentVersion?->display_name ?? $ingredient->source_key;
-                $inciName = $ingredient->currentVersion?->inci_name;
+                $label = $ingredient->display_name ?? $ingredient->source_key;
+                $inciName = $ingredient->inci_name;
 
                 if (filled($inciName)) {
                     $label .= sprintf(' (%s)', $inciName);
@@ -346,7 +364,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         $ingredient = Ingredient::query()
-            ->with('currentVersion:id,ingredient_id,inci_name')
             ->find((int) $ingredientId);
 
         if (! $ingredient instanceof Ingredient) {
@@ -355,8 +372,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         $parts = [];
 
-        if (filled($ingredient->currentVersion?->inci_name)) {
-            $parts[] = sprintf('Resolved INCI: %s.', e($ingredient->currentVersion?->inci_name));
+        if (filled($ingredient->inci_name)) {
+            $parts[] = sprintf('Resolved INCI: %s.', e($ingredient->inci_name));
         } else {
             $parts[] = 'This linked component does not yet have an INCI name.';
         }

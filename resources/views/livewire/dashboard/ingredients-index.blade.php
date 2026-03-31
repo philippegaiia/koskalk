@@ -52,7 +52,7 @@
                             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h4 class="truncate text-lg font-semibold text-[var(--color-ink-strong)]">{{ $ingredient->currentVersion?->display_name ?? $ingredient->source_key }}</h4>
+                                        <h4 class="truncate text-lg font-semibold text-[var(--color-ink-strong)]">{{ $ingredient->display_name ?? $ingredient->source_key }}</h4>
                                         <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
                                             {{ $ingredient->category?->getLabel() ?? 'Uncategorized' }}
                                         </span>
@@ -60,8 +60,8 @@
                                             <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Composite</span>
                                         @endif
                                     </div>
-                                    @if (filled($ingredient->currentVersion?->inci_name))
-                                        <p class="mt-2 truncate text-sm text-[var(--color-ink-soft)]">{{ $ingredient->currentVersion?->inci_name }}</p>
+                                    @if (filled($ingredient->inci_name))
+                                        <p class="mt-2 truncate text-sm text-[var(--color-ink-soft)]">{{ $ingredient->inci_name }}</p>
                                     @endif
                                 </div>
 

@@ -4,7 +4,7 @@ namespace App\Livewire\Dashboard;
 
 use App\IngredientCategory;
 use App\Models\IfraProductCategory;
-use App\Models\IngredientVersion;
+use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\User;
@@ -18,7 +18,6 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Livewire\Attributes\Locked;
@@ -342,6 +341,8 @@ class RecipeWorkbench extends Component implements HasForms
                         'id' => $category->id,
                         'code' => $category->code,
                         'name' => $category->name,
+                        'short_name' => $category->short_name,
+                        'description' => $category->description,
                     ])
                     ->all(),
             ],
@@ -362,48 +363,43 @@ class RecipeWorkbench extends Component implements HasForms
     {
         $user = $this->currentUser();
 
-        return IngredientVersion::query()
-            ->with(['ingredient', 'sapProfile', 'fattyAcidEntries.fattyAcid'])
-            ->where('is_current', true)
+        return Ingredient::query()
+            ->with(['sapProfile', 'fattyAcidEntries.fattyAcid'])
             ->where('is_active', true)
-            ->whereHas('ingredient', function (Builder $query) use ($user): void {
-                $query->where('is_active', true)
-                    ->accessibleTo($user)
-                    ->whereIn('category', [
-                        IngredientCategory::CarrierOil->value,
-                        IngredientCategory::EssentialOil->value,
-                        IngredientCategory::FragranceOil->value,
-                        IngredientCategory::BotanicalExtract->value,
-                        IngredientCategory::Co2Extract->value,
-                        IngredientCategory::Clay->value,
-                        IngredientCategory::Glycol->value,
-                        IngredientCategory::Colorant->value,
-                        IngredientCategory::Preservative->value,
-                        IngredientCategory::Additive->value,
-                    ]);
-            })
+            ->accessibleTo($user)
+            ->whereIn('category', [
+                IngredientCategory::CarrierOil->value,
+                IngredientCategory::EssentialOil->value,
+                IngredientCategory::FragranceOil->value,
+                IngredientCategory::BotanicalExtract->value,
+                IngredientCategory::Co2Extract->value,
+                IngredientCategory::Clay->value,
+                IngredientCategory::Glycol->value,
+                IngredientCategory::Colorant->value,
+                IngredientCategory::Preservative->value,
+                IngredientCategory::Additive->value,
+            ])
             ->get()
-            ->filter(fn (IngredientVersion $version): bool => $version->ingredient !== null && $version->ingredient->availableWorkbenchPhases() !== [])
-            ->map(function (IngredientVersion $version): array {
-                $ingredient = $version->ingredient;
-                $category = $ingredient?->category;
-                $sapProfile = $version->sapProfile;
+            ->filter(fn (Ingredient $ingredient): bool => $ingredient->availableWorkbenchPhases() !== [])
+            ->map(function (Ingredient $ingredient): array {
+                $category = $ingredient->category;
+                $sapProfile = $ingredient->sapProfile;
                 $availablePhases = $ingredient?->availableWorkbenchPhases() ?? [];
 
                 return [
-                    'id' => $version->id,
-                    'ingredient_id' => $version->ingredient_id,
-                    'name' => $version->display_name,
-                    'inci_name' => $version->inci_name,
+                    'id' => $ingredient->id,
+                    'ingredient_id' => $ingredient->id,
+                    'name' => $ingredient->display_name,
+                    'inci_name' => $ingredient->inci_name,
                     'image_url' => $ingredient?->featuredImageUrl(),
                     'category' => $category?->value,
                     'category_label' => $category?->getLabel(),
-                    'soap_inci_naoh_name' => $version->soap_inci_naoh_name,
-                    'soap_inci_koh_name' => $version->soap_inci_koh_name,
+                    'soap_inci_naoh_name' => $ingredient->soap_inci_naoh_name,
+                    'soap_inci_koh_name' => $ingredient->soap_inci_koh_name,
                     'needs_compliance' => $ingredient?->requiresAromaticCompliance() ?? false,
                     'koh_sap_value' => $sapProfile?->koh_sap_value === null ? null : (float) $sapProfile->koh_sap_value,
                     'naoh_sap_value' => $sapProfile?->naoh_sap_value,
-                    'fatty_acid_profile' => $version->normalizedFattyAcidProfile(),
+                    'fatty_acid_profile' => $ingredient->normalizedFattyAcidProfile(),
                     'available_phases' => $availablePhases,
                     'default_phase' => $ingredient?->preferredWorkbenchPhase(),
                     'can_add_to_saponified_oils' => in_array('saponified_oils', $availablePhases, true),

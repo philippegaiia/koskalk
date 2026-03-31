@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\IngredientVersion;
+use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
@@ -42,23 +42,23 @@ class RecipeWorkbenchService
             return null;
         }
 
-        $ingredientVersions = IngredientVersion::query()
+        $ingredients = Ingredient::query()
             ->with(['sapProfile', 'fattyAcidEntries.fattyAcid'])
-            ->whereKey($oilRows->pluck('ingredient_version_id')->filter()->map(fn (mixed $id): int => (int) $id)->all())
+            ->whereKey($oilRows->pluck('ingredient_id')->filter()->map(fn (mixed $id): int => (int) $id)->all())
             ->get()
             ->keyBy('id');
 
         $oils = $oilRows
-            ->map(function (array $row) use ($ingredientVersions, $payload): ?array {
-                $ingredientVersionId = isset($row['ingredient_version_id']) ? (int) $row['ingredient_version_id'] : null;
+            ->map(function (array $row) use ($ingredients, $payload): ?array {
+                $ingredientId = isset($row['ingredient_id']) ? (int) $row['ingredient_id'] : null;
 
-                if ($ingredientVersionId === null) {
+                if ($ingredientId === null) {
                     return null;
                 }
 
-                $version = $ingredientVersions->get($ingredientVersionId);
+                $ingredient = $ingredients->get($ingredientId);
 
-                if (! $version instanceof IngredientVersion) {
+                if (! $ingredient instanceof Ingredient) {
                     return null;
                 }
 
@@ -69,10 +69,10 @@ class RecipeWorkbenchService
                 }
 
                 return [
-                    'name' => $version->display_name,
+                    'name' => $ingredient->display_name,
                     'weight' => $weight,
-                    'koh_sap_value' => $version->sapProfile?->koh_sap_value ?? 0,
-                    'fatty_acid_profile' => $version->normalizedFattyAcidProfile(),
+                    'koh_sap_value' => $ingredient->sapProfile?->koh_sap_value ?? 0,
+                    'fatty_acid_profile' => $ingredient->normalizedFattyAcidProfile(),
                 ];
             })
             ->filter()
@@ -283,9 +283,9 @@ class RecipeWorkbenchService
 
             return $draftVersion->fresh([
                 'recipe',
-                'phases.items.ingredientVersion.ingredient',
-                'phases.items.ingredientVersion.sapProfile',
-                'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
+                'phases.items.ingredient',
+                'phases.items.ingredient.sapProfile',
+                'phases.items.ingredient.fattyAcidEntries.fattyAcid',
             ]);
         });
     }
@@ -330,9 +330,9 @@ class RecipeWorkbenchService
 
             return $newDraftVersion->fresh([
                 'recipe',
-                'phases.items.ingredientVersion.ingredient',
-                'phases.items.ingredientVersion.sapProfile',
-                'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
+                'phases.items.ingredient',
+                'phases.items.ingredient.sapProfile',
+                'phases.items.ingredient.fattyAcidEntries.fattyAcid',
             ]);
         });
     }
@@ -425,7 +425,6 @@ class RecipeWorkbenchService
                     'is_system' => (bool) ($phaseBlueprint['is_system'] ?? false),
                     'items' => array_values(array_filter($phase['items'], function (array $item): bool {
                         return $item['ingredient_id'] !== null
-                            && $item['ingredient_version_id'] !== null
                             && ($item['percentage'] > 0 || $item['weight'] > 0);
                     })),
                 ];
@@ -450,7 +449,6 @@ class RecipeWorkbenchService
                 'items' => array_map(function (array $row): array {
                     return [
                         'ingredient_id' => isset($row['ingredient_id']) ? (int) $row['ingredient_id'] : null,
-                        'ingredient_version_id' => isset($row['ingredient_version_id']) ? (int) $row['ingredient_version_id'] : null,
                         'percentage' => (float) ($row['percentage'] ?? 0),
                         'weight' => (float) ($row['weight'] ?? 0),
                         'note' => $row['note'] ?? null,
@@ -469,11 +467,11 @@ class RecipeWorkbenchService
             'recipe',
             'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
             'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
-            'phases.items.ingredientVersion.ingredient',
-            'phases.items.ingredientVersion.sapProfile',
-            'phases.items.ingredientVersion.fattyAcidEntries.fattyAcid',
-            'phases.items.ingredientVersion.allergenEntries',
-            'phases.items.ingredientVersion.ifraCertificates.limits',
+            'phases.items.ingredient',
+            'phases.items.ingredient.sapProfile',
+            'phases.items.ingredient.fattyAcidEntries.fattyAcid',
+            'phases.items.ingredient.allergenEntries',
+            'phases.items.ingredient.ifraCertificates.limits',
         ];
     }
 
@@ -494,7 +492,7 @@ class RecipeWorkbenchService
                 $phaseRows[$phase->slug] = $phase->items
                     ->sortBy('position')
                     ->map(fn (RecipeItem $item): array => $this->mapItemToWorkbenchRow($item))
-                    ->filter(fn (array $row): bool => $row['ingredient_version_id'] !== null)
+                    ->filter(fn (array $row): bool => $row['ingredient_id'] !== null)
                     ->values()
                     ->all();
             });
@@ -671,7 +669,6 @@ class RecipeWorkbenchService
             foreach ($phasePayload['items'] as $itemIndex => $itemPayload) {
                 $recipeItem = new RecipeItem([
                     'ingredient_id' => $itemPayload['ingredient_id'],
-                    'ingredient_version_id' => $itemPayload['ingredient_version_id'],
                     'owner_type' => OwnerType::User,
                     'owner_id' => $user->id,
                     'workspace_id' => null,
@@ -745,22 +742,20 @@ class RecipeWorkbenchService
      */
     private function mapItemToWorkbenchRow(RecipeItem $item): array
     {
-        $ingredientVersion = $item->ingredientVersion;
-        $ingredient = $ingredientVersion?->ingredient;
-        $sapProfile = $ingredientVersion?->sapProfile;
+        $ingredient = $item->ingredient;
+        $sapProfile = $ingredient?->sapProfile;
 
         return [
             'id' => 'saved-'.$item->id,
-            'ingredient_version_id' => $item->ingredient_version_id,
             'ingredient_id' => $item->ingredient_id,
-            'name' => $ingredientVersion?->display_name,
-            'inci_name' => $ingredientVersion?->inci_name,
+            'name' => $ingredient?->display_name,
+            'inci_name' => $ingredient?->inci_name,
             'category' => $ingredient?->category?->value,
-            'soap_inci_naoh_name' => $ingredientVersion?->soap_inci_naoh_name,
-            'soap_inci_koh_name' => $ingredientVersion?->soap_inci_koh_name,
+            'soap_inci_naoh_name' => $ingredient?->soap_inci_naoh_name,
+            'soap_inci_koh_name' => $ingredient?->soap_inci_koh_name,
             'koh_sap_value' => $sapProfile?->koh_sap_value === null ? null : (float) $sapProfile->koh_sap_value,
             'naoh_sap_value' => $sapProfile?->naoh_sap_value,
-            'fatty_acid_profile' => $ingredientVersion?->normalizedFattyAcidProfile() ?? [],
+            'fatty_acid_profile' => $ingredient?->normalizedFattyAcidProfile() ?? [],
             'percentage' => (float) $item->percentage,
             'note' => $item->note,
         ];
@@ -815,22 +810,21 @@ class RecipeWorkbenchService
 
     private function latestIngredientChangeAt(RecipeItem $item): ?Carbon
     {
-        $ingredientVersion = $item->ingredientVersion;
+        $ingredient = $item->ingredient;
 
-        if (! $ingredientVersion instanceof IngredientVersion) {
+        if (! $ingredient instanceof Ingredient) {
             return null;
         }
 
         return collect([
-            $ingredientVersion->updated_at,
-            $ingredientVersion->ingredient?->updated_at,
-            $ingredientVersion->sapProfile?->updated_at,
-            $ingredientVersion->allergenEntries->max('updated_at'),
-            $ingredientVersion->ifraCertificates->max('updated_at'),
-            $ingredientVersion->ifraCertificates
+            $ingredient->updated_at,
+            $ingredient->sapProfile?->updated_at,
+            $ingredient->allergenEntries->max('updated_at'),
+            $ingredient->ifraCertificates->max('updated_at'),
+            $ingredient->ifraCertificates
                 ->flatMap(fn ($certificate) => $certificate->limits)
                 ->max('updated_at'),
-            $ingredientVersion->fattyAcidEntries->max('updated_at'),
+            $ingredient->fattyAcidEntries->max('updated_at'),
         ])
             ->filter()
             ->map(fn ($value) => $value instanceof Carbon ? $value : Carbon::parse($value))

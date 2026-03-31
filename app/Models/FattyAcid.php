@@ -28,9 +28,9 @@ class FattyAcid extends Model
     /** @use HasFactory<FattyAcidFactory> */
     use HasFactory;
 
-    public function ingredientVersionEntries(): HasMany
+    public function ingredientEntries(): HasMany
     {
-        return $this->hasMany(IngredientVersionFattyAcid::class);
+        return $this->hasMany(IngredientFattyAcid::class);
     }
 
     protected function casts(): array

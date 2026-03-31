@@ -23,6 +23,7 @@ trait InteractsWithIngredientDataEntry
             'sap_profile' => $data['sap_profile'] ?? [],
             'fatty_acid_entries' => $data['fatty_acid_entries'] ?? [],
             'allergen_entries' => $data['allergen_entries'] ?? [],
+            'function_ids' => $data['function_ids'] ?? [],
             'components' => $data['components'] ?? [],
         ];
 
@@ -31,6 +32,7 @@ trait InteractsWithIngredientDataEntry
             $data['sap_profile'],
             $data['fatty_acid_entries'],
             $data['allergen_entries'],
+            $data['function_ids'],
             $data['components'],
         );
 
@@ -40,6 +42,6 @@ trait InteractsWithIngredientDataEntry
     protected function syncIngredientDataEntryState(Ingredient $ingredient): void
     {
         app(IngredientDataEntryService::class)->syncCurrentData($ingredient, $this->ingredientDataEntryState);
-        $this->record = $ingredient->fresh(['currentVersion']);
+        $this->record = $ingredient->fresh();
     }
 }

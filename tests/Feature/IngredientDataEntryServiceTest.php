@@ -4,8 +4,9 @@ use App\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
+use App\Models\IngredientAllergenEntry;
+use App\Models\IngredientFunction;
 use App\Models\IngredientSapProfile;
-use App\Models\IngredientVersion;
 use App\Services\IngredientDataEntryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -30,7 +31,7 @@ it('syncs current carrier oil data from the ingredient entry service', function 
         'name' => 'Palmitic',
     ]);
 
-    $version = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+    $savedIngredient = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
         'current_version' => [
             'display_name' => 'Olive Oil',
             'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
@@ -41,6 +42,8 @@ it('syncs current carrier oil data from the ingredient entry service', function 
         ],
         'sap_profile' => [
             'koh_sap_value' => 0.188,
+            'iodine_value' => 86.4,
+            'ins_value' => 102.8,
             'source_notes' => 'Trusted supplier average.',
         ],
         'fatty_acid_entries' => [
@@ -58,11 +61,13 @@ it('syncs current carrier oil data from the ingredient entry service', function 
         'allergen_entries' => [],
     ]);
 
-    expect($version->display_name)->toBe('Olive Oil')
-        ->and($version->inci_name)->toBe('OLEA EUROPAEA FRUIT OIL')
-        ->and((float) $version->sapProfile->koh_sap_value)->toBe(0.188)
-        ->and($version->fattyAcidEntries)->toHaveCount(2)
-        ->and($version->fattyAcidEntries->pluck('fatty_acid_id')->all())->toEqualCanonicalizing([$oleic->id, $palmitic->id]);
+    expect($savedIngredient->display_name)->toBe('Olive Oil')
+        ->and($savedIngredient->inci_name)->toBe('OLEA EUROPAEA FRUIT OIL')
+        ->and((float) $savedIngredient->sapProfile->koh_sap_value)->toBe(0.188)
+        ->and((float) $savedIngredient->sapProfile->iodine_value)->toBe(86.4)
+        ->and((float) $savedIngredient->sapProfile->ins_value)->toBe(102.8)
+        ->and($savedIngredient->fattyAcidEntries)->toHaveCount(2)
+        ->and($savedIngredient->fattyAcidEntries->pluck('fatty_acid_id')->all())->toEqualCanonicalizing([$oleic->id, $palmitic->id]);
 });
 
 it('syncs current aromatic allergen data from the ingredient entry service', function () {
@@ -81,7 +86,7 @@ it('syncs current aromatic allergen data from the ingredient entry service', fun
         'inci_name' => 'LIMONENE',
     ]);
 
-    $version = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+    $savedIngredient = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
         'current_version' => [
             'display_name' => 'Lavender Essential Oil',
             'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
@@ -105,12 +110,51 @@ it('syncs current aromatic allergen data from the ingredient entry service', fun
         ],
     ]);
 
-    expect($version->display_name)->toBe('Lavender Essential Oil')
-        ->and($version->allergenEntries)->toHaveCount(2)
-        ->and($version->allergenEntries->pluck('allergen_id')->all())->toEqualCanonicalizing([$linalool->id, $limonene->id]);
+    expect($savedIngredient->display_name)->toBe('Lavender Essential Oil')
+        ->and($savedIngredient->allergenEntries)->toHaveCount(2)
+        ->and($savedIngredient->allergenEntries->pluck('allergen_id')->all())->toEqualCanonicalizing([$linalool->id, $limonene->id]);
 });
 
-it('hydrates fatty acid rows from the legacy sap profile when normalized rows are missing', function () {
+it('syncs ingredient functions from the ingredient entry service', function () {
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'source_key' => 'ADD1',
+        'source_file' => 'admin',
+        'is_active' => true,
+    ]);
+
+    $emollient = IngredientFunction::factory()->create([
+        'key' => 'emollient',
+        'name' => 'Emollient',
+        'sort_order' => 10,
+    ]);
+
+    $skinConditioning = IngredientFunction::factory()->create([
+        'key' => 'skin_conditioning',
+        'name' => 'Skin conditioning',
+        'sort_order' => 20,
+    ]);
+
+    $savedIngredient = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => [
+            'display_name' => 'Calendula Balm Extract',
+            'inci_name' => 'CALENDULA OFFICINALIS FLOWER EXTRACT',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [],
+        'function_ids' => [$skinConditioning->id, $emollient->id, $emollient->id],
+        'components' => [],
+    ]);
+
+    expect($savedIngredient->functions)->toHaveCount(2)
+        ->and($savedIngredient->functions->pluck('id')->all())->toEqual([$emollient->id, $skinConditioning->id])
+        ->and(app(IngredientDataEntryService::class)->formData($savedIngredient)['function_ids'])->toEqual([$emollient->id, $skinConditioning->id]);
+});
+
+it('keeps sap profile reference metrics separate from fatty acid entries', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
         'source_key' => 'AVO1',
@@ -118,38 +162,26 @@ it('hydrates fatty acid rows from the legacy sap profile when normalized rows ar
         'is_active' => true,
     ]);
 
-    $oleic = FattyAcid::factory()->create([
-        'key' => 'oleic',
-        'name' => 'Oleic',
-    ]);
-
-    $palmitic = FattyAcid::factory()->create([
-        'key' => 'palmitic',
-        'name' => 'Palmitic',
-    ]);
-
-    $version = IngredientVersion::factory()->create([
-        'ingredient_id' => $ingredient->id,
-        'is_current' => true,
+    $ingredient->update([
         'display_name' => 'Avocado Oil',
         'inci_name' => 'PERSEA GRATISSIMA OIL',
-        'source_key' => 'AVO1',
-        'source_file' => 'admin',
     ]);
 
     IngredientSapProfile::factory()->create([
-        'ingredient_version_id' => $version->id,
+        'ingredient_id' => $ingredient->id,
         'koh_sap_value' => 0.188,
-        'oleic' => 67,
-        'palmitic' => 14,
-        'source_notes' => 'Legacy imported profile.',
+        'iodine_value' => 84.7,
+        'ins_value' => 105.1,
+        'source_notes' => 'Supplier reference sheet.',
     ]);
 
-    $fattyAcidEntries = app(IngredientDataEntryService::class)->formData($ingredient)['fatty_acid_entries'];
+    $formData = app(IngredientDataEntryService::class)->formData($ingredient);
 
-    expect($fattyAcidEntries)->toHaveCount(2)
-        ->and(collect($fattyAcidEntries)->pluck('fatty_acid_id')->all())->toEqualCanonicalizing([$oleic->id, $palmitic->id])
-        ->and(collect($fattyAcidEntries)->pluck('source_notes')->unique()->values()->all())->toEqual(['Legacy imported profile.']);
+    expect($formData['fatty_acid_entries'])->toBe([])
+        ->and($formData['sap_profile']['koh_sap_value'])->toBe(0.188)
+        ->and($formData['sap_profile']['iodine_value'])->toBe(84.7)
+        ->and($formData['sap_profile']['ins_value'])->toBe(105.1)
+        ->and($formData['sap_profile']['source_notes'])->toBe('Supplier reference sheet.');
 });
 
 it('syncs composite ingredient components from the ingredient entry service', function () {
@@ -281,4 +313,76 @@ it('rejects composite components that do not reference catalog ingredients', fun
             ],
         ],
     ]))->toThrow(ValidationException::class, 'Composite components must reference existing catalog ingredients.');
+});
+
+it('clears stale dependent data when an ingredient is reclassified', function () {
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'source_key' => 'REC1',
+        'source_file' => 'admin',
+        'is_active' => true,
+    ]);
+
+    $oleic = FattyAcid::factory()->create([
+        'key' => 'oleic',
+        'name' => 'Oleic',
+    ]);
+
+    $linalool = Allergen::factory()->create([
+        'inci_name' => 'LINALOOL',
+    ]);
+
+    $service = app(IngredientDataEntryService::class);
+
+    $savedIngredient = $service->syncCurrentData($ingredient, [
+        'current_version' => [
+            'display_name' => 'Reclassify Me',
+            'inci_name' => 'TEST OIL',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [
+            'koh_sap_value' => 0.188,
+            'source_notes' => 'Initial chemistry',
+        ],
+        'fatty_acid_entries' => [
+            [
+                'fatty_acid_id' => $oleic->id,
+                'percentage' => 71,
+                'source_notes' => null,
+            ],
+        ],
+        'allergen_entries' => [],
+        'components' => [],
+    ]);
+
+    IngredientAllergenEntry::query()->create([
+        'ingredient_id' => $savedIngredient->id,
+        'allergen_id' => $linalool->id,
+        'concentration_percent' => 0.5,
+        'source_notes' => 'Old aromatic data',
+    ]);
+
+    $ingredient->update([
+        'category' => IngredientCategory::Clay,
+    ]);
+
+    $service->syncCurrentData($ingredient->fresh(), [
+        'current_version' => [
+            'display_name' => 'Reclassify Me',
+            'inci_name' => 'TEST CLAY',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [],
+        'components' => [],
+    ]);
+
+    $savedIngredient = $savedIngredient->fresh(['sapProfile', 'fattyAcidEntries', 'allergenEntries']);
+
+    expect($savedIngredient->sapProfile)->toBeNull()
+        ->and($savedIngredient->fattyAcidEntries)->toHaveCount(0)
+        ->and($savedIngredient->allergenEntries)->toHaveCount(0);
 });

@@ -26,14 +26,18 @@ class IfraProductCategoryForm
                             ->unique()
                             ->maxLength(255),
                         TextInput::make('name')
+                            ->label('Official label')
                             ->required()
                             ->maxLength(255),
                         TextInput::make('short_name')
+                            ->label('Short label')
+                            ->helperText('Use the user-facing shorthand, such as Soap / shower gel or Hair rinse-off.')
                             ->maxLength(255),
                         Toggle::make('is_active')
                             ->label('Active')
                             ->default(true),
                         Textarea::make('description')
+                            ->label('Full description')
                             ->rows(4)
                             ->columnSpanFull(),
                     ])

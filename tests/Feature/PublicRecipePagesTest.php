@@ -3,7 +3,6 @@
 use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
-use App\Models\IngredientVersion;
 use App\Models\ProductFamily;
 use App\Models\User;
 use App\OwnerType;
@@ -39,37 +38,24 @@ it('renders the public soap workbench with filtered catalog data', function () {
 
     $carrierOil = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive Oil',
+        'inci_name' => 'Olea europaea fruit oil',
+        'soap_inci_naoh_name' => 'Sodium olivate',
+        'soap_inci_koh_name' => 'Potassium olivate',
         'is_potentially_saponifiable' => true,
     ]);
 
-    $carrierOilVersion = IngredientVersion::factory()
-        ->for($carrierOil)
-        ->create([
-            'display_name' => 'Olive Oil',
-            'inci_name' => 'Olea europaea fruit oil',
-            'soap_inci_naoh_name' => 'Sodium olivate',
-            'soap_inci_koh_name' => 'Potassium olivate',
-        ]);
-
     IngredientSapProfile::factory()
-        ->for($carrierOilVersion, 'ingredientVersion')
+        ->for($carrierOil, 'ingredient')
         ->create([
             'koh_sap_value' => 0.188,
-            'oleic' => 71,
-            'linoleic' => 10,
-            'palmitic' => 13,
         ]);
 
     $essentialOil = Ingredient::factory()->create([
         'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Lavender Essential Oil',
+        'inci_name' => 'Lavandula angustifolia oil',
     ]);
-
-    IngredientVersion::factory()
-        ->for($essentialOil)
-        ->create([
-            'display_name' => 'Lavender Essential Oil',
-            'inci_name' => 'Lavandula angustifolia oil',
-        ]);
 
     $this->get(route('recipes.create'))
         ->assertSuccessful()
@@ -91,16 +77,13 @@ it('shows private user ingredients in the workbench only for their owner', funct
 
     $privateIngredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Additive,
+        'display_name' => 'Private Sodium Lactate',
+        'inci_name' => 'SODIUM LACTATE',
         'owner_type' => OwnerType::User,
         'owner_id' => $owner->id,
         'visibility' => Visibility::Private,
         'source_file' => 'user',
         'source_key' => 'USR-OWN',
-    ]);
-
-    IngredientVersion::factory()->for($privateIngredient)->create([
-        'display_name' => 'Private Sodium Lactate',
-        'inci_name' => 'SODIUM LACTATE',
     ]);
 
     $this->actingAs($owner)

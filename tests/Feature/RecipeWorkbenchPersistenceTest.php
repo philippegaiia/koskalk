@@ -4,9 +4,8 @@ use App\IngredientCategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
+use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
-use App\Models\IngredientVersion;
-use App\Models\IngredientVersionFattyAcid;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -23,20 +22,20 @@ it('syncs the parent recipe name when a saved draft is renamed', function () {
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
     $service = app(RecipeWorkbenchService::class);
 
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, name: 'Recipe A'),
+        soapDraftPayload($ingredient, name: 'Recipe A'),
     );
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, name: 'Recipe B'),
+        soapDraftPayload($ingredient, name: 'Recipe B'),
         $recipe,
     );
 
@@ -55,7 +54,7 @@ it('returns a structured error instead of throwing when oil weight is invalid', 
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
 
     $this->actingAs($user);
 
@@ -63,7 +62,7 @@ it('returns a structured error instead of throwing when oil weight is invalid', 
     $component->mount();
 
     $result = $component->saveDraft(
-        soapDraftPayload($ingredientVersion, oilWeight: 0),
+        soapDraftPayload($ingredient, oilWeight: 0),
         app(RecipeWorkbenchService::class),
     );
 
@@ -78,7 +77,7 @@ it('can still save a draft from a mounted component after the auth session is go
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
 
     $this->actingAs($user);
 
@@ -88,7 +87,7 @@ it('can still save a draft from a mounted component after the auth session is go
     auth()->logout();
 
     $result = $component->saveDraft(
-        soapDraftPayload($ingredientVersion, name: 'Fallback Draft'),
+        soapDraftPayload($ingredient, name: 'Fallback Draft'),
         app(RecipeWorkbenchService::class),
     );
 
@@ -108,10 +107,10 @@ it('returns backend soap calculation preview data for the workbench', function (
         'name' => 'Soap',
     ]);
 
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
 
     IngredientSapProfile::factory()->create([
-        'ingredient_version_id' => $ingredientVersion->id,
+        'ingredient_id' => $ingredient->id,
         'koh_sap_value' => 0.188,
     ]);
 
@@ -124,13 +123,13 @@ it('returns backend soap calculation preview data for the workbench', function (
         'name' => 'Palmitic',
     ]);
 
-    IngredientVersionFattyAcid::factory()->create([
-        'ingredient_version_id' => $ingredientVersion->id,
+    IngredientFattyAcid::factory()->create([
+        'ingredient_id' => $ingredient->id,
         'fatty_acid_id' => $oleic->id,
         'percentage' => 71,
     ]);
-    IngredientVersionFattyAcid::factory()->create([
-        'ingredient_version_id' => $ingredientVersion->id,
+    IngredientFattyAcid::factory()->create([
+        'ingredient_id' => $ingredient->id,
         'fatty_acid_id' => $palmitic->id,
         'percentage' => 13,
     ]);
@@ -139,7 +138,7 @@ it('returns backend soap calculation preview data for the workbench', function (
     $component->mount();
 
     $result = $component->previewCalculation(
-        soapDraftPayload($ingredientVersion, oilWeight: 1000),
+        soapDraftPayload($ingredient, oilWeight: 1000),
         app(RecipeWorkbenchService::class),
     );
 
@@ -155,13 +154,13 @@ it('stores formula context on recipe versions and returns it in the draft payloa
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
     $service = app(RecipeWorkbenchService::class);
 
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, exposureMode: 'leave_on'),
+        soapDraftPayload($ingredient, exposureMode: 'leave_on'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -185,13 +184,13 @@ it('flags a saved formula for review when linked ingredient data changes', funct
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
     $service = app(RecipeWorkbenchService::class);
 
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion),
+        soapDraftPayload($ingredient),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -200,7 +199,7 @@ it('flags a saved formula for review when linked ingredient data changes', funct
 
     $this->travel(1)->seconds();
 
-    $ingredientVersion->update([
+    $ingredient->update([
         'display_name' => 'Updated Oil Name',
     ]);
 
@@ -216,10 +215,10 @@ it('loads a saved version for comparison', function () {
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
 
     IngredientSapProfile::factory()->create([
-        'ingredient_version_id' => $ingredientVersion->id,
+        'ingredient_id' => $ingredient->id,
         'koh_sap_value' => 0.188,
     ]);
 
@@ -227,7 +226,7 @@ it('loads a saved version for comparison', function () {
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, name: 'Baseline Draft'),
+        soapDraftPayload($ingredient, name: 'Baseline Draft'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -235,7 +234,7 @@ it('loads a saved version for comparison', function () {
     $savedDraft = $service->saveAsNewVersion(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, name: 'Published Formula'),
+        soapDraftPayload($ingredient, name: 'Published Formula'),
         $recipe,
     );
 
@@ -291,10 +290,10 @@ it('keeps comparison snapshots aligned with the version payload and backend calc
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
 
     IngredientSapProfile::factory()->create([
-        'ingredient_version_id' => $ingredientVersion->id,
+        'ingredient_id' => $ingredient->id,
         'koh_sap_value' => 0.188,
     ]);
 
@@ -302,7 +301,7 @@ it('keeps comparison snapshots aligned with the version payload and backend calc
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, name: 'Comparison Draft'),
+        soapDraftPayload($ingredient, name: 'Comparison Draft'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -310,7 +309,7 @@ it('keeps comparison snapshots aligned with the version payload and backend calc
     $service->saveAsNewVersion(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, name: 'Comparison Baseline'),
+        soapDraftPayload($ingredient, name: 'Comparison Baseline'),
         $recipe,
     );
 
@@ -343,10 +342,10 @@ it('loads saved versions with the same snapshot contract used for comparison', f
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
 
     IngredientSapProfile::factory()->create([
-        'ingredient_version_id' => $ingredientVersion->id,
+        'ingredient_id' => $ingredient->id,
         'koh_sap_value' => 0.188,
     ]);
 
@@ -354,7 +353,7 @@ it('loads saved versions with the same snapshot contract used for comparison', f
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, name: 'Workbench Draft'),
+        soapDraftPayload($ingredient, name: 'Workbench Draft'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -362,7 +361,7 @@ it('loads saved versions with the same snapshot contract used for comparison', f
     $service->saveAsNewVersion(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredientVersion, name: 'Opened Baseline'),
+        soapDraftPayload($ingredient, name: 'Opened Baseline'),
         $recipe,
     );
 
@@ -396,17 +395,17 @@ it('returns no soap calculation preview for blend-only formulas', function () {
         'name' => 'Soap',
     ]);
 
-    $ingredientVersion = makeCarrierOilIngredientVersion();
+    $ingredient = makeCarrierOilIngredient();
 
     IngredientSapProfile::factory()->create([
-        'ingredient_version_id' => $ingredientVersion->id,
+        'ingredient_id' => $ingredient->id,
         'koh_sap_value' => 0.188,
     ]);
 
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
-    $draft = soapDraftPayload($ingredientVersion, oilWeight: 1000);
+    $draft = soapDraftPayload($ingredient, oilWeight: 1000);
     $draft['manufacturing_mode'] = 'blend_only';
 
     $result = $component->previewCalculation(
@@ -430,35 +429,16 @@ it('exposes workbench phase options for saponifiable oils, additive-only oils, a
         'is_active' => true,
     ]);
 
-    $trustedCarrierVersion = IngredientVersion::factory()->create([
-        'ingredient_id' => $trustedCarrierIngredient->id,
-        'display_name' => 'Olive Oil',
-        'is_current' => true,
-        'is_active' => true,
-    ]);
-
     $customCarrierIngredient = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'is_potentially_saponifiable' => false,
-        'is_active' => true,
-    ]);
-
-    $customCarrierVersion = IngredientVersion::factory()->create([
-        'ingredient_id' => $customCarrierIngredient->id,
         'display_name' => 'Custom Fig Oil',
-        'is_current' => true,
+        'is_potentially_saponifiable' => false,
         'is_active' => true,
     ]);
 
     $fragranceIngredient = Ingredient::factory()->create([
         'category' => IngredientCategory::FragranceOil,
-        'is_active' => true,
-    ]);
-
-    $fragranceVersion = IngredientVersion::factory()->create([
-        'ingredient_id' => $fragranceIngredient->id,
         'display_name' => 'Rose Accord',
-        'is_current' => true,
         'is_active' => true,
     ]);
 
@@ -469,29 +449,25 @@ it('exposes workbench phase options for saponifiable oils, additive-only oils, a
     $ingredients = collect($workbench['ingredients'])->keyBy('id');
 
     expect($ingredients)->toHaveKeys([
-        $trustedCarrierVersion->id,
-        $customCarrierVersion->id,
-        $fragranceVersion->id,
+        $trustedCarrierIngredient->id,
+        $customCarrierIngredient->id,
+        $fragranceIngredient->id,
     ])
-        ->and($ingredients[$trustedCarrierVersion->id]['available_phases'])->toBe(['saponified_oils', 'additives'])
-        ->and($ingredients[$trustedCarrierVersion->id]['default_phase'])->toBe('saponified_oils')
-        ->and($ingredients[$customCarrierVersion->id]['available_phases'])->toBe(['additives'])
-        ->and($ingredients[$customCarrierVersion->id]['default_phase'])->toBe('additives')
-        ->and($ingredients[$fragranceVersion->id]['available_phases'])->toBe(['fragrance'])
-        ->and($ingredients[$fragranceVersion->id]['needs_compliance'])->toBeTrue();
+        ->and($ingredients[$trustedCarrierIngredient->id]['available_phases'])->toBe(['saponified_oils', 'additives'])
+        ->and($ingredients[$trustedCarrierIngredient->id]['default_phase'])->toBe('saponified_oils')
+        ->and($ingredients[$customCarrierIngredient->id]['available_phases'])->toBe(['additives'])
+        ->and($ingredients[$customCarrierIngredient->id]['default_phase'])->toBe('additives')
+        ->and($ingredients[$fragranceIngredient->id]['available_phases'])->toBe(['fragrance'])
+        ->and($ingredients[$fragranceIngredient->id]['needs_compliance'])->toBeTrue();
 });
 
-function makeCarrierOilIngredientVersion(): IngredientVersion
+function makeCarrierOilIngredient(): Ingredient
 {
-    $ingredient = Ingredient::factory()->create([
+    return Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive Oil',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
         'is_potentially_saponifiable' => true,
-        'is_active' => true,
-    ]);
-
-    return IngredientVersion::factory()->create([
-        'ingredient_id' => $ingredient->id,
-        'is_current' => true,
         'is_active' => true,
     ]);
 }
@@ -500,7 +476,7 @@ function makeCarrierOilIngredientVersion(): IngredientVersion
  * @return array<string, mixed>
  */
 function soapDraftPayload(
-    IngredientVersion $ingredientVersion,
+    Ingredient $ingredient,
     string $name = 'Recipe',
     float $oilWeight = 1000,
     string $exposureMode = 'rinse_off',
@@ -523,8 +499,7 @@ function soapDraftPayload(
         'phase_items' => [
             'saponified_oils' => [
                 [
-                    'ingredient_id' => $ingredientVersion->ingredient_id,
-                    'ingredient_version_id' => $ingredientVersion->id,
+                    'ingredient_id' => $ingredient->id,
                     'percentage' => 100,
                     'weight' => $oilWeight,
                     'note' => null,

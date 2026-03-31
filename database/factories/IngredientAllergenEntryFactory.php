@@ -3,8 +3,8 @@
 namespace Database\Factories;
 
 use App\Models\Allergen;
+use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
-use App\Models\IngredientVersion;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,7 +20,7 @@ class IngredientAllergenEntryFactory extends Factory
     public function definition(): array
     {
         return [
-            'ingredient_version_id' => IngredientVersion::factory(),
+            'ingredient_id' => Ingredient::factory(),
             'allergen_id' => Allergen::factory(),
             'concentration_percent' => fake()->randomFloat(5, 0.0001, 5),
             'source_notes' => fake()->sentence(),

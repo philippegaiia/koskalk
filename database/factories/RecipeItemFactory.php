@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Ingredient;
-use App\Models\IngredientVersion;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -27,7 +26,6 @@ class RecipeItemFactory extends Factory
             'recipe_version_id' => RecipeVersion::factory(),
             'recipe_phase_id' => RecipePhase::factory(),
             'ingredient_id' => Ingredient::factory(),
-            'ingredient_version_id' => IngredientVersion::factory(),
             'owner_type' => OwnerType::User,
             'owner_id' => 1,
             'workspace_id' => null,

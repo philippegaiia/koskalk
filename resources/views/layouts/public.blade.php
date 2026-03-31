@@ -11,25 +11,29 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="min-h-screen bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
+    @php($isHomePage = request()->routeIs('home'))
+    <body data-public-shell="true" class="min-h-screen bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
         <div class="relative isolate overflow-hidden">
-            <div class="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,rgba(206,164,99,0.28),transparent_60%)]"></div>
+            @unless ($isHomePage)
+                <div class="pointer-events-none absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_top,rgba(206,164,99,0.28),transparent_60%)]"></div>
+            @endunless
 
-            <header class="border-b border-[var(--color-line)] bg-white/88 backdrop-blur">
+            <header class="{{ $isHomePage ? 'absolute inset-x-0 top-0 z-30' : 'border-b border-[var(--color-line)] bg-white/88 backdrop-blur' }}">
                 <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4 lg:px-8">
-                    <a href="{{ route('home') }}" class="flex items-center gap-3 text-sm font-semibold tracking-[0.24em] text-[var(--color-ink-strong)] uppercase">
-                        <span class="grid size-9 place-items-center rounded-full border border-[var(--color-line-strong)] bg-[var(--color-panel)] text-xs">KK</span>
+                    <a href="{{ route('home') }}" class="flex items-center gap-3 text-sm font-semibold tracking-[0.24em] {{ $isHomePage ? 'text-white' : 'text-[var(--color-ink-strong)]' }} uppercase">
+                        <span class="grid size-9 place-items-center rounded-full border text-xs {{ $isHomePage ? 'border-white/15 bg-white/10 text-white' : 'border-[var(--color-line-strong)] bg-[var(--color-panel)] text-[var(--color-ink-strong)]' }}">KK</span>
                         <span>Koskalk</span>
                     </a>
 
-                    <nav class="hidden items-center gap-6 text-sm text-[var(--color-ink-soft)] lg:flex">
-                        <a href="{{ route('home') }}" class="transition hover:text-[var(--color-ink-strong)]">Overview</a>
-                        <a href="{{ route('dashboard') }}" class="transition hover:text-[var(--color-ink-strong)]">Dashboard</a>
-                        <a href="/admin" class="transition hover:text-[var(--color-ink-strong)]">Admin</a>
+                    <nav class="hidden items-center gap-6 text-sm lg:flex {{ $isHomePage ? 'text-white/72' : 'text-[var(--color-ink-soft)]' }}">
+                        <a href="{{ route('home') }}" class="transition {{ $isHomePage ? 'hover:text-white' : 'hover:text-[var(--color-ink-strong)]' }}">Overview</a>
+                        <a href="{{ route('recipes.index') }}" class="transition {{ $isHomePage ? 'hover:text-white' : 'hover:text-[var(--color-ink-strong)]' }}">Recipes</a>
+                        <a href="{{ route('ingredients.index') }}" class="transition {{ $isHomePage ? 'hover:text-white' : 'hover:text-[var(--color-ink-strong)]' }}">Ingredients</a>
+                        <a href="/admin" class="transition {{ $isHomePage ? 'hover:text-white' : 'hover:text-[var(--color-ink-strong)]' }}">Admin</a>
                     </nav>
 
                     <div class="flex items-center gap-3">
-                        <a href="{{ route('dashboard') }}" class="rounded-full border border-[var(--color-line-strong)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">Open Workspace</a>
+                        <a href="{{ route('dashboard') }}" class="rounded-full border px-4 py-2 text-sm font-medium transition {{ $isHomePage ? 'border-white/15 bg-white/10 text-white hover:bg-white/16' : 'border-[var(--color-line-strong)] text-[var(--color-ink-strong)] hover:bg-[var(--color-panel)]' }}">Open Workspace</a>
                     </div>
                 </div>
             </header>

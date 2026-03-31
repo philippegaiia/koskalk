@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -21,6 +22,17 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'source_key',
     'source_code_prefix',
     'category',
+    'display_name',
+    'display_name_en',
+    'inci_name',
+    'supplier_name',
+    'supplier_reference',
+    'soap_inci_naoh_name',
+    'soap_inci_koh_name',
+    'cas_number',
+    'ec_number',
+    'unit',
+    'price_eur',
     'owner_type',
     'owner_id',
     'workspace_id',
@@ -28,6 +40,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'is_potentially_saponifiable',
     'requires_admin_review',
     'is_active',
+    'is_manufactured',
     'source_data',
     'info_markdown',
     'featured_image_path',
@@ -41,14 +54,9 @@ class Ingredient extends Model
         isAccessibleBy as tenantIsAccessibleBy;
     }
 
-    public function versions(): HasMany
+    public function sapProfile(): HasOne
     {
-        return $this->hasMany(IngredientVersion::class);
-    }
-
-    public function currentVersion(): HasOne
-    {
-        return $this->hasOne(IngredientVersion::class)->where('is_current', true);
+        return $this->hasOne(IngredientSapProfile::class);
     }
 
     public function workspace(): BelongsTo
@@ -68,9 +76,55 @@ class Ingredient extends Model
         return $this->hasMany(RecipeItem::class);
     }
 
+    public function fattyAcidEntries(): HasMany
+    {
+        return $this->hasMany(IngredientFattyAcid::class);
+    }
+
+    public function allergenEntries(): HasMany
+    {
+        return $this->hasMany(IngredientAllergenEntry::class);
+    }
+
+    public function functions(): BelongsToMany
+    {
+        return $this->belongsToMany(IngredientFunction::class, 'ingredient_function_ingredient')
+            ->withTimestamps()
+            ->orderBy('ingredient_functions.sort_order')
+            ->orderBy('ingredient_functions.name');
+    }
+
+    public function ifraCertificates(): HasMany
+    {
+        return $this->hasMany(IfraCertificate::class);
+    }
+
     public function featuredImageUrl(): ?string
     {
         return MediaStorage::publicUrl($this->featured_image_path);
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    public function normalizedFattyAcidProfile(): array
+    {
+        $profile = $this->fattyAcidEntries()
+            ->with('fattyAcid:id,key,display_order')
+            ->get()
+            ->sortBy(fn (IngredientFattyAcid $entry): int => $entry->fattyAcid?->display_order ?? PHP_INT_MAX)
+            ->mapWithKeys(function (IngredientFattyAcid $entry): array {
+                $key = $entry->fattyAcid?->key;
+
+                return $key === null ? [] : [$key => round((float) $entry->percentage, 5)];
+            })
+            ->all();
+
+        if ($profile !== []) {
+            return $profile;
+        }
+
+        return [];
     }
 
     public function isAvailableForInitialSoapCalculation(): bool
@@ -175,9 +229,11 @@ class Ingredient extends Model
             'category' => IngredientCategory::class,
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
+            'price_eur' => 'decimal:2',
             'is_potentially_saponifiable' => 'bool',
             'requires_admin_review' => 'bool',
             'is_active' => 'bool',
+            'is_manufactured' => 'bool',
             'source_data' => 'array',
         ];
     }

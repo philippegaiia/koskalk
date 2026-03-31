@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\IfraCertificates\Schemas;
 
 use App\IngredientCategory;
+use App\Models\IfraProductCategory;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -24,14 +25,11 @@ class IfraCertificateForm
                     ->description('Enter the current IFRA amendment and category limits for the aromatic ingredient version. Reference files can stay outside the normal admin workflow.')
                     ->icon(Heroicon::DocumentCheck)
                     ->schema([
-                        Select::make('ingredient_version_id')
+                        Select::make('ingredient_id')
                             ->relationship(
-                                name: 'ingredientVersion',
+                                name: 'ingredient',
                                 titleAttribute: 'display_name',
-                                modifyQueryUsing: fn (Builder $query): Builder => $query->whereHas(
-                                    'ingredient',
-                                    fn (Builder $ingredientQuery): Builder => $ingredientQuery->whereIn('category', IngredientCategory::aromaticValues())
-                                )
+                                modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn('category', IngredientCategory::aromaticValues())
                             )
                             ->searchable()
                             ->preload()
@@ -47,6 +45,12 @@ class IfraCertificateForm
                             ->maxLength(255),
                         DatePicker::make('published_at'),
                         DatePicker::make('valid_from'),
+                        TextInput::make('peroxide_value')
+                            ->label('Peroxide value')
+                            ->helperText('Optional peroxide value for the current material, typically in meq O2/kg.')
+                            ->numeric()
+                            ->inputMode('decimal')
+                            ->suffix('meq O2/kg'),
                         Toggle::make('is_current')
                             ->label('Current set')
                             ->default(true),
@@ -62,7 +66,14 @@ class IfraCertificateForm
                             ->relationship()
                             ->schema([
                                 Select::make('ifra_product_category_id')
-                                    ->relationship(name: 'ifraProductCategory', titleAttribute: 'name')
+                                    ->options(fn (): array => IfraProductCategory::query()
+                                        ->where('is_active', true)
+                                        ->orderBy('code')
+                                        ->get()
+                                        ->mapWithKeys(fn (IfraProductCategory $category): array => [
+                                            $category->id => $category->optionLabel(),
+                                        ])
+                                        ->all())
                                     ->searchable()
                                     ->preload()
                                     ->required(),

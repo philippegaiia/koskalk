@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\SoapFattyAcid;
 use App\SoapSap;
 use Database\Factories\IngredientSapProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -12,16 +11,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
-    'ingredient_version_id',
+    'ingredient_id',
     'koh_sap_value',
-    'lauric',
-    'myristic',
-    'palmitic',
-    'stearic',
-    'ricinoleic',
-    'oleic',
-    'linoleic',
-    'linolenic',
+    'iodine_value',
+    'ins_value',
     'source_notes',
 ])]
 class IngredientSapProfile extends Model
@@ -29,39 +22,18 @@ class IngredientSapProfile extends Model
     /** @use HasFactory<IngredientSapProfileFactory> */
     use HasFactory;
 
-    public function ingredientVersion(): BelongsTo
+    public function ingredient(): BelongsTo
     {
-        return $this->belongsTo(IngredientVersion::class);
-    }
-
-    /**
-     * @return array<string, float>
-     */
-    public function fattyAcidProfile(): array
-    {
-        return collect(SoapFattyAcid::coreSet())
-            ->mapWithKeys(function (SoapFattyAcid $fattyAcid): array {
-                $value = $this->getAttributeValue($fattyAcid->value);
-
-                return $value === null
-                    ? []
-                    : [$fattyAcid->value => round((float) $value, 2)];
-            })
-            ->all();
-    }
-
-    public function hasFattyAcidProfile(): bool
-    {
-        return $this->fattyAcidProfile() !== [];
+        return $this->belongsTo(Ingredient::class);
     }
 
     protected function casts(): array
     {
-        return array_merge([
+        return [
             'koh_sap_value' => 'decimal:6',
-        ], collect(SoapFattyAcid::coreSet())
-            ->mapWithKeys(fn (SoapFattyAcid $fattyAcid): array => [$fattyAcid->value => 'decimal:2'])
-            ->all());
+            'iodine_value' => 'decimal:3',
+            'ins_value' => 'decimal:3',
+        ];
     }
 
     protected function naohSapValue(): Attribute

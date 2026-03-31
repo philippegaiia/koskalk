@@ -146,7 +146,7 @@
                                 <article class="rounded-[1.5rem] border border-[var(--color-line)] bg-white p-4">
                                     <div class="flex items-start justify-between gap-3">
                                         <div class="min-w-0">
-                                            <p class="truncate font-medium text-[var(--color-ink-strong)]">{{ $ingredient->currentVersion?->display_name ?? $ingredient->source_key }}</p>
+                                            <p class="truncate font-medium text-[var(--color-ink-strong)]">{{ $ingredient->display_name ?? $ingredient->source_key }}</p>
                                             <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $ingredient->category?->getLabel() ?? 'Uncategorized' }}</p>
                                         </div>
                                         <a href="{{ route('ingredients.edit', $ingredient->id) }}" wire:navigate class="shrink-0 rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">

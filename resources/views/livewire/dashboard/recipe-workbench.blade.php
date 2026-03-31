@@ -168,10 +168,13 @@
                             <div class="mt-3 flex flex-wrap gap-2">
                                 <template x-for="category in $data.ifraProductCategories" :key="category.id">
                                     <button type="button" @click="selectedIfraProductCategoryId = category.id" :class="selectedIfraProductCategoryId === category.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'border-transparent bg-white/70 text-[var(--color-ink-soft)]'" class="rounded-full border px-3 py-1.5 text-xs font-medium transition">
-                                        <span x-text="`Cat ${category.code}`"></span>
+                                        <span x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></span>
                                     </button>
                                 </template>
                             </div>
+                        </template>
+                        <template x-if="selectedIfraProductCategory?.description">
+                            <p class="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]" x-text="selectedIfraProductCategory.description"></p>
                         </template>
                         <template x-if="! $data.ifraProductCategories?.length">
                             <p class="mt-3 text-sm text-[var(--color-ink-soft)]">IFRA categories can be selected once the compliance catalog is populated.</p>

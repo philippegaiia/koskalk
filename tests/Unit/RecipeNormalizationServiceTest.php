@@ -10,22 +10,22 @@ it('normalizes soap phases from percentages using oil weight as the basis', func
             'key' => 'saponified_oils',
             'name' => 'Saponified Oils',
             'items' => [
-                ['ingredient_id' => 1, 'ingredient_version_id' => 11, 'percentage' => 70],
-                ['ingredient_id' => 2, 'ingredient_version_id' => 12, 'percentage' => 30],
+                ['ingredient_id' => 1, 'percentage' => 70],
+                ['ingredient_id' => 2, 'percentage' => 30],
             ],
         ],
         [
             'key' => 'additives',
             'name' => 'Additives',
             'items' => [
-                ['ingredient_id' => 3, 'ingredient_version_id' => 13, 'percentage' => 2],
+                ['ingredient_id' => 3, 'percentage' => 2],
             ],
         ],
         [
             'key' => 'fragrance',
             'name' => 'Fragrance',
             'items' => [
-                ['ingredient_id' => 4, 'ingredient_version_id' => 14, 'percentage' => 3],
+                ['ingredient_id' => 4, 'percentage' => 3],
             ],
         ],
     ], 1000, 'percent');

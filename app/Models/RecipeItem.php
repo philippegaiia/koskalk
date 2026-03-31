@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'recipe_version_id',
     'recipe_phase_id',
     'ingredient_id',
-    'ingredient_version_id',
     'owner_type',
     'owner_id',
     'workspace_id',
@@ -51,11 +50,6 @@ class RecipeItem extends Model
     public function ingredient(): BelongsTo
     {
         return $this->belongsTo(Ingredient::class);
-    }
-
-    public function ingredientVersion(): BelongsTo
-    {
-        return $this->belongsTo(IngredientVersion::class);
     }
 
     protected function casts(): array

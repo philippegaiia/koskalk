@@ -13,11 +13,11 @@ class IngredientAllergenEntriesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['ingredientVersion.ingredient', 'allergen']))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['ingredient', 'allergen']))
             ->columns([
-                TextColumn::make('ingredientVersion.display_name')
-                    ->label('Ingredient version')
-                    ->description(fn (IngredientAllergenEntry $record): ?string => $record->ingredientVersion?->ingredient?->category?->getLabel())
+                TextColumn::make('ingredient.display_name')
+                    ->label('Ingredient')
+                    ->description(fn (IngredientAllergenEntry $record): ?string => $record->ingredient?->category?->getLabel())
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('allergen.inci_name')

@@ -507,6 +507,7 @@ class RecipeWorkbenchService
                 'id' => $version->recipe_id,
                 'draft_version_id' => $version->id,
                 'version_number' => $version->version_number,
+                'is_draft' => $version->is_draft,
             ],
             'formulaName' => $version->name,
             'oilUnit' => (string) ($calculationContext['oil_unit'] ?? $version->batch_unit),

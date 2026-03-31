@@ -3,10 +3,12 @@
 use App\IngredientCategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\FattyAcid;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
+use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
@@ -459,6 +461,57 @@ it('exposes workbench phase options for saponifiable oils, additive-only oils, a
         ->and($ingredients[$customCarrierIngredient->id]['default_phase'])->toBe('additives')
         ->and($ingredients[$fragranceIngredient->id]['available_phases'])->toBe(['fragrance'])
         ->and($ingredients[$fragranceIngredient->id]['needs_compliance'])->toBeTrue();
+});
+
+it('orders ifra categories naturally and exposes cat 9 as the default soap context', function () {
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $category10A = IfraProductCategory::factory()->create([
+        'code' => '10A',
+        'short_name' => 'Household hand contact',
+        'is_active' => true,
+    ]);
+    $category9 = IfraProductCategory::factory()->create([
+        'code' => '9',
+        'short_name' => 'Soap / shower gel / rinse-off',
+        'is_active' => true,
+    ]);
+    $category2 = IfraProductCategory::factory()->create([
+        'code' => '2',
+        'short_name' => 'Deodorants / axillae',
+        'is_active' => true,
+    ]);
+
+    ProductFamilyIfraCategory::factory()->create([
+        'product_family_id' => $soapFamily->id,
+        'ifra_product_category_id' => $category10A->id,
+        'is_default' => false,
+        'sort_order' => 3,
+    ]);
+    ProductFamilyIfraCategory::factory()->create([
+        'product_family_id' => $soapFamily->id,
+        'ifra_product_category_id' => $category9->id,
+        'is_default' => true,
+        'sort_order' => 2,
+    ]);
+    ProductFamilyIfraCategory::factory()->create([
+        'product_family_id' => $soapFamily->id,
+        'ifra_product_category_id' => $category2->id,
+        'is_default' => false,
+        'sort_order' => 1,
+    ]);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $workbench = $component->render(app(RecipeWorkbenchService::class))->getData()['workbench'];
+
+    expect(collect($workbench['ifraProductCategories'])->pluck('code')->all())
+        ->toBe(['2', '9', '10A'])
+        ->and($workbench['defaultIfraProductCategoryId'])->toBe($category9->id);
 });
 
 function makeCarrierOilIngredient(): Ingredient

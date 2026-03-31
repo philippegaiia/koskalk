@@ -3,6 +3,8 @@ import './bootstrap';
 window.recipeWorkbench = (payload) => ({
     recipeId: payload.recipe?.id ?? null,
     draftVersionId: payload.recipe?.draft_version_id ?? null,
+    currentVersionNumber: payload.recipe?.version_number ?? null,
+    currentVersionIsDraft: payload.recipe?.is_draft ?? true,
     formulaName: 'New Soap Formula',
     oilUnit: 'g',
     oilWeight: 1000,
@@ -18,8 +20,8 @@ window.recipeWorkbench = (payload) => ({
     superfat: 5,
     search: '',
     activeCategory: 'all',
-    ifraProductCategories: payload.ifraProductCategories ?? [],
-    selectedIfraProductCategoryId: payload.ifraProductCategories[0]?.id ?? null,
+    ifraProductCategories: (payload.ifraProductCategories ?? []).filter((category) => ['6', '7A', '8', '9', '10A'].includes(`${category.code ?? ''}`.toUpperCase())),
+    selectedIfraProductCategoryId: payload.defaultIfraProductCategoryId === null || payload.defaultIfraProductCategoryId === undefined ? '' : String(payload.defaultIfraProductCategoryId),
     ingredients: payload.ingredients ?? [],
     versionOptions: payload.versionOptions ?? [],
     selectedComparisonVersionId: payload.versionOptions?.[0]?.id ?? null,
@@ -86,7 +88,19 @@ window.recipeWorkbench = (payload) => ({
     },
 
     get selectedIfraProductCategory() {
-        return this.ifraProductCategories.find((category) => category.id === this.selectedIfraProductCategoryId) ?? null;
+        const selectedId = this.normalizedIfraProductCategoryId();
+
+        if (selectedId === null) {
+            return null;
+        }
+
+        return this.ifraProductCategories.find((category) => this.number(category.id) === selectedId) ?? null;
+    },
+
+    normalizedIfraProductCategoryId() {
+        const candidate = this.number(this.selectedIfraProductCategoryId);
+
+        return candidate > 0 ? candidate : null;
     },
 
     ingredientMonogram(ingredient) {
@@ -283,6 +297,30 @@ window.recipeWorkbench = (payload) => ({
         return cards;
     },
 
+    totalLyeToWeigh() {
+        const backendLye = this.backendCalculation?.lye ?? null;
+
+        if (backendLye) {
+            return this.number(backendLye.selected?.naoh_weight ?? 0) + this.number(backendLye.selected?.koh_to_weigh ?? 0);
+        }
+
+        const lye = this.lyeBreakdown();
+
+        return this.number(lye.selected_naoh_weight) + this.number(lye.koh_to_weigh);
+    },
+
+    formatLyeSummaryCardValue(card) {
+        const value = this.number(card?.value ?? 0);
+        const shouldFloorLye = this.oilUnit === 'g' && card?.id !== 'water' && this.totalLyeToWeigh() > 300;
+        const shouldFloorWater = this.oilUnit === 'g' && card?.id === 'water' && value > 300;
+
+        if (shouldFloorLye || shouldFloorWater) {
+            return this.format(Math.floor(value), 0);
+        }
+
+        return this.format(value, 2);
+    },
+
     addIngredient(ingredient, requestedPhase = null) {
         const targetPhase = this.resolveTargetPhase(ingredient, requestedPhase);
 
@@ -334,6 +372,8 @@ window.recipeWorkbench = (payload) => ({
 
         this.recipeId = draft.recipe?.id ?? this.recipeId;
         this.draftVersionId = draft.recipe?.draft_version_id ?? this.draftVersionId;
+        this.currentVersionNumber = draft.recipe?.version_number ?? this.currentVersionNumber;
+        this.currentVersionIsDraft = draft.recipe?.is_draft ?? this.currentVersionIsDraft;
         this.formulaName = draft.formulaName ?? this.formulaName;
         this.oilUnit = draft.oilUnit ?? this.oilUnit;
         this.oilWeight = this.number(draft.oilWeight ?? this.oilWeight);
@@ -347,7 +387,11 @@ window.recipeWorkbench = (payload) => ({
         this.waterMode = ['percent_of_oils', 'lye_ratio', 'lye_concentration'].includes(draft.waterMode) ? draft.waterMode : this.waterMode;
         this.waterValue = this.number(draft.waterValue ?? this.waterValue);
         this.superfat = this.number(draft.superfat ?? this.superfat);
-        this.selectedIfraProductCategoryId = draft.selectedIfraProductCategoryId ?? this.selectedIfraProductCategoryId;
+        if (Object.hasOwn(draft, 'selectedIfraProductCategoryId')) {
+            this.selectedIfraProductCategoryId = draft.selectedIfraProductCategoryId === null || draft.selectedIfraProductCategoryId === undefined
+                ? ''
+                : String(draft.selectedIfraProductCategoryId);
+        }
         this.phaseItems = {
             saponified_oils: draft.phaseItems?.saponified_oils ?? [],
             additives: draft.phaseItems?.additives ?? [],
@@ -397,7 +441,7 @@ window.recipeWorkbench = (payload) => ({
             water_mode: this.waterMode,
             water_value: this.waterValue,
             superfat: this.superfat,
-            ifra_product_category_id: this.selectedIfraProductCategoryId,
+            ifra_product_category_id: this.normalizedIfraProductCategoryId(),
             phase_items: {
                 saponified_oils: this.oilRows.map((row) => this.serializeRow(row)),
                 additives: this.additiveRows.map((row) => this.serializeRow(row)),
@@ -554,6 +598,12 @@ window.recipeWorkbench = (payload) => ({
         return Math.max(0, this.number(value));
     },
 
+    roundTo(value, decimals = 3) {
+        const factor = 10 ** decimals;
+
+        return Math.round(this.number(value) * factor) / factor;
+    },
+
     rowWeight(row) {
         return this.nonNegativeNumber(this.oilWeight) * (this.nonNegativeNumber(row.percentage) / 100);
     },
@@ -567,7 +617,7 @@ window.recipeWorkbench = (payload) => ({
             return;
         }
 
-        row.percentage = (this.nonNegativeNumber(weightValue) / totalOilWeight) * 100;
+        row.percentage = this.roundTo((this.nonNegativeNumber(weightValue) / totalOilWeight) * 100);
     },
 
     updateOilPercentagesFromWeights(row, weightValue) {
@@ -580,9 +630,11 @@ window.recipeWorkbench = (payload) => ({
         const totalOilWeight = Array.from(weightsByRowId.values())
             .reduce((total, currentWeight) => total + this.nonNegativeNumber(currentWeight), 0);
 
-        this.oilWeight = totalOilWeight;
+        const roundedTotalOilWeight = this.roundTo(totalOilWeight);
 
-        if (totalOilWeight <= 0) {
+        this.oilWeight = roundedTotalOilWeight;
+
+        if (roundedTotalOilWeight <= 0) {
             this.oilRows.forEach((oilRow) => {
                 oilRow.percentage = 0;
             });
@@ -593,7 +645,7 @@ window.recipeWorkbench = (payload) => ({
         this.oilRows.forEach((oilRow) => {
             const rowWeight = weightsByRowId.get(oilRow.id) ?? 0;
 
-            oilRow.percentage = (this.nonNegativeNumber(rowWeight) / totalOilWeight) * 100;
+            oilRow.percentage = this.roundTo((this.nonNegativeNumber(rowWeight) / roundedTotalOilWeight) * 100);
         });
     },
 
@@ -611,6 +663,16 @@ window.recipeWorkbench = (payload) => ({
 
     get hasSavedRecipe() {
         return this.recipeId !== null;
+    },
+
+    get formulaWorkbenchLabel() {
+        if (!this.hasSavedRecipe || this.currentVersionNumber === null) {
+            return 'Draft';
+        }
+
+        return this.currentVersionIsDraft
+            ? `Draft v${this.currentVersionNumber}`
+            : `Version ${this.currentVersionNumber}`;
     },
 
     get needsCatalogReview() {
@@ -631,6 +693,19 @@ window.recipeWorkbench = (payload) => ({
 
     qualityBarStyle(value, color = 'var(--color-line-strong)') {
         const width = Math.max(0, Math.min(100, this.number(value)));
+
+        return `width: ${width}%; background: linear-gradient(90deg, color-mix(in srgb, ${color} 72%, white 28%) 0%, ${color} 100%);`;
+    },
+
+    fattyAcidRowBarStyle(value, color = 'var(--color-ink-soft)') {
+        const rows = this.fattyAcidProfileRows;
+        const maxFattyAcidValue = rows.reduce((maxValue, row) => Math.max(maxValue, this.number(row.value)), 0);
+
+        if (maxFattyAcidValue <= 0) {
+            return `width: 0%; background: linear-gradient(90deg, color-mix(in srgb, ${color} 72%, white 28%) 0%, ${color} 100%);`;
+        }
+
+        const width = Math.max(0, Math.min(100, (this.number(value) / maxFattyAcidValue) * 100));
 
         return `width: ${width}%; background: linear-gradient(90deg, color-mix(in srgb, ${color} 72%, white 28%) 0%, ${color} 100%);`;
     },
@@ -791,11 +866,6 @@ window.recipeWorkbench = (payload) => ({
 
     get totalSummaryCards() {
         return [
-            {
-                id: 'oils-basis-total',
-                label: 'Oils basis total',
-                value: `${this.format(this.totalOilPercentage(), 1)}%`,
-            },
             {
                 id: 'additives-total',
                 label: 'Additives',

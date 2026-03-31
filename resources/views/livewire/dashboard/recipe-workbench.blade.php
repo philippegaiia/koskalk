@@ -1,23 +1,18 @@
 <div x-data="recipeWorkbench(@js($workbench))" x-init="init()" class="mx-auto max-w-[90rem] space-y-6">
     <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
         <div class="min-w-0">
-            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula name</p>
+            <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula name</p>
+                <span class="text-sm font-medium text-[var(--color-ink-soft)]" x-text="`(${formulaWorkbenchLabel})`"></span>
+            </div>
             <input x-model="formulaName" type="text" placeholder="Untitled soap formula" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]" />
-        </div>
-
-        <div class="mt-4 flex flex-wrap gap-2">
-            <span class="rounded-full border border-[var(--color-line)] px-3 py-2 text-xs font-medium text-[var(--color-ink-soft)]" x-text="hasSavedRecipe ? 'Connected to saved draft' : 'New local draft'"></span>
-            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs font-medium text-[var(--color-ink-soft)]" x-text="manufacturingModeLabel"></span>
-            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs font-medium text-[var(--color-ink-soft)]" x-text="exposureModeLabel"></span>
-            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`Regime: ${regulatoryRegime.toUpperCase()}`"></span>
-            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs font-medium text-[var(--color-ink-soft)]">{{ $workbench['productFamily']['name'] ?? 'Soap' }}</span>
         </div>
 
         <div class="mt-4 rounded-[1.75rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Save status</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]" x-text="hasSavedRecipe ? 'Working draft connected' : 'Ready to save'"></h3>
+                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula actions</p>
+                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Drafts and versions</h3>
                 </div>
                 <div class="flex flex-wrap gap-2">
                     <button type="button" @click="saveDraft()" :disabled="!oilPercentageIsBalanced || isSaving" :class="!oilPercentageIsBalanced || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent-strong)] text-white hover:bg-[var(--color-accent)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
@@ -32,7 +27,7 @@
                 </div>
             </div>
             <div class="mt-3 space-y-2 text-sm text-[var(--color-ink-soft)]">
-                <p x-text="hasSavedRecipe ? 'You are editing the current working draft. Use Save as new version to create a numbered snapshot you can reopen later.' : 'Save the first draft once the oils reach 100% to turn this into a persistent formula.'"></p>
+                <p x-text="hasSavedRecipe ? 'Keep saving the live draft as you iterate. Use Save as new version when you want a numbered snapshot you can reopen later.' : 'Save the first draft once the oils reach 100% to turn this into a persistent formula.'"></p>
                 <div :class="saveStatus === 'error' ? 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)]'" class="rounded-[1.5rem] border px-4 py-3">
                     <p class="font-medium" x-text="saveMessage || 'Draft and version actions stay disabled until the saponified oils reach exactly 100%.'"></p>
                 </div>
@@ -103,9 +98,43 @@
                         </div>
                     </div>
                 </div>
+                <div class="mt-4 rounded-[1.25rem] border border-[var(--color-line)] bg-white p-4">
+                    <details class="group" x-data="{ open: false }" @toggle="open = $event.target.open">
+                        <summary class="flex cursor-pointer list-none items-center justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">IFRA context</p>
+                                <p class="mt-1 text-sm text-[var(--color-ink-soft)]" x-text="selectedIfraProductCategory ? `Optional screening for soap-oriented IFRA categories. Current: Cat ${selectedIfraProductCategory.code}${selectedIfraProductCategory.short_name ? ` - ${selectedIfraProductCategory.short_name}` : ''}.` : 'Optional screening only. Open this when you want IFRA-oriented guidance on the formula.'"></p>
+                            </div>
+                            <div class="flex shrink-0 items-center gap-2">
+                                <template x-if="selectedIfraProductCategory">
+                                    <span class="rounded-full border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)]" x-text="`Cat ${selectedIfraProductCategory.code}`"></span>
+                                </template>
+                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="open ? 'Hide' : 'Open'"></span>
+                            </div>
+                        </summary>
+
+                        <template x-if="$data.ifraProductCategories?.length">
+                            <div class="mt-4 border-t border-[var(--color-line)] pt-4">
+                                <select x-model="selectedIfraProductCategoryId" class="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]">
+                                    <option value="">No IFRA context</option>
+                                    <template x-for="category in $data.ifraProductCategories" :key="category.id">
+                                        <option :value="String(category.id)" x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></option>
+                                    </template>
+                                </select>
+                                <p class="mt-3 text-xs leading-5 text-[var(--color-ink-soft)]">For soap workbench use, the list is intentionally reduced to the most relevant categories: 6, 7A, 8, 9, and 10A.</p>
+                                <template x-if="selectedIfraProductCategory?.description">
+                                    <p class="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]" x-text="selectedIfraProductCategory.description"></p>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="! $data.ifraProductCategories?.length">
+                            <p class="mt-3 text-sm text-[var(--color-ink-soft)]">IFRA categories can be selected once the compliance catalog is populated.</p>
+                        </template>
+                    </details>
+                </div>
             </div>
 
-            <div class="mt-4 grid gap-4 xl:grid-cols-5">
+            <div class="mt-4 grid gap-4 xl:grid-cols-4">
                 <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                     <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Lye type</p>
                     <div class="mt-3 flex flex-wrap gap-2">
@@ -137,6 +166,13 @@
                         <button type="button" @click="oilUnit = 'lb'" :class="oilUnit === 'lb' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">lb</button>
                     </div>
                     <input x-model.number="oilWeight" type="number" min="0" step="1" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none" />
+                    <div class="mt-4 border-t border-[var(--color-line)] pt-4">
+                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Entry mode</p>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <button type="button" @click="editMode = 'percentage'" :class="editMode === 'percentage' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">% of oils</button>
+                            <button type="button" @click="editMode = 'weight'" :class="editMode === 'weight' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Weight</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                     <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Water mode</p>
@@ -155,31 +191,6 @@
                     </div>
                     <input x-model.number="superfat" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-red-600' : 'accent-[var(--color-accent-strong)]'" class="mt-3 w-full" />
                     <input x-model.number="superfat" type="number" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'border-red-200 text-red-600' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="mt-3 w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none" />
-                </div>
-                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Entry mode</p>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <button type="button" @click="editMode = 'percentage'" :class="editMode === 'percentage' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">% of oils</button>
-                        <button type="button" @click="editMode = 'weight'" :class="editMode === 'weight' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Weight</button>
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">IFRA context</p>
-                        <template x-if="$data.ifraProductCategories?.length">
-                            <div class="mt-3 flex flex-wrap gap-2">
-                                <template x-for="category in $data.ifraProductCategories" :key="category.id">
-                                    <button type="button" @click="selectedIfraProductCategoryId = category.id" :class="selectedIfraProductCategoryId === category.id ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'border-transparent bg-white/70 text-[var(--color-ink-soft)]'" class="rounded-full border px-3 py-1.5 text-xs font-medium transition">
-                                        <span x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></span>
-                                    </button>
-                                </template>
-                            </div>
-                        </template>
-                        <template x-if="selectedIfraProductCategory?.description">
-                            <p class="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]" x-text="selectedIfraProductCategory.description"></p>
-                        </template>
-                        <template x-if="! $data.ifraProductCategories?.length">
-                            <p class="mt-3 text-sm text-[var(--color-ink-soft)]">IFRA categories can be selected once the compliance catalog is populated.</p>
-                        </template>
-                    </div>
                 </div>
             </div>
         </div>
@@ -312,8 +323,9 @@
                     </div>
                 </div>
                 <div class="p-5">
-                    <div class="overflow-hidden rounded-[1.75rem] border border-[var(--color-line)]">
-                        <div class="grid grid-cols-[minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
+                    <div class="relative rounded-[1.75rem] border border-[var(--color-line)]">
+                        <div class="overflow-hidden rounded-[calc(1.75rem-1px)]">
+                            <div class="grid grid-cols-[minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
                             <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Oil</div>
                             <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% oils</div>
                             <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Weight</div>
@@ -322,7 +334,73 @@
                             <template x-for="row in oilRows" :key="row.id">
                                 <div class="contents">
                                     <div class="bg-white px-4 py-3">
-                                        <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+                                        <div class="flex items-start justify-between gap-3">
+                                            <div class="min-w-0">
+                                                <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+                                            </div>
+                                            <div x-data="{
+                                                    open: false,
+                                                    panelStyle: '',
+                                                    reposition() {
+                                                        const panelWidth = 256;
+                                                        const gutter = 16;
+                                                        const rect = this.$refs.trigger.getBoundingClientRect();
+                                                        const left = Math.max(gutter, Math.min(window.innerWidth - panelWidth - gutter, rect.right - panelWidth));
+                                                        const top = Math.min(window.innerHeight - gutter, rect.bottom + 8);
+
+                                                        this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
+                                                    },
+                                                }"
+                                                class="relative shrink-0"
+                                                x-cloak>
+                                                <template x-if="ingredientHasInspector(row)">
+                                                    <button type="button"
+                                                        x-ref="trigger"
+                                                        @mouseenter="open = true; reposition()"
+                                                        @mouseleave="open = false"
+                                                        @focus="open = true; reposition()"
+                                                        @blur="open = false"
+                                                        @click.prevent="open = !open; if (open) { reposition(); }"
+                                                        class="grid size-6 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]">
+                                                        i
+                                                    </button>
+                                                </template>
+                                                <template x-teleport="body">
+                                                    <div x-show="open"
+                                                        x-transition.opacity
+                                                        @mouseenter="open = true"
+                                                        @mouseleave="open = false"
+                                                        @click.outside="open = false"
+                                                        @scroll.window="if (open) { reposition(); }"
+                                                        @resize.window="if (open) { reposition(); }"
+                                                        :style="panelStyle"
+                                                        class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3 shadow-lg">
+                                                        <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Material details</p>
+                                                        <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
+                                                            <template x-for="detail in ingredientInspectorRows(row)" :key="detail.label">
+                                                                <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
+                                                                    <span x-text="detail.label"></span>
+                                                                    <span class="font-medium text-[var(--color-ink-strong)]" x-text="detail.value"></span>
+                                                                </div>
+                                                            </template>
+                                                        </div>
+                                                        <template x-if="ingredientFattyAcidRows(row).length > 0">
+                                                            <div class="mt-3">
+                                                                <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Fatty acids</p>
+                                                                <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs text-[var(--color-ink-soft)]">
+                                                                    <template x-for="fattyAcid in ingredientFattyAcidRows(row)" :key="fattyAcid.key">
+                                                                        <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
+                                                                            <span x-text="fattyAcid.label"></span>
+                                                                            <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(fattyAcid.value, 1)}%`"></span>
+                                                                        </div>
+                                                                    </template>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
                                         <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
                                     </div>
                                     <div class="bg-white px-3 py-3">
@@ -352,6 +430,7 @@
                             <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel)] text-[var(--color-ink-strong)]' : 'bg-red-50 text-red-700'" class="px-4 py-3 font-medium" x-text="`${format(oilWeightTotal(), 1)} ${oilUnit}`"></div>
                             <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel)]' : 'bg-red-50'" class="px-4 py-3"></div>
                         </div>
+                        </div>
                     </div>
 
                     <div class="mt-5 rounded-[1.75rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
@@ -371,7 +450,7 @@
                             <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
                                 <div class="rounded-[1.35rem] border border-[var(--color-line)] bg-white p-4">
                                     <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
-                                    <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(card.value, 2)} ${oilUnit}`"></p>
+                                    <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
                                 </div>
                             </template>
                         </div>
@@ -491,13 +570,24 @@
                     </div>
                 </div>
 
-                <div class="grid gap-4 xl:grid-cols-4">
-                    <template x-for="card in totalSummaryCards" :key="card.id">
-                        <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
-                            <p class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
+                <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                    <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Batch totals</p>
+                            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">A quick read of the current formula outputs without repeating the oil basis already shown above.</p>
                         </div>
-                    </template>
+                    </div>
+
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        <template x-for="card in totalSummaryCards" :key="card.id">
+                            <div class="flex h-full flex-col justify-between rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                                <div>
+                                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
+                                </div>
+                                <p class="pt-6 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
+                            </div>
+                        </template>
+                    </div>
                 </div>
 
                 <template x-if="Math.abs(totalOilPercentage() - 100) > 0.01">
@@ -565,8 +655,55 @@
                         </div>
                     </details>
                 </template>
+            </div>
 
-                <div class="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]">
+            <div class="xl:col-span-2">
+                <div class="grid gap-4 xl:grid-cols-3">
+                    <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Fatty acid profile</p>
+                        <template x-if="hasFattyAcidProfileData">
+                            <div class="mt-4 space-y-4">
+                                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Grouped profile</p>
+                                    <div class="mt-3 flex h-3 overflow-hidden rounded-full bg-white/80">
+                                        <template x-for="segment in fattyAcidGroupSegments()" :key="segment.key">
+                                            <div :style="`width: ${segment.percent}%; background: ${segment.color};`"></div>
+                                        </template>
+                                    </div>
+                                    <div class="mt-3 flex flex-wrap gap-2">
+                                        <template x-for="segment in fattyAcidGroupSegments()" :key="`${segment.key}-legend`">
+                                            <div class="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs">
+                                                <span class="inline-block h-2.5 w-2.5 rounded-full" :style="`background: ${segment.color};`"></span>
+                                                <span class="rounded-full px-2 py-0.5 font-medium text-white" :style="`background: ${segment.color};`" x-text="segment.shortLabel"></span>
+                                                <span class="text-[var(--color-ink-strong)]" x-text="segment.label"></span>
+                                                <span class="text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <div class="grid gap-2">
+                                    <template x-for="row in fattyAcidProfileRows" :key="row.key">
+                                        <div class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
+                                            <div class="flex items-center justify-between">
+                                                <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                                <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
+                                            </div>
+                                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
+                                                <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="fattyAcidRowBarStyle(row.value, 'var(--color-ink-soft)')"></div>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="!hasFattyAcidProfileData">
+                            <div class="mt-4 rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
+                                Fill the fatty acid profile on the selected carrier oils to see the blended profile here.
+                            </div>
+                        </template>
+                    </div>
+
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
                         <div class="flex items-center justify-between gap-3">
                             <div>
@@ -617,85 +754,49 @@
                                 </template>
                             </div>
                         </template>
-
-                        <template x-if="hasQualityMetricsData">
-                            <details class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
-                                <summary class="cursor-pointer text-sm font-medium text-[var(--color-ink-strong)]">Advanced metrics</summary>
-                                <div class="mt-3 grid gap-2">
-                                    <template x-for="row in advancedQualityRows()" :key="row.key">
-                                        <div class="rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm">
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                                                <div class="text-right">
-                                                    <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
-                                                    <template x-if="row.level">
-                                                        <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                            <template x-if="row.level">
-                                                <div class="relative mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-panel)]">
-                                                    <template x-if="targetZoneStyle(row.key)">
-                                                        <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
-                                                    </template>
-                                                    <div class="relative h-full rounded-full" :style="qualityBarStyle(row.value)"></div>
-                                                </div>
-                                            </template>
-                                            <template x-if="row.explanation">
-                                                <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="row.explanation"></p>
-                                            </template>
-                                        </div>
-                                    </template>
-                                </div>
-                            </details>
-                        </template>
                     </div>
 
                     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Fatty acid profile</p>
-                        <template x-if="hasFattyAcidProfileData">
-                            <div class="mt-4 space-y-4">
-                                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-                                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Grouped profile</p>
-                                    <div class="mt-3 flex h-3 overflow-hidden rounded-full bg-white/80">
-                                        <template x-for="segment in fattyAcidGroupSegments()" :key="segment.key">
-                                            <div :style="`width: ${segment.percent}%; background: ${segment.color};`"></div>
-                                        </template>
-                                    </div>
-                                    <div class="mt-3 flex flex-wrap gap-2">
-                                        <template x-for="segment in fattyAcidGroupSegments()" :key="`${segment.key}-legend`">
-                                            <div class="flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs">
-                                                <span class="inline-block h-2.5 w-2.5 rounded-full" :style="`background: ${segment.color};`"></span>
-                                                <span class="rounded-full px-2 py-0.5 font-medium text-white" :style="`background: ${segment.color};`" x-text="segment.shortLabel"></span>
-                                                <span class="text-[var(--color-ink-strong)]" x-text="segment.label"></span>
-                                                <span class="text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
-                                            </div>
-                                        </template>
-                                    </div>
-                                </div>
-
-                                <div class="grid gap-2">
-                                    <template x-for="row in fattyAcidProfileRows" :key="row.key">
-                                        <div class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
-                                            <div class="flex items-center justify-between">
-                                                <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                                                <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
-                                            </div>
-                                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
-                                                <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="qualityBarStyle(row.value, 'var(--color-ink-soft)')"></div>
+                        <div>
+                            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Advanced metrics</p>
+                            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Deeper structure signals, including iodine and INS.</p>
+                        </div>
+                        <template x-if="hasQualityMetricsData">
+                            <div class="mt-4 grid gap-2">
+                                <template x-for="row in advancedQualityRows()" :key="row.key">
+                                    <div class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                            <div class="text-right">
+                                                <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
+                                                <template x-if="row.level">
+                                                    <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+                                                </template>
                                             </div>
                                         </div>
-                                    </template>
-                                </div>
+                                        <template x-if="row.level">
+                                            <div class="relative mt-3 h-2 overflow-hidden rounded-full bg-white/80">
+                                                <template x-if="targetZoneStyle(row.key)">
+                                                    <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
+                                                </template>
+                                                <div class="relative h-full rounded-full" :style="qualityBarStyle(row.value)"></div>
+                                            </div>
+                                        </template>
+                                        <template x-if="row.explanation">
+                                            <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="row.explanation"></p>
+                                        </template>
+                                    </div>
+                                </template>
                             </div>
                         </template>
-                        <template x-if="!hasFattyAcidProfileData">
+                        <template x-if="!hasQualityMetricsData">
                             <div class="mt-4 rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
-                                Fill the fatty acid profile on the selected carrier oils to see the blended profile here.
+                                Add saponifiable oils with SAP data to unlock the deeper chemistry indicators here.
                             </div>
                         </template>
                     </div>
                 </div>
+            </div>
     </section>
 
     <x-filament-actions::modals />

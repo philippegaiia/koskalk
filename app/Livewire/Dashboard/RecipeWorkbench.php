@@ -6,6 +6,7 @@ use App\IngredientCategory;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
+use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
@@ -333,18 +334,8 @@ class RecipeWorkbench extends Component implements HasForms
                     : [],
                 'phases' => $recipeWorkbenchService->phaseBlueprints(),
                 'ingredients' => $this->ingredientCatalog(),
-                'ifraProductCategories' => IfraProductCategory::query()
-                    ->where('is_active', true)
-                    ->orderBy('code')
-                    ->get()
-                    ->map(fn (IfraProductCategory $category): array => [
-                        'id' => $category->id,
-                        'code' => $category->code,
-                        'name' => $category->name,
-                        'short_name' => $category->short_name,
-                        'description' => $category->description,
-                    ])
-                    ->all(),
+                'ifraProductCategories' => $this->ifraProductCategories($soapFamily),
+                'defaultIfraProductCategoryId' => $this->defaultIfraProductCategoryId($soapFamily),
             ],
         ]);
     }
@@ -354,6 +345,72 @@ class RecipeWorkbench extends Component implements HasForms
         return ProductFamily::query()
             ->where('slug', 'soap')
             ->firstOrFail();
+    }
+
+    /**
+     * @return array<int, array{id:int, code:string, name:string, short_name:?string, description:?string}>
+     */
+    private function ifraProductCategories(ProductFamily $productFamily): array
+    {
+        $mappedCategories = ProductFamilyIfraCategory::query()
+            ->with('ifraProductCategory')
+            ->where('product_family_id', $productFamily->id)
+            ->orderBy('sort_order')
+            ->orderByDesc('is_default')
+            ->get()
+            ->map(fn (ProductFamilyIfraCategory $mapping): ?IfraProductCategory => $mapping->ifraProductCategory)
+            ->filter(fn (?IfraProductCategory $category): bool => $category instanceof IfraProductCategory && $category->is_active)
+            ->values();
+
+        $categories = $mappedCategories->isNotEmpty()
+            ? $mappedCategories
+            : IfraProductCategory::query()
+                ->where('is_active', true)
+                ->get();
+
+        return $categories
+            ->sortBy(fn (IfraProductCategory $category): array => $this->ifraProductCategorySortKey($category->code))
+            ->values()
+            ->map(fn (IfraProductCategory $category): array => [
+                'id' => $category->id,
+                'code' => $category->code,
+                'name' => $category->name,
+                'short_name' => $category->short_name,
+                'description' => $category->description,
+            ])
+            ->all();
+    }
+
+    private function defaultIfraProductCategoryId(ProductFamily $productFamily): ?int
+    {
+        $mappedDefault = ProductFamilyIfraCategory::query()
+            ->with('ifraProductCategory:id,is_active')
+            ->where('product_family_id', $productFamily->id)
+            ->where('is_default', true)
+            ->orderBy('sort_order')
+            ->first();
+
+        if ($mappedDefault?->ifraProductCategory?->is_active) {
+            return $mappedDefault->ifra_product_category_id;
+        }
+
+        return IfraProductCategory::query()
+            ->where('is_active', true)
+            ->where('code', '9')
+            ->value('id');
+    }
+
+    /**
+     * @return array{int,string}
+     */
+    private function ifraProductCategorySortKey(string $code): array
+    {
+        preg_match('/^(\d+)([A-Za-z]*)$/', $code, $matches);
+
+        return [
+            isset($matches[1]) ? (int) $matches[1] : PHP_INT_MAX,
+            strtoupper($matches[2] ?? ''),
+        ];
     }
 
     /**

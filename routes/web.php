@@ -15,6 +15,10 @@ Route::controller(RecipeController::class)
     ->group(function (): void {
         Route::get('/', 'index')->name('index');
         Route::get('/new', 'create')->name('create');
+        Route::get('/{recipe}/versions/{version}', 'version')->name('version');
+        Route::post('/{recipe}/versions/{version}/use-as-draft', 'useVersionAsDraft')->name('use-version-as-draft');
+        Route::get('/{recipe}/versions/{version}/print', 'printRecipe')->name('print.recipe');
+        Route::get('/{recipe}/versions/{version}/print/details', 'printDetails')->name('print.details');
         Route::get('/{recipe}', 'edit')->name('edit');
     });
 

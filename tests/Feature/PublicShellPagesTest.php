@@ -10,6 +10,6 @@ it('renders the public home page', function () {
 it('renders the public dashboard shell page', function () {
     $this->get(route('dashboard'))
         ->assertSuccessful()
-        ->assertSee('Create formulas, reopen drafts')
+        ->assertSee('Create formulas, keep one working draft, and reuse saved versions without losing clarity.')
         ->assertSee('Saved recipes');
 });

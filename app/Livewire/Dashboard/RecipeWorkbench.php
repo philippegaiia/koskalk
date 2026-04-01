@@ -19,6 +19,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Livewire\Attributes\Locked;
@@ -26,6 +27,7 @@ use Livewire\Component;
 
 class RecipeWorkbench extends Component implements HasForms
 {
+    use AuthorizesRequests;
     use InteractsWithForms;
 
     #[Locked]
@@ -165,9 +167,12 @@ class RecipeWorkbench extends Component implements HasForms
      */
     public function previewCalculation(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
     {
+        $calculation = $recipeWorkbenchService->previewSoapCalculation($draft);
+
         return [
             'ok' => true,
-            'calculation' => $recipeWorkbenchService->previewSoapCalculation($draft),
+            'calculation' => $calculation,
+            'labeling' => $recipeWorkbenchService->previewInci($draft, $calculation),
         ];
     }
 
@@ -234,6 +239,8 @@ class RecipeWorkbench extends Component implements HasForms
 
             return;
         }
+
+        $this->authorize('update', $recipe);
 
         /** @var array{description:?string, featured_image_path:?string} $state */
         $state = $this->form->getState();
@@ -332,6 +339,12 @@ class RecipeWorkbench extends Component implements HasForms
                 'versionOptions' => $this->currentRecipe() instanceof Recipe
                     ? $recipeWorkbenchService->versionOptions($this->currentRecipe())
                     : [],
+                'versionViewRouteTemplate' => $this->currentRecipe() instanceof Recipe
+                    ? route('recipes.version', [
+                        'recipe' => $this->currentRecipe()->id,
+                        'version' => '__VERSION__',
+                    ])
+                    : null,
                 'phases' => $recipeWorkbenchService->phaseBlueprints(),
                 'ingredients' => $this->ingredientCatalog(),
                 'ifraProductCategories' => $this->ifraProductCategories($soapFamily),

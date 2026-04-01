@@ -1,201 +1,60 @@
 <div x-data="recipeWorkbench(@js($workbench))" x-init="init()" class="mx-auto max-w-[90rem] space-y-6">
     <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-        <div class="min-w-0">
-            <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div class="min-w-0 flex-1">
                 <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula name</p>
-                <span class="text-sm font-medium text-[var(--color-ink-soft)]" x-text="`(${formulaWorkbenchLabel})`"></span>
+                <input x-model="formulaName" type="text" placeholder="Untitled soap formula" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]" />
             </div>
-            <input x-model="formulaName" type="text" placeholder="Untitled soap formula" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]" />
+
+            <div class="flex flex-wrap gap-2 lg:justify-end">
+                <button type="button" @click="saveDraft()" :disabled="!oilPercentageIsBalanced || isSaving" :class="!oilPercentageIsBalanced || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent-strong)] text-white hover:bg-[var(--color-accent)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
+                    <span x-text="isSaving ? 'Saving…' : 'Save draft'"></span>
+                </button>
+                <button type="button" @click="saveAsNewVersion()" :disabled="!oilPercentageIsBalanced || isSaving" :class="!oilPercentageIsBalanced || isSaving ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line-strong)] bg-white text-[var(--color-ink-strong)] hover:bg-[var(--color-accent-soft)]'" class="rounded-full border px-4 py-2.5 text-sm font-medium transition">
+                    Save as new version
+                </button>
+                <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!oilPercentageIsBalanced || isSaving" :class="!oilPercentageIsBalanced || isSaving ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-accent-soft)]'" class="rounded-full border px-4 py-2.5 text-sm font-medium transition">
+                    Duplicate
+                </button>
+            </div>
         </div>
 
-        <div class="mt-4 rounded-[1.75rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula actions</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Drafts and versions</h3>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    <button type="button" @click="saveDraft()" :disabled="!oilPercentageIsBalanced || isSaving" :class="!oilPercentageIsBalanced || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent-strong)] text-white hover:bg-[var(--color-accent)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
-                        <span x-text="isSaving ? 'Saving…' : 'Save draft'"></span>
-                    </button>
-                    <button type="button" @click="saveAsNewVersion()" :disabled="!oilPercentageIsBalanced || isSaving" :class="!oilPercentageIsBalanced || isSaving ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line-strong)] bg-white text-[var(--color-ink-strong)] hover:bg-[var(--color-accent-soft)]'" class="rounded-full border px-4 py-2.5 text-sm font-medium transition">
-                        Save as new version
-                    </button>
-                    <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!oilPercentageIsBalanced || isSaving" :class="!oilPercentageIsBalanced || isSaving ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-accent-soft)]'" class="rounded-full border px-4 py-2.5 text-sm font-medium transition">
-                        Duplicate
-                    </button>
-                </div>
+        <div class="mt-4 flex flex-col gap-3 border-t border-[var(--color-line)] pt-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-wrap gap-2">
+                <button type="button" @click="activeWorkbenchTab = 'formula'" :class="activeWorkbenchTab === 'formula' ? 'bg-[var(--color-ink-strong)] text-white' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full border px-4 py-2 text-sm font-medium transition">
+                    Formula
+                </button>
+                <button type="button" @click="activeWorkbenchTab = 'instructions'" :class="activeWorkbenchTab === 'instructions' ? 'bg-[var(--color-ink-strong)] text-white' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full border px-4 py-2 text-sm font-medium transition">
+                    Instructions &amp; Media
+                </button>
             </div>
-            <div class="mt-3 space-y-2 text-sm text-[var(--color-ink-soft)]">
-                <p x-text="hasSavedRecipe ? 'Keep saving the live draft as you iterate. Use Save as new version when you want a numbered snapshot you can reopen later.' : 'Save the first draft once the oils reach 100% to turn this into a persistent formula.'"></p>
-                <div :class="saveStatus === 'error' ? 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)]'" class="rounded-[1.5rem] border px-4 py-3">
-                    <p class="font-medium" x-text="saveMessage || 'Draft and version actions stay disabled until the saponified oils reach exactly 100%.'"></p>
-                </div>
-                <template x-if="needsCatalogReview">
-                    <div class="rounded-[1.5rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">
-                        <p class="font-medium" x-text="catalogReview?.message"></p>
-                    </div>
+
+            <div class="flex flex-wrap gap-2">
+                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="formulaWorkbenchLabel"></span>
+                <span :class="oilPercentageIsBalanced ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium">
+                    <span x-text="oilPercentageStatusLabel"></span>
+                    <span class="rounded-full bg-white px-2.5 py-0.5 text-xs font-semibold" x-text="`${format(totalOilPercentage(), 1)}%`"></span>
+                </span>
+                <template x-if="saveMessage">
+                    <span :class="saveStatus === 'error' ? 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)]'" class="rounded-full border px-3 py-1.5 text-xs font-medium" x-text="saveMessage"></span>
                 </template>
             </div>
         </div>
+
+        <template x-if="needsCatalogReview">
+            <div class="mt-4 rounded-[1.5rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">
+                <p class="font-medium" x-text="catalogReview?.message"></p>
+            </div>
+        </template>
+
+        @if (session('status'))
+            <div class="mt-4 rounded-[1.5rem] border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-4 py-3 text-sm text-[var(--color-success-strong)]">
+                {{ session('status') }}
+            </div>
+        @endif
     </section>
 
-    <section class="rounded-[2rem] border border-[var(--color-line)] bg-white">
-        <details class="group" x-data="{ open: false }" @toggle="open = $event.target.open">
-            <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4">
-                <div>
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Recipe content</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Description, instructions, and finished-product image</h3>
-                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Optional publishing content for later sharing and finished formula pages.</p>
-                </div>
-                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="open ? 'Hide' : 'Open'"></span>
-            </summary>
-
-            <div class="border-t border-[var(--color-line)] px-5 py-5">
-                @if ($workbench['recipe'])
-                    <form wire:submit="saveRecipeContent" class="space-y-4">
-                        @if ($recipeContentMessage)
-                            <div class="{{ $recipeContentStatus === 'success' ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' }} rounded-[1.5rem] border px-4 py-3 text-sm">
-                                {{ $recipeContentMessage }}
-                            </div>
-                        @endif
-
-                        {{ $this->form }}
-
-                        <div class="flex justify-end">
-                            <button type="submit" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
-                                Save recipe content
-                            </button>
-                        </div>
-                    </form>
-                @else
-                    <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-4 text-sm text-[var(--color-ink-soft)]">
-                        Save the first draft once, then add the finished-product image, a richer description, instructions, and process photos here.
-                    </div>
-                @endif
-            </div>
-        </details>
-    </section>
-
-    <section class="rounded-[2rem] border border-[var(--color-line)] bg-white">
-        <div class="border-b border-[var(--color-line)] px-5 py-4">
-            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula settings</p>
-            <div class="mt-3 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="space-y-2">
-                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Formula context</p>
-                        <p class="text-sm text-[var(--color-ink-soft)]">Rinse-off versus leave-on is saved on the formula version because it affects compliance interpretation and future INCI behavior.</p>
-                        <div class="flex flex-wrap gap-2 text-xs text-[var(--color-ink-soft)]">
-                            <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 font-medium" x-text="manufacturingModeLabel"></span>
-                            <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 font-medium" x-text="`Regime: ${regulatoryRegime.toUpperCase()}`"></span>
-                        </div>
-                    </div>
-                    <div class="min-w-0 rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
-                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Exposure mode</p>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button type="button" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-ink-strong)] text-white' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Rinse-off</button>
-                            <button type="button" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-ink-strong)] text-white' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Leave-on</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="mt-4 rounded-[1.25rem] border border-[var(--color-line)] bg-white p-4">
-                    <details class="group" x-data="{ open: false }" @toggle="open = $event.target.open">
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-4">
-                            <div>
-                                <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">IFRA context</p>
-                                <p class="mt-1 text-sm text-[var(--color-ink-soft)]" x-text="selectedIfraProductCategory ? `Optional screening for soap-oriented IFRA categories. Current: Cat ${selectedIfraProductCategory.code}${selectedIfraProductCategory.short_name ? ` - ${selectedIfraProductCategory.short_name}` : ''}.` : 'Optional screening only. Open this when you want IFRA-oriented guidance on the formula.'"></p>
-                            </div>
-                            <div class="flex shrink-0 items-center gap-2">
-                                <template x-if="selectedIfraProductCategory">
-                                    <span class="rounded-full border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)]" x-text="`Cat ${selectedIfraProductCategory.code}`"></span>
-                                </template>
-                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="open ? 'Hide' : 'Open'"></span>
-                            </div>
-                        </summary>
-
-                        <template x-if="$data.ifraProductCategories?.length">
-                            <div class="mt-4 border-t border-[var(--color-line)] pt-4">
-                                <select x-model="selectedIfraProductCategoryId" class="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]">
-                                    <option value="">No IFRA context</option>
-                                    <template x-for="category in $data.ifraProductCategories" :key="category.id">
-                                        <option :value="String(category.id)" x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></option>
-                                    </template>
-                                </select>
-                                <p class="mt-3 text-xs leading-5 text-[var(--color-ink-soft)]">For soap workbench use, the list is intentionally reduced to the most relevant categories: 6, 7A, 8, 9, and 10A.</p>
-                                <template x-if="selectedIfraProductCategory?.description">
-                                    <p class="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]" x-text="selectedIfraProductCategory.description"></p>
-                                </template>
-                            </div>
-                        </template>
-                        <template x-if="! $data.ifraProductCategories?.length">
-                            <p class="mt-3 text-sm text-[var(--color-ink-soft)]">IFRA categories can be selected once the compliance catalog is populated.</p>
-                        </template>
-                    </details>
-                </div>
-            </div>
-
-            <div class="mt-4 grid gap-4 xl:grid-cols-4">
-                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Lye type</p>
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        <button type="button" @click="lyeType = 'naoh'" :class="lyeType === 'naoh' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">NaOH</button>
-                        <button type="button" @click="lyeType = 'koh'" :class="lyeType === 'koh' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">KOH</button>
-                        <button type="button" @click="lyeType = 'dual'" :class="lyeType === 'dual' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Dual Lye</button>
-                    </div>
-                    <template x-if="lyeType === 'dual'">
-                        <div class="mt-3 rounded-2xl border border-[var(--color-line)] bg-white p-3">
-                            <div class="flex items-center justify-between gap-3">
-                                <span class="text-xs font-medium text-[var(--color-ink-soft)]">NaOH <span x-text="`${format(dualNaohPercentage, 1)}%`"></span></span>
-                                <span class="text-xs font-medium text-[var(--color-ink-soft)]">KOH <span x-text="`${format(dualKohPercentage, 1)}%`"></span></span>
-                            </div>
-                            <input x-model.number="dualKohPercentage" type="range" min="0" max="100" step="1" class="mt-3 w-full accent-[var(--color-accent-strong)]" />
-                        </div>
-                    </template>
-                    <template x-if="lyeType === 'koh' || lyeType === 'dual'">
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button type="button" @click="kohPurity = 100" :class="kohPurity === 100 ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">KOH 100%</button>
-                            <button type="button" @click="kohPurity = 90" :class="kohPurity === 90 ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">KOH 90%</button>
-                        </div>
-                    </template>
-                </div>
-                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Weight of oils</p>
-                    <div class="mt-3 flex gap-2">
-                        <button type="button" @click="oilUnit = 'g'" :class="oilUnit === 'g' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">g</button>
-                        <button type="button" @click="oilUnit = 'oz'" :class="oilUnit === 'oz' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">oz</button>
-                        <button type="button" @click="oilUnit = 'lb'" :class="oilUnit === 'lb' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">lb</button>
-                    </div>
-                    <input x-model.number="oilWeight" type="number" min="0" step="1" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none" />
-                    <div class="mt-4 border-t border-[var(--color-line)] pt-4">
-                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Entry mode</p>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <button type="button" @click="editMode = 'percentage'" :class="editMode === 'percentage' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">% of oils</button>
-                            <button type="button" @click="editMode = 'weight'" :class="editMode === 'weight' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Weight</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Water mode</p>
-                    <div class="mt-3 grid gap-2">
-                        <button type="button" @click="waterMode = 'percent_of_oils'" :class="waterMode === 'percent_of_oils' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-2xl px-3 py-2 text-left text-xs font-medium transition">Water as % of oils</button>
-                        <button type="button" @click="waterMode = 'lye_ratio'" :class="waterMode === 'lye_ratio' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-2xl px-3 py-2 text-left text-xs font-medium transition">Water : lye ratio</button>
-                        <button type="button" @click="waterMode = 'lye_concentration'" :class="waterMode === 'lye_concentration' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-2xl px-3 py-2 text-left text-xs font-medium transition">Lye concentration</button>
-                    </div>
-                    <input x-model.number="waterValue" type="number" min="0" step="0.1" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none" />
-                </div>
-                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Superfat</p>
-                    <div class="mt-3 flex items-center justify-between gap-3 text-sm">
-                        <span :class="superfat < 0 ? 'text-red-600' : 'text-[var(--color-ink-soft)]'" class="font-medium">Current</span>
-                        <span :class="superfat < 0 ? 'text-red-600' : 'text-[var(--color-ink-strong)]'" class="font-semibold" x-text="`${format(superfat, 1)}%`"></span>
-                    </div>
-                    <input x-model.number="superfat" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-red-600' : 'accent-[var(--color-accent-strong)]'" class="mt-3 w-full" />
-                    <input x-model.number="superfat" type="number" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'border-red-200 text-red-600' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="mt-3 w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none" />
-                </div>
-            </div>
-        </div>
-    </section>
-
+    <div x-show="activeWorkbenchTab === 'formula'" class="space-y-6">
     <section class="grid gap-4 xl:grid-cols-[22rem_minmax(0,1fr)]">
         <aside class="space-y-4">
             <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-4">
@@ -311,6 +170,125 @@
         </aside>
 
         <div class="space-y-4">
+            <section class="rounded-[2rem] border border-[var(--color-line)] bg-white">
+                <div class="border-b border-[var(--color-line)] px-5 py-4">
+                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formula settings</p>
+                    <div class="mt-3 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div class="space-y-2">
+                                <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Formula context</p>
+                                <p class="text-sm text-[var(--color-ink-soft)]">Rinse-off versus leave-on is saved on the formula version because it affects compliance interpretation and future INCI behavior.</p>
+                                <div class="flex flex-wrap gap-2 text-xs text-[var(--color-ink-soft)]">
+                                    <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 font-medium" x-text="manufacturingModeLabel"></span>
+                                    <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 font-medium" x-text="`Regime: ${regulatoryRegime.toUpperCase()}`"></span>
+                                </div>
+                            </div>
+                            <div class="min-w-0 rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
+                                <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Exposure mode</p>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <button type="button" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-ink-strong)] text-white' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Rinse-off</button>
+                                    <button type="button" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-ink-strong)] text-white' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Leave-on</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 rounded-[1.25rem] border border-[var(--color-line)] bg-white p-4">
+                            <details class="group" x-data="{ open: false }" @toggle="open = $event.target.open">
+                                <summary class="flex cursor-pointer list-none items-center justify-between gap-4">
+                                    <div>
+                                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">IFRA context</p>
+                                        <p class="mt-1 text-sm text-[var(--color-ink-soft)]" x-text="selectedIfraProductCategory ? `Optional screening for soap-oriented IFRA categories. Current: Cat ${selectedIfraProductCategory.code}${selectedIfraProductCategory.short_name ? ` - ${selectedIfraProductCategory.short_name}` : ''}.` : 'Optional screening only. Open this when you want IFRA-oriented guidance on the formula.'"></p>
+                                    </div>
+                                    <div class="flex shrink-0 items-center gap-2">
+                                        <template x-if="selectedIfraProductCategory">
+                                            <span class="rounded-full border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)]" x-text="`Cat ${selectedIfraProductCategory.code}`"></span>
+                                        </template>
+                                        <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="open ? 'Hide' : 'Open'"></span>
+                                    </div>
+                                </summary>
+
+                                <template x-if="$data.ifraProductCategories?.length">
+                                    <div class="mt-4 border-t border-[var(--color-line)] pt-4">
+                                        <select x-model="selectedIfraProductCategoryId" class="w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]">
+                                            <option value="">No IFRA context</option>
+                                            <template x-for="category in $data.ifraProductCategories" :key="category.id">
+                                                <option :value="String(category.id)" x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></option>
+                                            </template>
+                                        </select>
+                                        <p class="mt-3 text-xs leading-5 text-[var(--color-ink-soft)]">For soap workbench use, the list is intentionally reduced to the most relevant categories: 6, 7A, 8, 9, and 10A.</p>
+                                        <template x-if="selectedIfraProductCategory?.description">
+                                            <p class="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]" x-text="selectedIfraProductCategory.description"></p>
+                                        </template>
+                                    </div>
+                                </template>
+                                <template x-if="! $data.ifraProductCategories?.length">
+                                    <p class="mt-3 text-sm text-[var(--color-ink-soft)]">IFRA categories can be selected once the compliance catalog is populated.</p>
+                                </template>
+                            </details>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid gap-4 xl:grid-cols-4">
+                        <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                            <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Lye type</p>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button type="button" @click="lyeType = 'naoh'" :class="lyeType === 'naoh' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">NaOH</button>
+                                <button type="button" @click="lyeType = 'koh'" :class="lyeType === 'koh' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">KOH</button>
+                                <button type="button" @click="lyeType = 'dual'" :class="lyeType === 'dual' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Dual Lye</button>
+                            </div>
+                            <template x-if="lyeType === 'dual'">
+                                <div class="mt-3 rounded-2xl border border-[var(--color-line)] bg-white p-3">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <span class="text-xs font-medium text-[var(--color-ink-soft)]">NaOH <span x-text="`${format(dualNaohPercentage, 1)}%`"></span></span>
+                                        <span class="text-xs font-medium text-[var(--color-ink-soft)]">KOH <span x-text="`${format(dualKohPercentage, 1)}%`"></span></span>
+                                    </div>
+                                    <input x-model.number="dualKohPercentage" type="range" min="0" max="100" step="1" class="mt-3 w-full accent-[var(--color-accent-strong)]" />
+                                </div>
+                            </template>
+                            <template x-if="lyeType === 'koh' || lyeType === 'dual'">
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <button type="button" @click="kohPurity = 100" :class="kohPurity === 100 ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">KOH 100%</button>
+                                    <button type="button" @click="kohPurity = 90" :class="kohPurity === 90 ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">KOH 90%</button>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                            <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Weight of oils</p>
+                            <div class="mt-3 flex gap-2">
+                                <button type="button" @click="oilUnit = 'g'" :class="oilUnit === 'g' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">g</button>
+                                <button type="button" @click="oilUnit = 'oz'" :class="oilUnit === 'oz' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">oz</button>
+                                <button type="button" @click="oilUnit = 'lb'" :class="oilUnit === 'lb' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">lb</button>
+                            </div>
+                            <input x-model.number="oilWeight" type="number" min="0" step="1" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none" />
+                            <div class="mt-4 border-t border-[var(--color-line)] pt-4">
+                                <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Entry mode</p>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <button type="button" @click="editMode = 'percentage'" :class="editMode === 'percentage' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">% of oils</button>
+                                    <button type="button" @click="editMode = 'weight'" :class="editMode === 'weight' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Weight</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                            <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Water mode</p>
+                            <div class="mt-3 grid gap-2">
+                                <button type="button" @click="waterMode = 'percent_of_oils'" :class="waterMode === 'percent_of_oils' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-2xl px-3 py-2 text-left text-xs font-medium transition">Water as % of oils</button>
+                                <button type="button" @click="waterMode = 'lye_ratio'" :class="waterMode === 'lye_ratio' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-2xl px-3 py-2 text-left text-xs font-medium transition">Water : lye ratio</button>
+                                <button type="button" @click="waterMode = 'lye_concentration'" :class="waterMode === 'lye_concentration' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-2xl px-3 py-2 text-left text-xs font-medium transition">Lye concentration</button>
+                            </div>
+                            <input x-model.number="waterValue" type="number" min="0" step="0.1" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none" />
+                        </div>
+                        <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                            <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Superfat</p>
+                            <div class="mt-3 flex items-center justify-between gap-3 text-sm">
+                                <span :class="superfat < 0 ? 'text-red-600' : 'text-[var(--color-ink-soft)]'" class="font-medium">Current</span>
+                                <span :class="superfat < 0 ? 'text-red-600' : 'text-[var(--color-ink-strong)]'" class="font-semibold" x-text="`${format(superfat, 1)}%`"></span>
+                            </div>
+                            <input x-model.number="superfat" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-red-600' : 'accent-[var(--color-accent-strong)]'" class="mt-3 w-full" />
+                            <input x-model.number="superfat" type="number" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'border-red-200 text-red-600' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="mt-3 w-full rounded-2xl border bg-white px-4 py-3 text-sm outline-none" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             <section class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
                 <div class="border-b border-[var(--color-line)] px-5 py-4">
                     <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Reaction core</p>
@@ -590,6 +568,92 @@
                     </div>
                 </div>
 
+                <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+                    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Ingredient list preview</p>
+                            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Generated from the live formula rows and linked ingredient data so you can check the label output before export.</p>
+                            <template x-if="labelingBasis?.note">
+                                <p class="mt-3 max-w-3xl text-xs leading-5 text-[var(--color-ink-soft)]" x-text="labelingBasis.note"></p>
+                            </template>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <template x-if="labelingBasis?.label">
+                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="labelingBasis.label"></span>
+                            </template>
+                            <template x-if="generatedIngredientListText">
+                                <button type="button" @click="copyGeneratedIngredientList()" class="rounded-full border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">
+                                    Copy list
+                                </button>
+                            </template>
+                            <template x-if="inciCopyMessage">
+                                <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="inciCopyMessage"></span>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 rounded-[1.75rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-4">
+                        <template x-if="generatedIngredientListText">
+                            <p class="text-sm leading-7 text-[var(--color-ink-strong)]" x-text="generatedIngredientListText"></p>
+                        </template>
+                        <template x-if="!generatedIngredientListText">
+                            <p class="text-sm text-[var(--color-ink-soft)]">The generated ingredient list will appear here once the formula has enough data to resolve a preview.</p>
+                        </template>
+                    </div>
+
+                    <template x-if="labelingWarnings.length > 0">
+                        <div class="mt-4 space-y-2">
+                            <template x-for="warning in labelingWarnings" :key="warning">
+                                <div class="rounded-[1.25rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]" x-text="warning"></div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <div class="mt-5 overflow-hidden rounded-[1.75rem] border border-[var(--color-line)]">
+                        <div class="border-b border-[var(--color-line)] px-4 py-3">
+                            <p class="font-medium text-[var(--color-ink-strong)]">Declaration details</p>
+                            <p class="mt-1 text-xs text-[var(--color-ink-soft)]">All recorded fragrance declarations are listed here with their estimated contribution to the current formula basis and whether they are appended to the ingredient list.</p>
+                        </div>
+
+                        <template x-if="declarationRows.length > 0">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
+                                    <thead class="bg-[var(--color-panel)] text-left text-xs font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] uppercase">
+                                        <tr>
+                                            <th class="px-4 py-3">Label</th>
+                                            <th class="px-4 py-3">Sources</th>
+                                            <th class="px-4 py-3">% total formula</th>
+                                            <th class="px-4 py-3">Threshold</th>
+                                            <th class="px-4 py-3">Status</th>
+                                            <th class="px-4 py-3">Notes</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-[var(--color-line)] bg-white text-[var(--color-ink-soft)]">
+                                        <template x-for="row in declarationRows" :key="row.label">
+                                            <tr>
+                                                <td class="px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
+                                                <td class="px-4 py-3" x-text="row.source_ingredients.join(', ')"></td>
+                                                <td class="px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_formula, 4)}%`"></td>
+                                                <td class="px-4 py-3" x-text="`${format(row.threshold_percent, 3)}%`"></td>
+                                                <td class="px-4 py-3">
+                                                    <span :class="declarationStatusClasses(row)" class="inline-flex rounded-full border px-3 py-1 text-xs font-medium" x-text="row.status_label"></span>
+                                                </td>
+                                                <td class="px-4 py-3 leading-6" x-text="row.notes"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </template>
+
+                        <template x-if="declarationRows.length === 0">
+                            <div class="px-4 py-6 text-sm text-[var(--color-ink-soft)]">
+                                No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here.
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
                 <template x-if="Math.abs(totalOilPercentage() - 100) > 0.01">
                     <div class="rounded-[1.5rem] border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink-strong)]">
                         The saponified oils should total 100% on the oil basis before the formula is considered balanced.
@@ -621,7 +685,7 @@
                                         </select>
                                     </template>
                                     <button type="button" @click="loadComparisonVersion()" class="rounded-full border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">Compare</button>
-                                    <button type="button" @click="openSelectedVersion()" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]">Open version</button>
+                                    <button type="button" @click="openSelectedVersion()" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]">View version</button>
                                 </div>
                             </div>
 
@@ -797,6 +861,39 @@
                     </div>
                 </div>
             </div>
+    </section>
+    </div>
+
+    <section x-show="activeWorkbenchTab === 'instructions'" x-cloak class="rounded-[2rem] border border-[var(--color-line)] bg-white">
+        <div class="border-b border-[var(--color-line)] px-5 py-4">
+            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Instructions &amp; Media</p>
+            <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Method notes, instructions, and optional image</h3>
+            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Use this space for your formula notes, process instructions, and a finished-product image if you want one.</p>
+        </div>
+
+        <div class="px-5 py-5">
+            @if ($workbench['recipe'])
+                <form wire:submit="saveRecipeContent" class="space-y-4">
+                    @if ($recipeContentMessage)
+                        <div class="{{ $recipeContentStatus === 'success' ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' }} rounded-[1.5rem] border px-4 py-3 text-sm">
+                            {{ $recipeContentMessage }}
+                        </div>
+                    @endif
+
+                    {{ $this->form }}
+
+                    <div class="flex justify-end">
+                        <button type="submit" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
+                            Save instructions and media
+                        </button>
+                    </div>
+                </form>
+            @else
+                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-4 text-sm text-[var(--color-ink-soft)]">
+                    Save the first draft once, then return here to add notes, instructions, and an optional finished-product image.
+                </div>
+            @endif
+        </div>
     </section>
 
     <x-filament-actions::modals />

@@ -10,7 +10,7 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@theme {
+/*@theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 
@@ -43,6 +43,56 @@
     --color-warning-soft: oklch(95% .040 75);
     --color-warning-strong: oklch(55% .130 75);
     --color-danger: oklch(55% .200 25);
+    --color-danger-soft: oklch(95% .050 25);
+    --color-danger-strong: oklch(45% .180 25);
+    --color-glow: oklch(74% .105 78);
+}*/
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+
+    --color-surface: oklch(96% .008 240);
+    /* cool blue-gray bg */
+    --color-surface-strong: oklch(28% .025 230);
+    /* deep navy sidebar */
+    --color-hero: oklch(22% .030 235);
+    --color-hero-soft: oklch(27% .028 235);
+    --color-panel: oklch(99% .005 240);
+    /* near-white cool panel */
+    --color-panel-strong: oklch(93% .012 235);
+
+
+    --color-line: oklch(85% .012 230);
+    --color-line-strong: oklch(68% .018 225);
+    --color-line-hero: oklch(44% .028 230);
+
+
+    --color-ink: oklch(28% .012 240);
+    --color-ink-strong: oklch(12% .008 235);
+    --color-ink-soft: oklch(50% .012 235);
+
+
+    --color-ink-sidebar: oklch(88% .018 220);
+    --color-ink-sidebar-soft: oklch(64% .022 220);
+
+
+    --color-accent: oklch(52% .130 210);
+    /* teal-blue */
+    --color-accent-hover: oklch(42% .120 210);
+    --color-accent-soft: oklch(94% .030 210);
+    --color-accent-strong: oklch(34% .110 210);
+
+
+    --color-success: oklch(52% .155 142);
+    --color-success-soft: oklch(95% .045 142);
+    --color-success-strong: oklch(36% .130 142);
+    --color-warning: oklch(72% .145 75);
+    --color-warning-hover: oklch(62% .135 75);
+    --color-warning-soft: oklch(95% .040 75);
+    --color-warning-strong: oklch(52% .125 75);
+    --color-danger: oklch(55% .200 25);
+    --color-danger-hover: oklch(46% .185 25);
     --color-danger-soft: oklch(95% .050 25);
     --color-danger-strong: oklch(45% .180 25);
     --color-glow: oklch(74% .105 78);

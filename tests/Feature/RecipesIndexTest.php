@@ -34,12 +34,24 @@ it('shows saved recipes on the recipes index page', function () {
         'is_draft' => true,
         'version_number' => 1,
     ]);
+    RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Published Olive Coconut Bar',
+        'is_draft' => false,
+        'version_number' => 2,
+        'saved_at' => now(),
+    ]);
 
     $this->actingAs($user)
         ->get(route('recipes.index'))
         ->assertSuccessful()
         ->assertSee('Olive Coconut Bar')
-        ->assertSee('Open draft');
+        ->assertSee('Open working draft')
+        ->assertSee('Use as draft')
+        ->assertSee('Published Olive Coconut Bar');
 });
 
 it('only shows recipes that belong to the current user', function () {

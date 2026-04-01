@@ -1,6 +1,7 @@
 import './bootstrap';
 
 window.recipeWorkbench = (payload) => ({
+    activeWorkbenchTab: 'formula',
     recipeId: payload.recipe?.id ?? null,
     draftVersionId: payload.recipe?.draft_version_id ?? null,
     currentVersionNumber: payload.recipe?.version_number ?? null,
@@ -24,11 +25,14 @@ window.recipeWorkbench = (payload) => ({
     selectedIfraProductCategoryId: payload.defaultIfraProductCategoryId === null || payload.defaultIfraProductCategoryId === undefined ? '' : String(payload.defaultIfraProductCategoryId),
     ingredients: payload.ingredients ?? [],
     versionOptions: payload.versionOptions ?? [],
+    versionViewRouteTemplate: payload.versionViewRouteTemplate ?? null,
     selectedComparisonVersionId: payload.versionOptions?.[0]?.id ?? null,
     comparisonMessage: '',
     backendCalculation: payload.savedSnapshot?.calculation ?? null,
+    backendLabeling: payload.savedSnapshot?.labeling ?? null,
     baselineSnapshot: payload.savedSnapshot ?? null,
     catalogReview: payload.savedSnapshot?.draft?.catalogReview ?? null,
+    inciCopyMessage: '',
     calculationPreviewTimer: null,
     isPreviewingCalculation: false,
     phaseOrder: payload.phases ?? [],
@@ -52,7 +56,7 @@ window.recipeWorkbench = (payload) => ({
             }
         }
 
-        ['oilWeight', 'manufacturingMode', 'lyeType', 'kohPurity', 'dualKohPercentage', 'waterMode', 'waterValue', 'superfat', 'selectedIfraProductCategoryId'].forEach((key) => {
+        ['oilWeight', 'manufacturingMode', 'exposureMode', 'regulatoryRegime', 'lyeType', 'kohPurity', 'dualKohPercentage', 'waterMode', 'waterValue', 'superfat', 'selectedIfraProductCategoryId'].forEach((key) => {
             this.$watch(key, () => this.scheduleCalculationPreview());
         });
 
@@ -359,6 +363,8 @@ window.recipeWorkbench = (payload) => ({
 
         this.applyDraft(snapshot.draft);
         this.backendCalculation = snapshot.calculation ?? null;
+        this.backendLabeling = snapshot.labeling ?? null;
+        this.inciCopyMessage = '';
 
         if (resetBaseline) {
             this.baselineSnapshot = JSON.parse(JSON.stringify(snapshot));
@@ -417,12 +423,31 @@ window.recipeWorkbench = (payload) => ({
 
             if (response?.ok) {
                 this.backendCalculation = response.calculation ?? null;
+                this.backendLabeling = response.labeling ?? null;
+                this.inciCopyMessage = '';
             }
         } catch (error) {
             this.backendCalculation = null;
+            this.backendLabeling = null;
         } finally {
             this.isPreviewingCalculation = false;
             this.calculationPreviewTimer = null;
+        }
+    },
+
+    async copyGeneratedIngredientList() {
+        if (!this.generatedIngredientListText || !navigator?.clipboard?.writeText) {
+            return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(this.generatedIngredientListText);
+            this.inciCopyMessage = 'Copied';
+            setTimeout(() => {
+                this.inciCopyMessage = '';
+            }, 1600);
+        } catch (error) {
+            this.inciCopyMessage = 'Copy failed';
         }
     },
 
@@ -497,30 +522,21 @@ window.recipeWorkbench = (payload) => ({
     },
 
     async openSelectedVersion() {
-        if (!this.selectedComparisonVersionId || !this.hasSavedRecipe) {
+        const selectedVersionUrl = this.selectedVersionUrl();
+
+        if (!selectedVersionUrl) {
             return;
         }
 
-        this.comparisonMessage = '';
+        window.location.href = selectedVersionUrl;
+    },
 
-        try {
-            const response = await this.$wire.loadVersion(this.selectedComparisonVersionId);
-
-            if (!response?.ok) {
-                this.comparisonMessage = response?.message ?? 'Saved version could not be opened.';
-
-                return;
-            }
-
-            if (response.snapshot) {
-                this.applySnapshot(response.snapshot, { resetBaseline: false });
-            }
-
-            this.saveStatus = 'success';
-            this.saveMessage = response.message ?? 'Saved version loaded.';
-        } catch (error) {
-            this.comparisonMessage = 'Saved version could not be opened.';
+    selectedVersionUrl() {
+        if (!this.selectedComparisonVersionId || !this.hasSavedRecipe || !this.versionViewRouteTemplate) {
+            return null;
         }
+
+        return this.versionViewRouteTemplate.replace('__VERSION__', this.selectedComparisonVersionId);
     },
 
     comparisonSummaryItems() {
@@ -874,19 +890,49 @@ window.recipeWorkbench = (payload) => ({
             {
                 id: 'produced-glycerine',
                 label: 'Produced glycerine',
-                value: `${this.format(this.backendCalculation?.lye?.selected?.glycerine_weight ?? this.lyeBreakdown().glycerine_weight, 1)} ${this.oilUnit}`,
+                value: `${this.format(this.backendCalculation?.lye?.selected?.glycerine_weight ?? this.lyeBreakdown().glycerine_weight, 0)} ${this.oilUnit}`,
             },
             {
                 id: 'wet-weight',
                 label: 'Wet weight',
-                value: `${this.format(this.finalBatchWeight(), 1)} ${this.oilUnit}`,
+                value: `${this.format(this.finalBatchWeight(), 0)} ${this.oilUnit}`,
             },
             {
                 id: 'cured-weight',
                 label: 'Weight after cure',
-                value: `${this.format(this.curedBatchWeight(), 1)} ${this.oilUnit}`,
+                value: `${this.format(this.curedBatchWeight(), 0)} ${this.oilUnit}`,
             },
         ];
+    },
+
+    get labelingBasis() {
+        return this.backendLabeling?.basis ?? null;
+    },
+
+    get generatedIngredientListText() {
+        return this.backendLabeling?.final_label_text ?? '';
+    },
+
+    get generatedIngredientRows() {
+        return this.backendLabeling?.ingredient_rows ?? [];
+    },
+
+    get declarationRows() {
+        return this.backendLabeling?.declaration_rows ?? [];
+    },
+
+    get labelingWarnings() {
+        return this.backendLabeling?.warnings ?? [];
+    },
+
+    declarationStatusClasses(row) {
+        if (!row?.exceeds_threshold) {
+            return 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]';
+        }
+
+        return row?.suppressed_by_existing_label
+            ? 'border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'
+            : 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]';
     },
 
     get fattyAcidProfileRows() {

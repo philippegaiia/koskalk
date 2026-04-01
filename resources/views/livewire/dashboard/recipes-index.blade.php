@@ -4,9 +4,9 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="min-w-0">
                     <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Formulas</p>
-                    <h3 class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">Your saved drafts and versions live here.</h3>
+                    <h3 class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">One working draft, with saved versions you can reopen or reuse.</h3>
                     <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-                        Name the formula from the workbench header, save the draft, then reopen it here to continue editing or promote it into a new version.
+                        Keep one editable working draft per recipe. Saved versions stay frozen until you open one for reference or explicitly use it to replace the working draft.
                     </p>
                 </div>
 
@@ -61,7 +61,7 @@
         <div class="flex items-center justify-between gap-4">
             <div>
                 <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Saved formulas</p>
-                <h3 class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">Drafts you can reopen and continue</h3>
+                <h3 class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">Recipes with a working draft and saved versions</h3>
             </div>
             @if ($currentUser)
                 <span class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm text-[var(--color-ink-soft)]">{{ $recipeCount }} visible</span>
@@ -115,7 +115,7 @@
                             </div>
 
                             <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate class="inline-flex shrink-0 rounded-full border border-[var(--color-line-strong)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                                Open draft
+                                Open working draft
                             </a>
                         </div>
 
@@ -133,6 +133,38 @@
                         @if ($recipe->description)
                             <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
                                 {{ \Illuminate\Support\Str::limit(strip_tags($recipe->description), 220) }}
+                            </div>
+                        @endif
+
+                        @if ($recipe->publishedVersions->isNotEmpty())
+                            <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Saved versions</p>
+                                    @if ($recipe->published_versions_count > $recipe->publishedVersions->count())
+                                        <span class="text-xs text-[var(--color-ink-soft)]">Showing latest {{ $recipe->publishedVersions->count() }}</span>
+                                    @endif
+                                </div>
+                                <div class="mt-3 space-y-2">
+                                    @foreach ($recipe->publishedVersions as $version)
+                                        <div class="flex flex-col gap-2 rounded-[1.25rem] border border-[var(--color-line)] bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                                            <div class="min-w-0">
+                                                <p class="text-sm font-medium text-[var(--color-ink-strong)]">v{{ $version->version_number }} · {{ $version->name }}</p>
+                                                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $version->saved_at?->diffForHumans() ?? 'Saved' }}</p>
+                                            </div>
+                                            <div class="flex flex-wrap gap-2">
+                                                <a href="{{ route('recipes.version', ['recipe' => $recipe->id, 'version' => $version->id]) }}" wire:navigate class="inline-flex rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                                                    View
+                                                </a>
+                                                <form method="POST" action="{{ route('recipes.use-version-as-draft', ['recipe' => $recipe->id, 'version' => $version->id]) }}">
+                                                    @csrf
+                                                    <button type="submit" class="inline-flex rounded-full bg-[var(--color-ink-strong)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
+                                                        Use as draft
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </div>
                         @endif
                     </article>
@@ -169,7 +201,7 @@
                 <div class="mt-4 space-y-3">
                     @foreach ([
                         'Named drafts that now persist into a visible recipe list',
-                        'A workbench that reopens a saved formula from the public shell',
+                        'A workbench with one working draft and saved versions you can reuse',
                         'Category-filtered ingredient loading from the actual catalog',
                         'A clear split between reaction core and post-reaction phases',
                     ] as $point)

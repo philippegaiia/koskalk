@@ -49,6 +49,13 @@ class Recipe extends Model
         return $this->hasMany(RecipeVersion::class);
     }
 
+    public function publishedVersions(): HasMany
+    {
+        return $this->hasMany(RecipeVersion::class)
+            ->where('is_draft', false)
+            ->orderByDesc('version_number');
+    }
+
     public function currentDraftVersion(): HasOne
     {
         return $this->hasOne(RecipeVersion::class)->where('is_draft', true);

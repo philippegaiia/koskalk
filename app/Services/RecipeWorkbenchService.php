@@ -22,6 +22,7 @@ class RecipeWorkbenchService
     public function __construct(
         private readonly RecipeNormalizationService $recipeNormalizationService,
         private readonly SoapCalculationService $soapCalculationService,
+        private readonly InciGenerationService $inciGenerationService,
     ) {}
 
     /**
@@ -257,6 +258,58 @@ class RecipeWorkbenchService
         return $this->previewSoapCalculation($this->previewPayloadFromWorkbenchDraft($draft));
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $calculation
+     * @return array<string, mixed>
+     */
+    public function previewInci(array $payload, ?array $calculation = null): array
+    {
+        return $this->inciGenerationService->generate(
+            $payload,
+            $calculation ?? $this->previewSoapCalculation($payload),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    public function inciFromWorkbenchDraft(array $draft): array
+    {
+        return $this->labelingFromWorkbenchDraft($draft);
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @param  array<string, mixed>|null  $calculation
+     * @return array<string, mixed>
+     */
+    public function labelingFromWorkbenchDraft(array $draft, ?array $calculation = null): array
+    {
+        $previewPayload = $this->previewPayloadFromWorkbenchDraft($draft);
+
+        return $this->previewInci(
+            $previewPayload,
+            $calculation ?? $this->calculationFromWorkbenchDraft($draft),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>}
+     */
+    public function snapshotFromWorkbenchDraft(array $draft): array
+    {
+        $calculation = $this->calculationFromWorkbenchDraft($draft);
+
+        return [
+            'draft' => $draft,
+            'calculation' => $calculation,
+            'labeling' => $this->labelingFromWorkbenchDraft($draft, $calculation),
+        ];
+    }
+
     public function saveDraft(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
         $normalizedPayload = $this->normalizePayload($payload);
@@ -343,6 +396,23 @@ class RecipeWorkbenchService
         $copyPayload['name'] = $this->duplicateName((string) ($payload['name'] ?? 'Soap Formula'));
 
         return $this->saveDraft($user, $productFamily, $copyPayload);
+    }
+
+    public function useVersionAsDraft(User $user, Recipe $recipe, int $versionId): RecipeVersion
+    {
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $recipe->id)
+            ->where('is_draft', false)
+            ->whereKey($versionId)
+            ->with($this->versionWorkbenchRelations())
+            ->firstOrFail();
+
+        return $this->saveDraft(
+            $user,
+            $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
+            $this->savePayloadFromWorkbenchDraft($this->workbenchPayloadFromVersion($version)),
+            $recipe,
+        );
     }
 
     /**
@@ -470,7 +540,7 @@ class RecipeWorkbenchService
             'phases.items.ingredient',
             'phases.items.ingredient.sapProfile',
             'phases.items.ingredient.fattyAcidEntries.fattyAcid',
-            'phases.items.ingredient.allergenEntries',
+            'phases.items.ingredient.allergenEntries.allergen',
             'phases.items.ingredient.ifraCertificates.limits',
         ];
     }
@@ -533,16 +603,13 @@ class RecipeWorkbenchService
     }
 
     /**
-     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null}
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>}
      */
     private function workbenchSnapshotFromVersion(RecipeVersion $version): array
     {
-        $draft = $this->workbenchPayloadFromVersion($version);
-
-        return [
-            'draft' => $draft,
-            'calculation' => $this->calculationFromWorkbenchDraft($draft),
-        ];
+        return $this->snapshotFromWorkbenchDraft(
+            $this->workbenchPayloadFromVersion($version),
+        );
     }
 
     /**
@@ -553,6 +620,8 @@ class RecipeWorkbenchService
     {
         return [
             'manufacturing_mode' => $draft['manufacturingMode'] ?? 'saponify_in_formula',
+            'exposure_mode' => $draft['exposureMode'] ?? 'rinse_off',
+            'regulatory_regime' => $draft['regulatoryRegime'] ?? 'eu',
             'oil_weight' => $draft['oilWeight'] ?? 0,
             'lye_type' => $draft['lyeType'] ?? 'naoh',
             'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
@@ -560,6 +629,31 @@ class RecipeWorkbenchService
             'water_mode' => $draft['waterMode'] ?? 'percent_of_oils',
             'water_value' => $draft['waterValue'] ?? 38,
             'superfat' => $draft['superfat'] ?? 5,
+            'phase_items' => $draft['phaseItems'] ?? [],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    private function savePayloadFromWorkbenchDraft(array $draft): array
+    {
+        return [
+            'name' => $draft['formulaName'] ?? 'Untitled Soap Formula',
+            'oil_unit' => $draft['oilUnit'] ?? 'g',
+            'oil_weight' => $draft['oilWeight'] ?? 0,
+            'manufacturing_mode' => $draft['manufacturingMode'] ?? 'saponify_in_formula',
+            'exposure_mode' => $draft['exposureMode'] ?? 'rinse_off',
+            'regulatory_regime' => $draft['regulatoryRegime'] ?? 'eu',
+            'editing_mode' => ($draft['editMode'] ?? 'percentage') === 'weight' ? 'weight' : 'percentage',
+            'lye_type' => $draft['lyeType'] ?? 'naoh',
+            'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
+            'dual_lye_koh_percentage' => $draft['dualKohPercentage'] ?? 40,
+            'water_mode' => $draft['waterMode'] ?? 'percent_of_oils',
+            'water_value' => $draft['waterValue'] ?? 38,
+            'superfat' => $draft['superfat'] ?? 5,
+            'ifra_product_category_id' => $draft['selectedIfraProductCategoryId'] ?? null,
             'phase_items' => $draft['phaseItems'] ?? [],
         ];
     }

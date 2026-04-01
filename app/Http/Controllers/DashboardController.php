@@ -24,6 +24,10 @@ class DashboardController extends Controller
                 ->with([
                     'productFamily',
                     'currentDraftVersion',
+                    'publishedVersions' => fn ($query) => $query
+                        ->select(['id', 'recipe_id', 'version_number', 'name', 'saved_at'])
+                        ->latest('version_number')
+                        ->limit(3),
                 ])
                 ->withCount([
                     'versions as published_versions_count' => fn ($query) => $query->where('is_draft', false),

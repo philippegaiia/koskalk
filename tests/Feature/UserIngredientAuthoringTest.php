@@ -11,6 +11,7 @@ use App\OwnerType;
 use App\Services\UserIngredientAuthoringService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -40,6 +41,28 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->and($ingredient->is_potentially_saponifiable)->toBeFalse()
         ->and($ingredient->display_name)->toBe('French Green Clay')
         ->and($ingredient->inci_name)->toBe('ILLITE');
+});
+
+it('persists an optional ingredient icon separately from the main image', function () {
+    $user = User::factory()->create();
+    $ingredient = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Green Clay',
+        'category' => IngredientCategory::Clay->value,
+        'featured_image_path' => 'ingredients/featured-images/green-clay.webp',
+        'icon_image_path' => 'ingredients/icons/green-clay-icon.webp',
+    ], $user);
+
+    expect($ingredient->featured_image_path)->toBe('ingredients/featured-images/green-clay.webp')
+        ->and($ingredient->icon_image_path)->toBe('ingredients/icons/green-clay-icon.webp');
+});
+
+it('falls back to the main ingredient image when no icon exists for picker surfaces', function () {
+    $ingredient = Ingredient::factory()->make([
+        'featured_image_path' => 'ingredients/featured-images/green-clay.webp',
+        'icon_image_path' => null,
+    ]);
+
+    expect($ingredient->pickerImageUrl())->toBe($ingredient->featuredImageUrl());
 });
 
 it('persists optional allergen and current ifra data for aromatic user ingredients', function () {
@@ -164,4 +187,37 @@ it('keeps user carrier oils out of the soap saponification lane', function () {
     expect($ingredient->availableWorkbenchPhases())
         ->toContain('additives')
         ->not->toContain('saponified_oils');
+});
+
+it('deletes replaced ingredient media from storage during update', function () {
+    Storage::fake('public');
+
+    config([
+        'media.disk' => 'public',
+        'media.visibility' => 'public',
+    ]);
+
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'featured_image_path' => 'ingredients/featured-images/original.webp',
+        'icon_image_path' => 'ingredients/icons/original-icon.webp',
+    ]);
+
+    Storage::disk('public')->put('ingredients/featured-images/original.webp', 'old-image');
+    Storage::disk('public')->put('ingredients/icons/original-icon.webp', 'old-icon');
+
+    $updated = app(UserIngredientAuthoringService::class)->update($ingredient, [
+        'name' => $ingredient->display_name,
+        'category' => $ingredient->category->value,
+        'featured_image_path' => null,
+        'icon_image_path' => null,
+    ], $user);
+
+    expect(Storage::disk('public')->exists('ingredients/featured-images/original.webp'))->toBeFalse()
+        ->and(Storage::disk('public')->exists('ingredients/icons/original-icon.webp'))->toBeFalse()
+        ->and($updated->featured_image_path)->toBeNull()
+        ->and($updated->icon_image_path)->toBeNull();
 });

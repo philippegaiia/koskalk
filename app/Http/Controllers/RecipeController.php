@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Services\CurrentAppUserResolver;
+use App\Services\MediaStorage;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class RecipeController extends Controller
 {
@@ -90,6 +92,88 @@ class RecipeController extends Controller
         return redirect()
             ->route('recipes.edit', $recipe->id)
             ->with('status', 'Working draft replaced with version v'.$version->version_number.'.');
+    }
+
+    public function destroy(
+        int $recipe,
+        CurrentAppUserResolver $currentAppUserResolver,
+        Request $request,
+    ): RedirectResponse {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+
+        $recipe = Recipe::withoutGlobalScopes()->findOrFail($recipe);
+
+        $this->authorize('delete', $recipe);
+
+        abort_unless($request->string('confirm_name')->toString() === $recipe->name, 403, 'Confirmation name does not match.');
+
+        $mediaPaths = $recipe->mediaPaths();
+
+        DB::transaction(function () use ($recipe): void {
+            $recipe->delete();
+        });
+
+        $mediaPaths->each(function (string $path): void {
+            MediaStorage::deletePublicPath($path);
+        });
+
+        return redirect()
+            ->route('recipes.index')
+            ->with('status', 'Recipe deleted.');
+    }
+
+    public function destroyVersion(
+        int $recipe,
+        int $version,
+        CurrentAppUserResolver $currentAppUserResolver,
+        Request $request,
+    ): RedirectResponse {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+
+        $recipe = Recipe::withoutGlobalScopes()->findOrFail($recipe);
+        $version = RecipeVersion::withoutGlobalScopes()->findOrFail($version);
+
+        abort_unless($version->recipe_id === $recipe->id, 404);
+
+        $this->authorize('delete', $version);
+
+        if (! $version->is_draft) {
+            abort_unless($request->string('confirm_name')->toString() === $version->name, 403, 'Confirmation name does not match.');
+        }
+
+        $status = DB::transaction(function () use ($recipe, $version): string {
+            $lockedRecipe = Recipe::withoutGlobalScopes()
+                ->whereKey($recipe->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $lockedVersion = RecipeVersion::withoutGlobalScopes()
+                ->whereKey($version->id)
+                ->where('recipe_id', $lockedRecipe->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $wasPublished = ! $lockedVersion->is_draft;
+
+            $lockedVersion->delete();
+
+            $hasPublishedVersions = RecipeVersion::withoutGlobalScopes()
+                ->where('recipe_id', $lockedRecipe->id)
+                ->where('is_draft', false)
+                ->exists();
+
+            return $wasPublished && ! $hasPublishedVersions
+                ? 'Last published version deleted. Recipe has no published versions.'
+                : 'Version deleted.';
+        });
+
+        return redirect()
+            ->route('recipes.index')
+            ->with('status', $status);
     }
 
     private function accessibleRecipe(int $recipeId, CurrentAppUserResolver $currentAppUserResolver): Recipe

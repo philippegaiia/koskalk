@@ -44,6 +44,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'source_data',
     'info_markdown',
     'featured_image_path',
+    'icon_image_path',
 ])]
 class Ingredient extends Model
 {
@@ -102,6 +103,16 @@ class Ingredient extends Model
     public function featuredImageUrl(): ?string
     {
         return MediaStorage::publicUrl($this->featured_image_path);
+    }
+
+    public function iconImageUrl(): ?string
+    {
+        return MediaStorage::publicUrl($this->icon_image_path);
+    }
+
+    public function pickerImageUrl(): ?string
+    {
+        return $this->iconImageUrl() ?? $this->featuredImageUrl();
     }
 
     /**

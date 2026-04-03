@@ -29,6 +29,7 @@ class UserIngredientAuthoringService
             'supplier_name' => null,
             'supplier_reference' => null,
             'featured_image_path' => null,
+            'icon_image_path' => null,
             'info_markdown' => null,
             'function_ids' => [],
             'allergen_entries' => [],
@@ -62,6 +63,7 @@ class UserIngredientAuthoringService
             'supplier_name' => data_get($entryData, 'current_version.supplier_name'),
             'supplier_reference' => data_get($entryData, 'current_version.supplier_reference'),
             'featured_image_path' => $ingredient->featured_image_path,
+            'icon_image_path' => $ingredient->icon_image_path,
             'info_markdown' => $ingredient->info_markdown,
             'function_ids' => $entryData['function_ids'] ?? [],
             'allergen_entries' => $entryData['allergen_entries'] ?? [],
@@ -113,10 +115,23 @@ class UserIngredientAuthoringService
             ]);
         }
 
+        $previousFeaturedImagePath = $ingredient->featured_image_path;
+        $previousIconImagePath = $ingredient->icon_image_path;
+
         $this->fillIngredient($ingredient, $state);
         $ingredient->save();
 
-        return $this->syncState($ingredient, $state);
+        $ingredient = $this->syncState($ingredient, $state);
+
+        if ($previousFeaturedImagePath !== $ingredient->featured_image_path) {
+            MediaStorage::deletePublicPath($previousFeaturedImagePath);
+        }
+
+        if ($previousIconImagePath !== $ingredient->icon_image_path) {
+            MediaStorage::deletePublicPath($previousIconImagePath);
+        }
+
+        return $ingredient;
     }
 
     public function createInlineComponent(array $state, User $user): Ingredient
@@ -128,6 +143,7 @@ class UserIngredientAuthoringService
             'supplier_name' => $state['supplier_name'] ?? null,
             'supplier_reference' => $state['supplier_reference'] ?? null,
             'featured_image_path' => null,
+            'icon_image_path' => null,
             'info_markdown' => null,
             'function_ids' => [],
             'allergen_entries' => [],
@@ -156,6 +172,7 @@ class UserIngredientAuthoringService
         }
 
         $ingredient->featured_image_path = Arr::get($state, 'featured_image_path');
+        $ingredient->icon_image_path = Arr::get($state, 'icon_image_path');
         $ingredient->info_markdown = Arr::get($state, 'info_markdown');
         $ingredient->is_potentially_saponifiable = false;
         $ingredient->is_active = true;

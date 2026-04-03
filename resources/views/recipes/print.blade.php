@@ -140,9 +140,18 @@
 
             @if ($recipe->description)
                 <section class="mt-6">
-                    <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Instructions</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Presentation</h2>
                     <div class="prose prose-sm prose-slate mt-3 max-w-none">
                         {!! str($recipe->description)->sanitizeHtml() !!}
+                    </div>
+                </section>
+            @endif
+
+            @if ($recipe->manufacturing_instructions)
+                <section class="mt-6">
+                    <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Manufacturing instructions</h2>
+                    <div class="prose prose-sm prose-slate mt-3 max-w-none">
+                        {!! str($recipe->manufacturing_instructions)->sanitizeHtml() !!}
                     </div>
                 </section>
             @endif

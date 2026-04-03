@@ -426,7 +426,7 @@
 
                         <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                             <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
-                                <div class="rounded-[1.35rem] border border-[var(--color-line)] bg-white p-4">
+                                <div class="rounded-[1.35rem] border border-[var(--color-line)] bg-white p-3">
                                     <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
                                     <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
                                 </div>
@@ -866,9 +866,9 @@
 
     <section x-show="activeWorkbenchTab === 'instructions'" x-cloak class="rounded-[2rem] border border-[var(--color-line)] bg-white">
         <div class="border-b border-[var(--color-line)] px-5 py-4">
-            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Instructions &amp; Media</p>
-            <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Method notes, instructions, and optional image</h3>
-            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Use this space for your formula notes, process instructions, and a finished-product image if you want one.</p>
+            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Content &amp; Media</p>
+            <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Presentation, manufacturing steps, and product image</h3>
+            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Keep customer-facing presentation separate from the print-ready manufacturing instructions.</p>
         </div>
 
         <div class="px-5 py-5">
@@ -884,13 +884,13 @@
 
                     <div class="flex justify-end">
                         <button type="submit" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
-                            Save instructions and media
+                            Save content and media
                         </button>
                     </div>
                 </form>
             @else
                 <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-4 text-sm text-[var(--color-ink-soft)]">
-                    Save the first draft once, then return here to add notes, instructions, and an optional finished-product image.
+                    Save the first draft once, then return here to add presentation, manufacturing instructions, and an optional finished-product image.
                 </div>
             @endif
         </div>

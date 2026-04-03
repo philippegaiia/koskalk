@@ -113,9 +113,18 @@
 
     @if ($recipe->description)
         <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Instructions</p>
+            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Presentation</p>
             <div class="prose prose-stone mt-4 max-w-none text-[var(--color-ink-soft)]">
                 {!! str($recipe->description)->sanitizeHtml() !!}
+            </div>
+        </section>
+    @endif
+
+    @if ($recipe->manufacturing_instructions)
+        <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Manufacturing instructions</p>
+            <div class="prose prose-stone mt-4 max-w-none text-[var(--color-ink-soft)]">
+                {!! str($recipe->manufacturing_instructions)->sanitizeHtml() !!}
             </div>
         </section>
     @endif

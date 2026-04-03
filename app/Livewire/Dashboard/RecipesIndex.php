@@ -8,10 +8,15 @@ use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Services\CurrentAppUserResolver;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class RecipesIndex extends Component
 {
+    #[Url(as: 'q')]
+    public string $search = '';
+
     public function render(): View
     {
         $productFamilies = ProductFamily::query()
@@ -51,9 +56,10 @@ class RecipesIndex extends Component
         $recipeCount = 0;
         $draftCount = 0;
         $publishedVersionCount = 0;
+        $searchTerm = trim($this->search);
 
         if ($currentUser !== null) {
-            $recipes = Recipe::query()
+            $recipesQuery = Recipe::query()
                 ->with([
                     'productFamily',
                     'currentDraftVersion',
@@ -65,7 +71,18 @@ class RecipesIndex extends Component
                 ->withCount([
                     'versions as published_versions_count' => fn ($query) => $query->where('is_draft', false),
                 ])
-                ->whereNull('archived_at')
+                ->whereNull('archived_at');
+
+            if ($searchTerm !== '') {
+                $recipesQuery->where(function (Builder $query) use ($searchTerm): void {
+                    $query
+                        ->where('name', 'ilike', '%'.$searchTerm.'%')
+                        ->orWhereHas('productFamily', fn (Builder $familyQuery) => $familyQuery->where('name', 'ilike', '%'.$searchTerm.'%'))
+                        ->orWhereHas('versions', fn (Builder $versionQuery) => $versionQuery->where('name', 'ilike', '%'.$searchTerm.'%'));
+                });
+            }
+
+            $recipes = $recipesQuery
                 ->latest()
                 ->get();
 
@@ -82,6 +99,7 @@ class RecipesIndex extends Component
             'draftCount' => $draftCount,
             'publishedVersionCount' => $publishedVersionCount,
             'recipes' => $recipes,
+            'searchTerm' => $searchTerm,
         ]);
     }
 }

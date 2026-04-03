@@ -46,6 +46,7 @@ class IngredientFactory extends Factory
             'source_data' => null,
             'info_markdown' => null,
             'featured_image_path' => null,
+            'icon_image_path' => null,
         ];
     }
 }

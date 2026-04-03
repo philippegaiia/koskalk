@@ -31,6 +31,7 @@ class RecipeFactory extends Factory
             'visibility' => Visibility::Private,
             'name' => $name,
             'description' => null,
+            'manufacturing_instructions' => null,
             'featured_image_path' => null,
             'slug' => Str::slug($name),
             'archived_at' => null,

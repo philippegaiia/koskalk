@@ -8,10 +8,14 @@ use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
+use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use App\Services\RecipeWorkbenchService;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -24,10 +28,12 @@ use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
-class RecipeWorkbench extends Component implements HasForms
+class RecipeWorkbench extends Component implements HasActions, HasForms
 {
     use AuthorizesRequests;
+    use InteractsWithActions;
     use InteractsWithForms;
 
     #[Locked]
@@ -241,19 +247,89 @@ class RecipeWorkbench extends Component implements HasForms
         }
 
         $this->authorize('update', $recipe);
+        $previousFeaturedImagePath = $recipe->featured_image_path;
+        $previousRichContentAttachmentPaths = $recipe->richContentAttachmentPaths();
+        $pendingRichContentState = $this->pendingRecipeRichContentState();
 
-        /** @var array{description:?string, featured_image_path:?string} $state */
-        $state = $this->form->getState();
+        /** @var array{description:?string, manufacturing_instructions:?string, featured_image_path:?string} $state */
+        $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
+
+        try {
+            $state = $this->form->getState();
+        } finally {
+            $this->clearPendingRichContentStateOnRecipeTargets($recipe);
+        }
 
         $recipe->fill([
             'description' => $state['description'] ?? null,
+            'manufacturing_instructions' => $state['manufacturing_instructions'] ?? null,
             'featured_image_path' => $state['featured_image_path'] ?? null,
         ]);
         $recipe->save();
 
+        if ($previousFeaturedImagePath !== $recipe->featured_image_path) {
+            MediaStorage::deletePublicPath($previousFeaturedImagePath);
+        }
+
+        $previousRichContentAttachmentPaths
+            ->diff($recipe->richContentAttachmentPaths())
+            ->each(function (string $path): void {
+                MediaStorage::deletePublicPath($path);
+            });
+
         $this->recipeContentStatus = 'success';
         $this->recipeContentMessage = 'Recipe content saved.';
         $this->refreshRecipeContentForm($recipe->fresh());
+    }
+
+    public function deleteVersion(int $versionId, string $confirmName = ''): void
+    {
+        abort_unless($this->currentUser() instanceof User, 403);
+
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $this->recipeId)
+            ->findOrFail($versionId);
+
+        $this->authorize('delete', $version);
+
+        if (! $version->is_draft) {
+            if ($confirmName !== $version->name) {
+                throw ValidationException::withMessages([
+                    'confirmName' => 'Confirmation name does not match.',
+                ]);
+            }
+        }
+
+        $isDraft = $version->is_draft;
+
+        $version->delete();
+
+        if ($isDraft) {
+            session()->flash('status', 'Draft deleted.');
+            $this->redirect(route('recipes.index'), navigate: true);
+
+            return;
+        }
+
+        $recipe = $this->currentRecipe();
+        $recipeWorkbenchService = app(RecipeWorkbenchService::class);
+        $savedSnapshot = $recipeWorkbenchService->draftSnapshot($recipe);
+        $versionOptions = $recipe instanceof Recipe
+            ? $recipeWorkbenchService->versionOptions($recipe)
+            : [];
+        $status = empty($versionOptions)
+            ? 'Last published version deleted. Recipe has no published versions.'
+            : 'Version deleted.';
+
+        session()->flash('status', $status);
+
+        $this->dispatch(
+            'version-deleted',
+            message: $status,
+            recipe: $savedSnapshot['draft']['recipe'] ?? null,
+            versionName: $savedSnapshot['draft']['formulaName'] ?? null,
+            versionOptions: $versionOptions,
+        );
     }
 
     public function form(Schema $schema): Schema
@@ -261,14 +337,14 @@ class RecipeWorkbench extends Component implements HasForms
         return $schema
             ->components([
                 Section::make('Recipe content')
-                    ->description('Use rich text for the process story, instructions, and in-process photos. Images stay constrained through Filament upload and editor controls.')
+                    ->description('Keep presentation copy and manufacturing steps separate, with the product image stored alongside them.')
                     ->columns([
                         'lg' => 12,
                     ])
                     ->schema([
                         RichEditor::make('description')
-                            ->label('Description and instructions')
-                            ->helperText('Use this for process steps, instructions, and publication-ready recipe notes.')
+                            ->label('Presentation')
+                            ->helperText('Use this for product story, benefits, positioning, and publication-ready notes.')
                             ->toolbarButtons([
                                 ['bold', 'italic', 'underline', 'strike', 'link'],
                                 ['h2', 'h3', 'blockquote', 'bulletList', 'orderedList'],
@@ -276,22 +352,45 @@ class RecipeWorkbench extends Component implements HasForms
                             ])
                             ->fileAttachmentsDisk(MediaStorage::publicDisk())
                             ->fileAttachmentsDirectory('recipes/rich-content')
-                            ->fileAttachmentsVisibility('public')
+                            ->fileAttachmentsVisibility(MediaStorage::publicVisibility())
                             ->fileAttachmentsAcceptedFileTypes([
                                 'image/jpeg',
                                 'image/webp',
                             ])
-                            ->fileAttachmentsMaxSize(3072)
+                            ->fileAttachmentsMaxSize(MediaStorage::recipeRichContentImagesMaxSize())
                             ->resizableImages()
                             ->columnSpan([
-                                'lg' => 7,
+                                'lg' => 6,
+                            ]),
+                        RichEditor::make('manufacturing_instructions')
+                            ->label('Manufacturing instructions')
+                            ->helperText('Use this for process steps, timing, cautions, and print-ready production instructions.')
+                            ->toolbarButtons([
+                                ['bold', 'italic', 'underline', 'strike', 'link'],
+                                ['h2', 'h3', 'blockquote', 'bulletList', 'orderedList'],
+                                ['attachFiles', 'undo', 'redo'],
+                            ])
+                            ->fileAttachmentsDisk(MediaStorage::publicDisk())
+                            ->fileAttachmentsDirectory('recipes/rich-content')
+                            ->fileAttachmentsVisibility(MediaStorage::publicVisibility())
+                            ->fileAttachmentsAcceptedFileTypes([
+                                'image/jpeg',
+                                'image/webp',
+                            ])
+                            ->fileAttachmentsMaxSize(MediaStorage::recipeRichContentImagesMaxSize())
+                            ->resizableImages()
+                            ->columnSpan([
+                                'lg' => 6,
                             ]),
                         FileUpload::make('featured_image_path')
                             ->label('Finished product image')
                             ->image()
                             ->disk(MediaStorage::publicDisk())
                             ->directory('recipes/featured-images')
-                            ->visibility('public')
+                            ->visibility(MediaStorage::publicVisibility())
+                            ->deleteUploadedFileUsing(function (string $file): void {
+                                MediaStorage::deletePublicPath($file);
+                            })
                             ->imagePreviewHeight('20rem')
                             ->panelLayout('integrated')
                             ->panelAspectRatio('4:3')
@@ -299,21 +398,23 @@ class RecipeWorkbench extends Component implements HasForms
                                 'image/jpeg',
                                 'image/webp',
                             ])
-                            ->maxSize(3072)
-                            ->automaticallyResizeImagesMode('cover')
-                            ->automaticallyResizeImagesToHeight('1400')
-                            ->automaticallyResizeImagesToWidth('1400')
-                            ->automaticallyUpscaleImagesWhenResizing(false)
+                            ->maxSize(MediaStorage::recipeFeaturedImagesMaxSize())
+                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeResizedWebp(
+                                $file,
+                                (string) $component->getDirectory(),
+                                (int) config('media.recipe_featured_images.max_width', 1200),
+                                (int) config('media.recipe_featured_images.max_height', 900),
+                                MediaStorage::recipeFeaturedImagesQuality(),
+                            ))
                             ->imageEditor()
                             ->imageAspectRatio('4:3')
-                            ->imageEditorAspectRatioOptions([
-                                '4:3',
-                                '1:1',
-                            ])
+                            ->imageEditorAspectRatioOptions(['4:3'])
+                            ->imageEditorViewportWidth('1200')
+                            ->imageEditorViewportHeight('900')
                             ->automaticallyOpenImageEditorForAspectRatio()
-                            ->helperText('Allowed: JPG or WebP, up to 3 MB. Square and 4:3 crops stay large enough for recipe cards and future thumbnails.')
+                            ->helperText('Allowed: JPG or WebP, up to 1 MB. Recipe images are cropped to 4:3 and stored up to 1200x900.')
                             ->columnSpan([
-                                'lg' => 5,
+                                'lg' => 12,
                             ]),
                     ]),
             ])
@@ -461,7 +562,7 @@ class RecipeWorkbench extends Component implements HasForms
                     'ingredient_id' => $ingredient->id,
                     'name' => $ingredient->display_name,
                     'inci_name' => $ingredient->inci_name,
-                    'image_url' => $ingredient?->featuredImageUrl(),
+                    'image_url' => $ingredient?->pickerImageUrl(),
                     'category' => $category?->value,
                     'category_label' => $category?->getLabel(),
                     'soap_inci_naoh_name' => $ingredient->soap_inci_naoh_name,
@@ -520,12 +621,13 @@ class RecipeWorkbench extends Component implements HasForms
             'id' => $recipe->id,
             'name' => $recipe->name,
             'description' => $recipe->description,
+            'manufacturing_instructions' => $recipe->manufacturing_instructions,
             'featured_image_url' => $recipe->featuredImageUrl(),
         ];
     }
 
     /**
-     * @return array{description:?string, featured_image_path:?string}
+     * @return array{description:?string, manufacturing_instructions:?string, featured_image_path:?string}
      */
     private function recipeContentFormState(?Recipe $recipe = null): array
     {
@@ -533,6 +635,7 @@ class RecipeWorkbench extends Component implements HasForms
 
         return [
             'description' => $recipe?->description,
+            'manufacturing_instructions' => $recipe?->manufacturing_instructions,
             'featured_image_path' => $recipe?->featured_image_path,
         ];
     }
@@ -544,6 +647,49 @@ class RecipeWorkbench extends Component implements HasForms
         $this->form
             ->model($recipe ?? Recipe::class)
             ->fill($this->recipeContentFormState($recipe));
+    }
+
+    /**
+     * @return array{description:?string, manufacturing_instructions:?string}
+     */
+    private function pendingRecipeRichContentState(): array
+    {
+        return [
+            'description' => $this->pendingRichContentValue('description'),
+            'manufacturing_instructions' => $this->pendingRichContentValue('manufacturing_instructions'),
+        ];
+    }
+
+    /**
+     * @param  array{description:?string, manufacturing_instructions:?string}  $state
+     */
+    private function setPendingRichContentStateOnRecipeTargets(Recipe $recipe, array $state): void
+    {
+        $recipe->setPendingRichContentState($state);
+
+        $formRecord = $this->form->getRecord();
+
+        if ($formRecord instanceof Recipe && $formRecord !== $recipe) {
+            $formRecord->setPendingRichContentState($state);
+        }
+    }
+
+    private function clearPendingRichContentStateOnRecipeTargets(Recipe $recipe): void
+    {
+        $recipe->clearPendingRichContentState();
+
+        $formRecord = $this->form->getRecord();
+
+        if ($formRecord instanceof Recipe && $formRecord !== $recipe) {
+            $formRecord->clearPendingRichContentState();
+        }
+    }
+
+    private function pendingRichContentValue(string $key): ?string
+    {
+        $value = $this->data[$key] ?? null;
+
+        return is_string($value) || $value === null ? $value : null;
     }
 
     private function currentUser(): ?User

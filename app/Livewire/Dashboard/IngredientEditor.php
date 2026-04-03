@@ -13,6 +13,7 @@ use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -29,6 +30,7 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class IngredientEditor extends Component implements HasActions, HasForms
 {
@@ -133,20 +135,57 @@ class IngredientEditor extends Component implements HasActions, HasForms
                         FileUpload::make('featured_image_path')
                             ->label('Ingredient image')
                             ->image()
-                            ->maxSize(2048)
+                            ->maxSize(MediaStorage::ingredientImagesMaxSize())
                             ->acceptedFileTypes([
                                 'image/jpeg',
                                 'image/webp',
                             ])
                             ->disk(MediaStorage::publicDisk())
                             ->directory('ingredients/featured-images')
-                            ->visibility('public')
+                            ->visibility(MediaStorage::publicVisibility())
+                            ->deleteUploadedFileUsing(function (string $file): void {
+                                MediaStorage::deletePublicPath($file);
+                            })
+                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeFittedWebp(
+                                $file,
+                                (string) $component->getDirectory(),
+                                MediaStorage::ingredientImageWidth(),
+                                MediaStorage::ingredientImageHeight(),
+                                MediaStorage::ingredientImagesQuality(),
+                            ))
                             ->imageEditor()
                             ->imageAspectRatio('1:1')
                             ->imageEditorAspectRatioOptions(['1:1'])
                             ->automaticallyOpenImageEditorForAspectRatio()
-                            ->helperText('Optional square image for ingredient cards and selectors.')
-                            ->columnSpanFull(),
+                            ->helperText('Optional square image for the ingredient sheet and larger cards.')
+                            ->columnSpan(1),
+                        FileUpload::make('icon_image_path')
+                            ->label('Ingredient icon')
+                            ->image()
+                            ->maxSize(MediaStorage::ingredientIconsMaxSize())
+                            ->acceptedFileTypes([
+                                'image/jpeg',
+                                'image/webp',
+                            ])
+                            ->disk(MediaStorage::publicDisk())
+                            ->directory('ingredients/icons')
+                            ->visibility(MediaStorage::publicVisibility())
+                            ->deleteUploadedFileUsing(function (string $file): void {
+                                MediaStorage::deletePublicPath($file);
+                            })
+                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeFittedWebp(
+                                $file,
+                                (string) $component->getDirectory(),
+                                MediaStorage::ingredientIconsWidth(),
+                                MediaStorage::ingredientIconsHeight(),
+                                MediaStorage::ingredientIconsQuality(),
+                            ))
+                            ->imageEditor()
+                            ->imageAspectRatio('1:1')
+                            ->imageEditorAspectRatioOptions(['1:1'])
+                            ->automaticallyOpenImageEditorForAspectRatio()
+                            ->helperText('Optional 96x96 icon for compact selectors. If empty, the main image is used.')
+                            ->columnSpan(1),
                         Textarea::make('info_markdown')
                             ->label('Notes and formulation info')
                             ->rows(4)

@@ -1,4 +1,10 @@
 <div class="mx-auto max-w-[90rem] xl:max-w-[90rem] space-y-8">
+    @if (session('status'))
+        <div class="rounded-[2rem] border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-6 py-4 text-sm text-[var(--color-success-strong)]">
+            {{ session('status') }}
+        </div>
+    @endif
+
     <section class="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_22rem]">
         <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -58,14 +64,32 @@
     </section>
 
     <section class="space-y-4">
-        <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
                 <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Saved formulas</p>
                 <h3 class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">Recipes with a working draft and saved versions</h3>
             </div>
-            @if ($currentUser)
-                <span class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm text-[var(--color-ink-soft)]">{{ $recipeCount }} visible</span>
-            @endif
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                @if ($currentUser)
+                    <label class="flex min-w-0 items-center gap-3 rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm text-[var(--color-ink-soft)] sm:min-w-80">
+                        <span class="shrink-0 text-[var(--color-ink-soft)]">Search</span>
+                        <input
+                            wire:model.live.debounce.250ms="search"
+                            type="text"
+                            placeholder="Recipes, families, versions"
+                            class="min-w-0 flex-1 bg-transparent text-sm text-[var(--color-ink-strong)] outline-none placeholder:text-[var(--color-ink-soft)]"
+                        />
+                        @if ($searchTerm !== '')
+                            <button type="button" wire:click="$set('search', '')" class="shrink-0 rounded-full border border-[var(--color-line)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                Clear
+                            </button>
+                        @endif
+                    </label>
+                    <span class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm text-[var(--color-ink-soft)]">
+                        {{ $recipeCount }} {{ $searchTerm !== '' ? 'matching' : 'visible' }}
+                    </span>
+                @endif
+            </div>
         </div>
 
         @if (! $currentUser)
@@ -75,22 +99,42 @@
             </div>
         @elseif ($recipes->isEmpty())
             <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-8 text-center">
-                <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">No formulas saved yet</h4>
-                <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Create the first soap formula, give it a name in the header, and save the draft to make it appear in this list.</p>
-                <a href="{{ route('recipes.create') }}" wire:navigate class="mt-5 inline-flex rounded-full bg-[var(--color-ink-strong)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">Create soap formula</a>
+                <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $searchTerm !== '' ? 'No formulas match this search' : 'No formulas saved yet' }}</h4>
+                <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">
+                    {{ $searchTerm !== '' ? 'Try a recipe name, product family, or saved version name.' : 'Create the first soap formula, give it a name in the header, and save the draft to make it appear in this list.' }}
+                </p>
+                @if ($searchTerm === '')
+                    <a href="{{ route('recipes.create') }}" wire:navigate class="mt-5 inline-flex rounded-full bg-[var(--color-ink-strong)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">Create soap formula</a>
+                @endif
             </div>
         @else
             <div class="grid gap-4 xl:grid-cols-2">
                 @foreach ($recipes as $recipe)
+                    @php
+                        $productFamilyName = $recipe->productFamily?->name ?? 'Formula';
+                        $productFamilySlug = $recipe->productFamily?->slug ?? 'formula';
+                        $fallbackThumbnailClasses = match ($productFamilySlug) {
+                            'soap' => 'border-[var(--color-accent-soft)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]',
+                            default => 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]',
+                        };
+                        $fallbackThumbnailLabel = \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($productFamilyName, 0, 4));
+                    @endphp
                     <article class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                        @if ($recipe->featuredImageUrl())
-                            <div class="mb-4 overflow-hidden rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)]">
-                                <img src="{{ $recipe->featuredImageUrl() }}" alt="{{ $recipe->name }}" class="h-44 w-full object-cover" />
-                            </div>
-                        @endif
+                        <div class="flex items-start gap-4">
+                            @if ($recipe->featuredImageUrl())
+                                <div class="h-20 w-20 shrink-0 overflow-hidden rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)]">
+                                    <img src="{{ $recipe->featuredImageUrl() }}" alt="{{ $recipe->name }}" class="h-full w-full object-cover" />
+                                </div>
+                            @else
+                                <div class="grid h-20 w-20 shrink-0 place-items-center rounded-[1.25rem] border text-center {{ $fallbackThumbnailClasses }}">
+                                    <div>
+                                        <p class="text-[10px] font-semibold tracking-[0.18em]">{{ $fallbackThumbnailLabel }}</p>
+                                        <p class="mt-1 text-[11px] font-medium">{{ $productFamilyName }}</p>
+                                    </div>
+                                </div>
+                            @endif
 
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                            <div class="min-w-0">
+                            <div class="min-w-0 flex-1">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <h4 class="truncate text-xl font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
                                     @if ($recipe->currentDraftVersion)
@@ -104,7 +148,7 @@
                                 </div>
                                 <div class="mt-3 flex flex-wrap gap-2">
                                     <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
-                                        {{ $recipe->productFamily?->name ?? 'Formula' }}
+                                        {{ $productFamilyName }}
                                     </span>
                                     @if ($recipe->currentDraftVersion)
                                         <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
@@ -112,38 +156,68 @@
                                         </span>
                                     @endif
                                 </div>
-                            </div>
-
-                            <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate class="inline-flex shrink-0 rounded-full border border-[var(--color-line-strong)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                                Open working draft
-                            </a>
-                        </div>
-
-                        <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
-                                <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Last updated</p>
-                                <p class="mt-2 text-sm font-medium text-[var(--color-ink-strong)]">{{ $recipe->updated_at?->diffForHumans() ?? 'Just now' }}</p>
-                            </div>
-                            <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
-                                <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Naming</p>
-                                <p class="mt-2 text-sm font-medium text-[var(--color-ink-strong)]">{{ $recipe->name }}</p>
+                                <p class="mt-3 text-xs text-[var(--color-ink-soft)]">
+                                    Last updated {{ $recipe->updated_at?->diffForHumans() ?? 'just now' }}
+                                </p>
                             </div>
                         </div>
 
-                        @if ($recipe->description)
-                            <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
-                                {{ \Illuminate\Support\Str::limit(strip_tags($recipe->description), 220) }}
+                        <div x-data="{ open: false, confirmText: '', recipeName: @js($recipe->name) }" class="mt-4">
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate class="inline-flex rounded-full border border-[var(--color-line-strong)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                                    Open draft
+                                </a>
+
+                                <button type="button" @click="open = true" class="inline-flex rounded-full border border-[var(--color-danger-soft)] px-4 py-2 text-sm font-medium text-[var(--color-danger-strong)] transition hover:bg-[var(--color-danger-soft)]">
+                                    Delete recipe
+                                </button>
                             </div>
-                        @endif
+
+                            <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="open = false">
+                                <div class="w-full max-w-md rounded-[2rem] border border-[var(--color-line)] bg-white p-6" @click.stop>
+                                    <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete &quot;{{ $recipe->name }}&quot;?</h3>
+                                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">
+                                        This will delete the recipe, its draft, and all saved versions. This action cannot be undone.
+                                    </p>
+
+                                    <button type="button" @click="confirmText = recipeName" class="mt-4 inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                                        Use recipe name
+                                    </button>
+
+                                    <input x-model="confirmText" type="text" placeholder="Paste recipe name to confirm" class="mt-4 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]" />
+
+                                    <form method="POST" action="{{ route('recipes.destroy', $recipe->id) }}" class="mt-4">
+                                        @method('DELETE')
+                                        @csrf
+                                        <input type="hidden" name="confirm_name" :value="confirmText">
+                                        <button type="submit" :disabled="confirmText !== recipeName" :class="confirmText !== recipeName ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]'" class="w-full rounded-full px-4 py-2.5 text-sm font-medium transition">
+                                            Delete permanently
+                                        </button>
+                                    </form>
+
+                                    <button type="button" @click="open = false" class="mt-3 w-full rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
 
                         @if ($recipe->publishedVersions->isNotEmpty())
-                            <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
-                                <div class="flex items-center justify-between gap-3">
-                                    <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Saved versions</p>
-                                    @if ($recipe->published_versions_count > $recipe->publishedVersions->count())
-                                        <span class="text-xs text-[var(--color-ink-soft)]">Showing latest {{ $recipe->publishedVersions->count() }}</span>
-                                    @endif
-                                </div>
+                            <details class="group mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                                <summary class="flex cursor-pointer list-none items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Saved versions</p>
+                                        <p class="mt-1 text-sm text-[var(--color-ink-soft)]">
+                                            {{ $recipe->published_versions_count }} {{ \Illuminate\Support\Str::plural('saved version', $recipe->published_versions_count) }}
+                                            @if ($recipe->published_versions_count > $recipe->publishedVersions->count())
+                                                · showing latest {{ $recipe->publishedVersions->count() }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                    <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)] transition group-open:hidden">Show</span>
+                                    <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)] transition hidden group-open:inline-flex">Hide</span>
+                                </summary>
+
                                 <div class="mt-3 space-y-2">
                                     @foreach ($recipe->publishedVersions as $version)
                                         <div class="flex flex-col gap-2 rounded-[1.25rem] border border-[var(--color-line)] bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
@@ -165,53 +239,11 @@
                                         </div>
                                     @endforeach
                                 </div>
-                            </div>
+                            </details>
                         @endif
                     </article>
                 @endforeach
             </div>
         @endif
-
-        <div class="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.9fr)]">
-            <div class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
-                <div class="border-b border-[var(--color-line)] px-5 py-4">
-                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Product families</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Calculation basis is family-driven</h3>
-                </div>
-
-                <div class="grid gap-px bg-[var(--color-line)]">
-                    @foreach ($productFamilies as $family)
-                        <div class="bg-white px-5 py-4">
-                            <div class="flex items-start justify-between gap-4">
-                                <div>
-                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $family['name'] }}</p>
-                                    <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $family['description'] }}</p>
-                                </div>
-                                <span class="shrink-0 rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
-                                    {{ $family['basis'] === 'initial_oils' ? 'Initial oils basis' : 'Total formula basis' }}
-                                </span>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">This slice delivers</p>
-                <div class="mt-4 space-y-3">
-                    @foreach ([
-                        'Named drafts that now persist into a visible recipe list',
-                        'A workbench with one working draft and saved versions you can reuse',
-                        'Category-filtered ingredient loading from the actual catalog',
-                        'A clear split between reaction core and post-reaction phases',
-                    ] as $point)
-                        <div class="flex gap-3 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-ink-soft)]">
-                            <span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-strong)]">•</span>
-                            <span>{{ $point }}</span>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        </div>
     </section>
 </div>

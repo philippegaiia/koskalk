@@ -2,150 +2,123 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Split reusable packaging catalog management from formula-specific costing usage, then make the costing tab read as “components per finished unit” instead of ambiguous batch quantity.
+**Goal:** Make packaging readable and usable by moving it below ingredient costing in the recipe workbench and turning the packaging catalog page into a real create-and-reuse manager.
 
-**Architecture:** Keep the existing `user_packaging_items` and `recipe_version_costing_packaging_items` tables, but translate the old `quantity` concept into a clearer per-unit usage model at the service, Alpine, and Blade boundaries. Add a dedicated dashboard page for catalog management, while the recipe workbench keeps an inline packaging-item modal so users can create a missing item without leaving costing.
+**Architecture:** Keep the existing packaging persistence model and costing snapshots, but reshape the UI around one continuous costing flow: settings, ingredients, packaging, totals. Reuse the current Livewire and Alpine plumbing for catalog saves, add direct creation on the `Packaging Items` page, and rewrite the costing section from a sidebar card stack into a table-like block below ingredients.
 
-**Tech Stack:** Laravel 13, Livewire 4, Filament actions/forms traits already present on the workbench component, Alpine-powered recipe workbench JavaScript, Pest 4 feature tests, Tailwind CSS 4 utility classes in Blade templates.
+**Tech Stack:** Laravel 13, Livewire 4, Alpine-based recipe workbench JavaScript, Blade templates, Tailwind CSS 4, Pest 4 feature tests, Laravel Pint.
 
 ---
 
 ## File Structure
 
-### New Files
-
-- `app/Http/Controllers/PackagingItemController.php`
-  Responsibility: route entrypoint for the dedicated packaging catalog page.
-- `app/Livewire/Dashboard/PackagingItemsIndex.php`
-  Responsibility: load the signed-in user, fetch reusable packaging items, and expose catalog counts to the dashboard view.
-- `resources/views/packaging/index.blade.php`
-  Responsibility: app-shell page wrapper for the new packaging catalog screen.
-- `resources/views/livewire/dashboard/packaging-items-index.blade.php`
-  Responsibility: reusable catalog UI for packaging items outside the recipe workbench.
-- `tests/Feature/PackagingItemsIndexTest.php`
-  Responsibility: route, navigation, signed-in, and empty-state coverage for the dedicated packaging page.
-- `tests/Feature/RecipeWorkbenchCostingContentTest.php`
-  Responsibility: response-level assertions for the new wording and empty-state content in the costing tab.
-
 ### Modified Files
 
-- `routes/web.php`
-  Responsibility: register `/dashboard/packaging-items` route names alongside recipes and ingredients.
-- `resources/views/layouts/app-shell.blade.php`
-  Responsibility: add `Packaging Items` to the sidebar navigation with active-state handling.
-- `app/Livewire/Dashboard/RecipeWorkbench.php`
-  Responsibility: keep renderless packaging catalog actions, but return the saved packaging item payload needed by the inline modal flow.
-- `app/Services/RecipeVersionCostingSynchronizer.php`
-  Responsibility: normalize the “components per finished unit” contract, keep storage on the existing `quantity` column, and return a `packaging_item` payload after save.
-- `resources/js/recipe-workbench/component.js`
-  Responsibility: add modal state, modal form defaults, and packaging-specific UI flags to the Alpine workbench state.
-- `resources/js/recipe-workbench/sections/costing-section.js`
-  Responsibility: rename packaging behavior to per-unit semantics, default new rows to `1`, compute per-unit and batch totals separately, and support “save and add to this costing”.
-- `resources/js/recipe-workbench/payload.js`
-  Responsibility: serialize packaging rows using the clearer `components_per_unit` client-side contract.
-- `resources/js/recipe-workbench/bridge.js`
-  Responsibility: persist catalog items, update the local catalog, and hand the saved packaging item back to the costing section.
+- `app/Livewire/Dashboard/PackagingItemsIndex.php`
+  Responsibility: expose create-form state, persist catalog items for the current user, and return ordered packaging records to the page.
+- `resources/views/livewire/dashboard/packaging-items-index.blade.php`
+  Responsibility: render the packaging catalog intro, creation form, validation/error feedback, and saved items list.
 - `resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php`
-  Responsibility: replace ambiguous packaging copy, remove inline catalog administration, and add the inline `New packaging item` modal.
-- `tests/Feature/RecipeVersionCostingTest.php`
-  Responsibility: lock in per-unit packaging snapshots and version-copy behavior.
+  Responsibility: remove the right-column packaging sidebar, render packaging below ingredient costing, simplify labels, and keep the modal for inline creation.
+- `resources/js/recipe-workbench/sections/costing-section.js`
+  Responsibility: support the revised packaging flow, add “choose existing item” behavior, preserve modal saves, and keep packaging totals aligned with the new table layout.
+- `resources/js/recipe-workbench/component.js`
+  Responsibility: ensure the costing section state still initializes the packaging modal and row data correctly after the layout change.
+- `resources/js/recipe-workbench/bridge.js`
+  Responsibility: keep the packaging catalog save bridge aligned with the revised create-and-add flow.
+- `tests/Feature/PackagingItemsIndexTest.php`
+  Responsibility: prove the packaging page can create items, shows the saved list, and remains scoped to the signed-in user.
+- `tests/Feature/RecipeWorkbenchCostingContentTest.php`
+  Responsibility: lock in the new packaging placement, wording, and actions in the costing tab response.
 - `tests/Feature/RecipeWorkbenchPersistenceTest.php`
-  Responsibility: verify the workbench action returns the saved packaging item payload that the Alpine modal needs.
+  Responsibility: verify inline packaging-item creation still returns the payload needed to add the new item directly to costing.
 
 ### Deliberate Non-Changes
 
-- No migration for `recipe_version_costing_packaging_items.quantity`.
-  The database column can remain as-is in this iteration, while the UI and service layer expose it as per-unit usage.
+- No migration for packaging costing storage.
+  The existing `quantity` column remains the underlying storage while the UI continues to present the clearer per-unit model.
 - No purchase-pack conversion logic.
-  The catalog continues storing an effective unit price entered by the user.
+  Unit price remains the effective per-component price entered by the user.
 
 ---
 
-### Task 1: Add The Dedicated Packaging Catalog Page
+### Task 1: Turn The Packaging Items Page Into A Real Catalog Manager
 
 **Files:**
-- Create: `app/Http/Controllers/PackagingItemController.php`
-- Create: `app/Livewire/Dashboard/PackagingItemsIndex.php`
-- Create: `resources/views/packaging/index.blade.php`
-- Create: `resources/views/livewire/dashboard/packaging-items-index.blade.php`
-- Modify: `routes/web.php`
-- Modify: `resources/views/layouts/app-shell.blade.php`
+- Modify: `app/Livewire/Dashboard/PackagingItemsIndex.php`
+- Modify: `resources/views/livewire/dashboard/packaging-items-index.blade.php`
 - Test: `tests/Feature/PackagingItemsIndexTest.php`
 
-- [ ] **Step 1: Write the failing page test**
+- [ ] **Step 1: Write the failing feature test for direct page creation**
 
 ```php
 <?php
 
+use App\Livewire\Dashboard\PackagingItemsIndex;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use function Pest\Laravel\actingAs;
+use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);
 
-it('shows the signed-in user packaging catalog page', function () {
+it('creates a packaging item directly from the packaging items page', function () {
     $user = User::factory()->create();
+
+    actingAs($user);
+
+    livewire(PackagingItemsIndex::class)
+        ->set('form.name', 'Kraft soap box')
+        ->set('form.unit_cost', '0.4200')
+        ->set('form.notes', '100g rectangle')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSet('form.name', '')
+        ->assertSee('Kraft soap box');
+
+    expect(UserPackagingItem::query()->where('user_id', $user->id)->first())
+        ->not->toBeNull()
+        ->name->toBe('Kraft soap box');
+});
+
+it('shows only the signed-in user packaging items on the page', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
 
     UserPackagingItem::query()->create([
         'user_id' => $user->id,
-        'name' => 'Front Label',
-        'unit_cost' => 0.0315,
+        'name' => 'Front sticker',
+        'unit_cost' => 0.03,
         'currency' => 'EUR',
-        'notes' => 'Waterproof stock',
+        'notes' => null,
     ]);
 
-    $this->actingAs($user)
-        ->get(route('packaging-items.index'))
-        ->assertSuccessful()
-        ->assertSee('Packaging Items')
-        ->assertSee('Front Label')
-        ->assertSee('Reusable packaging catalog')
-        ->assertSee('0.0315');
-});
+    UserPackagingItem::query()->create([
+        'user_id' => $otherUser->id,
+        'name' => 'Hidden competitor box',
+        'unit_cost' => 0.99,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
 
-it('shows a sign-in message when no dashboard user is available', function () {
+    actingAs($user);
+
     $this->get(route('packaging-items.index'))
         ->assertSuccessful()
-        ->assertSee('Sign in to manage packaging items');
+        ->assertSee('Front sticker')
+        ->assertDontSee('Hidden competitor box')
+        ->assertSee('Save packaging item');
 });
 ```
 
-- [ ] **Step 2: Run the new test to verify the route is missing**
+- [ ] **Step 2: Run the page test to verify the current page does not support creation**
 
 Run: `php artisan test --compact tests/Feature/PackagingItemsIndexTest.php`
 
-Expected: FAIL with a route exception for `packaging-items.index` or a missing view/controller failure.
+Expected: FAIL because `PackagingItemsIndex` does not yet have a `form` state, `save()` action, or create-form rendering.
 
-- [ ] **Step 3: Add the route, controller, Livewire component, and app-shell navigation**
-
-```php
-// routes/web.php
-use App\Http\Controllers\PackagingItemController;
-
-Route::controller(PackagingItemController::class)
-    ->prefix('/dashboard/packaging-items')
-    ->name('packaging-items.')
-    ->group(function (): void {
-        Route::get('/', 'index')->name('index');
-    });
-```
-
-```php
-<?php
-// app/Http/Controllers/PackagingItemController.php
-
-namespace App\Http\Controllers;
-
-use Illuminate\Contracts\View\View;
-
-class PackagingItemController extends Controller
-{
-    public function index(): View
-    {
-        return view('packaging.index');
-    }
-}
-```
+- [ ] **Step 3: Add create-form state and save handling to the Livewire page**
 
 ```php
 <?php
@@ -157,13 +130,66 @@ use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Services\CurrentAppUserResolver;
 use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class PackagingItemsIndex extends Component
 {
-    public function render(): View
+    /**
+     * @var array{name: string, unit_cost: string, notes: string}
+     */
+    public array $form = [
+        'name' => '',
+        'unit_cost' => '',
+        'notes' => '',
+    ];
+
+    #[Locked]
+    public ?int $currentUserId = null;
+
+    public function mount(CurrentAppUserResolver $resolver): void
     {
-        $currentUser = app(CurrentAppUserResolver::class)->resolve();
+        $user = $resolver->resolve();
+
+        $this->currentUserId = $user instanceof User ? $user->id : null;
+    }
+
+    /**
+     * @return array<string, array<int, string>|string>
+     */
+    protected function rules(): array
+    {
+        return [
+            'form.name' => ['required', 'string', 'max:255'],
+            'form.unit_cost' => ['required', 'numeric', 'min:0'],
+            'form.notes' => ['nullable', 'string', 'max:1000'],
+        ];
+    }
+
+    public function save(): void
+    {
+        abort_unless($this->currentUserId !== null, 403);
+
+        $validated = $this->validate();
+
+        UserPackagingItem::query()->create([
+            'user_id' => $this->currentUserId,
+            'name' => trim($validated['form']['name']),
+            'unit_cost' => (float) $validated['form']['unit_cost'],
+            'currency' => 'EUR',
+            'notes' => blank($validated['form']['notes']) ? null : trim($validated['form']['notes']),
+        ]);
+
+        $this->form = [
+            'name' => '',
+            'unit_cost' => '',
+            'notes' => '',
+        ];
+    }
+
+    public function render(CurrentAppUserResolver $resolver): View
+    {
+        $currentUser = $resolver->resolve();
         $packagingItems = collect();
 
         if ($currentUser instanceof User) {
@@ -183,628 +209,548 @@ class PackagingItemsIndex extends Component
 }
 ```
 
-```blade
-{{-- resources/views/packaging/index.blade.php --}}
-@extends('layouts.app-shell')
-
-@section('title', 'Packaging Items · Koskalk')
-@section('page_heading', 'Packaging Items')
-
-@section('content')
-    <livewire:dashboard.packaging-items-index />
-@endsection
-```
+- [ ] **Step 4: Replace the page markup with a visible create form followed by the catalog list**
 
 ```blade
 {{-- resources/views/livewire/dashboard/packaging-items-index.blade.php --}}
-<div class="mx-auto w-full max-w-7xl space-y-6">
-    <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5 sm:p-6">
-        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Reusable packaging catalog</p>
-        <h3 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)] sm:text-3xl">Keep labels, boxes, wraps, and inserts reusable across formulas.</h3>
-        <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-            Catalog items live here. Formula costing only decides how many components each finished unit uses.
+<div class="mx-auto max-w-[90rem] space-y-6">
+    <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-6">
+        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging items</p>
+        <h3 class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">Create reusable packaging items here, then reuse them in recipe costing.</h3>
+        <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
+            This page manages your reusable catalog. Recipe costing decides how many of each packaging item one finished unit uses.
         </p>
     </section>
 
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-[18rem_minmax(0,1fr)]">
-        <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging items</p>
-            <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">{{ $packagingItemCount }}</p>
-            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Reusable packaging definitions for your own workspace.</p>
-        </div>
+    @if (! $currentUser)
+        <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-8 text-center">
+            <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">Sign in to manage packaging items</h4>
+            <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">
+                Open the dashboard from your signed-in app or admin session to create and reuse packaging items.
+            </p>
+        </section>
+    @else
+        <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-6">
+            <div class="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+                <div class="xl:max-w-xl">
+                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">New packaging item</p>
+                    <h4 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Add a reusable packaging record</h4>
+                    <p class="mt-2 text-sm leading-7 text-[var(--color-ink-soft)]">
+                        Save boxes, labels, stickers, wraps, and inserts here so they are ready inside recipe costing.
+                    </p>
+                </div>
 
-        <div class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
-            <div class="border-b border-[var(--color-line)] px-5 py-4">
-                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Catalog records</p>
-                <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Reusable packaging items</h3>
+                <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-ink-soft)]">
+                    <span class="font-medium text-[var(--color-ink-strong)]">{{ $packagingItemCount }}</span>
+                    {{ $packagingItemCount === 1 ? 'saved item' : 'saved items' }}
+                </div>
             </div>
 
-            @if (! $currentUser)
-                <div class="p-8 text-center">
-                    <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">Sign in to manage packaging items</h4>
-                    <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Open the dashboard from your signed-in app or admin session to maintain your packaging catalog.</p>
+            <form wire:submit="save" class="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.8fr)_14rem]">
+                <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                    <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Name</span>
+                    <input wire:model.blur="form.name" type="text" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" placeholder="Box soap rectangle 100g" />
+                    @error('form.name')
+                        <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </label>
+
+                <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                    <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Effective unit price</span>
+                    <input wire:model.blur="form.unit_cost" type="number" min="0" step="0.0001" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" placeholder="0.4200" />
+                    @error('form.unit_cost')
+                        <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </label>
+
+                <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4 xl:col-span-2">
+                    <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Notes</span>
+                    <textarea wire:model.blur="form.notes" rows="3" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" placeholder="Optional context for size, finish, or pack variant"></textarea>
+                    @error('form.notes')
+                        <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
+                    @enderror
+                </label>
+
+                <div class="xl:col-span-2 flex justify-end">
+                    <button type="submit" class="rounded-full bg-[var(--color-accent-strong)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
+                        Save packaging item
+                    </button>
                 </div>
-            @elseif ($packagingItems->isEmpty())
-                <div class="p-8 text-center">
-                    <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">No packaging items yet</h4>
-                    <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Create packaging items from a formula costing modal first, or add direct catalog management here in the next pass.</p>
+            </form>
+        </section>
+
+        <section class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
+            <div class="border-b border-[var(--color-line)] px-5 py-4">
+                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Saved packaging</p>
+                <h4 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Reusable packaging items</h4>
+            </div>
+
+            @if ($packagingItems->isEmpty())
+                <div class="px-5 py-8 text-sm text-[var(--color-ink-soft)]">
+                    No packaging items yet. Create your first packaging item above.
                 </div>
             @else
                 <div class="divide-y divide-[var(--color-line)]">
                     @foreach ($packagingItems as $packagingItem)
                         <article class="px-5 py-4">
-                            <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $packagingItem->name }}</h4>
-                            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ $packagingItem->currency }} {{ number_format((float) $packagingItem->unit_cost, 4) }} each</p>
-                            @if (filled($packagingItem->notes))
-                                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ $packagingItem->notes }}</p>
-                            @endif
+                            <div class="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+                                <div class="min-w-0">
+                                    <h5 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $packagingItem->name }}</h5>
+                                    @if (filled($packagingItem->notes))
+                                        <p class="mt-2 text-sm leading-7 text-[var(--color-ink-soft)]">{{ $packagingItem->notes }}</p>
+                                    @endif
+                                </div>
+
+                                <div class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)]">
+                                    {{ $packagingItem->currency }} {{ number_format((float) $packagingItem->unit_cost, 4, '.', '') }}
+                                </div>
+                            </div>
                         </article>
                     @endforeach
                 </div>
             @endif
-        </div>
-    </section>
+        </section>
+    @endif
 </div>
 ```
 
-```blade
-{{-- resources/views/layouts/app-shell.blade.php --}}
-<a
-    href="{{ route('packaging-items.index') }}"
-    wire:navigate
-    @click="if (! isDesktop) closeNav()"
-    class="{{ request()->routeIs('packaging-items.*') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition"
->
-    Packaging Items
-</a>
-```
+- [ ] **Step 5: Run the page test to verify creation now works**
 
-- [ ] **Step 4: Run the page test and one existing dashboard smoke test**
+Run: `php artisan test --compact tests/Feature/PackagingItemsIndexTest.php`
 
-Run: `php artisan test --compact tests/Feature/PackagingItemsIndexTest.php tests/Feature/DashboardPageTest.php`
+Expected: PASS with the new create-from-page coverage green.
 
-Expected: PASS with the new route/page assertions and no regression in the dashboard shell.
-
-- [ ] **Step 5: Commit the page scaffold**
+- [ ] **Step 6: Commit the catalog page task**
 
 ```bash
-git add app/Http/Controllers/PackagingItemController.php app/Livewire/Dashboard/PackagingItemsIndex.php resources/views/packaging/index.blade.php resources/views/livewire/dashboard/packaging-items-index.blade.php resources/views/layouts/app-shell.blade.php routes/web.php tests/Feature/PackagingItemsIndexTest.php
-git commit -m "feat: add packaging catalog dashboard page"
+git add app/Livewire/Dashboard/PackagingItemsIndex.php resources/views/livewire/dashboard/packaging-items-index.blade.php tests/Feature/PackagingItemsIndexTest.php
+git commit -m "feat: make packaging catalog page writable"
 ```
 
-### Task 2: Normalize Packaging Costing Data To Per-Unit Usage
+---
+
+### Task 2: Move Packaging Below Ingredients And Simplify The Costing Layout
 
 **Files:**
-- Modify: `app/Livewire/Dashboard/RecipeWorkbench.php`
-- Modify: `app/Services/RecipeVersionCostingSynchronizer.php`
-- Modify: `resources/js/recipe-workbench/payload.js`
-- Test: `tests/Feature/RecipeVersionCostingTest.php`
-- Test: `tests/Feature/RecipeWorkbenchPersistenceTest.php`
-
-- [ ] **Step 1: Write failing tests for per-unit packaging payloads and saved-item responses**
-
-```php
-it('stores packaging rows as per-unit usage while keeping batch size separate', function () {
-    $user = User::factory()->create();
-    $soapFamily = ProductFamily::factory()->create([
-        'slug' => 'soap',
-        'name' => 'Soap',
-    ]);
-    $ingredient = makeSharedCarrierOilIngredient();
-    $service = app(RecipeWorkbenchService::class);
-
-    $draftVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient));
-    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
-    $packagingItem = UserPackagingItem::query()->create([
-        'user_id' => $user->id,
-        'name' => 'Front Label',
-        'unit_cost' => 0.03,
-        'currency' => 'EUR',
-    ]);
-
-    $service->saveCosting($user, $recipe, [
-        'oil_weight_for_costing' => 1000,
-        'oil_unit_for_costing' => 'g',
-        'units_produced' => 12,
-        'currency' => 'EUR',
-        'items' => [],
-        'packaging_items' => [
-            [
-                'user_packaging_item_id' => $packagingItem->id,
-                'name' => 'Front Label',
-                'unit_cost' => 0.03,
-                'components_per_unit' => 2,
-            ],
-        ],
-    ]);
-
-    $savedPackagingRow = RecipeVersionCosting::query()
-        ->with('packagingItems')
-        ->where('recipe_version_id', $draftVersion->id)
-        ->where('user_id', $user->id)
-        ->firstOrFail()
-        ->packagingItems
-        ->sole();
-
-    expect((float) $savedPackagingRow->quantity)->toBe(2.0);
-});
-```
-
-```php
-it('returns the saved packaging item payload from the workbench action', function () {
-    $user = User::factory()->create();
-
-    $response = Livewire::actingAs($user)
-        ->test(RecipeWorkbench::class)
-        ->call('savePackagingCatalogItem', [
-            'name' => 'Bottom Label',
-            'unit_cost' => 0.02,
-            'currency' => 'EUR',
-            'notes' => 'Matte paper',
-        ]);
-
-    $response->assertReturned(fn (array $payload): bool => $payload['ok'] === true
-        && ($payload['packaging_item']['name'] ?? null) === 'Bottom Label');
-});
-```
-
-- [ ] **Step 2: Run the failing backend tests**
-
-Run: `php artisan test --compact tests/Feature/RecipeVersionCostingTest.php tests/Feature/RecipeWorkbenchPersistenceTest.php`
-
-Expected: FAIL because `components_per_unit` is not recognized yet and `savePackagingCatalogItem()` does not return a `packaging_item`.
-
-- [ ] **Step 3: Implement the backend contract and client serialization**
-
-```php
-// app/Services/RecipeVersionCostingSynchronizer.php
-public function savePackagingItem(User $user, array $payload): array
-{
-    $name = trim((string) ($payload['name'] ?? ''));
-
-    if ($name === '') {
-        return [
-            'packaging_catalog' => $this->packagingCatalogPayload($user),
-            'packaging_item' => null,
-        ];
-    }
-
-    $packagingItem = UserPackagingItem::query()
-        ->where('user_id', $user->id)
-        ->when(
-            isset($payload['id']) && is_numeric($payload['id']),
-            fn ($query) => $query->whereKey((int) $payload['id']),
-        )
-        ->first() ?? new UserPackagingItem([
-            'user_id' => $user->id,
-        ]);
-
-    $packagingItem->fill([
-        'name' => $name,
-        'unit_cost' => (float) ($payload['unit_cost'] ?? 0),
-        'currency' => $this->normalizeCurrency($payload['currency'] ?? 'EUR'),
-        'notes' => $payload['notes'] ?? null,
-    ]);
-    $packagingItem->save();
-
-    return [
-        'packaging_catalog' => $this->packagingCatalogPayload($user),
-        'packaging_item' => [
-            'id' => $packagingItem->id,
-            'name' => $packagingItem->name,
-            'unit_cost' => (float) $packagingItem->unit_cost,
-            'currency' => $packagingItem->currency,
-            'notes' => $packagingItem->notes,
-        ],
-    ];
-}
-
-private function replacePackagingItems(RecipeVersionCosting $costing, mixed $rawItems): void
-{
-    $costing->packagingItems()->delete();
-
-    collect(is_array($rawItems) ? $rawItems : [])
-        ->filter(fn (mixed $row): bool => is_array($row) && filled($row['name'] ?? null))
-        ->each(function (array $row) use ($costing): void {
-            $componentsPerUnit = $row['components_per_unit'] ?? $row['quantity'] ?? 0;
-
-            $costing->packagingItems()->create([
-                'user_packaging_item_id' => isset($row['user_packaging_item_id']) && is_numeric($row['user_packaging_item_id'])
-                    ? (int) $row['user_packaging_item_id']
-                    : null,
-                'name' => trim((string) $row['name']),
-                'unit_cost' => (float) ($row['unit_cost'] ?? 0),
-                'quantity' => (float) $componentsPerUnit,
-            ]);
-        });
-}
-```
-
-```php
-// app/Livewire/Dashboard/RecipeWorkbench.php
-#[Renderless]
-public function savePackagingCatalogItem(array $packagingItem, RecipeWorkbenchService $recipeWorkbenchService): array
-{
-    $user = $this->currentUser();
-
-    if (! $user instanceof User) {
-        return [
-            'ok' => false,
-            'message' => 'Sign in before saving packaging items.',
-        ];
-    }
-
-    return [
-        'ok' => true,
-        'message' => 'Packaging item saved.',
-        ...$recipeWorkbenchService->savePackagingCatalogItem($user, $packagingItem),
-    ];
-}
-```
-
-```js
-// resources/js/recipe-workbench/payload.js
-packaging_items: state.packagingCostRows.map((row) => ({
-    user_packaging_item_id: row.user_packaging_item_id ?? null,
-    name: row.name,
-    unit_cost: nonNegativeNumber(row.unit_cost),
-    components_per_unit: nonNegativeNumber(row.components_per_unit),
-})),
-```
-
-- [ ] **Step 4: Run the focused backend tests again**
-
-Run: `php artisan test --compact tests/Feature/RecipeVersionCostingTest.php tests/Feature/RecipeWorkbenchPersistenceTest.php`
-
-Expected: PASS, proving the server accepts the clearer contract and still stores snapshots in the current schema.
-
-- [ ] **Step 5: Commit the data-contract pass**
-
-```bash
-git add app/Livewire/Dashboard/RecipeWorkbench.php app/Services/RecipeVersionCostingSynchronizer.php resources/js/recipe-workbench/payload.js tests/Feature/RecipeVersionCostingTest.php tests/Feature/RecipeWorkbenchPersistenceTest.php
-git commit -m "refactor: normalize packaging costing as per-unit usage"
-```
-
-### Task 3: Rebuild The Costing Tab Around Per-Unit Packaging Usage
-
-**Files:**
-- Modify: `resources/js/recipe-workbench/component.js`
-- Modify: `resources/js/recipe-workbench/sections/costing-section.js`
-- Modify: `resources/js/recipe-workbench/bridge.js`
 - Modify: `resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php`
 - Test: `tests/Feature/RecipeWorkbenchCostingContentTest.php`
 
-- [ ] **Step 1: Write the failing workbench content test**
+- [ ] **Step 1: Write the failing response test for the new packaging placement and wording**
 
 ```php
 <?php
 
+use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\ProductFamily;
+use App\Models\Recipe;
+use App\Models\RecipeVersion;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use function Pest\Laravel\actingAs;
+use function Pest\Livewire\livewire;
 
 uses(RefreshDatabase::class);
 
-it('shows the clarified packaging wording on the workbench', function () {
+it('renders packaging below ingredient costing with the simplified wording', function () {
     $user = User::factory()->create();
-    $family = ProductFamily::factory()->create([
-        'slug' => 'soap',
-        'name' => 'Soap',
-    ]);
+    $family = ProductFamily::factory()->create();
+    $recipe = Recipe::factory()->for($user, 'owner')->for($family)->create();
+    $version = RecipeVersion::factory()->for($recipe)->for($user, 'owner')->draft()->create();
 
-    $this->actingAs($user)
-        ->get(route('recipes.create', ['family' => $family->id]))
-        ->assertSuccessful()
-        ->assertSee('Packaging usage per finished unit')
-        ->assertSee('Components per finished unit')
-        ->assertSee('Choose a packaging item from your catalog, or create one without leaving this tab.')
-        ->assertDontSee('Add custom row')
-        ->assertDontSee('Saved packaging items');
+    actingAs($user);
+
+    $html = livewire(RecipeWorkbench::class, ['recipe' => $recipe])->html();
+
+    expect($html)->toContain('Ingredient costing');
+    expect($html)->toContain('Packaging');
+    expect($html)->toContain('Add packaging item');
+    expect($html)->toContain('New packaging item');
+    expect($html)->toContain('Components per unit');
+    expect($html)->not->toContain('Packaging usage per finished unit');
 });
 ```
 
-- [ ] **Step 2: Run the content test to confirm the old copy is still present**
+- [ ] **Step 2: Run the costing content test to verify the current sidebar wording still fails**
 
 Run: `php artisan test --compact tests/Feature/RecipeWorkbenchCostingContentTest.php`
 
-Expected: FAIL because the current costing tab still renders `Saved packaging items`, `Packaging in this costing`, `Quantity`, and `Add custom row`.
+Expected: FAIL because the current Blade still renders the sidebar packaging layout and older wording.
 
-- [ ] **Step 3: Implement the Alpine state, totals, and modal flow**
+- [ ] **Step 3: Rewrite the costing Blade so packaging is a full-width section below ingredients**
 
-```js
-// resources/js/recipe-workbench/component.js
-packagingCostRows: [],
-packagingCatalog: payload.costing?.packaging_catalog ?? [],
-packagingCatalogModalOpen: false,
-packagingCatalogModalIntent: 'save_only',
-packagingCatalogForm: {
-    id: null,
-    name: '',
-    unit_cost: '',
-    currency: payload.costing?.settings?.currency ?? 'EUR',
-    notes: '',
-},
+```blade
+{{-- resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php --}}
+<div x-show="activeWorkbenchTab === 'costing'" class="space-y-6">
+    <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+        {{-- keep current costing settings block --}}
+    </section>
+
+    <section class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
+        {{-- keep current ingredient costing table --}}
+    </section>
+
+    <section class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
+        <div class="border-b border-[var(--color-line)] px-5 py-4">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging</p>
+                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Packaging</h3>
+                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Add reusable packaging items used for one finished unit.</p>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                    <button type="button" @click="openPackagingPicker = ! openPackagingPicker" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                        Add packaging item
+                    </button>
+                    <button type="button" @click="openPackagingCatalogModal()" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
+                        New packaging item
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="px-5 py-4" x-show="openPackagingPicker">
+            <div class="flex flex-wrap gap-2">
+                <template x-for="item in packagingCatalog" :key="item.id">
+                    <button type="button" @click="addPackagingCostRow(item); openPackagingPicker = false" class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2 text-sm text-[var(--color-ink-strong)] transition hover:bg-white" x-text="item.name"></button>
+                </template>
+            </div>
+
+            <template x-if="packagingCatalog.length === 0">
+                <p class="text-sm text-[var(--color-ink-soft)]">No saved packaging items yet. Use “New packaging item” to create one.</p>
+            </template>
+        </div>
+
+        <template x-if="packagingCostRows.length === 0">
+            <div class="px-5 py-8 text-sm text-[var(--color-ink-soft)]">
+                <p class="font-medium text-[var(--color-ink-strong)]">No packaging added yet.</p>
+                <p class="mt-2">Add a reusable packaging item to include boxes, labels, stickers, and other unit-level packaging in this costing.</p>
+            </div>
+        </template>
+
+        <template x-if="packagingCostRows.length > 0">
+            <div class="overflow-x-auto">
+                <div class="min-w-[56rem]">
+                    <div class="grid grid-cols-[minmax(0,1.8fr)_8rem_8rem_8rem_8rem_7rem] gap-px bg-[var(--color-line)] text-sm">
+                        <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Packaging item</div>
+                        <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Components per unit</div>
+                        <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Unit price</div>
+                        <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Cost per unit</div>
+                        <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Batch cost</div>
+                        <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]"></div>
+                    </div>
+
+                    <div class="divide-y divide-[var(--color-line)] bg-white">
+                        <template x-for="row in packagingCostRows" :key="row.id">
+                            <div class="grid grid-cols-[minmax(0,1.8fr)_8rem_8rem_8rem_8rem_7rem] gap-px bg-[var(--color-line)] text-sm">
+                                <div class="bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="row.name"></div>
+                                <div class="bg-white px-3 py-3">
+                                    <input x-model.number="row.quantity" @change="scheduleCostingSave()" type="number" min="0" step="0.001" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                </div>
+                                <div class="bg-white px-3 py-3">
+                                    <input x-model.number="row.unit_cost" @change="scheduleCostingSave()" type="number" min="0" step="0.0001" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                </div>
+                                <div class="bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostPerFinishedUnitForRow(row), 2)}`"></div>
+                                <div class="bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(packagingBatchCostForRow(row), 2)}` : 'Set units produced'"></div>
+                                <div class="bg-white px-4 py-3 text-right">
+                                    <button type="button" @click="removePackagingCostRow(row.id)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </section>
+
+    <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+        {{-- keep current cost summary block --}}
+    </section>
+
+    {{-- keep current packaging modal --}}
+</div>
 ```
+
+- [ ] **Step 4: Run the costing content test to verify the new structure passes**
+
+Run: `php artisan test --compact tests/Feature/RecipeWorkbenchCostingContentTest.php`
+
+Expected: PASS with the simplified packaging wording present and the legacy heading gone.
+
+- [ ] **Step 5: Commit the costing layout task**
+
+```bash
+git add resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php tests/Feature/RecipeWorkbenchCostingContentTest.php
+git commit -m "feat: place packaging below ingredient costing"
+```
+
+---
+
+### Task 3: Keep The Packaging Interactions Working In The New Layout
+
+**Files:**
+- Modify: `resources/js/recipe-workbench/sections/costing-section.js`
+- Modify: `resources/js/recipe-workbench/component.js`
+- Modify: `resources/js/recipe-workbench/bridge.js`
+- Test: `tests/Feature/RecipeWorkbenchPersistenceTest.php`
+
+- [ ] **Step 1: Write the failing persistence test for inline create-and-add after the layout change**
+
+```php
+<?php
+
+use App\Livewire\Dashboard\RecipeWorkbench;
+use App\Models\ProductFamily;
+use App\Models\Recipe;
+use App\Models\RecipeVersion;
+use App\Models\User;
+use App\Models\UserPackagingItem;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use function Pest\Laravel\actingAs;
+
+uses(RefreshDatabase::class);
+
+it('returns the saved packaging item payload so costing can add it immediately', function () {
+    $user = User::factory()->create();
+    $family = ProductFamily::factory()->create();
+    $recipe = Recipe::factory()->for($user, 'owner')->for($family)->create();
+    $version = RecipeVersion::factory()->for($recipe)->for($user, 'owner')->draft()->create();
+
+    actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->recipe = $recipe;
+
+    $response = $component->savePackagingCatalogItem([
+        'name' => 'Bottom label',
+        'unit_cost' => 0.025,
+        'currency' => 'EUR',
+        'notes' => 'Matte white',
+    ]);
+
+    expect($response['ok'])->toBeTrue();
+    expect($response['packaging_item']['name'])->toBe('Bottom label');
+    expect($response['packaging_item']['unit_cost'])->toBe(0.025);
+    expect(UserPackagingItem::query()->where('user_id', $user->id)->count())->toBe(1);
+});
+```
+
+- [ ] **Step 2: Run the persistence test to verify the changed layout still needs explicit state support**
+
+Run: `php artisan test --compact tests/Feature/RecipeWorkbenchPersistenceTest.php --filter=returns_the_saved_packaging_item_payload`
+
+Expected: FAIL if the revised JavaScript state or modal flow is incomplete after the layout rewrite.
+
+- [ ] **Step 3: Update Alpine costing state for the inline picker and modal**
 
 ```js
 // resources/js/recipe-workbench/sections/costing-section.js
-this.packagingCostRows = (costingPayload?.packaging_items ?? []).map((row) => ({
-    id: row.id ?? this.makeLocalPackagingRowId(),
-    user_packaging_item_id: row.user_packaging_item_id ?? null,
-    name: row.name ?? '',
-    unit_cost: row.unit_cost ?? 0,
-    components_per_unit: row.components_per_unit ?? row.quantity ?? 1,
-}));
-
-get packagingCostPerUnitTotal() {
-    return this.packagingCostRows.reduce((total, row) => {
-        return total + (nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.components_per_unit));
-    }, 0);
-}
-
-get packagingCostTotal() {
-    return this.costingUnitsProducedValue > 0
-        ? this.packagingCostPerUnitTotal * this.costingUnitsProducedValue
-        : 0;
-}
-
-addPackagingCostRow(packagingItem = null) {
-    this.packagingCostRows = [
-        ...this.packagingCostRows,
-        {
-            id: this.makeLocalPackagingRowId(),
-            user_packaging_item_id: packagingItem?.id ?? null,
-            name: packagingItem?.name ?? '',
-            unit_cost: packagingItem?.unit_cost ?? 0,
-            components_per_unit: 1,
+export function createCostingSection(payload) {
+    return {
+        initializeCostingState() {
+            this.openPackagingPicker = false;
+            this.applyCostingPayload(payload.costing ?? null);
         },
-    ];
 
-    this.scheduleCostingSave();
+        addPackagingCostRow(packagingItem = null) {
+            this.packagingCostRows = [
+                ...this.packagingCostRows,
+                {
+                    id: this.makeLocalPackagingRowId(),
+                    user_packaging_item_id: packagingItem?.id ?? null,
+                    name: packagingItem?.name ?? '',
+                    unit_cost: packagingItem?.unit_cost ?? 0,
+                    quantity: 1,
+                },
+            ];
+
+            this.openPackagingPicker = false;
+            this.scheduleCostingSave();
+        },
+
+        openPackagingCatalogModal() {
+            this.packagingCatalogStatus = null;
+            this.packagingCatalogMessage = '';
+            this.resetPackagingCatalogForm();
+            this.packagingCatalogModalOpen = true;
+        },
+
+        async savePackagingCatalogItem(addToCosting = false) {
+            if (`${this.packagingCatalogForm.name ?? ''}`.trim() === '') {
+                this.packagingCatalogStatus = 'error';
+                this.packagingCatalogMessage = 'Packaging items need a name.';
+
+                return null;
+            }
+
+            const saved = await persistPackagingCatalogItem(this, this.packagingCatalogForm);
+
+            if (!saved) {
+                return null;
+            }
+
+            if (addToCosting) {
+                this.addPackagingCostRow(saved);
+            }
+
+            this.closePackagingCatalogModal(true);
+
+            if (!addToCosting) {
+                this.packagingCatalogMessage = 'Packaging item saved.';
+                this.packagingCatalogStatus = 'success';
+            }
+
+            return saved;
+        },
+    };
 }
+```
 
-openPackagingCatalogModal(intent = 'save_and_add') {
-    this.packagingCatalogModalIntent = intent;
-    this.packagingCatalogModalOpen = true;
-    this.resetPackagingCatalogForm();
-}
-
-async savePackagingCatalogItem() {
-    if (`${this.packagingCatalogForm.name ?? ''}`.trim() === '') {
-        this.packagingCatalogStatus = 'error';
-        this.packagingCatalogMessage = 'Packaging items need a name.';
-
-        return;
-    }
-
-    const savedPackagingItem = await persistPackagingCatalogItem(this, this.packagingCatalogForm);
-
-    if (! savedPackagingItem) {
-        return;
-    }
-
-    this.packagingCatalogModalOpen = false;
-
-    if (this.packagingCatalogModalIntent === 'save_and_add') {
-        this.addPackagingCostRow(savedPackagingItem);
-    } else {
-        this.resetPackagingCatalogForm();
-    }
+```js
+// resources/js/recipe-workbench/component.js
+export function createRecipeWorkbench(payload) {
+    return {
+        openPackagingPicker: false,
+        packagingCatalogModalOpen: false,
+        packagingCatalogStatus: null,
+        packagingCatalogMessage: '',
+        packagingCatalogForm: {
+            id: null,
+            name: '',
+            unit_cost: '',
+            currency: 'EUR',
+            notes: '',
+        },
+        // keep existing workbench state
+    };
 }
 ```
 
 ```js
 // resources/js/recipe-workbench/bridge.js
-export async function persistPackagingCatalogItem(workbench, payload) {
-    workbench.packagingCatalogStatus = 'saving';
-    workbench.packagingCatalogMessage = '';
+export async function persistPackagingCatalogItem(component, form) {
+    const response = await component.$wire.savePackagingCatalogItem({
+        id: form.id,
+        name: form.name,
+        unit_cost: form.unit_cost,
+        currency: form.currency,
+        notes: form.notes,
+    });
 
-    try {
-        const response = await workbench.$wire.savePackagingCatalogItem(payload);
-
-        if (!response?.ok) {
-            workbench.packagingCatalogStatus = 'error';
-            workbench.packagingCatalogMessage = response?.message ?? 'The packaging item could not be saved.';
-
-            return null;
-        }
-
-        workbench.packagingCatalog = response.packaging_catalog ?? [];
-        workbench.packagingCatalogStatus = 'success';
-        workbench.packagingCatalogMessage = response.message ?? 'Packaging item saved.';
-
-        return response.packaging_item ?? null;
-    } catch (error) {
-        workbench.packagingCatalogStatus = 'error';
-        workbench.packagingCatalogMessage = 'The packaging item could not be saved.';
+    if (!response?.ok) {
+        component.packagingCatalogStatus = 'error';
+        component.packagingCatalogMessage = response?.message ?? 'Packaging item could not be saved.';
 
         return null;
     }
+
+    component.packagingCatalog = response.packaging_catalog ?? component.packagingCatalog ?? [];
+    component.packagingCatalogStatus = 'success';
+    component.packagingCatalogMessage = response.message ?? 'Packaging item saved.';
+
+    return response.packaging_item ?? null;
 }
 ```
 
-```blade
-{{-- resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php --}}
-<section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-    <div class="flex items-start justify-between gap-3">
-        <div>
-            <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging usage per finished unit</p>
-            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Define how many of each packaging component are used for one finished unit. Batch packaging cost is calculated from this and Units produced.</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            <a href="{{ route('packaging-items.index') }}" wire:navigate class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                Open catalog
-            </a>
-            <button type="button" @click="openPackagingCatalogModal('save_and_add')" class="rounded-full bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-white">
-                New packaging item
-            </button>
-        </div>
-    </div>
-
-    <div class="mt-4 space-y-3">
-        <template x-for="row in packagingCostRows" :key="row.id">
-            <div class="rounded-[1.4rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-3">
-                <div class="grid gap-2">
-                    <input x-model="row.name" @change="scheduleCostingSave()" type="text" placeholder="Front label" class="rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                    <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-                        <input x-model.number="row.unit_cost" @change="scheduleCostingSave()" type="number" min="0" step="0.0001" placeholder="Effective unit price" class="rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                        <input x-model.number="row.components_per_unit" @change="scheduleCostingSave()" type="number" min="0" step="0.001" placeholder="Components per finished unit" class="rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                        <button type="button" @click="removePackagingCostRow(row.id)" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-white">Remove</button>
-                    </div>
-                </div>
-
-                <div class="mt-3 grid gap-2 sm:grid-cols-2">
-                    <p class="text-xs text-[var(--color-ink-soft)]" x-text="`${costingCurrency} ${format(nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.components_per_unit), 2)} per finished unit`"></p>
-                    <p class="text-xs text-[var(--color-ink-soft)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.components_per_unit) * costingUnitsProducedValue, 2)} per batch` : 'Set units produced'"></p>
-                </div>
-            </div>
-        </template>
-
-        <template x-if="packagingCostRows.length === 0">
-            <div class="rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-5 text-sm text-[var(--color-ink-soft)]">
-                No packaging added yet. Choose a packaging item from your catalog, or create one without leaving this tab.
-            </div>
-        </template>
-    </div>
-
-    <div x-show="packagingCatalogModalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="packagingCatalogModalOpen = false">
-        <div class="w-full max-w-lg rounded-[2rem] border border-[var(--color-line)] bg-white p-6">
-            <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">New packaging item</h3>
-            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Save a reusable catalog item, then optionally add it to this costing with 1 component per finished unit.</p>
-            <div class="mt-4 grid gap-3">
-                <input x-model="packagingCatalogForm.name" type="text" placeholder="Front label" class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                <input x-model.number="packagingCatalogForm.unit_cost" type="number" min="0" step="0.0001" placeholder="Effective unit price" class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                <textarea x-model="packagingCatalogForm.notes" rows="3" placeholder="Optional notes" class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"></textarea>
-            </div>
-
-            <template x-if="packagingCatalogMessage">
-                <p class="mt-3 text-xs text-[var(--color-ink-soft)]" x-text="packagingCatalogMessage"></p>
-            </template>
-
-            <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
-                <button type="button" @click="packagingCatalogModalIntent = 'save_only'; savePackagingCatalogItem()" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                    Save only
-                </button>
-                <button type="button" @click="packagingCatalogModalIntent = 'save_and_add'; savePackagingCatalogItem()" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
-                    Save and add to this costing
-                </button>
-                <button type="button" @click="packagingCatalogModalOpen = false" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-</section>
-```
-
-- [ ] **Step 4: Run the content test plus the related workbench persistence tests**
-
-Run: `php artisan test --compact tests/Feature/RecipeWorkbenchCostingContentTest.php tests/Feature/RecipeWorkbenchPersistenceTest.php tests/Feature/RecipeVersionCostingTest.php`
-
-Expected: PASS, proving the new wording, defaults, and backend contract all agree.
-
-- [ ] **Step 5: Commit the workbench UX rewrite**
-
-```bash
-git add resources/js/recipe-workbench/component.js resources/js/recipe-workbench/sections/costing-section.js resources/js/recipe-workbench/bridge.js resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php tests/Feature/RecipeWorkbenchCostingContentTest.php tests/Feature/RecipeWorkbenchPersistenceTest.php tests/Feature/RecipeVersionCostingTest.php
-git commit -m "feat: clarify packaging usage in costing"
-```
-
-### Task 4: Final Verification And Cleanup
-
-**Files:**
-- Modify: `resources/views/livewire/dashboard/packaging-items-index.blade.php`
-- Modify: `resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php`
-- Test: `tests/Feature/PackagingItemsIndexTest.php`
-- Test: `tests/Feature/RecipeWorkbenchCostingContentTest.php`
-
-- [ ] **Step 1: Add the final regression assertions for empty-state and navigation copy**
+- [ ] **Step 4: Strengthen the persistence test around create-and-add behavior**
 
 ```php
-it('highlights packaging items in the sidebar when the page is open', function () {
-    $user = User::factory()->create();
+it('adds a newly created packaging item to costing with one component per unit by default', function () {
+    $componentState = testRecipeWorkbenchCostingSection();
 
-    $this->actingAs($user)
-        ->get(route('packaging-items.index'))
-        ->assertSuccessful()
-        ->assertSee('Packaging Items')
-        ->assertSee('Reusable packaging catalog');
-});
+    $componentState->packagingCatalog = [];
+    $componentState->packagingCostRows = [];
 
-it('shows the costing placeholder instead of a fake batch total when units produced is empty', function () {
-    $user = User::factory()->create();
+    $saved = [
+        'id' => 15,
+        'name' => 'Soap sleeve',
+        'unit_cost' => 0.18,
+        'currency' => 'EUR',
+        'notes' => null,
+    ];
 
-    $this->actingAs($user)
-        ->get(route('recipes.create'))
-        ->assertSuccessful()
-        ->assertSee('Set units produced');
+    mockPersistPackagingCatalogItem($saved);
+
+    $result = $componentState->savePackagingCatalogItem(true);
+
+    expect($result['id'])->toBe(15);
+    expect($componentState->packagingCostRows)->toHaveCount(1);
+    expect($componentState->packagingCostRows[0]['name'])->toBe('Soap sleeve');
+    expect($componentState->packagingCostRows[0]['quantity'])->toBe(1);
 });
 ```
 
-- [ ] **Step 2: Run the full packaging-related test slice before formatting**
+- [ ] **Step 5: Run the persistence test file to verify the interaction flow**
 
-Run: `php artisan test --compact tests/Feature/PackagingItemsIndexTest.php tests/Feature/RecipeWorkbenchCostingContentTest.php tests/Feature/RecipeVersionCostingTest.php tests/Feature/RecipeWorkbenchPersistenceTest.php`
+Run: `php artisan test --compact tests/Feature/RecipeWorkbenchPersistenceTest.php`
 
-Expected: PASS across the catalog route, workbench copy, and costing persistence behavior.
+Expected: PASS with both the backend payload and JavaScript-assisted interaction coverage green.
 
-- [ ] **Step 3: Run Pint on the changed PHP files**
+- [ ] **Step 6: Commit the interaction task**
+
+```bash
+git add resources/js/recipe-workbench/sections/costing-section.js resources/js/recipe-workbench/component.js resources/js/recipe-workbench/bridge.js tests/Feature/RecipeWorkbenchPersistenceTest.php
+git commit -m "feat: streamline packaging costing interactions"
+```
+
+---
+
+### Task 4: Run The Full Packaging Regression Slice And Final Cleanup
+
+**Files:**
+- Modify as needed: only files touched by failed verification
+- Test: `tests/Feature/PackagingItemsIndexTest.php`
+- Test: `tests/Feature/RecipeWorkbenchCostingContentTest.php`
+- Test: `tests/Feature/RecipeWorkbenchPersistenceTest.php`
+- Test: `tests/Feature/RecipeVersionCostingTest.php`
+
+- [ ] **Step 1: Run the full packaging-related regression slice**
+
+Run: `php artisan test --compact tests/Feature/PackagingItemsIndexTest.php tests/Feature/RecipeWorkbenchCostingContentTest.php tests/Feature/RecipeWorkbenchPersistenceTest.php tests/Feature/RecipeVersionCostingTest.php`
+
+Expected: PASS with all packaging catalog, costing content, persistence, and snapshot tests green.
+
+- [ ] **Step 2: Run formatting on the touched PHP files**
 
 Run: `vendor/bin/pint --dirty --format agent`
 
-Expected: PASS with formatting fixes applied if needed.
+Expected: `{"result":"pass"}`
 
-- [ ] **Step 4: Build frontend assets if the browser does not reflect the updated Alpine/Blade behavior**
+- [ ] **Step 3: Build the frontend assets because Blade and Alpine files changed**
 
 Run: `npm run build`
 
-Expected: PASS with a fresh Vite bundle. If the user is already running `npm run dev`, this step can be skipped.
+Expected: Vite build succeeds with exit code `0`.
 
-- [ ] **Step 5: Commit the verification pass**
+- [ ] **Step 4: If verification exposes failures, make the minimal fix only in the affected files and rerun the exact failing command**
 
 ```bash
-git add resources/views/livewire/dashboard/packaging-items-index.blade.php resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php tests/Feature/PackagingItemsIndexTest.php tests/Feature/RecipeWorkbenchCostingContentTest.php
-git commit -m "test: cover packaging catalog and costing copy"
+php artisan test --compact <failing-test-file>
+vendor/bin/pint --dirty --format agent
+npm run build
 ```
 
-## Self-Review
+- [ ] **Step 5: Commit the verified final state**
 
-### Spec Coverage
+```bash
+git add app/Livewire/Dashboard/PackagingItemsIndex.php resources/views/livewire/dashboard/packaging-items-index.blade.php resources/views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php resources/js/recipe-workbench/sections/costing-section.js resources/js/recipe-workbench/component.js resources/js/recipe-workbench/bridge.js tests/Feature/PackagingItemsIndexTest.php tests/Feature/RecipeWorkbenchCostingContentTest.php tests/Feature/RecipeWorkbenchPersistenceTest.php tests/Feature/RecipeVersionCostingTest.php
+git commit -m "feat: simplify packaging costing flow"
+```
 
-- Dedicated `Packaging Items` page and menu:
-  Covered by Task 1.
-- Costing framed as per-finished-unit usage:
-  Covered by Tasks 2 and 3.
-- Default packaging row value of `1`:
-  Covered by Task 3.
-- Inline modal with `Save and add to this costing`:
-  Covered by Task 3.
-- Placeholder behavior for missing `units produced`:
-  Covered by Task 3 and Task 4.
-- Snapshot stability and version-copy behavior:
-  Covered by Task 2.
+---
 
-No spec gaps remain.
+## Self-Review Checklist
 
-### Placeholder Scan
-
-- No `TODO`, `TBD`, or “implement later” placeholders remain in the tasks.
-- Each task names exact files, concrete commands, and code examples for the worker.
-- The only deferred item is `npm run build`, and it is explicitly gated on whether the user needs a production bundle rather than being left ambiguous.
-
-### Type Consistency
-
-- Client-side packaging rows use `components_per_unit`.
-- Server-side storage continues mapping that value into the existing `quantity` database column.
-- Returned catalog payload keys stay `id`, `name`, `unit_cost`, `currency`, and `notes`.
-
-The naming stays consistent across tasks.
-
-## Execution Handoff
-
-Plan complete and saved to `docs/superpowers/plans/2026-04-08-packaging-costing-clarification.md`. Two execution options:
-
-**1. Subagent-Driven (recommended)** - I dispatch a fresh subagent per task, review between tasks, fast iteration
-
-**2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
-
-**Which approach?**
+- Spec coverage:
+  - packaging page direct creation is covered in Task 1
+  - packaging below ingredients is covered in Task 2
+  - simplified wording and row structure are covered in Task 2
+  - inline costing creation and add-to-costing behavior are covered in Task 3
+  - regression verification and build checks are covered in Task 4
+- Placeholder scan:
+  - no `TODO`, `TBD`, or “implement later” placeholders remain
+- Type consistency:
+  - the plan consistently uses `quantity` as the persisted row field and `components per unit` as the UI label
+  - the packaging create action is consistently named `save()` on the page and `savePackagingCatalogItem()` in the workbench flow

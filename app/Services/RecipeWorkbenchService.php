@@ -265,16 +265,6 @@ class RecipeWorkbenchService
         return $this->recipeVersionCostingSynchronizer->savePackagingItem($user, $payload);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function deletePackagingCatalogItem(User $user, int $packagingItemId): array
-    {
-        return [
-            'packaging_catalog' => $this->recipeVersionCostingSynchronizer->deletePackagingItem($user, $packagingItemId),
-        ];
-    }
-
     private function duplicateName(string $name): string
     {
         return Str::startsWith($name, 'Copy of ')

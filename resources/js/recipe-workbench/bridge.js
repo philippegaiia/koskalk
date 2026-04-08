@@ -111,30 +111,3 @@ export async function persistPackagingCatalogItem(workbench, payload) {
         return false;
     }
 }
-
-export async function destroyPackagingCatalogItem(workbench, packagingItemId) {
-    workbench.packagingCatalogStatus = 'saving';
-    workbench.packagingCatalogMessage = '';
-
-    try {
-        const response = await workbench.$wire.deletePackagingCatalogItem(packagingItemId);
-
-        if (!response?.ok) {
-            workbench.packagingCatalogStatus = 'error';
-            workbench.packagingCatalogMessage = response?.message ?? 'The packaging item could not be deleted.';
-
-            return false;
-        }
-
-        workbench.packagingCatalog = response.packaging_catalog ?? [];
-        workbench.packagingCatalogStatus = 'success';
-        workbench.packagingCatalogMessage = response.message ?? 'Packaging item deleted.';
-
-        return true;
-    } catch (error) {
-        workbench.packagingCatalogStatus = 'error';
-        workbench.packagingCatalogMessage = 'The packaging item could not be deleted.';
-
-        return false;
-    }
-}

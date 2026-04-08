@@ -289,28 +289,6 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         ];
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    #[Renderless]
-    public function deletePackagingCatalogItem(int $packagingItemId, RecipeWorkbenchService $recipeWorkbenchService): array
-    {
-        $user = $this->currentUser();
-
-        if (! $user instanceof User) {
-            return [
-                'ok' => false,
-                'message' => 'Sign in before deleting packaging items.',
-            ];
-        }
-
-        return [
-            'ok' => true,
-            'message' => 'Packaging item deleted.',
-            ...$recipeWorkbenchService->deletePackagingCatalogItem($user, $packagingItemId),
-        ];
-    }
-
     #[Renderless]
     public function comparisonVersion(int $versionId, RecipeWorkbenchService $recipeWorkbenchService): array
     {

@@ -306,10 +306,14 @@ export function createCostingSection(payload) {
             this.packagingCatalogModalOpen = true;
         },
 
-        closePackagingCatalogModal() {
+        closePackagingCatalogModal(preserveFeedback = false) {
             this.packagingCatalogModalOpen = false;
-            this.packagingCatalogStatus = null;
-            this.packagingCatalogMessage = '';
+
+            if (!preserveFeedback) {
+                this.packagingCatalogStatus = null;
+                this.packagingCatalogMessage = '';
+            }
+
             this.resetPackagingCatalogForm();
         },
 
@@ -328,7 +332,7 @@ export function createCostingSection(payload) {
                     this.addPackagingCostRow(saved);
                 }
 
-                this.closePackagingCatalogModal();
+                this.closePackagingCatalogModal(true);
             }
 
             return saved;

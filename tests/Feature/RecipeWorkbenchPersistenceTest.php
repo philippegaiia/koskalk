@@ -614,6 +614,7 @@ await state.savePackagingCatalogItemAndAddToCosting();
 console.log(JSON.stringify({
   packagingCatalogCount: state.packagingCatalog.length,
   packagingCatalogStatus: state.packagingCatalogStatus,
+  packagingCatalogMessage: state.packagingCatalogMessage,
   packagingCatalogModalOpen: state.packagingCatalogModalOpen,
   row: state.packagingCostRows[0] ?? null,
   form: state.packagingCatalogForm,
@@ -632,6 +633,8 @@ JS;
     $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
 
     expect($payload['packagingCatalogCount'])->toBe(1)
+        ->and($payload['packagingCatalogStatus'])->toBe('success')
+        ->and($payload['packagingCatalogMessage'])->toBe('Packaging item saved.')
         ->and($payload['packagingCatalogModalOpen'])->toBeFalse()
         ->and($payload['row'])->toMatchArray([
             'user_packaging_item_id' => 41,
@@ -639,6 +642,117 @@ JS;
             'unit_cost' => 1.2345,
             'quantity' => 1,
         ])
+        ->and($payload['form'])->toMatchArray([
+            'id' => null,
+            'name' => '',
+            'unit_cost' => '',
+            'currency' => 'EUR',
+            'notes' => '',
+        ]);
+});
+
+it('keeps the save-only packaging success message visible after closing the modal', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const state = {
+  costingCurrency: 'EUR',
+  packagingCatalog: [],
+  packagingCostRows: [],
+  packagingCatalogStatus: null,
+  packagingCatalogMessage: '',
+  packagingCatalogForm: {
+    id: null,
+    name: 'Amber Jar',
+    unit_cost: 1.2345,
+    currency: 'EUR',
+    notes: 'For boxed bars',
+  },
+  hasSavedRecipe: true,
+  costingSaveTimer: null,
+  scheduleCostingSave() {},
+  makeLocalPackagingRowId() {
+    return `row-${this.packagingCostRows.length + 1}`;
+  },
+  resetPackagingCatalogForm() {
+    this.packagingCatalogForm = {
+      id: null,
+      name: '',
+      unit_cost: '',
+      currency: this.costingCurrency ?? 'EUR',
+      notes: '',
+    };
+  },
+  $wire: {
+    async savePackagingCatalogItem(payload) {
+      return {
+        ok: true,
+        message: 'Packaging item saved.',
+        packaging_catalog: [
+          {
+            id: 41,
+            name: payload.name,
+            unit_cost: payload.unit_cost,
+            currency: payload.currency,
+            notes: payload.notes,
+          },
+        ],
+        packaging_item: {
+          id: 41,
+          name: payload.name,
+          unit_cost: payload.unit_cost,
+          currency: payload.currency,
+          notes: payload.notes,
+        },
+      };
+    },
+  },
+};
+
+const bridgeSource = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/bridge.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace(/export async function /g, 'async function ');
+
+const costingSource = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createCostingSection', 'function createCostingSection');
+
+globalThis.persistPackagingCatalogItem = undefined;
+globalThis.persistCosting = async () => {};
+globalThis.createCostingSection = undefined;
+eval(`${bridgeSource}\nglobalThis.persistPackagingCatalogItem = persistPackagingCatalogItem;`);
+eval(`const persistCosting = globalThis.persistCosting;\n${costingSource}\nglobalThis.createCostingSection = createCostingSection;`);
+
+Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
+
+await state.savePackagingCatalogItemOnly();
+
+console.log(JSON.stringify({
+  packagingCatalogCount: state.packagingCatalog.length,
+  packagingCatalogStatus: state.packagingCatalogStatus,
+  packagingCatalogMessage: state.packagingCatalogMessage,
+  packagingCatalogModalOpen: state.packagingCatalogModalOpen,
+  form: state.packagingCatalogForm,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['packagingCatalogCount'])->toBe(1)
+        ->and($payload['packagingCatalogStatus'])->toBe('success')
+        ->and($payload['packagingCatalogMessage'])->toBe('Packaging item saved.')
+        ->and($payload['packagingCatalogModalOpen'])->toBeFalse()
         ->and($payload['form'])->toMatchArray([
             'id' => null,
             'name' => '',

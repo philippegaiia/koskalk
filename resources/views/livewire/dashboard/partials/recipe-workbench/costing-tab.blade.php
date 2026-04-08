@@ -130,73 +130,100 @@
             <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
                 <div class="flex items-start justify-between gap-3">
                     <div>
-                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Saved packaging items</p>
-                        <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Build your own little packaging catalog, then pull items into this costing one by one.</p>
+                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging usage per finished unit</p>
+                        <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Packaging usage per finished unit</h3>
+                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Define how many of each packaging component are used for one finished unit. Batch packaging cost is calculated from this and Units produced.</p>
                     </div>
-                    <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`${packagingCatalog.length} saved`"></span>
-                </div>
-
-                <div class="mt-4 grid gap-2">
-                    <input x-model="packagingCatalogForm.name" type="text" placeholder="Bottle 100 g" class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                    <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-                        <input x-model.number="packagingCatalogForm.unit_cost" type="number" min="0" step="0.0001" placeholder="Unit cost" class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                        <button type="button" @click="savePackagingCatalogItem()" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">Save item</button>
-                        <button type="button" @click="resetPackagingCatalogForm()" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Reset</button>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <a href="{{ route('packaging-items.index') }}" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Packaging Items page</a>
+                        <button type="button" @click="openPackagingCatalogModal()" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">New packaging item</button>
                     </div>
-                    <template x-if="packagingCatalogMessage">
-                        <p class="text-xs text-[var(--color-ink-soft)]" x-text="packagingCatalogMessage"></p>
-                    </template>
-                </div>
-
-                <div class="mt-4 space-y-2">
-                    <template x-for="item in packagingCatalog" :key="item.id">
-                        <div class="rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-3">
-                            <div class="flex items-start justify-between gap-3">
-                                <div class="min-w-0">
-                                    <p class="font-medium text-[var(--color-ink-strong)]" x-text="item.name"></p>
-                                    <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="`${item.currency} ${format(item.unit_cost, 4)} each`"></p>
-                                </div>
-                                <div class="flex shrink-0 items-center gap-2">
-                                    <button type="button" @click="addPackagingCostRow(item)" class="rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)] transition hover:border-[var(--color-line-strong)]">Use</button>
-                                    <button type="button" @click="editPackagingCatalogItem(item)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-white">Edit</button>
-                                    <button type="button" @click="deletePackagingCatalogItem(item.id)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-white">Delete</button>
-                                </div>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </section>
-
-            <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging in this costing</p>
-                        <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Mix saved packaging items with one-off custom rows when a formula needs a different presentation.</p>
-                    </div>
-                    <button type="button" @click="addPackagingCostRow()" class="rounded-full bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-white">Add custom row</button>
                 </div>
 
                 <div class="mt-4 space-y-3">
                     <template x-for="row in packagingCostRows" :key="row.id">
                         <div class="rounded-[1.4rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-3">
-                            <div class="grid gap-2">
-                                <input x-model="row.name" @change="scheduleCostingSave()" type="text" placeholder="Label / box / bottle" class="rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                                <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-                                    <input x-model.number="row.unit_cost" @change="scheduleCostingSave()" type="number" min="0" step="0.0001" placeholder="Unit cost" class="rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
-                                    <input x-model.number="row.quantity" @change="scheduleCostingSave()" type="number" min="0" step="0.001" placeholder="Quantity" class="rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
+                            <div class="grid gap-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Packaging item</p>
+                                        <p class="mt-1 font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+                                    </div>
                                     <button type="button" @click="removePackagingCostRow(row.id)" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-white">Remove</button>
                                 </div>
+
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <label class="rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
+                                        <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Components per finished unit</span>
+                                        <input x-model.number="row.quantity" @change="scheduleCostingSave()" type="number" min="0" step="0.001" class="mt-2 w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                    </label>
+
+                                    <label class="rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
+                                        <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Effective unit price</span>
+                                        <input x-model.number="row.unit_cost" @change="scheduleCostingSave()" type="number" min="0" step="0.0001" class="mt-2 w-full rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                    </label>
+                                </div>
+
+                                <div class="grid gap-2 sm:grid-cols-2">
+                                    <div class="rounded-[1.25rem] border border-[var(--color-line)] bg-white px-4 py-3">
+                                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Cost per finished unit</p>
+                                        <p class="mt-2 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostPerFinishedUnitForRow(row), 2)}`"></p>
+                                    </div>
+
+                                    <div class="rounded-[1.25rem] border border-[var(--color-line)] bg-white px-4 py-3">
+                                        <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Batch cost</p>
+                                        <p class="mt-2 font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(packagingBatchCostForRow(row), 2)}` : 'Set units produced'"></p>
+                                    </div>
+                                </div>
                             </div>
-                            <p class="mt-2 text-xs text-[var(--color-ink-soft)]" x-text="`${costingCurrency} ${format(nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.quantity), 2)}`"></p>
                         </div>
                     </template>
 
                     <template x-if="packagingCostRows.length === 0">
                         <div class="rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-5 text-sm text-[var(--color-ink-soft)]">
-                            No packaging added yet. Use a saved item or add a custom row.
+                            <p class="font-medium text-[var(--color-ink-strong)]">No packaging added yet.</p>
+                            <p class="mt-2">Choose a packaging item from your catalog, or create one without leaving this tab.</p>
                         </div>
                     </template>
                 </div>
+
+                <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Catalog</p>
+                            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Catalog items stay reusable across recipes. Add one to this costing when you need it.</p>
+                        </div>
+                        <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`${packagingCatalog.length} items`"></span>
+                    </div>
+
+                    <div class="mt-3 space-y-2">
+                        <template x-for="item in packagingCatalog" :key="item.id">
+                            <div class="rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-[var(--color-ink-strong)]" x-text="item.name"></p>
+                                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="`${item.currency} ${format(item.unit_cost, 4)} each`"></p>
+                                    </div>
+                                    <div class="flex shrink-0 items-center gap-2">
+                                        <button type="button" @click="addPackagingCostRow(item)" class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">Add to costing</button>
+                                        <button type="button" @click="openPackagingCatalogModal(item)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Edit</button>
+                                        <button type="button" @click="deletePackagingCatalogItem(item.id)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template x-if="packagingCatalog.length === 0">
+                            <div class="rounded-[1.25rem] border border-dashed border-[var(--color-line)] bg-white px-4 py-4 text-sm text-[var(--color-ink-soft)]">
+                                Your packaging catalog is empty. Create a packaging item here, then reuse it across recipes.
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <template x-if="packagingCatalogMessage">
+                    <p class="mt-3 text-xs text-[var(--color-ink-soft)]" x-text="packagingCatalogMessage"></p>
+                </template>
             </section>
 
             <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
@@ -208,11 +235,11 @@
                     </div>
                     <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
                         <span class="text-[var(--color-ink-soft)]">Packaging</span>
-                        <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostTotal, 2)}`"></span>
+                        <span class="font-medium text-[var(--color-ink-strong)]" x-text="packagingCostTotal !== null ? `${costingCurrency} ${format(packagingCostTotal, 2)}` : 'Set units produced'"></span>
                     </div>
                     <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3">
                         <span class="text-[var(--color-ink-strong)]">Total batch cost</span>
-                        <span class="font-semibold text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(totalBatchCost, 2)}`"></span>
+                        <span class="font-semibold text-[var(--color-ink-strong)]" x-text="totalBatchCost !== null ? `${costingCurrency} ${format(totalBatchCost, 2)}` : 'Set units produced'"></span>
                     </div>
                     <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
                         <span class="text-[var(--color-ink-soft)]">Cost per unit</span>
@@ -225,6 +252,52 @@
                 </div>
             </section>
         </aside>
+    </div>
+
+    <div
+        x-cloak
+        x-show="packagingCatalogModalOpen"
+        x-transition.opacity
+        @keydown.escape.window="closePackagingCatalogModal()"
+        class="fixed inset-0 z-40 flex items-center justify-center bg-[color:rgb(15_23_42/0.45)] px-4 py-6"
+    >
+        <div @click.away="closePackagingCatalogModal()" class="w-full max-w-xl rounded-[2rem] border border-[var(--color-line)] bg-white p-6 shadow-2xl">
+            <div class="flex items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging item</p>
+                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]" x-text="packagingCatalogForm.id ? 'Edit packaging item' : 'New packaging item'"></h3>
+                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Save a reusable catalog item here, then optionally add it straight into this costing at one component per finished unit.</p>
+                </div>
+                <button type="button" @click="closePackagingCatalogModal()" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Cancel</button>
+            </div>
+
+            <div class="mt-5 grid gap-3">
+                <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                    <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Name</span>
+                    <input x-model="packagingCatalogForm.name" type="text" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
+                </label>
+
+                <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                    <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Effective unit price</span>
+                    <input x-model.number="packagingCatalogForm.unit_cost" type="number" min="0" step="0.0001" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
+                </label>
+
+                <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+                    <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Notes</span>
+                    <textarea x-model="packagingCatalogForm.notes" rows="4" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"></textarea>
+                </label>
+            </div>
+
+            <template x-if="packagingCatalogMessage">
+                <p class="mt-4 text-sm text-[var(--color-ink-soft)]" x-text="packagingCatalogMessage"></p>
+            </template>
+
+            <div class="mt-5 flex flex-wrap justify-end gap-2">
+                <button type="button" @click="closePackagingCatalogModal()" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Cancel</button>
+                <button type="button" @click="savePackagingCatalogItemOnly()" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">Save only</button>
+                <button type="button" @click="savePackagingCatalogItemAndAddToCosting()" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">Save and add to this costing</button>
+            </div>
+        </div>
     </div>
 
     <template x-if="!hasSavedRecipe">

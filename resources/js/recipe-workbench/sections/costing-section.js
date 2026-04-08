@@ -175,12 +175,26 @@ export function createCostingSection(payload) {
         },
 
         get packagingCostTotal() {
+            if (this.costingUnitsProducedValue <= 0) {
+                return null;
+            }
+
+            return this.packagingCostRows.reduce((total, row) => {
+                return total + this.packagingBatchCostForRow(row);
+            }, 0);
+        },
+
+        get packagingCostPerFinishedUnitTotal() {
             return this.packagingCostRows.reduce((total, row) => {
                 return total + (nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.quantity));
             }, 0);
         },
 
         get totalBatchCost() {
+            if (this.packagingCostTotal === null) {
+                return null;
+            }
+
             return this.ingredientCostTotal + this.packagingCostTotal;
         },
 
@@ -228,6 +242,14 @@ export function createCostingSection(payload) {
             this.scheduleCostingSave();
         },
 
+        packagingCostPerFinishedUnitForRow(row) {
+            return nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.quantity);
+        },
+
+        packagingBatchCostForRow(row) {
+            return this.packagingCostPerFinishedUnitForRow(row) * this.costingUnitsProducedValue;
+        },
+
         removePackagingCostRow(rowId) {
             this.packagingCostRows = this.packagingCostRows.filter((row) => row.id !== rowId);
             this.scheduleCostingSave();
@@ -273,6 +295,26 @@ export function createCostingSection(payload) {
             };
         },
 
+        openPackagingCatalogModal(item = null) {
+            this.packagingCatalogStatus = null;
+            this.packagingCatalogMessage = '';
+
+            if (item) {
+                this.editPackagingCatalogItem(item);
+            } else {
+                this.resetPackagingCatalogForm();
+            }
+
+            this.packagingCatalogModalOpen = true;
+        },
+
+        closePackagingCatalogModal() {
+            this.packagingCatalogModalOpen = false;
+            this.packagingCatalogStatus = null;
+            this.packagingCatalogMessage = '';
+            this.resetPackagingCatalogForm();
+        },
+
         editPackagingCatalogItem(item) {
             this.packagingCatalogForm = {
                 id: item.id,
@@ -283,26 +325,40 @@ export function createCostingSection(payload) {
             };
         },
 
-        async savePackagingCatalogItem() {
+        async savePackagingCatalogItem(addToCosting = false) {
             if (`${this.packagingCatalogForm.name ?? ''}`.trim() === '') {
                 this.packagingCatalogStatus = 'error';
                 this.packagingCatalogMessage = 'Packaging items need a name.';
 
-                return;
+                return null;
             }
 
             const saved = await persistPackagingCatalogItem(this, this.packagingCatalogForm);
 
             if (saved) {
-                this.resetPackagingCatalogForm();
+                if (addToCosting) {
+                    this.addPackagingCostRow(saved);
+                }
+
+                this.closePackagingCatalogModal();
             }
+
+            return saved;
+        },
+
+        async savePackagingCatalogItemAndAddToCosting() {
+            return this.savePackagingCatalogItem(true);
+        },
+
+        async savePackagingCatalogItemOnly() {
+            return this.savePackagingCatalogItem(false);
         },
 
         async deletePackagingCatalogItem(packagingItemId) {
             const removed = await destroyPackagingCatalogItem(this, packagingItemId);
 
             if (removed && Number(this.packagingCatalogForm.id) === Number(packagingItemId)) {
-                this.resetPackagingCatalogForm();
+                this.closePackagingCatalogModal();
             }
         },
 

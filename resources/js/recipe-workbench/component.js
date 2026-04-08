@@ -101,6 +101,7 @@ function createRecipeWorkbenchState(payload) {
             currency: payload.costing?.settings?.currency ?? 'EUR',
             notes: '',
         },
+        packagingCatalogModalOpen: false,
         hasLoadedCosting: Boolean(payload.costingLoaded ?? payload.costing),
         isLoadingCosting: false,
         costingSaveTimer: null,

@@ -2,119 +2,164 @@
 
 ## Summary
 
-The current costing tab mixes two different concepts:
+The current packaging experience is visually fragmented and functionally incomplete.
 
-- reusable packaging item definitions
-- packaging usage for a specific formula
+In the costing tab, packaging is pushed into a narrow side column that competes with the ingredient table instead of following it. On the catalog side, the `Packaging Items` page does not let the user create packaging items directly, which makes the page feel broken and forces the user back into costing for basic catalog maintenance.
 
-That creates ambiguity around what the user is entering, especially for `quantity`, which currently does not explain whether it means per piece, per finished unit, or per batch.
+This design replaces that split experience with one clear model:
 
-This design separates those concerns clearly:
-
-- `Packaging Items` becomes the reusable catalog management area
-- `Costing` becomes the place where a formula defines packaging usage per finished unit
-- users can create missing packaging items directly from the costing tab through a modal, without leaving their workflow
+- the costing tab shows packaging directly below ingredient costing
+- packaging is presented as a simple second costing table, not as a sidebar card stack
+- the `Packaging Items` page becomes a real catalog manager with visible creation at the top
+- the costing tab can still create a missing packaging item in a modal without forcing the user to leave the recipe
 
 ## Goals
 
-- Make the packaging costing model obvious to a first-time user
-- Remove ambiguity around the current `quantity` field
-- Keep packaging outside the ingredient BOM/formula model
-- Preserve reuse through a packaging catalog
-- Let users create a missing packaging item without leaving the costing tab
+- Make the costing flow read in one natural order: settings, ingredients, packaging, totals
+- Remove the cramped right-column packaging layout
+- Make packaging usage understandable on first read
+- Make the `Packaging Items` page immediately useful by allowing direct creation there
+- Preserve reusable packaging records without scattering the workflow across unrelated surfaces
 
 ## Non-Goals
 
-- No purchasing-unit conversion in this iteration
-- No automatic translation from `pack of 100` or `roll of 250` into effective unit cost
+- No packaging inside the ingredient BOM itself
+- No purchase-pack conversion or supplier pack math in this iteration
 - No packaging percentages
-- No packaging embedded into the ingredient formula structure
+- No attempt to turn the packaging page into a full procurement system
 
 ## User Model
 
-The user should understand packaging through one rule:
+The user should understand two simple rules:
 
-`Costing packaging rows describe how many packaging components are used for one finished unit.`
+1. `Packaging Items` is a reusable personal catalog.
+2. `Packaging` in costing means what one finished unit uses.
 
 Examples:
 
 - 1 box per soap
-- 1 bottom label per soap
 - 1 front sticker per soap
-- 2 stickers per soap
+- 1 bottom label per soap
+- 2 shrink bands per soap
 
-The packaging catalog stores reusable packaging items and their effective unit prices. Users are responsible for entering the effective unit price themselves for now.
+The user enters effective unit price manually for now. The application does not derive it from purchase packs.
 
 ## Information Architecture
 
-### Packaging Items
-
-Add a dedicated `Packaging Items` menu or page for reusable catalog management.
-
-This area owns:
-
-- create packaging item
-- edit packaging item
-- review existing packaging items
-- archive or delete packaging item if the current product rules allow it
-
-This area does not own formula usage.
-
 ### Costing Tab
 
-The costing tab owns:
+The costing tab becomes the main working surface for recipe economics.
 
-- ingredient costing
-- packaging usage for the current formula
-- summary calculations derived from ingredient cost, packaging cost, and units produced
+The visual order must be:
 
-The packaging section in costing should be framed as formula-specific usage, not as catalog administration.
+1. Costing settings
+2. Ingredient costing
+3. Packaging
+4. Cost summary
 
-## Costing Tab UX
+Packaging must sit directly below ingredient costing in the main content column. It must not live in a narrow right sidebar.
 
-Rename and reframe the packaging area as:
+### Packaging Items Page
 
-- section title: `Packaging usage per finished unit`
-- helper text: `Define how many of each packaging component are used for one finished unit. Batch packaging cost is calculated from this and Units produced.`
+The `Packaging Items` page becomes a straightforward catalog manager.
 
-### Packaging Row Fields
+The visual order must be:
 
-Each packaging row in costing should show:
+1. Page intro
+2. Create packaging item form
+3. Existing packaging items list or table
+
+The page must support creating packaging items directly. It cannot be a read-only index.
+
+## Costing Tab Layout
+
+### Ingredient Costing
+
+Keep ingredient costing as the first large table in the costing flow.
+
+### Packaging Section
+
+Immediately below ingredient costing, render a packaging section that feels like a second costing table.
+
+Recommended section content:
+
+- title: `Packaging`
+- helper copy: `Add reusable packaging items used for one finished unit.`
+- primary actions:
+  - `Add packaging item`
+  - `New packaging item`
+
+The packaging section should visually align with the ingredient costing section so the user reads it as the next step in the same process.
+
+### Packaging Row Shape
+
+Each packaging row should be shown in a row-oriented layout, not stacked mini-cards.
+
+Each row must expose:
 
 - `Packaging item`
-- `Components per finished unit`
-- `Effective unit price`
-- `Cost per finished unit`
+- `Components per unit`
+- `Unit price`
+- `Cost per unit`
 - `Batch cost`
+- `Remove`
 
-The current generic `quantity` label should be removed because it does not explain the unit of measure.
+The label `Quantity` should not appear in packaging costing.
 
-### Default Behavior
+## Packaging Behavior In Costing
 
-When a packaging item is added to the costing:
+### Adding Existing Items
 
-- it defaults to `components per finished unit = 1`
-- it pulls `effective unit price` from the saved packaging item
-- the user only edits the count if the usage is not one-to-one
+`Add packaging item` should let the user choose from saved packaging items in the catalog.
 
-Examples:
+When a saved item is added:
 
-- `Box` defaults to `1`
-- `Bottom label` defaults to `1`
-- `Front sticker` defaults to `1`
-- if a soap uses two stickers, the user changes the count to `2`
+- the row defaults to `components per unit = 1`
+- the row pulls the current saved unit price
+- the user can override the price inside the recipe costing snapshot
 
-## Pricing Rules
+### Creating Missing Items
 
-Packaging item prices in the catalog represent the effective unit price entered by the user.
+`New packaging item` in costing should open a modal.
 
-Examples:
+The modal contains only catalog fields:
 
-- box = 0.22 each
-- front sticker = 0.03 each
-- bottom label = 0.02 each
+- `Name`
+- `Effective unit price`
+- optional `Notes`
 
-The system should not attempt to derive effective unit prices from purchase pack sizes in this iteration. That remains a manual decision by the user.
+Actions:
+
+- primary: `Save and add`
+- secondary: `Save only`
+- tertiary: `Cancel`
+
+Post-save behavior:
+
+- `Save and add` creates the catalog item and inserts it into the current costing with `components per unit = 1`
+- `Save only` creates the catalog item and keeps the user in the costing flow without adding a row automatically
+
+## Packaging Items Page Behavior
+
+The catalog page must provide an obvious creation form near the top of the page.
+
+Required fields:
+
+- `Name`
+- `Effective unit price`
+- optional `Notes`
+
+Required action:
+
+- `Save packaging item`
+
+Below the form, the page should show the saved reusable packaging items in a simple readable list or table.
+
+The page should help the user understand that:
+
+- items saved here become available in recipe costing
+- this page defines reusable packaging records
+- formula-specific usage still happens inside recipe costing
 
 ## Calculation Rules
 
@@ -122,157 +167,110 @@ The system should not attempt to derive effective unit prices from purchase pack
 
 For each packaging row:
 
-`cost per finished unit = components per finished unit × effective unit price`
+`cost per unit = components per unit × unit price`
 
 ### Batch Packaging Cost
 
 For each packaging row:
 
-`batch cost = cost per finished unit × units produced`
+`batch cost = cost per unit × units produced`
 
 ### Total Packaging Cost
 
-`packaging total = sum of batch cost for all packaging rows`
+`packaging total = sum of all packaging row batch costs`
 
-### Total Cost Per Unit
+### Overall Totals
 
-`cost per unit = ingredient cost per unit + packaging cost per unit`
+The summary should continue to show:
 
-The summary should expose both packaging total and cost per unit so the user can understand batch economics and finished-unit economics at the same time.
+- ingredients total
+- packaging total
+- total batch cost
+- cost per unit
+- cost per kg
 
-## Inline Creation Flow
+## Empty States And Feedback
 
-If the needed packaging item does not exist, the user should be able to create it directly from the costing tab through a modal.
+### No Packaging In Costing
 
-### Modal Trigger
+Show an empty state such as:
 
-Place a clear action near the packaging picker or add action:
+- `No packaging added yet.`
+- `Add a reusable packaging item to include boxes, labels, stickers, and other unit-level packaging in this costing.`
 
-- `New packaging item`
+### No Catalog Items
 
-### Modal Fields
+If the user has no saved packaging items yet:
 
-The modal should contain catalog fields only:
-
-- `Name`
-- `Effective unit price`
-- optional `Notes`
-
-### Modal Actions
-
-- primary: `Save and add to this costing`
-- secondary: `Save only`
-- tertiary: `Cancel`
-
-### Post-Save Behavior
-
-If the user chooses `Save and add to this costing`:
-
-- the catalog item is persisted
-- the modal closes
-- a new packaging row is added to the current formula costing
-- `components per finished unit` defaults to `1`
-
-If the user chooses `Save only`:
-
-- the catalog item is persisted
-- the modal closes
-- the costing state is unchanged until the user selects the item
-
-## Empty States And Validation
-
-### No Packaging Rows
-
-Use an explanatory empty state such as:
-
-- `No packaging added yet`
-- `Choose a packaging item from your catalog, or create one without leaving this tab.`
-
-Avoid language like `Add custom row` as the main framing, because the primary model should be reusable packaging items.
+- the costing tab should still allow `New packaging item`
+- the packaging page should show the create form first, then an empty list message below it
 
 ### Missing Units Produced
 
-If `units produced` is empty or zero:
+If `units produced` is missing or zero:
 
 - packaging rows remain editable
-- `cost per finished unit` still displays
-- batch-level totals that depend on `units produced` should show a muted placeholder such as `Set units produced`
+- `cost per unit` still displays
+- batch-level values display `Set units produced`
 
-This prevents the UI from implying that packaging cannot be entered yet while still signaling that batch totals are incomplete.
+## Content And Labeling
 
-### Missing Packaging Price
+Use simpler wording throughout.
 
-If a packaging row has no valid price:
+Preferred terms:
 
-- row totals should resolve to `0`
-- the row should show an incomplete-pricing state through helper text or subdued feedback
+- `Packaging` instead of `Packaging usage per finished unit` as the large section title
+- `Components per unit`
+- `Unit price`
+- `Cost per unit`
+- `Batch cost`
+- `Packaging Items` for the reusable catalog page
 
-## Content And Labeling Changes
-
-The current copy emphasizes “saved packaging items” and “packaging in this costing,” but does not teach the cost model.
-
-Copy should instead reinforce three concepts:
-
-- packaging items are reusable
-- formula rows define usage per finished unit
-- batch totals derive from `units produced`
-
-Recommended wording patterns:
-
-- `Packaging Items` for catalog management
-- `Packaging usage per finished unit` in costing
-- `Components per finished unit` instead of `Quantity`
-- `Effective unit price` instead of generic `Unit cost` where clarity matters
+Avoid long explanatory headings that repeat the same phrase twice or make the section harder to scan.
 
 ## Data Flow
 
 ### Catalog Layer
 
-Reusable packaging items remain user-owned records separate from formula BOM data.
-
-Stored fields for this design:
+Reusable packaging items remain user-owned records with:
 
 - name
 - effective unit price
 - currency
 - optional notes
 
-### Formula Costing Layer
+### Costing Layer
 
-Formula costing stores usage rows referencing packaging items plus formula-specific usage values:
+Recipe costing stores packaging usage rows with:
 
-- packaging item id
-- components per finished unit
-- effective unit price snapshot used by the costing
+- packaging item id when available
+- packaging item name snapshot
+- unit price snapshot
+- components per unit
 
-The costing should keep its existing behavior of snapshotting pricing into the formula costing context so later catalog price changes do not rewrite historical formula economics unless explicitly refreshed.
+Historical costing must stay readable even if the catalog changes later.
 
 ## Error Handling
 
-- If a catalog item save fails in the modal, keep the modal open and show a clear inline error
-- If adding a catalog item to costing fails after save, preserve the saved item and show a recoverable message
-- If costing autosave fails, keep the user’s visible row values and show a non-destructive save warning
-- If a deleted packaging item is still referenced by historical costing, the costing snapshot should remain readable because the effective unit price and item name are preserved on the costing row
+- If catalog item creation fails in the modal, keep the modal open and show the error inline
+- If costing autosave fails, preserve visible user input and show a non-destructive warning
+- If a catalog item is later removed or edited, existing costing snapshots must remain readable
 
 ## Testing
 
-Add feature coverage for:
+Add or update coverage for:
 
-- costing tab displays the updated packaging terminology
-- a packaging row defaults to `1 component per finished unit`
-- packaging batch totals multiply correctly by `units produced`
-- creating a packaging item from costing persists the catalog item
-- `Save and add to this costing` inserts the new item immediately into costing
-- missing `units produced` shows the expected placeholder behavior
-- missing price results in a non-crashing incomplete state
-- existing formula cost snapshots remain stable even if packaging catalog prices later change
+- packaging renders below ingredient costing instead of in a side layout
+- costing tab copy uses the simpler packaging wording
+- packaging rows default to `1` component per unit
+- creating a packaging item from the packaging page persists a reusable record
+- creating a packaging item from costing works without leaving the recipe
+- `Save and add` inserts the new item into costing immediately
+- batch packaging totals multiply correctly by `units produced`
+- missing `units produced` shows the expected placeholder state
 
 ## Rollout Notes
 
-This design intentionally avoids purchase-unit conversion logic. Once this simpler model is clear and easy to use, a future iteration can add optional purchasing metadata like:
+This pass is about clarity and flow, not about adding more packaging business logic.
 
-- purchase pack size
-- supplier unit
-- auto-derived effective unit cost
-
-That should be a later enhancement, not part of this UX clarification pass.
+If later we want purchase-pack conversion, supplier metadata, or richer catalog management, that should be designed after this simpler structure is stable and understandable.

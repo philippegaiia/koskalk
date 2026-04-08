@@ -67,6 +67,14 @@ class Recipe extends Model implements HasRichContent
             ->orderByDesc('version_number');
     }
 
+    public function currentSavedVersion(): HasOne
+    {
+        return $this->hasOne(RecipeVersion::class)
+            ->ofMany(['version_number' => 'max'], function ($query): void {
+                $query->where('is_draft', false);
+            });
+    }
+
     public function currentDraftVersion(): HasOne
     {
         return $this->hasOne(RecipeVersion::class)->where('is_draft', true);

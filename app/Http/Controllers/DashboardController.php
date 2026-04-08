@@ -15,7 +15,7 @@ class DashboardController extends Controller
         $recipes = collect();
         $recipeCount = 0;
         $draftCount = 0;
-        $publishedVersionCount = 0;
+        $savedFormulaCount = 0;
         $personalIngredients = collect();
         $personalIngredientCount = 0;
 
@@ -24,13 +24,7 @@ class DashboardController extends Controller
                 ->with([
                     'productFamily',
                     'currentDraftVersion',
-                    'publishedVersions' => fn ($query) => $query
-                        ->select(['id', 'recipe_id', 'version_number', 'name', 'saved_at'])
-                        ->latest('version_number')
-                        ->limit(3),
-                ])
-                ->withCount([
-                    'versions as published_versions_count' => fn ($query) => $query->where('is_draft', false),
+                    'currentSavedVersion',
                 ])
                 ->whereNull('archived_at')
                 ->latest()
@@ -39,7 +33,7 @@ class DashboardController extends Controller
 
             $recipeCount = $recipes->count();
             $draftCount = $recipes->filter(fn (Recipe $recipe): bool => $recipe->currentDraftVersion !== null)->count();
-            $publishedVersionCount = (int) $recipes->sum('published_versions_count');
+            $savedFormulaCount = $recipes->filter(fn (Recipe $recipe): bool => $recipe->currentSavedVersion !== null)->count();
 
             $personalIngredients = Ingredient::query()
                 ->ownedByUser($currentUser)
@@ -58,7 +52,7 @@ class DashboardController extends Controller
             'recipes' => $recipes,
             'recipeCount' => $recipeCount,
             'draftCount' => $draftCount,
-            'publishedVersionCount' => $publishedVersionCount,
+            'savedFormulaCount' => $savedFormulaCount,
             'personalIngredients' => $personalIngredients,
             'personalIngredientCount' => $personalIngredientCount,
         ]);

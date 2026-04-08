@@ -12,10 +12,14 @@ use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Services\RecipeContentUpdater;
 use App\Services\RecipeWorkbenchService;
+use App\Services\RecipeWorkbenchViewDataBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+
+use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 
@@ -67,6 +71,7 @@ it('returns a structured error instead of throwing when oil weight is invalid', 
     $result = $component->saveDraft(
         soapDraftPayload($ingredient, oilWeight: 0),
         app(RecipeWorkbenchService::class),
+        app(RecipeContentUpdater::class),
     );
 
     expect($result['ok'])->toBeFalse()
@@ -92,6 +97,7 @@ it('can still save a draft from a mounted component after the auth session is go
     $result = $component->saveDraft(
         soapDraftPayload($ingredient, name: 'Fallback Draft'),
         app(RecipeWorkbenchService::class),
+        app(RecipeContentUpdater::class),
     );
 
     expect($result['ok'])->toBeTrue()
@@ -102,6 +108,37 @@ it('can still save a draft from a mounted component after the auth session is go
     expect($recipe->owner_id)->toBe($user->id)
         ->and($recipe->name)->toBe('Fallback Draft')
         ->and($soapFamily->id)->toBe($recipe->product_family_id);
+});
+
+it('keeps instructions and media entered before the first draft is saved', function () {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+    $component->data['description'] = '<p>Presentation ready before the first save.</p>';
+    $component->data['manufacturing_instructions'] = '<p>Step 1: Prepare the mould.</p>';
+    $component->data['featured_image_path'] = ['recipes/featured-images/first-draft.webp'];
+
+    $result = $component->saveDraft(
+        soapDraftPayload($ingredient, name: 'Draft With Content'),
+        app(RecipeWorkbenchService::class),
+        app(RecipeContentUpdater::class),
+    );
+
+    expect($result['ok'])->toBeTrue();
+
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($result['snapshot']['draft']['recipe']['id']);
+
+    expect($recipe->description)->toContain('Presentation ready before the first save')
+        ->and($recipe->manufacturing_instructions)->toContain('Prepare the mould')
+        ->and($recipe->featured_image_path)->toBe('recipes/featured-images/first-draft.webp');
 });
 
 it('returns backend soap calculation preview data for the workbench', function () {
@@ -151,6 +188,43 @@ it('returns backend soap calculation preview data for the workbench', function (
         ->and($result['calculation']['properties']['qualities'])->toHaveKey('unmolding_firmness');
 });
 
+it('does not re-render the workbench when refreshing the calculation preview', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $ingredient = makeCarrierOilIngredient();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    mock(RecipeWorkbenchViewDataBuilder::class, function ($mock): void {
+        $mock->shouldReceive('build')
+            ->once()
+            ->andReturn([
+                'productFamily' => [
+                    'id' => 1,
+                    'name' => 'Soap',
+                    'slug' => 'soap',
+                    'calculation_basis' => null,
+                ],
+                'recipe' => null,
+                'savedSnapshot' => null,
+                'phases' => [],
+                'ingredients' => [],
+                'ifraProductCategories' => [],
+                'defaultIfraProductCategoryId' => null,
+                'costing' => [],
+            ]);
+    });
+
+    Livewire::test(RecipeWorkbench::class)
+        ->call('previewCalculation', soapDraftPayload($ingredient, oilWeight: 1000));
+});
+
 it('stores formula context on recipe versions and returns it in the draft payload', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -179,6 +253,97 @@ it('stores formula context on recipe versions and returns it in the draft payloa
         ->and($draft['exposureMode'])->toBe('leave_on')
         ->and($draft['regulatoryRegime'])->toBe('eu')
         ->and($draft['catalogReview']['needs_review'])->toBeFalse();
+});
+
+it('preserves ingredient order across draft and saved versions', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeCarrierOilIngredient();
+    $coconutOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA OIL',
+        'is_potentially_saponifiable' => true,
+        'is_active' => true,
+    ]);
+    $spirulina = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Spirulina',
+        'inci_name' => 'SPIRULINA PLATENSIS POWDER',
+        'is_active' => true,
+    ]);
+    $oatMilk = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Oat Milk Powder',
+        'inci_name' => 'AVENA SATIVA KERNEL FLOUR',
+        'is_active' => true,
+    ]);
+
+    $payload = soapDraftPayload($oliveOil, name: 'Ordered Formula');
+    $payload['phase_items']['saponified_oils'] = [
+        [
+            'ingredient_id' => $coconutOil->id,
+            'percentage' => 70,
+            'weight' => 700,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $oliveOil->id,
+            'percentage' => 30,
+            'weight' => 300,
+            'note' => null,
+        ],
+    ];
+    $payload['phase_items']['additives'] = [
+        [
+            'ingredient_id' => $oatMilk->id,
+            'percentage' => 2,
+            'weight' => 20,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $spirulina->id,
+            'percentage' => 1,
+            'weight' => 10,
+            'note' => null,
+        ],
+    ];
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->saveDraft($user, $soapFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->saveAsNewVersion($user, $soapFamily, $payload, $recipe);
+
+    $publishedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_draft', false)
+        ->latest('version_number')
+        ->firstOrFail();
+    $publishedVersion->load([
+        'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
+        'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
+    ]);
+
+    $draftPayload = $service->draftPayload($recipe);
+    $publishedPayload = $service->versionPayload($recipe, $publishedVersion->id);
+
+    expect(collect($draftPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
+        ->toBe([$coconutOil->id, $oliveOil->id])
+        ->and(collect($draftPayload['phaseItems']['additives'])->pluck('ingredient_id')->all())
+        ->toBe([$oatMilk->id, $spirulina->id])
+        ->and(collect($publishedPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
+        ->toBe([$coconutOil->id, $oliveOil->id])
+        ->and(collect($publishedPayload['phaseItems']['additives'])->pluck('ingredient_id')->all())
+        ->toBe([$oatMilk->id, $spirulina->id])
+        ->and($publishedVersion->phases->firstWhere('slug', 'saponified_oils')?->items->pluck('ingredient_id')->all())
+        ->toBe([$coconutOil->id, $oliveOil->id])
+        ->and($publishedVersion->phases->firstWhere('slug', 'additives')?->items->pluck('ingredient_id')->all())
+        ->toBe([$oatMilk->id, $spirulina->id]);
 });
 
 it('flags a saved formula for review when linked ingredient data changes', function () {

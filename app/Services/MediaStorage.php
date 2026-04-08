@@ -137,6 +137,10 @@ class MediaStorage
             return null;
         }
 
+        if (! Storage::disk(static::publicDisk())->exists($path)) {
+            return null;
+        }
+
         return Storage::disk(static::publicDisk())->url($path);
     }
 

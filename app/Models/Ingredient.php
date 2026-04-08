@@ -100,6 +100,11 @@ class Ingredient extends Model
         return $this->hasMany(IfraCertificate::class);
     }
 
+    public function userPrices(): HasMany
+    {
+        return $this->hasMany(UserIngredientPrice::class);
+    }
+
     public function featuredImageUrl(): ?string
     {
         return MediaStorage::publicUrl($this->featured_image_path);
@@ -120,9 +125,13 @@ class Ingredient extends Model
      */
     public function normalizedFattyAcidProfile(): array
     {
-        $profile = $this->fattyAcidEntries()
-            ->with('fattyAcid:id,key,display_order')
-            ->get()
+        $fattyAcidEntries = $this->relationLoaded('fattyAcidEntries')
+            ? $this->fattyAcidEntries->loadMissing('fattyAcid:id,key,display_order')
+            : $this->fattyAcidEntries()
+                ->with('fattyAcid:id,key,display_order')
+                ->get();
+
+        $profile = $fattyAcidEntries
             ->sortBy(fn (IngredientFattyAcid $entry): int => $entry->fattyAcid?->display_order ?? PHP_INT_MAX)
             ->mapWithKeys(function (IngredientFattyAcid $entry): array {
                 $key = $entry->fattyAcid?->key;

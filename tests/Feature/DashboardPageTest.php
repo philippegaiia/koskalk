@@ -32,19 +32,19 @@ it('renders the simplified dashboard with creation buttons and saved recipes', f
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'name' => $recipe->name,
-        'is_draft' => true,
-        'version_number' => 1,
+        'name' => 'Dashboard Published Formula',
+        'is_draft' => false,
+        'version_number' => 2,
+        'saved_at' => now(),
     ]);
     RecipeVersion::factory()->create([
         'recipe_id' => $recipe->id,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'name' => 'Dashboard Published Formula',
-        'is_draft' => false,
-        'version_number' => 2,
-        'saved_at' => now(),
+        'name' => $recipe->name,
+        'is_draft' => true,
+        'version_number' => 3,
     ]);
 
     $this->actingAs($user)
@@ -53,8 +53,9 @@ it('renders the simplified dashboard with creation buttons and saved recipes', f
         ->assertSee('Create soap formula')
         ->assertSee('Create formula')
         ->assertSee('Dashboard Test Formula')
-        ->assertSee('Open working draft')
-        ->assertSee('Use as draft')
+        ->assertSee('Open draft')
+        ->assertSee('Open recipe')
+        ->assertSee('Duplicate')
         ->assertSee('Personal ingredients');
 });
 

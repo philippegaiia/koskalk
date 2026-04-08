@@ -8,8 +8,8 @@ return [
 
     'recipe_featured_images' => [
         'max_size_kb' => 1024,
-        'max_width' => 1200,
-        'max_height' => 900,
+        'max_width' => 800,
+        'max_height' => 600,
         'quality' => 85,
     ],
 

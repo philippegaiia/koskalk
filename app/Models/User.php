@@ -22,6 +22,11 @@ class User extends Authenticatable implements FilamentUser
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    /**
+     * @var array<int, int>|null
+     */
+    private ?array $cachedAccessibleWorkspaceIds = null;
+
     public function ownedWorkspaces(): HasMany
     {
         return $this->hasMany(Workspace::class, 'owner_user_id');
@@ -30,6 +35,21 @@ class User extends Authenticatable implements FilamentUser
     public function workspaceMemberships(): HasMany
     {
         return $this->hasMany(WorkspaceMember::class);
+    }
+
+    public function ingredientPrices(): HasMany
+    {
+        return $this->hasMany(UserIngredientPrice::class);
+    }
+
+    public function packagingItems(): HasMany
+    {
+        return $this->hasMany(UserPackagingItem::class);
+    }
+
+    public function recipeVersionCostings(): HasMany
+    {
+        return $this->hasMany(RecipeVersionCosting::class);
     }
 
     public function workspaces(): BelongsToMany
@@ -44,7 +64,11 @@ class User extends Authenticatable implements FilamentUser
      */
     public function accessibleWorkspaceIds(): array
     {
-        return array_values(array_unique(array_merge(
+        if ($this->cachedAccessibleWorkspaceIds !== null) {
+            return $this->cachedAccessibleWorkspaceIds;
+        }
+
+        $this->cachedAccessibleWorkspaceIds = array_values(array_unique(array_merge(
             Workspace::withoutGlobalScopes()
                 ->where('owner_user_id', $this->id)
                 ->pluck('id')
@@ -54,6 +78,8 @@ class User extends Authenticatable implements FilamentUser
                 ->pluck('workspace_id')
                 ->all(),
         )));
+
+        return $this->cachedAccessibleWorkspaceIds;
     }
 
     public function workspaceRoleFor(int $workspaceId): ?WorkspaceMemberRole

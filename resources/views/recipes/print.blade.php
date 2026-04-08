@@ -6,7 +6,7 @@
     $oilUnit = $snapshot['draft']['oilUnit'] ?? 'g';
 @endphp
 
-@section('title', $recipe->name.' · v'.$version->version_number.' · '.($isDetailsMode ? 'Full Details' : 'Recipe Print'))
+@section('title', $recipe->name.' · Saved Formula · '.($isDetailsMode ? 'Full Details' : 'Recipe Print'))
 
 @section('content')
     <div class="space-y-6 text-[15px] leading-6 text-slate-900">
@@ -17,13 +17,13 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('recipes.version', ['recipe' => $recipe->id, 'version' => $version->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">
-                    Back to version
+                <a href="{{ route('recipes.saved', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">
+                    Back to saved formula
                 </a>
-                <a href="{{ route('recipes.print.recipe', ['recipe' => $recipe->id, 'version' => $version->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border px-4 py-2 text-sm font-medium transition {{ $isDetailsMode ? 'border-slate-300 text-slate-600 hover:bg-slate-50' : 'border-slate-800 text-slate-900' }}">
+                <a href="{{ route('recipes.print.recipe', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border px-4 py-2 text-sm font-medium transition {{ $isDetailsMode ? 'border-slate-300 text-slate-600 hover:bg-slate-50' : 'border-slate-800 text-slate-900' }}">
                     Recipe
                 </a>
-                <a href="{{ route('recipes.print.details', ['recipe' => $recipe->id, 'version' => $version->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border px-4 py-2 text-sm font-medium transition {{ $isDetailsMode ? 'border-slate-800 text-slate-900' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">
+                <a href="{{ route('recipes.print.details', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border px-4 py-2 text-sm font-medium transition {{ $isDetailsMode ? 'border-slate-800 text-slate-900' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">
                     Full details
                 </a>
                 <button type="button" onclick="window.print()" class="inline-flex rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">
@@ -38,7 +38,7 @@
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ $isDetailsMode ? 'Full recipe details' : 'Recipe sheet' }}</p>
                         <h1 class="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-950">{{ $recipe->name }}</h1>
-                        <p class="mt-2 text-sm text-slate-600">Saved version v{{ $version->version_number }}</p>
+                        <p class="mt-2 text-sm text-slate-600">Current saved formula</p>
                     </div>
                     <div class="text-sm text-slate-600 sm:text-right">
                         <div>Saved {{ $version->saved_at?->format('Y-m-d H:i') ?? 'not recorded yet' }}</div>
@@ -103,7 +103,7 @@
                         <div class="flex flex-col gap-2 border-b border-slate-300 pb-2 sm:flex-row sm:items-end sm:justify-between">
                             <div>
                                 <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">{{ $section['label'] }}</h2>
-                                <p class="mt-1 text-xs text-slate-500">Locked percentages from the saved version, recalculated on the selected oil basis.</p>
+                                <p class="mt-1 text-xs text-slate-500">Locked percentages from the current saved formula, recalculated on the selected oil basis.</p>
                             </div>
                             <div class="text-xs text-slate-500">
                                 {{ $formatNumber($section['total_percentage']) }}% oils · {{ $formatNumber($section['total_weight']) }} {{ $oilUnit }}
@@ -158,10 +158,27 @@
 
             @if ($isDetailsMode)
                 <section class="mt-6 border-t border-slate-300 pt-6">
+                    @php($listVariants = $snapshot['labeling']['list_variants'] ?? [])
                     <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Ingredient list preview</h2>
-                    <div class="mt-3 border border-slate-200 px-4 py-3 text-sm leading-7 text-slate-900">
-                        {{ $snapshot['labeling']['final_label_text'] ?? 'No generated ingredient list yet.' }}
-                    </div>
+                    @if ($listVariants !== [])
+                        <div class="mt-3 grid gap-3 lg:grid-cols-2">
+                            @foreach ($listVariants as $variant)
+                                <div class="border border-slate-200 px-4 py-3">
+                                    <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{{ $variant['label'] }}</p>
+                                    @if (filled($variant['note'] ?? null))
+                                        <p class="mt-2 text-xs leading-5 text-slate-500">{{ $variant['note'] }}</p>
+                                    @endif
+                                    <p class="mt-3 text-[0.95rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-slate-900">
+                                        {{ $variant['final_label_text'] ?: 'No generated ingredient list yet.' }}
+                                    </p>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="mt-3 border border-slate-200 px-4 py-3 text-[0.95rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-slate-900">
+                            {{ $snapshot['labeling']['final_label_text'] ?? 'No generated ingredient list yet.' }}
+                        </div>
+                    @endif
 
                     @if (($snapshot['labeling']['warnings'] ?? []) !== [])
                         <div class="mt-3 space-y-2">
@@ -176,6 +193,7 @@
 
                 <section class="mt-6">
                     <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">Declaration details</h2>
+                    <p class="mt-1 text-xs leading-5 text-slate-500">Threshold statuses below correspond to the default soap-style list.</p>
                     @if (($snapshot['labeling']['declaration_rows'] ?? []) !== [])
                         <div class="mt-3 overflow-hidden border border-slate-200">
                             <table class="min-w-full text-sm">
@@ -205,7 +223,7 @@
                         </div>
                     @else
                         <div class="mt-3 border border-slate-200 px-4 py-3 text-sm text-slate-600">
-                            No declaration rows are available for this saved version yet.
+                            No declaration rows are available for this saved formula yet.
                         </div>
                     @endif
                 </section>

@@ -29,11 +29,75 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         @livewireStyles
     </head>
-    <body x-data="{ mobileNavOpen: false }" class="min-h-screen bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
-        <div class="relative min-h-screen lg:grid lg:grid-cols-[17rem_minmax(0,1fr)]">
-            <div x-cloak x-show="mobileNavOpen" x-transition.opacity class="fixed inset-0 z-40 bg-black/35 lg:hidden" @click="mobileNavOpen = false"></div>
+    <body
+        x-data="{
+            navStorageKey: 'koskalk:sidebar-open',
+            navOpen: true,
+            isDesktop: window.innerWidth >= 1024,
+            initNavState() {
+                const storedValue = window.localStorage.getItem(this.navStorageKey);
 
-            <aside :class="mobileNavOpen ? 'translate-x-0' : ''" class="fixed inset-y-0 left-0 z-50 w-72 -translate-x-full border-r border-[var(--color-line)] bg-[var(--color-panel-strong)] px-5 py-6 transition duration-300 lg:static lg:z-auto lg:w-auto lg:translate-x-0 lg:border-b-0">
+                if (storedValue === null) {
+                    this.navOpen = this.isDesktop;
+
+                    return;
+                }
+
+                this.navOpen = storedValue === 'true';
+            },
+            persistNavState() {
+                window.localStorage.setItem(this.navStorageKey, this.navOpen ? 'true' : 'false');
+            },
+            syncViewport() {
+                this.isDesktop = window.innerWidth >= 1024;
+
+                if (! this.isDesktop) {
+                    this.navOpen = false;
+
+                    return;
+                }
+
+                this.initNavState();
+            },
+            sidebarGridStyle() {
+                if (! this.isDesktop) {
+                    return null;
+                }
+
+                return `grid-template-columns: ${this.navOpen ? '17rem minmax(0, 1fr)' : '0 minmax(0, 1fr)'};`;
+            },
+            sidebarStyle() {
+                if (! this.isDesktop) {
+                    return null;
+                }
+
+                return this.navOpen
+                    ? 'width: 17rem; opacity: 1; padding: 1.5rem 1.25rem; border-right-width: 1px; pointer-events: auto;'
+                    : 'width: 0; opacity: 0; padding: 0; border-right-width: 0; pointer-events: none;';
+            },
+            toggleNav() {
+                this.navOpen = ! this.navOpen;
+                this.persistNavState();
+            },
+            closeNav() {
+                this.navOpen = false;
+                this.persistNavState();
+            },
+        }"
+        x-init="syncViewport()"
+        @resize.window.debounce.150ms="syncViewport()"
+        class="min-h-screen bg-[var(--color-surface)] text-[var(--color-ink)] antialiased"
+    >
+        <div :style="sidebarGridStyle()" class="relative min-h-screen lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] transition-[grid-template-columns] duration-300 lg:transition-none">
+            <div x-cloak x-show="navOpen && ! isDesktop" x-transition.opacity class="fixed inset-0 z-40 bg-black/35 lg:hidden" @click="closeNav()"></div>
+
+            <aside
+                :class="navOpen
+                    ? 'translate-x-0'
+                    : '-translate-x-full lg:translate-x-0 lg:w-0 lg:px-0 lg:py-0 lg:opacity-0 lg:border-r-0 lg:pointer-events-none'"
+                :style="sidebarStyle()"
+                class="fixed inset-y-0 left-0 z-50 w-72 overflow-hidden border-r border-[var(--color-line)] bg-[var(--color-panel-strong)] px-5 py-6 transition-all duration-300 lg:static lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:border-b-0 lg:opacity-100 lg:transition-none"
+            >
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
                         <span class="grid size-10 place-items-center rounded-full border border-[var(--color-line-strong)] bg-white text-xs font-semibold tracking-[0.22em] uppercase text-[var(--color-ink-strong)]">KK</span>
@@ -43,20 +107,27 @@
                         </div>
                     </div>
 
-                    <button type="button" @click="mobileNavOpen = false" class="grid size-10 place-items-center rounded-2xl border border-[var(--color-line)] bg-white text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)] lg:hidden">
+                    <button type="button" @click="closeNav()" class="grid size-10 place-items-center rounded-2xl border border-[var(--color-line)] bg-white text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)] lg:hidden">
                         <span class="sr-only">Close menu</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18 18 6M6 6l12 12" />
                         </svg>
                     </button>
+
+                    <button type="button" @click="toggleNav()" class="hidden size-10 place-items-center rounded-2xl border border-[var(--color-line)] bg-white text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)] lg:grid">
+                        <span class="sr-only">Collapse menu</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="m15 18-6-6 6-6" />
+                        </svg>
+                    </button>
                 </div>
 
                 <nav class="mt-8 grid gap-2 text-sm">
-                    <a href="{{ route('dashboard') }}" wire:navigate @click="mobileNavOpen = false" class="{{ request()->routeIs('dashboard') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Dashboard</a>
-                    <a href="{{ route('recipes.index') }}" wire:navigate @click="mobileNavOpen = false" class="{{ request()->routeIs('recipes.*') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Recipes</a>
-                    <a href="{{ route('ingredients.index') }}" wire:navigate @click="mobileNavOpen = false" class="{{ request()->routeIs('ingredients.*') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Ingredients</a>
-                    <a href="#" @click="mobileNavOpen = false" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Compliance</a>
-                    <a href="/admin" @click="mobileNavOpen = false" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Admin</a>
+                    <a href="{{ route('dashboard') }}" wire:navigate @click="if (! isDesktop) closeNav()" class="{{ request()->routeIs('dashboard') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Dashboard</a>
+                    <a href="{{ route('recipes.index') }}" wire:navigate @click="if (! isDesktop) closeNav()" class="{{ request()->routeIs('recipes.*') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Recipes</a>
+                    <a href="{{ route('ingredients.index') }}" wire:navigate @click="if (! isDesktop) closeNav()" class="{{ request()->routeIs('ingredients.*') ? 'border border-[var(--color-line)] bg-white font-medium text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)] hover:bg-white/70 hover:text-[var(--color-ink-strong)]' }} rounded-2xl px-4 py-3 transition">Ingredients</a>
+                    <a href="#" @click="if (! isDesktop) closeNav()" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Compliance</a>
+                    <a href="/admin" @click="if (! isDesktop) closeNav()" class="rounded-2xl px-4 py-3 text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)]">Admin</a>
                 </nav>
 
                 <div class="mt-8 rounded-3xl border border-[var(--color-line)] bg-white p-4">
@@ -65,20 +136,26 @@
                 </div>
             </aside>
 
-            <div class="flex min-h-screen flex-col">
+            <div class="flex min-h-screen min-w-0 flex-col">
                 <header class="border-b border-[var(--color-line)] bg-white/92 px-6 py-4 backdrop-blur lg:px-8">
                     <div class="flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3">
-                            <button type="button" @click="mobileNavOpen = true" class="grid size-11 place-items-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-strong)] transition hover:bg-white lg:hidden">
-                                <span class="sr-only">Open menu</span>
+                            <button
+                                type="button"
+                                @click="toggleNav()"
+                                :class="navOpen && isDesktop ? 'lg:pointer-events-none lg:-translate-x-2 lg:opacity-0' : ''"
+                                class="grid size-11 place-items-center rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-strong)] transition hover:bg-white"
+                            >
+                                <span class="sr-only" x-text="navOpen ? 'Hide menu' : 'Show menu'"></span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 7h16M4 12h16M4 17h16" />
+                                    <path x-show="! navOpen || ! isDesktop" x-cloak stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M4 7h16M4 12h16M4 17h16" />
+                                    <path x-show="navOpen && ! isDesktop" x-cloak stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18 18 6M6 6l12 12" />
                                 </svg>
                             </button>
 
                             <div>
-                            <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">@yield('page_heading', 'Dashboard')</h2>
-                        </div>
+                                <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">@yield('page_heading', 'Dashboard')</h2>
+                            </div>
                         </div>
 
                         <a href="{{ route('home') }}" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Home</a>

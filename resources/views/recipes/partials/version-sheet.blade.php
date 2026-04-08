@@ -59,7 +59,7 @@
                 </div>
             @else
                 <div class="mt-4 rounded-[1.5rem] border border-dashed border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
-                    This saved version is not using the soap calculation engine, so no lye or water sheet is shown here.
+                    This saved formula is not using the soap calculation engine, so no lye or water sheet is shown here.
                 </div>
             @endif
         </article>
@@ -72,7 +72,7 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">{{ $section['label'] }}</p>
-                            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Percentages stay locked to the saved version. Only the oil quantity basis changes.</p>
+                            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Percentages stay locked to the current saved formula. Only the oil quantity basis changes.</p>
                         </div>
                         <div class="flex flex-wrap gap-2 text-xs text-[var(--color-ink-soft)]">
                             <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1">{{ $formatNumber($section['total_percentage']) }}% oils</span>
@@ -131,10 +131,11 @@
 
     @if ($showDetails)
         <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
+            @php($listVariants = $snapshot['labeling']['list_variants'] ?? [])
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Ingredient list preview</p>
-                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Generated from the saved version with the currently selected oil quantity basis.</p>
+                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Generated from the current saved formula with the selected oil quantity basis.</p>
                 </div>
                 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">EU preview</span>
             </div>
@@ -149,15 +150,31 @@
                 </div>
             @endif
 
-            <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-4 text-lg leading-9 text-[var(--color-ink-strong)]">
-                {{ $snapshot['labeling']['final_label_text'] ?? 'No generated ingredient list yet.' }}
-            </div>
+            @if ($listVariants !== [])
+                <div class="mt-4 grid gap-4 xl:grid-cols-2">
+                    @foreach ($listVariants as $variant)
+                        <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-4">
+                            <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">{{ $variant['label'] }}</p>
+                            @if (filled($variant['note'] ?? null))
+                                <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ $variant['note'] }}</p>
+                            @endif
+                            <p class="mt-3 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
+                                {{ $variant['final_label_text'] ?: 'No generated ingredient list yet.' }}
+                            </p>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="mt-4 rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-4 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
+                    {{ $snapshot['labeling']['final_label_text'] ?? 'No generated ingredient list yet.' }}
+                </div>
+            @endif
         </section>
 
         <section class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
             <div class="border-b border-[var(--color-line)] px-5 py-4">
                 <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Declaration details</p>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Threshold-based declarations are shown here with their current contribution to the selected batch basis.</p>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Threshold-based declarations are shown here with their current contribution to the selected batch basis for the default soap-style list.</p>
             </div>
 
             @if (($snapshot['labeling']['declaration_rows'] ?? []) !== [])
@@ -189,7 +206,7 @@
                 </div>
             @else
                 <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
-                    No declaration rows are available for this saved version yet.
+                    No declaration rows are available for this saved formula yet.
                 </div>
             @endif
         </section>

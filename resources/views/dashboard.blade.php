@@ -9,7 +9,7 @@
             <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
                 <div class="min-w-0">
                     <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Workspace</p>
-                    <h3 class="mt-3 max-w-4xl text-2xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)] sm:text-3xl lg:text-4xl">Create formulas, keep one working draft, and reuse saved versions without losing clarity.</h3>
+                    <h3 class="mt-3 max-w-4xl text-2xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)] sm:text-3xl lg:text-4xl">Create formulas, keep one working draft, and save the current formula without extra version clutter.</h3>
                     <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)] sm:text-[15px]">
                         The dashboard is the real home for the formulation app. It should show what matters immediately: what you can create, what is already saved, and what personal ingredients belong to you.
                     </p>
@@ -35,12 +35,12 @@
             <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
                 <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Current drafts</p>
                 <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">{{ $draftCount }}</p>
-                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">One working draft stays editable. Saved versions remain frozen until you intentionally use one as the draft.</p>
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">One working draft stays editable so you can experiment before replacing the saved formula.</p>
             </div>
             <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Published versions</p>
-                <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">{{ $publishedVersionCount }}</p>
-                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Versioning stays explicit, so history remains clean and meaningful.</p>
+                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Saved formulas</p>
+                <p class="mt-4 text-4xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">{{ $savedFormulaCount }}</p>
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Each recipe can keep one current saved formula, while hidden recovery snapshots stay out of the way.</p>
             </div>
         </section>
 
@@ -49,7 +49,7 @@
                 <div class="flex items-center justify-between border-b border-[var(--color-line)] px-5 py-4">
                     <div>
                         <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Recipes</p>
-                        <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Your saved formulas and their statuses</h3>
+                        <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Your saved formulas and draft states</h3>
                     </div>
                     <a href="{{ route('recipes.index') }}" wire:navigate class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
                         View all
@@ -74,64 +74,40 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <h4 class="truncate text-lg font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
-                                            @if ($recipe->currentDraftVersion && $recipe->published_versions_count > 0)
-                                                <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Draft + versioned</span>
-                                            @elseif ($recipe->currentDraftVersion)
+                                            @if ($recipe->currentDraftVersion)
                                                 <span class="rounded-full border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-3 py-1 text-xs font-medium text-[var(--color-warning-strong)]">Draft</span>
-                                            @else
-                                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Versioned</span>
+                                            @endif
+                                            @if ($recipe->currentSavedVersion)
+                                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Saved</span>
                                             @endif
                                         </div>
                                         <div class="mt-3 flex flex-wrap gap-2">
                                             <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
                                                 {{ $recipe->productFamily?->name ?? 'Formula' }}
                                             </span>
-                                            @if ($recipe->currentDraftVersion)
-                                                <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
-                                                    Draft v{{ $recipe->currentDraftVersion->version_number }}
-                                                </span>
-                                            @endif
-                                            @if ($recipe->published_versions_count > 0)
-                                                <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
-                                                    {{ $recipe->published_versions_count }} {{ \Illuminate\Support\Str::plural('version', $recipe->published_versions_count) }}
-                                                </span>
-                                            @endif
                                         </div>
+                                        <p class="mt-3 text-xs text-[var(--color-ink-soft)]">
+                                            Last updated {{ $recipe->updated_at?->diffForHumans() ?? 'just now' }}
+                                        </p>
                                     </div>
 
                                     <div class="flex flex-wrap gap-2">
-                                        <span class="inline-flex items-center rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2 text-sm text-[var(--color-ink-soft)]">
-                                            Updated {{ $recipe->updated_at?->diffForHumans() ?? 'just now' }}
-                                        </span>
                                         <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate class="inline-flex rounded-full border border-[var(--color-line-strong)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                                            Open working draft
+                                            Open draft
                                         </a>
+                                        @if ($recipe->currentSavedVersion)
+                                            <a href="{{ route('recipes.saved', $recipe->id) }}" wire:navigate class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                                Open recipe
+                                            </a>
+                                        @endif
+                                        <form method="POST" action="{{ route('recipes.duplicate', $recipe->id) }}">
+                                            @csrf
+                                            <button type="submit" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                                Duplicate
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
-
-                                @if ($recipe->publishedVersions->isNotEmpty())
-                                    <div class="mt-4 space-y-2">
-                                        @foreach ($recipe->publishedVersions as $version)
-                                            <div class="flex flex-col gap-2 rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                                <div class="min-w-0">
-                                                    <p class="text-sm font-medium text-[var(--color-ink-strong)]">v{{ $version->version_number }} · {{ $version->name }}</p>
-                                                    <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $version->saved_at?->diffForHumans() ?? 'Saved' }}</p>
-                                                </div>
-                                                <div class="flex flex-wrap gap-2">
-                                                    <a href="{{ route('recipes.version', ['recipe' => $recipe->id, 'version' => $version->id]) }}" wire:navigate class="inline-flex rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">
-                                                        View
-                                                    </a>
-                                                    <form method="POST" action="{{ route('recipes.use-version-as-draft', ['recipe' => $recipe->id, 'version' => $version->id]) }}">
-                                                        @csrf
-                                                        <button type="submit" class="inline-flex rounded-full bg-[var(--color-ink-strong)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
-                                                            Use as draft
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                @endif
                             </article>
                         @endforeach
                     </div>

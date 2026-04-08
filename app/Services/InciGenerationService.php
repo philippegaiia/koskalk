@@ -7,6 +7,10 @@ use Illuminate\Support\Str;
 
 class InciGenerationService
 {
+    private const DEFAULT_LIST_VARIANT_KEY = 'saponified_with_superfat';
+
+    private const INCORPORATED_LIST_VARIANT_KEY = 'incorporated_ingredients';
+
     /**
      * @var array<int, Ingredient|null>
      */
@@ -40,6 +44,32 @@ class InciGenerationService
      *         source_ingredients: array<int, string>,
      *         notes: string|null
      *     }>,
+     *     list_variants: array<int, array{
+     *         key: string,
+     *         label: string,
+     *         note: string,
+     *         ingredient_rows: array<int, array{
+     *             label: string,
+     *             weight: float,
+     *             percent_of_formula: float,
+     *             kind: string,
+     *             source_ingredients: array<int, string>
+     *         }>,
+     *         declaration_rows: array<int, array{
+     *             label: string,
+     *             percent_of_formula: float,
+     *             threshold_percent: float,
+     *             exceeds_threshold: bool,
+     *             included_in_inci: bool,
+     *             suppressed_by_existing_label: bool,
+     *             status_label: string,
+     *             source_ingredients: array<int, string>,
+     *             notes: string|null
+     *         }>,
+     *         final_labels: array<int, string>,
+     *         final_label_text: string
+     *     }>,
+     *     default_variant_key: string,
      *     final_labels: array<int, string>,
      *     final_label_text: string,
      *     warnings: array<int, string>
@@ -48,49 +78,265 @@ class InciGenerationService
     public function generate(array $payload, ?array $soapCalculation = null): array
     {
         $this->ingredientCache = [];
+        $this->preloadIngredientsForPayload($payload);
 
         $rowContexts = $this->resolveRowContexts($payload);
         $basis = $this->basisState($payload, $rowContexts, $soapCalculation);
-        $ingredientRowsState = $this->ingredientRowsState($payload, $rowContexts, $basis['formula_weight'], $soapCalculation);
-        $declarationRows = $this->declarationRows(
-            $rowContexts,
-            $ingredientRowsState['label_keys'],
-            $basis['formula_weight'],
-            $basis['threshold_percent'],
-        );
+        $listVariants = $this->listVariants($payload, $rowContexts, $basis, $soapCalculation);
+        $defaultVariant = $this->defaultListVariant($listVariants);
 
         return [
             'basis' => $basis,
-            'ingredient_rows' => $ingredientRowsState['rows'],
-            'declaration_rows' => $declarationRows,
-            'final_labels' => [
-                ...array_map(
-                    fn (array $row): string => $row['label'],
-                    $ingredientRowsState['rows'],
-                ),
-                ...array_map(
-                    fn (array $row): string => $row['label'],
-                    array_values(array_filter(
-                        $declarationRows,
-                        fn (array $row): bool => $row['included_in_inci'],
-                    )),
-                ),
-            ],
-            'final_label_text' => implode(', ', [
-                ...array_map(
-                    fn (array $row): string => $row['label'],
-                    $ingredientRowsState['rows'],
-                ),
-                ...array_map(
-                    fn (array $row): string => $row['label'],
-                    array_values(array_filter(
-                        $declarationRows,
-                        fn (array $row): bool => $row['included_in_inci'],
-                    )),
-                ),
-            ]),
-            'warnings' => $this->warnings($payload, $rowContexts, $ingredientRowsState['fallback_warnings'], $soapCalculation),
+            'ingredient_rows' => $defaultVariant['ingredient_rows'],
+            'declaration_rows' => $defaultVariant['declaration_rows'],
+            'list_variants' => $listVariants,
+            'default_variant_key' => $defaultVariant['key'],
+            'final_labels' => $defaultVariant['final_labels'],
+            'final_label_text' => $defaultVariant['final_label_text'],
+            'warnings' => $this->warnings($payload, $rowContexts, $this->variantWarnings($listVariants), $soapCalculation),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string
+     * }>  $rowContexts
+     * @param  array{
+     *     label: string,
+     *     note: string,
+     *     formula_weight: float,
+     *     threshold_percent: float
+     * }  $basis
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array<int, array{
+     *     key: string,
+     *     label: string,
+     *     note: string,
+     *     ingredient_rows: array<int, array{
+     *         label: string,
+     *         weight: float,
+     *         percent_of_formula: float,
+     *         kind: string,
+     *         source_ingredients: array<int, string>
+     *     }>,
+     *     declaration_rows: array<int, array{
+     *         label: string,
+     *         percent_of_formula: float,
+     *         threshold_percent: float,
+     *         exceeds_threshold: bool,
+     *         included_in_inci: bool,
+     *         suppressed_by_existing_label: bool,
+     *         status_label: string,
+     *         source_ingredients: array<int, string>,
+     *         notes: string|null
+     *     }>,
+     *     final_labels: array<int, string>,
+     *     final_label_text: string,
+     *     warnings: array<int, string>
+     * }>
+     */
+    private function listVariants(
+        array $payload,
+        array $rowContexts,
+        array $basis,
+        ?array $soapCalculation,
+    ): array {
+        $variantDefinitions = [
+            [
+                'key' => self::DEFAULT_LIST_VARIANT_KEY,
+                'label' => 'Saponified + superfat oils',
+                'note' => 'Uses saponified oil names while also listing the theoretical unsaponified share from the selected superfat percentage.',
+            ],
+            [
+                'key' => self::INCORPORATED_LIST_VARIANT_KEY,
+                'label' => 'Incorporated ingredients',
+                'note' => 'Lists ingredients as incorporated before saponification, then appends qualifying allergens.',
+            ],
+        ];
+
+        return array_map(function (array $definition) use ($payload, $rowContexts, $basis, $soapCalculation): array {
+            $ingredientRowsState = $this->ingredientRowsState(
+                $payload,
+                $rowContexts,
+                $basis['formula_weight'],
+                $soapCalculation,
+                $definition['key'],
+            );
+            $declarationRows = $this->declarationRows(
+                $rowContexts,
+                $ingredientRowsState['label_keys'],
+                $basis['formula_weight'],
+                $basis['threshold_percent'],
+            );
+            $finalLabels = $this->finalLabels($ingredientRowsState['rows'], $declarationRows);
+
+            return [
+                'key' => $definition['key'],
+                'label' => $definition['label'],
+                'note' => $definition['note'],
+                'ingredient_rows' => $ingredientRowsState['rows'],
+                'declaration_rows' => $declarationRows,
+                'final_labels' => $finalLabels,
+                'final_label_text' => implode(', ', $finalLabels),
+                'warnings' => $ingredientRowsState['fallback_warnings'],
+            ];
+        }, $variantDefinitions);
+    }
+
+    /**
+     * @param  array<int, array{
+     *     key: string,
+     *     label: string,
+     *     note: string,
+     *     ingredient_rows: array<int, array{
+     *         label: string,
+     *         weight: float,
+     *         percent_of_formula: float,
+     *         kind: string,
+     *         source_ingredients: array<int, string>
+     *     }>,
+     *     declaration_rows: array<int, array{
+     *         label: string,
+     *         percent_of_formula: float,
+     *         threshold_percent: float,
+     *         exceeds_threshold: bool,
+     *         included_in_inci: bool,
+     *         suppressed_by_existing_label: bool,
+     *         status_label: string,
+     *         source_ingredients: array<int, string>,
+     *         notes: string|null
+     *     }>,
+     *     final_labels: array<int, string>,
+     *     final_label_text: string,
+     *     warnings: array<int, string>
+     * }>  $listVariants
+     * @return array{
+     *     key: string,
+     *     label: string,
+     *     note: string,
+     *     ingredient_rows: array<int, array{
+     *         label: string,
+     *         weight: float,
+     *         percent_of_formula: float,
+     *         kind: string,
+     *         source_ingredients: array<int, string>
+     *     }>,
+     *     declaration_rows: array<int, array{
+     *         label: string,
+     *         percent_of_formula: float,
+     *         threshold_percent: float,
+     *         exceeds_threshold: bool,
+     *         included_in_inci: bool,
+     *         suppressed_by_existing_label: bool,
+     *         status_label: string,
+     *         source_ingredients: array<int, string>,
+     *         notes: string|null
+     *     }>,
+     *     final_labels: array<int, string>,
+     *     final_label_text: string,
+     *     warnings: array<int, string>
+     * }
+     */
+    private function defaultListVariant(array $listVariants): array
+    {
+        foreach ($listVariants as $variant) {
+            if ($variant['key'] === self::DEFAULT_LIST_VARIANT_KEY) {
+                return $variant;
+            }
+        }
+
+        return $listVariants[0] ?? [
+            'key' => self::DEFAULT_LIST_VARIANT_KEY,
+            'label' => 'Saponified + superfat oils',
+            'note' => '',
+            'ingredient_rows' => [],
+            'declaration_rows' => [],
+            'final_labels' => [],
+            'final_label_text' => '',
+            'warnings' => [],
+        ];
+    }
+
+    /**
+     * @param  array<int, array{
+     *     label: string,
+     *     weight: float,
+     *     percent_of_formula: float,
+     *     kind: string,
+     *     source_ingredients: array<int, string>
+     * }>  $ingredientRows
+     * @param  array<int, array{
+     *     label: string,
+     *     percent_of_formula: float,
+     *     threshold_percent: float,
+     *     exceeds_threshold: bool,
+     *     included_in_inci: bool,
+     *     suppressed_by_existing_label: bool,
+     *     status_label: string,
+     *     source_ingredients: array<int, string>,
+     *     notes: string|null
+     * }>  $declarationRows
+     * @return array<int, string>
+     */
+    private function finalLabels(array $ingredientRows, array $declarationRows): array
+    {
+        return [
+            ...array_map(
+                fn (array $row): string => $row['label'],
+                $ingredientRows,
+            ),
+            ...array_map(
+                fn (array $row): string => $row['label'],
+                array_values(array_filter(
+                    $declarationRows,
+                    fn (array $row): bool => $row['included_in_inci'],
+                )),
+            ),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{
+     *     key: string,
+     *     label: string,
+     *     note: string,
+     *     ingredient_rows: array<int, array{
+     *         label: string,
+     *         weight: float,
+     *         percent_of_formula: float,
+     *         kind: string,
+     *         source_ingredients: array<int, string>
+     *     }>,
+     *     declaration_rows: array<int, array{
+     *         label: string,
+     *         percent_of_formula: float,
+     *         threshold_percent: float,
+     *         exceeds_threshold: bool,
+     *         included_in_inci: bool,
+     *         suppressed_by_existing_label: bool,
+     *         status_label: string,
+     *         source_ingredients: array<int, string>,
+     *         notes: string|null
+     *     }>,
+     *     final_labels: array<int, string>,
+     *     final_label_text: string,
+     *     warnings: array<int, string>
+     * }>  $listVariants
+     * @return array<int, string>
+     */
+    private function variantWarnings(array $listVariants): array
+    {
+        $warnings = [];
+
+        foreach ($listVariants as $variant) {
+            $warnings = [...$warnings, ...$variant['warnings']];
+        }
+
+        return array_values(array_unique($warnings));
     }
 
     /**
@@ -142,18 +388,89 @@ class InciGenerationService
         ));
     }
 
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function preloadIngredientsForPayload(array $payload): void
+    {
+        $phaseItems = is_array($payload['phase_items'] ?? null) ? $payload['phase_items'] : [];
+        $ingredientIds = [];
+
+        foreach (['saponified_oils', 'additives', 'fragrance'] as $phaseKey) {
+            $rows = is_array($phaseItems[$phaseKey] ?? null) ? $phaseItems[$phaseKey] : [];
+
+            foreach ($rows as $row) {
+                if (! is_array($row) || ! filled($row['ingredient_id'] ?? null)) {
+                    continue;
+                }
+
+                $ingredientIds[] = (int) $row['ingredient_id'];
+            }
+        }
+
+        $this->preloadIngredientGraph($ingredientIds);
+    }
+
+    /**
+     * @param  array<int, int>  $ingredientIds
+     */
+    private function preloadIngredientGraph(array $ingredientIds): void
+    {
+        $pendingIds = collect($ingredientIds)
+            ->filter(fn (mixed $id): bool => is_int($id) && $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        while ($pendingIds !== []) {
+            $idsToLoad = array_values(array_filter(
+                $pendingIds,
+                fn (int $id): bool => ! array_key_exists($id, $this->ingredientCache),
+            ));
+
+            if ($idsToLoad === []) {
+                break;
+            }
+
+            $loadedIngredients = Ingredient::query()
+                ->with($this->ingredientGraphRelations())
+                ->whereKey($idsToLoad)
+                ->get()
+                ->keyBy('id');
+
+            foreach ($idsToLoad as $ingredientId) {
+                $this->ingredientCache[$ingredientId] = $loadedIngredients->get($ingredientId);
+            }
+
+            $pendingIds = $loadedIngredients
+                ->flatMap(fn (Ingredient $ingredient) => $ingredient->components->pluck('component_ingredient_id'))
+                ->filter(fn (mixed $id): bool => is_int($id) && $id > 0)
+                ->unique()
+                ->values()
+                ->all();
+        }
+    }
+
     private function ingredientById(int $ingredientId): ?Ingredient
     {
         if (! array_key_exists($ingredientId, $this->ingredientCache)) {
             $this->ingredientCache[$ingredientId] = Ingredient::query()
-                ->with([
-                    'allergenEntries.allergen',
-                    'components.componentIngredient',
-                ])
+                ->with($this->ingredientGraphRelations())
                 ->find($ingredientId);
         }
 
         return $this->ingredientCache[$ingredientId];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function ingredientGraphRelations(): array
+    {
+        return [
+            'allergenEntries.allergen',
+            'components',
+        ];
     }
 
     /**
@@ -309,57 +626,58 @@ class InciGenerationService
         array $rowContexts,
         float $formulaWeight,
         ?array $soapCalculation,
+        string $variantKey,
     ): array {
         $rowsByLabel = [];
         $fallbackWarnings = [];
+        $thresholdPercent = $this->thresholdPercent((string) ($payload['exposure_mode'] ?? 'rinse_off'));
 
         foreach ($rowContexts as $context) {
-            $labelState = $this->ingredientListLabel(
+            $rowContributions = $this->ingredientRowContributions(
                 $context,
                 $payload,
                 $formulaWeight,
-                $this->thresholdPercent((string) ($payload['exposure_mode'] ?? 'rinse_off')),
+                $thresholdPercent,
+                $soapCalculation,
+                $variantKey,
             );
 
-            if ($labelState['label'] === null) {
-                continue;
+            foreach ($rowContributions as $contribution) {
+                if ($contribution['label'] === null || $contribution['weight'] <= 0) {
+                    continue;
+                }
+
+                if ($contribution['warning'] !== null) {
+                    $fallbackWarnings[] = $contribution['warning'];
+                }
+
+                $labelKey = $this->normalizeLabel($contribution['label']);
+
+                if (! array_key_exists($labelKey, $rowsByLabel)) {
+                    $rowsByLabel[$labelKey] = [
+                        'label' => $contribution['label'],
+                        'weight' => 0.0,
+                        'percent_of_formula' => 0.0,
+                        'kind' => $contribution['kind'],
+                        'source_ingredients' => [],
+                    ];
+                }
+
+                $rowsByLabel[$labelKey]['weight'] += $contribution['weight'];
+                $rowsByLabel[$labelKey]['kind'] = $this->mergeRowKind(
+                    $rowsByLabel[$labelKey]['kind'],
+                    $contribution['kind'],
+                );
+                $rowsByLabel[$labelKey]['source_ingredients'][] = $context['ingredient_name'];
             }
-
-            if ($labelState['warning'] !== null) {
-                $fallbackWarnings[] = $labelState['warning'];
-            }
-
-            $labelKey = $this->normalizeLabel($labelState['label']);
-
-            if (! array_key_exists($labelKey, $rowsByLabel)) {
-                $rowsByLabel[$labelKey] = [
-                    'label' => $labelState['label'],
-                    'weight' => 0.0,
-                    'percent_of_formula' => 0.0,
-                    'kind' => $labelState['kind'],
-                    'source_ingredients' => [],
-                ];
-            }
-
-            $rowsByLabel[$labelKey]['weight'] += $context['weight'];
-            $rowsByLabel[$labelKey]['source_ingredients'][] = $context['ingredient_name'];
         }
 
         if (is_array($soapCalculation) && ($payload['manufacturing_mode'] ?? 'saponify_in_formula') === 'saponify_in_formula') {
-            $this->appendStandaloneIngredientRow(
-                $rowsByLabel,
-                'AQUA',
-                (float) data_get($soapCalculation, 'lye.water.weight', 0),
-                'water',
-                'Lye water',
-            );
-            $this->appendStandaloneIngredientRow(
-                $rowsByLabel,
-                'GLYCERIN',
-                (float) data_get($soapCalculation, 'lye.selected.glycerine_weight', 0),
-                'derived',
-                'Saponification',
-            );
+            if ($variantKey === self::INCORPORATED_LIST_VARIANT_KEY) {
+                $this->appendIncorporatedIngredientRows($rowsByLabel, $soapCalculation);
+            } else {
+                $this->appendSaponifiedIngredientRows($rowsByLabel, $soapCalculation);
+            }
         }
 
         $rows = array_values(array_map(
@@ -398,6 +716,89 @@ class InciGenerationService
             ),
             'fallback_warnings' => array_values(array_unique($fallbackWarnings)),
         ];
+    }
+
+    /**
+     * @param  array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string
+     * }  $context
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array<int, array{label: string|null, weight: float, kind: string, warning: string|null}>
+     */
+    private function ingredientRowContributions(
+        array $context,
+        array $payload,
+        float $formulaWeight,
+        float $thresholdPercent,
+        ?array $soapCalculation,
+        string $variantKey,
+    ): array {
+        if ($variantKey === self::INCORPORATED_LIST_VARIANT_KEY) {
+            $labelState = $this->incorporatedIngredientLabel($context);
+
+            return [[
+                'label' => $labelState['label'],
+                'weight' => $context['weight'],
+                'kind' => $labelState['kind'],
+                'warning' => $labelState['warning'],
+            ]];
+        }
+
+        if (
+            $context['phase_key'] === 'saponified_oils'
+            && ($payload['manufacturing_mode'] ?? 'saponify_in_formula') === 'saponify_in_formula'
+        ) {
+            $superfatWeight = $context['weight'] * $this->superfatRatio($payload, $soapCalculation);
+            $saponifiedWeight = max(0.0, $context['weight'] - $superfatWeight);
+            $contributions = [];
+
+            if ($saponifiedWeight > 0) {
+                $labelState = $this->ingredientListLabel(
+                    $context,
+                    $payload,
+                    $formulaWeight,
+                    $thresholdPercent,
+                );
+
+                $contributions[] = [
+                    'label' => $labelState['label'],
+                    'weight' => $saponifiedWeight,
+                    'kind' => $labelState['kind'],
+                    'warning' => $labelState['warning'],
+                ];
+            }
+
+            if ($superfatWeight > 0) {
+                $labelState = $this->incorporatedIngredientLabel($context);
+
+                $contributions[] = [
+                    'label' => $labelState['label'],
+                    'weight' => $superfatWeight,
+                    'kind' => 'theoretical_superfat',
+                    'warning' => $labelState['warning'],
+                ];
+            }
+
+            return $contributions;
+        }
+
+        $labelState = $this->ingredientListLabel(
+            $context,
+            $payload,
+            $formulaWeight,
+            $thresholdPercent,
+        );
+
+        return [[
+            'label' => $labelState['label'],
+            'weight' => $context['weight'],
+            'kind' => $labelState['kind'],
+            'warning' => $labelState['warning'],
+        ]];
     }
 
     /**
@@ -604,6 +1005,49 @@ class InciGenerationService
      *     ingredient: Ingredient|null,
      *     ingredient_name: string
      * }  $context
+     * @return array{label: string|null, kind: string, warning: string|null}
+     */
+    private function incorporatedIngredientLabel(array $context): array
+    {
+        $ingredient = $context['ingredient'];
+        $ingredientName = $context['ingredient_name'] !== '' ? $context['ingredient_name'] : 'Unnamed ingredient';
+
+        if (! $ingredient instanceof Ingredient) {
+            return [
+                'label' => null,
+                'kind' => 'ingredient',
+                'warning' => null,
+            ];
+        }
+
+        $label = $this->normalizePrintedLabel($ingredient->inci_name);
+
+        if ($label !== null) {
+            return [
+                'label' => $this->isParfumLabel($label) ? 'PARFUM' : $label,
+                'kind' => 'ingredient',
+                'warning' => null,
+            ];
+        }
+
+        $fallbackLabel = $this->normalizePrintedLabel($ingredient->display_name);
+
+        return [
+            'label' => $fallbackLabel,
+            'kind' => 'ingredient',
+            'warning' => $fallbackLabel === null
+                ? null
+                : "{$ingredientName} is missing an INCI name, so the preview is falling back to its display name.",
+        ];
+    }
+
+    /**
+     * @param  array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string
+     * }  $context
      */
     private function declarationReplacementLabel(
         array $context,
@@ -697,6 +1141,98 @@ class InciGenerationService
         $rowsByLabel[$labelKey]['source_ingredients'][] = $sourceIngredient;
     }
 
+    private function mergeRowKind(string $existingKind, string $incomingKind): string
+    {
+        if ($existingKind === $incomingKind) {
+            return $existingKind;
+        }
+
+        $kinds = array_values(array_unique([$existingKind, $incomingKind]));
+
+        sort($kinds);
+
+        return match ($kinds) {
+            ['saponified_oil', 'theoretical_superfat'] => 'mixed_saponified_superfat',
+            default => $existingKind,
+        };
+    }
+
+    /**
+     * @param  array<string, array{
+     *     label: string,
+     *     weight: float,
+     *     percent_of_formula: float,
+     *     kind: string,
+     *     source_ingredients: array<int, string>
+     * }>  $rowsByLabel
+     * @param  array<string, mixed>  $soapCalculation
+     */
+    private function appendSaponifiedIngredientRows(array &$rowsByLabel, array $soapCalculation): void
+    {
+        $this->appendStandaloneIngredientRow(
+            $rowsByLabel,
+            'AQUA',
+            (float) data_get($soapCalculation, 'lye.water.weight', 0),
+            'water',
+            'Lye water',
+        );
+        $this->appendStandaloneIngredientRow(
+            $rowsByLabel,
+            'GLYCERIN',
+            (float) data_get($soapCalculation, 'lye.selected.glycerine_weight', 0),
+            'derived',
+            'Saponification',
+        );
+    }
+
+    /**
+     * @param  array<string, array{
+     *     label: string,
+     *     weight: float,
+     *     percent_of_formula: float,
+     *     kind: string,
+     *     source_ingredients: array<int, string>
+     * }>  $rowsByLabel
+     * @param  array<string, mixed>  $soapCalculation
+     */
+    private function appendIncorporatedIngredientRows(array &$rowsByLabel, array $soapCalculation): void
+    {
+        $this->appendStandaloneIngredientRow(
+            $rowsByLabel,
+            'AQUA',
+            (float) data_get($soapCalculation, 'lye.water.weight', 0),
+            'water',
+            'Lye water',
+        );
+        $this->appendStandaloneIngredientRow(
+            $rowsByLabel,
+            'SODIUM HYDROXIDE',
+            (float) data_get($soapCalculation, 'lye.selected.naoh_weight', 0),
+            'lye',
+            'Lye',
+        );
+        $this->appendStandaloneIngredientRow(
+            $rowsByLabel,
+            'POTASSIUM HYDROXIDE',
+            (float) data_get($soapCalculation, 'lye.selected.koh_to_weigh', 0),
+            'lye',
+            'Lye',
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $soapCalculation
+     */
+    private function superfatRatio(array $payload, ?array $soapCalculation): float
+    {
+        $superfatPercentage = is_array($soapCalculation)
+            ? (float) data_get($soapCalculation, 'lye.superfat_percentage', $payload['superfat'] ?? 0)
+            : (float) ($payload['superfat'] ?? 0);
+
+        return max(0.0, min(0.99999, $superfatPercentage / 100));
+    }
+
     private function declarationStatusLabel(float $percentOfFormula, float $thresholdPercent, bool $suppressedByExistingLabel): string
     {
         if ($percentOfFormula < $thresholdPercent) {
@@ -746,7 +1282,7 @@ class InciGenerationService
             && ! is_array($soapCalculation)
             && array_any($rowContexts, fn (array $context): bool => $context['phase_key'] === 'saponified_oils')
         ) {
-            $warnings[] = 'Soap calculation is not complete yet, so Aqua and produced glycerine are still missing from this preview.';
+            $warnings[] = 'Soap calculation is not complete yet, so Aqua, lye inputs, and produced glycerine are still missing from these previews.';
         }
 
         foreach ($rowContexts as $context) {

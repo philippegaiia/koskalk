@@ -4,7 +4,6 @@ namespace App\Livewire\Dashboard;
 
 use App\IngredientCategory;
 use App\Models\Ingredient;
-use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Services\CurrentAppUserResolver;
 use Illuminate\Contracts\View\View;
@@ -19,43 +18,38 @@ class RecipesIndex extends Component
 
     public function render(): View
     {
-        $productFamilies = ProductFamily::query()
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get()
-            ->map(fn (ProductFamily $family): array => [
-                'name' => $family->name,
-                'slug' => $family->slug,
-                'basis' => $family->calculation_basis,
-                'description' => $family->description,
-            ])
-            ->all();
-
-        $catalogStats = [
-            'carrier_oils' => Ingredient::query()
-                ->where('category', IngredientCategory::CarrierOil->value)
-                ->where('is_potentially_saponifiable', true)
-                ->count(),
-            'aromatics' => Ingredient::query()
-                ->whereIn('category', IngredientCategory::aromaticValues())
-                ->count(),
-            'additives' => Ingredient::query()
-                ->whereIn('category', [
+        $catalogStatsRow = Ingredient::query()
+            ->selectRaw(
+                '
+                COALESCE(SUM(CASE WHEN category = ? AND is_potentially_saponifiable = ? THEN 1 ELSE 0 END), 0) as carrier_oils,
+                COALESCE(SUM(CASE WHEN category IN (?, ?, ?) THEN 1 ELSE 0 END), 0) as aromatics,
+                COALESCE(SUM(CASE WHEN category IN (?, ?, ?, ?, ?, ?) THEN 1 ELSE 0 END), 0) as additives
+                ',
+                [
+                    IngredientCategory::CarrierOil->value,
+                    true,
+                    ...IngredientCategory::aromaticValues(),
                     IngredientCategory::BotanicalExtract->value,
                     IngredientCategory::Clay->value,
                     IngredientCategory::Glycol->value,
                     IngredientCategory::Additive->value,
                     IngredientCategory::Colorant->value,
                     IngredientCategory::Preservative->value,
-                ])
-                ->count(),
+                ],
+            )
+            ->first();
+
+        $catalogStats = [
+            'carrier_oils' => (int) ($catalogStatsRow?->carrier_oils ?? 0),
+            'aromatics' => (int) ($catalogStatsRow?->aromatics ?? 0),
+            'additives' => (int) ($catalogStatsRow?->additives ?? 0),
         ];
 
         $currentUser = app(CurrentAppUserResolver::class)->resolve();
         $recipes = collect();
         $recipeCount = 0;
         $draftCount = 0;
-        $publishedVersionCount = 0;
+        $savedFormulaCount = 0;
         $searchTerm = trim($this->search);
 
         if ($currentUser !== null) {
@@ -63,13 +57,7 @@ class RecipesIndex extends Component
                 ->with([
                     'productFamily',
                     'currentDraftVersion',
-                    'publishedVersions' => fn ($query) => $query
-                        ->select(['id', 'recipe_id', 'version_number', 'name', 'saved_at'])
-                        ->latest('version_number')
-                        ->limit(3),
-                ])
-                ->withCount([
-                    'versions as published_versions_count' => fn ($query) => $query->where('is_draft', false),
+                    'currentSavedVersion',
                 ])
                 ->whereNull('archived_at');
 
@@ -77,8 +65,7 @@ class RecipesIndex extends Component
                 $recipesQuery->where(function (Builder $query) use ($searchTerm): void {
                     $query
                         ->where('name', 'ilike', '%'.$searchTerm.'%')
-                        ->orWhereHas('productFamily', fn (Builder $familyQuery) => $familyQuery->where('name', 'ilike', '%'.$searchTerm.'%'))
-                        ->orWhereHas('versions', fn (Builder $versionQuery) => $versionQuery->where('name', 'ilike', '%'.$searchTerm.'%'));
+                        ->orWhereHas('productFamily', fn (Builder $familyQuery) => $familyQuery->where('name', 'ilike', '%'.$searchTerm.'%'));
                 });
             }
 
@@ -88,16 +75,15 @@ class RecipesIndex extends Component
 
             $recipeCount = $recipes->count();
             $draftCount = $recipes->filter(fn (Recipe $recipe): bool => $recipe->currentDraftVersion !== null)->count();
-            $publishedVersionCount = (int) $recipes->sum('published_versions_count');
+            $savedFormulaCount = $recipes->filter(fn (Recipe $recipe): bool => $recipe->currentSavedVersion !== null)->count();
         }
 
         return view('livewire.dashboard.recipes-index', [
             'currentUser' => $currentUser,
-            'productFamilies' => $productFamilies,
             'catalogStats' => $catalogStats,
             'recipeCount' => $recipeCount,
             'draftCount' => $draftCount,
-            'publishedVersionCount' => $publishedVersionCount,
+            'savedFormulaCount' => $savedFormulaCount,
             'recipes' => $recipes,
             'searchTerm' => $searchTerm,
         ]);

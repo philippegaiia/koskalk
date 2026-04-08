@@ -651,6 +651,61 @@ JS;
         ]);
 });
 
+it('closes the packaging picker after adding a saved catalog item to costing', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const state = {
+  openPackagingPicker: true,
+  packagingCostRows: [],
+  scheduleCostingSave() {},
+  makeLocalPackagingRowId() {
+    return `row-${this.packagingCostRows.length + 1}`;
+  },
+};
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createCostingSection', 'function createCostingSection');
+
+globalThis.createCostingSection = undefined;
+eval(`${source}\nglobalThis.createCostingSection = createCostingSection;`);
+
+Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
+
+state.addPackagingCostRow({
+  id: 91,
+  name: 'Soap box',
+  unit_cost: 0.42,
+});
+
+console.log(JSON.stringify({
+  openPackagingPicker: state.openPackagingPicker,
+  row: state.packagingCostRows[0] ?? null,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['openPackagingPicker'])->toBeFalse()
+        ->and($payload['row'])->toMatchArray([
+            'user_packaging_item_id' => 91,
+            'name' => 'Soap box',
+            'unit_cost' => 0.42,
+            'quantity' => 1,
+        ]);
+});
+
 it('keeps the save-only packaging success message visible after closing the modal', function () {
     $script = <<<'JS'
 import fs from 'node:fs';

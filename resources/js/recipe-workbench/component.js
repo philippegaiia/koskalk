@@ -94,6 +94,7 @@ function createRecipeWorkbenchState(payload) {
         costingPriceByRowId: {},
         packagingCostRows: [],
         packagingCatalog: payload.costing?.packaging_catalog ?? [],
+        openPackagingPicker: false,
         packagingCatalogForm: {
             id: null,
             name: '',

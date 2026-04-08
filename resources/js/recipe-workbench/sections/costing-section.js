@@ -25,6 +25,7 @@ const WEIGHT_FACTORS_IN_KG = {
 export function createCostingSection(payload) {
     return {
         initializeCostingState() {
+            this.openPackagingPicker = false;
             this.applyCostingPayload(payload.costing ?? null);
         },
 
@@ -242,6 +243,7 @@ export function createCostingSection(payload) {
                 },
             ];
 
+            this.openPackagingPicker = false;
             this.scheduleCostingSave();
         },
 
@@ -298,7 +300,7 @@ export function createCostingSection(payload) {
             };
         },
 
-        openPackagingCatalogModal(item = null) {
+        openPackagingCatalogModal() {
             this.packagingCatalogStatus = null;
             this.packagingCatalogMessage = '';
             this.resetPackagingCatalogForm();

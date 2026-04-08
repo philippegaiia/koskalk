@@ -219,19 +219,6 @@ class RecipeVersionCostingSynchronizer
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function deletePackagingItem(User $user, int $packagingItemId): array
-    {
-        UserPackagingItem::query()
-            ->where('user_id', $user->id)
-            ->whereKey($packagingItemId)
-            ->delete();
-
-        return $this->packagingCatalogPayload($user);
-    }
-
-    /**
-     * @return array<int, array<string, mixed>>
-     */
     public function packagingCatalogPayload(User $user): array
     {
         return UserPackagingItem::query()

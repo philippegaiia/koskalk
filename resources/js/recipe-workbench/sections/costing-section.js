@@ -74,7 +74,7 @@ export function createCostingSection(payload) {
                 user_packaging_item_id: row.user_packaging_item_id ?? null,
                 name: row.name ?? '',
                 unit_cost: row.unit_cost ?? 0,
-                quantity: row.quantity ?? 1,
+                quantity: row.components_per_unit ?? row.quantity ?? 1,
             }));
             this.packagingCatalog = costingPayload?.packaging_catalog ?? this.packagingCatalog ?? [];
             this.reconcileCostingPrices();

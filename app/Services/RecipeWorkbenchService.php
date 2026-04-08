@@ -262,9 +262,7 @@ class RecipeWorkbenchService
      */
     public function savePackagingCatalogItem(User $user, array $payload): array
     {
-        return [
-            'packaging_catalog' => $this->recipeVersionCostingSynchronizer->savePackagingItem($user, $payload),
-        ];
+        return $this->recipeVersionCostingSynchronizer->savePackagingItem($user, $payload);
     }
 
     /**

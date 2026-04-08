@@ -66,7 +66,14 @@ it('saves formula costing separately while updating the user price memory', func
                 'price_per_kg' => 8.9123,
             ],
         ],
-        'packaging_items' => [],
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => null,
+                'name' => 'Box',
+                'unit_cost' => 1.2,
+                'components_per_unit' => 2,
+            ],
+        ],
     ]);
 
     $costing = RecipeVersionCosting::query()
@@ -76,6 +83,8 @@ it('saves formula costing separately while updating the user price memory', func
 
     expect($costing->items)->toHaveCount(1)
         ->and((float) $costing->items->first()->price_per_kg)->toBe(8.9123)
+        ->and($costing->packagingItems)->toHaveCount(1)
+        ->and((float) $costing->packagingItems->first()->quantity)->toBe(2.0)
         ->and(UserIngredientPrice::query()
             ->where('user_id', $user->id)
             ->where('ingredient_id', $ingredient->id)
@@ -163,7 +172,7 @@ it('copies pricing and packaging rows forward when a draft is published into a n
                 'user_packaging_item_id' => $packagingItem->id,
                 'name' => $packagingItem->name,
                 'unit_cost' => 0.44,
-                'quantity' => 12,
+                'components_per_unit' => 2,
             ],
         ],
     ]);
@@ -180,7 +189,8 @@ it('copies pricing and packaging rows forward when a draft is published into a n
         ->and($newDraftCosting->items)->toHaveCount(1)
         ->and((float) $newDraftCosting->items->first()->price_per_kg)->toBe(7.8)
         ->and($newDraftCosting->packagingItems)->toHaveCount(1)
-        ->and($newDraftCosting->packagingItems->first()->name)->toBe('Bow 100 g');
+        ->and($newDraftCosting->packagingItems->first()->name)->toBe('Bow 100 g')
+        ->and((float) $newDraftCosting->packagingItems->first()->quantity)->toBe(2.0);
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)

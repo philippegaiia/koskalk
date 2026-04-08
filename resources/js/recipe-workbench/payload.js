@@ -52,7 +52,7 @@ export function serializeCosting(state) {
             user_packaging_item_id: row.user_packaging_item_id ?? null,
             name: row.name,
             unit_cost: nonNegativeNumber(row.unit_cost),
-            quantity: nonNegativeNumber(row.quantity),
+            components_per_unit: nonNegativeNumber(row.quantity),
         })),
     };
 }

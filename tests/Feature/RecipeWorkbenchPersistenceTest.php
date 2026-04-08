@@ -12,6 +12,7 @@ use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\UserPackagingItem;
 use App\Services\RecipeContentUpdater;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
@@ -35,14 +36,14 @@ it('syncs the parent recipe name when a saved draft is renamed', function () {
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, name: 'Recipe A'),
+        workbenchSoapDraftPayload($ingredient, name: 'Recipe A'),
     );
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, name: 'Recipe B'),
+        workbenchSoapDraftPayload($ingredient, name: 'Recipe B'),
         $recipe,
     );
 
@@ -69,7 +70,7 @@ it('returns a structured error instead of throwing when oil weight is invalid', 
     $component->mount();
 
     $result = $component->saveDraft(
-        soapDraftPayload($ingredient, oilWeight: 0),
+        workbenchSoapDraftPayload($ingredient, oilWeight: 0),
         app(RecipeWorkbenchService::class),
         app(RecipeContentUpdater::class),
     );
@@ -95,7 +96,7 @@ it('can still save a draft from a mounted component after the auth session is go
     auth()->logout();
 
     $result = $component->saveDraft(
-        soapDraftPayload($ingredient, name: 'Fallback Draft'),
+        workbenchSoapDraftPayload($ingredient, name: 'Fallback Draft'),
         app(RecipeWorkbenchService::class),
         app(RecipeContentUpdater::class),
     );
@@ -127,7 +128,7 @@ it('keeps instructions and media entered before the first draft is saved', funct
     $component->data['featured_image_path'] = ['recipes/featured-images/first-draft.webp'];
 
     $result = $component->saveDraft(
-        soapDraftPayload($ingredient, name: 'Draft With Content'),
+        workbenchSoapDraftPayload($ingredient, name: 'Draft With Content'),
         app(RecipeWorkbenchService::class),
         app(RecipeContentUpdater::class),
     );
@@ -178,7 +179,7 @@ it('returns backend soap calculation preview data for the workbench', function (
     $component->mount();
 
     $result = $component->previewCalculation(
-        soapDraftPayload($ingredient, oilWeight: 1000),
+        workbenchSoapDraftPayload($ingredient, oilWeight: 1000),
         app(RecipeWorkbenchService::class),
     );
 
@@ -222,7 +223,7 @@ it('does not re-render the workbench when refreshing the calculation preview', f
     });
 
     Livewire::test(RecipeWorkbench::class)
-        ->call('previewCalculation', soapDraftPayload($ingredient, oilWeight: 1000));
+        ->call('previewCalculation', workbenchSoapDraftPayload($ingredient, oilWeight: 1000));
 });
 
 it('stores formula context on recipe versions and returns it in the draft payload', function () {
@@ -237,7 +238,7 @@ it('stores formula context on recipe versions and returns it in the draft payloa
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, exposureMode: 'leave_on'),
+        workbenchSoapDraftPayload($ingredient, exposureMode: 'leave_on'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -283,7 +284,7 @@ it('preserves ingredient order across draft and saved versions', function () {
         'is_active' => true,
     ]);
 
-    $payload = soapDraftPayload($oliveOil, name: 'Ordered Formula');
+    $payload = workbenchSoapDraftPayload($oliveOil, name: 'Ordered Formula');
     $payload['phase_items']['saponified_oils'] = [
         [
             'ingredient_id' => $coconutOil->id,
@@ -358,7 +359,7 @@ it('flags a saved formula for review when linked ingredient data changes', funct
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient),
+        workbenchSoapDraftPayload($ingredient),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -394,7 +395,7 @@ it('loads a saved version for comparison', function () {
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, name: 'Baseline Draft'),
+        workbenchSoapDraftPayload($ingredient, name: 'Baseline Draft'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -402,7 +403,7 @@ it('loads a saved version for comparison', function () {
     $savedDraft = $service->saveAsNewVersion(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, name: 'Published Formula'),
+        workbenchSoapDraftPayload($ingredient, name: 'Published Formula'),
         $recipe,
     );
 
@@ -452,6 +453,40 @@ it('saves recipe content through the standalone filament form', function () {
         ->description->toContain('calming creamy bar')
         ->manufacturing_instructions->toContain('Blend the base gently')
         ->featured_image_path->toBe('recipes/featured-images/soap.jpg');
+});
+
+it('returns the saved packaging item payload when saving a packaging catalog item', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->savePackagingCatalogItem(
+        [
+            'name' => 'Amber Jar',
+            'unit_cost' => 1.2345,
+            'currency' => 'EUR',
+            'notes' => 'For 100 g bars',
+        ],
+        app(RecipeWorkbenchService::class),
+    );
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['packaging_catalog'])->toHaveCount(1)
+        ->and($result['packaging_item'])->toMatchArray([
+            'name' => 'Amber Jar',
+            'unit_cost' => 1.2345,
+            'currency' => 'EUR',
+            'notes' => 'For 100 g bars',
+        ])
+        ->and($result['packaging_item']['id'])->toBeInt();
+
+    expect(UserPackagingItem::query()
+        ->where('user_id', $user->id)
+        ->where('name', 'Amber Jar')
+        ->value('unit_cost'))->toBe('1.2345');
 });
 
 it('deletes the previous recipe featured image from storage when the image is cleared', function () {
@@ -543,7 +578,7 @@ it('keeps comparison snapshots aligned with the version payload and backend calc
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, name: 'Comparison Draft'),
+        workbenchSoapDraftPayload($ingredient, name: 'Comparison Draft'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -551,7 +586,7 @@ it('keeps comparison snapshots aligned with the version payload and backend calc
     $service->saveAsNewVersion(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, name: 'Comparison Baseline'),
+        workbenchSoapDraftPayload($ingredient, name: 'Comparison Baseline'),
         $recipe,
     );
 
@@ -595,7 +630,7 @@ it('loads saved versions with the same snapshot contract used for comparison', f
     $draftVersion = $service->saveDraft(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, name: 'Workbench Draft'),
+        workbenchSoapDraftPayload($ingredient, name: 'Workbench Draft'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -603,7 +638,7 @@ it('loads saved versions with the same snapshot contract used for comparison', f
     $service->saveAsNewVersion(
         $user,
         $soapFamily,
-        soapDraftPayload($ingredient, name: 'Opened Baseline'),
+        workbenchSoapDraftPayload($ingredient, name: 'Opened Baseline'),
         $recipe,
     );
 
@@ -647,7 +682,7 @@ it('returns no soap calculation preview for blend-only formulas', function () {
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
-    $draft = soapDraftPayload($ingredient, oilWeight: 1000);
+    $draft = workbenchSoapDraftPayload($ingredient, oilWeight: 1000);
     $draft['manufacturing_mode'] = 'blend_only';
 
     $result = $component->previewCalculation(
@@ -768,7 +803,7 @@ function makeCarrierOilIngredient(): Ingredient
 /**
  * @return array<string, mixed>
  */
-function soapDraftPayload(
+function workbenchSoapDraftPayload(
     Ingredient $ingredient,
     string $name = 'Recipe',
     float $oilWeight = 1000,

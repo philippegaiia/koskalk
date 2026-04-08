@@ -73,7 +73,7 @@ class RecipeVersionCostingSynchronizer
                     'user_packaging_item_id' => $item->user_packaging_item_id,
                     'name' => $item->name,
                     'unit_cost' => (float) $item->unit_cost,
-                    'quantity' => (float) $item->quantity,
+                    'components_per_unit' => (float) $item->quantity,
                 ])
                 ->values()
                 ->all(),
@@ -180,7 +180,10 @@ class RecipeVersionCostingSynchronizer
         $name = trim((string) ($payload['name'] ?? ''));
 
         if ($name === '') {
-            return $this->packagingCatalogPayload($user);
+            return [
+                'packaging_catalog' => $this->packagingCatalogPayload($user),
+                'packaging_item' => null,
+            ];
         }
 
         $packagingItem = UserPackagingItem::query()
@@ -201,7 +204,16 @@ class RecipeVersionCostingSynchronizer
         ]);
         $packagingItem->save();
 
-        return $this->packagingCatalogPayload($user);
+        return [
+            'packaging_catalog' => $this->packagingCatalogPayload($user),
+            'packaging_item' => [
+                'id' => $packagingItem->id,
+                'name' => $packagingItem->name,
+                'unit_cost' => (float) $packagingItem->unit_cost,
+                'currency' => $packagingItem->currency,
+                'notes' => $packagingItem->notes,
+            ],
+        ];
     }
 
     /**
@@ -360,7 +372,7 @@ class RecipeVersionCostingSynchronizer
                         : null,
                     'name' => trim((string) $row['name']),
                     'unit_cost' => (float) ($row['unit_cost'] ?? 0),
-                    'quantity' => (float) ($row['quantity'] ?? 0),
+                    'quantity' => (float) ($row['components_per_unit'] ?? $row['quantity'] ?? 0),
                 ]);
             });
     }

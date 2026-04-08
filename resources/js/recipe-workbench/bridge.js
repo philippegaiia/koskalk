@@ -103,7 +103,7 @@ export async function persistPackagingCatalogItem(workbench, payload) {
         workbench.packagingCatalogStatus = 'success';
         workbench.packagingCatalogMessage = response.message ?? 'Packaging item saved.';
 
-        return true;
+        return response.packaging_item ?? null;
     } catch (error) {
         workbench.packagingCatalogStatus = 'error';
         workbench.packagingCatalogMessage = 'The packaging item could not be saved.';

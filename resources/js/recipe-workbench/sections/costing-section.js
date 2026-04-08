@@ -221,7 +221,7 @@ export function createCostingSection(payload) {
                     user_packaging_item_id: packagingItem?.id ?? null,
                     name: packagingItem?.name ?? '',
                     unit_cost: packagingItem?.unit_cost ?? 0,
-                    quantity: this.costingUnitsProducedValue > 0 ? this.costingUnitsProducedValue : 1,
+                    quantity: 1,
                 },
             ];
 

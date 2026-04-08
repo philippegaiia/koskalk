@@ -19,6 +19,7 @@ use App\Services\RecipeWorkbenchViewDataBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Symfony\Component\Process\Process;
 
 use function Pest\Laravel\mock;
 
@@ -487,6 +488,49 @@ it('returns the saved packaging item payload when saving a packaging catalog ite
         ->where('user_id', $user->id)
         ->where('name', 'Amber Jar')
         ->value('unit_cost'))->toBe('1.2345');
+});
+
+it('defaults a new packaging row to one component per finished unit in the workbench flow', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const state = {
+  costingUnitsProduced: 12,
+  costingSaveTimer: null,
+  packagingCostRows: [],
+  scheduleCostingSave() {},
+  makeLocalPackagingRowId() {
+    return 'row-1';
+  },
+};
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createCostingSection', 'function createCostingSection');
+
+globalThis.createCostingSection = undefined;
+eval(`${source}\nglobalThis.createCostingSection = createCostingSection;`);
+
+Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
+
+state.addPackagingCostRow();
+
+console.log(JSON.stringify(state.packagingCostRows[0]));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $row = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($row['quantity'])->toBe(1);
 });
 
 it('deletes the previous recipe featured image from storage when the image is cleared', function () {

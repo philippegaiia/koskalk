@@ -91,6 +91,43 @@ it('saves formula costing separately while updating the user price memory', func
             ->value('price_per_kg'))->toBe('8.9123');
 });
 
+it('keeps legacy packaging quantity input compatible while storing per-unit usage', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->saveCosting($user, $recipe, [
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 12,
+        'currency' => 'EUR',
+        'items' => [],
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => null,
+                'name' => 'Legacy Wrap',
+                'unit_cost' => 0.25,
+                'quantity' => 3,
+            ],
+        ],
+    ]);
+
+    $costing = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $draftVersion->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect($costing->packagingItems)->toHaveCount(1)
+        ->and((float) $costing->packagingItems->first()->quantity)->toBe(3.0);
+});
+
 it('keeps a formula costing stable after the user default ingredient price changes', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

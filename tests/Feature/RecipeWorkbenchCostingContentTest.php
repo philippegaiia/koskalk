@@ -10,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('shows clarified packaging wording on the costing tab', function () {
+it('renders packaging below ingredient costing with simplified wording', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -25,25 +25,24 @@ it('shows clarified packaging wording on the costing tab', function () {
     $this->actingAs($user)
         ->get(route('recipes.edit', $recipe->id))
         ->assertSuccessful()
-        ->assertSee('Packaging usage per finished unit')
-        ->assertSee('Define how many of each packaging component are used for one finished unit. Batch packaging cost is calculated from this and Units produced.')
+        ->assertSeeInOrder([
+            'Ingredient costing',
+            'Packaging',
+            'Cost summary',
+        ])
+        ->assertSee('Add reusable packaging items used for one finished unit.')
         ->assertSee('Packaging item')
-        ->assertSee('Components per finished unit')
-        ->assertSee('Effective unit price')
-        ->assertSee('Cost per finished unit')
-        ->assertSee('Batch cost')
+        ->assertSee('Add packaging item')
         ->assertSee('New packaging item')
-        ->assertSee('Save and add to this costing')
+        ->assertSee('Components per unit')
+        ->assertSee('Unit price')
+        ->assertSee('Cost per unit')
+        ->assertSee('Batch cost')
+        ->assertSee('Save and add')
         ->assertSee('Save only')
-        ->assertSee('Packaging Items page')
         ->assertSee('No packaging added yet.')
-        ->assertSee('Choose a packaging item from your catalog, or create one without leaving this tab.')
-        ->assertDontSee('openPackagingCatalogModal(item)', false)
-        ->assertDontSee('deletePackagingCatalogItem(item.id)', false)
-        ->assertDontSee('Edit packaging item')
-        ->assertDontSee('Saved packaging items')
-        ->assertDontSee('Packaging in this costing')
-        ->assertDontSee('Add custom row')
+        ->assertSee('Add a reusable packaging item to include boxes, labels, stickers, and other unit-level packaging in this costing.')
+        ->assertDontSee('Packaging usage per finished unit')
         ->assertDontSee('Quantity');
 });
 

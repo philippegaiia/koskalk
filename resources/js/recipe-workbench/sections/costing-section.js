@@ -1,6 +1,5 @@
 import { rowWeightForOilWeight } from '../calculation';
 import {
-    destroyPackagingCatalogItem,
     persistCosting,
     persistPackagingCatalogItem,
 } from '../bridge';
@@ -222,6 +221,10 @@ export function createCostingSection(payload) {
         },
 
         get costPerKg() {
+            if (this.costingUnitsProducedValue <= 0 || this.totalBatchCost === null) {
+                return null;
+            }
+
             return this.totalBatchWeightKg > 0
                 ? this.totalBatchCost / this.totalBatchWeightKg
                 : 0;
@@ -298,12 +301,7 @@ export function createCostingSection(payload) {
         openPackagingCatalogModal(item = null) {
             this.packagingCatalogStatus = null;
             this.packagingCatalogMessage = '';
-
-            if (item) {
-                this.editPackagingCatalogItem(item);
-            } else {
-                this.resetPackagingCatalogForm();
-            }
+            this.resetPackagingCatalogForm();
 
             this.packagingCatalogModalOpen = true;
         },
@@ -313,16 +311,6 @@ export function createCostingSection(payload) {
             this.packagingCatalogStatus = null;
             this.packagingCatalogMessage = '';
             this.resetPackagingCatalogForm();
-        },
-
-        editPackagingCatalogItem(item) {
-            this.packagingCatalogForm = {
-                id: item.id,
-                name: item.name,
-                unit_cost: item.unit_cost,
-                currency: item.currency ?? this.costingCurrency ?? 'EUR',
-                notes: item.notes ?? '',
-            };
         },
 
         async savePackagingCatalogItem(addToCosting = false) {
@@ -352,14 +340,6 @@ export function createCostingSection(payload) {
 
         async savePackagingCatalogItemOnly() {
             return this.savePackagingCatalogItem(false);
-        },
-
-        async deletePackagingCatalogItem(packagingItemId) {
-            const removed = await destroyPackagingCatalogItem(this, packagingItemId);
-
-            if (removed && Number(this.packagingCatalogForm.id) === Number(packagingItemId)) {
-                this.closePackagingCatalogModal();
-            }
         },
 
         makeLocalPackagingRowId() {

@@ -204,11 +204,7 @@
                                         <p class="font-medium text-[var(--color-ink-strong)]" x-text="item.name"></p>
                                         <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="`${item.currency} ${format(item.unit_cost, 4)} each`"></p>
                                     </div>
-                                    <div class="flex shrink-0 items-center gap-2">
-                                        <button type="button" @click="addPackagingCostRow(item)" class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">Add to costing</button>
-                                        <button type="button" @click="openPackagingCatalogModal(item)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Edit</button>
-                                        <button type="button" @click="deletePackagingCatalogItem(item.id)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Delete</button>
-                                    </div>
+                                    <button type="button" @click="addPackagingCostRow(item)" class="shrink-0 rounded-full bg-[var(--color-accent-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">Add to costing</button>
                                 </div>
                             </div>
                         </template>
@@ -247,7 +243,7 @@
                     </div>
                     <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
                         <span class="text-[var(--color-ink-soft)]">Cost per kg</span>
-                        <span class="font-medium text-[var(--color-ink-strong)]" x-text="totalBatchWeightKg > 0 ? `${costingCurrency} ${format(costPerKg, 2)}` : 'Unavailable'"></span>
+                        <span class="font-medium text-[var(--color-ink-strong)]" x-text="costPerKg !== null ? `${costingCurrency} ${format(costPerKg, 2)}` : 'Set units produced'"></span>
                     </div>
                 </div>
             </section>
@@ -265,7 +261,7 @@
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging item</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]" x-text="packagingCatalogForm.id ? 'Edit packaging item' : 'New packaging item'"></h3>
+                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">New packaging item</h3>
                     <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Save a reusable catalog item here, then optionally add it straight into this costing at one component per finished unit.</p>
                 </div>
                 <button type="button" @click="closePackagingCatalogModal()" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">Cancel</button>

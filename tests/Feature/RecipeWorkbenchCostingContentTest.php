@@ -35,12 +35,35 @@ it('shows clarified packaging wording on the costing tab', function () {
         ->assertSee('New packaging item')
         ->assertSee('Save and add to this costing')
         ->assertSee('Save only')
+        ->assertSee('Packaging Items page')
         ->assertSee('No packaging added yet.')
         ->assertSee('Choose a packaging item from your catalog, or create one without leaving this tab.')
+        ->assertDontSee('openPackagingCatalogModal(item)', false)
+        ->assertDontSee('deletePackagingCatalogItem(item.id)', false)
+        ->assertDontSee('Edit packaging item')
         ->assertDontSee('Saved packaging items')
         ->assertDontSee('Packaging in this costing')
         ->assertDontSee('Add custom row')
         ->assertDontSee('Quantity');
+});
+
+it('shows units-produced fallback on batch-dependent costing summary outputs', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCostingContentCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->saveDraft($user, $soapFamily, costingContentDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $this->actingAs($user)
+        ->get(route('recipes.edit', $recipe->id))
+        ->assertSuccessful()
+        ->assertSee('Set units produced')
+        ->assertDontSee('Unavailable');
 });
 
 function makeCostingContentCarrierOilIngredient(): Ingredient

@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
+use App\Http\Controllers\PackagingItemController;
 use App\Http\Controllers\RecipeController;
 use Illuminate\Support\Facades\Route;
 
@@ -37,4 +38,11 @@ Route::controller(IngredientController::class)
         Route::get('/', 'index')->name('index');
         Route::get('/new', 'create')->name('create');
         Route::get('/{ingredient}', 'edit')->name('edit');
+    });
+
+Route::controller(PackagingItemController::class)
+    ->prefix('/dashboard/packaging-items')
+    ->name('packaging-items.')
+    ->group(function (): void {
+        Route::get('/', 'index')->name('index');
     });

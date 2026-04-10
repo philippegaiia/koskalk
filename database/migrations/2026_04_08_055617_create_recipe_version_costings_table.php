@@ -4,6 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Creates the recipe_version_costings table.
+ *
+ * One costing context per user per recipe version. Stores the batch size override,
+ * units produced, and currency. Created lazily when the user first opens the
+ * Costing tab for a recipe. The unique constraint on (recipe_version_id, user_id)
+ * ensures each user has exactly one costing setup per version.
+ */
 return new class extends Migration
 {
     /**

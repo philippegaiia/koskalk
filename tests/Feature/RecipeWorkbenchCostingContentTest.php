@@ -32,7 +32,6 @@ it('renders packaging below ingredient costing with simplified wording', functio
         ])
         ->assertSee('Add reusable packaging items used for one finished unit.')
         ->assertSee('Packaging item')
-        ->assertSee('Add packaging item')
         ->assertSee('New packaging item')
         ->assertSee('Components per unit')
         ->assertSee('Unit price')

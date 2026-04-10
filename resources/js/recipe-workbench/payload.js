@@ -36,6 +36,11 @@ export function serializeDraft(state) {
     };
 }
 
+/**
+ * Serialize the current costing state into the payload expected by the backend's
+ * saveCosting endpoint. Includes settings, ingredient prices (one per formula row),
+ * and packaging rows with their components-per-unit usage.
+ */
 export function serializeCosting(state) {
     return {
         oil_weight_for_costing: state.costingOilWeight,

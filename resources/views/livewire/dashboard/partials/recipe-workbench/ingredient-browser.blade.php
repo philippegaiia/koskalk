@@ -13,13 +13,13 @@
         </div>
     </div>
 
-    <div class="rounded-[2rem] border border-[var(--color-line)] bg-white">
+    <div class="overflow-hidden rounded-[2rem] border border-[var(--color-line)] bg-white">
         <div class="border-b border-[var(--color-line)] px-5 py-4">
             <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Available ingredients</p>
             <p class="mt-1 text-sm text-[var(--color-ink-soft)]"><span x-text="filteredIngredients.length"></span> match the current filter</p>
         </div>
 
-        <div class="max-h-[44rem] divide-y divide-[var(--color-line)] overflow-y-auto px-3">
+        <div class="max-h-[44rem] divide-y divide-[var(--color-line)] overflow-y-auto px-3 pr-2">
             <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
                 <div class="px-2 py-2.5 transition hover:bg-[var(--color-panel)]">
                     <div class="flex items-start gap-2.5">
@@ -40,47 +40,67 @@
                             </div>
                             <p class="mt-0.5 min-w-0 break-words text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
                             <div class="mt-2 flex items-start justify-between gap-2">
-                                <div x-data="{ open: false }" class="relative shrink-0" x-cloak>
+                                <div x-data="{
+                                        open: false,
+                                        panelStyle: '',
+                                        reposition() {
+                                            const panelWidth = 256;
+                                            const gutter = 16;
+                                            const rect = this.$refs.trigger.getBoundingClientRect();
+                                            const left = Math.max(gutter, Math.min(window.innerWidth - panelWidth - gutter, rect.right - panelWidth));
+                                            const top = Math.min(window.innerHeight - gutter, rect.bottom + 8);
+
+                                            this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
+                                        },
+                                    }"
+                                    class="relative shrink-0"
+                                    x-cloak>
                                     <template x-if="ingredientHasInspector(ingredient)">
                                         <button type="button"
-                                            @mouseenter="open = true"
+                                            x-ref="trigger"
+                                            @mouseenter="open = true; reposition()"
                                             @mouseleave="open = false"
-                                            @focus="open = true"
+                                            @focus="open = true; reposition()"
                                             @blur="open = false"
-                                            @click.prevent="open = !open"
+                                            @click.prevent="open = !open; if (open) { reposition(); }"
                                             class="grid size-6 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]">
                                             i
                                         </button>
                                     </template>
-                                    <div x-show="open"
-                                        x-transition.opacity
-                                        @mouseenter="open = true"
-                                        @mouseleave="open = false"
-                                        @click.outside="open = false"
-                                        class="absolute left-0 top-8 z-20 w-64 rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3 shadow-lg">
-                                        <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Material details</p>
-                                        <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
-                                            <template x-for="row in ingredientInspectorRows(ingredient)" :key="row.label">
-                                                <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
-                                                    <span x-text="row.label"></span>
-                                                    <span class="font-medium text-[var(--color-ink-strong)]" x-text="row.value"></span>
+                                    <template x-teleport="body">
+                                        <div x-show="open"
+                                            x-transition.opacity
+                                            @mouseenter="open = true"
+                                            @mouseleave="open = false"
+                                            @click.outside="open = false"
+                                            @scroll.window="if (open) { reposition(); }"
+                                            @resize.window="if (open) { reposition(); }"
+                                            :style="panelStyle"
+                                            class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3 shadow-lg">
+                                            <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Material details</p>
+                                            <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
+                                                <template x-for="row in ingredientInspectorRows(ingredient)" :key="row.label">
+                                                    <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
+                                                        <span x-text="row.label"></span>
+                                                        <span class="font-medium text-[var(--color-ink-strong)]" x-text="row.value"></span>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                            <template x-if="ingredientFattyAcidRows(ingredient).length > 0">
+                                                <div class="mt-3">
+                                                    <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Fatty acids</p>
+                                                    <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs text-[var(--color-ink-soft)]">
+                                                        <template x-for="row in ingredientFattyAcidRows(ingredient)" :key="row.key">
+                                                            <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
+                                                                <span x-text="row.label"></span>
+                                                                <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
                                                 </div>
                                             </template>
                                         </div>
-                                        <template x-if="ingredientFattyAcidRows(ingredient).length > 0">
-                                            <div class="mt-3">
-                                                <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Fatty acids</p>
-                                                <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs text-[var(--color-ink-soft)]">
-                                                    <template x-for="row in ingredientFattyAcidRows(ingredient)" :key="row.key">
-                                                        <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
-                                                            <span x-text="row.label"></span>
-                                                            <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
-                                                        </div>
-                                                    </template>
-                                                </div>
-                                            </div>
-                                        </template>
-                                    </div>
+                                    </template>
                                 </div>
                                 <div class="ml-auto flex flex-wrap justify-end gap-2">
                                     <template x-if="ingredient.can_add_to_saponified_oils">
@@ -111,12 +131,11 @@
     </div>
 
     <div class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
-        <div class="flex items-start justify-between gap-3">
+        <div>
             <div>
                 <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Fatty acid profile</p>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Live blend feedback while you adjust the oil selection.</p>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Live blend feedback.</p>
             </div>
-            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isPreviewingCalculation ? 'Updating…' : 'Live blend'"></span>
         </div>
 
         <template x-if="hasFattyAcidProfileData">

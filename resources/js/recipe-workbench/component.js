@@ -18,6 +18,7 @@ import {
 import {
     persistWorkbench,
     refreshCalculationPreview as refreshWorkbenchCalculationPreview,
+    refreshLabelingPreview as refreshWorkbenchLabelingPreview,
 } from './bridge';
 import {
     draftStateFromDraft as buildDraftStateFromDraft,
@@ -46,7 +47,7 @@ function createRecipeWorkbenchState(payload) {
     const initialDraft = payload.savedDraft ?? initialSnapshot?.draft ?? null;
 
     return {
-        activeWorkbenchTab: 'formula',
+        activeWorkbenchTab: window.location.hash.replace('#', '') || 'formula',
         recipeId: payload.recipe?.id ?? null,
         draftVersionId: payload.recipe?.draft_version_id ?? null,
         currentVersionNumber: payload.recipe?.version_number ?? null,
@@ -76,6 +77,7 @@ function createRecipeWorkbenchState(payload) {
         savedRecipeUrl: payload.recipe?.saved_formula_url ?? null,
         inciCopyMessage: '',
         calculationPreviewTimer: null,
+        labelingPreviewTimer: null,
         isPreviewingCalculation: false,
         draggedRowId: null,
         draggedRowPhaseKey: null,
@@ -94,7 +96,6 @@ function createRecipeWorkbenchState(payload) {
         costingPriceByRowId: {},
         packagingCostRows: [],
         packagingCatalog: payload.costing?.packaging_catalog ?? [],
-        openPackagingPicker: false,
         packagingCatalogForm: {
             id: null,
             name: '',
@@ -106,11 +107,13 @@ function createRecipeWorkbenchState(payload) {
         hasLoadedCosting: Boolean(payload.costingLoaded ?? payload.costing),
         isLoadingCosting: false,
         costingSaveTimer: null,
+        costingSaveSeq: 0,
         isSavingCosting: false,
         costingSaveStatus: null,
         costingSaveMessage: '',
         packagingCatalogStatus: null,
         packagingCatalogMessage: '',
+        lastCalculationPhaseSignature: null,
         phaseItems: {
             saponified_oils: [],
             additives: [],
@@ -122,6 +125,10 @@ function createRecipeWorkbenchState(payload) {
             this.applySnapshot(initialSnapshot);
             this.initializeCostingState();
             this.resetPackagingCatalogForm();
+
+            if (this.activeWorkbenchTab === 'costing') {
+                this.ensureCostingLoaded();
+            }
 
             if (this.phaseItems.saponified_oils.length === 0) {
                 const defaultOil = this.filteredIngredients.find((ingredient) => ingredient.can_add_to_saponified_oils);
@@ -137,8 +144,10 @@ function createRecipeWorkbenchState(payload) {
 
             this.$watch('phaseItems', () => {
                 this.reconcileCostingPrices();
-                this.scheduleCalculationPreview();
+                this.schedulePhaseItemPreviews();
             });
+
+            this.lastCalculationPhaseSignature = this.currentCalculationPhaseSignature();
 
             /**
              * Existing drafts already arrive with a server-rendered snapshot, so
@@ -185,14 +194,6 @@ function createCatalogSection() {
             return this.ingredients.find((ingredient) => Number(ingredient.id) === Number(row?.ingredient_id)) ?? null;
         },
 
-        availablePhasesForRow(row) {
-            const ingredient = this.ingredientForRow(row);
-
-            return Array.isArray(ingredient?.available_phases)
-                ? ingredient.available_phases
-                : [];
-        },
-
         ingredientHasInspector(ingredient) {
             return this.ingredientInspectorRows(ingredient).length > 0
                 || this.ingredientFattyAcidRows(ingredient).length > 0;
@@ -212,6 +213,10 @@ function createCatalogSection() {
 
         humanizeKey(value) {
             return humanizeText(value);
+        },
+
+        currentCalculationPhaseSignature() {
+            return JSON.stringify(this.phaseItems?.saponified_oils ?? []);
         },
 
         addIngredient(ingredient, requestedPhase = null) {
@@ -241,6 +246,21 @@ function createCatalogSection() {
                 percentage: targetPhase === 'saponified_oils' && this.phaseItems[targetPhase].length === 0 ? 100 : 0,
                 note: '',
             });
+
+            if (targetPhase !== 'saponified_oils') {
+                this.highlightPostReaction();
+            }
+        },
+
+        highlightPostReaction() {
+            const el = document.getElementById('post-reaction-phases');
+            if (!el) return;
+
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            el.classList.add('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');
+            setTimeout(() => {
+                el.classList.remove('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');
+            }, 1200);
         },
 
         removeIngredient(phaseKey, rowId) {
@@ -279,16 +299,14 @@ function createCatalogSection() {
                 return false;
             }
 
+            if (phaseKey !== this.draggedRowPhaseKey) {
+                return false;
+            }
+
             const draggedRow = (this.phaseItems[this.draggedRowPhaseKey] ?? [])
                 .find((row) => row.id === this.draggedRowId);
 
             if (!draggedRow) {
-                return false;
-            }
-
-            const availablePhases = this.availablePhasesForRow(draggedRow);
-
-            if (availablePhases.length > 0 && !availablePhases.includes(phaseKey)) {
                 return false;
             }
 
@@ -331,6 +349,12 @@ function createCatalogSection() {
                 return;
             }
 
+            if (sourcePhaseKey !== phaseKey) {
+                this.endRowDrag();
+
+                return;
+            }
+
             if (sourcePhaseKey === phaseKey && targetRowId === rowId) {
                 this.endRowDrag();
 
@@ -347,9 +371,7 @@ function createCatalogSection() {
             }
 
             const [draggedRow] = sourceRows.splice(sourceIndex, 1);
-            const targetRows = sourcePhaseKey === phaseKey
-                ? sourceRows
-                : [...(this.phaseItems[phaseKey] ?? [])];
+            const targetRows = sourceRows;
 
             let targetIndex = targetRowId === null
                 ? targetRows.length
@@ -383,6 +405,18 @@ function createCatalogSection() {
  */
 function createPersistenceSection() {
     return {
+        schedulePhaseItemPreviews() {
+            const nextCalculationSignature = this.currentCalculationPhaseSignature();
+            const shouldRefreshCalculation = nextCalculationSignature !== this.lastCalculationPhaseSignature;
+
+            this.lastCalculationPhaseSignature = nextCalculationSignature;
+            this.scheduleLabelingPreview();
+
+            if (shouldRefreshCalculation) {
+                this.scheduleCalculationPreview();
+            }
+        },
+
         applySnapshot(snapshot, options = {}) {
             const nextState = buildSnapshotStateFromSnapshot(snapshot, this, options);
 
@@ -391,6 +425,7 @@ function createPersistenceSection() {
             }
 
             Object.assign(this, nextState);
+            this.lastCalculationPhaseSignature = this.currentCalculationPhaseSignature();
             this.reconcileCostingPrices();
             this.syncIngredientListVariantSelection();
         },
@@ -403,6 +438,7 @@ function createPersistenceSection() {
             }
 
             Object.assign(this, nextState);
+            this.lastCalculationPhaseSignature = this.currentCalculationPhaseSignature();
             this.reconcileCostingPrices();
             this.syncIngredientListVariantSelection();
         },
@@ -422,6 +458,22 @@ function createPersistenceSection() {
             void resetBaseline;
 
             await refreshWorkbenchCalculationPreview(this);
+        },
+
+        scheduleLabelingPreview(resetBaseline = false) {
+            void resetBaseline;
+
+            if (this.labelingPreviewTimer) {
+                clearTimeout(this.labelingPreviewTimer);
+            }
+
+            this.labelingPreviewTimer = setTimeout(() => {
+                this.refreshLabelingPreview();
+            }, 120);
+        },
+
+        async refreshLabelingPreview() {
+            await refreshWorkbenchLabelingPreview(this);
         },
 
         async copyGeneratedIngredientList() {

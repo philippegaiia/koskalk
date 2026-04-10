@@ -28,6 +28,9 @@ class UserIngredientAuthoringService
             'inci_name' => null,
             'supplier_name' => null,
             'supplier_reference' => null,
+            'cas_number' => null,
+            'ec_number' => null,
+            'is_organic' => false,
             'featured_image_path' => null,
             'icon_image_path' => null,
             'info_markdown' => null,
@@ -62,6 +65,9 @@ class UserIngredientAuthoringService
             'inci_name' => data_get($entryData, 'current_version.inci_name'),
             'supplier_name' => data_get($entryData, 'current_version.supplier_name'),
             'supplier_reference' => data_get($entryData, 'current_version.supplier_reference'),
+            'cas_number' => data_get($entryData, 'current_version.cas_number'),
+            'ec_number' => data_get($entryData, 'current_version.ec_number'),
+            'is_organic' => (bool) data_get($entryData, 'current_version.is_organic', false),
             'featured_image_path' => $ingredient->featured_image_path,
             'icon_image_path' => $ingredient->icon_image_path,
             'info_markdown' => $ingredient->info_markdown,
@@ -142,6 +148,9 @@ class UserIngredientAuthoringService
             'inci_name' => $state['inci_name'] ?? null,
             'supplier_name' => $state['supplier_name'] ?? null,
             'supplier_reference' => $state['supplier_reference'] ?? null,
+            'cas_number' => $state['cas_number'] ?? null,
+            'ec_number' => $state['ec_number'] ?? null,
+            'is_organic' => (bool) ($state['is_organic'] ?? false),
             'featured_image_path' => null,
             'icon_image_path' => null,
             'info_markdown' => null,
@@ -183,12 +192,18 @@ class UserIngredientAuthoringService
      */
     private function syncState(Ingredient $ingredient, array $state): Ingredient
     {
+        $this->validateAllergenEntries(Arr::get($state, 'allergen_entries', []));
+        $this->validateIfraState(Arr::get($state, 'ifra', []));
+
         $ingredient = $this->ingredientDataEntryService->syncCurrentData($ingredient, [
             'current_version' => [
                 'display_name' => Arr::get($state, 'name'),
                 'inci_name' => Arr::get($state, 'inci_name'),
                 'supplier_name' => Arr::get($state, 'supplier_name'),
                 'supplier_reference' => Arr::get($state, 'supplier_reference'),
+                'cas_number' => Arr::get($state, 'cas_number'),
+                'ec_number' => Arr::get($state, 'ec_number'),
+                'is_organic' => (bool) Arr::get($state, 'is_organic', false),
                 'is_active' => true,
                 'is_manufactured' => false,
             ],
@@ -260,5 +275,59 @@ class UserIngredientAuthoringService
         $limitsState->each(function (array $limitState) use ($certificate): void {
             $certificate->limits()->create($limitState);
         });
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $entries
+     */
+    private function validateAllergenEntries(array $entries): void
+    {
+        foreach ($entries as $index => $entry) {
+            $concentration = (float) ($entry['concentration_percent'] ?? 0);
+
+            if ($concentration < 0) {
+                throw ValidationException::withMessages([
+                    "allergen_entries.{$index}.concentration_percent" => 'Allergen concentration must not be negative.',
+                ]);
+            }
+
+            if ($concentration > 100) {
+                throw ValidationException::withMessages([
+                    "allergen_entries.{$index}.concentration_percent" => 'Allergen concentration must not exceed 100%.',
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function validateIfraState(array $state): void
+    {
+        $peroxideValue = Arr::get($state, 'peroxide_value');
+
+        if ($peroxideValue !== null && (float) $peroxideValue < 0) {
+            throw ValidationException::withMessages([
+                'ifra.peroxide_value' => 'Peroxide value must not be negative.',
+            ]);
+        }
+
+        $limits = collect(Arr::get($state, 'limits', []));
+
+        foreach ($limits as $index => $limit) {
+            $maxPercentage = (float) ($limit['max_percentage'] ?? 0);
+
+            if ($maxPercentage < 0) {
+                throw ValidationException::withMessages([
+                    "ifra.limits.{$index}.max_percentage" => 'Max concentration must not be negative.',
+                ]);
+            }
+
+            if ($maxPercentage > 100) {
+                throw ValidationException::withMessages([
+                    "ifra.limits.{$index}.max_percentage" => 'Max concentration must not exceed 100%.',
+                ]);
+            }
+        }
     }
 }

@@ -221,6 +221,19 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     }
 
     /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    #[Renderless]
+    public function previewLabeling(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        return [
+            'ok' => true,
+            'labeling' => $recipeWorkbenchService->previewInci($draft),
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $costing
      * @return array<string, mixed>
      */

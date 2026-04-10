@@ -111,7 +111,7 @@
                             </div>
                             <div class="bg-white px-3 py-3">
                                 <template x-if="editMode === 'percentage'">
-                                    <input x-model.number="row.percentage" @input="row.percentage = nonNegativeNumber($event.target.value)" type="number" min="0" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                    <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                 </template>
                                 <template x-if="editMode !== 'percentage'">
                                     <span class="inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -119,13 +119,13 @@
                             </div>
                             <div class="bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
                                 <template x-if="editMode === 'weight'">
-                                    <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" type="number" min="0" step="0.1" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                    <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                 </template>
                                 <template x-if="editMode !== 'weight'">
                                     <span class="inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)} ${oilUnit}`"></span>
                                 </template>
                             </div>
-                            <div class="grid place-items-center bg-white px-2 py-3">
+                            <div class="flex items-center justify-center bg-white px-2 py-3">
                                 <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-8 place-items-center rounded-full border border-[var(--color-line)] text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]">×</button>
                             </div>
                         </div>
@@ -134,8 +134,12 @@
                     <div @dragover="allowPhaseDrop('saponified_oils', $event)"
                         @drop="dropDraggedRow('saponified_oils', $event)"
                         :class="isDropTarget('saponified_oils') ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'"
-                        class="px-4 py-2 text-xs font-medium transition">
-                        Drag here to place an oil at the end of the reaction core.
+                        class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px text-xs font-medium transition">
+                        <div class="px-3 py-2"></div>
+                        <div class="px-4 py-2">Drag here to place an oil at the end of the reaction core.</div>
+                        <div class="px-3 py-2"></div>
+                        <div class="px-3 py-2"></div>
+                        <div class="px-2 py-2"></div>
                     </div>
                 </div>
 
@@ -164,9 +168,9 @@
 
             <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
-                    <div class="rounded-[1.35rem] border border-[var(--color-line)] bg-white p-3">
+                    <div class="flex min-h-[5rem] flex-col justify-between rounded-[1.35rem] border border-[var(--color-line)] bg-white p-3">
                         <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
-                        <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
+                        <p class="text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
                     </div>
                 </template>
             </div>

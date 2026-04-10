@@ -25,8 +25,7 @@ it('renders the public recipes page', function () {
 
     $this->get(route('recipes.index'))
         ->assertSuccessful()
-        ->assertSee('Create soap formula')
-        ->assertSee('Calculation basis is family-driven');
+        ->assertSee('Create soap formula');
 });
 
 it('renders the public soap workbench with filtered catalog data', function () {
@@ -62,7 +61,10 @@ it('renders the public soap workbench with filtered catalog data', function () {
         ->assertSee('Reaction core')
         ->assertSee('Additives and aromatics')
         ->assertSee('Olive Oil')
-        ->assertSee('Lavender Essential Oil');
+        ->assertSee('Lavender Essential Oil')
+        ->assertSee('Fatty acid profile')
+        ->assertSee('Live blend feedback.')
+        ->assertDontSee('while you adjust the oil selection.');
 });
 
 it('shows private user ingredients in the workbench only for their owner', function () {

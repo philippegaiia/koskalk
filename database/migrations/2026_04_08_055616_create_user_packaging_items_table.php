@@ -4,6 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Creates the user_packaging_items table.
+ *
+ * Each user builds their own reusable catalog of packaging materials (boxes, labels,
+ * jars, etc.) with an effective unit price. When a packaging item is added to a recipe
+ * costing, its name and price are snapshotted into the costing row so historical
+ * costings remain accurate even if the catalog item is later edited or deleted.
+ */
 return new class extends Migration
 {
     /**

@@ -16,37 +16,31 @@
             <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                 <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Oil weight for costing</span>
                 <input
-                    x-model.number="costingOilWeight"
-                    @change="scheduleCostingSave()"
-                    type="number"
-                    min="0"
-                    step="0.1"
+                    x-model="costingOilWeight"
+                    @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
+                    type="text"
+                    inputmode="decimal"
                     class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
                 />
             </label>
 
-            <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
+            <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                 <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Unit</span>
-                <select
-                    x-model="costingOilUnit"
-                    @change="scheduleCostingSave()"
-                    class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
-                >
-                    <option value="g">g</option>
-                    <option value="kg">kg</option>
-                    <option value="oz">oz</option>
-                    <option value="lb">lb</option>
-                </select>
-            </label>
+                <div class="mt-3 flex flex-wrap gap-2">
+                    <button type="button" @click="costingOilUnit = 'g'; scheduleCostingSave()" :class="costingOilUnit === 'g' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">g</button>
+                    <button type="button" @click="costingOilUnit = 'kg'; scheduleCostingSave()" :class="costingOilUnit === 'kg' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">kg</button>
+                    <button type="button" @click="costingOilUnit = 'oz'; scheduleCostingSave()" :class="costingOilUnit === 'oz' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">oz</button>
+                    <button type="button" @click="costingOilUnit = 'lb'; scheduleCostingSave()" :class="costingOilUnit === 'lb' ? 'bg-[var(--color-accent-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">lb</button>
+                </div>
+            </div>
 
             <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                 <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Units produced</span>
                 <input
-                    x-model.number="costingUnitsProduced"
-                    @change="scheduleCostingSave()"
-                    type="number"
-                    min="0"
-                    step="1"
+                    x-model="costingUnitsProduced"
+                    @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
+                    type="text"
+                    inputmode="numeric"
                     class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
                     placeholder="e.g. 50"
                 />
@@ -54,7 +48,15 @@
 
             <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                 <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Currency</span>
-                <div class="mt-3 rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)]" x-text="costingCurrency"></div>
+                <select
+                    x-model="costingCurrency"
+                    @change="scheduleCostingSave()"
+                    class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline-none"
+                >
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                    <option value="CHF">CHF</option>
+                </select>
                 <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">Ingredient prices are stored per kilogram and reused here as your default.</p>
             </div>
         </div>
@@ -95,9 +97,8 @@
                                         :value="costingPriceForRow(row) ?? ''"
                                         @change="updateCostingPrice(row, $event.target.value)"
                                         @blur="updateCostingPrice(row, $event.target.value)"
-                                        type="number"
-                                        min="0"
-                                        step="0.0001"
+                                        type="text"
+                                        inputmode="decimal"
                                         class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none"
                                     />
                                 </div>
@@ -135,30 +136,22 @@
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2">
-                    <button type="button" @click="openPackagingPicker = ! openPackagingPicker" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                        Add packaging item
-                    </button>
+                    <template x-if="unusedPackagingCatalogItems.length > 0">
+                        <select
+                            @change="if ($event.target.value) { addPackagingCostRow(JSON.parse($event.target.value)); $event.target.value = ''; }"
+                            class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] outline-none"
+                        >
+                            <option value="">Add from catalog...</option>
+                            <template x-for="item in unusedPackagingCatalogItems" :key="item.id">
+                                <option :value="JSON.stringify(item)" x-text="`${item.name} (${costingCurrency} ${format(item.unit_cost, 4)})`"></option>
+                            </template>
+                        </select>
+                    </template>
                     <button type="button" @click="openPackagingCatalogModal()" class="rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
                         New packaging item
                     </button>
                 </div>
             </div>
-        </div>
-
-        <div x-cloak x-show="openPackagingPicker" class="border-b border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-4">
-            <div class="flex flex-wrap items-center gap-2">
-                <template x-for="item in packagingCatalog" :key="item.id">
-                    <button type="button" @click="addPackagingCostRow(item); openPackagingPicker = false" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]" x-text="item.name"></button>
-                </template>
-
-                <template x-if="packagingCatalog.length === 0">
-                    <p class="text-sm text-[var(--color-ink-soft)]">No saved packaging items yet. Use “New packaging item” to create one.</p>
-                </template>
-            </div>
-
-            <template x-if="packagingCatalog.length > 0">
-                <p class="mt-3 text-xs text-[var(--color-ink-soft)]">Pick an existing catalog item to add it here with one component per unit by default.</p>
-            </template>
         </div>
 
         <template x-if="packagingCostRows.length === 0">
@@ -183,18 +176,18 @@
                     <div class="divide-y divide-[var(--color-line)] bg-white">
                         <template x-for="row in packagingCostRows" :key="row.id">
                             <div class="grid grid-cols-[minmax(0,1.8fr)_9rem_9rem_9rem_9rem_7rem] gap-px bg-[var(--color-line)] text-sm">
-                                <div class="bg-white px-4 py-3">
+                                <div class="flex items-center bg-white px-4 py-3">
                                     <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
                                 </div>
-                                <div class="bg-white px-3 py-3">
-                                    <input x-model.number="row.quantity" @change="scheduleCostingSave()" type="number" min="0" step="0.001" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                <div class="flex items-center bg-white px-3 py-3">
+                                    <input x-model="row.quantity" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                 </div>
-                                <div class="bg-white px-3 py-3">
-                                    <input x-model.number="row.unit_cost" @change="scheduleCostingSave()" type="number" min="0" step="0.0001" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+                                <div class="flex items-center bg-white px-3 py-3">
+                                    <input x-model="row.unit_cost" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
                                 </div>
-                                <div class="bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostPerFinishedUnitForRow(row), 2)}`"></div>
-                                <div class="bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(packagingBatchCostForRow(row), 2)}` : 'Set units produced'"></div>
-                                <div class="bg-white px-4 py-3 text-right">
+                                <div class="flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostPerFinishedUnitForRow(row), 2)}`"></div>
+                                <div class="flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(packagingBatchCostForRow(row), 2)}` : 'Set units produced'"></div>
+                                <div class="flex items-center justify-end bg-white px-4 py-3">
                                     <button type="button" @click="removePackagingCostRow(row.id)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
                                         Remove
                                     </button>
@@ -213,7 +206,7 @@
 
     <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5">
         <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Cost summary</p>
-        <div class="mt-4 grid gap-2 lg:grid-cols-2 xl:grid-cols-5 xl:gap-3 text-sm">
+        <div class="mt-4 grid gap-2 lg:grid-cols-2 xl:grid-cols-4 xl:gap-3 text-sm">
             <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
                 <span class="text-[var(--color-ink-soft)]">Ingredients</span>
                 <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></span>
@@ -229,10 +222,6 @@
             <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
                 <span class="text-[var(--color-ink-soft)]">Cost per unit</span>
                 <span class="font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(costPerUnit, 2)}` : 'Set units produced'"></span>
-            </div>
-            <div class="flex items-center justify-between rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
-                <span class="text-[var(--color-ink-soft)]">Cost per kg</span>
-                <span class="font-medium text-[var(--color-ink-strong)]" x-text="costPerKg !== null ? `${costingCurrency} ${format(costPerKg, 2)}` : 'Set units produced'"></span>
             </div>
         </div>
     </section>
@@ -262,7 +251,7 @@
 
                 <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                     <span class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Effective unit price</span>
-                    <input x-model.number="packagingCatalogForm.unit_cost" type="number" min="0" step="0.0001" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
+                    <input x-model="packagingCatalogForm.unit_cost" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="mt-3 w-full rounded-2xl border border-[var(--color-line)] bg-white px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
                 </label>
 
                 <label class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-4">

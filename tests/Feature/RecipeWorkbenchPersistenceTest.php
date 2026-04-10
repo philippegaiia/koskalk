@@ -651,12 +651,11 @@ JS;
         ]);
 });
 
-it('closes the packaging picker after adding a saved catalog item to costing', function () {
+it('adds a saved catalog item to costing with one component per unit', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
 
 const state = {
-  openPackagingPicker: true,
   packagingCostRows: [],
   scheduleCostingSave() {},
   makeLocalPackagingRowId() {
@@ -681,7 +680,6 @@ state.addPackagingCostRow({
 });
 
 console.log(JSON.stringify({
-  openPackagingPicker: state.openPackagingPicker,
   row: state.packagingCostRows[0] ?? null,
 }));
 JS;
@@ -697,13 +695,373 @@ JS;
 
     $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
 
-    expect($payload['openPackagingPicker'])->toBeFalse()
-        ->and($payload['row'])->toMatchArray([
-            'user_packaging_item_id' => 91,
-            'name' => 'Soap box',
-            'unit_cost' => 0.42,
-            'quantity' => 1,
-        ]);
+    expect($payload['row'])->toMatchArray([
+        'user_packaging_item_id' => 91,
+        'name' => 'Soap box',
+        'unit_cost' => 0.42,
+        'quantity' => 1,
+    ]);
+});
+
+it('keeps drag and drop limited to reordering within the same phase', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  ingredients: [
+    {
+      id: 1,
+      name: 'Olive Oil',
+      inci_name: 'OLEA EUROPAEA FRUIT OIL',
+      category: 'carrier_oil',
+      available_phases: ['saponified_oils', 'additives'],
+      can_add_to_saponified_oils: true,
+      can_add_to_additives: true,
+    },
+  ],
+});
+
+workbench.phaseItems = {
+  saponified_oils: [
+    { id: 'oil-1', ingredient_id: 1, name: 'Olive Oil' },
+  ],
+  additives: [],
+  fragrance: [],
+};
+
+const event = {
+  preventDefault() {},
+  dataTransfer: {
+    effectAllowed: '',
+    dropEffect: '',
+    setData() {},
+  },
+};
+
+workbench.beginRowDrag('saponified_oils', 'oil-1', event);
+
+const canDropIntoAdditives = workbench.canDropRowInPhase('additives');
+
+workbench.dropDraggedRow('additives', event);
+
+console.log(JSON.stringify({
+  canDropIntoAdditives,
+  oilCount: workbench.phaseItems.saponified_oils.length,
+  additiveCount: workbench.phaseItems.additives.length,
+  oilRowId: workbench.phaseItems.saponified_oils[0]?.id ?? null,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['canDropIntoAdditives'])->toBeFalse()
+        ->and($payload['oilCount'])->toBe(1)
+        ->and($payload['additiveCount'])->toBe(0)
+        ->and($payload['oilRowId'])->toBe('oil-1');
+});
+
+it('still allows reordering rows within the same phase', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  ingredients: [
+    { id: 1, available_phases: ['saponified_oils'], can_add_to_saponified_oils: true },
+    { id: 2, available_phases: ['saponified_oils'], can_add_to_saponified_oils: true },
+  ],
+});
+
+workbench.phaseItems = {
+  saponified_oils: [
+    { id: 'oil-1', ingredient_id: 1, name: 'Olive Oil' },
+    { id: 'oil-2', ingredient_id: 2, name: 'Coconut Oil' },
+  ],
+  additives: [],
+  fragrance: [],
+};
+
+const event = {
+  preventDefault() {},
+  dataTransfer: {
+    effectAllowed: '',
+    dropEffect: '',
+    setData() {},
+  },
+};
+
+workbench.beginRowDrag('saponified_oils', 'oil-1', event);
+workbench.dropDraggedRow('saponified_oils', event);
+
+console.log(JSON.stringify({
+  oilIds: workbench.phaseItems.saponified_oils.map((row) => row.id),
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['oilIds'])->toBe(['oil-2', 'oil-1']);
+});
+
+it('only schedules the soap calculation preview when reaction-core rows change', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  ingredients: [],
+});
+
+workbench.phaseItems = {
+  saponified_oils: [
+    { id: 'oil-1', ingredient_id: 1, percentage: 100 },
+  ],
+  additives: [],
+  fragrance: [],
+};
+
+let calculationSchedules = 0;
+let labelingSchedules = 0;
+
+workbench.scheduleCalculationPreview = () => {
+  calculationSchedules += 1;
+};
+
+workbench.scheduleLabelingPreview = () => {
+  labelingSchedules += 1;
+};
+
+workbench.lastCalculationPhaseSignature = workbench.currentCalculationPhaseSignature();
+workbench.phaseItems.fragrance.push({ id: 'frag-1', ingredient_id: 9, percentage: 2 });
+workbench.schedulePhaseItemPreviews();
+
+console.log(JSON.stringify({
+  calculationSchedules,
+  labelingSchedules,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['calculationSchedules'])->toBe(0)
+        ->and($payload['labelingSchedules'])->toBe(1);
+});
+
+it('still schedules the soap calculation preview when reaction-core rows change', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  ingredients: [],
+});
+
+workbench.phaseItems = {
+  saponified_oils: [
+    { id: 'oil-1', ingredient_id: 1, percentage: 100 },
+  ],
+  additives: [],
+  fragrance: [],
+};
+
+let calculationSchedules = 0;
+let labelingSchedules = 0;
+
+workbench.scheduleCalculationPreview = () => {
+  calculationSchedules += 1;
+};
+
+workbench.scheduleLabelingPreview = () => {
+  labelingSchedules += 1;
+};
+
+workbench.lastCalculationPhaseSignature = workbench.currentCalculationPhaseSignature();
+workbench.phaseItems.saponified_oils[0].percentage = 85;
+workbench.schedulePhaseItemPreviews();
+
+console.log(JSON.stringify({
+  calculationSchedules,
+  labelingSchedules,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['calculationSchedules'])->toBe(1)
+        ->and($payload['labelingSchedules'])->toBe(1);
 });
 
 it('keeps the save-only packaging success message visible after closing the modal', function () {

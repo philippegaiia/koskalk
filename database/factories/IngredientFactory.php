@@ -33,6 +33,7 @@ class IngredientFactory extends Factory
             'soap_inci_koh_name' => null,
             'cas_number' => null,
             'ec_number' => null,
+            'is_organic' => false,
             'unit' => 'g',
             'price_eur' => null,
             'owner_type' => null,

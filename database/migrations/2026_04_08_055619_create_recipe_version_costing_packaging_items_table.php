@@ -4,6 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Creates the recipe_version_costing_packaging_items table.
+ *
+ * Packaging rows are snapshotted into each costing so historical costings stay
+ * readable even if the user later edits or deletes the source catalog item.
+ * The nullable user_packaging_item_id link allows the UI to suggest updates
+ * but is not required for the costing row to display correctly.
+ */
 return new class extends Migration
 {
     /**

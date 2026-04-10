@@ -17,12 +17,24 @@ use Illuminate\Support\Facades\DB;
 /**
  * Keeps formula costing rows in step with the draft version while preserving
  * the user's remembered defaults and any formula-specific overrides.
+ *
+ * This service is the core of the costing feature. It handles:
+ * - Loading the costing payload for the frontend
+ * - Saving costing changes (settings, prices, packaging)
+ * - Copying costing forward when versions are published
+ * - Reconciling costing items against the current formula structure
+ *
+ * Key invariant: once a user sets a price in a formula's costing, that price
+ * stays stable even if their global default price for the same ingredient changes.
  */
 class RecipeVersionCostingSynchronizer
 {
     /**
-     * Costing rows follow the draft version the user is editing, while the packaging
-     * catalog stays available even before the formula has been saved for the first time.
+     * Build the full costing payload for the frontend.
+     *
+     * Returns settings, ingredient prices, packaging rows, and the user's packaging
+     * catalog. The packaging catalog is always available (even before a first draft
+     * save) so the user can browse and create items early.
      *
      * @return array<string, mixed>
      */
@@ -82,6 +94,12 @@ class RecipeVersionCostingSynchronizer
     }
 
     /**
+     * Persist costing changes: settings, ingredient prices, and packaging rows.
+     *
+     * Runs inside a transaction so settings, item prices, and packaging are all
+     * saved atomically. Returns the full costing payload after save so the
+     * frontend can reconcile its local state.
+     *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
@@ -106,6 +124,14 @@ class RecipeVersionCostingSynchronizer
         });
     }
 
+    /**
+     * Copy costing from a source version to a target version.
+     *
+     * Used when publishing a draft (the published version and the new draft both
+     * get a copy). Settings, packaging rows, and item prices (matched by
+     * ingredient_id + phase_key + position) are all forwarded so the user does
+     * not lose their costing work during the version lifecycle.
+     */
     public function copyToVersion(?RecipeVersion $sourceVersion, RecipeVersion $targetVersion, User $user): void
     {
         if (! $sourceVersion instanceof RecipeVersion) {
@@ -172,6 +198,11 @@ class RecipeVersionCostingSynchronizer
     }
 
     /**
+     * Create or update a reusable packaging catalog item for the user.
+     *
+     * If payload contains an 'id', the existing item is updated. Otherwise a new
+     * one is created. Returns the updated catalog and the saved item payload.
+     *
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */
@@ -217,6 +248,8 @@ class RecipeVersionCostingSynchronizer
     }
 
     /**
+     * Return the user's full packaging catalog, ordered by name then id.
+     *
      * @return array<int, array<string, mixed>>
      */
     public function packagingCatalogPayload(User $user): array
@@ -237,6 +270,13 @@ class RecipeVersionCostingSynchronizer
             ->all();
     }
 
+    /**
+     * Ensure a costing record exists for this (recipe_version, user) pair.
+     *
+     * Creates one if missing (defaulting oil weight and unit from the recipe version),
+     * then syncs costing items against the current formula structure. Returns the
+     * costing with items and packagingItems eager-loaded.
+     */
     public function ensureCosting(RecipeVersion $recipeVersion, User $user): RecipeVersionCosting
     {
         return DB::transaction(function () use ($recipeVersion, $user): RecipeVersionCosting {
@@ -258,6 +298,18 @@ class RecipeVersionCostingSynchronizer
         });
     }
 
+    /**
+     * Rebuild costing items from the current formula structure.
+     *
+     * Reconciliation rules:
+     * - New formula rows → create costing row, prefilled from user_ingredient_prices
+     * - Deleted formula rows → their costing rows are removed
+     * - Unchanged rows → preserve the saved costing price
+     * - Reordered rows → preserve price, update position
+     *
+     * This runs inside ensureCosting() and save(), so the costing items always
+     * reflect the current formula state.
+     */
     private function syncFormulaItems(RecipeVersionCosting $costing): void
     {
         $recipeVersion = RecipeVersion::withoutGlobalScopes()
@@ -306,6 +358,13 @@ class RecipeVersionCostingSynchronizer
         });
     }
 
+    /**
+     * Apply submitted item prices to costing rows and upsert user ingredient price memory.
+     *
+     * For each submitted price, the costing item is updated. If the price is non-null,
+     * the user's global price memory (user_ingredient_prices) is also updated so the
+     * price can be prefilled in future recipes containing the same ingredient.
+     */
     private function applyItemPrices(RecipeVersionCosting $costing, User $user, mixed $rawItems): void
     {
         $submittedItems = collect(is_array($rawItems) ? $rawItems : [])
@@ -346,29 +405,65 @@ class RecipeVersionCostingSynchronizer
         });
     }
 
+    /**
+     * Replace all packaging rows on the costing with the submitted set.
+     *
+     * Uses a full replace strategy (delete all, then recreate) to keep the
+     * persistence logic simple. Accepts both 'components_per_unit' and 'quantity'
+     * keys for backward compatibility with older frontend payloads.
+     */
     private function replacePackagingItems(RecipeVersionCosting $costing, mixed $rawItems): void
     {
+        $submittedItems = collect(is_array($rawItems) ? $rawItems : [])
+            ->filter(fn (mixed $row): bool => is_array($row) && filled($row['name'] ?? null))
+            ->values();
+
+        $linkedPackagingItems = UserPackagingItem::query()
+            ->where('user_id', $costing->user_id)
+            ->whereIn('id', $submittedItems
+                ->pluck('user_packaging_item_id')
+                ->filter(fn (mixed $id): bool => is_numeric($id))
+                ->map(fn (mixed $id): int => (int) $id)
+                ->all())
+            ->get()
+            ->keyBy('id');
+
         $costing->packagingItems()->delete();
 
-        collect(is_array($rawItems) ? $rawItems : [])
-            ->filter(fn (mixed $row): bool => is_array($row) && filled($row['name'] ?? null))
-            ->each(function (array $row) use ($costing): void {
+        $submittedItems
+            ->each(function (array $row) use ($costing, $linkedPackagingItems): void {
+                $linkedPackagingItemId = isset($row['user_packaging_item_id']) && is_numeric($row['user_packaging_item_id'])
+                    ? (int) $row['user_packaging_item_id']
+                    : null;
+                $unitCost = (float) ($row['unit_cost'] ?? 0);
+
                 $costing->packagingItems()->create([
-                    'user_packaging_item_id' => isset($row['user_packaging_item_id']) && is_numeric($row['user_packaging_item_id'])
-                        ? (int) $row['user_packaging_item_id']
-                        : null,
+                    'user_packaging_item_id' => $linkedPackagingItemId,
                     'name' => trim((string) $row['name']),
-                    'unit_cost' => (float) ($row['unit_cost'] ?? 0),
+                    'unit_cost' => $unitCost,
                     'quantity' => (float) ($row['components_per_unit'] ?? $row['quantity'] ?? 0),
                 ]);
+
+                $linkedPackagingItem = $linkedPackagingItems->get($linkedPackagingItemId);
+
+                if (! $linkedPackagingItem instanceof UserPackagingItem) {
+                    return;
+                }
+
+                $linkedPackagingItem->forceFill([
+                    'unit_cost' => $unitCost,
+                    'currency' => $costing->currency,
+                ])->save();
             });
     }
 
+    /** Build a composite key for matching costing rows to formula rows. */
     private function costingKey(int $ingredientId, string $phaseKey, int $position): string
     {
         return implode(':', [$ingredientId, $phaseKey, $position]);
     }
 
+    /** Cast a value to a rounded float, or null if non-numeric. */
     private function nullableFloat(mixed $value): ?float
     {
         if (! is_numeric($value)) {
@@ -378,6 +473,7 @@ class RecipeVersionCostingSynchronizer
         return round((float) $value, 4);
     }
 
+    /** Cast a value to a positive integer, or null if non-numeric or zero. */
     private function nullableInt(mixed $value): ?int
     {
         if (! is_numeric($value)) {
@@ -389,13 +485,15 @@ class RecipeVersionCostingSynchronizer
         return $normalized > 0 ? $normalized : null;
     }
 
+    /** Normalize a currency string to one of the allowed codes, defaulting to EUR. */
     private function normalizeCurrency(mixed $value): string
     {
         $currency = strtoupper(trim((string) $value));
 
-        return strlen($currency) === 3 ? $currency : 'EUR';
+        return in_array($currency, ['EUR', 'USD', 'CHF'], true) ? $currency : 'EUR';
     }
 
+    /** Normalize an oil unit to one of the allowed values, defaulting to grams. */
     private function normalizeOilUnit(mixed $value): string
     {
         return in_array($value, ['g', 'kg', 'oz', 'lb'], true)

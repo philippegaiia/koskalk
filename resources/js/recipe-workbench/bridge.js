@@ -24,6 +24,27 @@ export async function refreshCalculationPreview(workbench) {
 }
 
 /**
+ * Labeling preview stays independent from the soap calculation preview so
+ * aromatic/additive changes can refresh INCI output without toggling the
+ * fatty-acid or lye live-preview state.
+ */
+export async function refreshLabelingPreview(workbench) {
+    try {
+        const response = await workbench.$wire.previewLabeling(serializeDraft(workbench));
+
+        if (response?.ok) {
+            workbench.backendLabeling = response.labeling ?? null;
+            workbench.syncIngredientListVariantSelection();
+            workbench.inciCopyMessage = '';
+        }
+    } catch (error) {
+        workbench.backendLabeling = null;
+    } finally {
+        workbench.labelingPreviewTimer = null;
+    }
+}
+
+/**
  * Save flows all share the same request contract: send the serialized draft,
  * apply an optional returned snapshot, and follow an optional redirect.
  */
@@ -50,7 +71,8 @@ export async function persistWorkbench(workbench, method) {
         }
 
         if (response.redirect) {
-            window.location.href = response.redirect;
+            const hash = workbench.activeWorkbenchTab ? `#${workbench.activeWorkbenchTab}` : '';
+            window.location.href = response.redirect + hash;
         }
     } catch (error) {
         workbench.saveStatus = 'error';
@@ -60,12 +82,22 @@ export async function persistWorkbench(workbench, method) {
     }
 }
 
-export async function persistCosting(workbench) {
+/**
+ * Persist the current costing state (settings, ingredient prices, packaging rows)
+ * to the backend. On success, the returned payload is applied to reconcile local
+ * state with the server's view. Runs on a 350ms debounce from the costing tab.
+ * The seq parameter guards against stale responses from out-of-order saves.
+ */
+export async function persistCosting(workbench, seq) {
     workbench.isSavingCosting = true;
     workbench.costingSaveStatus = null;
 
     try {
         const response = await workbench.$wire.saveCosting(serializeCosting(workbench));
+
+        if (seq !== workbench.costingSaveSeq) {
+            return;
+        }
 
         if (!response?.ok) {
             workbench.costingSaveStatus = 'error';
@@ -78,13 +110,24 @@ export async function persistCosting(workbench) {
         workbench.costingSaveStatus = 'success';
         workbench.costingSaveMessage = response.message ?? 'Costing saved.';
     } catch (error) {
+        if (seq !== workbench.costingSaveSeq) {
+            return;
+        }
+
         workbench.costingSaveStatus = 'error';
         workbench.costingSaveMessage = 'The costing data could not be saved.';
     } finally {
-        workbench.isSavingCosting = false;
+        if (seq === workbench.costingSaveSeq) {
+            workbench.isSavingCosting = false;
+        }
     }
 }
 
+/**
+ * Create or update a reusable packaging catalog item. On success, the updated
+ * catalog is applied and the saved item is returned so the caller can optionally
+ * add it to the current costing rows.
+ */
 export async function persistPackagingCatalogItem(workbench, payload) {
     workbench.packagingCatalogStatus = 'saving';
     workbench.packagingCatalogMessage = '';

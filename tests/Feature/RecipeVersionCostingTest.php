@@ -128,6 +128,45 @@ it('keeps legacy packaging quantity input compatible while storing per-unit usag
         ->and((float) $costing->packagingItems->first()->quantity)->toBe(3.0);
 });
 
+it('updates the saved packaging item price memory from costing overrides', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Gift Box',
+        'unit_cost' => 0.4400,
+        'currency' => 'EUR',
+    ]);
+
+    $service->saveCosting($user, $recipe, [
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 8,
+        'currency' => 'USD',
+        'items' => [],
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => $packagingItem->id,
+                'name' => $packagingItem->name,
+                'unit_cost' => 0.73,
+                'components_per_unit' => 1,
+            ],
+        ],
+    ]);
+
+    expect($packagingItem->fresh())
+        ->unit_cost->toBe('0.7300')
+        ->currency->toBe('USD');
+});
+
 it('keeps a formula costing stable after the user default ingredient price changes', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

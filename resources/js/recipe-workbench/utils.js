@@ -1,3 +1,11 @@
+export function parseDecimalInput(value) {
+    const normalized = `${value ?? ''}`.replace(',', '.');
+
+    const parsed = Number.parseFloat(normalized);
+
+    return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export function clone(value) {
     if (value === null || value === undefined) {
         return value;

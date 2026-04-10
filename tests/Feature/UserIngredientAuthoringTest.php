@@ -29,6 +29,9 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->set('data.name', 'French Green Clay')
         ->set('data.category', IngredientCategory::Clay->value)
         ->set('data.inci_name', 'ILLITE')
+        ->set('data.cas_number', '1332-58-7')
+        ->set('data.ec_number', '310-194-1')
+        ->set('data.is_organic', true)
         ->call('save');
 
     $ingredient = Ingredient::query()
@@ -40,7 +43,10 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->and($ingredient->visibility)->toBe(Visibility::Private)
         ->and($ingredient->is_potentially_saponifiable)->toBeFalse()
         ->and($ingredient->display_name)->toBe('French Green Clay')
-        ->and($ingredient->inci_name)->toBe('ILLITE');
+        ->and($ingredient->inci_name)->toBe('ILLITE')
+        ->and($ingredient->cas_number)->toBe('1332-58-7')
+        ->and($ingredient->ec_number)->toBe('310-194-1')
+        ->and($ingredient->is_organic)->toBeTrue();
 });
 
 it('persists an optional ingredient icon separately from the main image', function () {

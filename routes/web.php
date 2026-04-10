@@ -45,4 +45,6 @@ Route::controller(PackagingItemController::class)
     ->name('packaging-items.')
     ->group(function (): void {
         Route::get('/', 'index')->name('index');
+        Route::get('/new', 'create')->name('create');
+        Route::get('/{packagingItem}', 'edit')->name('edit');
     });

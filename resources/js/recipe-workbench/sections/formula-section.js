@@ -17,6 +17,7 @@ import {
     format as formatNumber,
     nonNegativeNumber as ensureNonNegativeNumber,
     number as coerceNumber,
+    parseDecimalInput as parseDecimal,
     roundTo as roundNumberTo,
 } from '../utils';
 
@@ -154,11 +155,11 @@ export function createFormulaSection() {
         },
 
         updatePercentageFromWeight(row, weightValue) {
-            row.percentage = calculatePercentageFromWeight(this.oilWeight, weightValue);
+            row.percentage = calculatePercentageFromWeight(this.oilWeight, parseDecimal(weightValue));
         },
 
         updateOilPercentagesFromWeights(row, weightValue) {
-            const updatedWeights = buildOilPercentagesFromWeights(this.oilRows, this.oilWeight, row.id, weightValue);
+            const updatedWeights = buildOilPercentagesFromWeights(this.oilRows, this.oilWeight, row.id, parseDecimal(weightValue));
 
             this.oilWeight = updatedWeights.oilWeight;
             this.oilRows.forEach((oilRow) => {
@@ -240,8 +241,35 @@ export function createFormulaSection() {
             return coerceNumber(value);
         },
 
+        handleDecimalKeydown(event) {
+            if (event.key === ',') {
+                event.preventDefault();
+                const el = event.target;
+                const start = el.selectionStart;
+                const end = el.selectionEnd;
+                el.setRangeText('.', start, end, 'end');
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        },
+
+        parseDecimalInput(value) {
+            return parseDecimal(value);
+        },
+
         normalizeSapValue(value) {
             return getNormalizedSapValue(value);
+        },
+
+        confirmNegativeSuperfat(event) {
+            const value = parseFloat(event.target.value);
+
+            if (isNaN(value) || value >= 0 || this.superfat < 0) {
+                return;
+            }
+
+            if (!window.confirm('Negative superfat means excess lye in the finished product. This can cause skin irritation or burns. Proceed with a negative superfat?')) {
+                this.superfat = 0;
+            }
         },
 
         format(value, decimals = 2) {

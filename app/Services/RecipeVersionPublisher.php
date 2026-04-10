@@ -8,8 +8,16 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
+/**
+ * Publishes a recipe version by creating a published snapshot and a new draft.
+ *
+ * When publishing, the current draft becomes a published version and a fresh draft
+ * is created for continued editing. The costing synchronizer copies pricing and
+ * packaging data forward so the user does not lose their costing work.
+ */
 class RecipeVersionPublisher
 {
+    /** Maximum number of older published versions to keep as hidden recovery snapshots. */
     private const MAX_HIDDEN_RECOVERY_SNAPSHOTS = 3;
 
     public function __construct(
@@ -19,6 +27,13 @@ class RecipeVersionPublisher
     ) {}
 
     /**
+     * Publish a recipe: turn the current state into a numbered published version,
+     * then create a fresh draft for continued editing.
+     *
+     * Costing is copied to both the published version (for historical accuracy)
+     * and the new draft (for continued editing). Hidden recovery snapshots are
+     * pruned to the configured limit.
+     *
      * @param  array<string, mixed>  $normalizedPayload
      */
     public function publish(User $user, ProductFamily $productFamily, array $normalizedPayload, ?Recipe $recipe = null): RecipeVersion
@@ -75,6 +90,11 @@ class RecipeVersionPublisher
     }
 
     /**
+     * Restore a previous version by creating a new published version from the given payload.
+     *
+     * Unlike publish(), this does not create a new draft — it only snapshots the
+     * restored state as a published version.
+     *
      * @param  array<string, mixed>  $normalizedPayload
      */
     public function restore(User $user, Recipe $recipe, array $normalizedPayload): RecipeVersion
@@ -99,6 +119,7 @@ class RecipeVersionPublisher
         });
     }
 
+    /** Remove older published versions beyond the recovery snapshot limit. */
     private function pruneHiddenRecoverySnapshots(Recipe $recipe): void
     {
         RecipeVersion::withoutGlobalScopes()

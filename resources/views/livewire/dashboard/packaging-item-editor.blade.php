@@ -2,18 +2,18 @@
     <section class="rounded-[2rem] border border-[var(--color-line)] bg-white p-5 sm:p-6">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div class="min-w-0">
-                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Personal ingredient</p>
+                <p class="text-xs font-semibold tracking-[0.18em] text-[var(--color-ink-soft)] uppercase">Packaging item</p>
                 <h3 class="mt-3 text-2xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">
-                    {{ $ingredient ? 'Refine the ingredient, its components, and optional aromatic compliance.' : 'Create the ingredient now, then enrich it on the next screen.' }}
+                    {{ $packagingItem ? 'Refine the packaging record and keep it ready for costing.' : 'Create a reusable packaging item for recipe costing.' }}
                 </h3>
                 <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-                    User-created ingredients are always private by default and never become trusted soap-saponification oils automatically.
+                    Packaging items stay private to your account and can be reused across formulas without retyping the same details every time.
                 </p>
             </div>
 
             <div class="flex flex-col gap-3 sm:flex-row">
-                <a href="{{ route('ingredients.index') }}" wire:navigate class="inline-flex justify-center rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                    Back to ingredients
+                <a href="{{ route('packaging-items.index') }}" wire:navigate class="inline-flex justify-center rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                    Back to packaging
                 </a>
             </div>
         </div>
@@ -30,7 +30,7 @@
 
         <div class="flex justify-end">
             <button type="submit" class="rounded-full bg-[var(--color-accent-strong)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
-                {{ $ingredient ? 'Save ingredient' : 'Create ingredient' }}
+                {{ $packagingItem ? 'Save packaging item' : 'Create packaging item' }}
             </button>
         </div>
     </form>

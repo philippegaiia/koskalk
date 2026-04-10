@@ -30,6 +30,7 @@ class IngredientDataEntryService
                 'soap_inci_koh_name' => $ingredient->soap_inci_koh_name,
                 'cas_number' => $ingredient->cas_number,
                 'ec_number' => $ingredient->ec_number,
+                'is_organic' => $ingredient->is_organic,
                 'unit' => $ingredient->unit,
                 'price_eur' => $ingredient->price_eur === null ? null : (float) $ingredient->price_eur,
                 'is_active' => $ingredient->is_active,
@@ -94,6 +95,7 @@ class IngredientDataEntryService
             'soap_inci_koh_name' => $currentVersionState['soap_inci_koh_name'] ?? null,
             'cas_number' => $currentVersionState['cas_number'] ?? null,
             'ec_number' => $currentVersionState['ec_number'] ?? null,
+            'is_organic' => (bool) ($currentVersionState['is_organic'] ?? false),
             'unit' => $currentVersionState['unit'] ?? null,
             'price_eur' => $currentVersionState['price_eur'] ?? null,
             'is_active' => array_key_exists('is_active', $currentVersionState)
@@ -189,6 +191,7 @@ class IngredientDataEntryService
         collect($allergenEntriesState)
             ->filter(fn (mixed $row): bool => is_array($row))
             ->filter(fn (array $row): bool => filled($row['allergen_id'] ?? null))
+            ->unique(fn (array $row): int => (int) $row['allergen_id'])
             ->each(function (array $row) use ($ingredient): void {
                 IngredientAllergenEntry::query()->create([
                     'ingredient_id' => $ingredient->id,

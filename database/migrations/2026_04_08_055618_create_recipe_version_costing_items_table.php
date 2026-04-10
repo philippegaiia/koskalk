@@ -4,6 +4,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Creates the recipe_version_costing_items table.
+ *
+ * Each row stores the price_per_kg currently used for one formula ingredient row
+ * inside a costing session. The composite unique key (costing_id, ingredient_id,
+ * phase_key, position) ensures each formula row has exactly one price entry.
+ * Prices here are independent of the user's global default — changing the default
+ * later does not silently rewrite existing formula costings.
+ */
 return new class extends Migration
 {
     /**

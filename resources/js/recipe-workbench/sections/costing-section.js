@@ -3,7 +3,7 @@ import {
     persistCosting,
     persistPackagingCatalogItem,
 } from '../bridge';
-import { nonNegativeNumber, number, roundTo } from '../utils';
+import { nonNegativeNumber, number, parseDecimalInput, roundTo } from '../utils';
 
 const PHASE_LABELS = {
     saponified_oils: 'Reaction core',
@@ -25,7 +25,6 @@ const WEIGHT_FACTORS_IN_KG = {
 export function createCostingSection(payload) {
     return {
         initializeCostingState() {
-            this.openPackagingPicker = false;
             this.applyCostingPayload(payload.costing ?? null);
         },
 
@@ -146,7 +145,7 @@ export function createCostingSection(payload) {
         updateCostingPrice(row, value) {
             const normalizedValue = `${value}`.trim() === ''
                 ? null
-                : roundTo(nonNegativeNumber(value), 4);
+                : roundTo(parseDecimalInput(value), 4);
 
             this.costingPriceByRowId = {
                 ...this.costingPriceByRowId,
@@ -210,25 +209,24 @@ export function createCostingSection(payload) {
                 : 0;
         },
 
-        get totalBatchWeightKg() {
-            const currentOilWeightInKg = this.weightInKg(this.oilWeight, this.oilUnit);
-            const costingOilWeightInKg = this.weightInKg(this.costingBaseOilWeight, this.costingBaseOilUnit);
+        get unusedPackagingCatalogItems() {
+            const usedIds = new Set(
+                this.packagingCostRows
+                    .map((row) => row.user_packaging_item_id)
+                    .filter((id) => id !== null),
+            );
 
-            if (currentOilWeightInKg <= 0) {
-                return 0;
-            }
-
-            return this.weightInKg(this.finalBatchWeight(), this.oilUnit) * (costingOilWeightInKg / currentOilWeightInKg);
+            return this.packagingCatalog.filter((item) => !usedIds.has(item.id));
         },
 
-        get costPerKg() {
-            if (this.costingUnitsProducedValue <= 0 || this.totalBatchCost === null) {
-                return null;
-            }
+        get unusedPackagingCatalogItems() {
+            const usedIds = new Set(
+                this.packagingCostRows
+                    .map((row) => row.user_packaging_item_id)
+                    .filter((id) => id !== null),
+            );
 
-            return this.totalBatchWeightKg > 0
-                ? this.totalBatchCost / this.totalBatchWeightKg
-                : 0;
+            return this.packagingCatalog.filter((item) => !usedIds.has(item.id));
         },
 
         addPackagingCostRow(packagingItem = null) {
@@ -243,7 +241,6 @@ export function createCostingSection(payload) {
                 },
             ];
 
-            this.openPackagingPicker = false;
             this.scheduleCostingSave();
         },
 
@@ -282,7 +279,7 @@ export function createCostingSection(payload) {
                 return;
             }
 
-            await persistCosting(this);
+            await persistCosting(this, ++this.costingSaveSeq);
 
             if (this.costingSaveTimer) {
                 clearTimeout(this.costingSaveTimer);
@@ -350,6 +347,12 @@ export function createCostingSection(payload) {
 
         makeLocalPackagingRowId() {
             return `packaging-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        },
+
+        normalizeDecimalBlur(event) {
+            const raw = `${event.target.value ?? ''}`.replace(',', '.');
+            const parsed = Number.parseFloat(raw);
+            event.target.value = Number.isFinite(parsed) ? parsed : '';
         },
     };
 }

@@ -4,6 +4,7 @@
 @import '../../vendor/filament/schemas/resources/css/index.css';
 @import '../../vendor/filament/actions/resources/css/index.css';
 @import '../../vendor/filament/forms/resources/css/index.css';
+@import '../../vendor/filament/tables/resources/css/index.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -52,29 +53,26 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 
 
-    --color-surface: oklch(96% .008 240);
-    /* cool blue-gray bg */
-    --color-surface-strong: oklch(28% .025 230);
-    /* deep navy sidebar */
-    --color-hero: oklch(22% .030 235);
-    --color-hero-soft: oklch(27% .028 235);
-    --color-panel: oklch(99% .005 240);
-    /* near-white cool panel */
-    --color-panel-strong: oklch(93% .012 235);
+    --color-surface: oklch(96% .008 210);
+    --color-surface-strong: oklch(28% .025 210);
+    --color-hero: oklch(22% .030 210);
+    --color-hero-soft: oklch(27% .028 210);
+    --color-panel: oklch(99% .005 210);
+    --color-panel-strong: oklch(93% .012 210);
 
 
-    --color-line: oklch(85% .012 230);
-    --color-line-strong: oklch(68% .018 225);
-    --color-line-hero: oklch(44% .028 230);
+    --color-line: oklch(85% .012 210);
+    --color-line-strong: oklch(68% .018 210);
+    --color-line-hero: oklch(44% .028 210);
 
 
-    --color-ink: oklch(28% .012 240);
-    --color-ink-strong: oklch(12% .008 235);
-    --color-ink-soft: oklch(50% .012 235);
+    --color-ink: oklch(28% .012 210);
+    --color-ink-strong: oklch(12% .008 210);
+    --color-ink-soft: oklch(50% .012 210);
 
 
-    --color-ink-sidebar: oklch(88% .018 220);
-    --color-ink-sidebar-soft: oklch(64% .022 220);
+    --color-ink-sidebar: oklch(88% .018 210);
+    --color-ink-sidebar-soft: oklch(64% .022 210);
 
 
     --color-accent: oklch(52% .130 210);

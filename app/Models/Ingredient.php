@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'soap_inci_koh_name',
     'cas_number',
     'ec_number',
+    'is_organic',
     'unit',
     'price_eur',
     'owner_type',
@@ -103,6 +104,11 @@ class Ingredient extends Model
     public function userPrices(): HasMany
     {
         return $this->hasMany(UserIngredientPrice::class);
+    }
+
+    public function costingItems(): HasMany
+    {
+        return $this->hasMany(RecipeVersionCostingItem::class);
     }
 
     public function featuredImageUrl(): ?string
@@ -250,6 +256,7 @@ class Ingredient extends Model
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
             'price_eur' => 'decimal:2',
+            'is_organic' => 'bool',
             'is_potentially_saponifiable' => 'bool',
             'requires_admin_review' => 'bool',
             'is_active' => 'bool',

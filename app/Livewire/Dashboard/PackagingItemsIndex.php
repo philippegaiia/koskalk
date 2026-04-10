@@ -5,88 +5,134 @@ namespace App\Livewire\Dashboard;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Services\CurrentAppUserResolver;
+use App\Services\MediaStorage;
+use App\Services\UserPackagingItemAuthoringService;
+use Filament\Actions\Action;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
+use Filament\Tables\TableComponent;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Locked;
-use Livewire\Component;
+use Livewire\WithoutUrlPagination;
 
-class PackagingItemsIndex extends Component
+class PackagingItemsIndex extends TableComponent
 {
-    /**
-     * @var array{name: string, unit_cost: string, notes: string}
-     */
-    public array $form = [
-        'name' => '',
-        'unit_cost' => '',
-        'notes' => '',
-    ];
-
-    public ?string $saveMessage = null;
+    use WithoutUrlPagination;
 
     #[Locked]
     public ?int $currentUserId = null;
 
     public function mount(CurrentAppUserResolver $resolver): void
     {
-        $currentUser = $resolver->resolve();
-
-        $this->currentUserId = $currentUser instanceof User ? $currentUser->id : null;
+        $this->currentUserId = $resolver->resolve()?->id;
     }
 
-    /**
-     * @return array<string, array<int, string>>
-     */
-    protected function rules(): array
+    public function table(Table $table): Table
     {
-        return [
-            'form.name' => ['required', 'string', 'max:255'],
-            'form.unit_cost' => ['required', 'numeric', 'min:0'],
-            'form.notes' => ['nullable', 'string', 'max:1000'],
-        ];
+        return $table
+            ->query($this->tableQuery())
+            ->columns([
+                ImageColumn::make('featured_image_path')
+                    ->label('Picture')
+                    ->disk(MediaStorage::publicDisk())
+                    ->visibility(MediaStorage::publicVisibility())
+                    ->square()
+                    ->imageSize(52)
+                    ->checkFileExistence(false),
+                TextColumn::make('name')
+                    ->label('Name')
+                    ->searchable()
+                    ->sortable()
+                    ->weight('600'),
+                TextColumn::make('unit_cost')
+                    ->label('Unit price')
+                    ->sortable()
+                    ->formatStateUsing(fn (string $state, UserPackagingItem $record): string => sprintf(
+                        '%s %s',
+                        $record->currency,
+                        number_format((float) $state, 4, '.', ''),
+                    )),
+                TextColumn::make('notes')
+                    ->label('Notes')
+                    ->searchable()
+                    ->wrap(),
+            ])
+            ->columnManager(false)
+            ->striped()
+            ->headerActions([
+                Action::make('create')
+                    ->label('Add packaging item')
+                    ->icon(Heroicon::Plus)
+                    ->url(route('packaging-items.create'))
+                    ->visible(fn (): bool => $this->currentUser() instanceof User),
+            ])
+            ->recordActions([
+                Action::make('edit')
+                    ->label('Edit')
+                    ->icon(Heroicon::PencilSquare)
+                    ->iconButton()
+                    ->tooltip('Edit packaging item')
+                    ->url(fn (UserPackagingItem $record): string => route('packaging-items.edit', $record->id)),
+                Action::make('delete')
+                    ->label('Delete')
+                    ->icon(Heroicon::Trash)
+                    ->color('danger')
+                    ->iconButton()
+                    ->tooltip(fn (UserPackagingItem $record): string => (int) ($record->costing_items_count ?? 0) > 0
+                        ? 'Used in costing, so it cannot be deleted.'
+                        : 'Delete packaging item')
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete packaging item')
+                    ->modalDescription('This removes the packaging item from your private catalog.')
+                    ->disabled(fn (UserPackagingItem $record): bool => (int) ($record->costing_items_count ?? 0) > 0)
+                    ->tooltip(fn (UserPackagingItem $record): ?string => (int) ($record->costing_items_count ?? 0) > 0
+                        ? 'This packaging item is already used in saved costing rows.'
+                        : null)
+                    ->action(fn (UserPackagingItem $record): bool => $this->deletePackagingItem($record)),
+            ])
+            ->recordActionsColumnLabel('Actions')
+            ->recordActionsAlignment('end')
+            ->defaultSort('name')
+            ->paginated([25, 50, 100])
+            ->emptyStateHeading('No packaging items yet')
+            ->emptyStateDescription('Create reusable boxes, labels, jars, and inserts once, then pull them into recipe costing when needed.');
     }
 
-    public function save(): void
+    public function render(): View
     {
-        if ($this->currentUserId === null) {
-            return;
-        }
-
-        /** @var array{form: array{name: string, unit_cost: string|float|int, notes: string|null}} $validated */
-        $validated = $this->validate();
-
-        UserPackagingItem::query()->create([
-            'user_id' => $this->currentUserId,
-            'name' => trim($validated['form']['name']),
-            'unit_cost' => (float) $validated['form']['unit_cost'],
-            'currency' => 'EUR',
-            'notes' => blank($validated['form']['notes']) ? null : trim((string) $validated['form']['notes']),
-        ]);
-
-        $this->form = [
-            'name' => '',
-            'unit_cost' => '',
-            'notes' => '',
-        ];
-
-        $this->saveMessage = 'Packaging item saved.';
-    }
-
-    public function render(CurrentAppUserResolver $resolver): View
-    {
-        $currentUser = $resolver->resolve($this->currentUserId);
-        $packagingItems = collect();
-
-        if ($currentUser instanceof User) {
-            $packagingItems = UserPackagingItem::query()
-                ->where('user_id', $currentUser->id)
-                ->orderBy('name')
-                ->orderBy('id')
-                ->get();
-        }
-
         return view('livewire.dashboard.packaging-items-index', [
-            'currentUser' => $currentUser,
-            'packagingItems' => $packagingItems,
-            'packagingItemCount' => $packagingItems->count(),
+            'currentUser' => $this->currentUser(),
         ]);
+    }
+
+    private function tableQuery(): Builder
+    {
+        $query = UserPackagingItem::query()->withCount('costingItems');
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('user_id', $user->id);
+    }
+
+    private function deletePackagingItem(UserPackagingItem $packagingItem): bool
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return false;
+        }
+
+        return app(UserPackagingItemAuthoringService::class)->delete($packagingItem, $user);
+    }
+
+    private function currentUser(): ?User
+    {
+        return app(CurrentAppUserResolver::class)->resolve($this->currentUserId);
     }
 }

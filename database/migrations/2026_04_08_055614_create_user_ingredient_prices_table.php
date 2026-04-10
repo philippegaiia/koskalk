@@ -4,6 +4,14 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Creates the user_ingredient_prices table.
+ *
+ * Each user keeps their own private price per ingredient, including shared catalog
+ * ingredients. This avoids duplicating ingredient records just to store a buying price.
+ * The last_used_at column tracks when the price was most recently used, useful for
+ * future UI features like "recently priced" sorting.
+ */
 return new class extends Migration
 {
     /**

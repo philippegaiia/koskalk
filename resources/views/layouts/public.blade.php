@@ -21,8 +21,8 @@
             <header class="{{ $isHomePage ? 'absolute inset-x-0 top-0 z-30' : 'border-b border-[var(--color-line)] bg-white/88 backdrop-blur' }}">
                 <div class="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 py-4 lg:px-8">
                     <a href="{{ route('home') }}" class="flex items-center gap-3 text-sm font-semibold tracking-[0.24em] {{ $isHomePage ? 'text-white' : 'text-[var(--color-ink-strong)]' }} uppercase">
-                        <span class="grid size-9 place-items-center rounded-full border text-xs {{ $isHomePage ? 'border-white/15 bg-white/10 text-white' : 'border-[var(--color-line-strong)] bg-[var(--color-panel)] text-[var(--color-ink-strong)]' }}">FK</span>
-                        <span>Formula Key</span>
+                        <span class="grid size-9 place-items-center rounded-full border text-xs {{ $isHomePage ? 'border-white/15 bg-white/10 text-white' : 'border-[var(--color-line-strong)] bg-[var(--color-panel)] text-[var(--color-ink-strong)]' }}">SK</span>
+                        <span>Soapkraft</span>
                     </a>
 
                     <nav class="hidden items-center gap-6 text-sm lg:flex {{ $isHomePage ? 'text-white/72' : 'text-[var(--color-ink-soft)]' }}">

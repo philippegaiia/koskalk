@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Formula Key')
+@section('title', 'Soapkraft')
 
 @section('content')
     @php
@@ -186,7 +186,7 @@
                         A calmer route from raw material to finished label.
                     </h2>
                     <p class="max-w-xl text-base leading-8 text-[var(--color-ink-soft)] lg:text-lg">
-                        Formula Key separates drafting, chemistry stewardship, and compliance review so each stage can stay focused instead of collapsing into one overloaded screen.
+                        Soapkraft separates drafting, chemistry stewardship, and compliance review so each stage can stay focused instead of collapsing into one overloaded screen.
                     </p>
                 </div>
 

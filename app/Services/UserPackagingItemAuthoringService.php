@@ -39,7 +39,7 @@ class UserPackagingItemAuthoringService
     {
         $packagingItem = new UserPackagingItem([
             'user_id' => $user->id,
-            'currency' => 'EUR',
+            'currency' => $user->defaultCurrency(),
         ]);
 
         return $this->persist($packagingItem, $state);
@@ -94,7 +94,9 @@ class UserPackagingItemAuthoringService
 
         $packagingItem->name = $name;
         $packagingItem->unit_cost = $unitCost;
-        $packagingItem->currency = 'EUR';
+        $packagingItem->currency = filled($packagingItem->currency)
+            ? $packagingItem->currency
+            : ($state['currency'] ?? 'EUR');
         $packagingItem->notes = blank(Arr::get($state, 'notes'))
             ? null
             : trim((string) Arr::get($state, 'notes'));

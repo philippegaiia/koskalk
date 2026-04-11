@@ -20,6 +20,7 @@ class RecipeWorkbenchViewDataBuilder
     public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user): array
     {
         $savedDraft = $this->recipeWorkbenchService->draftPayload($recipe);
+        $defaultCurrency = $user?->defaultCurrency() ?? 'EUR';
 
         return [
             'productFamily' => [
@@ -36,7 +37,24 @@ class RecipeWorkbenchViewDataBuilder
             'defaultIfraProductCategoryId' => $this->recipeWorkbenchIfraOptionsBuilder->defaultCategoryId($productFamily),
             'costing' => null,
             'costingLoaded' => false,
+            'defaultCurrency' => $defaultCurrency,
+            'currencies' => $this->currencyOptions(),
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function currencyOptions(): array
+    {
+        $currencies = config('currencies', []);
+
+        return collect($currencies)
+            ->mapWithKeys(fn (array $data, string $code): array => [
+                $code => __('currencies.'.$code),
+            ])
+            ->sort()
+            ->all();
     }
 
     /**

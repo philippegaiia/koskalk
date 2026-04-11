@@ -49,51 +49,46 @@
     --color-glow: oklch(74% .105 78);
 }*/
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 
+    --color-surface: oklch(97.5% .008 82);
+    --color-panel: oklch(99.5% .003 80);
+    --color-panel-strong: oklch(93.5% .014 80);
 
-    --color-surface: oklch(96% .008 210);
-    --color-surface-strong: oklch(28% .025 210);
-    --color-hero: oklch(22% .030 210);
-    --color-hero-soft: oklch(27% .028 210);
-    --color-panel: oklch(99% .005 210);
-    --color-panel-strong: oklch(93% .012 210);
+    --color-hero: oklch(22.0% .025 154);
+    --color-hero-soft: oklch(27.0% .028 154);
+    --color-surface-strong: oklch(30.0% .022 80);
 
+    --color-line: oklch(88% .010 80);
+    --color-line-strong: oklch(72% .018 80);
+    --color-line-hero: oklch(40% .030 154);
 
-    --color-line: oklch(85% .012 210);
-    --color-line-strong: oklch(68% .018 210);
-    --color-line-hero: oklch(44% .028 210);
+    --color-ink: oklch(28% .012 75);
+    --color-ink-strong: oklch(13% .008 70);
+    --color-ink-soft: oklch(54% .012 75);
 
+    --color-ink-sidebar: oklch(88% .020 154);
+    --color-ink-sidebar-soft: oklch(62% .028 154);
 
-    --color-ink: oklch(28% .012 210);
-    --color-ink-strong: oklch(12% .008 210);
-    --color-ink-soft: oklch(50% .012 210);
+    --color-accent: oklch(46% .115 154);
+    --color-accent-hover: oklch(38% .105 154);
+    --color-accent-soft: oklch(94% .036 154);
+    --color-accent-strong: oklch(32% .092 154);
 
+    --color-warning: oklch(46% .110 55);
+    --color-warning-hover: oklch(38% .100 55);
+    --color-warning-soft: oklch(93% .038 68);
+    --color-warning-strong: oklch(36% .095 55);
 
-    --color-ink-sidebar: oklch(88% .018 210);
-    --color-ink-sidebar-soft: oklch(64% .022 210);
-
-
-    --color-accent: oklch(52% .130 210);
-    /* teal-blue */
-    --color-accent-hover: oklch(42% .120 210);
-    --color-accent-soft: oklch(94% .030 210);
-    --color-accent-strong: oklch(34% .110 210);
-
-
-    --color-success: oklch(52% .155 142);
-    --color-success-soft: oklch(95% .045 142);
-    --color-success-strong: oklch(36% .130 142);
-    --color-warning: oklch(72% .145 75);
-    --color-warning-hover: oklch(62% .135 75);
-    --color-warning-soft: oklch(95% .040 75);
-    --color-warning-strong: oklch(52% .125 75);
     --color-danger: oklch(55% .200 25);
     --color-danger-hover: oklch(46% .185 25);
     --color-danger-soft: oklch(95% .050 25);
     --color-danger-strong: oklch(45% .180 25);
-    --color-glow: oklch(74% .105 78);
+
+    --color-success: oklch(52% .155 142);
+    --color-success-soft: oklch(95% .040 142);
+    --color-success-strong: oklch(36% .130 142);
 }
 
 @layer base {

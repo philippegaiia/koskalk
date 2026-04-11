@@ -99,6 +99,27 @@ class User extends Authenticatable implements FilamentUser
         return $role === null ? null : WorkspaceMemberRole::from($role);
     }
 
+    /**
+     * Get the user's primary company (first owned workspace, or first membership).
+     */
+    public function company(): ?Workspace
+    {
+        return Workspace::withoutGlobalScopes()
+            ->where('owner_user_id', $this->id)
+            ->first()
+            ?? Workspace::withoutGlobalScopes()
+                ->whereHas('members', fn ($q) => $q->where('user_id', $this->id))
+                ->first();
+    }
+
+    /**
+     * Get the default currency for this user's company.
+     */
+    public function defaultCurrency(): string
+    {
+        return $this->company()?->default_currency ?? config('currencies.default', 'EUR');
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         return $panel->getId() !== 'admin' || $this->is_admin;

@@ -24,6 +24,9 @@ use Illuminate\Support\Collection;
     'owner_type',
     'owner_id',
     'workspace_id',
+    'brand_id',
+    'is_private',
+    'created_by',
     'visibility',
     'name',
     'description',
@@ -53,6 +56,16 @@ class Recipe extends Model implements HasRichContent
     public function productFamily(): BelongsTo
     {
         return $this->belongsTo(ProductFamily::class);
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function versions(): HasMany
@@ -182,6 +195,7 @@ class Recipe extends Model implements HasRichContent
         return [
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
+            'is_private' => 'bool',
             'archived_at' => 'datetime',
         ];
     }

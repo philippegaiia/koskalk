@@ -66,7 +66,7 @@ export function createCostingSection(payload) {
             this.costingOilWeight = costingPayload?.settings?.oilWeightForCosting ?? this.costingOilWeight ?? null;
             this.costingOilUnit = costingPayload?.settings?.oilUnitForCosting ?? this.costingOilUnit ?? this.oilUnit;
             this.costingUnitsProduced = costingPayload?.settings?.unitsProduced ?? this.costingUnitsProduced ?? null;
-            this.costingCurrency = costingPayload?.settings?.currency ?? this.costingCurrency ?? 'EUR';
+            this.costingCurrency = costingPayload?.settings?.currency ?? this.costingCurrency ?? this.defaultCurrency ?? 'EUR';
             this.persistedCostingItemPrices = costingPayload?.item_prices ?? [];
             this.packagingCostRows = (costingPayload?.packaging_items ?? []).map((row) => ({
                 id: row.id ?? this.makeLocalPackagingRowId(),
@@ -292,7 +292,7 @@ export function createCostingSection(payload) {
                 id: null,
                 name: '',
                 unit_cost: '',
-                currency: this.costingCurrency ?? 'EUR',
+                currency: this.costingCurrency ?? this.defaultCurrency ?? 'EUR',
                 notes: '',
             };
         },

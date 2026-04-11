@@ -48,3 +48,5 @@ Route::controller(PackagingItemController::class)
         Route::get('/new', 'create')->name('create');
         Route::get('/{packagingItem}', 'edit')->name('edit');
     });
+
+Route::view('/dashboard/settings', 'settings')->name('settings');

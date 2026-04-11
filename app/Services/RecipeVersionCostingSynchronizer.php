@@ -230,7 +230,7 @@ class RecipeVersionCostingSynchronizer
         $packagingItem->fill([
             'name' => $name,
             'unit_cost' => (float) ($payload['unit_cost'] ?? 0),
-            'currency' => $this->normalizeCurrency($payload['currency'] ?? 'EUR'),
+            'currency' => $this->normalizeCurrency($payload['currency'] ?? $user->defaultCurrency()),
             'notes' => $payload['notes'] ?? null,
         ]);
         $packagingItem->save();
@@ -288,7 +288,7 @@ class RecipeVersionCostingSynchronizer
                 [
                     'oil_weight_for_costing' => $recipeVersion->batch_size,
                     'oil_unit_for_costing' => $recipeVersion->batch_unit,
-                    'currency' => 'EUR',
+                    'currency' => $user->defaultCurrency(),
                 ],
             );
 
@@ -485,12 +485,13 @@ class RecipeVersionCostingSynchronizer
         return $normalized > 0 ? $normalized : null;
     }
 
-    /** Normalize a currency string to one of the allowed codes, defaulting to EUR. */
+    /** Normalize a currency string to a valid ISO 4217 code, defaulting to EUR. */
     private function normalizeCurrency(mixed $value): string
     {
         $currency = strtoupper(trim((string) $value));
+        $validCurrencies = array_keys(config('currencies', []));
 
-        return in_array($currency, ['EUR', 'USD', 'CHF'], true) ? $currency : 'EUR';
+        return in_array($currency, $validCurrencies, true) ? $currency : 'EUR';
     }
 
     /** Normalize an oil unit to one of the allowed values, defaulting to grams. */

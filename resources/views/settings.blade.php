@@ -1,6 +1,6 @@
 @extends('layouts.app-shell')
 
-@section('title', 'Settings · Koskalk')
+@section('title', 'Settings · '.config('app.name'))
 @section('page_heading', 'Settings')
 
 @section('content')

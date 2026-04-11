@@ -1,6 +1,6 @@
 @extends('layouts.app-shell')
 
-@section('title', 'My Ingredients · Koskalk')
+@section('title', 'My Ingredients · '.config('app.name'))
 @section('page_heading', 'Ingredients')
 
 @section('content')

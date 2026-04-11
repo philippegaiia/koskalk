@@ -1,6 +1,6 @@
 @extends('layouts.app-shell')
 
-@section('title', $recipe->name.' · Saved Formula · Koskalk')
+@section('title', $recipe->name.' · Saved Formula · '.config('app.name'))
 @section('page_heading', 'Saved Formula')
 
 @section('content')

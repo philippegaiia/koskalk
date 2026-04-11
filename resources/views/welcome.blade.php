@@ -88,20 +88,6 @@
         </div>
     </section>
 
-    <section class="border-y border-[var(--color-line)] bg-[var(--color-panel)]">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="grid lg:grid-cols-3">
-                @foreach ($pillars as $pillar)
-                    <article class="border-b border-[var(--color-line)] px-0 py-8 last:border-b-0 lg:border-b-0 lg:px-8 lg:py-10 {{ $loop->first ? 'lg:pl-0' : '' }} {{ $loop->last ? 'lg:pr-0' : 'lg:border-r' }}">
-                        <p class="text-[11px] font-semibold tracking-[0.22em] text-[var(--color-ink-soft)] uppercase">0{{ $loop->iteration }}</p>
-                        <h2 class="mt-4 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $pillar['title'] }}</h2>
-                        <p class="mt-4 max-w-sm text-sm leading-7 text-[var(--color-ink-soft)]">{{ $pillar['body'] }}</p>
-                    </article>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
     <section id="preview" class="bg-[var(--color-panel)] px-6 py-16 lg:px-8 lg:py-20">
         <div class="mx-auto max-w-7xl">
             <div class="grid gap-12 lg:grid-cols-2 lg:items-center">
@@ -140,46 +126,6 @@
                             <p class="mt-1 text-xs text-white/30">Replace with your image</p>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section class="bg-[var(--color-surface)] px-6 py-18 lg:px-8 lg:py-24">
-        <div class="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(24rem,1fr)]">
-            <div class="space-y-8">
-                <div class="space-y-5">
-                    <p class="text-xs font-semibold tracking-[0.22em] text-[var(--color-ink-soft)] uppercase">Workflow</p>
-                    <h2 class="max-w-xl text-4xl leading-none font-semibold text-[var(--color-ink-strong)] lg:text-5xl">
-                        A calmer route from raw material to finished label.
-                    </h2>
-                    <p class="max-w-xl text-base leading-8 text-[var(--color-ink-soft)] lg:text-lg">
-                        Koskalk separates drafting, chemistry stewardship, and compliance review so each stage can stay focused instead of collapsing into one overloaded screen.
-                    </p>
-                </div>
-
-                <div class="border-t border-[var(--color-line)]">
-                    @foreach ($catalogPriorities as $priority)
-                        <div class="flex items-start gap-4 border-b border-[var(--color-line)] py-5">
-                            <span class="mt-1 h-2.5 w-2.5 rounded-full bg-[var(--color-accent)]"></span>
-                            <p class="max-w-xl text-sm leading-7 text-[var(--color-ink-soft)]">{{ $priority }}</p>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <div class="lg:sticky lg:top-24">
-                <div class="overflow-hidden rounded-[2.25rem] border border-[var(--color-line-hero)] bg-[var(--color-hero)] text-white">
-                    @foreach ($workflow as $step)
-                        <div class="flex gap-4 border-b border-white/8 px-6 py-6 last:border-b-0">
-                            <span class="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/6 text-sm font-semibold">{{ $loop->iteration }}</span>
-
-                            <div>
-                                <h3 class="text-lg font-semibold text-white">{{ $step['title'] }}</h3>
-                                <p class="mt-2 text-sm leading-7 text-white/68">{{ $step['body'] }}</p>
-                            </div>
-                        </div>
-                    @endforeach
                 </div>
             </div>
         </div>

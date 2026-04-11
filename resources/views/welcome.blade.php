@@ -102,6 +102,49 @@
         </div>
     </section>
 
+    <section id="preview" class="bg-[var(--color-panel)] px-6 py-16 lg:px-8 lg:py-20">
+        <div class="mx-auto max-w-7xl">
+            <div class="grid gap-12 lg:grid-cols-2 lg:items-center">
+                <div class="space-y-6">
+                    <p class="text-xs font-semibold tracking-[0.22em] text-[var(--color-ink-soft)] uppercase">Preview</p>
+                    <h2 class="text-3xl font-semibold text-[var(--color-ink-strong)] lg:text-4xl">
+                        Built for soapmakers
+                    </h2>
+                    <p class="text-base leading-7 text-[var(--color-ink-soft)]">
+                        Every recipe lives in your portfolio with the chemistry details that matter — oils, lye ratios, fatty acid profiles, and costings.
+                    </p>
+                    <ul class="space-y-3 text-sm text-[var(--color-ink-soft)]">
+                        <li class="flex items-start gap-3">
+                            <span class="mt-1 h-2 w-2 rounded-full bg-[var(--color-accent)]"></span>
+                            Versioned recipe history you can always audit
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="mt-1 h-2 w-2 rounded-full bg-[var(--color-accent)]"></span>
+                            INCI labels generated automatically
+                        </li>
+                        <li class="flex items-start gap-3">
+                            <span class="mt-1 h-2 w-2 rounded-full bg-[var(--color-accent)]"></span>
+                            Allergen check built into every formula
+                        </li>
+                    </ul>
+                    <a href="{{ route('dashboard') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] transition-colors">
+                        Try the workbench
+                        <span aria-hidden="true">→</span>
+                    </a>
+                </div>
+
+                <div class="rounded-2xl bg-[var(--color-panel-strong)] p-4 shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+                    <div class="aspect-video rounded-xl bg-[var(--color-hero)] flex items-center justify-center">
+                        <div class="text-center text-white/40">
+                            <p class="text-sm font-medium">Recipe workbench screenshot</p>
+                            <p class="mt-1 text-xs text-white/30">Replace with your image</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <section class="bg-[var(--color-surface)] px-6 py-18 lg:px-8 lg:py-24">
         <div class="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(24rem,1fr)]">
             <div class="space-y-8">

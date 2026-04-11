@@ -4,30 +4,27 @@
 
 @section('content')
     @php
-        $proofPoints = [
-            ['label' => 'Calculation basis', 'text' => 'Carrier oils stay at the center of the first pass.'],
-            ['label' => 'Chemistry posture', 'text' => 'KOH-first SAP data with derived NaOH and traceable fatty-acid logic.'],
-            ['label' => 'Output discipline', 'text' => 'Versioned drafts first, compliance review second, export last.'],
-        ];
-
         $pillars = [
-            ['title' => 'Trusted chemistry', 'body' => 'INCI, soap INCI, SAP values, and fatty-acid profiles remain separate, explicit, and auditable.'],
-            ['title' => 'Faster drafting', 'body' => 'The workbench is built for immediate recalculation instead of save-refresh-edit loops.'],
-            ['title' => 'Cleaner handoff', 'body' => 'Allergens, IFRA, restrictions, and final label output belong in a deliberate closing pass.'],
-        ];
-
-        $workflow = [
-            ['title' => 'Select the reaction core', 'body' => 'Pick carrier oils first, with chemistry fields visible instead of buried in one generic catalog list.'],
-            ['title' => 'Tune the batch', 'body' => 'Adjust lye ratios, superfat, and phase weights while totals stay legible and responsive.'],
-            ['title' => 'Layer the aromatic phase', 'body' => 'Add essential oils, fragrance oils, and additives without corrupting the core saponification logic.'],
-            ['title' => 'Close with compliance', 'body' => 'Review allergens, IFRA categories, and final INCI outputs only when the formula itself is stable.'],
-        ];
-
-        $catalogPriorities = [
-            'Carrier oils with INCI, CAS, soap INCI, KOH SAP, and fatty-acid profiles.',
-            'Essential oils that can scale well past the first starter catalog.',
-            'User-authored fragrance materials instead of platform-seeded fiction.',
-            'Versioned recipes and ingredients that keep exports auditable.',
+            [
+                'title' => 'Your recipe portfolio',
+                'body' => 'Store recipes with photos, notes, and version history — all in one place.',
+                'icon' => '📋',
+            ],
+            [
+                'title' => 'Precise calculations',
+                'body' => 'SAP values, lye calculations, and costings you can trust.',
+                'icon' => '⚗️',
+            ],
+            [
+                'title' => 'Compliance included',
+                'body' => 'Allergen summaries and IFRA compliance for every recipe.',
+                'icon' => '✓',
+            ],
+            [
+                'title' => 'Share with makers',
+                'body' => 'Share ingredients and recipes with other Koskalk members.',
+                'icon' => '🔗',
+            ],
         ];
     @endphp
 
@@ -73,6 +70,20 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="bg-[var(--color-surface)] px-6 py-16 lg:px-8 lg:py-20">
+        <div class="mx-auto max-w-7xl">
+            <div class="grid gap-6 lg:grid-cols-4">
+                @foreach ($pillars as $pillar)
+                    <article class="rounded-xl bg-[var(--color-panel)] p-6 shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+                        <div class="mb-4 text-3xl">{{ $pillar['icon'] }}</div>
+                        <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $pillar['title'] }}</h2>
+                        <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $pillar['body'] }}</p>
+                    </article>
+                @endforeach
             </div>
         </div>
     </section>

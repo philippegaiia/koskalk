@@ -146,4 +146,26 @@
             </div>
         </div>
     </section>
+
+    <section class="border-t border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-10 lg:px-8">
+        <div class="mx-auto max-w-7xl">
+            <div class="flex flex-col items-center justify-between gap-6 lg:flex-row">
+                <div class="flex items-center gap-8">
+                    @foreach ([
+                        ['name' => 'Free', 'limit' => '20 recipes'],
+                        ['name' => 'Light', 'limit' => '100 recipes'],
+                        ['name' => 'Pro', 'limit' => '200 recipes'],
+                    ] as $tier)
+                        <div class="text-center">
+                            <p class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ $tier['name'] }}</p>
+                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $tier['limit'] }}</p>
+                        </div>
+                    @endforeach
+                </div>
+                <p class="text-sm text-[var(--color-ink-soft)]">
+                    All plans include ingredient database and IFRA compliance tools.
+                </p>
+            </div>
+        </div>
+    </section>
 @endsection

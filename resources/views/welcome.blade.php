@@ -40,7 +40,6 @@
                     <p class="text-xs font-semibold tracking-[0.24em] text-white/62 uppercase">Soap formulation workspace</p>
 
                     <div class="space-y-4">
-                        <h1 class="text-6xl leading-none font-semibold text-white sm:text-7xl lg:text-[6.5rem]">Formula Key</h1>
                         <p class="max-w-2xl text-3xl leading-[1.08] font-medium tracking-[0.016em] text-white/94 sm:text-4xl lg:text-[3.35rem]">
                             Fast drafting, clean chemistry, and a compliance-ready handoff.
                         </p>

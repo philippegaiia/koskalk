@@ -51,10 +51,16 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-numeric: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        'Liberation Mono', 'Courier New', monospace;
 
-    --color-surface: oklch(97.5% .008 82);
+    --color-surface: oklch(98.3% .011 85);
+    --color-sidebar: oklch(96.8% .010 86);
     --color-panel: oklch(99.5% .003 80);
-    --color-panel-strong: oklch(93.5% .014 80);
+    --color-panel-strong: oklch(95.1% .014 84);
+    --color-field: oklch(99.7% .002 82);
+    --color-field-muted: oklch(96.8% .010 84);
+    --color-field-outline: oklch(78% .012 82);
 
     --color-hero: oklch(22.0% .025 154);
     --color-hero-soft: oklch(27.0% .028 154);
@@ -68,15 +74,18 @@
     --color-ink-strong: oklch(13% .008 70);
     --color-ink-soft: oklch(54% .012 75);
 
-    --color-ink-sidebar: oklch(88% .020 154);
-    --color-ink-sidebar-soft: oklch(62% .028 154);
+    --color-ink-sidebar: oklch(24% .025 150);
+    --color-ink-sidebar-soft: oklch(48% .025 150);
+    --color-inverse: oklch(98% .006 84);
+    --color-inverse-soft: oklch(76% .010 84);
+    --color-inverse-muted: oklch(58% .010 84);
 
-    --color-accent: oklch(46% .115 154);
+    --color-accent: oklch(53.0% .077 163);
     --color-accent-hover: oklch(38% .105 154);
     --color-accent-soft: oklch(94% .036 154);
     --color-accent-strong: oklch(32% .092 154);
 
-    --color-warning: oklch(46% .110 55);
+    --color-warning: oklch(45.7% .087 65);
     --color-warning-hover: oklch(38% .100 55);
     --color-warning-soft: oklch(93% .038 68);
     --color-warning-strong: oklch(36% .095 55);
@@ -89,6 +98,14 @@
     --color-success: oklch(52% .155 142);
     --color-success-soft: oklch(95% .040 142);
     --color-success-strong: oklch(36% .130 142);
+}
+
+@layer utilities {
+    .numeric {
+        font-family: var(--font-numeric);
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+    }
 }
 
 @layer base {

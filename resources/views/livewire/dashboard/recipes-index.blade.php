@@ -188,7 +188,7 @@
  Use recipe name
  </button>
 
- <input x-model="confirmText" type="text" placeholder="Paste recipe name to confirm" class="mt-4 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]" />
+ <input x-model="confirmText" type="text" placeholder="Paste recipe name to confirm" class="mt-4 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
 
  <form method="POST" action="{{ route('recipes.destroy', $recipe->id) }}" class="mt-4">
  @method('DELETE')

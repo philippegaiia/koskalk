@@ -41,8 +41,8 @@
                         <p class="mt-2 text-sm text-slate-600">Current saved formula</p>
                     </div>
                     <div class="text-sm text-slate-600 sm:text-right">
-                        <div>Saved {{ $version->saved_at?->format('Y-m-d H:i') ?? 'not recorded yet' }}</div>
-                        <div>Oil basis {{ $formatNumber($selectedOilWeight, 2) }} {{ $oilUnit }}</div>
+                        <div>Saved <span class="numeric">{{ $version->saved_at?->format('Y-m-d H:i') ?? 'not recorded yet' }}</span></div>
+                        <div>Oil basis <span class="numeric">{{ $formatNumber($selectedOilWeight, 2) }} {{ $oilUnit }}</span></div>
                     </div>
                 </div>
             </header>
@@ -54,7 +54,7 @@
                         @foreach ($summaryCards as $card)
                             <div class="border border-slate-200 px-4 py-3">
                                 <div class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{{ $card['label'] }}</div>
-                                <div class="mt-1 text-lg font-semibold text-slate-950">{{ $formatNumber($card['value']) }} {{ $card['unit'] }}</div>
+                                <div class="numeric mt-1 text-lg font-semibold text-slate-950">{{ $formatNumber($card['value']) }} {{ $card['unit'] }}</div>
                             </div>
                         @endforeach
                     </div>
@@ -82,7 +82,7 @@
                                 @foreach ($lyeRows as $row)
                                     <tr>
                                         <td class="w-64 bg-slate-50 px-4 py-2.5 font-medium text-slate-600">{{ $row['label'] }}</td>
-                                        <td class="px-4 py-2.5 text-slate-900">
+                                        <td class="numeric px-4 py-2.5 text-slate-900">
                                             @if (is_numeric($row['value']))
                                                 {{ $formatNumber($row['value']) }}@if ($row['unit']) {{ $row['unit'] }}@endif
                                             @else
@@ -105,7 +105,7 @@
                                 <h2 class="text-sm font-semibold uppercase tracking-[0.16em] text-slate-500">{{ $section['label'] }}</h2>
                                 <p class="mt-1 text-xs text-slate-500">Locked percentages from the current saved formula, recalculated on the selected oil basis.</p>
                             </div>
-                            <div class="text-xs text-slate-500">
+                            <div class="numeric text-xs text-slate-500">
                                 {{ $formatNumber($section['total_percentage']) }}% oils · {{ $formatNumber($section['total_weight']) }} {{ $oilUnit }}
                             </div>
                         </div>
@@ -126,8 +126,8 @@
                                         <tr>
                                             <td class="px-4 py-2.5 font-medium text-slate-950">{{ $row['name'] }}</td>
                                             <td class="px-4 py-2.5 text-slate-600">{{ $row['inci_name'] ?: 'Not recorded yet' }}</td>
-                                            <td class="px-4 py-2.5 text-slate-900">{{ $formatNumber($row['percentage']) }}%</td>
-                                            <td class="px-4 py-2.5 text-slate-900">{{ $formatNumber($row['weight']) }} {{ $oilUnit }}</td>
+                                            <td class="numeric px-4 py-2.5 text-slate-900">{{ $formatNumber($row['percentage']) }}%</td>
+                                            <td class="numeric px-4 py-2.5 text-slate-900">{{ $formatNumber($row['weight']) }} {{ $oilUnit }}</td>
                                             <td class="px-4 py-2.5 text-slate-600">{{ $row['note'] ?: '—' }}</td>
                                         </tr>
                                     @endforeach
@@ -212,8 +212,8 @@
                                         <tr>
                                             <td class="px-4 py-2.5 font-medium text-slate-950">{{ $row['label'] }}</td>
                                             <td class="px-4 py-2.5 text-slate-600">{{ implode(', ', $row['source_ingredients']) }}</td>
-                                            <td class="px-4 py-2.5 text-slate-900">{{ $formatNumber($row['percent_of_formula'], 4) }}%</td>
-                                            <td class="px-4 py-2.5 text-slate-600">{{ $formatNumber($row['threshold_percent'], 3) }}%</td>
+                                            <td class="numeric px-4 py-2.5 text-slate-900">{{ $formatNumber($row['percent_of_formula'], 4) }}%</td>
+                                            <td class="numeric px-4 py-2.5 text-slate-600">{{ $formatNumber($row['threshold_percent'], 3) }}%</td>
                                             <td class="px-4 py-2.5 text-slate-900">{{ $row['status_label'] }}</td>
                                             <td class="px-4 py-2.5 text-slate-600">{{ $row['notes'] ?: '—' }}</td>
                                         </tr>

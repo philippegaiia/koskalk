@@ -60,7 +60,7 @@
  <input
  wire:model="name"
  type="text"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  @error('name') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
@@ -70,7 +70,7 @@
  <input
  wire:model="email"
  type="email"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  @error('email') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
@@ -98,7 +98,7 @@
  <input
  wire:model="currentPassword"
  type="password"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  @error('currentPassword') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
@@ -109,7 +109,7 @@
  <input
  wire:model="newPassword"
  type="password"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  @error('newPassword') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
@@ -119,7 +119,7 @@
  <input
  wire:model="newPasswordConfirmation"
  type="password"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  </label>
  </div>
@@ -159,7 +159,7 @@
  <input
  wire:model="companyName"
  type="text"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  @error('companyName') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
@@ -168,7 +168,7 @@
  <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Default currency</span>
  <select
  wire:model="companyCurrency"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  >
  @foreach(config('currencies', []) as $code => $data)
  <option value="{{ $code }}">{{ $code }} — {{ __('currencies.' . $code) }}</option>
@@ -214,7 +214,7 @@
  wire:model="inviteEmail"
  type="email"
  placeholder="colleague@example.com"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  @error('inviteEmail') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
@@ -223,7 +223,7 @@
  <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Role</span>
  <select
  wire:model="inviteRole"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  >
  <option value="admin">Admin</option>
  <option value="editor">Editor</option>

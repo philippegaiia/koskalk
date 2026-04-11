@@ -137,6 +137,49 @@ it('replaces the working draft with the selected saved version using the same wo
         ->and($actualPayload['catalogReview']['needs_review'])->toBeFalse();
 });
 
+it('publishes after restoring a recovery snapshot without reusing the recovery version number', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchLifecycleOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->saveDraft($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Formula A',
+    ]));
+
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->saveRecipe($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Formula A',
+    ]), $recipe);
+    $service->saveRecipe($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Formula B',
+    ]), $recipe);
+
+    $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_draft', false)
+        ->where('name', 'Formula A')
+        ->latest('version_number')
+        ->firstOrFail();
+
+    $restoredVersion = $service->restoreSavedFormula($user, $recipe, $olderSavedVersion->id);
+    $newDraft = $service->saveRecipe($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Published After Restore',
+    ]), $recipe);
+
+    expect($newDraft->is_draft)->toBeTrue()
+        ->and($newDraft->version_number)->toBeGreaterThan($restoredVersion->version_number);
+});
+
 function recipeWorkbenchLifecycleOil(array $overrides = []): Ingredient
 {
     return Ingredient::factory()->create(array_merge([

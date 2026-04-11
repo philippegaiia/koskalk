@@ -12,11 +12,11 @@
  <template x-if="hasQualityMetricsData">
  <div class="mt-4 grid gap-2">
  <template x-for="row in defaultQualityRows()" :key="row.key">
- <div class="rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 text-sm">
+ <div class="rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm">
  <div class="flex items-center justify-between gap-4">
  <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
  <div class="text-right">
- <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
+ <div class="numeric font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
  <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
  </div>
  </div>
@@ -35,7 +35,7 @@
  </template>
 
  <template x-if="!hasQualityMetricsData">
- <div class="mt-4 rounded-lg bg-[var(--color-panel-strong)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
+ <div class="mt-4 rounded-lg bg-[var(--color-field)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
  Add saponifiable oils with SAP data to see backend-calculated Koskalk qualities here.
  </div>
  </template>
@@ -60,11 +60,11 @@
  <template x-if="hasQualityMetricsData">
  <div class="mt-4 grid gap-2">
  <template x-for="row in advancedQualityRows()" :key="row.key">
- <div class="rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 text-sm">
+ <div class="rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm">
  <div class="flex items-center justify-between">
  <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
  <div class="text-right">
- <div class="font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
+ <div class="numeric font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
  <template x-if="row.level">
  <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
  </template>
@@ -86,7 +86,7 @@
  </div>
  </template>
  <template x-if="!hasQualityMetricsData">
- <div class="mt-4 rounded-lg bg-[var(--color-panel-strong)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
+ <div class="mt-4 rounded-lg bg-[var(--color-field)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
  Add saponifiable oils with SAP data to unlock the deeper chemistry indicators here.
  </div>
  </template>

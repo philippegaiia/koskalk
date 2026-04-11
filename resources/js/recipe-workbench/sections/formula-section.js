@@ -247,6 +247,14 @@ export function createFormulaSection() {
                 const el = event.target;
                 const start = el.selectionStart;
                 const end = el.selectionEnd;
+
+                if (start === null || end === null || typeof el.setRangeText !== 'function') {
+                    el.value = `${el.value ?? ''}.`;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
+
+                    return;
+                }
+
                 el.setRangeText('.', start, end, 'end');
                 el.dispatchEvent(new Event('input', { bubbles: true }));
             }

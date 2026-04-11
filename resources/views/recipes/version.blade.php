@@ -77,8 +77,8 @@
                         <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Scale quantity</p>
                         <label class="mt-3 block text-sm font-medium text-[var(--color-ink-strong)]" for="oil_weight">Oil quantity</label>
                         <div class="mt-2 flex items-center gap-2">
-                            <input id="oil_weight" name="oil_weight" type="number" min="0.01" step="0.01" value="{{ rtrim(rtrim(number_format($selectedOilWeight, 2, '.', ''), '0'), '.') }}" class="w-full rounded-[1.25rem] border border-[var(--color-line)] bg-white px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]" />
-                            <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-2 text-xs font-medium text-[var(--color-ink-soft)]">{{ $snapshot['draft']['oilUnit'] ?? 'g' }}</span>
+                            <input id="oil_weight" name="oil_weight" type="number" min="0.01" step="0.01" value="{{ rtrim(rtrim(number_format($selectedOilWeight, 2, '.', ''), '0'), '.') }}" class="numeric w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                            <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-2 text-xs font-medium text-[var(--color-ink-soft)]">{{ $snapshot['draft']['oilUnit'] ?? 'g' }}</span>
                         </div>
                         <div class="mt-3 flex flex-wrap gap-2">
                             <button type="submit" class="inline-flex rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">

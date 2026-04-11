@@ -1475,6 +1475,36 @@ it('orders ifra categories naturally and exposes cat 9 as the default soap conte
         ->and($workbench['defaultIfraProductCategoryId'])->toBe($category9->id);
 });
 
+it('keeps formula table controls stepped and visually aligned', function () {
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+    $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+
+    expect($reactionCore)
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem]')
+        ->toContain('type="number" inputmode="decimal" step="1"')
+        ->toContain('row.percentage = format(nonNegativeNumber($event.target.value), 2)')
+        ->toContain('format(totalOilPercentage(), 2)')
+        ->toContain("oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]'")
+        ->and($postReaction)
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem]')
+        ->toContain('type="number" inputmode="decimal" step="0.1"')
+        ->toContain('type="number" inputmode="decimal" step="0.001"')
+        ->toContain('format(rowWeight(row), 3)');
+});
+
+it('keeps formula visual states distinct and softly selected', function () {
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+    $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
+    $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
+
+    expect($reactionCore)
+        ->toContain('class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
+        ->and($formulaAnalysis)
+        ->toContain('rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm')
+        ->and($navigation)
+        ->toContain('bg-[var(--color-accent-soft)]');
+});
+
 function makeCarrierOilIngredient(): Ingredient
 {
     return Ingredient::factory()->create([

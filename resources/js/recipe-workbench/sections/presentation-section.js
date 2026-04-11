@@ -74,8 +74,8 @@ export function createPresentationSection() {
             return [
                 {
                     id: 'additives-total',
-                    label: 'Additives',
-                    value: `${this.format(this.totalAdditionPercentage(), 1)}% of oils`,
+                    label: 'Additives (% oils)',
+                    value: `${this.format(this.totalAdditionPercentage(), 1)}%`,
                 },
                 {
                     id: 'produced-glycerine',

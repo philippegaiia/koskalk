@@ -20,7 +20,7 @@
  @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
  type="text"
  inputmode="decimal"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  </label>
 
@@ -41,7 +41,7 @@
  @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
  type="text"
  inputmode="numeric"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  placeholder="e.g. 50"
  />
  </label>
@@ -51,7 +51,7 @@
  <select
  x-model="costingCurrency"
  @change="scheduleCostingSave()"
- class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline-none"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  >
  @foreach($workbench['currencies'] ?? ['EUR' => 'Euro', 'USD' => 'US Dollar', 'CHF' => 'Swiss Franc'] as $code => $name)
  <option value="{{ $code }}">{{ $code }} — {{ $name }}</option>
@@ -67,7 +67,7 @@
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Ingredient costing</p>
  <div class="mt-1 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
  <p class="text-sm text-[var(--color-ink-soft)]">Formula rows stay read-only here except for price per kilo, so development and costing each get their own space.</p>
- <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`${costingFormulaRows.length} priced rows`"></span>
+ <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`${costingFormulaRows.length} priced rows`"></span>
  </div>
  </div>
 
@@ -90,8 +90,8 @@
  <div class="bg-white px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
- <div class="bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></div>
- <div class="bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)} ${row.weightUnit}`"></div>
+ <div class="numeric bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></div>
+ <div class="numeric bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)} ${row.weightUnit}`"></div>
  <div class="bg-white px-3 py-3">
  <input
  :value="costingPriceForRow(row) ?? ''"
@@ -99,10 +99,10 @@
  @blur="updateCostingPrice(row, $event.target.value)"
  type="text"
  inputmode="decimal"
- class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none"
+ class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  </div>
- <div class="bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"></div>
+ <div class="numeric bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"></div>
  </div>
  </template>
 
@@ -112,7 +112,7 @@
  <div class="bg-[var(--color-panel)] px-4 py-3"></div>
  <div class="bg-[var(--color-panel)] px-4 py-3"></div>
  <div class="bg-[var(--color-panel)] px-4 py-3"></div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></div>
+ <div class="numeric bg-[var(--color-panel)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></div>
  </div>
  </div>
  </div>
@@ -139,7 +139,7 @@
  <template x-if="unusedPackagingCatalogItems.length > 0">
  <select
  @change="if ($event.target.value) { addPackagingCostRow(JSON.parse($event.target.value)); $event.target.value = ''; }"
- class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] outline-none"
+ class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  >
  <option value="">Add from catalog...</option>
  <template x-for="item in unusedPackagingCatalogItems" :key="item.id">
@@ -180,17 +180,15 @@
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
  <div class="flex items-center bg-white px-3 py-3">
- <input x-model="row.quantity" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+ <input x-model="row.quantity" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
  <div class="flex items-center bg-white px-3 py-3">
- <input x-model="row.unit_cost" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+ <input x-model="row.unit_cost" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
- <div class="flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostPerFinishedUnitForRow(row), 2)}`"></div>
- <div class="flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(packagingBatchCostForRow(row), 2)}` : 'Set units produced'"></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostPerFinishedUnitForRow(row), 2)}`"></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(packagingBatchCostForRow(row), 2)}` : 'Set units produced'"></div>
  <div class="flex items-center justify-end bg-white px-4 py-3">
- <button type="button" @click="removePackagingCostRow(row.id)" class="rounded-full border border-[var(--color-line)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
- Remove
- </button>
+ <button type="button" @click="removePackagingCostRow(row.id)" class="grid size-8 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove packaging item">×</button>
  </div>
  </div>
  </template>
@@ -207,21 +205,21 @@
  <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Cost summary</p>
  <div class="mt-4 grid gap-2 lg:grid-cols-2 xl:grid-cols-4 xl:gap-3 text-sm">
- <div class="flex items-center justify-between rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
+ <div class="flex items-center justify-between rounded-lg bg-[var(--color-field)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-soft)]">Ingredients</span>
- <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></span>
  </div>
- <div class="flex items-center justify-between rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
+ <div class="flex items-center justify-between rounded-lg bg-[var(--color-field)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-soft)]">Packaging</span>
- <span class="font-medium text-[var(--color-ink-strong)]" x-text="packagingCostTotal !== null ? `${costingCurrency} ${format(packagingCostTotal, 2)}` : 'Set units produced'"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="packagingCostTotal !== null ? `${costingCurrency} ${format(packagingCostTotal, 2)}` : 'Set units produced'"></span>
  </div>
  <div class="flex items-center justify-between rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-strong)]">Total batch cost</span>
- <span class="font-semibold text-[var(--color-ink-strong)]" x-text="totalBatchCost !== null ? `${costingCurrency} ${format(totalBatchCost, 2)}` : 'Set units produced'"></span>
+ <span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="totalBatchCost !== null ? `${costingCurrency} ${format(totalBatchCost, 2)}` : 'Set units produced'"></span>
  </div>
- <div class="flex items-center justify-between rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
+ <div class="flex items-center justify-between rounded-lg bg-[var(--color-field)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-soft)]">Cost per unit</span>
- <span class="font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(costPerUnit, 2)}` : 'Set units produced'"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(costPerUnit, 2)}` : 'Set units produced'"></span>
  </div>
  </div>
  </section>
@@ -246,17 +244,17 @@
  <div class="mt-5 grid gap-3">
  <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
  <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Name</span>
- <input x-model="packagingCatalogForm.name" type="text" class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
+ <input x-model="packagingCatalogForm.name" type="text" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </label>
 
  <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
  <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Effective unit price</span>
- <input x-model="packagingCatalogForm.unit_cost" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none" />
+ <input x-model="packagingCatalogForm.unit_cost" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </label>
 
  <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
  <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Notes</span>
- <textarea x-model="packagingCatalogForm.notes" rows="4" class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none"></textarea>
+ <textarea x-model="packagingCatalogForm.notes" rows="4" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"></textarea>
  </label>
  </div>
 

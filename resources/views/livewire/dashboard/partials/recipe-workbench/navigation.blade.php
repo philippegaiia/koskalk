@@ -3,7 +3,7 @@
  type="button"
  @click="activeWorkbenchTab = 'formula'"
  :class="activeWorkbenchTab === 'formula'
- ? 'border-[var(--color-accent)] bg-white text-[var(--color-ink-strong)] border-t-2'
+ ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
  : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
@@ -14,7 +14,7 @@
  type="button"
  @click="activeWorkbenchTab = 'costing'; ensureCostingLoaded()"
  :class="activeWorkbenchTab === 'costing'
- ? 'border-[var(--color-accent)] bg-white text-[var(--color-ink-strong)] border-t-2'
+ ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
  : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
@@ -25,7 +25,7 @@
  type="button"
  @click="activeWorkbenchTab = 'output'"
  :class="activeWorkbenchTab === 'output'
- ? 'border-[var(--color-accent)] bg-white text-[var(--color-ink-strong)] border-t-2'
+ ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
  : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
@@ -36,7 +36,7 @@
  type="button"
  @click="activeWorkbenchTab = 'instructions'"
  :class="activeWorkbenchTab === 'instructions'
- ? 'border-[var(--color-accent)] bg-white text-[var(--color-ink-strong)] border-t-2'
+ ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
  : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >

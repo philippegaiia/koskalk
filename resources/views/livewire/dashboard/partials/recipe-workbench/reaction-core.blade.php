@@ -5,7 +5,7 @@
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">Saponified oils + lye water</h3>
  <div :class="oilPercentageIsBalanced ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium transition">
  <span x-text="oilPercentageStatusLabel"></span>
- <span class="rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 1)}%`"></span>
+ <span class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"></span>
  </div>
  </div>
  </div>
@@ -13,11 +13,11 @@
  <div class="relative rounded-lg bg-[var(--color-panel-strong)]">
  <div class="overflow-hidden rounded-lg">
  <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="bg-[var(--color-panel)] px-3 py-3"></div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Oil</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% oils</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Weight</div>
- <div class="bg-[var(--color-panel)] px-4 py-3"></div>
+ <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Oil</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% oils</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Weight</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
  </div>
 
  <div class="divide-y divide-[var(--color-line)] bg-white">
@@ -34,9 +34,9 @@
  draggable="true"
  @dragstart="beginRowDrag('saponified_oils', row.id, $event)"
  @dragend="endRowDrag()"
- class="grid size-8 cursor-grab place-items-center rounded-full border border-[var(--color-line)] text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
+ class="grid size-7 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
  aria-label="Drag to reorder or move this oil">
- <span class="text-base leading-none">⋮⋮</span>
+ <span class="text-sm leading-none">⋮⋮</span>
  </button>
  </div>
  <div class="bg-white px-4 py-3">
@@ -86,7 +86,7 @@
  <template x-for="detail in ingredientInspectorRows(row)" :key="detail.label">
  <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
  <span x-text="detail.label"></span>
- <span class="font-medium text-[var(--color-ink-strong)]" x-text="detail.value"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="detail.value"></span>
  </div>
  </template>
  </div>
@@ -97,7 +97,7 @@
  <template x-for="fattyAcid in ingredientFattyAcidRows(row)" :key="fattyAcid.key">
  <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
  <span x-text="fattyAcid.label"></span>
- <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(fattyAcid.value, 1)}%`"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="`${format(fattyAcid.value, 1)}%`"></span>
  </div>
  </template>
  </div>
@@ -111,44 +111,33 @@
  </div>
  <div class="bg-white px-3 py-3">
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+ <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(nonNegativeNumber($event.target.value), 2)" type="number" inputmode="decimal" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'percentage'">
- <span class="inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
+ <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
  <div class="bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
  <template x-if="editMode === 'weight'">
- <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="w-full rounded-xl border border-[var(--color-line)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline-none" />
+ <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
- <span class="inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)} ${oilUnit}`"></span>
+ <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)} ${oilUnit}`"></span>
  </template>
  </div>
  <div class="flex items-center justify-center bg-white px-2 py-3">
- <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-8 place-items-center rounded-full border border-[var(--color-line)] text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]">×</button>
+ <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-8 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove oil">×</button>
  </div>
  </div>
  </template>
-
- <div @dragover="allowPhaseDrop('saponified_oils', $event)"
- @drop="dropDraggedRow('saponified_oils', $event)"
- :class="isDropTarget('saponified_oils') ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'"
- class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px text-xs font-medium transition">
- <div class="px-3 py-2"></div>
- <div class="px-4 py-2">Drag here to place an oil at the end of the reaction core.</div>
- <div class="px-3 py-2"></div>
- <div class="px-3 py-2"></div>
- <div class="px-2 py-2"></div>
- </div>
  </div>
 
  <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-3 py-3"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="px-4 py-3 font-medium">Oil total</div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="px-4 py-3 font-medium" x-text="`${format(totalOilPercentage(), 1)}%`"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="px-4 py-3 font-medium" x-text="`${format(oilWeightTotal(), 1)} ${oilUnit}`"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-4 py-3"></div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-3 py-3"></div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="px-4 py-3 font-medium">Oil total</div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric px-4 py-3 font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric px-4 py-3 font-medium" x-text="`${format(oilWeightTotal(), 1)} ${oilUnit}`"></div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-4 py-3"></div>
  </div>
  </div>
  </div>
@@ -168,9 +157,9 @@
 
  <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
  <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
- <div class="flex min-h-[5rem] flex-col justify-between rounded-lg bg-[var(--color-panel-strong)] p-3">
+ <div class="flex min-h-[4.25rem] flex-col justify-between rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
- <p class="text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
+ <p class="numeric text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
  </div>
  </template>
  </div>

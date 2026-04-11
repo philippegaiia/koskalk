@@ -68,11 +68,9 @@ class RecipeVersionPublisher
             $publishedVersion->save();
             $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
 
-            $nextDraftVersionNumber = $publishedVersion->version_number + 1;
-
             $newDraftVersion = new RecipeVersion;
             $newDraftVersion->recipe()->associate($recipe);
-            $newDraftVersion->version_number = $nextDraftVersionNumber;
+            $newDraftVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
             $this->recipeVersionRecordService->fillVersion(
                 $newDraftVersion,
                 $recipe,

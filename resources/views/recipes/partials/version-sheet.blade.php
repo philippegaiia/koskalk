@@ -9,7 +9,7 @@
         @foreach ($summaryCards as $card)
             <article class="rounded-[1.75rem] border border-[var(--color-line)] bg-white p-5">
                 <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">{{ $card['label'] }}</p>
-                <p class="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[var(--color-ink-strong)]">
+                <p class="numeric mt-3 text-3xl font-semibold text-[var(--color-ink-strong)]">
                     {{ $formatNumber($card['value']) }}<span class="ml-1 text-base font-medium text-[var(--color-ink-soft)]">{{ $card['unit'] }}</span>
                 </p>
             </article>
@@ -47,7 +47,7 @@
                     @foreach ($lyeRows as $row)
                         <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
                             <p class="text-xs font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">{{ $row['label'] }}</p>
-                            <p class="mt-2 text-sm font-medium text-[var(--color-ink-strong)]">
+                            <p class="numeric mt-2 text-sm font-medium text-[var(--color-ink-strong)]">
                                 @if (is_numeric($row['value']))
                                     {{ $formatNumber($row['value']) }}@if ($row['unit']) <span class="text-[var(--color-ink-soft)]">{{ $row['unit'] }}</span>@endif
                                 @else
@@ -75,8 +75,8 @@
                             <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Percentages stay locked to the current saved formula. Only the oil quantity basis changes.</p>
                         </div>
                         <div class="flex flex-wrap gap-2 text-xs text-[var(--color-ink-soft)]">
-                            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1">{{ $formatNumber($section['total_percentage']) }}% oils</span>
-                            <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1">{{ $formatNumber($section['total_weight']) }} {{ $oilUnit }}</span>
+                            <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1">{{ $formatNumber($section['total_percentage']) }}% oils</span>
+                            <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1">{{ $formatNumber($section['total_weight']) }} {{ $oilUnit }}</span>
                         </div>
                     </div>
                 </div>
@@ -99,8 +99,8 @@
                                         <p class="font-medium text-[var(--color-ink-strong)]">{{ $row['name'] }}</p>
                                     </td>
                                     <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $row['inci_name'] ?: 'Not recorded yet' }}</td>
-                                    <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($row['percentage']) }}%</td>
-                                    <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($row['weight']) }} {{ $oilUnit }}</td>
+                                    <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($row['percentage']) }}%</td>
+                                    <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($row['weight']) }} {{ $oilUnit }}</td>
                                     <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $row['note'] ?: '—' }}</td>
                                 </tr>
                             @endforeach
@@ -195,8 +195,8 @@
                                 <tr>
                                     <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $row['label'] }}</td>
                                     <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ implode(', ', $row['source_ingredients']) }}</td>
-                                    <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($row['percent_of_formula'], 4) }}%</td>
-                                    <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $formatNumber($row['threshold_percent'], 3) }}%</td>
+                                    <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($row['percent_of_formula'], 4) }}%</td>
+                                    <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $formatNumber($row['threshold_percent'], 3) }}%</td>
                                     <td class="px-5 py-4 align-top text-[var(--color-ink-strong)]">{{ $row['status_label'] }}</td>
                                     <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $row['notes'] ?: '—' }}</td>
                                 </tr>

@@ -7,22 +7,22 @@
  </div>
  <div class="flex flex-wrap items-center gap-2">
  <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">Dry soap basis</span>
- <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">11% residual water</span>
+ <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">11% residual water</span>
  </div>
  </div>
 
  <div class="mt-4 grid gap-3 md:grid-cols-3">
  <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Cured bar basis</p>
- <p class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapOutputBasisWeight, 1)} ${oilUnit}`"></p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapOutputBasisWeight, 1)} ${oilUnit}`"></p>
  </div>
  <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Residual water</p>
- <p class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapResidualWaterWeight, 1)} ${oilUnit}`"></p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapResidualWaterWeight, 1)} ${oilUnit}`"></p>
  </div>
  <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Ingredient-only total</p>
- <p class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapIngredientTotalPercent, 1)}%`"></p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapIngredientTotalPercent, 1)}%`"></p>
  </div>
  </div>
  </section>
@@ -52,16 +52,16 @@
  <tr>
  <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="outputRowKindLabel(row)"></td>
- <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 3)}%`"></td>
- <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 2)} ${oilUnit}`"></td>
+ <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 3)}%`"></td>
+ <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 2)} ${oilUnit}`"></td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="row.source_ingredients.join(', ')"></td>
  </tr>
  </template>
  <tr class="bg-[var(--color-panel)]">
  <td class="px-5 py-4 font-semibold text-[var(--color-ink-strong)]">Total</td>
  <td class="px-5 py-4 text-[var(--color-ink-soft)]">Excluding allergens</td>
- <td class="px-5 py-4 font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapIngredientTotalPercent, 3)}%`"></td>
- <td class="px-5 py-4 text-[var(--color-ink-soft)]" x-text="`${format(drySoapIngredientTotalWeight, 2)} ${oilUnit}`"></td>
+ <td class="numeric px-5 py-4 font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapIngredientTotalPercent, 3)}%`"></td>
+ <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]" x-text="`${format(drySoapIngredientTotalWeight, 2)} ${oilUnit}`"></td>
  <td class="px-5 py-4"></td>
  </tr>
  </tbody>
@@ -97,8 +97,8 @@
  <template x-for="row in drySoapAllergenRows" :key="row.label">
  <tr>
  <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
- <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 4)}%`"></td>
- <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 4)} ${oilUnit}`"></td>
+ <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 4)}%`"></td>
+ <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 4)} ${oilUnit}`"></td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="row.source_ingredients.join(', ')"></td>
  </tr>
  </template>

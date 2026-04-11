@@ -80,8 +80,8 @@
  <tr>
  <td class="px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
  <td class="px-4 py-3" x-text="row.source_ingredients.join(', ')"></td>
- <td class="px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 4)}%`"></td>
- <td class="px-4 py-3" x-text="`${format(row.threshold_percent, 3)}%`"></td>
+ <td class="numeric px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 4)}%`"></td>
+ <td class="numeric px-4 py-3" x-text="`${format(row.threshold_percent, 3)}%`"></td>
  <td class="px-4 py-3">
  <span :class="declarationStatusClasses(row)" class="inline-flex rounded-full border px-3 py-1 text-xs font-medium" x-text="row.status_label"></span>
  </td>

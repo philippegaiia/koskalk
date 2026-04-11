@@ -2,7 +2,7 @@
  <div class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Ingredient browser</p>
  <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">Filtered by role</h3>
- <input x-model="search" type="search" placeholder="Search name or INCI" class="mt-4 w-full rounded-lg bg-[var(--color-panel-strong)] px-4 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]" />
+ <input x-model="search" type="search" placeholder="Search name or INCI" class="mt-4 w-full rounded-lg bg-[var(--color-field)] px-4 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
 
  <div class="mt-4 flex flex-wrap gap-2">
  <template x-for="option in categoryOptions" :key="option.value">
@@ -16,7 +16,7 @@
  <div class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Available ingredients</p>
- <p class="mt-1 text-sm text-[var(--color-ink-soft)]"><span x-text="filteredIngredients.length"></span> match the current filter</p>
+ <p class="mt-1 text-sm text-[var(--color-ink-soft)]"><span class="numeric" x-text="filteredIngredients.length"></span> match the current filter</p>
  </div>
 
  <div class="max-h-[44rem] divide-y divide-[var(--color-line)] overflow-y-auto px-3 pr-2">
@@ -82,7 +82,7 @@
  <template x-for="row in ingredientInspectorRows(ingredient)" :key="row.label">
  <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
  <span x-text="row.label"></span>
- <span class="font-medium text-[var(--color-ink-strong)]" x-text="row.value"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="row.value"></span>
  </div>
  </template>
  </div>
@@ -93,7 +93,7 @@
  <template x-for="row in ingredientFattyAcidRows(ingredient)" :key="row.key">
  <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
  <span x-text="row.label"></span>
- <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
  </div>
  </template>
  </div>
@@ -144,18 +144,18 @@
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Grouped profile</p>
  <div class="mt-3 flex h-3 overflow-hidden rounded-full bg-white/80">
  <template x-for="segment in fattyAcidGroupSegments()" :key="segment.key">
- <div :style="`width: ${segment.percent}%; background: ${segment.color};`"></div>
+ <div class="h-full shrink-0" :style="{ width: `${segment.percent}%`, backgroundColor: segment.color }"></div>
  </template>
  </div>
  <div class="mt-3 grid gap-2">
  <template x-for="segment in fattyAcidGroupSegments()" :key="`${segment.key}-legend`">
- <div class="flex items-center justify-between gap-3 rounded-lg bg-[var(--color-panel-strong)] px-3 py-2 text-xs">
+ <div class="flex items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs">
  <div class="flex min-w-0 items-center gap-2">
- <span class="inline-block h-2.5 w-2.5 rounded-full" :style="`background: ${segment.color};`"></span>
- <span class="rounded-full px-2 py-0.5 font-medium text-white" :style="`background: ${segment.color};`" x-text="segment.shortLabel"></span>
+ <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: segment.color }"></span>
+ <span class="rounded-full px-2 py-0.5 font-medium text-white" :style="{ backgroundColor: segment.color }" x-text="segment.shortLabel"></span>
  <span class="truncate text-[var(--color-ink-strong)]" x-text="segment.label"></span>
  </div>
- <span class="shrink-0 text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
+ <span class="numeric shrink-0 text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
  </div>
  </template>
  </div>
@@ -163,10 +163,10 @@
 
  <div class="grid gap-2">
  <template x-for="row in fattyAcidProfileRows" :key="row.key">
- <div class="rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 text-sm">
+ <div class="rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm">
  <div class="flex items-center justify-between gap-3">
  <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
- <span class="font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
+ <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
  </div>
  <div class="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
  <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="fattyAcidRowBarStyle(row.value, 'var(--color-ink-soft)')"></div>
@@ -178,7 +178,7 @@
  </template>
 
  <template x-if="!hasFattyAcidProfileData">
- <div class="mt-4 rounded-lg bg-[var(--color-panel-strong)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
+ <div class="mt-4 rounded-lg bg-[var(--color-field)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
  Fill the fatty acid profile on the selected carrier oils to see the blended profile here.
  </div>
  </template>

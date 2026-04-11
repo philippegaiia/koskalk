@@ -292,7 +292,39 @@ function createCatalogSection() {
         },
 
         isDropTarget(phaseKey, rowId = null) {
-            return this.dropTargetPhaseKey === phaseKey && this.dropTargetRowId === rowId;
+            if (this.dropTargetPhaseKey !== phaseKey) {
+                return false;
+            }
+
+            if (this.dropTargetRowId === rowId) {
+                return true;
+            }
+
+            return rowId !== null
+                && this.dropTargetRowId === null
+                && this.rowIsLastDropTarget(phaseKey, rowId);
+        },
+
+        rowIsLastDropTarget(phaseKey, rowId) {
+            const rows = this.phaseItems[phaseKey] ?? [];
+
+            return rows.length > 0 && rows[rows.length - 1]?.id === rowId;
+        },
+
+        resolvedDropTargetRowId(phaseKey, event, targetRowId = null) {
+            if (targetRowId === null || !this.rowIsLastDropTarget(phaseKey, targetRowId)) {
+                return targetRowId;
+            }
+
+            const rect = event?.currentTarget?.getBoundingClientRect?.();
+
+            if (!rect) {
+                return targetRowId;
+            }
+
+            return event.clientY >= rect.top + (rect.height / 2)
+                ? null
+                : targetRowId;
         },
 
         canDropRowInPhase(phaseKey) {
@@ -329,7 +361,7 @@ function createCatalogSection() {
             }
 
             this.dropTargetPhaseKey = phaseKey;
-            this.dropTargetRowId = targetRowId;
+            this.dropTargetRowId = this.resolvedDropTargetRowId(phaseKey, event, targetRowId);
         },
 
         dropDraggedRow(phaseKey, event, targetRowId = null) {
@@ -343,6 +375,7 @@ function createCatalogSection() {
 
             const sourcePhaseKey = this.draggedRowPhaseKey;
             const rowId = this.draggedRowId;
+            const resolvedTargetRowId = this.resolvedDropTargetRowId(phaseKey, event, targetRowId);
 
             if (!sourcePhaseKey || !rowId) {
                 this.endRowDrag();
@@ -356,7 +389,7 @@ function createCatalogSection() {
                 return;
             }
 
-            if (sourcePhaseKey === phaseKey && targetRowId === rowId) {
+            if (sourcePhaseKey === phaseKey && resolvedTargetRowId === rowId) {
                 this.endRowDrag();
 
                 return;
@@ -374,9 +407,9 @@ function createCatalogSection() {
             const [draggedRow] = sourceRows.splice(sourceIndex, 1);
             const targetRows = sourceRows;
 
-            let targetIndex = targetRowId === null
+            let targetIndex = resolvedTargetRowId === null
                 ? targetRows.length
-                : targetRows.findIndex((row) => row.id === targetRowId);
+                : targetRows.findIndex((row) => row.id === resolvedTargetRowId);
 
             if (targetIndex === -1) {
                 targetIndex = targetRows.length;

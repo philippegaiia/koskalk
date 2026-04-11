@@ -11,8 +11,8 @@
  <template x-if="lyeType === 'dual'">
  <div class="mt-3 rounded-lg bg-[var(--color-panel-strong)] p-3">
  <div class="flex items-center justify-between gap-3">
- <span class="text-xs font-medium text-[var(--color-ink-soft)]">NaOH <span x-text="`${format(dualNaohPercentage, 1)}%`"></span></span>
- <span class="text-xs font-medium text-[var(--color-ink-soft)]">KOH <span x-text="`${format(dualKohPercentage, 1)}%`"></span></span>
+ <span class="text-xs font-medium text-[var(--color-ink-soft)]">NaOH <span class="numeric" x-text="`${format(dualNaohPercentage, 1)}%`"></span></span>
+ <span class="text-xs font-medium text-[var(--color-ink-soft)]">KOH <span class="numeric" x-text="`${format(dualKohPercentage, 1)}%`"></span></span>
  </div>
  <input x-model.number="dualKohPercentage" type="range" min="0" max="100" step="1" class="mt-3 w-full accent-[var(--color-accent)]" />
  </div>
@@ -31,7 +31,7 @@
  <button type="button" @click="oilUnit = 'oz'" :class="oilUnit === 'oz' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">oz</button>
  <button type="button" @click="oilUnit = 'lb'" :class="oilUnit === 'lb' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">lb</button>
  </div>
- <input x-model="oilWeight" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); oilWeight = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none" />
+ <input x-model="oilWeight" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); oilWeight = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  <div class="mt-4 border-t border-[var(--color-line)] pt-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Entry mode</p>
  <div class="mt-3 flex flex-wrap gap-2">
@@ -47,27 +47,27 @@
  <button type="button" @click="waterMode = 'lye_ratio'" :class="waterMode === 'lye_ratio' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-lg px-3 py-2 text-left text-xs font-medium transition">Water : lye ratio</button>
  <button type="button" @click="waterMode = 'lye_concentration'" :class="waterMode === 'lye_concentration' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-lg px-3 py-2 text-left text-xs font-medium transition">Lye concentration</button>
  </div>
- <input x-model="waterValue" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); waterValue = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline-none" />
+ <input x-model="waterValue" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); waterValue = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
  <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Superfat</p>
  <div class="mt-3 flex items-center justify-between gap-3 text-sm">
  <span :class="superfat < 0 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-soft)]'" class="font-medium">Current</span>
- <span :class="superfat < 0 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]'" class="font-semibold" x-text="`${format(superfat, 1)}%`"></span>
+ <span :class="superfat < 0 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]'" class="numeric font-semibold" x-text="`${format(superfat, 1)}%`"></span>
  </div>
  <input x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-[var(--color-danger)]' : 'accent-[var(--color-accent)]'" class="mt-3 w-full" />
- <input x-model="superfat" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="superfat < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="mt-3 w-full rounded-lg border bg-white px-4 py-3 text-sm outline-none" />
+ <input x-model="superfat" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="superfat < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
  <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Exposure</p>
  <div class="mt-3 flex flex-wrap gap-2">
- <button type="button" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-ink-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Rinse-off</button>
- <button type="button" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-ink-strong)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Leave-on</button>
+ <button type="button" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Rinse-off</button>
+ <button type="button" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Leave-on</button>
  </div>
  <div class="mt-4 border-t border-[var(--color-line)] pt-4">
  <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">IFRA context</p>
  <template x-if="$data.ifraProductCategories?.length">
- <select x-model="selectedIfraProductCategoryId" class="mt-3 w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]">
+ <select :value="`${selectedIfraProductCategoryId ?? ''}`" @change="selectedIfraProductCategoryId = $event.target.value" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">
  <option value="">No IFRA context</option>
  <template x-for="category in $data.ifraProductCategories" :key="category.id">
  <option :value="String(category.id)" x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></option>

@@ -186,26 +186,17 @@
     </section>
 
     <section class="px-6 pb-16 lg:px-8 lg:pb-24">
-        <div class="mx-auto overflow-hidden rounded-[2.5rem] bg-[linear-gradient(135deg,rgba(12,33,29,0.98),rgba(24,61,52,0.96))] px-6 py-10 text-white lg:max-w-7xl lg:px-10 lg:py-12">
-            <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                <div>
-                    <p class="text-xs font-semibold tracking-[0.22em] text-white/46 uppercase">Now shipping</p>
-                    <h2 class="mt-4 max-w-3xl text-4xl leading-none font-semibold text-white lg:text-5xl">
-                        Open the workspace, pressure-test the flow, and push the next build.
-                    </h2>
-                    <p class="mt-4 max-w-2xl text-sm leading-7 text-white/68 lg:text-base">
-                        The app shell is already live. The next gains come from tightening the drafting rhythm and keeping the chemistry clean as the catalog grows.
-                    </p>
-                </div>
-
-                <div class="flex flex-col gap-3 sm:flex-row lg:flex-col">
-                    <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-[var(--color-hero)] transition duration-300 hover:-translate-y-0.5 hover:bg-[var(--color-panel-strong)] motion-reduce:hover:translate-y-0">
-                        Open workspace
-                    </a>
-                    <a href="/admin" class="inline-flex justify-center rounded-full border border-white/14 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:bg-white/14">
-                        Open admin
-                    </a>
-                </div>
+        <div class="mx-auto max-w-3xl text-center">
+            <h2 class="text-3xl font-semibold text-[var(--color-ink-strong)] lg:text-4xl">
+                Start building your portfolio today.
+            </h2>
+            <p class="mt-4 text-base text-[var(--color-ink-soft)]">
+                20 recipes free. No credit card required.
+            </p>
+            <div class="mt-8">
+                <a href="{{ route('register') }}" class="inline-flex justify-center rounded-full bg-[var(--color-accent)] px-8 py-3 text-sm font-semibold text-white transition duration-300 hover:bg-[var(--color-accent-hover)] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0">
+                    Create free account
+                </a>
             </div>
         </div>
     </section>

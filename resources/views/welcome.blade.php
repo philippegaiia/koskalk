@@ -37,7 +37,7 @@
         <div class="relative mx-auto grid min-h-[100svh] max-w-7xl items-end gap-12 px-6 pb-10 pt-28 lg:grid-cols-[minmax(0,0.74fr)_minmax(32rem,1fr)] lg:px-8 lg:pb-14 lg:pt-32">
             <div class="self-center space-y-8">
                 <div class="space-y-5 animate-hero-rise">
-                    <p class="text-xs font-semibold tracking-[0.24em] text-white/62 uppercase">Soap formulation workspace</p>
+                    <p class="text-xs font-semibold tracking-[0.24em] text-white/62 uppercase">soap and cosmetics formulation workspace</p>
 
                     <div class="space-y-4">
                         <p class="max-w-2xl text-3xl leading-[1.08] font-medium tracking-[0.016em] text-white/94 sm:text-4xl lg:text-[3.35rem]">

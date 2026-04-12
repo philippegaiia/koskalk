@@ -27,6 +27,21 @@ class FattyAcidSeeder extends Seeder
     {
         return [
             [
+                'key' => 'caproic',
+                'name' => 'Caproic',
+                'short_name' => 'C6:0',
+                'chain_length' => 6,
+                'double_bonds' => 0,
+                'saturation_class' => 'saturated',
+                'iodine_factor' => 0,
+                'default_group_key' => 'vs',
+                'display_order' => 5,
+                'is_core' => false,
+                'is_active' => true,
+                'default_hidden_below_percent' => 0.5,
+                'source_data' => null,
+            ],
+            [
                 'key' => 'caprylic',
                 'name' => 'Caprylic',
                 'short_name' => 'C8:0',

@@ -3,7 +3,9 @@
 namespace App\Livewire\Dashboard;
 
 use App\IngredientCategory;
+use App\SoapSap;
 use App\Models\Allergen;
+use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
@@ -286,6 +288,68 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->columnSpanFull(),
                                     ]),
                             ]),
+                        Tab::make('Soap Chemistry')
+                            ->visible(fn (Get $get): bool => $this->isEditing() && static::isCarrierOilCategory($get('category')))
+                            ->schema([
+                                Section::make('SAP profile')
+                                    ->description('Keep the KOH SAP value, optional iodine and INS references, and fatty-acid profile for soap calculation.')
+                                    ->columns([
+                                        'md' => 2,
+                                    ])
+                                    ->schema([
+                                        TextInput::make('sap_profile.koh_sap_value')
+                                            ->label('KOH SAP')
+                                            ->numeric()
+                                            ->inputMode('decimal')
+                                            ->live(onBlur: true)
+                                            ->helperText('Enter professional-style KOH SAP like 245 or decimal-style 0.245. NaOH SAP is derived automatically.'),
+                                        \Filament\Infolists\Components\TextEntry::make('sap_profile.naoh_sap_value')
+                                            ->label('Derived NaOH SAP')
+                                            ->state(fn (Get $get): ?string => blank($get('sap_profile.koh_sap_value')) ? null : number_format(SoapSap::deriveNaohFromKoh((float) $get('sap_profile.koh_sap_value')), 6, '.', '')),
+                                        TextInput::make('sap_profile.iodine_value')
+                                            ->label('Iodine value')
+                                            ->numeric()
+                                            ->inputMode('decimal'),
+                                        TextInput::make('sap_profile.ins_value')
+                                            ->label('INS')
+                                            ->numeric()
+                                            ->inputMode('decimal'),
+                                        Textarea::make('sap_profile.source_notes')
+                                            ->label('Soap notes')
+                                            ->rows(3)
+                                            ->columnSpanFull(),
+                                        Repeater::make('fatty_acid_entries')
+                                            ->label('Fatty acid profile')
+                                            ->schema([
+                                                Select::make('fatty_acid_id')
+                                                    ->label('Fatty acid')
+                                                    ->options(fn (): array => FattyAcid::query()
+                                                        ->where('is_active', true)
+                                                        ->orderBy('display_order')
+                                                        ->pluck('name', 'id')
+                                                        ->all())
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->required(),
+                                                TextInput::make('percentage')
+                                                    ->numeric()
+                                                    ->inputMode('decimal')
+                                                    ->suffix('%')
+                                                    ->minValue(0)
+                                                    ->maxValue(100)
+                                                    ->required(),
+                                                Textarea::make('source_notes')
+                                                    ->rows(2)
+                                                    ->columnSpanFull(),
+                                            ])
+                                            ->columns([
+                                                'md' => 2,
+                                            ])
+                                            ->defaultItems(0)
+                                            ->reorderable(false)
+                                            ->columnSpanFull(),
+                                    ]),
+                            ]),
                         Tab::make('Compliance')
                             ->visible(fn (Get $get): bool => $this->isEditing() && static::isPublicAromaticCategory($get('category')))
                             ->schema([
@@ -505,5 +569,14 @@ class IngredientEditor extends Component implements HasActions, HasForms
             IngredientCategory::FragranceOil->value,
             IngredientCategory::Co2Extract->value,
         ], true);
+    }
+
+    private static function isCarrierOilCategory(mixed $state): bool
+    {
+        if ($state instanceof IngredientCategory) {
+            return $state === IngredientCategory::CarrierOil;
+        }
+
+        return $state === IngredientCategory::CarrierOil->value;
     }
 }

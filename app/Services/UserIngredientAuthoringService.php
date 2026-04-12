@@ -37,6 +37,13 @@ class UserIngredientAuthoringService
             'function_ids' => [],
             'allergen_entries' => [],
             'components' => [],
+            'sap_profile' => [
+                'koh_sap_value' => null,
+                'iodine_value' => null,
+                'ins_value' => null,
+                'source_notes' => null,
+            ],
+            'fatty_acid_entries' => [],
             'ifra' => [
                 'reference_label' => null,
                 'ifra_amendment' => null,
@@ -74,6 +81,13 @@ class UserIngredientAuthoringService
             'function_ids' => $entryData['function_ids'] ?? [],
             'allergen_entries' => $entryData['allergen_entries'] ?? [],
             'components' => $entryData['components'] ?? [],
+            'sap_profile' => [
+                'koh_sap_value' => data_get($entryData, 'sap_profile.koh_sap_value'),
+                'iodine_value' => data_get($entryData, 'sap_profile.iodine_value'),
+                'ins_value' => data_get($entryData, 'sap_profile.ins_value'),
+                'source_notes' => data_get($entryData, 'sap_profile.source_notes'),
+            ],
+            'fatty_acid_entries' => data_get($entryData, 'fatty_acid_entries', []),
             'ifra' => [
                 'reference_label' => $currentIfra?->certificate_name,
                 'ifra_amendment' => $currentIfra?->ifra_amendment,
@@ -258,7 +272,7 @@ class UserIngredientAuthoringService
         $ingredient->featured_image_path = Arr::get($state, 'featured_image_path');
         $ingredient->icon_image_path = Arr::get($state, 'icon_image_path');
         $ingredient->info_markdown = Arr::get($state, 'info_markdown');
-        $ingredient->is_potentially_saponifiable = false;
+        $ingredient->is_potentially_saponifiable = $ingredient->category === IngredientCategory::CarrierOil;
         $ingredient->is_active = true;
     }
 
@@ -283,8 +297,8 @@ class UserIngredientAuthoringService
                 'is_manufactured' => false,
             ],
             'function_ids' => Arr::get($state, 'function_ids', []),
-            'sap_profile' => [],
-            'fatty_acid_entries' => [],
+            'sap_profile' => Arr::get($state, 'sap_profile', []),
+            'fatty_acid_entries' => Arr::get($state, 'fatty_acid_entries', []),
             'allergen_entries' => Arr::get($state, 'allergen_entries', []),
             'components' => Arr::get($state, 'components', []),
         ]);
@@ -297,6 +311,8 @@ class UserIngredientAuthoringService
         }
 
         return $ingredient->fresh([
+            'sapProfile',
+            'fattyAcidEntries.fattyAcid',
             'components.componentIngredient',
             'allergenEntries.allergen',
             'functions',

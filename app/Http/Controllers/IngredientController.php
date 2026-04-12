@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\UserIngredientPrice;
 use App\Services\CurrentAppUserResolver;
+use App\Services\UserIngredientAuthoringService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -61,5 +62,52 @@ class IngredientController extends Controller
         );
 
         return response()->json(['ok' => true]);
+    }
+
+    public function searchPlatform(Request $request)
+    {
+        $query = (string) $request->query('q', '');
+
+        $results = Ingredient::query()
+            ->whereNull('owner_type')
+            ->where('is_active', true)
+            ->when(filled($query), fn ($q) => $q->where(function ($q) use ($query) {
+                $q->where('display_name', 'like', "%{$query}%")
+                    ->orWhere('inci_name', 'like', "%{$query}%");
+            }))
+            ->orderBy('display_name')
+            ->limit(20)
+            ->get()
+            ->map(fn (Ingredient $ingredient) => [
+                'id' => $ingredient->id,
+                'name' => $ingredient->display_name,
+                'inci_name' => $ingredient->inci_name,
+                'category' => $ingredient->category?->getLabel(),
+            ]);
+
+        return response()->json($results);
+    }
+
+    public function duplicate(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            return response()->json(['ok' => false, 'message' => 'Sign in required.'], 403);
+        }
+
+        $validated = $request->validate([
+            'ingredient_id' => ['required', 'integer', 'exists:ingredients,id'],
+        ]);
+
+        $source = Ingredient::query()->findOrFail($validated['ingredient_id']);
+
+        $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+        return response()->json([
+            'ok' => true,
+            'ingredient_id' => $copy->id,
+            'redirect' => route('ingredients.edit', $copy->id),
+        ]);
     }
 }

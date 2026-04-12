@@ -38,6 +38,8 @@ Route::controller(IngredientController::class)
         Route::get('/', 'index')->name('index');
         Route::get('/new', 'create')->name('create');
         Route::post('/update-price', 'updatePrice')->name('update-price');
+        Route::get('/search-platform', 'searchPlatform')->name('search-platform');
+        Route::post('/duplicate', 'duplicate')->name('duplicate');
         Route::get('/{ingredient}', 'edit')->name('edit');
     });
 

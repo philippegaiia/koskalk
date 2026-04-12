@@ -9,6 +9,8 @@
  </p>
  </div>
 
+ @include('livewire.dashboard.partials.duplicate-ingredient-modal')
+
  <a href="{{ route('dashboard') }}" wire:navigate class="inline-flex justify-center rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
  Back to dashboard
  </a>

@@ -1,0 +1,1155 @@
+[
+    {
+        "source_key": "a_ai_oil",
+        "fatty_acids": {
+            "lauric": 24.06,
+            "myristic": 9.94,
+            "palmitic": 47.58,
+            "stearic": 13.58
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "almond_oil",
+        "fatty_acids": {
+            "lauric": 6.5,
+            "myristic": 0.6,
+            "palmitic": 71,
+            "stearic": 18
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "andiroba_oil",
+        "fatty_acids": {
+            "lauric": 28,
+            "myristic": 1.2,
+            "palmitic": 51,
+            "stearic": 10
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "apricot_oil",
+        "fatty_acids": {
+            "lauric": 5.8,
+            "myristic": 1.5,
+            "palmitic": 63.1,
+            "stearic": 27.8
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "argan_oil",
+        "fatty_acids": {
+            "lauric": 12.7,
+            "myristic": 0.08,
+            "palmitic": 45.6,
+            "stearic": 34.6
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "avocado_butter",
+        "fatty_acids": {
+            "lauric": 21,
+            "palmitic": 53,
+            "stearic": 6
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "avocado_oil",
+        "fatty_acids": {
+            "lauric": 14.5,
+            "myristic": 5.83,
+            "palmitic": 64.3,
+            "stearic": 13
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "babassu_oil",
+        "fatty_acids": {
+            "lauric": 7.8,
+            "palmitic": 14.9,
+            "stearic": 3.2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "bacaba_kernel_oil",
+        "fatty_acids": {
+            "lauric": 24.7,
+            "myristic": 1.1,
+            "palmitic": 49.7,
+            "stearic": 18.7
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "bacaba_pulp_oil",
+        "fatty_acids": {
+            "lauric": 23.4,
+            "myristic": 0.8,
+            "palmitic": 57.1,
+            "stearic": 14
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "bacuri_butter",
+        "fatty_acids": {
+            "lauric": 70.26,
+            "myristic": 5.61,
+            "palmitic": 24.13
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "baobab_oil",
+        "fatty_acids": {
+            "lauric": 26.7,
+            "myristic": 0.2,
+            "palmitic": 41.9,
+            "stearic": 20.6
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "beef_tallow",
+        "fatty_acids": {
+            "lauric": 24.9,
+            "myristic": 2.4,
+            "palmitic": 41.4,
+            "stearic": 1.8
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "black_cumin_oil",
+        "fatty_acids": {
+            "lauric": 13.1,
+            "myristic": 0.2,
+            "palmitic": 23.8,
+            "stearic": 58.5
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "borago_oil",
+        "fatty_acids": {
+            "lauric": 10.1,
+            "palmitic": 17.1,
+            "stearic": 39.2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "brazil_nut_oil",
+        "fatty_acids": {
+            "lauric": 15.3,
+            "myristic": 0.4,
+            "palmitic": 40.8,
+            "stearic": 34
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "buriti_oil",
+        "fatty_acids": {
+            "lauric": 16.3,
+            "myristic": 0.4,
+            "palmitic": 79.2,
+            "stearic": 1.4
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "calendula_oil",
+        "fatty_acids": {
+            "lauric": 8,
+            "palmitic": 58,
+            "stearic": 27
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "camelina_seed_oil",
+        "fatty_acids": {
+            "lauric": 6,
+            "palmitic": 24,
+            "stearic": 19
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "camellia_tea_seed_oil",
+        "fatty_acids": {
+            "lauric": 10.74,
+            "myristic": 0.11,
+            "palmitic": 76.7,
+            "stearic": 7.2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "canola_oil",
+        "fatty_acids": {
+            "lauric": 4,
+            "palmitic": 60,
+            "stearic": 20
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "castor_oil",
+        "fatty_acids": {
+            "lauric": 2,
+            "palmitic": 6,
+            "stearic": 4
+        },
+        "koh_sap_value": 0.182,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "cherry_kernel_oil",
+        "fatty_acids": {
+            "lauric": 8.6,
+            "myristic": 0.44,
+            "palmitic": 40.7,
+            "stearic": 46
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "chiken_fat",
+        "fatty_acids": {
+            "lauric": 21.7,
+            "myristic": 6.4,
+            "palmitic": 41.2,
+            "stearic": 20.3
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "cocoa_butter",
+        "fatty_acids": {
+            "lauric": 22.2,
+            "myristic": 1.6,
+            "palmitic": 37.3,
+            "stearic": 1.8
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "coconut_oil",
+        "fatty_acids": {
+            "lauric": 9.5,
+            "myristic": 1.01,
+            "palmitic": 6.5,
+            "stearic": 1.7
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "copa_ba_oil",
+        "fatty_acids": {
+            "lauric": 13.97,
+            "palmitic": 18.11,
+            "stearic": 16.38
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "corn_oil",
+        "fatty_acids": {
+            "lauric": 10,
+            "myristic": 0.1,
+            "palmitic": 30.7,
+            "stearic": 43
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "coroba_kernell_oil",
+        "fatty_acids": {
+            "lauric": 9.76,
+            "palmitic": 16.1,
+            "stearic": 3.2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "cottonseed_oil",
+        "fatty_acids": {
+            "lauric": 20,
+            "myristic": 0.5,
+            "palmitic": 24.2,
+            "stearic": 51.8
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "crisco",
+        "fatty_acids": {
+            "lauric": 20,
+            "palmitic": 35,
+            "stearic": 42
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "cucumber_seed_oil",
+        "fatty_acids": {
+            "lauric": 13.8,
+            "myristic": 0.1,
+            "palmitic": 19.1,
+            "stearic": 54.9
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "cupuacu_butter",
+        "fatty_acids": {
+            "lauric": 9.1,
+            "myristic": 0.3,
+            "palmitic": 42.8,
+            "stearic": 1.74
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "duck_fat",
+        "fatty_acids": {
+            "lauric": 21,
+            "myristic": 7,
+            "palmitic": 44,
+            "stearic": 18.3
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "emu_oil",
+        "fatty_acids": {
+            "lauric": 22,
+            "myristic": 3.5,
+            "palmitic": 48.3,
+            "stearic": 15.2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "evening_primrose_oil",
+        "fatty_acids": {
+            "lauric": 5.8,
+            "palmitic": 6.6,
+            "stearic": 71.6
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "fractionated_coconut_oil",
+        "fatty_acids": [],
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "grape_seed_oil",
+        "fatty_acids": {
+            "lauric": 7.66,
+            "myristic": 0.03,
+            "palmitic": 17.65,
+            "stearic": 69.3
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "hazelnut_oil",
+        "fatty_acids": {
+            "lauric": 5.5,
+            "myristic": 0.4,
+            "palmitic": 79.6,
+            "stearic": 11.1
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "hemp_oil",
+        "fatty_acids": {
+            "lauric": 6,
+            "palmitic": 12,
+            "stearic": 55
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "illipe_butter",
+        "fatty_acids": {
+            "lauric": 17,
+            "palmitic": 35,
+            "stearic": 2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "jojoba_oil",
+        "fatty_acids": {
+            "myristic": 0.25,
+            "palmitic": 0.66,
+            "stearic": 2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "karanja_oil",
+        "fatty_acids": {
+            "lauric": 11.6,
+            "palmitic": 51.5,
+            "stearic": 16
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "kokum_butter",
+        "fatty_acids": {
+            "lauric": 4,
+            "palmitic": 40,
+            "stearic": 2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "kukui_nut_oil",
+        "fatty_acids": {
+            "lauric": 6,
+            "palmitic": 20,
+            "stearic": 42
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "lard",
+        "fatty_acids": {
+            "lauric": 27,
+            "myristic": 3.8,
+            "palmitic": 45,
+            "stearic": 9
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "laurel_berries_oil",
+        "fatty_acids": {
+            "lauric": 25.9,
+            "myristic": 0.3,
+            "palmitic": 10.8,
+            "stearic": 11.3
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "licuri_coconut_oil",
+        "fatty_acids": {
+            "lauric": 5,
+            "palmitic": 7,
+            "stearic": 2
+        },
+        "koh_sap_value": 0,
+        "iodine_value": 0,
+        "ins_value": null
+    },
+    {
+        "source_key": "lineseed_oil_flax",
+        "fatty_acids": {
+            "lauric": 6,
+            "palmitic": 22.4,
+            "stearic": 20
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "macadamia_nut_oil",
+        "fatty_acids": {
+            "lauric": 9.7,
+            "myristic": 26.7,
+            "palmitic": 50.9,
+            "stearic": 3.4
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "mango_butter",
+        "fatty_acids": {
+            "lauric": 8.9,
+            "palmitic": 41.3,
+            "stearic": 6.9
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "mango_oil",
+        "fatty_acids": {
+            "lauric": 8.9,
+            "palmitic": 52.3,
+            "stearic": 6.9
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "maracuja_passionfruit_oil",
+        "fatty_acids": {
+            "lauric": 8.7,
+            "myristic": 0.2,
+            "palmitic": 16.1,
+            "stearic": 72.4
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "marula_oil",
+        "fatty_acids": {
+            "lauric": 14.13,
+            "myristic": 0.2,
+            "palmitic": 68.2,
+            "stearic": 5.2
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "moringa_oil",
+        "fatty_acids": {
+            "lauric": 6.03,
+            "myristic": 1.31,
+            "palmitic": 69.5,
+            "stearic": 3.48
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "mowrah_butter",
+        "fatty_acids": {
+            "lauric": 22,
+            "palmitic": 43,
+            "stearic": 11
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "murumuru_butter",
+        "fatty_acids": {
+            "lauric": 4.6,
+            "palmitic": 10.8,
+            "stearic": 0.4
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "mustard_oil",
+        "fatty_acids": {
+            "lauric": 2.3,
+            "myristic": 0.2,
+            "palmitic": 15.2,
+            "stearic": 16.7
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "myristic_acid",
+        "fatty_acids": [],
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "neem_tree_oil",
+        "fatty_acids": {
+            "lauric": 21.4,
+            "myristic": 0.1,
+            "palmitic": 35.1,
+            "stearic": 17.6
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "oleic_acid",
+        "fatty_acids": {
+            "palmitic": 100
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "olive_oil",
+        "fatty_acids": {
+            "lauric": 13.5,
+            "myristic": 0.5,
+            "palmitic": 74.8,
+            "stearic": 7
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "olive_pomace_oil",
+        "fatty_acids": {
+            "lauric": 13.2,
+            "myristic": 1.7,
+            "palmitic": 69.3,
+            "stearic": 12
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "olive_recycled_oil",
+        "fatty_acids": {
+            "lauric": 11.5,
+            "palmitic": 73.3,
+            "stearic": 9
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "palm_kernel_oil",
+        "fatty_acids": {
+            "lauric": 8.4,
+            "palmitic": 16.5,
+            "stearic": 2.25
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "palm_oil",
+        "fatty_acids": {
+            "lauric": 42.1,
+            "myristic": 0.3,
+            "palmitic": 39.6,
+            "stearic": 10.4
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "palm_olein",
+        "fatty_acids": {
+            "lauric": 39,
+            "myristic": 0.3,
+            "palmitic": 43.6,
+            "stearic": 11
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "palmitic_acid",
+        "fatty_acids": {
+            "lauric": 98
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "patau_oil",
+        "fatty_acids": {
+            "lauric": 10.6,
+            "myristic": 0.6,
+            "palmitic": 74.7,
+            "stearic": 4.9
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "peach_kernel_oil",
+        "fatty_acids": {
+            "lauric": 6.2,
+            "myristic": 0.4,
+            "palmitic": 69,
+            "stearic": 22
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "peanut_oil",
+        "fatty_acids": {
+            "lauric": 9.1,
+            "palmitic": 51.6,
+            "stearic": 26.8
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "pecan_oil",
+        "fatty_acids": {
+            "lauric": 5.6,
+            "myristic": 0.1,
+            "palmitic": 54.8,
+            "stearic": 33.8
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "pequi_oil",
+        "fatty_acids": {
+            "lauric": 44.3,
+            "myristic": 0.4,
+            "palmitic": 50.2,
+            "stearic": 1.2
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "pistachio_oil",
+        "fatty_acids": {
+            "lauric": 11,
+            "palmitic": 63,
+            "stearic": 25
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "poppyseed_oil",
+        "fatty_acids": {
+            "lauric": 9.2,
+            "myristic": 0.1,
+            "palmitic": 9.9,
+            "stearic": 76.2
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "pracaxi_oil",
+        "fatty_acids": {
+            "lauric": 2.25,
+            "palmitic": 45,
+            "stearic": 2.4
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "pumpkin_seed_oil",
+        "fatty_acids": {
+            "lauric": 11,
+            "palmitic": 32,
+            "stearic": 49
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "rice_bran_oil",
+        "fatty_acids": {
+            "lauric": 15,
+            "myristic": 0.3,
+            "palmitic": 45.6,
+            "stearic": 35.6
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "roasted_coffee_oil",
+        "fatty_acids": {
+            "lauric": 39,
+            "palmitic": 9,
+            "stearic": 40
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "rosehip_oil",
+        "fatty_acids": {
+            "lauric": 3.9,
+            "myristic": 0.14,
+            "palmitic": 15,
+            "stearic": 44.5
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "sacha_inchi_oil",
+        "fatty_acids": {
+            "lauric": 6,
+            "palmitic": 10,
+            "stearic": 37
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "safflower_oil",
+        "fatty_acids": {
+            "lauric": 4.9,
+            "palmitic": 17,
+            "stearic": 74.8
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "safflower_oil_high_oleic",
+        "fatty_acids": {
+            "lauric": 5,
+            "palmitic": 77,
+            "stearic": 15
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "sal_butter",
+        "fatty_acids": {
+            "lauric": 6,
+            "palmitic": 41.6,
+            "stearic": 2.5
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "seeds_oil",
+        "fatty_acids": {
+            "lauric": 8,
+            "palmitic": 58,
+            "stearic": 27
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "sesame_oil",
+        "fatty_acids": {
+            "lauric": 8,
+            "palmitic": 46,
+            "stearic": 40
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "shea_butter",
+        "fatty_acids": {
+            "lauric": 7.1,
+            "palmitic": 47.6,
+            "stearic": 6.4
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "soy_oil",
+        "fatty_acids": {
+            "lauric": 10.5,
+            "myristic": 0.1,
+            "palmitic": 23.4,
+            "stearic": 52.6
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "soy_oil_hydrogenated",
+        "fatty_acids": {
+            "myristic": 11.3,
+            "palmitic": 75
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "stearic_acid",
+        "fatty_acids": [],
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "stearine",
+        "fatty_acids": {
+            "lauric": 46,
+            "palmitic": 2
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "sunflower_oil",
+        "fatty_acids": {
+            "lauric": 5.5,
+            "palmitic": 25,
+            "stearic": 64
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "sunflower_oil_high_oleic",
+        "fatty_acids": {
+            "lauric": 4,
+            "palmitic": 85,
+            "stearic": 5
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "tallow_cow",
+        "fatty_acids": {
+            "lauric": 27.7,
+            "myristic": 3.9,
+            "palmitic": 42.3,
+            "stearic": 1.1
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "tallow_sheep",
+        "fatty_acids": {
+            "lauric": 21,
+            "myristic": 3,
+            "palmitic": 37,
+            "stearic": 4
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "tigernut_oil",
+        "fatty_acids": {
+            "lauric": 14.2,
+            "palmitic": 65.1,
+            "stearic": 11.6
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "tucum_kernel_oil",
+        "fatty_acids": {
+            "lauric": 5.3,
+            "palmitic": 9.3,
+            "stearic": 3.6
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "tucum_pulp_oil",
+        "fatty_acids": {
+            "lauric": 21.6,
+            "myristic": 0.4,
+            "palmitic": 62.7,
+            "stearic": 4.7
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "ucu_ba_oil",
+        "fatty_acids": {
+            "lauric": 5,
+            "palmitic": 1
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "vegetal_butter_margarine",
+        "fatty_acids": {
+            "lauric": 15.5,
+            "myristic": 0.1,
+            "palmitic": 29.8,
+            "stearic": 38.5
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "walnut_oil",
+        "fatty_acids": {
+            "lauric": 7,
+            "palmitic": 22.2,
+            "stearic": 57.4
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    },
+    {
+        "source_key": "wheatgerm_oil",
+        "fatty_acids": {
+            "lauric": 13.5,
+            "palmitic": 18.9,
+            "stearic": 57.1
+        },
+        "koh_sap_value": null,
+        "iodine_value": null,
+        "ins_value": null
+    }
+]

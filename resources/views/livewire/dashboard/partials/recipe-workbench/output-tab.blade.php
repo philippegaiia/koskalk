@@ -54,7 +54,14 @@
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="outputRowKindLabel(row)"></td>
  <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 3)}%`"></td>
  <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 2)} ${oilUnit}`"></td>
- <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="row.source_ingredients.join(', ')"></td>
+ <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">
+     <template x-for="(source, idx) in row.source_ingredients" :key="idx">
+         <span class="inline-flex items-center gap-1">
+             <span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-amber-400" title="Ingredient not curated by the platform"></span>
+             <span x-text="source"></span>
+         </span>
+     </template>
+ </td>
  </tr>
  </template>
  <tr class="bg-[var(--color-panel)]">
@@ -99,7 +106,14 @@
  <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
  <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 4)}%`"></td>
  <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 4)} ${oilUnit}`"></td>
- <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="row.source_ingredients.join(', ')"></td>
+ <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">
+     <template x-for="(source, idx) in row.source_ingredients" :key="idx">
+         <span class="inline-flex items-center gap-1">
+             <span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-amber-400" title="Ingredient not curated by the platform"></span>
+             <span x-text="source"></span>
+         </span>
+     </template>
+ </td>
  </tr>
  </template>
  </tbody>
@@ -113,4 +127,11 @@
  </div>
  </template>
  </section>
+
+ <template x-if="drySoapIngredientRows.some(row => row.source_is_user_owned?.some(Boolean)) || drySoapAllergenRows.some(row => row.source_is_user_owned?.some(Boolean))">
+     <p class="rounded-lg bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
+         <span class="inline-block size-1.5 rounded-full bg-amber-400 mr-1"></span>
+         Ingredient not curated by the platform. Compliance data is user-maintained.
+     </p>
+ </template>
 </div>

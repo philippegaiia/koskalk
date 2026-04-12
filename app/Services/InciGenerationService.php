@@ -31,7 +31,8 @@ class InciGenerationService
      *         weight: float,
      *         percent_of_formula: float,
      *         kind: string,
-     *         source_ingredients: array<int, string>
+     *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>
      *     }>,
      *     declaration_rows: array<int, array{
      *         label: string,
@@ -42,6 +43,7 @@ class InciGenerationService
      *         suppressed_by_existing_label: bool,
      *         status_label: string,
      *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>,
      *         notes: string|null
      *     }>,
      *     list_variants: array<int, array{
@@ -53,7 +55,8 @@ class InciGenerationService
      *             weight: float,
      *             percent_of_formula: float,
      *             kind: string,
-     *             source_ingredients: array<int, string>
+     *             source_ingredients: array<int, string>,
+     *             source_is_user_owned: array<int, bool>
      *         }>,
      *         declaration_rows: array<int, array{
      *             label: string,
@@ -64,6 +67,7 @@ class InciGenerationService
      *             suppressed_by_existing_label: bool,
      *             status_label: string,
      *             source_ingredients: array<int, string>,
+     *             source_is_user_owned: array<int, bool>,
      *             notes: string|null
      *         }>,
      *         final_labels: array<int, string>,
@@ -103,7 +107,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }>  $rowContexts
      * @param  array{
      *     label: string,
@@ -121,7 +126,8 @@ class InciGenerationService
      *         weight: float,
      *         percent_of_formula: float,
      *         kind: string,
-     *         source_ingredients: array<int, string>
+     *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>
      *     }>,
      *     declaration_rows: array<int, array{
      *         label: string,
@@ -132,6 +138,7 @@ class InciGenerationService
      *         suppressed_by_existing_label: bool,
      *         status_label: string,
      *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>,
      *         notes: string|null
      *     }>,
      *     final_labels: array<int, string>,
@@ -197,7 +204,8 @@ class InciGenerationService
      *         weight: float,
      *         percent_of_formula: float,
      *         kind: string,
-     *         source_ingredients: array<int, string>
+     *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>
      *     }>,
      *     declaration_rows: array<int, array{
      *         label: string,
@@ -208,6 +216,7 @@ class InciGenerationService
      *         suppressed_by_existing_label: bool,
      *         status_label: string,
      *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>,
      *         notes: string|null
      *     }>,
      *     final_labels: array<int, string>,
@@ -223,7 +232,8 @@ class InciGenerationService
      *         weight: float,
      *         percent_of_formula: float,
      *         kind: string,
-     *         source_ingredients: array<int, string>
+     *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>
      *     }>,
      *     declaration_rows: array<int, array{
      *         label: string,
@@ -234,6 +244,7 @@ class InciGenerationService
      *         suppressed_by_existing_label: bool,
      *         status_label: string,
      *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>,
      *         notes: string|null
      *     }>,
      *     final_labels: array<int, string>,
@@ -267,7 +278,8 @@ class InciGenerationService
      *     weight: float,
      *     percent_of_formula: float,
      *     kind: string,
-     *     source_ingredients: array<int, string>
+     *     source_ingredients: array<int, string>,
+     *     source_is_user_owned: array<int, bool>
      * }>  $ingredientRows
      * @param  array<int, array{
      *     label: string,
@@ -278,6 +290,7 @@ class InciGenerationService
      *     suppressed_by_existing_label: bool,
      *     status_label: string,
      *     source_ingredients: array<int, string>,
+     *     source_is_user_owned: array<int, bool>,
      *     notes: string|null
      * }>  $declarationRows
      * @return array<int, string>
@@ -309,7 +322,8 @@ class InciGenerationService
      *         weight: float,
      *         percent_of_formula: float,
      *         kind: string,
-     *         source_ingredients: array<int, string>
+     *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>
      *     }>,
      *     declaration_rows: array<int, array{
      *         label: string,
@@ -320,6 +334,7 @@ class InciGenerationService
      *         suppressed_by_existing_label: bool,
      *         status_label: string,
      *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>,
      *         notes: string|null
      *     }>,
      *     final_labels: array<int, string>,
@@ -345,7 +360,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }>
      */
     private function resolveRowContexts(array $payload): array
@@ -377,6 +393,7 @@ class InciGenerationService
                         $this->rowWeight($row, $payload),
                         $ingredient,
                         $ingredient?->display_name ?? trim((string) ($row['name'] ?? '')),
+                        [],
                     ),
                 ];
             }
@@ -478,7 +495,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }>
      */
     private function expandedContexts(
@@ -498,6 +516,7 @@ class InciGenerationService
                 'weight' => $weight,
                 'ingredient' => null,
                 'ingredient_name' => $fallbackName,
+                'is_user_owned' => false,
             ]];
         }
 
@@ -507,6 +526,7 @@ class InciGenerationService
                 'weight' => $weight,
                 'ingredient' => $ingredient,
                 'ingredient_name' => $ingredient->display_name,
+                'is_user_owned' => $ingredient->owner_type !== null,
             ]];
         }
 
@@ -520,6 +540,7 @@ class InciGenerationService
                 'weight' => $weight,
                 'ingredient' => $ingredient,
                 'ingredient_name' => $ingredient->display_name,
+                'is_user_owned' => $ingredient->owner_type !== null,
             ]];
         }
 
@@ -551,7 +572,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }>  $rowContexts
      * @param  array<string, mixed>|null  $soapCalculation
      * @return array{
@@ -606,7 +628,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }>  $rowContexts
      * @param  array<string, mixed>|null  $soapCalculation
      * @return array{
@@ -615,7 +638,8 @@ class InciGenerationService
      *         weight: float,
      *         percent_of_formula: float,
      *         kind: string,
-     *         source_ingredients: array<int, string>
+     *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>
      *     }>,
      *     label_keys: array<int, string>,
      *     fallback_warnings: array<int, string>
@@ -660,6 +684,7 @@ class InciGenerationService
                         'percent_of_formula' => 0.0,
                         'kind' => $contribution['kind'],
                         'source_ingredients' => [],
+                        'source_is_user_owned' => [],
                     ];
                 }
 
@@ -669,6 +694,7 @@ class InciGenerationService
                     $contribution['kind'],
                 );
                 $rowsByLabel[$labelKey]['source_ingredients'][] = $context['ingredient_name'];
+                $rowsByLabel[$labelKey]['source_is_user_owned'][] = $context['is_user_owned'];
             }
         }
 
@@ -687,6 +713,11 @@ class InciGenerationService
                     fn (mixed $value): bool => is_string($value) && $value !== '',
                 )));
 
+                $sourceIsUserOwned = $this->deduplicateOwnershipFlags(
+                    $row['source_ingredients'],
+                    $row['source_is_user_owned'],
+                );
+
                 return [
                     'label' => $row['label'],
                     'weight' => round((float) $row['weight'], 5),
@@ -695,6 +726,7 @@ class InciGenerationService
                         : 0.0,
                     'kind' => $row['kind'],
                     'source_ingredients' => $sourceIngredients,
+                    'source_is_user_owned' => $sourceIsUserOwned,
                 ];
             },
             $rowsByLabel,
@@ -719,11 +751,41 @@ class InciGenerationService
     }
 
     /**
+     * Deduplicate source_is_user_owned in the same order as the deduplicated source_ingredients.
+     * For each unique source ingredient, keeps the first ownership flag encountered.
+     *
+     * @param  array<int, string>  $sourceIngredients
+     * @param  array<int, bool>  $sourceIsUserOwned
+     * @return array<int, bool>
+     */
+    private function deduplicateOwnershipFlags(array $sourceIngredients, array $sourceIsUserOwned): array
+    {
+        $seen = [];
+        $result = [];
+
+        foreach ($sourceIngredients as $idx => $name) {
+            if (! is_string($name) || $name === '') {
+                continue;
+            }
+
+            $key = $name;
+
+            if (! array_key_exists($key, $seen)) {
+                $seen[$key] = true;
+                $result[] = $sourceIsUserOwned[$idx] ?? false;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * @param  array{
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }  $context
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>|null  $soapCalculation
@@ -806,7 +868,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }>  $rowContexts
      * @param  array<int, string>  $ingredientLabelKeys
      * @return array<int, array{
@@ -818,6 +881,7 @@ class InciGenerationService
      *     suppressed_by_existing_label: bool,
      *     status_label: string,
      *     source_ingredients: array<int, string>,
+     *     source_is_user_owned: array<int, bool>,
      *     notes: string|null
      * }>
      */
@@ -852,11 +916,13 @@ class InciGenerationService
                         'label' => $label,
                         'percent_of_formula' => 0.0,
                         'source_ingredients' => [],
+                        'source_is_user_owned' => [],
                     ];
                 }
 
                 $rowsByLabel[$labelKey]['percent_of_formula'] += $ingredientPercentOfFormula * (((float) $entry->concentration_percent) / 100);
                 $rowsByLabel[$labelKey]['source_ingredients'][] = $context['ingredient_name'];
+                $rowsByLabel[$labelKey]['source_is_user_owned'][] = $context['is_user_owned'];
             }
         }
 
@@ -866,6 +932,16 @@ class InciGenerationService
                 $suppressedByExistingLabel = $percentOfFormula >= $thresholdPercent
                     && in_array($this->normalizeLabel($row['label']), $ingredientLabelKeys, true);
                 $includedInInci = $percentOfFormula >= $thresholdPercent && ! $suppressedByExistingLabel;
+
+                $sourceIngredients = array_values(array_unique(array_filter(
+                    $row['source_ingredients'],
+                    fn (mixed $value): bool => is_string($value) && $value !== '',
+                )));
+
+                $sourceIsUserOwned = $this->deduplicateOwnershipFlags(
+                    $row['source_ingredients'],
+                    $row['source_is_user_owned'],
+                );
 
                 return [
                     'label' => $row['label'],
@@ -879,10 +955,8 @@ class InciGenerationService
                         $thresholdPercent,
                         $suppressedByExistingLabel,
                     ),
-                    'source_ingredients' => array_values(array_unique(array_filter(
-                        $row['source_ingredients'],
-                        fn (mixed $value): bool => is_string($value) && $value !== '',
-                    ))),
+                    'source_ingredients' => $sourceIngredients,
+                    'source_is_user_owned' => $sourceIsUserOwned,
                     'notes' => $this->declarationNotes(
                         $percentOfFormula,
                         $thresholdPercent,
@@ -913,7 +987,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }  $context
      * @param  array<string, mixed>  $payload
      * @return array{label: string|null, kind: string, warning: string|null}
@@ -1003,7 +1078,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }  $context
      * @return array{label: string|null, kind: string, warning: string|null}
      */
@@ -1046,7 +1122,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }  $context
      */
     private function declarationReplacementLabel(
@@ -1134,11 +1211,13 @@ class InciGenerationService
                 'percent_of_formula' => 0.0,
                 'kind' => $kind,
                 'source_ingredients' => [],
+                'source_is_user_owned' => [],
             ];
         }
 
         $rowsByLabel[$labelKey]['weight'] += $weight;
         $rowsByLabel[$labelKey]['source_ingredients'][] = $sourceIngredient;
+        $rowsByLabel[$labelKey]['source_is_user_owned'][] = false;
     }
 
     private function mergeRowKind(string $existingKind, string $incomingKind): string
@@ -1163,7 +1242,8 @@ class InciGenerationService
      *     weight: float,
      *     percent_of_formula: float,
      *     kind: string,
-     *     source_ingredients: array<int, string>
+     *     source_ingredients: array<int, string>,
+     *     source_is_user_owned: array<int, bool>
      * }>  $rowsByLabel
      * @param  array<string, mixed>  $soapCalculation
      */
@@ -1191,7 +1271,8 @@ class InciGenerationService
      *     weight: float,
      *     percent_of_formula: float,
      *     kind: string,
-     *     source_ingredients: array<int, string>
+     *     source_ingredients: array<int, string>,
+     *     source_is_user_owned: array<int, bool>
      * }>  $rowsByLabel
      * @param  array<string, mixed>  $soapCalculation
      */
@@ -1263,7 +1344,8 @@ class InciGenerationService
      *     phase_key: string,
      *     weight: float,
      *     ingredient: Ingredient|null,
-     *     ingredient_name: string
+     *     ingredient_name: string,
+     *     is_user_owned: bool
      * }>  $rowContexts
      * @param  array<int, string>  $fallbackWarnings
      * @param  array<string, mixed>|null  $soapCalculation

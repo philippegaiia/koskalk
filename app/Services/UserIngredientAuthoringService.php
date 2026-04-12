@@ -140,6 +140,81 @@ class UserIngredientAuthoringService
         return $ingredient;
     }
 
+    public function duplicate(Ingredient $source, User $user): Ingredient
+    {
+        if ($source->owner_type !== null) {
+            throw ValidationException::withMessages([
+                'ingredient' => 'Only platform ingredients can be duplicated.',
+            ]);
+        }
+
+        $copy = $source->replicate([
+            'featured_image_path',
+            'icon_image_path',
+        ]);
+
+        $copy->source_file = 'user';
+        $copy->source_key = $this->ingredientDataEntryService->generateSourceKey('USR', 'user');
+        $copy->source_code_prefix = 'USR';
+        $copy->owner_type = OwnerType::User;
+        $copy->owner_id = $user->id;
+        $copy->workspace_id = null;
+        $copy->visibility = Visibility::Private;
+        $copy->requires_admin_review = false;
+        $copy->featured_image_path = null;
+        $copy->icon_image_path = null;
+        $copy->save();
+
+        $this->deepCopyRelations($source, $copy);
+
+        return $copy->fresh([
+            'sapProfile',
+            'fattyAcidEntries.fattyAcid',
+            'components.componentIngredient',
+            'allergenEntries.allergen',
+            'functions',
+            'ifraCertificates.limits.ifraProductCategory',
+        ]);
+    }
+
+    private function deepCopyRelations(Ingredient $source, Ingredient $copy): void
+    {
+        // SAP profile
+        if ($source->sapProfile) {
+            $source->sapProfile->replicate()->fill([
+                'ingredient_id' => $copy->id,
+            ])->save();
+        }
+
+        // Fatty acid entries
+        $source->fattyAcidEntries->each(function ($entry) use ($copy): void {
+            $entry->replicate()->fill(['ingredient_id' => $copy->id])->save();
+        });
+
+        // Components
+        $source->components->each(function ($component) use ($copy): void {
+            $component->replicate()->fill(['ingredient_id' => $copy->id])->save();
+        });
+
+        // Allergen entries
+        $source->allergenEntries->each(function ($entry) use ($copy): void {
+            $entry->replicate()->fill(['ingredient_id' => $copy->id])->save();
+        });
+
+        // Functions
+        $copy->functions()->sync($source->functions->pluck('id'));
+
+        // IFRA certificates + limits
+        $source->ifraCertificates->each(function ($certificate) use ($copy): void {
+            $newCertificate = $certificate->replicate()->fill(['ingredient_id' => $copy->id]);
+            $newCertificate->save();
+
+            $certificate->limits->each(function ($limit) use ($newCertificate): void {
+                $limit->replicate()->fill(['ifra_certificate_id' => $newCertificate->id])->save();
+            });
+        });
+    }
+
     public function createInlineComponent(array $state, User $user): Ingredient
     {
         return $this->create([

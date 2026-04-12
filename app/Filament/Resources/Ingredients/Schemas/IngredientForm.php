@@ -85,9 +85,6 @@ class IngredientForm
                             ->label('Display name')
                             ->required()
                             ->maxLength(255),
-                        TextInput::make('current_version.display_name_en')
-                            ->label('Display name EN')
-                            ->maxLength(255),
                         TextInput::make('current_version.inci_name')
                             ->label('INCI')
                             ->maxLength(255)
@@ -108,10 +105,6 @@ class IngredientForm
                             ->maxLength(255),
                         TextInput::make('current_version.unit')
                             ->maxLength(64),
-                        TextInput::make('current_version.price_eur')
-                            ->label('Price EUR')
-                            ->numeric()
-                            ->inputMode('decimal'),
                         Toggle::make('current_version.is_manufactured')
                             ->label('Manufactured')
                             ->default(false),

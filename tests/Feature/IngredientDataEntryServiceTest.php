@@ -36,7 +36,6 @@ it('syncs current carrier oil data from the ingredient entry service', function 
             'display_name' => 'Olive Oil',
             'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
             'unit' => 'kg',
-            'price_eur' => 12.5,
             'is_active' => true,
             'is_manufactured' => false,
         ],

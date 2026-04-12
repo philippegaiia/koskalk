@@ -22,7 +22,6 @@ class IngredientDataEntryService
         return [
             'current_version' => [
                 'display_name' => $ingredient->display_name,
-                'display_name_en' => $ingredient->display_name_en,
                 'inci_name' => $ingredient->inci_name,
                 'supplier_name' => $ingredient->supplier_name,
                 'supplier_reference' => $ingredient->supplier_reference,
@@ -32,7 +31,6 @@ class IngredientDataEntryService
                 'ec_number' => $ingredient->ec_number,
                 'is_organic' => $ingredient->is_organic,
                 'unit' => $ingredient->unit,
-                'price_eur' => $ingredient->price_eur === null ? null : (float) $ingredient->price_eur,
                 'is_active' => $ingredient->is_active,
                 'is_manufactured' => $ingredient->is_manufactured ?? false,
             ],
@@ -83,7 +81,6 @@ class IngredientDataEntryService
 
         $ingredient->fill([
             'display_name' => $currentVersionState['display_name'] ?? $ingredient->source_key,
-            'display_name_en' => $currentVersionState['display_name_en'] ?? null,
             'inci_name' => $currentVersionState['inci_name'] ?? null,
             'supplier_name' => array_key_exists('supplier_name', $currentVersionState)
                 ? ($currentVersionState['supplier_name'] ?? null)
@@ -97,7 +94,6 @@ class IngredientDataEntryService
             'ec_number' => $currentVersionState['ec_number'] ?? null,
             'is_organic' => (bool) ($currentVersionState['is_organic'] ?? false),
             'unit' => $currentVersionState['unit'] ?? null,
-            'price_eur' => $currentVersionState['price_eur'] ?? null,
             'is_active' => array_key_exists('is_active', $currentVersionState)
                 ? (bool) $currentVersionState['is_active']
                 : $ingredient->is_active,

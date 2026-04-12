@@ -19,7 +19,6 @@ class IngredientExporter extends Exporter
                 ->label('ID'),
             ExportColumn::make('display_name')
                 ->label(__('Ingredient')),
-            ExportColumn::make('display_name_en'),
             ExportColumn::make('inci_name'),
             ExportColumn::make('category'),
             ExportColumn::make('source_file'),
@@ -33,7 +32,6 @@ class IngredientExporter extends Exporter
             ExportColumn::make('cas_number'),
             ExportColumn::make('ec_number'),
             ExportColumn::make('unit'),
-            ExportColumn::make('price_eur'),
             ExportColumn::make('visibility'),
             ExportColumn::make('workspace.name')
                 ->label(__('Workspace')),

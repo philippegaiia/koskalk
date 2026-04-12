@@ -24,5 +24,7 @@
  <section class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-0">
  {{ $this->table }}
  </section>
+
+ @include('livewire.dashboard.partials.priced-ingredients-section')
  @endif
 </div>

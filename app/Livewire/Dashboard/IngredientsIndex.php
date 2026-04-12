@@ -4,6 +4,7 @@ namespace App\Livewire\Dashboard;
 
 use App\Models\Ingredient;
 use App\Models\User;
+use App\Models\UserIngredientPrice;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use Filament\Actions\Action;
@@ -97,8 +98,21 @@ class IngredientsIndex extends TableComponent
 
     public function render(): View
     {
+        $currentUser = $this->currentUser();
+        $pricedIngredients = collect();
+
+        if ($currentUser instanceof User) {
+            $pricedIngredients = UserIngredientPrice::query()
+                ->where('user_id', $currentUser->id)
+                ->with('ingredient')
+                ->orderByDesc('last_used_at')
+                ->get()
+                ->filter(fn (UserIngredientPrice $price) => $price->ingredient !== null);
+        }
+
         return view('livewire.dashboard.ingredients-index', [
-            'currentUser' => $this->currentUser(),
+            'currentUser' => $currentUser,
+            'pricedIngredients' => $pricedIngredients,
         ]);
     }
 

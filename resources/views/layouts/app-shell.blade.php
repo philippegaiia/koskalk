@@ -100,7 +100,7 @@
             >
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <span class="grid size-10 place-items-center rounded-lg bg-[var(--color-accent-soft)] text-xs font-semibold tracking-[0.12em] uppercase text-[var(--color-accent-strong)]">SK</span>
+                        <img src="{{ asset('images/app/brand/soapcraft-logo-green-light.png') }}" alt="Soapkraft" class="size-10 rounded-lg object-contain">
                         <div>
                             <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-sidebar-soft)] uppercase">Workspace</p>
                             <h1 class="text-base font-semibold text-[var(--color-ink-sidebar)]">{{ config('app.name') }}</h1>

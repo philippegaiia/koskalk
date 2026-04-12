@@ -1495,12 +1495,16 @@ it('keeps formula table controls stepped and visually aligned', function () {
 it('keeps formula visual states distinct and softly selected', function () {
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
     $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
+    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
     $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
 
     expect($reactionCore)
         ->toContain('class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
         ->and($formulaAnalysis)
         ->toContain('rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm')
+        ->and($ingredientBrowser)
+        ->toContain('flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs')
+        ->toContain('min-w-0 flex-1 truncate text-[var(--color-ink-strong)]')
         ->and($navigation)
         ->toContain('bg-[var(--color-accent-soft)]');
 });

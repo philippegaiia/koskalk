@@ -149,13 +149,13 @@
  </div>
  <div class="mt-3 grid gap-2">
  <template x-for="segment in fattyAcidGroupSegments()" :key="`${segment.key}-legend`">
- <div class="flex items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs">
- <div class="flex min-w-0 items-center gap-2">
- <span class="inline-block h-2.5 w-2.5 rounded-full" :style="{ backgroundColor: segment.color }"></span>
- <span class="rounded-full px-2 py-0.5 font-medium text-white" :style="{ backgroundColor: segment.color }" x-text="segment.shortLabel"></span>
- <span class="truncate text-[var(--color-ink-strong)]" x-text="segment.label"></span>
+ <div class="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs">
+ <div class="flex min-w-0 flex-1 items-center gap-2">
+ <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: segment.color }"></span>
+ <span class="shrink-0 rounded-full px-2 py-0.5 font-medium text-white" :style="{ backgroundColor: segment.color }" x-text="segment.shortLabel"></span>
+ <span class="min-w-0 flex-1 truncate text-[var(--color-ink-strong)]" x-text="segment.label"></span>
  </div>
- <span class="numeric shrink-0 text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
+ <span class="numeric shrink-0 text-right text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
  </div>
  </template>
  </div>

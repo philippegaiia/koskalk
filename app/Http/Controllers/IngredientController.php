@@ -72,8 +72,9 @@ class IngredientController extends Controller
             ->whereNull('owner_type')
             ->where('is_active', true)
             ->when(filled($query), fn ($q) => $q->where(function ($q) use ($query) {
-                $q->where('display_name', 'like', "%{$query}%")
-                    ->orWhere('inci_name', 'like', "%{$query}%");
+                $lower = mb_strtolower($query);
+                $q->whereRaw('LOWER(display_name) LIKE ?', ["%{$lower}%"])
+                    ->orWhereRaw('LOWER(inci_name) LIKE ?', ["%{$lower}%"]);
             }))
             ->orderBy('display_name')
             ->limit(20)

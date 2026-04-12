@@ -40,7 +40,7 @@ it('searches platform ingredients for duplication', function () {
 
     actingAs($user);
 
-    $response = $this->getJson(route('ingredients.search-platform') . '?q=Lavender');
+    $response = $this->getJson(route('ingredients.search-platform') . '?q=lavender');
 
     $response->assertSuccessful();
     $results = $response->json();

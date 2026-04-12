@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             IngredientFunctionSeeder::class,
             IfraProductCategorySeeder::class,
             IngredientCatalogSeeder::class,
-            CarrierOilChemistrySeeder::class,
+            CarrierOilSeeder::class,
         ]);
 
         User::query()->updateOrCreate(

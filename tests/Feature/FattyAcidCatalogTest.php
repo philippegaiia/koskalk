@@ -12,7 +12,7 @@ uses(RefreshDatabase::class);
 it('seeds the fatty acid catalog with core and extended acids', function () {
     $this->seed(FattyAcidSeeder::class);
 
-    expect(FattyAcid::query()->count())->toBe(19)
+    expect(FattyAcid::query()->count())->toBe(20)
         ->and(FattyAcid::query()->where('key', 'lauric')->firstOrFail()->is_core)->toBeTrue()
         ->and(FattyAcid::query()->where('key', 'caprylic')->firstOrFail()->is_core)->toBeFalse()
         ->and(FattyAcid::query()->where('key', 'oleic')->firstOrFail()->default_group_key)->toBe('mu')

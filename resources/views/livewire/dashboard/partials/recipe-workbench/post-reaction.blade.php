@@ -21,7 +21,7 @@
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% oils</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Weight</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
  </div>
 
@@ -61,7 +61,7 @@
  <input :value="format(rowWeight(row), 3)" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="0.001" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
- <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)} ${oilUnit}`"></span>
+ <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
  </template>
  </div>
  <div class="flex items-center justify-center bg-white px-2 py-3">
@@ -83,7 +83,7 @@
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% oils</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Weight</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
  </div>
 
@@ -123,7 +123,7 @@
  <input :value="format(rowWeight(row), 3)" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="0.001" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
- <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)} ${oilUnit}`"></span>
+ <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
  </template>
  </div>
  <div class="grid place-items-center bg-white px-2 py-3">

@@ -11,43 +11,7 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-/*@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --color-surface: oklch(96% .010 82);
-    --color-surface-strong: oklch(26% .030 158);
-    --color-hero: oklch(20% .028 156);
-    --color-hero-soft: oklch(24% .030 156);
-    --color-panel: oklch(99% .008 82);
-    --color-panel-strong: oklch(93% .018 80);
-
-    --color-line: oklch(85% .014 78);
-    --color-line-strong: oklch(68% .022 72);
-    --color-line-hero: oklch(42% .024 156);
-
-    --color-ink: oklch(28% .016 55);
-    --color-ink-strong: oklch(14% .010 50);
-    --color-ink-soft: oklch(50% .016 58);
-
-    --color-ink-sidebar: oklch(90% .020 158);
-    --color-ink-sidebar-soft: oklch(68% .025 158);
-
-    --color-accent: oklch(46% .100 154);
-    --color-accent-soft: oklch(92% .035 154);
-    --color-accent-strong: oklch(34% .085 154);
-
-    --color-success: oklch(52% .140 154);
-    --color-success-soft: oklch(95% .040 154);
-    --color-success-strong: oklch(35% .120 154);
-    --color-warning: oklch(75% .150 75);
-    --color-warning-soft: oklch(95% .040 75);
-    --color-warning-strong: oklch(55% .130 75);
-    --color-danger: oklch(55% .200 25);
-    --color-danger-soft: oklch(95% .050 25);
-    --color-danger-strong: oklch(45% .180 25);
-    --color-glow: oklch(74% .105 78);
-}*/
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
@@ -98,6 +62,24 @@
     --color-success: oklch(52% .155 142);
     --color-success-soft: oklch(95% .040 142);
     --color-success-strong: oklch(36% .130 142);
+
+    /* Homepage palette */
+    --color-forest: #1a2e1e;
+    --color-forest-deep: #0e1a10;
+    --color-forest-mid: #243528;
+    --color-forest-light: #2e4433;
+    --color-sage: #7a9e7e;
+    --color-sage-light: #a8c5ab;
+    --color-sage-pale: #d4e6d6;
+    --color-cream: #f5f0e8;
+    --color-cream-warm: #ede6d6;
+    --color-cream-dark: #cfc5ad;
+    --color-amber: #c8882a;
+    --color-amber-light: #e8b96a;
+
+    /* Homepage fonts */
+    --font-serif: 'Lora', Georgia, serif;
+    --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
 }
 
 @layer utilities {

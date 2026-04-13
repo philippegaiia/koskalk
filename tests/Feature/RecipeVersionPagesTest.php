@@ -22,10 +22,28 @@ it('renders the current saved formula page with print actions', function () {
         ->assertSee('v'.$publishedVersion->version_number)
         ->assertSee('Edit in draft')
         ->assertSee('Duplicate')
-        ->assertSee('Recovery snapshots')
+        ->assertDontSee('Recovery snapshots')
         ->assertSee('Print recipe')
         ->assertSee('Print full details')
         ->assertSee('Published Formula');
+});
+
+it('shows recovery snapshots section when there are multiple saved versions', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeSavedRecipeIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->saveDraft($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('Recovery snapshots');
 });
 
 it('recalculates the saved formula view when a different oil quantity is requested', function () {

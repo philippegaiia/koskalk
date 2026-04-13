@@ -27,6 +27,5 @@
  {{ $this->table }}
  </section>
 
- @include('livewire.dashboard.partials.priced-ingredients-section')
  @endif
 </div>

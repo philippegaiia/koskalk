@@ -43,7 +43,7 @@
  <th class="px-5 py-3">Label</th>
  <th class="px-5 py-3">Role</th>
  <th class="px-5 py-3">Dry soap %</th>
- <th class="px-5 py-3">Weight</th>
+ <th class="px-5 py-3" x-text="`Weight (${oilUnit})`"></th>
  <th class="px-5 py-3">Sources</th>
  </tr>
  </thead>
@@ -53,7 +53,7 @@
  <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="outputRowKindLabel(row)"></td>
  <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 3)}%`"></td>
- <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 2)} ${oilUnit}`"></td>
+ <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 2)}`"></td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">
      <template x-for="(source, idx) in row.source_ingredients" :key="idx">
          <span class="inline-flex items-center gap-1">
@@ -68,7 +68,7 @@
  <td class="px-5 py-4 font-semibold text-[var(--color-ink-strong)]">Total</td>
  <td class="px-5 py-4 text-[var(--color-ink-soft)]">Excluding allergens</td>
  <td class="numeric px-5 py-4 font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapIngredientTotalPercent, 3)}%`"></td>
- <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]" x-text="`${format(drySoapIngredientTotalWeight, 2)} ${oilUnit}`"></td>
+ <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]" x-text="`${format(drySoapIngredientTotalWeight, 2)}`"></td>
  <td class="px-5 py-4"></td>
  </tr>
  </tbody>
@@ -96,7 +96,7 @@
  <tr>
  <th class="px-5 py-3">Allergen</th>
  <th class="px-5 py-3">Dry soap %</th>
- <th class="px-5 py-3">Weight</th>
+ <th class="px-5 py-3" x-text="`Weight (${oilUnit})`"></th>
  <th class="px-5 py-3">Sources</th>
  </tr>
  </thead>
@@ -105,7 +105,7 @@
  <tr>
  <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
  <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 4)}%`"></td>
- <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 4)} ${oilUnit}`"></td>
+ <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="`${format(row.adjusted_weight, 4)}`"></td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">
      <template x-for="(source, idx) in row.source_ingredients" :key="idx">
          <span class="inline-flex items-center gap-1">

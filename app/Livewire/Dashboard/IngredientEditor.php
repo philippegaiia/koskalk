@@ -338,9 +338,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->minValue(0)
                                                     ->maxValue(100)
                                                     ->required(),
-                                                Textarea::make('source_notes')
-                                                    ->rows(2)
-                                                    ->columnSpanFull(),
                                             ])
                                             ->columns([
                                                 'md' => 2,
@@ -376,9 +373,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->minValue(0)
                                                     ->maxValue(100)
                                                     ->required(),
-                                                Textarea::make('source_notes')
-                                                    ->rows(2)
-                                                    ->columnSpanFull(),
                                             ])
                                             ->columns([
                                                 'md' => 2,
@@ -432,9 +426,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->maxValue(100)
                                                     ->required()
                                                     ->suffix('%'),
-                                                Textarea::make('restriction_note')
-                                                    ->rows(2)
-                                                    ->columnSpanFull(),
                                             ])
                                             ->columns([
                                                 'md' => 2,

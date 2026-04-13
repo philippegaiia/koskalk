@@ -1,244 +1,373 @@
 @extends('layouts.public')
 
-@section('title', 'Soapkraft')
+@section('title', 'Soapkraft — Soap & Cosmetics Formulation Workbench')
 
 @section('content')
-    @php
-        $proofPoints = [
-            ['label' => 'Calculation basis', 'text' => 'Carrier oils stay at the center of the first pass.'],
-            ['label' => 'Chemistry posture', 'text' => 'KOH-first SAP data with derived NaOH and traceable fatty-acid logic.'],
-            ['label' => 'Output discipline', 'text' => 'Versioned drafts first, compliance review second, export last.'],
-        ];
+@php
+    $oils = [
+        ['name' => 'Olive oil virgin', 'pct' => '62.0%', 'g' => '620 g'],
+        ['name' => 'Coconut oil', 'pct' => '20.0%', 'g' => '200 g'],
+        ['name' => 'Shea butter', 'pct' => '10.0%', 'g' => '100 g'],
+        ['name' => 'Laurel berry oil', 'pct' => '8.0%', 'g' => '80 g'],
+    ];
 
-        $pillars = [
-            ['title' => 'Trusted chemistry', 'body' => 'INCI, soap INCI, SAP values, and fatty-acid profiles remain separate, explicit, and auditable.'],
-            ['title' => 'Faster drafting', 'body' => 'The workbench is built for immediate recalculation instead of save-refresh-edit loops.'],
-            ['title' => 'Cleaner handoff', 'body' => 'Allergens, IFRA, restrictions, and final label output belong in a deliberate closing pass.'],
-        ];
+    $qualities = [
+        ['label' => 'Hardness', 'value' => 43, 'color' => 'bg-sage'],
+        ['label' => 'Cleansing', 'value' => 17, 'color' => 'bg-sage'],
+        ['label' => 'Conditioning', 'value' => 56, 'color' => 'bg-sage'],
+        ['label' => 'Iodine', 'value' => 89, 'color' => 'bg-amber', 'valColor' => 'text-amber-light'],
+        ['label' => 'INS', 'value' => 148, 'color' => 'bg-sage'],
+        ['label' => 'Longevity', 'value' => 38, 'color' => 'bg-sage'],
+    ];
 
-        $workflow = [
-            ['title' => 'Select the reaction core', 'body' => 'Pick carrier oils first, with chemistry fields visible instead of buried in one generic catalog list.'],
-            ['title' => 'Tune the batch', 'body' => 'Adjust lye ratios, superfat, and phase weights while totals stay legible and responsive.'],
-            ['title' => 'Layer the aromatic phase', 'body' => 'Add essential oils, fragrance oils, and additives without corrupting the core saponification logic.'],
-            ['title' => 'Close with compliance', 'body' => 'Review allergens, IFRA categories, and final INCI outputs only when the formula itself is stable.'],
-        ];
+    $features = [
+        [
+            'num' => '01',
+            'title' => 'Trusted chemistry',
+            'body' => 'SAP values, soap INCI, fatty-acid profiles, and allergen tracking stay separate and explicit — never buried in a generic ingredient row that hides the math.',
+            'items' => ['KOH-first with derived NaOH', 'Traceable fatty-acid logic per oil', 'Allergen contribution per aromatic'],
+        ],
+        [
+            'num' => '02',
+            'title' => 'Faster drafting',
+            'body' => 'Immediate recalculation on every change. Lye, water, INCI, allergens, and quality scores all stay live. No save-refresh-edit loops slowing you down.',
+            'items' => ['No save-refresh-edit cycles', 'One working draft per recipe', 'Batch scaling without formula corruption'],
+        ],
+        [
+            'num' => '03',
+            'title' => 'Cleaner compliance handoff',
+            'body' => 'Allergens, IFRA reference rates, and final INCI output belong in a deliberate closing pass. Compliance stays out of your drafting view until you need it.',
+            'items' => ['EU allergen declaration thresholds', 'INCI normalized to cured-bar basis', 'IFRA data shown — you decide'],
+        ],
+    ];
 
-        $catalogPriorities = [
-            'Carrier oils with INCI, CAS, soap INCI, KOH SAP, and fatty-acid profiles.',
-            'Essential oils that can scale well past the first starter catalog.',
-            'User-authored fragrance materials instead of platform-seeded fiction.',
-            'Versioned recipes and ingredients that keep exports auditable.',
-        ];
-    @endphp
+    $soapScopeItems = ['NaOH · KOH · Dual lye', 'Superfat & water mode control', 'Dry soap basis output', 'Fatty-acid quality scores'];
+    $cosmeticsScopeItems = ['Anhydrous & emulsion formulas', 'Rinse-off & leave-on products', 'EU allergen declarations', 'IFRA reference per aromatic'];
 
-    <section class="relative overflow-hidden bg-[var(--color-hero)] text-white">
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_18%_18%,rgba(206,164,99,0.24),transparent_28%),radial-gradient(circle_at_82%_24%,rgba(72,135,116,0.22),transparent_32%),linear-gradient(135deg,rgba(8,24,21,0.96),rgba(16,44,39,0.92)_58%,rgba(10,32,29,0.98))]"></div>
-        <div class="absolute inset-y-0 right-0 hidden w-3/5 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_62%)] lg:block"></div>
-        <div class="relative mx-auto grid min-h-[100svh] max-w-7xl items-end gap-12 px-6 pb-10 pt-28 lg:grid-cols-[minmax(0,0.74fr)_minmax(32rem,1fr)] lg:px-8 lg:pb-14 lg:pt-32">
-            <div class="self-center space-y-8">
-                <div class="space-y-5 animate-hero-rise">
-                    <p class="text-xs font-semibold tracking-[0.24em] text-white/62 uppercase">soap and cosmetics formulation workspace</p>
+    $workflowSteps = [
+        ['num' => '01', 'title' => 'Select the reaction core', 'body' => 'Pick carrier oils with chemistry fields visible — SAP values, fatty-acid contribution, and quality scores update as you build. No buried catalog rows.', 'tag' => 'Carrier oils · SAP values · Fatty acids'],
+        ['num' => '02', 'title' => 'Tune the batch', 'body' => 'Adjust lye ratios, superfat percentage, and water mode while totals stay legible. Every change recalculates lye and water immediately.', 'tag' => 'Superfat · Lye water · Batch weight'],
+        ['num' => '03', 'title' => 'Layer the aromatic phase', 'body' => 'Add essential oils, fragrance materials, and additives without corrupting the saponification core. IFRA usage rates shown as reference alongside each material.', 'tag' => 'Essential oils · Fragrance · Additives', 'note' => 'IFRA data is shown for reference — the decision is yours.'],
+        ['num' => '04', 'title' => 'Close with compliance', 'body' => 'Review allergen thresholds and generate final INCI output when the formula is stable. Compliance is a deliberate closing step, not a constant interruption.', 'tag' => 'Allergens · INCI · allergen declarations · Label'],
+    ];
 
-                    <div class="space-y-4">
-                        <p class="max-w-2xl text-3xl leading-[1.08] font-medium tracking-[0.016em] text-white/94 sm:text-4xl lg:text-[3.35rem]">
-                            Fast drafting, clean chemistry, and a compliance-ready handoff.
-                        </p>
-                    </div>
+    $stripItems = ['KOH + NaOH saponification', 'Fatty-acid profile tracking', 'INCI list generation', 'EU allergen declarations', 'IFRA reference data', 'Versioned recipes', 'Personal ingredient library', 'Soap & cosmetics'];
+@endphp
 
-                    <p class="max-w-xl text-base leading-8 text-white/72 lg:text-lg">
-                        Built for soap and cosmetic formulation when carrier oils, SAP values, fatty-acid profiles, and version history need to stay legible under pressure.
-                    </p>
-                </div>
+{{-- ============================================================
+     HERO
+     ============================================================ --}}
+<section class="relative min-h-screen bg-forest-deep grid lg:grid-cols-[54%_46%] items-center pt-[58px] overflow-hidden">
+    {{-- Grain texture --}}
+    <div class="absolute inset-0 pointer-events-none" style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='1' height='1' fill='rgba(122,158,126,0.055)'/%3E%3C/svg%3E&quot;)"></div>
+    {{-- Glow --}}
+    <div class="absolute w-[700px] h-[700px] rounded-full top-1/2 left-[35%] -translate-x-1/2 -translate-y-1/2 pointer-events-none" style="background: radial-gradient(circle, rgba(122,158,126,0.06) 0%, transparent 70%)"></div>
 
-                <div class="flex flex-col gap-3 sm:flex-row animate-hero-rise animate-hero-rise-delay-1">
-                    <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-[var(--color-hero)] transition duration-300 hover:-translate-y-0.5 hover:bg-[var(--color-panel-strong)] motion-reduce:hover:translate-y-0">
-                        Preview workspace
-                    </a>
-                    <a href="{{ route('recipes.create') }}" class="inline-flex justify-center rounded-full border border-white/14 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:bg-white/14">
-                        Start a soap formula
-                    </a>
-                </div>
+    {{-- Left: copy --}}
+    <div class="py-16 px-5 lg:py-20 lg:pl-20 lg:pr-14 relative z-10">
+        <p class="font-mono text-[11px] tracking-[0.1em] uppercase text-sage/85 mb-[22px]">Soap & cosmetics formulation workbench</p>
 
-                <div class="grid gap-5 border-t border-white/10 pt-6 text-sm text-white/72 sm:grid-cols-3 animate-hero-rise animate-hero-rise-delay-2">
-                    @foreach ($proofPoints as $point)
-                        <div class="space-y-2">
-                            <p class="text-[11px] font-semibold tracking-[0.22em] text-white/45 uppercase">{{ $point['label'] }}</p>
-                            <p class="leading-6">{{ $point['text'] }}</p>
-                        </div>
-                    @endforeach
-                </div>
+        <h1 class="font-serif text-[clamp(36px,4vw,54px)] leading-[1.1] text-cream font-medium mb-[22px]">
+            Fast drafting, clean chemistry, and a <em class="italic text-sage-light">compliance-ready</em> handoff.
+        </h1>
+
+        <p class="text-[15px] text-cream/52 leading-[1.75] max-w-[440px] mb-7">
+            Built for soap and cosmetic formulation when carrier oils, SAP values, fatty-acid profiles, and version history need to stay legible under pressure.
+        </p>
+
+        <div class="flex flex-col gap-[11px] mb-8">
+            <div class="flex items-start gap-2.5 text-sm text-cream/52 leading-[1.5]">
+                <span class="w-[5px] h-[5px] rounded-full bg-sage mt-[7px] shrink-0"></span>
+                <span><span class="text-cream/92 font-medium">Trusted chemistry.</span> KOH-first SAP data with derived NaOH, fatty-acid profiles, and allergen tracking — separate and auditable.</span>
+            </div>
+            <div class="flex items-start gap-2.5 text-sm text-cream/52 leading-[1.5]">
+                <span class="w-[5px] h-[5px] rounded-full bg-sage mt-[7px] shrink-0"></span>
+                <span><span class="text-cream/92 font-medium">Faster drafting.</span> Change an oil and everything recalculates instantly — lye, water, INCI, qualities. No save-refresh loops.</span>
+            </div>
+            <div class="flex items-start gap-2.5 text-sm text-cream/52 leading-[1.5]">
+                <span class="w-[5px] h-[5px] rounded-full bg-sage mt-[7px] shrink-0"></span>
+                <span><span class="text-cream/92 font-medium">Cleaner handoff.</span> Allergens, IFRA reference, and final INCI output in a deliberate closing pass — not leaking into your working draft.</span>
+            </div>
+            <div class="flex items-start gap-2.5 text-sm text-cream/52 leading-[1.5]">
+                <span class="w-[5px] h-[5px] rounded-full bg-sage mt-[7px] shrink-0"></span>
+                <span><span class="text-cream/92 font-medium">Your ingredient library.</span> Private ingredients with full chemistry — not a platform catalog you can't edit or correct.</span>
+            </div>
+        </div>
+
+        <div class="flex gap-3 flex-wrap mb-9">
+            <a href="{{ route('dashboard') }}" class="text-sm px-[26px] py-3 rounded-lg bg-sage text-forest-deep font-medium no-underline transition hover:bg-sage-light hover:-translate-y-px">Open workspace</a>
+            <a href="#features" class="text-sm px-[26px] py-3 rounded-lg bg-transparent text-cream border border-cream/20 transition hover:border-cream/40 hover:bg-cream/[0.04]">See how it works</a>
+        </div>
+
+        <p class="text-xs text-cream/26 font-mono tracking-[0.03em] border-t border-cream/[0.08] pt-5">
+            Built by a soap & cosmetics formulator — <span class="text-sage/80">16 years, 1M+ bars, India & France.</span>
+        </p>
+    </div>
+
+    {{-- Right: mockup --}}
+    <div class="py-16 pr-5 pl-5 lg:py-20 lg:pr-[60px] lg:pl-5 hidden lg:flex items-center justify-center relative z-10">
+        <div class="relative w-full max-w-[390px]">
+            {{-- Floating iodine badge --}}
+            <div class="absolute -top-2.5 -right-2.5 bg-forest-light border border-sage/25 rounded-[9px] px-3.5 py-2.5 shadow-[0_10px_28px_rgba(0,0,0,0.4)] z-10">
+                <p class="text-[8px] tracking-[0.08em] uppercase text-sage font-mono mb-[5px]">Iodine value</p>
+                <p class="text-xl font-medium font-mono text-cream">88.7</p>
+                <p class="text-[9px] text-cream/52 font-mono mt-0.5">↑ increase hard oils</p>
             </div>
 
-            <div class="relative flex min-h-[33rem] items-end lg:min-h-[42rem]">
-                <div class="absolute inset-0 rounded-[2.75rem] bg-[radial-gradient(circle_at_40%_20%,rgba(206,164,99,0.26),transparent_38%),radial-gradient(circle_at_72%_78%,rgba(72,135,116,0.24),transparent_34%)] blur-3xl"></div>
+            {{-- Mockup frame --}}
+            <div class="w-full rounded-[14px] bg-forest-mid border border-sage/18 shadow-[0_40px_80px_rgba(0,0,0,0.5)] overflow-hidden">
+                {{-- Title bar --}}
+                <div class="px-3.5 py-2.5 bg-forest-light border-b border-sage/12 flex items-center gap-2.5">
+                    <div class="flex gap-1">
+                        <span class="w-[7px] h-[7px] rounded-full bg-[#e05252]"></span>
+                        <span class="w-[7px] h-[7px] rounded-full bg-[#e0a852]"></span>
+                        <span class="w-[7px] h-[7px] rounded-full bg-[#52a852]"></span>
+                    </div>
+                    <p class="flex-1 text-center text-[11px] text-cream/52 font-mono">Olive + Laurel Bar</p>
+                    <span class="text-[9px] px-[7px] py-0.5 rounded-full bg-sage/18 text-sage-light font-mono">Draft</span>
+                </div>
 
-                <div class="relative w-full overflow-hidden rounded-[2.4rem] border border-white/10 bg-[linear-gradient(160deg,rgba(14,39,35,0.98),rgba(8,24,21,0.94))] shadow-[0_40px_120px_rgba(0,0,0,0.45)] animate-surface-float motion-reduce:animate-none lg:translate-x-10">
-                    <div class="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent_34%)]"></div>
+                {{-- Body: main + sidebar --}}
+                <div class="grid grid-cols-[1fr_144px]">
+                    {{-- Main content --}}
+                    <div class="p-3.5">
+                        <p class="text-[9px] tracking-[0.1em] uppercase text-cream/26 font-mono mb-2">Reaction core</p>
 
-                    <div class="grid min-h-[33rem] gap-px bg-white/8 lg:grid-cols-[minmax(0,1.4fr)_19rem]">
-                        <div class="relative space-y-5 bg-[rgba(6,18,16,0.88)] p-5 sm:p-6">
-                            <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/8 pb-4">
-                                <div>
-                                    <p class="text-[11px] font-semibold tracking-[0.22em] text-white/42 uppercase">Live draft</p>
-                                    <h2 class="mt-2 text-2xl font-semibold text-white">Olive + Laurel Bar</h2>
-                                </div>
-
-                                <div class="flex items-center gap-2 text-xs text-white/56">
-                                    <span class="rounded-full border border-white/12 px-3 py-1">Unsaved changes</span>
-                                    <span class="rounded-full border border-[rgba(206,164,99,0.3)] bg-[rgba(206,164,99,0.12)] px-3 py-1 text-[var(--color-glow)]">Soap</span>
-                                </div>
+                        @foreach ($oils as $oil)
+                            <div class="flex items-center gap-1.5 px-2 py-[5px] rounded-[5px] mb-[3px] bg-white/[0.025] border border-white/[0.04]">
+                                <span class="text-[10px] text-cream/92 flex-1">{{ $oil['name'] }}</span>
+                                <span class="text-[10px] font-mono text-sage-light w-[34px] text-right">{{ $oil['pct'] }}</span>
+                                <span class="text-[10px] font-mono text-cream/52 w-[40px] text-right">{{ $oil['g'] }}</span>
                             </div>
+                        @endforeach
 
-                            <div class="grid gap-3 text-sm text-white/78">
-                                @foreach ([
-                                    ['material' => 'Olive Oil', 'phase' => 'Reaction core', 'percent' => '62.0%', 'weight' => '620 g'],
-                                    ['material' => 'Coconut Oil', 'phase' => 'Reaction core', 'percent' => '20.0%', 'weight' => '200 g'],
-                                    ['material' => 'Shea Butter', 'phase' => 'Reaction core', 'percent' => '10.0%', 'weight' => '100 g'],
-                                    ['material' => 'Laurel Berry Oil', 'phase' => 'Reaction core', 'percent' => '8.0%', 'weight' => '80 g'],
-                                ] as $row)
-                                    <div class="grid gap-3 rounded-[1.5rem] border border-white/7 bg-white/4 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_8rem_5rem] sm:items-center">
-                                        <div class="min-w-0">
-                                            <p class="truncate font-medium text-white">{{ $row['material'] }}</p>
-                                            <p class="mt-1 text-xs text-white/46">{{ $row['phase'] }}</p>
-                                        </div>
-                                        <p class="text-sm text-white/72 sm:text-right">{{ $row['percent'] }}</p>
-                                        <p class="text-sm font-medium text-white sm:text-right">{{ $row['weight'] }}</p>
-                                    </div>
-                                @endforeach
+                        {{-- Lye / Water --}}
+                        <div class="grid grid-cols-2 gap-[5px] mt-2.5">
+                            <div class="bg-sage/7 rounded-[5px] px-2 py-[7px] border border-sage/12">
+                                <p class="text-xs font-medium font-mono text-cream">137.8 g</p>
+                                <p class="text-[8px] text-cream/26 font-mono mt-px">NaOH</p>
                             </div>
-
-                            <div class="grid gap-px overflow-hidden rounded-[1.75rem] border border-white/8 bg-white/8 sm:grid-cols-3">
-                                <div class="bg-white/5 px-4 py-4">
-                                    <p class="text-[11px] font-semibold tracking-[0.18em] text-white/40 uppercase">Lye</p>
-                                    <p class="mt-2 text-lg font-semibold text-white">137.8 g NaOH</p>
-                                </div>
-                                <div class="bg-white/5 px-4 py-4">
-                                    <p class="text-[11px] font-semibold tracking-[0.18em] text-white/40 uppercase">Liquid</p>
-                                    <p class="mt-2 text-lg font-semibold text-white">310 g water</p>
-                                </div>
-                                <div class="bg-white/5 px-4 py-4">
-                                    <p class="text-[11px] font-semibold tracking-[0.18em] text-white/40 uppercase">Superfat</p>
-                                    <p class="mt-2 text-lg font-semibold text-white">5.0%</p>
-                                </div>
+                            <div class="bg-sage/7 rounded-[5px] px-2 py-[7px] border border-sage/12">
+                                <p class="text-xs font-medium font-mono text-cream">310 g</p>
+                                <p class="text-[8px] text-cream/26 font-mono mt-px">Water</p>
                             </div>
                         </div>
 
-                        <div class="space-y-5 bg-[rgba(244,236,226,0.96)] p-5 text-[var(--color-ink-strong)] sm:p-6">
-                            <div class="border-b border-[var(--color-line)] pb-4">
-                                <p class="text-[11px] font-semibold tracking-[0.22em] text-[var(--color-ink-soft)] uppercase">Chemistry rail</p>
-                                <h2 class="mt-2 text-xl font-semibold">Live properties</h2>
-                            </div>
-
-                            <div class="space-y-4">
-                                @foreach ([
-                                    ['label' => 'Hardness', 'value' => '43', 'tone' => 'bg-[rgba(72,135,116,0.14)]'],
-                                    ['label' => 'Cleansing', 'value' => '17', 'tone' => 'bg-[rgba(206,164,99,0.18)]'],
-                                    ['label' => 'Conditioning', 'value' => '56', 'tone' => 'bg-[rgba(72,135,116,0.14)]'],
-                                ] as $metric)
-                                    <div class="space-y-2">
-                                        <div class="flex items-center justify-between gap-3 text-sm">
-                                            <span class="text-[var(--color-ink-soft)]">{{ $metric['label'] }}</span>
-                                            <span class="font-semibold text-[var(--color-ink-strong)]">{{ $metric['value'] }}</span>
-                                        </div>
-                                        <div class="h-2 overflow-hidden rounded-full bg-black/6">
-                                            <div class="h-full rounded-full {{ $metric['tone'] }}" style="width: {{ min(((int) $metric['value']) + 20, 100) }}%"></div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-
-                            <div class="space-y-3 border-t border-[var(--color-line)] pt-5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                                <p class="font-medium text-[var(--color-ink-strong)]">Compliance stays separate.</p>
-                                <p>Allergens, IFRA categories, and final label output wait for a deliberate review instead of leaking into core drafting.</p>
-                            </div>
-
-                            <div class="rounded-[1.6rem] bg-[var(--color-hero)] px-4 py-4 text-sm text-white">
-                                <p class="text-[11px] font-semibold tracking-[0.18em] text-white/48 uppercase">Current posture</p>
-                                <p class="mt-2 leading-6">Trusted data before flashy UI. The interface earns density only where the chemistry needs it.</p>
-                            </div>
+                        {{-- INCI preview --}}
+                        <div class="mt-2.5 p-2 bg-black/20 rounded-[5px] border border-sage/8">
+                            <p class="text-[8px] tracking-[0.08em] uppercase text-cream/26 font-mono mb-[3px]">INCI preview</p>
+                            <p class="text-[7.5px] font-mono text-cream/52 leading-[1.5]">SODIUM OLIVATE, SODIUM COCOATE, BUTYROSPERMUM PARKII BUTTER, LAURUS NOBILIS FRUIT OIL, AQUA, GLYCERIN...</p>
                         </div>
+                    </div>
+
+                    {{-- Sidebar: qualities --}}
+                    <div class="bg-black/18 border-l border-sage/8 px-3 py-3.5">
+                        <p class="text-[9px] tracking-[0.1em] uppercase text-cream/26 font-mono mb-2">Qualities</p>
+
+                        @foreach ($qualities as $q)
+                            @php $width = $q['label'] === 'INS' ? round($q['value'] / 290 * 100) : $q['value'] @endphp
+                            <div class="mb-[9px]">
+                                <p class="text-[8px] text-cream/26 font-mono mb-[3px]">{{ $q['label'] }}</p>
+                                <div class="h-[3px] bg-white/6 rounded-sm overflow-hidden">
+                                    <div class="h-full rounded-sm {{ $q['color'] }}" style="width: {{ $width }}%"></div>
+                                </div>
+                                <p class="text-[8px] font-mono {{ $q['valColor'] ?? 'text-cream/52' }} text-right mt-[2px]">{{ $q['value'] }}</p>
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             </div>
         </div>
-    </section>
+    </div>
+</section>
 
-    <section class="border-y border-[var(--color-line)] bg-[var(--color-panel)]">
-        <div class="mx-auto max-w-7xl px-6 lg:px-8">
-            <div class="grid lg:grid-cols-3">
-                @foreach ($pillars as $pillar)
-                    <article class="border-b border-[var(--color-line)] px-0 py-8 last:border-b-0 lg:border-b-0 lg:px-8 lg:py-10 {{ $loop->first ? 'lg:pl-0' : '' }} {{ $loop->last ? 'lg:pr-0' : 'lg:border-r' }}">
-                        <p class="text-[11px] font-semibold tracking-[0.22em] text-[var(--color-ink-soft)] uppercase">0{{ $loop->iteration }}</p>
-                        <h2 class="mt-4 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $pillar['title'] }}</h2>
-                        <p class="mt-4 max-w-sm text-sm leading-7 text-[var(--color-ink-soft)]">{{ $pillar['body'] }}</p>
-                    </article>
+{{-- ============================================================
+     TRUST STRIP
+     ============================================================ --}}
+<div class="bg-forest py-[18px] px-5 lg:px-20 flex items-center gap-10 overflow-x-auto border-y border-sage/10">
+    @foreach ($stripItems as $item)
+        <div class="flex items-center gap-[7px] whitespace-nowrap shrink-0">
+            <span class="w-1 h-1 rounded-full bg-sage/60"></span>
+            <span class="text-[11px] text-cream/52 font-mono tracking-[0.04em]">{{ $item }}</span>
+        </div>
+    @endforeach
+</div>
+
+{{-- ============================================================
+     FEATURES
+     ============================================================ --}}
+<section id="features" class="py-24 px-5 lg:px-20 bg-cream scroll-mt-[58px]">
+    <p class="font-mono text-[11px] tracking-[0.12em] uppercase text-sage mb-4 flex items-center gap-2.5">
+        <span class="block w-5 h-[0.5px] bg-sage"></span>
+        What makes it different
+    </p>
+    <h2 class="font-serif text-[clamp(26px,3vw,38px)] text-forest-deep leading-[1.2] font-medium max-w-[520px] mb-14">Built around the chemistry, not the UI.</h2>
+
+    <div class="grid lg:grid-cols-3 gap-[2px] bg-cream-dark">
+        @foreach ($features as $feature)
+            <div class="bg-cream p-7 lg:p-9 transition hover:bg-cream-warm">
+                <p class="font-mono text-[11px] text-cream-dark tracking-[0.06em] mb-[18px]">{{ $feature['num'] }}</p>
+
+                <div class="w-10 h-10 rounded-[10px] bg-forest-deep flex items-center justify-center mb-[18px]">
+                    @if ($feature['num'] === '01')
+                        <svg class="w-5 h-5 stroke-sage-light fill-none stroke-[1.5]" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+                    @elseif ($feature['num'] === '02')
+                        <svg class="w-5 h-5 stroke-sage-light fill-none stroke-[1.5]" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    @else
+                        <svg class="w-5 h-5 stroke-sage-light fill-none stroke-[1.5]" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    @endif
+                </div>
+
+                <h3 class="font-serif text-xl text-forest-deep mb-2.5 font-medium leading-[1.25]">{{ $feature['title'] }}</h3>
+                <p class="text-sm text-[#4a5c4e] leading-[1.75]">{{ $feature['body'] }}</p>
+
+                <div class="mt-4 pt-4 border-t border-cream-dark">
+                    @foreach ($feature['items'] as $item)
+                        <p class="text-xs text-[#6a8070] py-[3px] font-mono flex items-center gap-1.5">
+                            <span class="text-sage shrink-0">→</span>
+                            {{ $item }}
+                        </p>
+                    @endforeach
+                </div>
+            </div>
+        @endforeach
+    </div>
+</section>
+
+{{-- ============================================================
+     SCOPE — SOAP + COSMETICS
+     ============================================================ --}}
+<section id="scope" class="py-24 px-5 lg:px-20 bg-cream-warm scroll-mt-[58px]">
+    <p class="font-mono text-[11px] tracking-[0.12em] uppercase text-sage mb-4 flex items-center gap-2.5">
+        <span class="block w-5 h-[0.5px] bg-sage"></span>
+        Scope
+    </p>
+    <h2 class="font-serif text-[clamp(26px,3vw,38px)] text-forest-deep leading-[1.2] font-medium max-w-[520px] mb-14">
+        Soap is where most of us start.<br>The bench always grows.
+    </h2>
+
+    <div class="grid lg:grid-cols-2 gap-10 lg:gap-[60px] items-start">
+        {{-- Soap --}}
+        <div>
+            <h3 class="font-serif text-[22px] text-forest-deep mb-3 font-medium">Soap formulation</h3>
+            <p class="text-sm text-[#4a5c4e] leading-[1.75] mb-4">Cold process, hot process, liquid soap, syndet bars — the full saponification workflow with lye calculation, superfat control, and cured-bar INCI output.</p>
+            <div class="flex flex-col gap-1.5">
+                @foreach ($soapScopeItems as $item)
+                    <p class="text-[13px] text-[#5a7060] py-1.5 px-2.5 rounded-md bg-cream border border-cream-dark font-mono">{{ $item }}</p>
                 @endforeach
             </div>
         </div>
-    </section>
 
-    <section class="bg-[var(--color-surface)] px-6 py-18 lg:px-8 lg:py-24">
-        <div class="mx-auto grid max-w-7xl gap-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(24rem,1fr)]">
-            <div class="space-y-8">
-                <div class="space-y-5">
-                    <p class="text-xs font-semibold tracking-[0.22em] text-[var(--color-ink-soft)] uppercase">Workflow</p>
-                    <h2 class="max-w-xl text-4xl leading-none font-semibold text-[var(--color-ink-strong)] lg:text-5xl">
-                        A calmer route from raw material to finished label.
-                    </h2>
-                    <p class="max-w-xl text-base leading-8 text-[var(--color-ink-soft)] lg:text-lg">
-                        Soapkraft separates drafting, chemistry stewardship, and compliance review so each stage can stay focused instead of collapsing into one overloaded screen.
-                    </p>
-                </div>
-
-                <div class="border-t border-[var(--color-line)]">
-                    @foreach ($catalogPriorities as $priority)
-                        <div class="flex items-start gap-4 border-b border-[var(--color-line)] py-5">
-                            <span class="mt-1 h-2.5 w-2.5 rounded-full bg-[var(--color-accent)]"></span>
-                            <p class="max-w-xl text-sm leading-7 text-[var(--color-ink-soft)]">{{ $priority }}</p>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-
-            <div class="lg:sticky lg:top-24">
-                <div class="overflow-hidden rounded-[2.25rem] border border-[var(--color-line-hero)] bg-[var(--color-hero)] text-white">
-                    @foreach ($workflow as $step)
-                        <div class="flex gap-4 border-b border-white/8 px-6 py-6 last:border-b-0">
-                            <span class="grid size-10 shrink-0 place-items-center rounded-full border border-white/10 bg-white/6 text-sm font-semibold">{{ $loop->iteration }}</span>
-
-                            <div>
-                                <h3 class="text-lg font-semibold text-white">{{ $step['title'] }}</h3>
-                                <p class="mt-2 text-sm leading-7 text-white/68">{{ $step['body'] }}</p>
-                            </div>
-                        </div>
-                    @endforeach
-                </div>
+        {{-- Cosmetics --}}
+        <div>
+            <h3 class="font-serif text-[22px] text-forest-deep mb-3 font-medium">Cosmetics formulation</h3>
+            <p class="text-sm text-[#4a5c4e] leading-[1.75] mb-4">Balms, butters, rinse-off treatments, emulsions — the same ingredient discipline and INCI rigour applied to leave-on and rinse-off cosmetics.</p>
+            <div class="flex flex-col gap-1.5">
+                @foreach ($cosmeticsScopeItems as $item)
+                    <p class="text-[13px] text-[#5a7060] py-1.5 px-2.5 rounded-md bg-cream border border-cream-dark font-mono">{{ $item }}</p>
+                @endforeach
             </div>
         </div>
-    </section>
 
-    <section class="px-6 pb-16 lg:px-8 lg:pb-24">
-        <div class="mx-auto overflow-hidden rounded-[2.5rem] bg-[linear-gradient(135deg,rgba(12,33,29,0.98),rgba(24,61,52,0.96))] px-6 py-10 text-white lg:max-w-7xl lg:px-10 lg:py-12">
-            <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-                <div>
-                    <p class="text-xs font-semibold tracking-[0.22em] text-white/46 uppercase">Now shipping</p>
-                    <h2 class="mt-4 max-w-3xl text-4xl leading-none font-semibold text-white lg:text-5xl">
-                        Open the workspace, pressure-test the flow, and push the next build.
-                    </h2>
-                    <p class="mt-4 max-w-2xl text-sm leading-7 text-white/68 lg:text-base">
-                        The app shell is already live. The next gains come from tightening the drafting rhythm and keeping the chemistry clean as the catalog grows.
-                    </p>
-                </div>
+        {{-- Callout --}}
+        <div class="col-span-full p-6 lg:p-7 rounded-xl bg-forest-deep flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div>
+                <p class="font-serif text-[17px] text-cream italic leading-[1.5]">"The name says soap. The workbench handles everything on your bench."</p>
+                <p class="text-[13px] text-cream/52 mt-1.5">A cosmetic formulator landing on Soapkraft won't feel out of place — they'll feel at home.</p>
+            </div>
+            <a href="{{ route('dashboard') }}" class="text-sm px-[26px] py-3 rounded-lg bg-sage text-forest-deep font-medium shrink-0 whitespace-nowrap no-underline transition hover:bg-sage-light">Open workspace</a>
+        </div>
+    </div>
+</section>
 
-                <div class="flex flex-col gap-3 sm:flex-row lg:flex-col">
-                    <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-[var(--color-hero)] transition duration-300 hover:-translate-y-0.5 hover:bg-[var(--color-panel-strong)] motion-reduce:hover:translate-y-0">
-                        Open workspace
-                    </a>
-                    <a href="/admin" class="inline-flex justify-center rounded-full border border-white/14 bg-white/8 px-6 py-3 text-sm font-semibold text-white transition duration-300 hover:bg-white/14">
-                        Open admin
-                    </a>
+{{-- ============================================================
+     WORKFLOW
+     ============================================================ --}}
+<section id="workflow" class="py-24 px-5 lg:px-20 bg-forest-deep relative overflow-hidden scroll-mt-[58px]">
+    {{-- Background glow --}}
+    <div class="absolute inset-0 pointer-events-none" style="background: radial-gradient(ellipse at 80% 50%, rgba(122,158,126,0.05) 0%, transparent 60%)"></div>
+
+    <div class="relative z-10">
+        <p class="font-mono text-[11px] tracking-[0.12em] uppercase text-sage mb-4 flex items-center gap-2.5">
+            <span class="block w-5 h-[0.5px] bg-sage"></span>
+            How it works
+        </p>
+        <h2 class="font-serif text-[clamp(26px,3vw,38px)] text-cream leading-[1.2] font-medium max-w-[480px] mb-14">A calmer route from raw material to finished label.</h2>
+
+        <div class="grid lg:grid-cols-2 gap-[2px] bg-sage/8">
+            @foreach ($workflowSteps as $step)
+                <div class="bg-forest-deep p-7 lg:p-9 transition hover:bg-forest-mid">
+                    <p class="font-serif text-4xl text-sage/12 font-medium mb-3.5 leading-none">{{ $step['num'] }}</p>
+                    <h3 class="font-serif text-xl text-cream mb-2.5 font-medium">{{ $step['title'] }}</h3>
+                    <p class="text-sm text-cream/52 leading-[1.7]">{{ $step['body'] }}</p>
+                    <span class="inline-block mt-3.5 text-[10px] px-2.5 py-[3px] rounded-full bg-sage/10 text-sage-light font-mono tracking-[0.04em]">{{ $step['tag'] }}</span>
+                    @isset($step['note'])
+                        <p class="mt-2 text-[11px] text-cream/26 italic">{{ $step['note'] }}</p>
+                    @endisset
                 </div>
+            @endforeach
+        </div>
+    </div>
+</section>
+
+{{-- ============================================================
+     FOUNDER BAND
+     ============================================================ --}}
+<section class="py-14 px-5 lg:px-20 bg-forest-mid border-y border-sage/12">
+    <div class="max-w-[900px] mx-auto grid lg:grid-cols-[1fr_auto] items-center gap-10 lg:gap-[60px]">
+        <div>
+            <p class="font-mono text-[10px] tracking-[0.1em] uppercase text-sage/80 mb-3">Built from the bench</p>
+            <p class="font-serif text-lg text-cream leading-[1.55] italic mb-2.5">"I built the tool I needed on the manufacturing floor and never had."</p>
+            <p class="text-[13px] text-cream/52 leading-[1.6]">
+                Built by a French soap & cosmetics formulator — not a developer who soaps on weekends. The chemistry in Soapkraft comes from real production floors across India and France.
+                <a href="/about" class="text-sage-light no-underline border-b border-sage-light/40">Read the full story →</a>
+            </p>
+        </div>
+        <div class="flex gap-8 shrink-0">
+            <div class="text-center">
+                <p class="font-serif text-[32px] text-cream font-medium leading-none">1M+</p>
+                <p class="text-[11px] text-cream/52 font-mono mt-1">bars made</p>
+            </div>
+            <div class="text-center">
+                <p class="font-serif text-[32px] text-cream font-medium leading-none">16</p>
+                <p class="text-[11px] text-cream/52 font-mono mt-1">years formulating</p>
+            </div>
+            <div class="text-center">
+                <p class="font-serif text-[32px] text-cream font-medium leading-none">2</p>
+                <p class="text-[11px] text-cream/52 font-mono mt-1">countries</p>
             </div>
         </div>
-    </section>
+    </div>
+</section>
+
+{{-- ============================================================
+     CTA
+     ============================================================ --}}
+<section id="cta" class="py-24 lg:py-[120px] px-5 lg:px-20 bg-forest-deep text-center relative overflow-hidden scroll-mt-[58px]">
+    {{-- Watermark --}}
+    <div class="absolute font-serif text-[clamp(60px,12vw,150px)] text-sage/[0.03] font-medium whitespace-nowrap -bottom-2.5 left-1/2 -translate-x-1/2 pointer-events-none tracking-[-0.02em]">SOAPKRAFT</div>
+
+    <div class="max-w-[600px] mx-auto relative z-10">
+        <p class="font-mono text-[11px] tracking-[0.12em] uppercase text-sage mb-6 flex items-center justify-center gap-2.5">
+            <span class="block w-5 h-[0.5px] bg-sage"></span>
+            Now open
+            <span class="block w-5 h-[0.5px] bg-sage"></span>
+        </p>
+
+        <h2 class="font-serif text-[clamp(30px,4vw,50px)] text-cream leading-[1.15] mb-4 font-medium">
+            See if it works<br>for <em class="italic text-sage-light">your</em> bench.
+        </h2>
+
+        <p class="text-[15px] text-cream/52 leading-[1.75] mb-9 max-w-[480px] mx-auto">
+            Open the workspace, build a formula, and push the chemistry. No commitment — just find out if it fits how you actually work.
+        </p>
+
+        <div class="flex gap-3 justify-center flex-wrap">
+            <a href="{{ route('dashboard') }}" class="text-sm px-[26px] py-3 rounded-lg bg-sage text-forest-deep font-medium no-underline transition hover:bg-sage-light hover:-translate-y-px">Open workspace</a>
+            <a href="{{ route('recipes.create') }}" class="text-sm px-[26px] py-3 rounded-lg bg-transparent text-cream border border-cream/20 no-underline transition hover:border-cream/40 hover:bg-cream/[0.04]">Start a soap formula</a>
+        </div>
+
+        <p class="mt-[18px] text-xs text-cream/26 font-mono tracking-[0.04em]">Free to start · No account required to explore</p>
+    </div>
+</section>
 @endsection

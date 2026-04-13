@@ -4,14 +4,14 @@ use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\UserIngredientPrice;
+use App\OwnerType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
 
-it('shows priced platform ingredients in a separate section', function () {
+it('shows priced platform ingredients in the unified table', function () {
     $user = User::factory()->create();
-    $otherUser = User::factory()->create();
 
     $olive = Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
@@ -37,35 +37,43 @@ it('shows priced platform ingredients in a separate section', function () {
         'last_used_at' => now(),
     ]);
 
-    UserIngredientPrice::query()->create([
-        'user_id' => $otherUser->id,
-        'ingredient_id' => $coconut->id,
-        'price_per_kg' => 3.0000,
-        'currency' => 'EUR',
-        'last_used_at' => now(),
+    actingAs($user);
+
+    $this->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
+});
+
+it('shows user-owned ingredients in the unified table', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+
+    Ingredient::factory()->create([
+        'display_name' => 'My Lavender',
+        'category' => IngredientCategory::EssentialOil,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'is_active' => true,
+    ]);
+
+    Ingredient::factory()->create([
+        'display_name' => 'Other User Oil',
+        'category' => IngredientCategory::EssentialOil,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+        'is_active' => true,
     ]);
 
     actingAs($user);
 
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSee('Olive Oil')
-        ->assertSee('5.25')
-        ->assertDontSee('Coconut Oil')
-        ->assertSee('Priced ingredients');
+        ->assertSee('My Lavender')
+        ->assertDontSee('Other User Oil');
 });
 
-it('does not show the priced section when user has no prices', function () {
-    $user = User::factory()->create();
-
-    actingAs($user);
-
-    $this->get(route('ingredients.index'))
-        ->assertSuccessful()
-        ->assertDontSee('Priced ingredients');
-});
-
-it('updates a user ingredient price from the priced section', function () {
+it('updates a user ingredient price via the price endpoint', function () {
     $user = User::factory()->create();
 
     $olive = Ingredient::factory()->create([

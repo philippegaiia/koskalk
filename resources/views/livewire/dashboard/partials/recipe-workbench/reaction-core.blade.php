@@ -16,7 +16,7 @@
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Oil</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% oils</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Weight</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
  </div>
 
@@ -122,7 +122,7 @@
  <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
- <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)} ${oilUnit}`"></span>
+ <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)}`"></span>
  </template>
  </div>
  <div class="flex items-center justify-center bg-white px-2 py-3">
@@ -136,7 +136,7 @@
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-3 py-3"></div>
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="px-4 py-3 font-medium">Oil total</div>
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric px-4 py-3 font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric px-4 py-3 font-medium" x-text="`${format(oilWeightTotal(), 1)} ${oilUnit}`"></div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric px-4 py-3 font-medium" x-text="`${format(oilWeightTotal(), 1)}`"></div>
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-4 py-3"></div>
  </div>
  </div>

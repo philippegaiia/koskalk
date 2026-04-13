@@ -78,7 +78,7 @@
  <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Phase</div>
  <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
  <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">%</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Weight</div>
+ <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${costingBaseOilUnit})`"></div>
  <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Price / kg</div>
  <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Line cost</div>
  </div>
@@ -91,7 +91,7 @@
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
  <div class="numeric bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></div>
- <div class="numeric bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)} ${row.weightUnit}`"></div>
+ <div class="numeric bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)}`"></div>
  <div class="bg-white px-3 py-3">
  <input
  :value="costingPriceForRow(row) ?? ''"

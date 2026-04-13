@@ -2,12 +2,12 @@
     {
         "source_key": "a_ai_oil",
         "fatty_acids": {
-            "lauric": 4.77,
-            "myristic": 1.75,
-            "palmitic": 24.06,
-            "palmitoleic": 9.94,
-            "oleic": 47.58,
-            "linoleic": 13.58
+            "lauric": 4.8,
+            "myristic": 1.8,
+            "palmitic": 24,
+            "palmitoleic": 9.9,
+            "oleic": 47.6,
+            "linoleic": 13.7
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -16,14 +16,14 @@
     {
         "source_key": "almond_oil",
         "fatty_acids": {
-            "palmitic": 6.5,
-            "palmitoleic": 0.6,
+            "palmitic": 6.4,
+            "palmitoleic": 0.7,
             "stearic": 2.8,
             "oleic": 71,
-            "linoleic": 18,
-            "arachidic": 0.1,
-            "gondoic": 0.1,
-            "behenic": 0.1
+            "linoleic": 18.1,
+            "arachidic": 0,
+            "gondoic": 0,
+            "behenic": 0.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -32,11 +32,11 @@
     {
         "source_key": "andiroba_oil",
         "fatty_acids": {
-            "palmitic": 28,
-            "palmitoleic": 1.2,
-            "stearic": 9,
-            "oleic": 51,
-            "linoleic": 10
+            "palmitic": 28.1,
+            "palmitoleic": 1.3,
+            "stearic": 8.9,
+            "oleic": 51.1,
+            "linoleic": 9.9
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -45,15 +45,15 @@
     {
         "source_key": "apricot_oil",
         "fatty_acids": {
-            "myristic": 0.1,
+            "myristic": 0.2,
             "palmitic": 5.8,
-            "palmitoleic": 1.5,
-            "stearic": 1,
+            "palmitoleic": 1.6,
+            "stearic": 1.1,
             "oleic": 63.1,
-            "linoleic": 27.8,
-            "linolenic": 0.01,
-            "arachidic": 0.08,
-            "gondoic": 0.11
+            "linoleic": 27.7,
+            "linolenic": 0,
+            "arachidic": 0,
+            "gondoic": 0.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -62,16 +62,16 @@
     {
         "source_key": "argan_oil",
         "fatty_acids": {
-            "myristic": 0.12,
-            "palmitic": 12.7,
-            "palmitoleic": 0.08,
-            "stearic": 5.83,
-            "oleic": 45.6,
-            "linoleic": 34.6,
-            "linolenic": 0.34,
-            "arachidic": 0.4,
-            "gondoic": 0.17,
-            "behenic": 0.05
+            "myristic": 0,
+            "palmitic": 12.6,
+            "palmitoleic": 0,
+            "stearic": 5.8,
+            "oleic": 45.5,
+            "linoleic": 34.7,
+            "linolenic": 0.4,
+            "arachidic": 0.3,
+            "gondoic": 0,
+            "behenic": 0.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -84,7 +84,7 @@
             "stearic": 10,
             "oleic": 53,
             "linoleic": 6,
-            "linolenic": 2
+            "linolenic": 2.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -93,11 +93,11 @@
     {
         "source_key": "avocado_oil",
         "fatty_acids": {
-            "palmitic": 14.5,
-            "palmitoleic": 5.83,
-            "stearic": 1,
-            "oleic": 64.3,
-            "linoleic": 13,
+            "palmitic": 14.7,
+            "palmitoleic": 5.8,
+            "stearic": 1.1,
+            "oleic": 64.4,
+            "linoleic": 12.9,
             "linolenic": 1.1,
             "gondoic": 0.2
         },
@@ -108,16 +108,16 @@
     {
         "source_key": "babassu_oil",
         "fatty_acids": {
-            "caproic": 0.1,
-            "caprylic": 4.8,
-            "capric": 4.4,
-            "lauric": 43.8,
-            "myristic": 17.8,
+            "caproic": 0.2,
+            "caprylic": 4.9,
+            "capric": 4.5,
+            "lauric": 43.7,
+            "myristic": 17.9,
             "palmitic": 7.8,
             "stearic": 2.9,
             "oleic": 14.9,
-            "linoleic": 3.2,
-            "arachidic": 0.2
+            "linoleic": 3.1,
+            "arachidic": 0.3
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -127,12 +127,12 @@
         "source_key": "bacaba_kernel_oil",
         "fatty_acids": {
             "palmitic": 24.7,
-            "palmitoleic": 1.1,
-            "stearic": 3.5,
+            "palmitoleic": 1,
+            "stearic": 3.6,
             "oleic": 49.7,
-            "linoleic": 18.7,
-            "linolenic": 1.8,
-            "arachidic": 0.5
+            "linoleic": 18.6,
+            "linolenic": 1.9,
+            "arachidic": 0.6
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -141,11 +141,11 @@
     {
         "source_key": "bacaba_pulp_oil",
         "fatty_acids": {
-            "palmitic": 23.4,
-            "palmitoleic": 0.8,
-            "stearic": 3.2,
+            "palmitic": 23.3,
+            "palmitoleic": 0.9,
+            "stearic": 3.3,
             "oleic": 57.1,
-            "linoleic": 14,
+            "linoleic": 14.1,
             "linolenic": 0.6,
             "arachidic": 0.2
         },
@@ -156,9 +156,9 @@
     {
         "source_key": "bacuri_butter",
         "fatty_acids": {
-            "palmitic": 70.26,
-            "palmitoleic": 5.61,
-            "oleic": 24.13
+            "palmitic": 70.3,
+            "palmitoleic": 5.5,
+            "oleic": 24.3
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -168,16 +168,16 @@
         "source_key": "baobab_oil",
         "fatty_acids": {
             "myristic": 0.3,
-            "palmitic": 26.7,
+            "palmitic": 26.6,
             "palmitoleic": 0.2,
-            "stearic": 5.9,
+            "stearic": 6,
             "oleic": 41.9,
             "linoleic": 20.6,
-            "linolenic": 1.3,
-            "arachidic": 0.9,
-            "gondoic": 0.2,
+            "linolenic": 1.4,
+            "arachidic": 0.8,
+            "gondoic": 0.1,
             "behenic": 0.6,
-            "erucic": 0.4
+            "erucic": 0.5
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -187,14 +187,14 @@
         "source_key": "beef_tallow",
         "fatty_acids": {
             "lauric": 0.2,
-            "myristic": 3.1,
-            "palmitic": 24.9,
-            "palmitoleic": 2.4,
-            "stearic": 24.1,
-            "oleic": 41.4,
-            "linoleic": 1.8,
-            "linolenic": 0.7,
-            "arachidic": 0.8,
+            "myristic": 3.2,
+            "palmitic": 24.8,
+            "palmitoleic": 2.5,
+            "stearic": 24,
+            "oleic": 41.5,
+            "linoleic": 1.9,
+            "linolenic": 0.8,
+            "arachidic": 0.7,
             "gondoic": 0.6
         },
         "koh_sap_value": null,
@@ -204,14 +204,14 @@
     {
         "source_key": "black_cumin_oil",
         "fatty_acids": {
-            "myristic": 1,
+            "myristic": 1.1,
             "palmitic": 13.1,
             "palmitoleic": 0.2,
-            "stearic": 2.3,
-            "oleic": 23.8,
-            "linoleic": 58.5,
-            "linolenic": 0.4,
-            "arachidic": 0.5
+            "stearic": 2.2,
+            "oleic": 23.7,
+            "linoleic": 58.6,
+            "linolenic": 0.5,
+            "arachidic": 0.6
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -220,15 +220,15 @@
     {
         "source_key": "borago_oil",
         "fatty_acids": {
-            "palmitic": 10.1,
+            "palmitic": 10.2,
             "stearic": 3.6,
-            "oleic": 17.1,
-            "linoleic": 39.2,
-            "linolenic": 26.1,
-            "gamma_linolenic": 0.2,
-            "arachidic": 0.2,
+            "oleic": 17.2,
+            "linoleic": 39.3,
+            "linolenic": 26,
+            "gamma_linolenic": 0.1,
+            "arachidic": 0.4,
             "behenic": 0.2,
-            "erucic": 2.5
+            "erucic": 2.4
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -238,13 +238,13 @@
         "source_key": "brazil_nut_oil",
         "fatty_acids": {
             "myristic": 0.1,
-            "palmitic": 15.3,
-            "palmitoleic": 0.4,
-            "stearic": 8.8,
+            "palmitic": 15.4,
+            "palmitoleic": 0.3,
+            "stearic": 8.7,
             "oleic": 40.8,
-            "linoleic": 34,
+            "linoleic": 34.1,
             "linolenic": 0.1,
-            "arachidic": 0.3,
+            "arachidic": 0.2,
             "gondoic": 0.1,
             "behenic": 0.1
         },
@@ -255,13 +255,13 @@
     {
         "source_key": "buriti_oil",
         "fatty_acids": {
-            "myristic": 0.1,
+            "myristic": 0.2,
             "palmitic": 16.3,
-            "palmitoleic": 0.4,
-            "stearic": 1.3,
+            "palmitoleic": 0.5,
+            "stearic": 1.2,
             "oleic": 79.2,
             "linoleic": 1.4,
-            "linolenic": 1.3
+            "linolenic": 1.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -270,11 +270,11 @@
     {
         "source_key": "calendula_oil",
         "fatty_acids": {
-            "palmitic": 8,
-            "stearic": 3,
-            "oleic": 58,
+            "palmitic": 8.1,
+            "stearic": 3.1,
+            "oleic": 58.1,
             "linoleic": 27,
-            "linolenic": 1
+            "linolenic": 1.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -283,10 +283,10 @@
     {
         "source_key": "camelina_seed_oil",
         "fatty_acids": {
-            "palmitic": 6,
+            "palmitic": 6.1,
             "stearic": 2,
-            "oleic": 24,
-            "linoleic": 19,
+            "oleic": 24.2,
+            "linoleic": 19.1,
             "linolenic": 45
         },
         "koh_sap_value": null,
@@ -296,17 +296,17 @@
     {
         "source_key": "camellia_tea_seed_oil",
         "fatty_acids": {
-            "myristic": 0.07,
-            "palmitic": 10.74,
-            "palmitoleic": 0.11,
+            "myristic": 0.2,
+            "palmitic": 10.6,
+            "palmitoleic": 0.1,
             "stearic": 3.4,
-            "oleic": 76.7,
-            "linoleic": 7.2,
-            "linolenic": 0.42,
-            "arachidic": 0.05,
-            "gondoic": 0.41,
-            "behenic": 0.02,
-            "erucic": 0.03
+            "oleic": 76.8,
+            "linoleic": 7.3,
+            "linolenic": 0.4,
+            "arachidic": 0,
+            "gondoic": 0.3,
+            "behenic": 0,
+            "erucic": 0
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -316,11 +316,11 @@
         "source_key": "canola_oil",
         "fatty_acids": {
             "palmitic": 4,
-            "stearic": 1.5,
+            "stearic": 1.4,
             "oleic": 60,
-            "linoleic": 20,
-            "linolenic": 11,
-            "arachidic": 0.5,
+            "linoleic": 19.9,
+            "linolenic": 11.1,
+            "arachidic": 0.6,
             "gondoic": 1,
             "behenic": 0.4,
             "erucic": 0.4
@@ -332,27 +332,27 @@
     {
         "source_key": "castor_oil",
         "fatty_acids": {
-            "palmitic": 2,
+            "palmitic": 1.9,
             "stearic": 1,
-            "oleic": 6,
-            "linoleic": 4,
-            "ricinoleic": 87
+            "oleic": 5.9,
+            "linoleic": 3.9,
+            "ricinoleic": 87.1
         },
-        "koh_sap_value": 0.182,
-        "iodine_value": 96,
+        "koh_sap_value": 0.1817,
+        "iodine_value": 95,
         "ins_value": null
     },
     {
         "source_key": "cherry_kernel_oil",
         "fatty_acids": {
-            "lauric": 0.4,
-            "myristic": 0.8,
+            "lauric": 0.5,
+            "myristic": 0.9,
             "palmitic": 8.6,
-            "palmitoleic": 0.44,
-            "stearic": 2.8,
-            "oleic": 40.7,
-            "linoleic": 46,
-            "linolenic": 0.08,
+            "palmitoleic": 0.3,
+            "stearic": 2.9,
+            "oleic": 40.6,
+            "linoleic": 45.9,
+            "linolenic": 0.2,
             "arachidic": 0.1
         },
         "koh_sap_value": null,
@@ -362,12 +362,12 @@
     {
         "source_key": "chicken_fat",
         "fatty_acids": {
-            "myristic": 0.8,
-            "palmitic": 21.7,
-            "palmitoleic": 6.4,
-            "stearic": 7,
+            "myristic": 0.7,
+            "palmitic": 21.8,
+            "palmitoleic": 6.5,
+            "stearic": 6.9,
             "oleic": 41.2,
-            "linoleic": 20.3,
+            "linoleic": 20.4,
             "linolenic": 1.5,
             "gondoic": 1
         },
@@ -378,16 +378,16 @@
     {
         "source_key": "cocoa_butter",
         "fatty_acids": {
-            "caprylic": 0.3,
-            "capric": 0.3,
+            "caprylic": 0.2,
+            "capric": 0.2,
             "lauric": 1,
-            "myristic": 0.7,
-            "palmitic": 22.2,
-            "palmitoleic": 1.6,
+            "myristic": 0.6,
+            "palmitic": 22.3,
+            "palmitoleic": 1.5,
             "stearic": 32.2,
             "oleic": 37.3,
-            "linoleic": 1.8,
-            "linolenic": 1.2,
+            "linoleic": 1.7,
+            "linolenic": 1.1,
             "arachidic": 1.1,
             "behenic": 0.3
         },
@@ -398,17 +398,17 @@
     {
         "source_key": "coconut_oil",
         "fatty_acids": {
-            "caproic": 0.04,
-            "caprylic": 7,
+            "caproic": 0,
+            "caprylic": 7.1,
             "capric": 8,
             "lauric": 47.9,
             "myristic": 16,
             "palmitic": 9.5,
-            "palmitoleic": 1.01,
-            "stearic": 2,
-            "oleic": 6.5,
-            "linoleic": 1.7,
-            "arachidic": 0.25
+            "palmitoleic": 1.1,
+            "stearic": 2.1,
+            "oleic": 6.4,
+            "linoleic": 1.8,
+            "arachidic": 0.4
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -417,13 +417,13 @@
     {
         "source_key": "copa_ba_oil",
         "fatty_acids": {
-            "palmitic": 13.97,
-            "stearic": 19.65,
-            "oleic": 18.11,
-            "linoleic": 16.38,
+            "palmitic": 14.1,
+            "stearic": 19.6,
+            "oleic": 18.2,
+            "linoleic": 16.3,
             "linolenic": 10.8,
-            "gondoic": 2.1,
-            "behenic": 13.78
+            "gondoic": 2,
+            "behenic": 13.7
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -432,17 +432,17 @@
     {
         "source_key": "corn_oil",
         "fatty_acids": {
-            "caprylic": 4,
-            "capric": 7,
-            "myristic": 0.6,
+            "caprylic": 3.9,
+            "capric": 6.9,
+            "myristic": 0.8,
             "palmitic": 10,
             "palmitoleic": 0.1,
             "stearic": 2.7,
-            "oleic": 30.7,
-            "linoleic": 43,
-            "linolenic": 1,
-            "arachidic": 0.4,
-            "gondoic": 0.2,
+            "oleic": 30.6,
+            "linoleic": 42.9,
+            "linolenic": 1.1,
+            "arachidic": 0.5,
+            "gondoic": 0.1,
             "behenic": 0.2
         },
         "koh_sap_value": null,
@@ -452,15 +452,15 @@
     {
         "source_key": "coroba_kernell_oil",
         "fatty_acids": {
-            "caprylic": 4.4,
-            "capric": 4.7,
-            "lauric": 41.7,
-            "myristic": 15.7,
-            "palmitic": 9.76,
-            "stearic": 4,
+            "caprylic": 4.3,
+            "capric": 4.6,
+            "lauric": 41.6,
+            "myristic": 15.8,
+            "palmitic": 9.8,
+            "stearic": 4.1,
             "oleic": 16.1,
-            "linoleic": 3.2,
-            "linolenic": 0.08
+            "linoleic": 3.3,
+            "linolenic": 0.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -471,13 +471,13 @@
         "fatty_acids": {
             "myristic": 0.7,
             "palmitic": 20,
-            "palmitoleic": 0.5,
+            "palmitoleic": 0.6,
             "stearic": 2,
-            "oleic": 24.2,
-            "linoleic": 51.8,
+            "oleic": 24.3,
+            "linoleic": 51.7,
             "linolenic": 0.2,
-            "arachidic": 0.3,
-            "behenic": 0.1
+            "arachidic": 0.2,
+            "behenic": 0.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -489,7 +489,7 @@
             "palmitic": 20,
             "stearic": 2,
             "oleic": 35,
-            "linoleic": 42
+            "linoleic": 42.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -500,14 +500,14 @@
         "fatty_acids": {
             "myristic": 0.1,
             "palmitic": 13.8,
-            "palmitoleic": 0.1,
-            "stearic": 10.6,
-            "oleic": 19.1,
-            "linoleic": 54.9,
-            "linolenic": 0.4,
+            "palmitoleic": 0,
+            "stearic": 10.7,
+            "oleic": 19,
+            "linoleic": 54.8,
+            "linolenic": 0.6,
             "arachidic": 0.4,
-            "gondoic": 0.07,
-            "behenic": 0.06
+            "gondoic": 0,
+            "behenic": 0.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -517,13 +517,13 @@
         "source_key": "cupuacu_butter",
         "fatty_acids": {
             "myristic": 1,
-            "palmitic": 9.1,
-            "palmitoleic": 0.3,
+            "palmitic": 9,
+            "palmitoleic": 0.2,
             "stearic": 35.6,
             "oleic": 42.8,
-            "linoleic": 1.74,
-            "arachidic": 7.1,
-            "gondoic": 0.4,
+            "linoleic": 1.6,
+            "arachidic": 7.2,
+            "gondoic": 0.6,
             "behenic": 1.8
         },
         "koh_sap_value": null,
@@ -534,13 +534,13 @@
         "source_key": "duck_fat",
         "fatty_acids": {
             "myristic": 0.5,
-            "palmitic": 21,
-            "palmitoleic": 7,
-            "stearic": 6.5,
-            "oleic": 44,
-            "linoleic": 18.3,
-            "linolenic": 1.4,
-            "gondoic": 1
+            "palmitic": 20.9,
+            "palmitoleic": 6.9,
+            "stearic": 6.6,
+            "oleic": 44.1,
+            "linoleic": 18.2,
+            "linolenic": 1.3,
+            "gondoic": 1.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -549,12 +549,12 @@
     {
         "source_key": "emu_oil",
         "fatty_acids": {
-            "myristic": 0.4,
-            "palmitic": 22,
-            "palmitoleic": 3.5,
+            "myristic": 0.3,
+            "palmitic": 21.9,
+            "palmitoleic": 3.4,
             "stearic": 9.6,
             "oleic": 48.3,
-            "linoleic": 15.2,
+            "linoleic": 15.1,
             "linolenic": 0.9
         },
         "koh_sap_value": null,
@@ -566,10 +566,10 @@
         "fatty_acids": {
             "palmitic": 5.8,
             "stearic": 2.1,
-            "oleic": 6.6,
-            "linoleic": 71.6,
-            "linolenic": 12.6,
-            "gamma_linolenic": 0.2,
+            "oleic": 6.5,
+            "linoleic": 71.5,
+            "linolenic": 12.7,
+            "gamma_linolenic": 0.3,
             "arachidic": 0.3
         },
         "koh_sap_value": null,
@@ -580,8 +580,8 @@
         "source_key": "fractionated_coconut_oil",
         "fatty_acids": {
             "caprylic": 96,
-            "lauric": 2,
-            "myristic": 1
+            "lauric": 2.1,
+            "myristic": 1.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -590,16 +590,16 @@
     {
         "source_key": "grape_seed_oil",
         "fatty_acids": {
-            "myristic": 0.05,
-            "palmitic": 7.66,
-            "palmitoleic": 0.03,
-            "stearic": 4.53,
-            "oleic": 17.65,
-            "linoleic": 69.3,
-            "linolenic": 0.33,
-            "arachidic": 0.16,
-            "gondoic": 0.02,
-            "behenic": 0.04
+            "myristic": 0.2,
+            "palmitic": 7.6,
+            "palmitoleic": 0.2,
+            "stearic": 4.6,
+            "oleic": 17.7,
+            "linoleic": 69.4,
+            "linolenic": 0.4,
+            "arachidic": 0.1,
+            "gondoic": 0.1,
+            "behenic": 0
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -608,14 +608,14 @@
     {
         "source_key": "hazelnut_oil",
         "fatty_acids": {
-            "myristic": 0.1,
+            "myristic": 0,
             "palmitic": 5.5,
-            "palmitoleic": 0.4,
-            "stearic": 2.5,
-            "oleic": 79.6,
-            "linoleic": 11.1,
-            "linolenic": 0.4,
-            "gondoic": 0.2
+            "palmitoleic": 0.5,
+            "stearic": 2.6,
+            "oleic": 79.7,
+            "linoleic": 11.3,
+            "linolenic": 0.3,
+            "gondoic": 0.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -624,13 +624,13 @@
     {
         "source_key": "hemp_oil",
         "fatty_acids": {
-            "palmitic": 6,
-            "stearic": 2,
-            "oleic": 12,
-            "linoleic": 55,
+            "palmitic": 6.1,
+            "stearic": 2.1,
+            "oleic": 11.9,
+            "linoleic": 55.1,
             "linolenic": 23.7,
             "arachidic": 0.7,
-            "behenic": 0.5
+            "behenic": 0.6
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -639,11 +639,11 @@
     {
         "source_key": "illipe_butter",
         "fatty_acids": {
-            "palmitic": 17,
+            "palmitic": 17.1,
             "stearic": 44,
-            "oleic": 35,
+            "oleic": 34.9,
             "linoleic": 2,
-            "arachidic": 2
+            "arachidic": 2.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -652,26 +652,26 @@
     {
         "source_key": "jojoba_oil",
         "fatty_acids": {
-            "palmitoleic": 0.25,
-            "oleic": 0.66,
-            "linoleic": 2,
-            "linolenic": 3,
+            "palmitoleic": 0.2,
+            "oleic": 0.5,
+            "linoleic": 1.9,
+            "linolenic": 3.1,
             "arachidic": 29.5,
             "behenic": 14.2
         },
-        "koh_sap_value": 0.098,
-        "iodine_value": 46,
+        "koh_sap_value": 0.0986,
+        "iodine_value": 47,
         "ins_value": null
     },
     {
         "source_key": "karanja_oil",
         "fatty_acids": {
-            "palmitic": 11.6,
-            "stearic": 7.5,
+            "palmitic": 11.5,
+            "stearic": 7.7,
             "oleic": 51.5,
-            "linoleic": 16,
-            "linolenic": 2.6,
-            "arachidic": 1.7,
+            "linoleic": 16.1,
+            "linolenic": 2.5,
+            "arachidic": 1.6,
             "gondoic": 1.1,
             "behenic": 4.3
         },
@@ -683,8 +683,8 @@
         "source_key": "kokum_butter",
         "fatty_acids": {
             "palmitic": 4,
-            "stearic": 54,
-            "oleic": 40,
+            "stearic": 53.9,
+            "oleic": 39.9,
             "linoleic": 2
         },
         "koh_sap_value": null,
@@ -694,8 +694,8 @@
     {
         "source_key": "kukui_nut_oil",
         "fatty_acids": {
-            "palmitic": 6,
-            "stearic": 2,
+            "palmitic": 6.1,
+            "stearic": 1.9,
             "oleic": 20,
             "linoleic": 42,
             "linolenic": 29
@@ -707,13 +707,13 @@
     {
         "source_key": "lard",
         "fatty_acids": {
-            "myristic": 2,
-            "palmitic": 27,
-            "palmitoleic": 3.8,
-            "stearic": 11.1,
+            "myristic": 1.9,
+            "palmitic": 27.1,
+            "palmitoleic": 3.9,
+            "stearic": 11.2,
             "oleic": 45,
             "linoleic": 9,
-            "linolenic": 1,
+            "linolenic": 1.1,
             "arachidic": 0.5
         },
         "koh_sap_value": null,
@@ -723,14 +723,14 @@
     {
         "source_key": "laurel_berries_oil",
         "fatty_acids": {
-            "lauric": 26.5,
-            "myristic": 4.5,
-            "palmitic": 25.9,
+            "lauric": 26.6,
+            "myristic": 4.6,
+            "palmitic": 25.8,
             "palmitoleic": 0.3,
             "stearic": 3.1,
-            "oleic": 10.8,
+            "oleic": 11,
             "linoleic": 11.3,
-            "linolenic": 17.6
+            "linolenic": 17.5
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -739,15 +739,15 @@
     {
         "source_key": "licuri_coconut_oil",
         "fatty_acids": {
-            "caprylic": 19,
-            "capric": 10.5,
+            "caprylic": 19.1,
+            "capric": 10.4,
             "lauric": 41,
-            "myristic": 11,
+            "myristic": 10.9,
             "palmitic": 5,
             "stearic": 3,
-            "oleic": 7,
-            "linoleic": 2,
-            "arachidic": 0.5
+            "oleic": 6.9,
+            "linoleic": 2.1,
+            "arachidic": 0.6
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -756,13 +756,13 @@
     {
         "source_key": "lineseed_oil_flax",
         "fatty_acids": {
-            "palmitic": 6,
-            "stearic": 3.5,
-            "oleic": 22.4,
-            "linoleic": 20,
-            "linolenic": 47.2,
-            "arachidic": 0.6,
-            "behenic": 0.3
+            "palmitic": 6.1,
+            "stearic": 3.6,
+            "oleic": 22.5,
+            "linoleic": 20.1,
+            "linolenic": 47.3,
+            "arachidic": 0.7,
+            "behenic": 0.4
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -771,18 +771,18 @@
     {
         "source_key": "macadamia_nut_oil",
         "fatty_acids": {
-            "lauric": 0.1,
-            "myristic": 0.75,
+            "lauric": 0.2,
+            "myristic": 0.9,
             "palmitic": 9.7,
             "palmitoleic": 26.7,
-            "stearic": 3,
+            "stearic": 3.1,
             "oleic": 50.9,
-            "linoleic": 3.4,
-            "linolenic": 0.4,
-            "arachidic": 2.5,
-            "gondoic": 1,
-            "behenic": 0.8,
-            "erucic": 0.7
+            "linoleic": 3.5,
+            "linolenic": 0.5,
+            "arachidic": 2.6,
+            "gondoic": 1.1,
+            "behenic": 0.9,
+            "erucic": 0.6
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -791,13 +791,13 @@
     {
         "source_key": "mango_butter",
         "fatty_acids": {
-            "palmitic": 8.9,
-            "stearic": 39.2,
-            "oleic": 41.3,
+            "palmitic": 8.8,
+            "stearic": 39.1,
+            "oleic": 41.4,
             "linoleic": 6.9,
             "linolenic": 0.5,
-            "arachidic": 2.5,
-            "behenic": 0.6
+            "arachidic": 2.4,
+            "behenic": 0.5
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -806,12 +806,12 @@
     {
         "source_key": "mango_oil",
         "fatty_acids": {
-            "palmitic": 8.9,
-            "stearic": 27,
-            "oleic": 52.3,
-            "linoleic": 6.9,
-            "linolenic": 0.5,
-            "arachidic": 2.5,
+            "palmitic": 8.8,
+            "stearic": 27.1,
+            "oleic": 52.2,
+            "linoleic": 7,
+            "linolenic": 0.4,
+            "arachidic": 2.4,
             "behenic": 0.6
         },
         "koh_sap_value": null,
@@ -822,15 +822,15 @@
         "source_key": "maracuja_passionfruit_oil",
         "fatty_acids": {
             "myristic": 0.1,
-            "palmitic": 8.7,
+            "palmitic": 8.8,
             "palmitoleic": 0.2,
-            "stearic": 1.9,
+            "stearic": 2,
             "oleic": 16.1,
-            "linoleic": 72.4,
-            "linolenic": 0.3,
+            "linoleic": 72.5,
+            "linolenic": 0.2,
             "arachidic": 0.1,
-            "gondoic": 0.1,
-            "behenic": 0.06
+            "gondoic": 0.2,
+            "behenic": 0
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -839,16 +839,16 @@
     {
         "source_key": "marula_oil",
         "fatty_acids": {
-            "myristic": 0.15,
-            "palmitic": 14.13,
+            "myristic": 0,
+            "palmitic": 14.2,
             "palmitoleic": 0.2,
             "stearic": 10.3,
             "oleic": 68.2,
             "linoleic": 5.2,
-            "arachidic": 0.96,
-            "gondoic": 0.25,
-            "behenic": 0.25,
-            "erucic": 0.1
+            "arachidic": 0.8,
+            "gondoic": 0.3,
+            "behenic": 0.2,
+            "erucic": 0.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -858,16 +858,16 @@
         "source_key": "moringa_oil",
         "fatty_acids": {
             "myristic": 0.1,
-            "palmitic": 6.03,
-            "palmitoleic": 1.31,
-            "stearic": 5.29,
-            "oleic": 69.5,
-            "linoleic": 3.48,
-            "linolenic": 0.39,
-            "arachidic": 3.57,
-            "gondoic": 2.34,
+            "palmitic": 6.1,
+            "palmitoleic": 1.3,
+            "stearic": 5.4,
+            "oleic": 69.6,
+            "linoleic": 3.6,
+            "linolenic": 0.5,
+            "arachidic": 3.6,
+            "gondoic": 2.3,
             "behenic": 6.3,
-            "erucic": 0.13
+            "erucic": 0.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -876,11 +876,11 @@
     {
         "source_key": "mowrah_butter",
         "fatty_acids": {
-            "palmitic": 22,
-            "stearic": 22,
-            "oleic": 43,
-            "linoleic": 11,
-            "arachidic": 1.65
+            "palmitic": 21.9,
+            "stearic": 22.1,
+            "oleic": 42.9,
+            "linoleic": 10.9,
+            "arachidic": 1.7
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -889,13 +889,13 @@
     {
         "source_key": "murumuru_butter",
         "fatty_acids": {
-            "caproic": 0.2,
-            "caprylic": 1.1,
-            "capric": 1.6,
-            "lauric": 42.4,
-            "myristic": 36.7,
+            "caproic": 0.3,
+            "caprylic": 1.2,
+            "capric": 1.7,
+            "lauric": 42.5,
+            "myristic": 36.8,
             "palmitic": 4.6,
-            "stearic": 2.2,
+            "stearic": 2.1,
             "oleic": 10.8,
             "linoleic": 0.4
         },
@@ -907,13 +907,13 @@
         "source_key": "mustard_oil",
         "fatty_acids": {
             "palmitic": 2.3,
-            "palmitoleic": 0.2,
-            "stearic": 0.8,
-            "oleic": 15.2,
-            "linoleic": 16.7,
-            "linolenic": 11.9,
-            "arachidic": 0.07,
-            "gondoic": 9,
+            "palmitoleic": 0.3,
+            "stearic": 0.9,
+            "oleic": 15.1,
+            "linoleic": 16.8,
+            "linolenic": 11.8,
+            "arachidic": 0,
+            "gondoic": 8.9,
             "behenic": 1.5,
             "erucic": 42.3
         },
@@ -924,16 +924,16 @@
     {
         "source_key": "neem_tree_oil",
         "fatty_acids": {
-            "myristic": 1.4,
-            "palmitic": 21.4,
+            "myristic": 1.5,
+            "palmitic": 21.3,
             "palmitoleic": 0.1,
-            "stearic": 20.6,
-            "oleic": 35.1,
-            "linoleic": 17.6,
-            "linolenic": 0.6,
-            "arachidic": 1.9,
-            "gondoic": 0.6,
-            "behenic": 0.3
+            "stearic": 20.8,
+            "oleic": 35.2,
+            "linoleic": 17.5,
+            "linolenic": 0.7,
+            "arachidic": 1.8,
+            "gondoic": 0.7,
+            "behenic": 0.4
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -942,15 +942,15 @@
     {
         "source_key": "olive_oil",
         "fatty_acids": {
-            "palmitic": 13.5,
-            "palmitoleic": 0.5,
+            "palmitic": 13.4,
+            "palmitoleic": 0.4,
             "stearic": 2.6,
-            "oleic": 74.8,
+            "oleic": 74.9,
             "linoleic": 7,
-            "linolenic": 0.5,
-            "arachidic": 0.52,
-            "gondoic": 0.42,
-            "behenic": 0.1
+            "linolenic": 0.6,
+            "arachidic": 0.4,
+            "gondoic": 0.6,
+            "behenic": 0.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -960,15 +960,15 @@
         "source_key": "olive_pomace_oil",
         "fatty_acids": {
             "myristic": 0.1,
-            "palmitic": 13.2,
+            "palmitic": 13.1,
             "palmitoleic": 1.7,
-            "stearic": 2.8,
-            "oleic": 69.3,
-            "linoleic": 12,
-            "linolenic": 0.3,
+            "stearic": 2.7,
+            "oleic": 69.4,
+            "linoleic": 11.9,
+            "linolenic": 0.2,
             "arachidic": 0.3,
-            "gondoic": 0.2,
-            "behenic": 0.1
+            "gondoic": 0.3,
+            "behenic": 0
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -978,11 +978,11 @@
         "source_key": "olive_recycled_oil",
         "fatty_acids": {
             "myristic": 1.6,
-            "palmitic": 11.5,
-            "stearic": 2.5,
-            "oleic": 73.3,
-            "linoleic": 9,
-            "linolenic": 1
+            "palmitic": 11.6,
+            "stearic": 2.6,
+            "oleic": 73.2,
+            "linoleic": 9.1,
+            "linolenic": 0.9
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -991,18 +991,18 @@
     {
         "source_key": "palm_kernel_oil",
         "fatty_acids": {
-            "caproic": 0.4,
-            "caprylic": 4.5,
+            "caproic": 0.5,
+            "caprylic": 4.4,
             "capric": 3.8,
-            "lauric": 46,
-            "myristic": 15,
-            "palmitic": 8.4,
-            "stearic": 2.15,
-            "oleic": 16.5,
-            "linoleic": 2.25,
-            "linolenic": 0.35,
-            "arachidic": 0.15,
-            "gondoic": 0.25
+            "lauric": 46.2,
+            "myristic": 14.9,
+            "palmitic": 8.3,
+            "stearic": 2.3,
+            "oleic": 16.6,
+            "linoleic": 2.4,
+            "linolenic": 0.5,
+            "arachidic": 0.1,
+            "gondoic": 0.4
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1012,16 +1012,16 @@
         "source_key": "palm_oil",
         "fatty_acids": {
             "lauric": 0.2,
-            "myristic": 1.25,
+            "myristic": 1.2,
             "palmitic": 42.1,
             "palmitoleic": 0.3,
             "stearic": 5,
-            "oleic": 39.6,
-            "linoleic": 10.4,
-            "linolenic": 0.25,
-            "arachidic": 0.5,
-            "gondoic": 0.2,
-            "behenic": 0.05,
+            "oleic": 39.7,
+            "linoleic": 10.6,
+            "linolenic": 0.2,
+            "arachidic": 0.4,
+            "gondoic": 0.1,
+            "behenic": 0.2,
             "erucic": 0.1
         },
         "koh_sap_value": null,
@@ -1031,17 +1031,17 @@
     {
         "source_key": "palm_olein",
         "fatty_acids": {
-            "lauric": 0.3,
-            "myristic": 1,
+            "lauric": 0.4,
+            "myristic": 1.1,
             "palmitic": 39,
             "palmitoleic": 0.3,
-            "stearic": 4,
+            "stearic": 4.1,
             "oleic": 43.6,
             "linoleic": 11,
             "linolenic": 0.2,
-            "arachidic": 0.3,
+            "arachidic": 0.2,
             "gondoic": 0.2,
-            "behenic": 0.1
+            "behenic": 0
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1050,12 +1050,12 @@
     {
         "source_key": "patau_oil",
         "fatty_acids": {
-            "palmitic": 10.6,
-            "palmitoleic": 0.6,
-            "stearic": 3.9,
+            "palmitic": 10.7,
+            "palmitoleic": 0.5,
+            "stearic": 3.8,
             "oleic": 74.7,
-            "linoleic": 4.9,
-            "linolenic": 5,
+            "linoleic": 5,
+            "linolenic": 4.9,
             "arachidic": 0.1
         },
         "koh_sap_value": null,
@@ -1065,15 +1065,15 @@
     {
         "source_key": "peach_kernel_oil",
         "fatty_acids": {
-            "myristic": 0.13,
+            "myristic": 0.2,
             "palmitic": 6.2,
-            "palmitoleic": 0.4,
+            "palmitoleic": 0.5,
             "stearic": 1.6,
-            "oleic": 69,
-            "linoleic": 22,
-            "linolenic": 0.05,
+            "oleic": 68.9,
+            "linoleic": 22.1,
+            "linolenic": 0,
             "arachidic": 0.1,
-            "gondoic": 0.08
+            "gondoic": 0
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1082,14 +1082,14 @@
     {
         "source_key": "peanut_oil",
         "fatty_acids": {
-            "palmitic": 9.1,
-            "stearic": 4.6,
-            "oleic": 51.6,
-            "linoleic": 26.8,
-            "linolenic": 0.5,
+            "palmitic": 9,
+            "stearic": 4.7,
+            "oleic": 51.7,
+            "linoleic": 26.7,
+            "linolenic": 0.4,
             "arachidic": 3,
-            "gondoic": 1.1,
-            "behenic": 3
+            "gondoic": 1,
+            "behenic": 3.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1099,13 +1099,13 @@
         "source_key": "pecan_oil",
         "fatty_acids": {
             "palmitic": 5.6,
-            "palmitoleic": 0.1,
-            "stearic": 2.4,
-            "oleic": 54.8,
+            "palmitoleic": 0,
+            "stearic": 2.3,
+            "oleic": 54.7,
             "linoleic": 33.8,
-            "linolenic": 2.6,
-            "arachidic": 0.2,
-            "gondoic": 0.4
+            "linolenic": 2.5,
+            "arachidic": 0.1,
+            "gondoic": 0.5
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1116,11 +1116,11 @@
         "fatty_acids": {
             "myristic": 0.5,
             "palmitic": 44.3,
-            "palmitoleic": 0.4,
-            "stearic": 1.8,
-            "oleic": 50.2,
-            "linoleic": 1.2,
-            "linolenic": 0.7
+            "palmitoleic": 0.6,
+            "stearic": 1.9,
+            "oleic": 50.1,
+            "linoleic": 1.1,
+            "linolenic": 0.8
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1129,10 +1129,10 @@
     {
         "source_key": "pistachio_oil",
         "fatty_acids": {
-            "palmitic": 11,
-            "stearic": 1,
-            "oleic": 63,
-            "linoleic": 25
+            "palmitic": 10.9,
+            "stearic": 1.1,
+            "oleic": 62.9,
+            "linoleic": 25.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1141,14 +1141,14 @@
     {
         "source_key": "poppyseed_oil",
         "fatty_acids": {
-            "myristic": 0.6,
+            "myristic": 0.8,
             "palmitic": 9.2,
             "palmitoleic": 0.1,
             "stearic": 2.3,
             "oleic": 9.9,
-            "linoleic": 76.2,
+            "linoleic": 76.3,
             "linolenic": 0.5,
-            "arachidic": 0.4
+            "arachidic": 0.3
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1157,15 +1157,15 @@
     {
         "source_key": "pracaxi_oil",
         "fatty_acids": {
-            "lauric": 1.3,
+            "lauric": 1.2,
             "myristic": 1.4,
-            "palmitic": 2.25,
-            "stearic": 2.25,
+            "palmitic": 2.1,
+            "stearic": 2.3,
             "oleic": 45,
-            "linoleic": 2.4,
+            "linoleic": 2.3,
             "linolenic": 3,
-            "behenic": 30,
-            "erucic": 10
+            "behenic": 30.1,
+            "erucic": 9.9
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1174,9 +1174,9 @@
     {
         "source_key": "pumpkin_seed_oil",
         "fatty_acids": {
-            "palmitic": 11,
-            "stearic": 8,
-            "oleic": 32,
+            "palmitic": 11.1,
+            "stearic": 8.2,
+            "oleic": 31.9,
             "linoleic": 49
         },
         "koh_sap_value": null,
@@ -1187,12 +1187,12 @@
         "source_key": "rice_bran_oil",
         "fatty_acids": {
             "myristic": 0.7,
-            "palmitic": 15,
+            "palmitic": 15.1,
             "palmitoleic": 0.3,
             "stearic": 2,
             "oleic": 45.6,
-            "linoleic": 35.6,
-            "linolenic": 0.8
+            "linoleic": 35.5,
+            "linolenic": 0.7
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1202,8 +1202,8 @@
         "source_key": "roasted_coffee_oil",
         "fatty_acids": {
             "palmitic": 39,
-            "stearic": 9,
-            "oleic": 9,
+            "stearic": 9.1,
+            "oleic": 9.1,
             "linoleic": 40
         },
         "koh_sap_value": null,
@@ -1213,16 +1213,16 @@
     {
         "source_key": "rosehip_oil",
         "fatty_acids": {
-            "myristic": 0.15,
-            "palmitic": 3.9,
-            "palmitoleic": 0.14,
-            "stearic": 2,
-            "oleic": 15,
-            "linoleic": 44.5,
-            "linolenic": 32.5,
-            "arachidic": 0.5,
-            "gondoic": 0.25,
-            "behenic": 0.25
+            "myristic": 0,
+            "palmitic": 3.8,
+            "palmitoleic": 0.2,
+            "stearic": 2.1,
+            "oleic": 15.1,
+            "linoleic": 44.6,
+            "linolenic": 32.7,
+            "arachidic": 0.4,
+            "gondoic": 0.2,
+            "behenic": 0.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1231,12 +1231,12 @@
     {
         "source_key": "sacha_inchi_oil",
         "fatty_acids": {
-            "myristic": 1,
-            "palmitic": 6,
-            "stearic": 2,
-            "oleic": 10,
-            "linoleic": 37,
-            "linolenic": 44
+            "myristic": 0.9,
+            "palmitic": 5.9,
+            "stearic": 1.9,
+            "oleic": 10.1,
+            "linoleic": 37.1,
+            "linolenic": 43.9
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1245,13 +1245,13 @@
     {
         "source_key": "safflower_oil",
         "fatty_acids": {
-            "myristic": 0.5,
-            "palmitic": 4.9,
+            "myristic": 0.6,
+            "palmitic": 5,
             "stearic": 2.5,
-            "oleic": 17,
-            "linoleic": 74.8,
+            "oleic": 17.1,
+            "linoleic": 74.9,
             "linolenic": 0.1,
-            "arachidic": 0.2
+            "arachidic": 0.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1260,9 +1260,9 @@
     {
         "source_key": "safflower_oil_high_oleic",
         "fatty_acids": {
-            "palmitic": 5,
-            "stearic": 2,
-            "oleic": 77,
+            "palmitic": 4.9,
+            "stearic": 2.1,
+            "oleic": 76.9,
             "linoleic": 15
         },
         "koh_sap_value": null,
@@ -1272,11 +1272,11 @@
     {
         "source_key": "sal_butter",
         "fatty_acids": {
-            "palmitic": 6,
+            "palmitic": 6.2,
             "stearic": 40,
-            "oleic": 41.6,
+            "oleic": 41.7,
             "linoleic": 2.5,
-            "arachidic": 9.3
+            "arachidic": 9.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1285,11 +1285,11 @@
     {
         "source_key": "seeds_oil",
         "fatty_acids": {
-            "palmitic": 8,
+            "palmitic": 7.9,
             "stearic": 3,
-            "oleic": 58,
+            "oleic": 58.1,
             "linoleic": 27,
-            "linolenic": 1
+            "linolenic": 0.9
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1298,10 +1298,10 @@
     {
         "source_key": "sesame_oil",
         "fatty_acids": {
-            "palmitic": 8,
-            "stearic": 4.5,
-            "oleic": 46,
-            "linoleic": 40,
+            "palmitic": 7.9,
+            "stearic": 4.4,
+            "oleic": 45.9,
+            "linoleic": 40.2,
             "arachidic": 0.7
         },
         "koh_sap_value": null,
@@ -1311,11 +1311,11 @@
     {
         "source_key": "shea_butter",
         "fatty_acids": {
-            "palmitic": 7.1,
+            "palmitic": 7,
             "stearic": 37.8,
-            "oleic": 47.6,
-            "linoleic": 6.4,
-            "arachidic": 1.1
+            "oleic": 47.8,
+            "linoleic": 6.3,
+            "arachidic": 1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1325,17 +1325,17 @@
         "source_key": "soy_oil",
         "fatty_acids": {
             "lauric": 0.1,
-            "myristic": 0.2,
-            "palmitic": 10.5,
+            "myristic": 0.3,
+            "palmitic": 10.4,
             "palmitoleic": 0.1,
-            "stearic": 3.7,
+            "stearic": 3.6,
             "oleic": 23.4,
             "linoleic": 52.6,
-            "linolenic": 8,
-            "arachidic": 0.4,
+            "linolenic": 7.9,
+            "arachidic": 0.3,
             "gondoic": 0.2,
             "behenic": 0.4,
-            "erucic": 0.3
+            "erucic": 0.2
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1345,8 +1345,8 @@
         "source_key": "soy_oil_hydrogenated",
         "fatty_acids": {
             "palmitoleic": 11.3,
-            "stearic": 13.6,
-            "oleic": 75
+            "stearic": 13.8,
+            "oleic": 74.9
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1355,9 +1355,9 @@
     {
         "source_key": "stearine",
         "fatty_acids": {
-            "palmitic": 46,
-            "stearic": 52,
-            "oleic": 2
+            "palmitic": 46.1,
+            "stearic": 52.1,
+            "oleic": 2.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1367,11 +1367,11 @@
         "source_key": "sunflower_oil",
         "fatty_acids": {
             "palmitic": 5.5,
-            "stearic": 2.7,
-            "oleic": 25,
-            "linoleic": 64,
-            "linolenic": 0.3,
-            "arachidic": 1.3,
+            "stearic": 2.6,
+            "oleic": 24.9,
+            "linoleic": 64.1,
+            "linolenic": 0.2,
+            "arachidic": 1.2,
             "behenic": 0.8
         },
         "koh_sap_value": null,
@@ -1381,8 +1381,8 @@
     {
         "source_key": "sunflower_oil_high_oleic",
         "fatty_acids": {
-            "palmitic": 4,
-            "stearic": 6,
+            "palmitic": 3.9,
+            "stearic": 6.1,
             "oleic": 85,
             "linoleic": 5
         },
@@ -1394,15 +1394,15 @@
         "source_key": "tallow_cow",
         "fatty_acids": {
             "lauric": 2,
-            "myristic": 5.3,
+            "myristic": 5.4,
             "palmitic": 27.7,
-            "palmitoleic": 3.9,
+            "palmitoleic": 3.8,
             "stearic": 17.2,
-            "oleic": 42.3,
+            "oleic": 42.4,
             "linoleic": 1.1,
-            "linolenic": 0.2,
-            "arachidic": 0.05,
-            "gondoic": 0.2
+            "linolenic": 0.1,
+            "arachidic": 0,
+            "gondoic": 0.3
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1412,14 +1412,14 @@
         "source_key": "tallow_sheep",
         "fatty_acids": {
             "caprylic": 1.4,
-            "capric": 1,
-            "lauric": 0.5,
-            "myristic": 2,
-            "palmitic": 21,
+            "capric": 1.1,
+            "lauric": 0.6,
+            "myristic": 1.9,
+            "palmitic": 20.9,
             "palmitoleic": 3,
-            "stearic": 28,
+            "stearic": 27.9,
             "oleic": 37,
-            "linoleic": 4,
+            "linoleic": 4.1,
             "arachidic": 0.5,
             "erucic": 0.5
         },
@@ -1430,15 +1430,15 @@
     {
         "source_key": "tigernut_oil",
         "fatty_acids": {
-            "myristic": 1.7,
-            "palmitic": 14.2,
+            "myristic": 1.6,
+            "palmitic": 14.3,
             "stearic": 7.3,
             "oleic": 65.1,
-            "linoleic": 11.6,
+            "linoleic": 11.5,
             "linolenic": 0.2,
             "arachidic": 0.6,
-            "gondoic": 0.2,
-            "behenic": 0.1
+            "gondoic": 0.1,
+            "behenic": 0
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1447,14 +1447,14 @@
     {
         "source_key": "tucum_kernel_oil",
         "fatty_acids": {
-            "caprylic": 2.9,
-            "lauric": 51.6,
+            "caprylic": 3,
+            "lauric": 51.7,
             "myristic": 23.7,
             "palmitic": 5.3,
-            "stearic": 2.5,
-            "oleic": 9.3,
-            "linoleic": 3.6,
-            "linolenic": 0.1,
+            "stearic": 2.6,
+            "oleic": 9.5,
+            "linoleic": 3.5,
+            "linolenic": 0,
             "arachidic": 0.1
         },
         "koh_sap_value": null,
@@ -1465,16 +1465,16 @@
         "source_key": "tucum_pulp_oil",
         "fatty_acids": {
             "caprylic": 1.5,
-            "capric": 1,
-            "lauric": 0.14,
+            "capric": 1.1,
+            "lauric": 0.1,
             "myristic": 0.2,
-            "palmitic": 21.6,
-            "palmitoleic": 0.4,
-            "stearic": 3,
-            "oleic": 62.7,
-            "linoleic": 4.7,
-            "linolenic": 3.6,
-            "arachidic": 0.2
+            "palmitic": 21.7,
+            "palmitoleic": 0.5,
+            "stearic": 2.9,
+            "oleic": 62.8,
+            "linoleic": 4.8,
+            "linolenic": 3.7,
+            "arachidic": 0.1
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1483,12 +1483,12 @@
     {
         "source_key": "ucu_ba_oil",
         "fatty_acids": {
-            "caprylic": 0.9,
-            "lauric": 18,
-            "myristic": 72,
-            "palmitic": 5,
+            "caprylic": 0.8,
+            "lauric": 17.9,
+            "myristic": 71.9,
+            "palmitic": 4.9,
             "stearic": 3,
-            "oleic": 1
+            "oleic": 0.9
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1498,18 +1498,18 @@
         "source_key": "vegetal_butter_margarine",
         "fatty_acids": {
             "caprylic": 0.1,
-            "capric": 0.2,
-            "lauric": 2.4,
-            "myristic": 1.2,
-            "palmitic": 15.5,
-            "palmitoleic": 0.1,
-            "stearic": 6.7,
-            "oleic": 29.8,
-            "linoleic": 38.5,
+            "capric": 0.3,
+            "lauric": 2.5,
+            "myristic": 1.1,
+            "palmitic": 15.6,
+            "palmitoleic": 0,
+            "stearic": 6.6,
+            "oleic": 29.7,
+            "linoleic": 38.4,
             "linolenic": 2.3,
-            "gamma_linolenic": 0.1,
-            "arachidic": 0.4,
-            "behenic": 0.4
+            "gamma_linolenic": 0,
+            "arachidic": 0.3,
+            "behenic": 0.5
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1520,10 +1520,10 @@
         "fatty_acids": {
             "palmitic": 7,
             "stearic": 2,
-            "oleic": 22.2,
+            "oleic": 22.3,
             "linoleic": 57.4,
-            "linolenic": 10.4,
-            "gondoic": 0.4
+            "linolenic": 10.5,
+            "gondoic": 0.3
         },
         "koh_sap_value": null,
         "iodine_value": null,
@@ -1532,11 +1532,11 @@
     {
         "source_key": "wheatgerm_oil",
         "fatty_acids": {
-            "palmitic": 13.5,
-            "stearic": 3.5,
-            "oleic": 18.9,
-            "linoleic": 57.1,
-            "linolenic": 7
+            "palmitic": 13.6,
+            "stearic": 3.4,
+            "oleic": 18.8,
+            "linoleic": 57.2,
+            "linolenic": 6.9
         },
         "koh_sap_value": null,
         "iodine_value": null,

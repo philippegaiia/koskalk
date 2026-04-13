@@ -211,9 +211,15 @@ foreach ($faData as $index => $faEntry) {
     foreach ($faMapping as $pKey => $faName) {
         if (isset($faEntry[$pKey]) && is_numeric($faEntry[$pKey])) {
             $value = (float) $faEntry[$pKey];
-            // Add ±0.15 random variation and round to 1 decimal
-            $variation = (mt_rand(-15, 15) / 100);
-            $fattyAcids[$faName] = round(max(0, $value + $variation), 1);
+            if ($value <= 0) {
+                continue;
+            }
+            if ($value >= 1) {
+                $fattyAcids[$faName] = round($value);
+            } else {
+                // Round trace amounts to nearest 0.2 multiple (0.2, 0.4, 0.6, 0.8), minimum 0.2
+                $fattyAcids[$faName] = max(0.2, round($value / 0.2) * 0.2);
+            }
         }
     }
 

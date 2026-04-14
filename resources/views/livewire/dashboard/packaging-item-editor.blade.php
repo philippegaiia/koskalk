@@ -1,8 +1,8 @@
 <div class="mx-auto w-full max-w-5xl space-y-6">
- <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5 sm:p-6">
+ <section class="sk-card p-5 sm:p-6">
  <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Packaging item</p>
+ <p class="sk-eyebrow">Packaging item</p>
  <h3 class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]">
  {{ $packagingItem ? 'Refine the packaging record and keep it ready for costing.' : 'Create a reusable packaging item for recipe costing.' }}
  </h3>

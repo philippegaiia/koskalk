@@ -5,10 +5,10 @@
 
 @section('content')
  <div class="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8">
- <section class="rounded-xl bg-[var(--color-panel)] p-5 shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] sm:p-6">
+ <section class="sk-card p-5 sm:p-6">
  <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
  <div class="min-w-0">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Workspace</p>
+ <p class="sk-eyebrow">Workspace</p>
  <h3 class="mt-3 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">Create formulas, keep one working draft, and save the current formula without extra version clutter.</h3>
  <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)] sm:text-[15px]">
  The dashboard is the real home for the formulation app. It should show what matters immediately: what you can create, what is already saved, and what personal ingredients belong to you.
@@ -19,7 +19,7 @@
  <a href="{{ route('recipes.create') }}" wire:navigate class="inline-flex justify-center rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
  Create soap formula
  </a>
- <button type="button" disabled class="inline-flex cursor-not-allowed justify-center rounded-lg bg-[var(--color-panel-strong)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)]">
+ <button type="button" disabled class="inline-flex cursor-not-allowed justify-center sk-inset px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)]">
  Create formula
  </button>
  </div>
@@ -27,28 +27,28 @@
  </section>
 
  <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
- <div class="rounded-xl bg-[var(--color-panel)] p-5 shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Saved recipes</p>
+ <div class="sk-card p-5">
+ <p class="sk-eyebrow">Saved recipes</p>
  <p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $recipeCount }}</p>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Every saved draft should come back here without needing to open a separate recipes page first.</p>
  </div>
- <div class="rounded-xl bg-[var(--color-panel)] p-5 shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Current drafts</p>
+ <div class="sk-card p-5">
+ <p class="sk-eyebrow">Current drafts</p>
  <p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $draftCount }}</p>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">One working draft stays editable so you can experiment before replacing the saved formula.</p>
  </div>
- <div class="rounded-xl bg-[var(--color-panel)] p-5 shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Saved formulas</p>
+ <div class="sk-card p-5">
+ <p class="sk-eyebrow">Saved formulas</p>
  <p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $savedFormulaCount }}</p>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Each recipe can keep one current saved formula, while hidden recovery snapshots stay out of the way.</p>
  </div>
  </section>
 
  <section class="grid gap-4 xl:grid-cols-[minmax(0,1.35fr)_24rem]">
- <div class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+ <div class="overflow-hidden sk-card">
  <div class="flex items-center justify-between px-5 py-4">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Recipes</p>
+ <p class="sk-eyebrow">Recipes</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Your saved formulas and draft states</h3>
  </div>
  <a href="{{ route('recipes.index') }}" wire:navigate class="rounded-lg px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)]">
@@ -69,7 +69,7 @@
  @else
  <div class="space-y-2 px-3 pb-3">
  @foreach ($recipes as $recipe)
- <article class="rounded-lg bg-[var(--color-panel-strong)] px-4 py-3">
+ <article class="sk-inset px-4 py-3">
  <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
  <div class="min-w-0">
  <div class="flex flex-wrap items-center gap-2">
@@ -114,27 +114,27 @@
  @endif
  </div>
 
- <div class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+ <div class="sk-card">
  <div class="px-5 py-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Personal ingredients</p>
+ <p class="sk-eyebrow">Personal ingredients</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Your private ingredient library</h3>
  </div>
 
  <div class="space-y-4 p-5">
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Current count</p>
+ <div class="sk-inset p-4">
+ <p class="sk-eyebrow">Current count</p>
  <p class="mt-2 font-mono text-2xl text-[var(--color-ink-strong)]">{{ $personalIngredientCount }}</p>
  </div>
 
  @if (! $currentUser)
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-5">
+ <div class="sk-inset p-5">
  <p class="font-medium text-[var(--color-ink-strong)]">Sign in to manage ingredients</p>
  <p class="mt-2 text-sm leading-7 text-[var(--color-ink-soft)]">
  Open the dashboard from your signed-in app or admin session to create private ingredients and reuse them in formulas.
  </p>
  </div>
  @elseif ($personalIngredients->isEmpty())
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-5">
+ <div class="sk-inset p-5">
  <p class="font-medium text-[var(--color-ink-strong)]">No personal ingredients yet</p>
  <p class="mt-2 text-sm leading-7 text-[var(--color-ink-soft)]">
  Create your own fragrance oils, CO2 extracts, additives, glycols, clays, or composite ingredients, then enrich them later with components or aromatic compliance data.
@@ -143,7 +143,7 @@
  @else
  <div class="space-y-3">
  @foreach ($personalIngredients as $ingredient)
- <article class="rounded-lg bg-[var(--color-panel-strong)] p-4">
+ <article class="sk-inset p-4">
  <div class="flex items-start justify-between gap-3">
  <div class="min-w-0">
  <p class="truncate font-medium text-[var(--color-ink-strong)]">{{ $ingredient->display_name ?? $ingredient->source_key }}</p>

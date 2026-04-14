@@ -1,9 +1,9 @@
 <section class="space-y-4">
- <div id="post-reaction-phases" class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] transition-shadow duration-300">
+ <div id="post-reaction-phases" class="overflow-hidden sk-card transition-shadow duration-300">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Post-reaction phases</p>
+ <p class="sk-eyebrow">Post-reaction phases</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Additives and aromatics</h3>
  </div>
  <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`${format(totalAdditionPercentage(), 1)}% of oils`"></span>
@@ -12,7 +12,7 @@
 
  <div class="space-y-5 p-5">
  <template x-if="additiveRows.length > 0">
- <div class="overflow-hidden rounded-lg bg-[var(--color-panel-strong)]">
+ <div class="overflow-hidden sk-inset">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">Additives</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Colorants, preservatives, and other post-reaction functional materials. Drag to reorder the additives already in this phase.</p>
@@ -74,7 +74,7 @@
  </template>
 
  <template x-if="fragranceRows.length > 0">
- <div class="overflow-hidden rounded-lg bg-[var(--color-panel-strong)]">
+ <div class="overflow-hidden sk-inset">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">Fragrance and aromatics</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Essential oils and aromatic extracts with their own compliance context. Drag to reorder inside this aromatic phase.</p>
@@ -138,19 +138,19 @@
  </div>
  </div>
 
- <div class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
+ <div class="sk-card p-5">
  <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Batch totals</p>
+ <p class="sk-eyebrow">Batch totals</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">A quick read of the current formula outputs without repeating the oil basis already shown above.</p>
  </div>
  </div>
 
  <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
  <template x-for="card in totalSummaryCards" :key="card.id">
- <div class="flex h-full flex-col justify-between rounded-lg bg-[var(--color-panel-strong)] p-4">
+ <div class="sk-inset flex h-full flex-col justify-between p-4">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
+ <p class="sk-eyebrow" x-text="card.label"></p>
  </div>
  <p class="numeric pt-6 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
  </div>

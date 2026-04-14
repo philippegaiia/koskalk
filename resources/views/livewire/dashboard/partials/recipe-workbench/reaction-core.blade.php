@@ -1,6 +1,6 @@
-<section class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+<section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Reaction core</p>
+ <p class="sk-eyebrow">Reaction core</p>
  <div class="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">Saponified oils + lye water</h3>
  <div :class="oilPercentageIsBalanced ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium transition">
@@ -10,7 +10,7 @@
  </div>
  </div>
  <div class="p-5">
- <div class="relative rounded-lg bg-[var(--color-panel-strong)]">
+ <div class="relative sk-inset">
  <div class="overflow-hidden rounded-lg">
  <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
@@ -81,7 +81,7 @@
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
  class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
- <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Material details</p>
+ <p class="sk-eyebrow">Material details</p>
  <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
  <template x-for="detail in ingredientInspectorRows(row)" :key="detail.label">
  <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
@@ -92,7 +92,7 @@
  </div>
  <template x-if="ingredientFattyAcidRows(row).length > 0">
  <div class="mt-3">
- <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Fatty acids</p>
+ <p class="sk-eyebrow">Fatty acids</p>
  <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs text-[var(--color-ink-soft)]">
  <template x-for="fattyAcid in ingredientFattyAcidRows(row)" :key="fattyAcid.key">
  <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
@@ -142,10 +142,10 @@
  </div>
  </div>
 
- <div class="mt-5 rounded-lg bg-[var(--color-panel-strong)] p-4">
+ <div class="sk-inset mt-5 p-4">
  <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Calculated lye and water</p>
+ <p class="sk-eyebrow">Calculated lye and water</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">This block is derived from the saponified oils, lye type, water mode, and superfat.</p>
  </div>
  <template x-if="oilsMissingSap.length > 0">
@@ -157,8 +157,8 @@
 
  <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
  <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
- <div class="flex min-h-[4.25rem] flex-col justify-between rounded-lg bg-[var(--color-panel-strong)] px-3 py-2.5">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase" x-text="card.label"></p>
+ <div class="sk-inset flex min-h-[4.25rem] flex-col justify-between px-3 py-2.5">
+ <p class="sk-eyebrow" x-text="card.label"></p>
  <p class="numeric text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
  </div>
  </template>

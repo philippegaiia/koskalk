@@ -5,10 +5,10 @@
 
     <template x-if="open">
         <div class="fixed inset-0 z-40 flex items-center justify-center bg-[color:oklch(from_var(--color-surface-strong)_l_c_h_/_0.55)] px-4 py-6" @click.self="open = false" @keydown.escape.window="open = false">
-            <div class="w-full max-w-lg rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-6" @click.stop>
+            <div class="w-full max-w-lg sk-card p-6" @click.stop>
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Duplicate</p>
+                        <p class="sk-eyebrow">Duplicate</p>
                         <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Duplicate a platform ingredient</h3>
                         <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Search the platform catalog, then duplicate an ingredient to customize allergens, IFRA, or composition data.</p>
                     </div>

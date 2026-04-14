@@ -12,15 +12,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('renders the current saved formula page with print actions', function () {
+it('renders the current saved recipe page with print actions', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('Saved formula')
+        ->assertSee('Saved recipe')
         ->assertSee('v'.$publishedVersion->version_number)
-        ->assertSee('Edit in draft')
+        ->assertSee('Open editable draft')
         ->assertSee('Duplicate')
         ->assertDontSee('Recovery snapshots')
         ->assertSee('Print recipe')
@@ -85,13 +85,13 @@ it('does not expose the saved formula to other users', function () {
         ->assertNotFound();
 });
 
-it('keeps the legacy saved-version url working by showing the current saved formula', function () {
+it('keeps the legacy saved-version url working by showing the current saved recipe', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
     $this->actingAs($user)
         ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $publishedVersion->id]))
         ->assertSuccessful()
-        ->assertSee('Saved formula')
+        ->assertSee('Saved recipe')
         ->assertSee('Published Formula');
 });
 

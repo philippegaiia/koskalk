@@ -1,8 +1,8 @@
 <div x-show="activeWorkbenchTab === 'costing'" class="space-y-6">
- <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
+ <section class="sk-card p-5">
  <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Costing settings</p>
+ <p class="sk-eyebrow">Costing settings</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Business view without cluttering the formula bench</h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Ingredient identity stays shared. The price memory stays private to the current user and can be refreshed later if supplier rates move.</p>
  </div>
@@ -13,8 +13,8 @@
  </div>
 
  <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Oil weight for costing</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Oil weight for costing</span>
  <input
  x-model="costingOilWeight"
  @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
@@ -24,8 +24,8 @@
  />
  </label>
 
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Unit</span>
+ <div class="sk-inset p-4">
+ <span class="sk-eyebrow">Unit</span>
  <div class="mt-3 flex flex-wrap gap-2">
  <button type="button" @click="costingOilUnit = 'g'; scheduleCostingSave()" :class="costingOilUnit === 'g' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">g</button>
  <button type="button" @click="costingOilUnit = 'kg'; scheduleCostingSave()" :class="costingOilUnit === 'kg' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">kg</button>
@@ -34,8 +34,8 @@
  </div>
  </div>
 
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Units produced</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Units produced</span>
  <input
  x-model="costingUnitsProduced"
  @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
@@ -46,8 +46,8 @@
  />
  </label>
 
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Currency</span>
+ <div class="sk-inset p-4">
+ <span class="sk-eyebrow">Currency</span>
  <select
  x-model="costingCurrency"
  @change="scheduleCostingSave()"
@@ -62,9 +62,9 @@
  </div>
  </section>
 
- <section class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+ <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Ingredient costing</p>
+ <p class="sk-eyebrow">Ingredient costing</p>
  <div class="mt-1 flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
  <p class="text-sm text-[var(--color-ink-soft)]">Formula rows stay read-only here except for price per kilo, so development and costing each get their own space.</p>
  <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`${costingFormulaRows.length} priced rows`"></span>
@@ -126,11 +126,11 @@
  </template>
  </section>
 
- <section class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+ <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Packaging</p>
+ <p class="sk-eyebrow">Packaging</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Packaging</h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Add reusable packaging items used for one finished unit.</p>
  </div>
@@ -202,8 +202,8 @@
  </template>
  </section>
 
- <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Cost summary</p>
+ <section class="sk-card p-5">
+ <p class="sk-eyebrow">Cost summary</p>
  <div class="mt-4 grid gap-2 lg:grid-cols-2 xl:grid-cols-4 xl:gap-3 text-sm">
  <div class="flex items-center justify-between rounded-lg bg-[var(--color-field)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-soft)]">Ingredients</span>
@@ -231,10 +231,10 @@
  @keydown.escape.window="closePackagingCatalogModal()"
  class="fixed inset-0 z-40 flex items-center justify-center bg-[color:oklch(from_var(--color-surface-strong)_l_c_h_/_0.55)] px-4 py-6"
  >
- <div @click.away="closePackagingCatalogModal()" class="w-full max-w-xl rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-6">
+ <div @click.away="closePackagingCatalogModal()" class="w-full max-w-xl sk-card p-6">
  <div class="flex items-start justify-between gap-4">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Packaging item</p>
+ <p class="sk-eyebrow">Packaging item</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">New packaging item</h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Save a reusable catalog item here, then optionally add it straight into this costing at one component per finished unit.</p>
  </div>
@@ -242,18 +242,18 @@
  </div>
 
  <div class="mt-5 grid gap-3">
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Name</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Name</span>
  <input x-model="packagingCatalogForm.name" type="text" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </label>
 
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Effective unit price</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Effective unit price</span>
  <input x-model="packagingCatalogForm.unit_cost" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </label>
 
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Notes</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Notes</span>
  <textarea x-model="packagingCatalogForm.notes" rows="4" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"></textarea>
  </label>
  </div>

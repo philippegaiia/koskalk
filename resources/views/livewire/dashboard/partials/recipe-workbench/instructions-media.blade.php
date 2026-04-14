@@ -1,6 +1,6 @@
-<section x-show="activeWorkbenchTab === 'instructions'" x-cloak class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+<section x-show="activeWorkbenchTab === 'instructions'" x-cloak class="sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Content &amp; Media</p>
+ <p class="sk-eyebrow">Content &amp; Media</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Presentation, manufacturing steps, and product image</h3>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Keep customer-facing presentation separate from the print-ready manufacturing instructions.</p>
  </div>
@@ -14,7 +14,7 @@
  @endif
 
  @if (! $workbench['recipe'])
- <div class="rounded-lg bg-[var(--color-panel-strong)] px-4 py-4 text-sm text-[var(--color-ink-soft)]">
+ <div class="sk-inset px-4 py-4 text-sm text-[var(--color-ink-soft)]">
  You can prepare the presentation, manufacturing instructions, and image now. They will be kept when you save the first draft.
  </div>
  @endif

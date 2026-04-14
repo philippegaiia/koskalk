@@ -1,9 +1,9 @@
 <div class="xl:col-span-2">
  <div class="grid gap-4 xl:grid-cols-2">
- <div class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
+ <div class="sk-card p-5">
  <div class="flex items-center justify-between gap-3">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Soapkraft qualities</p>
+ <p class="sk-eyebrow">Soapkraft qualities</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Compact interpretation first, deeper chemistry second.</p>
  </div>
  <span class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isPreviewingCalculation ? 'Updating…' : latherProfileSummary()"></span>
@@ -52,9 +52,9 @@
  </template>
  </div>
 
- <div class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
+ <div class="sk-card p-5">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Advanced metrics</p>
+ <p class="sk-eyebrow">Advanced metrics</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Deeper structure signals, including iodine and INS.</p>
  </div>
  <template x-if="hasQualityMetricsData">

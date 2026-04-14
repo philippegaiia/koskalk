@@ -90,6 +90,169 @@
     }
 }
 
+@layer components {
+    .sk-card {
+        border: 1px solid color-mix(in oklab, var(--color-line) 82%, var(--color-ink) 8%);
+        border-radius: 0.75rem;
+        background: var(--color-panel);
+        box-shadow:
+            0 2px 4px rgba(60, 50, 30, 0.04),
+            0 12px 24px rgba(60, 50, 30, 0.08);
+    }
+
+    .sk-inset {
+        border: 1px solid color-mix(in oklab, var(--color-line) 72%, var(--color-ink) 10%);
+        border-radius: 0.5rem;
+        background: color-mix(in oklab, var(--color-panel-strong) 88%, var(--color-ink) 4%);
+    }
+
+    .sk-eyebrow {
+        color: color-mix(in oklab, var(--color-ink) 76%, var(--color-ink-soft));
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .sk-field {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.75rem;
+        border: 1px solid var(--color-line);
+        border-radius: 0.5rem;
+        background: white;
+        padding: 0.625rem 1rem;
+        color: var(--color-ink-soft);
+        font-size: 0.875rem;
+    }
+
+    .sk-field-control {
+        min-width: 0;
+        flex: 1 1 auto;
+        background: transparent;
+        color: var(--color-ink-strong);
+        font-size: 0.875rem;
+        outline: none;
+    }
+
+    .sk-field-control::placeholder {
+        color: var(--color-ink-soft);
+    }
+
+    .sk-select-control {
+        min-width: 9rem;
+        background: transparent;
+        color: var(--color-ink-strong);
+        font-size: 0.875rem;
+        outline: none;
+    }
+
+    .sk-input {
+        width: 100%;
+        border: 1px solid var(--color-line);
+        border-radius: 0.5rem;
+        background: var(--color-field);
+        padding: 0.75rem 1rem;
+        color: var(--color-ink-strong);
+        font-size: 0.875rem;
+        outline: 1px solid var(--color-field-outline);
+        transition: outline-color 150ms ease, outline-width 150ms ease;
+    }
+
+    .sk-input:focus {
+        outline: 2px solid var(--color-accent);
+    }
+
+    .sk-btn,
+    .sk-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 0.5rem;
+        background: transparent;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        text-decoration: none;
+        transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .sk-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
+    }
+
+    .sk-btn-primary {
+        background: var(--color-accent);
+        color: white;
+    }
+
+    .sk-btn-primary:hover {
+        background: var(--color-accent-hover);
+    }
+
+    .sk-btn-ghost,
+    .sk-action-link {
+        color: var(--color-ink-soft);
+    }
+
+    .sk-btn-ghost:hover,
+    .sk-action-link:hover {
+        background: var(--color-panel-strong);
+        color: var(--color-ink-strong);
+    }
+
+    .sk-btn-outline {
+        border: 1px solid var(--color-line);
+        background: white;
+        color: var(--color-ink-soft);
+    }
+
+    .sk-btn-outline:hover {
+        background: var(--color-panel-strong);
+        color: var(--color-ink-strong);
+    }
+
+    .sk-btn-danger {
+        border: 1px solid var(--color-danger-soft);
+        color: var(--color-danger-strong);
+    }
+
+    .sk-btn-danger:hover {
+        background: var(--color-danger-soft);
+    }
+
+    .sk-badge {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid transparent;
+        border-radius: 9999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1rem;
+    }
+
+    .sk-badge-success {
+        background: var(--color-success-soft);
+        color: var(--color-success-strong);
+    }
+
+    .sk-badge-neutral {
+        border: 1px solid var(--color-line);
+        color: var(--color-ink-soft);
+    }
+
+    .sk-badge-strong {
+        border: 1px solid var(--color-line-strong);
+        background: white;
+        color: var(--color-ink-strong);
+    }
+}
+
 @layer base {
     ::selection {
         background: color-mix(in oklab, var(--color-accent) 28%, white);

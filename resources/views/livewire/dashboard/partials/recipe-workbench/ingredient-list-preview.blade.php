@@ -1,7 +1,7 @@
-<section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
+<section class="sk-card p-5">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Ingredient list preview</p>
+ <p class="sk-eyebrow">Ingredient list preview</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Generated from the selected ingredient-list variant and normalized to the cured-bar basis so the label output stays aligned with the dry soap view.</p>
  </div>
  <div class="flex flex-wrap items-center gap-2">
@@ -36,7 +36,7 @@
  </div>
  </template>
 
- <div class="mt-4 rounded-lg bg-[var(--color-panel-strong)] px-5 py-4">
+ <div class="mt-4 sk-inset px-5 py-4">
  <template x-if="activeIngredientListVariant?.note">
  <p class="mb-3 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="activeIngredientListVariant.note"></p>
  </template>
@@ -56,7 +56,7 @@
  </div>
  </template>
 
- <div class="mt-5 overflow-hidden rounded-lg bg-[var(--color-panel-strong)]">
+ <div class="mt-5 overflow-hidden sk-inset">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">Declaration details</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.</p>

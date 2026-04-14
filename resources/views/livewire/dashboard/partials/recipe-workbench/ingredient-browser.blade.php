@@ -1,6 +1,6 @@
 <aside class="space-y-4">
- <div class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Ingredient browser</p>
+ <div class="sk-card p-4">
+ <p class="sk-eyebrow">Ingredient browser</p>
  <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">Filtered by role</h3>
  <input x-model="search" type="search" placeholder="Search name or INCI" class="mt-4 w-full rounded-lg bg-[var(--color-field)] px-4 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
 
@@ -13,9 +13,9 @@
  </div>
  </div>
 
- <div class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+ <div class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Available ingredients</p>
+ <p class="sk-eyebrow">Available ingredients</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]"><span class="numeric" x-text="filteredIngredients.length"></span> match the current filter</p>
  </div>
 
@@ -77,7 +77,7 @@
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
  class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
- <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Material details</p>
+ <p class="sk-eyebrow">Material details</p>
  <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
  <template x-for="row in ingredientInspectorRows(ingredient)" :key="row.label">
  <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
@@ -88,7 +88,7 @@
  </div>
  <template x-if="ingredientFattyAcidRows(ingredient).length > 0">
  <div class="mt-3">
- <p class="text-[11px] font-semibold tracking-[0.16em] text-[var(--color-ink-soft)] uppercase">Fatty acids</p>
+ <p class="sk-eyebrow">Fatty acids</p>
  <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs text-[var(--color-ink-soft)]">
  <template x-for="row in ingredientFattyAcidRows(ingredient)" :key="row.key">
  <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
@@ -130,18 +130,18 @@
  </div>
  </div>
 
- <div class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
+ <div class="sk-card p-5">
  <div>
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Fatty acid profile</p>
+ <p class="sk-eyebrow">Fatty acid profile</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Live blend feedback.</p>
  </div>
  </div>
 
  <template x-if="hasFattyAcidProfileData">
  <div class="mt-4 space-y-4">
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Grouped profile</p>
+ <div class="sk-inset p-4">
+ <p class="sk-eyebrow">Grouped profile</p>
  <div class="mt-3 flex h-3 overflow-hidden rounded-full bg-white/80">
  <template x-for="segment in fattyAcidGroupSegments()" :key="segment.key">
  <div class="h-full shrink-0" :style="{ width: `${segment.percent}%`, backgroundColor: segment.color }"></div>

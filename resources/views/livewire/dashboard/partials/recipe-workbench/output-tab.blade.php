@@ -1,8 +1,8 @@
 <div x-show="activeWorkbenchTab === 'output'" x-cloak class="space-y-6">
- <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5">
+ <section class="sk-card p-5">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Dry soap output</p>
+ <p class="sk-eyebrow">Dry soap output</p>
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">This view normalizes the selected acceptable ingredient list on the cured bar basis. It uses the same 11% residual water assumption as the cure-weight card, and allergens stay outside the 100% ingredient total.</p>
  </div>
  <div class="flex flex-wrap items-center gap-2">
@@ -12,16 +12,16 @@
  </div>
 
  <div class="mt-4 grid gap-3 md:grid-cols-3">
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Cured bar basis</p>
+ <div class="sk-inset p-4">
+ <p class="sk-eyebrow">Cured bar basis</p>
  <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapOutputBasisWeight, 1)} ${oilUnit}`"></p>
  </div>
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Residual water</p>
+ <div class="sk-inset p-4">
+ <p class="sk-eyebrow">Residual water</p>
  <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapResidualWaterWeight, 1)} ${oilUnit}`"></p>
  </div>
- <div class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Ingredient-only total</p>
+ <div class="sk-inset p-4">
+ <p class="sk-eyebrow">Ingredient-only total</p>
  <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(drySoapIngredientTotalPercent, 1)}%`"></p>
  </div>
  </div>
@@ -29,9 +29,9 @@
 
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')
 
- <section class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+ <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Ingredient basis</p>
+ <p class="sk-eyebrow">Ingredient basis</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">These percentages are normalized to 100% across the main ingredient rows only, using the cured soap basis.</p>
  </div>
 
@@ -83,9 +83,9 @@
  </template>
  </section>
 
- <section class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+ <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Declared allergens</p>
+ <p class="sk-eyebrow">Declared allergens</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">These are listed on the same cured basis for reference, but they are not counted inside the 100% ingredient total because they are already part of aromatic ingredients.</p>
  </div>
 

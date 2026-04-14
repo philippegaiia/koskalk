@@ -1,7 +1,7 @@
 @if($pricedIngredients->isNotEmpty())
-<section class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+<section class="overflow-hidden sk-card">
     <div class="border-b border-[var(--color-line)] px-5 py-4">
-        <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Priced ingredients</p>
+        <p class="sk-eyebrow">Priced ingredients</p>
         <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Platform ingredients you have priced in recipe costing. Edit the price here and it will be prefilled next time.</p>
     </div>
 
@@ -19,7 +19,7 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <span class="text-xs text-[var(--color-ink-soft)]">EUR/kg</span>
+                    <span class="text-xs text-[var(--color-ink-soft)]">{{ $priced->currency }}/kg</span>
                     <input
                         x-model="price"
                         @blur="

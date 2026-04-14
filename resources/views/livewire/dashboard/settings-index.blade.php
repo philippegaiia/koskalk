@@ -38,9 +38,9 @@
  </div>
 
  @if($activeTab === 'profile')
- <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5 space-y-5">
+ <section class="sk-card p-5 space-y-5">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Profile</p>
+ <p class="sk-eyebrow">Profile</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Your personal information and login credentials.</p>
  </div>
 
@@ -55,8 +55,8 @@
  @endif
 
  <div class="grid gap-3 md:grid-cols-2">
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Name</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Name</span>
  <input
  wire:model="name"
  type="text"
@@ -65,8 +65,8 @@
  @error('name') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
 
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Email</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Email</span>
  <input
  wire:model="email"
  type="email"
@@ -86,15 +86,15 @@
  </div>
  </section>
 
- <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5 space-y-5">
+ <section class="sk-card p-5 space-y-5">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Password</p>
+ <p class="sk-eyebrow">Password</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Update your password to keep your account secure.</p>
  </div>
 
  <div class="grid gap-3">
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Current password</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Current password</span>
  <input
  wire:model="currentPassword"
  type="password"
@@ -104,8 +104,8 @@
  </label>
 
  <div class="grid gap-3 md:grid-cols-2">
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">New password</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">New password</span>
  <input
  wire:model="newPassword"
  type="password"
@@ -114,8 +114,8 @@
  @error('newPassword') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
 
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Confirm new password</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Confirm new password</span>
  <input
  wire:model="newPasswordConfirmation"
  type="password"
@@ -137,9 +137,9 @@
  @endif
 
  @if($activeTab === 'company')
- <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5 space-y-5">
+ <section class="sk-card p-5 space-y-5">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Company</p>
+ <p class="sk-eyebrow">Company</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Your company owns all shared ingredients, packaging, and recipes. Only the owner can change these settings.</p>
  </div>
 
@@ -154,8 +154,8 @@
  @endif
 
  <div class="grid gap-3 md:grid-cols-2">
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Company name</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Company name</span>
  <input
  wire:model="companyName"
  type="text"
@@ -164,8 +164,8 @@
  @error('companyName') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
 
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Default currency</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Default currency</span>
  <select
  wire:model="companyCurrency"
  class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
@@ -191,9 +191,9 @@
  @endif
 
  @if($activeTab === 'members' && $companyId)
- <section class="rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)] p-5 space-y-5">
+ <section class="sk-card p-5 space-y-5">
  <div>
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Invite member</p>
+ <p class="sk-eyebrow">Invite member</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Invite someone to join your company by email. They will be able to access shared ingredients and recipes based on their role.</p>
  </div>
 
@@ -208,8 +208,8 @@
  @endif
 
  <div class="grid gap-3 md:grid-cols-3">
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4 md:col-span-2">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Email address</span>
+ <label class="sk-inset p-4 md:col-span-2">
+ <span class="sk-eyebrow">Email address</span>
  <input
  wire:model="inviteEmail"
  type="email"
@@ -219,8 +219,8 @@
  @error('inviteEmail') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
 
- <label class="rounded-lg bg-[var(--color-panel-strong)] p-4">
- <span class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Role</span>
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">Role</span>
  <select
  wire:model="inviteRole"
  class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
@@ -242,9 +242,9 @@
  </div>
  </section>
 
- <section class="overflow-hidden rounded-xl bg-[var(--color-panel)] shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]">
+ <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="text-[0.6875rem] font-medium tracking-[0.05em] text-[var(--color-ink-soft)] uppercase">Members</p>
+ <p class="sk-eyebrow">Members</p>
  </div>
 
  <div class="divide-y divide-[var(--color-line)]">

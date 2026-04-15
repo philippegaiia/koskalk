@@ -20,22 +20,36 @@ class RecipeWorkbenchVersionPayloadMapper
             ->map(fn (array $phase): array => [$phase['key'] => []])
             ->collapse()
             ->all();
+        $phases = collect($phaseBlueprints)
+            ->map(fn (array $phase): array => [
+                'key' => $phase['key'],
+                'name' => $phase['name'],
+            ])
+            ->keyBy('key')
+            ->all();
 
         $version->phases
             ->sortBy('sort_order')
-            ->each(function (RecipePhase $phase) use (&$phaseRows): void {
+            ->each(function (RecipePhase $phase) use (&$phaseRows, &$phases): void {
                 $phaseRows[$phase->slug] = $phase->items
                     ->sortBy('position')
                     ->map(fn (RecipeItem $item): array => $this->mapItemToWorkbenchRow($item))
                     ->filter(fn (array $row): bool => $row['ingredient_id'] !== null)
                     ->values()
                     ->all();
+
+                $phases[$phase->slug] = [
+                    'key' => $phase->slug,
+                    'name' => $phase->name,
+                ];
             });
 
         /** @var array<string, mixed> $waterSettings */
         $waterSettings = $version->water_settings ?? [];
         /** @var array<string, mixed> $calculationContext */
         $calculationContext = $version->calculation_context ?? [];
+        $lyeType = $calculationContext['lye_type'] ?? 'naoh';
+        $waterMode = $waterSettings['mode'] ?? 'percent_of_oils';
 
         return [
             'recipe' => [
@@ -44,6 +58,7 @@ class RecipeWorkbenchVersionPayloadMapper
                 'version_number' => $version->version_number,
                 'is_draft' => $version->is_draft,
             ],
+            'productTypeId' => $version->recipe?->product_type_id,
             'formulaName' => $version->name,
             'oilUnit' => (string) ($calculationContext['oil_unit'] ?? $version->batch_unit),
             'oilWeight' => (float) ($calculationContext['oil_weight'] ?? $version->batch_size),
@@ -57,17 +72,18 @@ class RecipeWorkbenchVersionPayloadMapper
                 ? $version->regulatory_regime
                 : 'eu',
             'editMode' => ($calculationContext['editing_mode'] ?? null) === 'weight' ? 'weight' : 'percentage',
-            'lyeType' => in_array($calculationContext['lye_type'] ?? 'naoh', ['naoh', 'koh', 'dual'], true)
-                ? $calculationContext['lye_type']
+            'lyeType' => in_array($lyeType, ['naoh', 'koh', 'dual'], true)
+                ? $lyeType
                 : 'naoh',
             'kohPurity' => (float) ($calculationContext['koh_purity_percentage'] ?? 90),
             'dualKohPercentage' => (float) ($calculationContext['dual_lye_koh_percentage'] ?? 40),
-            'waterMode' => in_array($waterSettings['mode'] ?? 'percent_of_oils', ['percent_of_oils', 'lye_ratio', 'lye_concentration'], true)
-                ? $waterSettings['mode']
+            'waterMode' => in_array($waterMode, ['percent_of_oils', 'lye_ratio', 'lye_concentration'], true)
+                ? $waterMode
                 : 'percent_of_oils',
             'waterValue' => (float) ($waterSettings['value'] ?? 38),
             'superfat' => (float) ($calculationContext['superfat'] ?? 5),
             'selectedIfraProductCategoryId' => $version->ifra_product_category_id,
+            'phases' => array_values($phases),
             'phaseItems' => $phaseRows,
             'catalogReview' => $catalogReview,
         ];
@@ -93,6 +109,7 @@ class RecipeWorkbenchVersionPayloadMapper
             'naoh_sap_value' => $sapProfile?->naoh_sap_value,
             'fatty_acid_profile' => $ingredient?->normalizedFattyAcidProfile() ?? [],
             'percentage' => (float) $item->percentage,
+            'weight' => (float) $item->weight,
             'note' => $item->note,
         ];
     }

@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Models\ProductFamily;
+
 class RecipeWorkbenchPhaseBlueprints
 {
     /**
@@ -12,8 +14,21 @@ class RecipeWorkbenchPhaseBlueprints
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function all(): array
+    public function all(?ProductFamily $productFamily = null): array
     {
+        if ($this->isCosmeticFamily($productFamily)) {
+            return [
+                [
+                    'key' => 'phase_a',
+                    'name' => 'Phase A',
+                    'phase_group' => 'cosmetic_formula',
+                    'phase_type' => 'cosmetic_phase',
+                    'description' => 'Default cosmetic formula phase.',
+                    'is_system' => false,
+                ],
+            ];
+        }
+
         return [
             [
                 'key' => 'saponified_oils',
@@ -56,6 +71,12 @@ class RecipeWorkbenchPhaseBlueprints
     public function find(string $key): ?array
     {
         return $this->indexedPhaseBlueprints()[$key] ?? null;
+    }
+
+    public function isCosmeticFamily(?ProductFamily $productFamily): bool
+    {
+        return $productFamily?->slug === 'cosmetic'
+            || $productFamily?->calculation_basis === 'total_formula';
     }
 
     /**

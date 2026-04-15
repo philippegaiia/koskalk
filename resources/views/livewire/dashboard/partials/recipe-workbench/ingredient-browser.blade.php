@@ -1,3 +1,5 @@
+@php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
+
 <aside class="space-y-4">
  <div class="sk-card p-4">
  <p class="sk-eyebrow">Ingredient browser</p>
@@ -103,6 +105,34 @@
  </template>
  </div>
  <div class="ml-auto flex flex-wrap justify-end gap-2">
+ @if ($isCosmeticWorkbench)
+ <template x-if="phaseOrder.length <= 1">
+ <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" class="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
+ <span class="text-sm leading-none">+</span>
+ <span>Add</span>
+ </button>
+ </template>
+ <template x-if="phaseOrder.length > 1">
+ <div x-data="{ open: false }" class="relative">
+ <button type="button" @click.stop="open = !open" class="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
+ <span class="text-sm leading-none">+</span>
+ <span>Add</span>
+ </button>
+ <div x-show="open"
+ x-transition.opacity
+ x-cloak
+ @click.outside="open = false"
+ class="absolute right-0 z-50 mt-2 w-48 rounded-lg border border-[var(--color-line)] bg-white p-1 shadow-lg">
+ <template x-for="phase in phaseOrder" :key="`${ingredient.id}-${phase.key}-add-option`">
+ <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]">
+ <span class="truncate" x-text="`Add to ${phase.name || humanizeKey(phase.key)}`"></span>
+ <span class="numeric text-[var(--color-ink-soft)]" x-text="`${format(cosmeticPhasePercentageTotal(phase.key), 1)}%`"></span>
+ </button>
+ </template>
+ </div>
+ </div>
+ </template>
+ @else
  <template x-if="ingredient.can_add_to_saponified_oils">
  <button type="button" @click.stop="addIngredient(ingredient, 'saponified_oils')" class="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
  <span class="text-sm leading-none">+</span>
@@ -121,6 +151,7 @@
  <span>Aromatic</span>
  </button>
  </template>
+ @endif
  </div>
  </div>
  </div>
@@ -130,6 +161,7 @@
  </div>
  </div>
 
+ @unless ($isCosmeticWorkbench)
  <div class="sk-card p-5">
  <div>
  <div>
@@ -183,4 +215,5 @@
  </div>
  </template>
  </div>
+ @endunless
 </aside>

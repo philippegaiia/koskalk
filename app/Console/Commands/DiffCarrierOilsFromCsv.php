@@ -35,16 +35,28 @@ class DiffCarrierOilsFromCsv extends Command
             return self::FAILURE;
         }
 
-        $csvNames = [];
-        $isFirstRow = true;
-        while (($row = fgetcsv($handle)) !== false) {
-            if ($isFirstRow) {
-                $isFirstRow = false;
+        $header = fgetcsv($handle);
 
-                continue;
-            }
-            if (isset($row[0]) && $row[0] !== '') {
-                $csvNames[] = trim($row[0]);
+        if ($header === false) {
+            fclose($handle);
+            $this->error("CSV appears empty: {$csvPath}");
+
+            return self::FAILURE;
+        }
+
+        $commonNameIndex = array_search('common_name', $header, true);
+
+        if ($commonNameIndex === false) {
+            fclose($handle);
+            $this->error("CSV does not contain 'common_name' column: {$csvPath}");
+
+            return self::FAILURE;
+        }
+
+        $csvNames = [];
+        while (($row = fgetcsv($handle)) !== false) {
+            if (isset($row[$commonNameIndex]) && $row[$commonNameIndex] !== '') {
+                $csvNames[] = trim((string) $row[$commonNameIndex]);
             }
         }
         fclose($handle);

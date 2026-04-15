@@ -231,6 +231,47 @@ it('does not allow editing another users private ingredient', function () {
         ->assertNotFound();
 });
 
+it('does not allow editing a platform ingredient from the public ingredient editor route', function () {
+    $user = User::factory()->create();
+
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Platform Glycerin',
+        'owner_type' => null,
+        'owner_id' => null,
+        'source_file' => 'platform',
+        'source_key' => 'PLATFORM-GLYCERIN',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('ingredients.edit', $ingredient->id))
+        ->assertNotFound();
+});
+
+it('does not delete a platform ingredient if a table action call is forced', function () {
+    $user = User::factory()->create();
+
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Platform Glycerin',
+        'owner_type' => null,
+        'owner_id' => null,
+        'source_file' => 'platform',
+        'source_key' => 'PLATFORM-GLYCERIN',
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientsIndex::class)
+        ->loadTable();
+
+    $deleteIngredient = new ReflectionMethod($component->instance(), 'deleteIngredient');
+
+    expect($deleteIngredient->invoke($component->instance(), $ingredient))->toBeFalse();
+
+    expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
+});
+
 it('renders the public ingredient create page for signed in users', function () {
     $user = User::factory()->create();
 

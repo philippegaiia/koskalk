@@ -13,6 +13,13 @@ export function serializeRow(state, row) {
 }
 
 export function serializeDraft(state) {
+    const phaseItems = Object.fromEntries(
+        Object.entries(state.phaseItems ?? {}).map(([phaseKey, rows]) => [
+            phaseKey,
+            Array.isArray(rows) ? rows.map((row) => serializeRow(state, row)) : [],
+        ]),
+    );
+
     return {
         name: state.formulaName,
         oil_unit: state.oilUnit,
@@ -20,6 +27,7 @@ export function serializeDraft(state) {
         manufacturing_mode: state.manufacturingMode,
         exposure_mode: state.exposureMode,
         regulatory_regime: state.regulatoryRegime,
+        product_type_id: state.productTypeId,
         editing_mode: state.editMode,
         lye_type: state.lyeType,
         koh_purity_percentage: state.kohPurity,
@@ -28,11 +36,11 @@ export function serializeDraft(state) {
         water_value: state.waterValue,
         superfat: state.superfat,
         ifra_product_category_id: normalizedIfraProductCategoryId(state.selectedIfraProductCategoryId),
-        phase_items: {
-            saponified_oils: state.oilRows.map((row) => serializeRow(state, row)),
-            additives: state.additiveRows.map((row) => serializeRow(state, row)),
-            fragrance: state.fragranceRows.map((row) => serializeRow(state, row)),
-        },
+        phases: (state.phaseOrder ?? []).map((phase) => ({
+            key: phase.key,
+            name: phase.name,
+        })),
+        phase_items: phaseItems,
     };
 }
 

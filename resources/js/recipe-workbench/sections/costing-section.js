@@ -127,7 +127,7 @@ export function createCostingSection(payload) {
                     rowId: row.id,
                     ingredient_id: row.ingredient_id,
                     phaseKey,
-                    phaseLabel: PHASE_LABELS[phaseKey] ?? phaseKey,
+                    phaseLabel: this.phaseOrder.find((phase) => phase.key === phaseKey)?.name ?? PHASE_LABELS[phaseKey] ?? phaseKey,
                     position: index + 1,
                     name: row.name,
                     percentage: nonNegativeNumber(row.percentage),

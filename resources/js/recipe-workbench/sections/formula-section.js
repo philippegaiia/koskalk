@@ -27,16 +27,20 @@ import {
  */
 export function createFormulaSection() {
     return {
+        get isCosmeticFormula() {
+            return this.productFamilySlug === 'cosmetic';
+        },
+
         get oilRows() {
-            return this.phaseItems.saponified_oils;
+            return this.phaseItems.saponified_oils ?? [];
         },
 
         get additiveRows() {
-            return this.phaseItems.additives;
+            return this.phaseItems.additives ?? [];
         },
 
         get fragranceRows() {
-            return this.phaseItems.fragrance;
+            return this.phaseItems.fragrance ?? [];
         },
 
         get oilsMissingSap() {
@@ -168,6 +172,10 @@ export function createFormulaSection() {
         },
 
         totalOilPercentage() {
+            if (this.isCosmeticFormula) {
+                return this.cosmeticFormulaPercentageTotal();
+            }
+
             return getOilPercentageTotal(this.oilRows);
         },
 
@@ -176,7 +184,27 @@ export function createFormulaSection() {
         },
 
         get oilPercentageStatusLabel() {
+            if (this.isCosmeticFormula) {
+                return this.oilPercentageIsBalanced ? 'Formula balanced' : 'Formula must reach 100%';
+            }
+
             return this.oilPercentageIsBalanced ? 'Oil basis balanced' : 'Oil basis must reach 100%';
+        },
+
+        get canSaveDraft() {
+            if (this.isCosmeticFormula) {
+                return this.nonNegativeNumber(this.oilWeight) > 0;
+            }
+
+            return this.oilPercentageIsBalanced;
+        },
+
+        get canSaveRecipe() {
+            return this.oilPercentageIsBalanced;
+        },
+
+        get canDuplicateFormula() {
+            return this.canSaveDraft;
         },
 
         totalAdditionPercentage() {
@@ -188,6 +216,10 @@ export function createFormulaSection() {
         },
 
         oilWeightTotal() {
+            if (this.isCosmeticFormula) {
+                return this.cosmeticFormulaWeightTotal();
+            }
+
             return this.oilRows.reduce((total, row) => total + this.rowWeight(row), 0);
         },
 
@@ -235,6 +267,113 @@ export function createFormulaSection() {
 
         totalFormulaPercentage(row) {
             return calculateTotalFormulaPercentage(this, row);
+        },
+
+        cosmeticDefaultPhaseKey() {
+            return this.phaseOrder[0]?.key ?? 'phase_a';
+        },
+
+        cosmeticFormulaRows() {
+            return this.phaseOrder.flatMap((phase) => this.phaseItems[phase.key] ?? []);
+        },
+
+        cosmeticFormulaPercentageTotal() {
+            return this.cosmeticFormulaRows()
+                .reduce((total, row) => total + this.nonNegativeNumber(row.percentage), 0);
+        },
+
+        cosmeticFormulaWeightTotal() {
+            return this.cosmeticFormulaRows()
+                .reduce((total, row) => total + this.rowWeight(row), 0);
+        },
+
+        cosmeticPhasePercentageTotal(phaseKey) {
+            return (this.phaseItems[phaseKey] ?? [])
+                .reduce((total, row) => total + this.nonNegativeNumber(row.percentage), 0);
+        },
+
+        cosmeticPhaseWeightTotal(phaseKey) {
+            return (this.phaseItems[phaseKey] ?? [])
+                .reduce((total, row) => total + this.rowWeight(row), 0);
+        },
+
+        addCosmeticPhase() {
+            const nextIndex = this.phaseOrder.length;
+            let candidate = `phase_${String.fromCharCode(97 + nextIndex)}`;
+            let suffix = nextIndex + 1;
+
+            while (Object.hasOwn(this.phaseItems, candidate)) {
+                candidate = `phase_${suffix}`;
+                suffix += 1;
+            }
+
+            this.phaseOrder = [
+                ...this.phaseOrder,
+                {
+                    key: candidate,
+                    name: `Phase ${String.fromCharCode(65 + nextIndex)}`,
+                },
+            ];
+            this.phaseItems = {
+                ...this.phaseItems,
+                [candidate]: [],
+            };
+        },
+
+        cosmeticPhaseIndex(phaseKey) {
+            return this.phaseOrder.findIndex((phase) => phase.key === phaseKey);
+        },
+
+        cosmeticPhaseIsFirst(phaseKey) {
+            return this.cosmeticPhaseIndex(phaseKey) <= 0;
+        },
+
+        cosmeticPhaseIsLast(phaseKey) {
+            const index = this.cosmeticPhaseIndex(phaseKey);
+
+            return index === -1 || index >= this.phaseOrder.length - 1;
+        },
+
+        moveCosmeticPhase(phaseKey, direction) {
+            const currentIndex = this.cosmeticPhaseIndex(phaseKey);
+            const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+            if (
+                currentIndex < 0
+                || targetIndex < 0
+                || targetIndex >= this.phaseOrder.length
+            ) {
+                return;
+            }
+
+            const nextPhaseOrder = [...this.phaseOrder];
+            const [phase] = nextPhaseOrder.splice(currentIndex, 1);
+            nextPhaseOrder.splice(targetIndex, 0, phase);
+            this.phaseOrder = nextPhaseOrder;
+        },
+
+        confirmRemoveCosmeticPhase(phaseKey) {
+            const phaseRows = this.phaseItems[phaseKey] ?? [];
+            const message = phaseRows.length > 0
+                ? 'Remove this phase and its ingredients?'
+                : 'Remove this phase?';
+
+            if (!window.confirm(message)) {
+                return;
+            }
+
+            this.removeCosmeticPhase(phaseKey);
+        },
+
+        removeCosmeticPhase(phaseKey) {
+            if (this.phaseOrder.length <= 1) {
+                return;
+            }
+
+            this.phaseOrder = this.phaseOrder.filter((phase) => phase.key !== phaseKey);
+            const nextPhaseItems = { ...this.phaseItems };
+            delete nextPhaseItems[phaseKey];
+            this.phaseItems = nextPhaseItems;
         },
 
         number(value) {

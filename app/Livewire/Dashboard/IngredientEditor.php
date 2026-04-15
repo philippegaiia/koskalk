@@ -3,7 +3,6 @@
 namespace App\Livewire\Dashboard;
 
 use App\IngredientCategory;
-use App\SoapSap;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
@@ -13,6 +12,7 @@ use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
+use App\SoapSap;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\BaseFileUpload;
@@ -24,6 +24,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -146,13 +147,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         TextInput::make('cas_number')
                                             ->label('CAS number')
                                             ->maxLength(255)
-                                            ->placeholder('e.g. 8007-02-1')
-                                            ->regex('/^[0-9]{2,7}-[0-9]{2}-[0-9]$/'),
+                                            ->placeholder('e.g. 8007-02-1'),
                                         TextInput::make('ec_number')
                                             ->label('EINECS / EC number')
                                             ->maxLength(255)
-                                            ->placeholder('e.g. 232-274-1')
-                                            ->regex('/^[0-9]{3}-[0-9]{3}-[0-9]$/'),
+                                            ->placeholder('e.g. 232-274-1'),
                                         Toggle::make('is_organic')
                                             ->label('Organic')
                                             ->helperText('Use this when the supplied ingredient is certified or sold as organic.')
@@ -303,7 +302,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->inputMode('decimal')
                                             ->live(onBlur: true)
                                             ->helperText('Enter professional-style KOH SAP like 245 or decimal-style 0.245. NaOH SAP is derived automatically.'),
-                                        \Filament\Infolists\Components\TextEntry::make('sap_profile.naoh_sap_value')
+                                        TextEntry::make('sap_profile.naoh_sap_value')
                                             ->label('Derived NaOH SAP')
                                             ->state(fn (Get $get): ?string => blank($get('sap_profile.koh_sap_value')) ? null : number_format(SoapSap::deriveNaohFromKoh((float) $get('sap_profile.koh_sap_value')), 6, '.', '')),
                                         TextInput::make('sap_profile.iodine_value')

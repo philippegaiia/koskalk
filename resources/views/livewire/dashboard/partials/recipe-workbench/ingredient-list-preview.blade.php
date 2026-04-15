@@ -1,11 +1,17 @@
+@php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
+
 <section class="sk-card p-5">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
  <p class="sk-eyebrow">Ingredient list preview</p>
+ @if ($isCosmeticWorkbench)
+ <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Generated from the full formula basis.</p>
+ @else
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Generated from the selected ingredient-list variant and normalized to the cured-bar basis so the label output stays aligned with the dry soap view.</p>
+ @endif
  </div>
  <div class="flex flex-wrap items-center gap-2">
- <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">Dry soap basis</span>
+ <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ $isCosmeticWorkbench ? 'Full formula basis' : 'Dry soap basis' }}</span>
  <template x-if="activeIngredientListVariant?.label">
  <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="activeIngredientListVariant.label"></span>
  </template>
@@ -59,7 +65,11 @@
  <div class="mt-5 overflow-hidden sk-inset">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">Declaration details</p>
+ @if ($isCosmeticWorkbench)
+ <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Recorded fragrance declarations are listed with their estimated contribution to the formula basis.</p>
+ @else
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.</p>
+ @endif
  </div>
 
  <template x-if="drySoapDeclarationRows.length > 0">
@@ -69,7 +79,7 @@
  <tr>
  <th class="px-4 py-3">Label</th>
  <th class="px-4 py-3">Sources</th>
- <th class="px-4 py-3">Dry soap %</th>
+ <th class="px-4 py-3">{{ $isCosmeticWorkbench ? 'Formula %' : 'Dry soap %' }}</th>
  <th class="px-4 py-3">Threshold</th>
  <th class="px-4 py-3">Status</th>
  <th class="px-4 py-3">Notes</th>

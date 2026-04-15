@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
 
@@ -17,10 +18,11 @@ class RecipeWorkbenchViewDataBuilder
     /**
      * @return array<string, mixed>
      */
-    public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user): array
+    public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user, ?ProductType $productType = null): array
     {
         $savedDraft = $this->recipeWorkbenchService->draftPayload($recipe);
         $defaultCurrency = $user?->defaultCurrency() ?? 'EUR';
+        $productType ??= $recipe?->productType;
 
         return [
             'productFamily' => [
@@ -29,12 +31,14 @@ class RecipeWorkbenchViewDataBuilder
                 'slug' => $productFamily->slug,
                 'calculation_basis' => $productFamily->calculation_basis,
             ],
+            'productType' => $this->productTypeData($productType),
             'recipe' => $this->recipeData($recipe),
             'savedDraft' => $savedDraft,
-            'phases' => $this->recipeWorkbenchService->phaseBlueprints(),
-            'ingredients' => $this->recipeWorkbenchIngredientCatalogBuilder->build($user),
+            'phases' => $this->recipeWorkbenchService->phaseBlueprints($productFamily),
+            'ingredients' => $this->recipeWorkbenchIngredientCatalogBuilder->build($user, $productFamily),
             'ifraProductCategories' => $this->recipeWorkbenchIfraOptionsBuilder->categories($productFamily),
-            'defaultIfraProductCategoryId' => $this->recipeWorkbenchIfraOptionsBuilder->defaultCategoryId($productFamily),
+            'defaultIfraProductCategoryId' => $productType?->default_ifra_product_category_id
+                ?? $this->recipeWorkbenchIfraOptionsBuilder->defaultCategoryId($productFamily),
             'costing' => null,
             'costingLoaded' => false,
             'defaultCurrency' => $defaultCurrency,
@@ -80,6 +84,23 @@ class RecipeWorkbenchViewDataBuilder
             'saved_formula_url' => $hasSavedFormula
                 ? route('recipes.saved', $recipe->id)
                 : null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function productTypeData(?ProductType $productType): ?array
+    {
+        if (! $productType instanceof ProductType) {
+            return null;
+        }
+
+        return [
+            'id' => $productType->id,
+            'name' => $productType->name,
+            'slug' => $productType->slug,
+            'default_ifra_product_category_id' => $productType->default_ifra_product_category_id,
         ];
     }
 }

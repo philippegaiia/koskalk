@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Ingredient;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
 use App\Services\CurrentAppUserResolver;
 use App\Services\UserIngredientAuthoringService;
+use App\Services\UserIngredientPriceMemory;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class IngredientController extends Controller
@@ -36,7 +37,7 @@ class IngredientController extends Controller
         ]);
     }
 
-    public function updatePrice(Request $request)
+    public function updatePrice(Request $request, UserIngredientPriceMemory $priceMemory): JsonResponse
     {
         $user = $request->user();
 
@@ -49,17 +50,11 @@ class IngredientController extends Controller
             'price_per_kg' => ['required', 'numeric', 'min:0'],
         ]);
 
-        UserIngredientPrice::query()->updateOrCreate(
-            [
-                'user_id' => $user->id,
-                'ingredient_id' => $validated['ingredient_id'],
-            ],
-            [
-                'price_per_kg' => round((float) $validated['price_per_kg'], 4),
-                'currency' => 'EUR',
-                'last_used_at' => now(),
-            ],
-        );
+        $ingredient = Ingredient::query()->findOrFail($validated['ingredient_id']);
+
+        abort_unless($this->canUpdatePrice($ingredient, $user), 404);
+
+        $priceMemory->remember($user, $ingredient->id, (float) $validated['price_per_kg']);
 
         return response()->json(['ok' => true]);
     }
@@ -110,5 +105,14 @@ class IngredientController extends Controller
             'ingredient_id' => $copy->id,
             'redirect' => route('ingredients.edit', $copy->id),
         ]);
+    }
+
+    private function canUpdatePrice(Ingredient $ingredient, User $user): bool
+    {
+        if ($ingredient->owner_type === null) {
+            return $ingredient->is_active;
+        }
+
+        return $ingredient->isOwnedBy($user) || $ingredient->isWorkspaceAccessibleBy($user);
     }
 }

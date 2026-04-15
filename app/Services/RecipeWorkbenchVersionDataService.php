@@ -201,7 +201,7 @@ class RecipeWorkbenchVersionDataService
     {
         return $this->recipeWorkbenchVersionPayloadMapper->toWorkbenchPayload(
             $version,
-            $this->recipeWorkbenchPhaseBlueprints->all(),
+            $this->recipeWorkbenchPhaseBlueprints->all($version->recipe?->productFamily),
             $this->catalogReviewState($version),
         );
     }
@@ -223,6 +223,7 @@ class RecipeWorkbenchVersionDataService
     {
         return [
             'recipe',
+            'recipe.productFamily',
             'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
             'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
             'phases.items.ingredient',

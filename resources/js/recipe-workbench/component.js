@@ -38,6 +38,26 @@ function defineSection(component, section) {
     Object.defineProperties(component, Object.getOwnPropertyDescriptors(section));
 }
 
+function defaultPhaseBlueprints(productFamilySlug) {
+    if (productFamilySlug === 'cosmetic') {
+        return [{ key: 'phase_a', name: 'Phase A' }];
+    }
+
+    return [
+        { key: 'saponified_oils', name: 'Saponified Oils' },
+        { key: 'additives', name: 'Additives' },
+        { key: 'fragrance', name: 'Fragrance And Aromatics' },
+    ];
+}
+
+function phaseItemsForBlueprints(blueprints) {
+    return blueprints.reduce((items, phase) => {
+        items[phase.key] = [];
+
+        return items;
+    }, {});
+}
+
 /**
  * This section owns the public state keys and the boot-time watchers that keep
  * the preview in sync while the user edits the workbench.
@@ -45,18 +65,26 @@ function defineSection(component, section) {
 function createRecipeWorkbenchState(payload) {
     const initialSnapshot = payload.savedSnapshot ?? null;
     const initialDraft = payload.savedDraft ?? initialSnapshot?.draft ?? null;
+    const productFamilySlug = payload.productFamily?.slug ?? 'soap';
+    const isCosmeticFormula = productFamilySlug === 'cosmetic';
+    const phaseOrder = Array.isArray(payload.phases) && payload.phases.length > 0
+        ? payload.phases
+        : defaultPhaseBlueprints(productFamilySlug);
 
     return {
         activeWorkbenchTab: window.location.hash.replace('#', '') || 'formula',
         recipeId: payload.recipe?.id ?? null,
+        productFamilySlug,
+        productTypeId: payload.productType?.id ?? null,
+        productTypeName: payload.productType?.name ?? null,
         draftVersionId: payload.recipe?.draft_version_id ?? null,
         currentVersionNumber: payload.recipe?.version_number ?? null,
         currentVersionIsDraft: payload.recipe?.is_draft ?? true,
-        formulaName: 'New Soap Formula',
+        formulaName: isCosmeticFormula ? 'New Cosmetic Formula' : 'New Soap Formula',
         oilUnit: 'g',
-        oilWeight: 1000,
-        manufacturingMode: 'saponify_in_formula',
-        exposureMode: 'rinse_off',
+        oilWeight: isCosmeticFormula ? 100 : 1000,
+        manufacturingMode: isCosmeticFormula ? 'blend_only' : 'saponify_in_formula',
+        exposureMode: isCosmeticFormula ? 'leave_on' : 'rinse_off',
         regulatoryRegime: 'eu',
         editMode: 'percentage',
         lyeType: 'naoh',
@@ -73,7 +101,7 @@ function createRecipeWorkbenchState(payload) {
         backendCalculation: initialSnapshot?.calculation ?? null,
         backendLabeling: initialSnapshot?.labeling ?? null,
         catalogReview: initialDraft?.catalogReview ?? null,
-        selectedIngredientListVariantKey: initialSnapshot?.labeling?.default_variant_key ?? 'saponified_with_superfat',
+        selectedIngredientListVariantKey: initialSnapshot?.labeling?.default_variant_key ?? (isCosmeticFormula ? 'incorporated_ingredients' : 'saponified_with_superfat'),
         savedRecipeUrl: payload.recipe?.saved_formula_url ?? null,
         inciCopyMessage: '',
         calculationPreviewTimer: null,
@@ -83,7 +111,7 @@ function createRecipeWorkbenchState(payload) {
         draggedRowPhaseKey: null,
         dropTargetPhaseKey: null,
         dropTargetRowId: null,
-        phaseOrder: payload.phases ?? [],
+        phaseOrder,
         saveStatus: null,
         saveMessage: '',
         isSaving: false,
@@ -115,23 +143,24 @@ function createRecipeWorkbenchState(payload) {
         packagingCatalogStatus: null,
         packagingCatalogMessage: '',
         lastCalculationPhaseSignature: null,
-        phaseItems: {
-            saponified_oils: [],
-            additives: [],
-            fragrance: [],
-        },
+        dirtyBaselineSignature: null,
+        unsavedBeforeUnloadHandler: null,
+        unsavedNavigateHandler: null,
+        phaseItems: phaseItemsForBlueprints(phaseOrder),
 
         init() {
             this.applyDraft(initialDraft);
             this.applySnapshot(initialSnapshot);
             this.initializeCostingState();
             this.resetPackagingCatalogForm();
+            this.refreshDirtyBaseline();
+            this.installUnsavedChangesGuard();
 
             if (this.activeWorkbenchTab === 'costing') {
                 this.ensureCostingLoaded();
             }
 
-            if (this.phaseItems.saponified_oils.length === 0) {
+            if (!this.isCosmeticFormula && this.phaseItems.saponified_oils.length === 0) {
                 const defaultOil = this.filteredIngredients.find((ingredient) => ingredient.can_add_to_saponified_oils);
 
                 if (defaultOil) {
@@ -157,6 +186,10 @@ function createRecipeWorkbenchState(payload) {
             if (!initialSnapshot) {
                 this.scheduleCalculationPreview();
             }
+        },
+
+        destroy() {
+            this.removeUnsavedChangesGuard();
         },
     };
 }
@@ -217,6 +250,13 @@ function createCatalogSection() {
         },
 
         currentCalculationPhaseSignature() {
+            if (this.isCosmeticFormula) {
+                return JSON.stringify({
+                    oilWeight: this.oilWeight,
+                    phaseItems: this.phaseItems ?? {},
+                });
+            }
+
             return JSON.stringify(this.phaseItems?.saponified_oils ?? []);
         },
 
@@ -225,6 +265,10 @@ function createCatalogSection() {
 
             if (!targetPhase) {
                 return;
+            }
+
+            if (!Array.isArray(this.phaseItems[targetPhase])) {
+                this.phaseItems[targetPhase] = [];
             }
 
             const existingRow = this.phaseItems[targetPhase].find((row) => row.ingredient_id === ingredient.id);
@@ -244,7 +288,10 @@ function createCatalogSection() {
                 koh_sap_value: ingredient.koh_sap_value,
                 naoh_sap_value: ingredient.naoh_sap_value,
                 fatty_acid_profile: ingredient.fatty_acid_profile ?? {},
-                percentage: targetPhase === 'saponified_oils' && this.phaseItems[targetPhase].length === 0 ? 100 : 0,
+                percentage: (targetPhase === 'saponified_oils' && this.phaseItems[targetPhase].length === 0)
+                    || (this.isCosmeticFormula && this.cosmeticFormulaRows().length === 0)
+                    ? 100
+                    : 0,
                 note: '',
             });
 
@@ -332,7 +379,7 @@ function createCatalogSection() {
                 return false;
             }
 
-            if (phaseKey !== this.draggedRowPhaseKey) {
+            if (!this.isCosmeticFormula && phaseKey !== this.draggedRowPhaseKey) {
                 return false;
             }
 
@@ -383,12 +430,6 @@ function createCatalogSection() {
                 return;
             }
 
-            if (sourcePhaseKey !== phaseKey) {
-                this.endRowDrag();
-
-                return;
-            }
-
             if (sourcePhaseKey === phaseKey && resolvedTargetRowId === rowId) {
                 this.endRowDrag();
 
@@ -405,7 +446,9 @@ function createCatalogSection() {
             }
 
             const [draggedRow] = sourceRows.splice(sourceIndex, 1);
-            const targetRows = sourceRows;
+            const targetRows = sourcePhaseKey === phaseKey
+                ? sourceRows
+                : [...(this.phaseItems[phaseKey] ?? [])];
 
             let targetIndex = resolvedTargetRowId === null
                 ? targetRows.length
@@ -424,6 +467,12 @@ function createCatalogSection() {
         },
 
         resolveTargetPhase(ingredient, requestedPhase = null) {
+            if (this.isCosmeticFormula) {
+                return requestedPhase && Array.isArray(this.phaseItems[requestedPhase])
+                    ? requestedPhase
+                    : this.cosmeticDefaultPhaseKey();
+            }
+
             return resolveIngredientTargetPhase(ingredient, requestedPhase);
         },
 
@@ -528,6 +577,61 @@ function createPersistenceSection() {
 
         serializeDraft() {
             return buildSerializedDraft(this);
+        },
+
+        currentDirtySignature() {
+            return JSON.stringify(this.serializeDraft());
+        },
+
+        refreshDirtyBaseline() {
+            this.dirtyBaselineSignature = this.currentDirtySignature();
+        },
+
+        hasUnsavedWorkbenchChanges() {
+            return this.dirtyBaselineSignature !== null
+                && this.currentDirtySignature() !== this.dirtyBaselineSignature;
+        },
+
+        installUnsavedChangesGuard() {
+            if (this.unsavedBeforeUnloadHandler || this.unsavedNavigateHandler) {
+                return;
+            }
+
+            this.unsavedBeforeUnloadHandler = (event) => {
+                if (!this.hasUnsavedWorkbenchChanges() || this.isSaving) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.returnValue = '';
+
+                return '';
+            };
+
+            this.unsavedNavigateHandler = (event) => {
+                if (!this.hasUnsavedWorkbenchChanges() || this.isSaving) {
+                    return;
+                }
+
+                if (!window.confirm('You have unsaved formula changes. Leave without saving?')) {
+                    event.preventDefault();
+                }
+            };
+
+            window.addEventListener('beforeunload', this.unsavedBeforeUnloadHandler);
+            document.addEventListener('livewire:navigate', this.unsavedNavigateHandler);
+        },
+
+        removeUnsavedChangesGuard() {
+            if (this.unsavedBeforeUnloadHandler) {
+                window.removeEventListener('beforeunload', this.unsavedBeforeUnloadHandler);
+                this.unsavedBeforeUnloadHandler = null;
+            }
+
+            if (this.unsavedNavigateHandler) {
+                document.removeEventListener('livewire:navigate', this.unsavedNavigateHandler);
+                this.unsavedNavigateHandler = null;
+            }
         },
 
         serializeRow(row) {

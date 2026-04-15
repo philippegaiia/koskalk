@@ -151,6 +151,15 @@ foreach ($soapcalcOils as $sIdx => $soapcalcOil) {
             $naohSap = round($kohSap * (40 / 56.1), 3);
             $mendrulandia[$bestIdx]['koh_sap_value'] = $kohSap;
             $mendrulandia[$bestIdx]['naoh_sap_value'] = $naohSap;
+
+            if (isset($soapcalcOil['iodine']) && $soapcalcOil['iodine'] !== null) {
+                $mendrulandia[$bestIdx]['iodine_value'] = (float) $soapcalcOil['iodine'];
+            }
+
+            if (isset($soapcalcOil['INS']) && $soapcalcOil['INS'] !== null) {
+                $mendrulandia[$bestIdx]['ins_value'] = (float) $soapcalcOil['INS'];
+            }
+
             $updatedMendrulandia[$bestIdx] = true;
             $matched++;
         }
@@ -175,5 +184,9 @@ if (count($notMatched) > 0) {
 file_put_contents($mendrulandiaPath, json_encode($mendrulandia, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 echo "\nUpdated: $mendrulandiaPath\n";
 
-$withData = count(array_filter($mendrulandia, fn ($o) => $o['koh_sap_value'] !== null));
-echo "Oils with SAP data: $withData / ".count($mendrulandia)."\n";
+$withKoh = count(array_filter($mendrulandia, fn ($o) => isset($o['koh_sap_value']) && $o['koh_sap_value'] !== null));
+$withIodine = count(array_filter($mendrulandia, fn ($o) => isset($o['iodine_value']) && $o['iodine_value'] !== null));
+$withIns = count(array_filter($mendrulandia, fn ($o) => isset($o['ins_value']) && $o['ins_value'] !== null));
+echo "Oils with KOH SAP: $withKoh / ".count($mendrulandia)."\n";
+echo "Oils with iodine: $withIodine / ".count($mendrulandia)."\n";
+echo "Oils with INS: $withIns / ".count($mendrulandia)."\n";

@@ -1,4 +1,34 @@
+@php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
+
 <div x-show="activeWorkbenchTab === 'output'" x-cloak class="space-y-6">
+@if ($isCosmeticWorkbench)
+ <section class="sk-card p-5">
+ <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+ <div class="min-w-0">
+ <p class="sk-eyebrow">Formula output</p>
+ <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">This view reads the full cosmetic formula basis.</p>
+ </div>
+ <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">Full formula basis</span>
+ </div>
+
+ <div class="mt-4 grid gap-3 md:grid-cols-3">
+ <div class="sk-inset p-4">
+ <p class="sk-eyebrow">Batch weight</p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(oilWeight, 3)} ${oilUnit}`"></p>
+ </div>
+ <div class="sk-inset p-4">
+ <p class="sk-eyebrow">Formula total</p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(totalOilPercentage(), 2)}%`"></p>
+ </div>
+ <div class="sk-inset p-4">
+ <p class="sk-eyebrow">Ingredient rows</p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="cosmeticFormulaRows().length"></p>
+ </div>
+ </div>
+ </section>
+
+ @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')
+@else
  <section class="sk-card p-5">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
@@ -134,4 +164,5 @@
          Ingredient not curated by the platform. Compliance data is user-maintained.
      </p>
  </template>
+@endif
 </div>

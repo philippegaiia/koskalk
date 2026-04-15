@@ -30,6 +30,16 @@ class MediaStorage
         return (int) config('media.recipe_featured_images.max_size_kb', 3072);
     }
 
+    public static function recipeFeaturedImagesWidth(): int
+    {
+        return (int) config('media.recipe_featured_images.max_width', 800);
+    }
+
+    public static function recipeFeaturedImagesHeight(): int
+    {
+        return (int) config('media.recipe_featured_images.max_height', 600);
+    }
+
     public static function recipeRichContentImagesMaxSize(): int
     {
         return (int) config('media.recipe_rich_content_images.max_size_kb', 1536);

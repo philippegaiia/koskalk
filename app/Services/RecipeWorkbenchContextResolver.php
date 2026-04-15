@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
 
@@ -19,8 +20,25 @@ class RecipeWorkbenchContextResolver
 
     public function soapFamily(): ProductFamily
     {
+        return $this->productFamily('soap');
+    }
+
+    public function productFamily(string $slug): ProductFamily
+    {
         return ProductFamily::query()
-            ->where('slug', 'soap')
+            ->where('slug', $slug)
+            ->firstOrFail();
+    }
+
+    public function productType(ProductFamily $productFamily, ?string $slug): ?ProductType
+    {
+        if ($slug === null || $slug === '') {
+            return null;
+        }
+
+        return ProductType::query()
+            ->whereBelongsTo($productFamily)
+            ->where('slug', $slug)
             ->firstOrFail();
     }
 

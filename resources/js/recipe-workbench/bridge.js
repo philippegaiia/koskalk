@@ -70,6 +70,8 @@ export async function persistWorkbench(workbench, method) {
             workbench.applySnapshot(response.snapshot);
         }
 
+        workbench.refreshDirtyBaseline();
+
         if (response.redirect) {
             const hash = workbench.activeWorkbenchTab ? `#${workbench.activeWorkbenchTab}` : '';
             window.location.href = response.redirect + hash;

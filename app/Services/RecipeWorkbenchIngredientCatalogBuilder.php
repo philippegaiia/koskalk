@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\IngredientCategory;
 use App\Models\Ingredient;
+use App\Models\ProductFamily;
 use App\Models\User;
 use App\Models\UserIngredientPrice;
 
@@ -12,8 +13,10 @@ class RecipeWorkbenchIngredientCatalogBuilder
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function build(?User $user): array
+    public function build(?User $user, ?ProductFamily $productFamily = null): array
     {
+        $isCosmetic = $productFamily?->slug === 'cosmetic'
+            || $productFamily?->calculation_basis === 'total_formula';
         $defaultPricesByIngredient = $user instanceof User
             ? UserIngredientPrice::query()
                 ->where('user_id', $user->id)
@@ -36,9 +39,10 @@ class RecipeWorkbenchIngredientCatalogBuilder
                 IngredientCategory::Colorant->value,
                 IngredientCategory::Preservative->value,
                 IngredientCategory::Additive->value,
+                IngredientCategory::Liquid->value,
             ])
             ->get()
-            ->filter(fn (Ingredient $ingredient): bool => $ingredient->availableWorkbenchPhases() !== [])
+            ->filter(fn (Ingredient $ingredient): bool => $isCosmetic || $ingredient->availableWorkbenchPhases() !== [])
             ->map(function (Ingredient $ingredient) use ($defaultPricesByIngredient): array {
                 $category = $ingredient->category;
                 $sapProfile = $ingredient->sapProfile;

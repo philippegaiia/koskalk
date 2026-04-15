@@ -75,7 +75,7 @@
                             <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Percentages come from the saved recipe. Only the oil quantity basis changes here.</p>
                         </div>
                         <div class="flex flex-wrap gap-2 text-xs text-[var(--color-ink-soft)]">
-                            <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1">{{ $formatNumber($section['total_percentage']) }}% oils</span>
+                            <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1">{{ $formatNumber($section['total_percentage']) }}% {{ $section['basis_label'] ?? 'oils' }}</span>
                             <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1">{{ $formatNumber($section['total_weight']) }} {{ $oilUnit }}</span>
                         </div>
                     </div>
@@ -87,7 +87,7 @@
                             <tr>
                                 <th class="px-5 py-3">Ingredient</th>
                                 <th class="px-5 py-3">INCI</th>
-                                <th class="px-5 py-3">% oils</th>
+                                <th class="px-5 py-3">% {{ $section['basis_label'] ?? 'oils' }}</th>
                                 <th class="px-5 py-3">Weight ({{ $oilUnit }})</th>
                                 <th class="px-5 py-3">Note</th>
                             </tr>

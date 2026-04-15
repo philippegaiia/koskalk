@@ -7,12 +7,15 @@ use App\Models\IfraCertificateLimit;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\OwnerType;
+use App\SoapSap;
 use App\Visibility;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class UserIngredientAuthoringService
 {
+    private const TRUSTED_KOH_SAP_TOLERANCE = 0.03;
+
     public function __construct(
         protected IngredientDataEntryService $ingredientDataEntryService,
     ) {}
@@ -175,6 +178,9 @@ class UserIngredientAuthoringService
         $copy->workspace_id = null;
         $copy->visibility = Visibility::Private;
         $copy->requires_admin_review = false;
+        $copy->cas_number = $this->normalizeCasNumber($copy->cas_number);
+        $copy->ec_number = $this->normalizeEcNumber($copy->ec_number);
+        $copy->source_data = $this->duplicateSourceData($source);
         $copy->featured_image_path = null;
         $copy->icon_image_path = null;
         $copy->save();
@@ -272,7 +278,8 @@ class UserIngredientAuthoringService
         $ingredient->featured_image_path = Arr::get($state, 'featured_image_path');
         $ingredient->icon_image_path = Arr::get($state, 'icon_image_path');
         $ingredient->info_markdown = Arr::get($state, 'info_markdown');
-        $ingredient->is_potentially_saponifiable = $ingredient->category === IngredientCategory::CarrierOil;
+        $ingredient->is_potentially_saponifiable = $ingredient->category === IngredientCategory::CarrierOil
+            && $this->canRetainUserSoapTrust($ingredient);
         $ingredient->is_active = true;
     }
 
@@ -283,6 +290,7 @@ class UserIngredientAuthoringService
     {
         $this->validateAllergenEntries(Arr::get($state, 'allergen_entries', []));
         $this->validateIfraState(Arr::get($state, 'ifra', []));
+        $this->validateTrustedKohSapValue($ingredient, $state);
 
         $ingredient = $this->ingredientDataEntryService->syncCurrentData($ingredient, [
             'current_version' => [
@@ -290,8 +298,8 @@ class UserIngredientAuthoringService
                 'inci_name' => Arr::get($state, 'inci_name'),
                 'supplier_name' => Arr::get($state, 'supplier_name'),
                 'supplier_reference' => Arr::get($state, 'supplier_reference'),
-                'cas_number' => Arr::get($state, 'cas_number'),
-                'ec_number' => Arr::get($state, 'ec_number'),
+                'cas_number' => $this->normalizeCasNumber(Arr::get($state, 'cas_number')),
+                'ec_number' => $this->normalizeEcNumber(Arr::get($state, 'ec_number')),
                 'is_organic' => (bool) Arr::get($state, 'is_organic', false),
                 'is_active' => true,
                 'is_manufactured' => false,
@@ -366,6 +374,93 @@ class UserIngredientAuthoringService
         $limitsState->each(function (array $limitState) use ($certificate): void {
             $certificate->limits()->create($limitState);
         });
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function duplicateSourceData(Ingredient $source): ?array
+    {
+        $sourceData = is_array($source->source_data) ? $source->source_data : [];
+        $trustedKohSapValue = $source->sapProfile?->koh_sap_value;
+
+        if ($source->category !== IngredientCategory::CarrierOil || $trustedKohSapValue === null) {
+            return $sourceData === [] ? null : $sourceData;
+        }
+
+        return array_replace_recursive($sourceData, [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => SoapSap::normalizeKohSapInput((float) $trustedKohSapValue),
+            ],
+        ]);
+    }
+
+    private function canRetainUserSoapTrust(Ingredient $ingredient): bool
+    {
+        return $ingredient->owner_type === OwnerType::User
+            && is_numeric(Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function validateTrustedKohSapValue(Ingredient $ingredient, array $state): void
+    {
+        if (! $this->canRetainUserSoapTrust($ingredient) || $ingredient->category !== IngredientCategory::CarrierOil) {
+            return;
+        }
+
+        $trustedKohSapValue = (float) Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value');
+        $kohSapValue = Arr::get($state, 'sap_profile.koh_sap_value');
+
+        if ($kohSapValue === null || $kohSapValue === '' || ! is_numeric($kohSapValue)) {
+            throw ValidationException::withMessages([
+                'sap_profile.koh_sap_value' => 'KOH SAP value is required for duplicated carrier oils trusted for soap calculation.',
+            ]);
+        }
+
+        $normalizedKohSapValue = SoapSap::normalizeKohSapInput((float) $kohSapValue);
+        $minimumValue = $trustedKohSapValue * (1 - self::TRUSTED_KOH_SAP_TOLERANCE);
+        $maximumValue = $trustedKohSapValue * (1 + self::TRUSTED_KOH_SAP_TOLERANCE);
+
+        if ($normalizedKohSapValue < $minimumValue || $normalizedKohSapValue > $maximumValue) {
+            throw ValidationException::withMessages([
+                'sap_profile.koh_sap_value' => 'KOH SAP value must be within ±3% of the duplicated platform value.',
+            ]);
+        }
+    }
+
+    private function normalizeCasNumber(mixed $value): ?string
+    {
+        $value = $this->normalizeIdentifier($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return preg_replace('/^([0-9]{2,7}-[0-9]{2})-0([0-9])$/', '$1-$2', $value) ?? $value;
+    }
+
+    private function normalizeEcNumber(mixed $value): ?string
+    {
+        $value = $this->normalizeIdentifier($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return preg_replace('/^([0-9]{3}-[0-9]{3})-0([0-9])$/', '$1-$2', $value) ?? $value;
+    }
+
+    private function normalizeIdentifier(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 
     /**

@@ -41,14 +41,16 @@ class RecipeVersionViewDataBuilder
             $snapshot = $this->recipeWorkbenchService->snapshotFromWorkbenchDraft($draft);
         }
 
+        $isCosmetic = $recipe->productFamily?->calculation_basis === 'total_formula';
+
         return [
             'recipe' => $recipe,
             'version' => $version,
             'snapshot' => $snapshot,
-            'phaseSections' => $this->phaseSections($snapshot['draft']),
-            'summaryCards' => $this->summaryCards($snapshot['draft'], $snapshot['calculation']),
-            'contextRows' => $this->contextRows($snapshot['draft'], $snapshot['calculation'], $version),
-            'lyeRows' => $this->lyeRows($snapshot['draft'], $snapshot['calculation']),
+            'phaseSections' => $this->phaseSections($snapshot['draft'], $isCosmetic),
+            'summaryCards' => $this->summaryCards($snapshot['draft'], $snapshot['calculation'], $isCosmetic),
+            'contextRows' => $this->contextRows($snapshot['draft'], $snapshot['calculation'], $version, $isCosmetic),
+            'lyeRows' => $isCosmetic ? [] : $this->lyeRows($snapshot['draft'], $snapshot['calculation']),
             'recoverySnapshots' => $this->recoverySnapshots($recipe, $version),
             'selectedOilWeight' => $selectedOilWeight,
         ];
@@ -69,7 +71,20 @@ class RecipeVersionViewDataBuilder
      * @param  array<string, mixed>  $draft
      * @return array<int, array<string, mixed>>
      */
-    private function phaseSections(array $draft): array
+    private function phaseSections(array $draft, bool $isCosmetic): array
+    {
+        if ($isCosmetic) {
+            return $this->cosmeticPhaseSections($draft);
+        }
+
+        return $this->soapPhaseSections($draft);
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<int, array<string, mixed>>
+     */
+    private function soapPhaseSections(array $draft): array
     {
         $sectionLabels = [
             'saponified_oils' => 'Saponified oils',
@@ -114,11 +129,94 @@ class RecipeVersionViewDataBuilder
 
     /**
      * @param  array<string, mixed>  $draft
+     * @return array<int, array<string, mixed>>
+     */
+    private function cosmeticPhaseSections(array $draft): array
+    {
+        $phaseDefinitions = collect(is_array($draft['phases'] ?? null) ? $draft['phases'] : [])
+            ->filter(fn (mixed $phase): bool => is_array($phase))
+            ->mapWithKeys(fn (array $phase): array => [
+                (string) ($phase['key'] ?? '') => (string) ($phase['name'] ?? ''),
+            ])
+            ->filter(fn (string $name, string $key): bool => $key !== '');
+
+        return collect($draft['phaseItems'] ?? [])
+            ->filter(fn (mixed $rows, mixed $key): bool => is_string($key) && is_array($rows))
+            ->map(function (array $rows, string $key) use ($draft, $phaseDefinitions): ?array {
+                $phaseRows = collect($rows)
+                    ->filter(fn (mixed $row): bool => is_array($row) && ((float) ($row['percentage'] ?? 0) > 0))
+                    ->map(function (array $row) use ($draft): array {
+                        $percentage = (float) ($row['percentage'] ?? 0);
+                        $weight = round(((float) ($draft['oilWeight'] ?? 0)) * ($percentage / 100), 4);
+
+                        return [
+                            'name' => $row['name'] ?? 'Unnamed ingredient',
+                            'inci_name' => $row['inci_name'] ?? null,
+                            'percentage' => $percentage,
+                            'weight' => $weight,
+                            'note' => $row['note'] ?? null,
+                        ];
+                    })
+                    ->values();
+
+                if ($phaseRows->isEmpty()) {
+                    return null;
+                }
+
+                return [
+                    'key' => $key,
+                    'label' => $phaseDefinitions->get($key) ?: str($key)->replace('_', ' ')->title()->toString(),
+                    'basis_label' => 'formula',
+                    'rows' => $phaseRows->all(),
+                    'total_percentage' => round((float) $phaseRows->sum('percentage'), 4),
+                    'total_weight' => round((float) $phaseRows->sum('weight'), 4),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
      * @param  array<string, mixed>|null  $calculation
      * @return array<int, array<string, scalar|null>>
      */
-    private function summaryCards(array $draft, ?array $calculation): array
+    private function summaryCards(array $draft, ?array $calculation, bool $isCosmetic): array
     {
+        if ($isCosmetic) {
+            $oilWeight = round((float) ($draft['oilWeight'] ?? 0), 4);
+            $formulaTotal = round((float) ($draft['formulaTotalPercentage'] ?? collect($draft['phaseItems'] ?? [])
+                ->flatMap(fn (mixed $rows): array => is_array($rows) ? $rows : [])
+                ->sum(fn (mixed $row): float => is_array($row) ? (float) ($row['percentage'] ?? 0) : 0)), 4);
+
+            return [
+                [
+                    'label' => 'Batch weight',
+                    'value' => round($oilWeight, 2),
+                    'unit' => $draft['oilUnit'] ?? 'g',
+                ],
+                [
+                    'label' => 'Formula total',
+                    'value' => round($formulaTotal, 2),
+                    'unit' => '%',
+                ],
+                [
+                    'label' => 'Ingredients',
+                    'value' => collect($draft['phaseItems'] ?? [])
+                        ->flatMap(fn (mixed $rows): array => is_array($rows) ? $rows : [])
+                        ->filter(fn (mixed $row): bool => is_array($row) && filled($row['ingredient_id'] ?? null))
+                        ->count(),
+                    'unit' => null,
+                ],
+                [
+                    'label' => 'Phases',
+                    'value' => collect($draft['phaseItems'] ?? [])->filter(fn (mixed $rows): bool => is_array($rows) && $rows !== [])->count(),
+                    'unit' => null,
+                ],
+            ];
+        }
+
         $oilWeight = round((float) ($draft['oilWeight'] ?? 0), 4);
         $additionWeight = collect([
             ...($draft['phaseItems']['additives'] ?? []),
@@ -165,9 +263,9 @@ class RecipeVersionViewDataBuilder
      * @param  array<string, mixed>|null  $calculation
      * @return array<int, array<string, scalar|null>>
      */
-    private function contextRows(array $draft, ?array $calculation, RecipeVersion $version): array
+    private function contextRows(array $draft, ?array $calculation, RecipeVersion $version, bool $isCosmetic): array
     {
-        return [
+        $rows = [
             [
                 'label' => 'Saved formula',
                 'value' => $version->saved_at !== null ? 'v'.$version->version_number : 'Not saved yet',
@@ -190,6 +288,20 @@ class RecipeVersionViewDataBuilder
                     ? 'Blend only'
                     : 'Saponify in formula',
             ],
+        ];
+
+        if ($isCosmetic) {
+            return [
+                ...$rows,
+                [
+                    'label' => 'Entry mode',
+                    'value' => ($draft['editMode'] ?? 'percentage') === 'weight' ? 'Weight' : 'Percentage',
+                ],
+            ];
+        }
+
+        return [
+            ...$rows,
             [
                 'label' => 'Superfat',
                 'value' => round((float) ($calculation['lye']['superfat_percentage'] ?? $draft['superfat'] ?? 0), 2).'%',

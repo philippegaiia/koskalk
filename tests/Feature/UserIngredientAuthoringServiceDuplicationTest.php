@@ -11,6 +11,7 @@ use App\OwnerType;
 use App\Services\UserIngredientAuthoringService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -97,6 +98,8 @@ it('duplicates a carrier oil with SAP profile and fatty acids', function () {
     $source = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Olive Oil',
+        'cas_number' => '8001-25-00',
+        'ec_number' => '232-277-00',
         'owner_type' => null,
         'owner_id' => null,
         'is_potentially_saponifiable' => true,
@@ -118,6 +121,8 @@ it('duplicates a carrier oil with SAP profile and fatty acids', function () {
     $copy = $service->duplicate($source, $user);
 
     expect($copy->is_potentially_saponifiable)->toBeTrue();
+    expect($copy->cas_number)->toBe('8001-25-0');
+    expect($copy->ec_number)->toBe('232-277-0');
     expect($copy->sapProfile)->not->toBeNull();
     expect((float) $copy->sapProfile->koh_sap_value)->toBe(0.188);
     expect((float) $copy->sapProfile->iodine_value)->toBe(86.4);
@@ -126,6 +131,39 @@ it('duplicates a carrier oil with SAP profile and fatty acids', function () {
     // SAP profile is independent
     $copy->sapProfile->update(['koh_sap_value' => 0.195]);
     expect((float) $source->fresh()->sapProfile->koh_sap_value)->toBe(0.188);
+});
+
+it('prevents duplicated carrier oil KOH SAP edits outside the trusted range', function () {
+    $user = User::factory()->create();
+
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive Oil',
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_potentially_saponifiable' => true,
+        'is_active' => true,
+    ]);
+
+    $source->sapProfile()->create([
+        'koh_sap_value' => 0.188,
+        'iodine_value' => 86.4,
+        'ins_value' => 102.8,
+    ]);
+
+    $service = app(UserIngredientAuthoringService::class);
+    $copy = $service->duplicate($source, $user);
+
+    expect(fn () => $service->update($copy, [
+        'name' => 'Olive Oil',
+        'category' => IngredientCategory::CarrierOil->value,
+        'inci_name' => $copy->inci_name,
+        'sap_profile' => [
+            'koh_sap_value' => 0.195,
+            'iodine_value' => 86.4,
+            'ins_value' => 102.8,
+        ],
+    ], $user))->toThrow(ValidationException::class);
 });
 
 it('duplicates a composite ingredient with components', function () {
@@ -173,5 +211,5 @@ it('refuses to duplicate a user-owned ingredient', function () {
     $service = app(UserIngredientAuthoringService::class);
 
     expect(fn () => $service->duplicate($source, $otherUser))
-        ->toThrow(\Illuminate\Validation\ValidationException::class);
+        ->toThrow(ValidationException::class);
 });

@@ -106,7 +106,7 @@
                                 <p class="mt-1 text-xs text-slate-500">Locked percentages from the current saved formula, recalculated on the selected oil basis.</p>
                             </div>
                             <div class="numeric text-xs text-slate-500">
-                                {{ $formatNumber($section['total_percentage']) }}% oils · {{ $formatNumber($section['total_weight']) }} {{ $oilUnit }}
+                                {{ $formatNumber($section['total_percentage']) }}% {{ $section['basis_label'] ?? 'oils' }} · {{ $formatNumber($section['total_weight']) }} {{ $oilUnit }}
                             </div>
                         </div>
 

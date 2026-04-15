@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Services\CurrentAppUserResolver;
@@ -21,9 +23,40 @@ class RecipeController extends Controller
         return view('recipes.index');
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('recipes.workbench');
+        $productFamilySlug = $request->string('family')->toString() ?: 'soap';
+        $productTypeSlug = $request->string('type')->toString();
+        $productFamily = ProductFamily::query()
+            ->where('slug', $productFamilySlug)
+            ->firstOrFail();
+
+        if ($productFamily->slug === 'cosmetic' && $productTypeSlug === '') {
+            return view('recipes.product-type-selector', [
+                'productFamily' => $productFamily,
+                'productTypes' => ProductType::query()
+                    ->whereBelongsTo($productFamily)
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('name')
+                    ->get(),
+            ]);
+        }
+
+        $productType = $productTypeSlug !== ''
+            ? ProductType::query()
+                ->whereBelongsTo($productFamily)
+                ->where('slug', $productTypeSlug)
+                ->where(function ($query): void {
+                    $query->where('is_active', true);
+                })
+                ->firstOrFail()
+            : null;
+
+        return view('recipes.workbench', [
+            'productFamily' => $productFamily,
+            'productType' => $productType,
+        ]);
     }
 
     public function edit(int $recipe, CurrentAppUserResolver $currentAppUserResolver): View

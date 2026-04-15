@@ -4,10 +4,10 @@ namespace App\Livewire\Dashboard;
 
 use App\Models\Ingredient;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
 use App\OwnerType;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
+use App\Services\UserIngredientPriceMemory;
 use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
@@ -59,20 +59,24 @@ class IngredientsIndex extends TableComponent
                     ->label('Category')
                     ->badge()
                     ->sortable(),
+                TextColumn::make('catalog_source')
+                    ->label('Source')
+                    ->badge()
+                    ->state(fn (Ingredient $record): string => $record->owner_type === OwnerType::User ? 'Mine' : 'Platform')
+                    ->color(fn (string $state): string => $state === 'Mine' ? 'warning' : 'gray'),
                 TextInputColumn::make('user_price_per_kg')
-                    ->label('Price (EUR/kg)')
+                    ->label('Price/kg')
                     ->type('number')
                     ->inputMode('decimal')
                     ->updateStateUsing(function (Ingredient $record, $state) {
-                        if ($this->currentUserId === null) {
+                        $user = $this->currentUser();
+
+                        if (! $user instanceof User) {
                             return $state;
                         }
 
-                        UserIngredientPrice::query()->updateOrCreate(
-                            ['user_id' => $this->currentUserId, 'ingredient_id' => $record->id],
-                            ['price_per_kg' => round((float) ($state ?? 0), 4), 'currency' => 'EUR', 'last_used_at' => now()],
-                        );
-                        $record->load(['userPrices' => fn ($q) => $q->where('user_id', $this->currentUserId)]);
+                        app(UserIngredientPriceMemory::class)->remember($user, $record->id, (float) ($state ?? 0));
+                        $record->load(['userPrices' => fn ($q) => $q->where('user_id', $user->id)]);
 
                         return $state;
                     }),
@@ -82,6 +86,7 @@ class IngredientsIndex extends TableComponent
                     ->label('Show')
                     ->options([
                         'mine' => 'My ingredients',
+                        'platform' => 'Platform catalog',
                         'priced' => 'Priced platform',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
@@ -90,8 +95,12 @@ class IngredientsIndex extends TableComponent
                         if ($value === 'mine') {
                             $query->where('owner_type', OwnerType::User->value)
                                 ->where('owner_id', $this->currentUserId);
+                        } elseif ($value === 'platform') {
+                            $query->whereNull('owner_type')
+                                ->where('is_active', true);
                         } elseif ($value === 'priced') {
-                            $query->whereNull('owner_type');
+                            $query->whereNull('owner_type')
+                                ->whereHas('userPrices', fn (Builder $q): Builder => $q->where('user_id', $this->currentUserId));
                         }
 
                         return $query;
@@ -153,21 +162,23 @@ class IngredientsIndex extends TableComponent
             return Ingredient::query()->whereRaw('1 = 0');
         }
 
-        $pricedIds = UserIngredientPrice::query()
-            ->where('user_id', $user->id)
-            ->pluck('ingredient_id');
-
         return Ingredient::query()
             ->withCount(['costingItems', 'recipeItems'])
             ->with(['userPrices' => fn ($q) => $q->where('user_id', $user->id)])
-            ->where(function (Builder $q) use ($user, $pricedIds) {
+            ->where(function (Builder $q) use ($user) {
                 $q->where(fn (Builder $qq) => $qq->where('owner_type', OwnerType::User->value)->where('owner_id', $user->id))
-                    ->orWhereIn('ingredients.id', $pricedIds);
+                    ->orWhere(fn (Builder $qq) => $qq->whereNull('owner_type')->where('is_active', true));
             });
     }
 
     private function deleteIngredient(Ingredient $ingredient): bool
     {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User || ! $ingredient->isOwnedBy($user)) {
+            return false;
+        }
+
         if ((int) ($ingredient->costing_items_count ?? $ingredient->costingItems()->count()) > 0) {
             return false;
         }

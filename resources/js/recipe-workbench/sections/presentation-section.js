@@ -71,6 +71,31 @@ export function createPresentationSection() {
         },
 
         get totalSummaryCards() {
+            if (this.isCosmeticFormula) {
+                return [
+                    {
+                        id: 'formula-total',
+                        label: 'Formula total',
+                        value: `${this.format(this.totalOilPercentage(), 2)}%`,
+                    },
+                    {
+                        id: 'batch-weight',
+                        label: 'Batch weight',
+                        value: `${this.format(this.oilWeight, 3)} ${this.oilUnit}`,
+                    },
+                    {
+                        id: 'ingredient-weight',
+                        label: 'Ingredient weight',
+                        value: `${this.format(this.cosmeticFormulaWeightTotal(), 3)} ${this.oilUnit}`,
+                    },
+                    {
+                        id: 'phase-count',
+                        label: 'Phases',
+                        value: `${this.phaseOrder.length}`,
+                    },
+                ];
+            }
+
             return [
                 {
                     id: 'additives-total',
@@ -150,6 +175,10 @@ export function createPresentationSection() {
         },
 
         get drySoapOutputListText() {
+            if (this.isCosmeticFormula) {
+                return this.generatedIngredientListText;
+            }
+
             const ingredientLabels = this.drySoapIngredientRows.map((row) => row.label);
             const allergenLabels = this.drySoapDeclarationRows
                 .filter((row) => row.included_in_inci)
@@ -159,14 +188,30 @@ export function createPresentationSection() {
         },
 
         get drySoapOutputBasisWeight() {
+            if (this.isCosmeticFormula) {
+                return this.number(this.oilWeight);
+            }
+
             return this.number(this.curedBatchWeight());
         },
 
         get drySoapResidualWaterWeight() {
+            if (this.isCosmeticFormula) {
+                return 0;
+            }
+
             return this.drySoapOutputBasisWeight * 0.11;
         },
 
         get drySoapIngredientRows() {
+            if (this.isCosmeticFormula) {
+                return this.generatedIngredientRows.map((row) => ({
+                    ...row,
+                    adjusted_weight: this.number(row.weight),
+                    percent_of_dry_basis: this.number(row.percent_of_formula),
+                }));
+            }
+
             const residualWaterWeight = this.drySoapResidualWaterWeight;
             const rows = (this.activeIngredientListVariant?.ingredient_rows ?? [])
                 .map((row) => ({
@@ -205,6 +250,14 @@ export function createPresentationSection() {
         },
 
         get drySoapDeclarationRows() {
+            if (this.isCosmeticFormula) {
+                return this.declarationRows.map((row) => ({
+                    ...row,
+                    adjusted_weight: this.oilWeight * (this.number(row.percent_of_formula) / 100),
+                    percent_of_dry_basis: this.number(row.percent_of_formula),
+                }));
+            }
+
             const formulaWeight = this.number(this.labelingBasis?.formula_weight ?? this.finalBatchWeight());
             const ingredientTotalWeight = this.drySoapIngredientTotalWeight;
 

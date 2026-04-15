@@ -34,9 +34,9 @@ class RecipeWorkbenchService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function phaseBlueprints(): array
+    public function phaseBlueprints(?ProductFamily $productFamily = null): array
     {
-        return $this->recipeWorkbenchPhaseBlueprints->all();
+        return $this->recipeWorkbenchPhaseBlueprints->all($productFamily);
     }
 
     /**
@@ -128,14 +128,14 @@ class RecipeWorkbenchService
 
     public function saveDraft(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
-        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload);
+        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, false);
 
         return $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
     }
 
     public function saveRecipe(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
-        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload);
+        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true);
 
         return $this->recipeVersionPublisher->publish($user, $productFamily, $normalizedPayload, $recipe);
     }
@@ -209,8 +209,10 @@ class RecipeWorkbenchService
             $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId),
         );
 
-        return $this->recipeWorkbenchPayloadNormalizer->normalize($currentDraftSavePayload) !==
-            $this->recipeWorkbenchPayloadNormalizer->normalize($targetVersionSavePayload);
+        $productFamily = $recipe->productFamily()->withoutGlobalScopes()->firstOrFail();
+
+        return $this->recipeWorkbenchPayloadNormalizer->normalize($currentDraftSavePayload, $productFamily, false) !==
+            $this->recipeWorkbenchPayloadNormalizer->normalize($targetVersionSavePayload, $productFamily, false);
     }
 
     public function restoreSavedFormula(User $user, Recipe $recipe, int $versionId): RecipeVersion
@@ -226,6 +228,8 @@ class RecipeWorkbenchService
                 $this->recipeWorkbenchDraftPayloadMapper->toSavePayload(
                     $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId),
                 ),
+                $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
+                true,
             ),
         );
 

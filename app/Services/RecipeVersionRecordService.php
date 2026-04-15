@@ -12,10 +12,11 @@ use Illuminate\Support\Str;
 
 class RecipeVersionRecordService
 {
-    public function createRecipe(User $user, ProductFamily $productFamily, string $name): Recipe
+    public function createRecipe(User $user, ProductFamily $productFamily, string $name, ?int $productTypeId = null): Recipe
     {
         $recipe = new Recipe([
             'product_family_id' => $productFamily->id,
+            'product_type_id' => $productTypeId,
             'name' => $name,
             'slug' => $this->uniqueRecipeSlug($name),
             'owner_type' => OwnerType::User,
@@ -39,8 +40,15 @@ class RecipeVersionRecordService
         array $normalizedPayload,
         bool $isDraft,
     ): void {
+        if ($recipe->product_type_id !== ($normalizedPayload['product_type_id'] ?? null)) {
+            $recipe->product_type_id = $normalizedPayload['product_type_id'] ?? null;
+        }
+
         if ($recipe->name !== $normalizedPayload['name']) {
             $recipe->name = $normalizedPayload['name'];
+        }
+
+        if ($recipe->isDirty()) {
             $recipe->save();
         }
 

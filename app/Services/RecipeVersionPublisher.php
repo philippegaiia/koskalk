@@ -43,6 +43,7 @@ class RecipeVersionPublisher
                 $user,
                 $productFamily,
                 $normalizedPayload['name'],
+                $normalizedPayload['product_type_id'] ?? null,
             );
 
             $draftVersion = RecipeVersion::withoutGlobalScopes()

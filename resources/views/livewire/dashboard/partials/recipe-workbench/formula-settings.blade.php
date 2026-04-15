@@ -1,4 +1,52 @@
+@php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
+
 <section class="sk-card">
+@if ($isCosmeticWorkbench)
+	 <div class="p-5">
+	 <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+	 <div class="sk-inset p-4">
+	 <p class="sk-eyebrow">Batch weight</p>
+	 <div class="mt-3 flex gap-2">
+	 <button type="button" @click="oilUnit = 'g'" :class="oilUnit === 'g' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">g</button>
+	 <button type="button" @click="oilUnit = 'oz'" :class="oilUnit === 'oz' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">oz</button>
+	 <button type="button" @click="oilUnit = 'lb'" :class="oilUnit === 'lb' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">lb</button>
+	 </div>
+	 <input x-model="oilWeight" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); oilWeight = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+	 </div>
+	 <div class="sk-inset p-4">
+	 <p class="sk-eyebrow">Entry mode</p>
+	 <div class="mt-3 flex flex-wrap gap-2">
+	 <button type="button" @click="editMode = 'percentage'" :class="editMode === 'percentage' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">% formula</button>
+	 <button type="button" @click="editMode = 'weight'" :class="editMode === 'weight' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Weight</button>
+	 </div>
+	 </div>
+	 <div class="sk-inset p-4">
+	 <p class="sk-eyebrow">Exposure</p>
+	 <div class="mt-3 flex flex-wrap gap-2">
+	 <button type="button" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Rinse-off</button>
+	 <button type="button" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-2 text-xs font-medium transition">Leave-on</button>
+	 </div>
+	 </div>
+	 <div class="sk-inset p-4">
+	 <p class="sk-eyebrow">IFRA context</p>
+	 <template x-if="$data.ifraProductCategories?.length">
+	 <select :value="`${selectedIfraProductCategoryId ?? ''}`" @change="selectedIfraProductCategoryId = $event.target.value" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">
+	 <option value="">No IFRA context</option>
+ <template x-for="category in $data.ifraProductCategories" :key="category.id">
+ <option :value="String(category.id)" x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></option>
+ </template>
+ </select>
+ </template>
+ <template x-if="! $data.ifraProductCategories?.length">
+ <p class="mt-3 text-xs text-[var(--color-ink-soft)]">IFRA categories appear once the compliance catalog is populated.</p>
+ </template>
+ <template x-if="selectedIfraProductCategory">
+	 <span class="mt-2 inline-block rounded-full border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-strong)]" x-text="`Cat ${selectedIfraProductCategory.code}`"></span>
+	 </template>
+	 </div>
+	 </div>
+	 </div>
+@else
  <div class="p-5">
  <div class="grid gap-4 xl:grid-cols-5">
  <div class="sk-inset p-4">
@@ -84,4 +132,5 @@
  </div>
  </div>
  </div>
+@endif
 </section>

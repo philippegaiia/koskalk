@@ -14,6 +14,7 @@ class RecipeWorkbenchDraftPayloadMapper
             'manufacturing_mode' => $draft['manufacturingMode'] ?? 'saponify_in_formula',
             'exposure_mode' => $draft['exposureMode'] ?? 'rinse_off',
             'regulatory_regime' => $draft['regulatoryRegime'] ?? 'eu',
+            'product_type_id' => $draft['productTypeId'] ?? null,
             'oil_weight' => $draft['oilWeight'] ?? 0,
             'lye_type' => $draft['lyeType'] ?? 'naoh',
             'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
@@ -38,6 +39,7 @@ class RecipeWorkbenchDraftPayloadMapper
             'manufacturing_mode' => $draft['manufacturingMode'] ?? 'saponify_in_formula',
             'exposure_mode' => $draft['exposureMode'] ?? 'rinse_off',
             'regulatory_regime' => $draft['regulatoryRegime'] ?? 'eu',
+            'product_type_id' => $draft['productTypeId'] ?? null,
             'editing_mode' => ($draft['editMode'] ?? 'percentage') === 'weight' ? 'weight' : 'percentage',
             'lye_type' => $draft['lyeType'] ?? 'naoh',
             'koh_purity_percentage' => $draft['kohPurity'] ?? 90,
@@ -46,7 +48,25 @@ class RecipeWorkbenchDraftPayloadMapper
             'water_value' => $draft['waterValue'] ?? 38,
             'superfat' => $draft['superfat'] ?? 5,
             'ifra_product_category_id' => $draft['selectedIfraProductCategoryId'] ?? null,
+            'phases' => $draft['phases'] ?? $this->phasesFromItems($draft['phaseItems'] ?? []),
             'phase_items' => $draft['phaseItems'] ?? [],
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $phaseItems
+     * @return array<int, array{key: string, name: string}>
+     */
+    private function phasesFromItems(array $phaseItems): array
+    {
+        return collect($phaseItems)
+            ->keys()
+            ->filter(fn (mixed $phaseKey): bool => is_string($phaseKey))
+            ->map(fn (string $phaseKey): array => [
+                'key' => $phaseKey,
+                'name' => str($phaseKey)->replace('_', ' ')->title()->toString(),
+            ])
+            ->values()
+            ->all();
     }
 }

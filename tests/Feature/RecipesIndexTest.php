@@ -1,15 +1,18 @@
 <?php
 
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
+use App\Services\MediaStorage;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -225,4 +228,142 @@ it('uses one ingredient stats query and skips the unused active product families
 
     expect($ingredientQueries)->toHaveCount(1)
         ->and($activeProductFamilyQueries)->toHaveCount(0);
+});
+
+it('can search recipes by product type name', function () {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'slug' => 'cosmetic',
+        'name' => 'Cosmetic',
+    ]);
+    $lotionType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+    ]);
+    $balmType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Balm / salve',
+        'slug' => 'balm-salve',
+    ]);
+
+    Recipe::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_type_id' => $lotionType->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Daily Moisturizer',
+        'slug' => 'daily-moisturizer',
+    ]);
+    Recipe::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_type_id' => $balmType->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Winter Skin Rescue',
+        'slug' => 'winter-skin-rescue',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.index', ['q' => 'lotion']))
+        ->assertSuccessful()
+        ->assertSee('Daily Moisturizer')
+        ->assertSee('Cream / lotion')
+        ->assertDontSee('Winter Skin Rescue');
+});
+
+it('filters recipes by product family and product type', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'slug' => 'cosmetic',
+        'name' => 'Cosmetic',
+    ]);
+    $lotionType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+    ]);
+    $balmType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Balm / salve',
+        'slug' => 'balm-salve',
+    ]);
+
+    Recipe::factory()->create([
+        'product_family_id' => $soapFamily->id,
+        'product_type_id' => null,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Olive Bar',
+        'slug' => 'olive-bar',
+    ]);
+    Recipe::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_type_id' => $lotionType->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Daily Moisturizer',
+        'slug' => 'daily-moisturizer',
+    ]);
+    Recipe::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_type_id' => $balmType->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Winter Skin Rescue',
+        'slug' => 'winter-skin-rescue',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.index', [
+            'family' => 'cosmetic',
+            'type' => 'cream-lotion',
+        ]))
+        ->assertSuccessful()
+        ->assertSee('Daily Moisturizer')
+        ->assertDontSee('Olive Bar')
+        ->assertDontSee('Winter Skin Rescue');
+});
+
+it('uses the product type fallback image when the recipe has no uploaded image', function () {
+    Storage::fake(MediaStorage::publicDisk());
+
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'slug' => 'cosmetic',
+        'name' => 'Cosmetic',
+    ]);
+    $lotionType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+        'fallback_image_path' => 'product-types/fallback-images/cream-lotion.webp',
+    ]);
+
+    Storage::disk(MediaStorage::publicDisk())->put($lotionType->fallback_image_path, 'fake-webp');
+
+    Recipe::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_type_id' => $lotionType->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Daily Moisturizer',
+        'slug' => 'daily-moisturizer',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.index'))
+        ->assertSuccessful()
+        ->assertSee('product-types/fallback-images/cream-lotion.webp', false)
+        ->assertSee('Cream / lotion');
 });

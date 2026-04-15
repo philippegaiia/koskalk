@@ -21,6 +21,7 @@ use Illuminate\Support\Collection;
 
 #[Fillable([
     'product_family_id',
+    'product_type_id',
     'owner_type',
     'owner_id',
     'workspace_id',
@@ -56,6 +57,11 @@ class Recipe extends Model implements HasRichContent
     public function productFamily(): BelongsTo
     {
         return $this->belongsTo(ProductFamily::class);
+    }
+
+    public function productType(): BelongsTo
+    {
+        return $this->belongsTo(ProductType::class);
     }
 
     public function brand(): BelongsTo

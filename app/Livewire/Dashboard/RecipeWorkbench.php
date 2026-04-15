@@ -3,6 +3,7 @@
 namespace App\Livewire\Dashboard;
 
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
@@ -36,6 +37,10 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     public ?int $recipeId = null;
 
+    public string $productFamilySlug = 'soap';
+
+    public ?string $productTypeSlug = null;
+
     /**
      * @var array<string, mixed>|null
      */
@@ -45,9 +50,13 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     public string $recipeContentStatus = 'idle';
 
-    private bool $hasResolvedSoapFamily = false;
+    private bool $hasResolvedProductFamily = false;
 
-    private ?ProductFamily $resolvedSoapFamily = null;
+    private ?ProductFamily $resolvedProductFamily = null;
+
+    private bool $hasResolvedProductType = false;
+
+    private ?ProductType $resolvedProductType = null;
 
     private bool $hasResolvedCurrentUser = false;
 
@@ -57,10 +66,12 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     private ?Recipe $resolvedCurrentRecipe = null;
 
-    public function mount(?Recipe $recipe = null): void
+    public function mount(?Recipe $recipe = null, string $productFamilySlug = 'soap', ?string $productTypeSlug = null): void
     {
         $this->actorUserId = $this->currentUser()?->id;
         $this->recipeId = $recipe?->id;
+        $this->productFamilySlug = $recipe?->productFamily?->slug ?? $productFamilySlug;
+        $this->productTypeSlug = $recipe?->productType?->slug ?? $productTypeSlug;
         $this->flushResolvedContext();
         $this->form->fill($this->recipeContentFormState($recipe));
     }
@@ -85,8 +96,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         try {
             $recipeVersion = $recipeWorkbenchService->saveDraft(
                 $user,
-                $this->soapFamily(),
-                $draft,
+                $this->productFamily(),
+                $this->draftWithWorkbenchContext($draft),
                 $this->currentRecipe(),
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
@@ -134,8 +145,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         try {
             $recipeVersion = $recipeWorkbenchService->saveRecipe(
                 $user,
-                $this->soapFamily(),
-                $draft,
+                $this->productFamily(),
+                $this->draftWithWorkbenchContext($draft),
                 $this->currentRecipe(),
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
@@ -190,8 +201,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         try {
             $recipeVersion = $recipeWorkbenchService->duplicate(
                 $user,
-                $this->soapFamily(),
-                $draft,
+                $this->productFamily(),
+                $this->draftWithWorkbenchContext($draft),
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
             return $this->saveErrorResponse($exception);
@@ -449,21 +460,53 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         return view('livewire.dashboard.recipe-workbench', [
             'workbench' => $recipeWorkbenchViewDataBuilder->build(
-                $this->soapFamily(),
+                $this->productFamily(),
                 $recipe,
                 $this->currentUser(),
+                $this->productType(),
             ),
         ]);
     }
 
-    private function soapFamily(): ProductFamily
+    private function productFamily(): ProductFamily
     {
-        if (! $this->hasResolvedSoapFamily) {
-            $this->resolvedSoapFamily = app(RecipeWorkbenchContextResolver::class)->soapFamily();
-            $this->hasResolvedSoapFamily = true;
+        if (! $this->hasResolvedProductFamily) {
+            $recipe = $this->currentRecipe();
+
+            $this->resolvedProductFamily = $recipe?->productFamily
+                ?? app(RecipeWorkbenchContextResolver::class)->productFamily($this->productFamilySlug);
+            $this->hasResolvedProductFamily = true;
         }
 
-        return $this->resolvedSoapFamily;
+        return $this->resolvedProductFamily;
+    }
+
+    private function productType(): ?ProductType
+    {
+        if (! $this->hasResolvedProductType) {
+            $recipe = $this->currentRecipe();
+
+            $this->resolvedProductType = $recipe?->productType
+                ?? app(RecipeWorkbenchContextResolver::class)->productType($this->productFamily(), $this->productTypeSlug);
+            $this->hasResolvedProductType = true;
+        }
+
+        return $this->resolvedProductType;
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    private function draftWithWorkbenchContext(array $draft): array
+    {
+        $productType = $this->productType();
+
+        if ($productType instanceof ProductType) {
+            $draft['product_type_id'] = $productType->id;
+        }
+
+        return $draft;
     }
 
     private function currentRecipe(): ?Recipe
@@ -623,8 +666,10 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $this->resolvedCurrentRecipe = null;
         $this->hasResolvedCurrentUser = false;
         $this->resolvedCurrentUser = null;
-        $this->hasResolvedSoapFamily = false;
-        $this->resolvedSoapFamily = null;
+        $this->hasResolvedProductFamily = false;
+        $this->resolvedProductFamily = null;
+        $this->hasResolvedProductType = false;
+        $this->resolvedProductType = null;
     }
 
     /**

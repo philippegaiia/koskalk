@@ -152,6 +152,16 @@ class InciGenerationService
         array $basis,
         ?array $soapCalculation,
     ): array {
+        if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') === 'blend_only') {
+            return $this->buildListVariants([
+                [
+                    'key' => self::INCORPORATED_LIST_VARIANT_KEY,
+                    'label' => 'Ingredient list',
+                    'note' => 'Uses the ingredients as entered on the full formula basis.',
+                ],
+            ], $payload, $rowContexts, $basis, $soapCalculation);
+        }
+
         $variantDefinitions = [
             [
                 'key' => self::DEFAULT_LIST_VARIANT_KEY,
@@ -165,6 +175,62 @@ class InciGenerationService
             ],
         ];
 
+        return $this->buildListVariants($variantDefinitions, $payload, $rowContexts, $basis, $soapCalculation);
+    }
+
+    /**
+     * @param  array<int, array{key: string, label: string, note: string}>  $variantDefinitions
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }>  $rowContexts
+     * @param  array{
+     *     label: string,
+     *     note: string,
+     *     formula_weight: float,
+     *     threshold_percent: float
+     * }  $basis
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array<int, array{
+     *     key: string,
+     *     label: string,
+     *     note: string,
+     *     ingredient_rows: array<int, array{
+     *         label: string,
+     *         weight: float,
+     *         percent_of_formula: float,
+     *         kind: string,
+     *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>
+     *     }>,
+     *     declaration_rows: array<int, array{
+     *         label: string,
+     *         percent_of_formula: float,
+     *         threshold_percent: float,
+     *         exceeds_threshold: bool,
+     *         included_in_inci: bool,
+     *         suppressed_by_existing_label: bool,
+     *         status_label: string,
+     *         source_ingredients: array<int, string>,
+     *         source_is_user_owned: array<int, bool>,
+     *         notes: string|null
+     *     }>,
+     *     final_labels: array<int, string>,
+     *     final_label_text: string,
+     *     warnings: array<int, string>
+     * }>
+     */
+    private function buildListVariants(
+        array $variantDefinitions,
+        array $payload,
+        array $rowContexts,
+        array $basis,
+        ?array $soapCalculation,
+    ): array {
         return array_map(function (array $definition) use ($payload, $rowContexts, $basis, $soapCalculation): array {
             $ingredientRowsState = $this->ingredientRowsState(
                 $payload,
@@ -370,9 +436,7 @@ class InciGenerationService
 
         $contexts = [];
 
-        foreach (['saponified_oils', 'additives', 'fragrance'] as $phaseKey) {
-            $rows = is_array($phaseItems[$phaseKey] ?? null) ? $phaseItems[$phaseKey] : [];
-
+        foreach ($this->phaseItemRows($phaseItems) as $phaseKey => $rows) {
             foreach ($rows as $row) {
                 if (! is_array($row)) {
                     continue;
@@ -413,9 +477,7 @@ class InciGenerationService
         $phaseItems = is_array($payload['phase_items'] ?? null) ? $payload['phase_items'] : [];
         $ingredientIds = [];
 
-        foreach (['saponified_oils', 'additives', 'fragrance'] as $phaseKey) {
-            $rows = is_array($phaseItems[$phaseKey] ?? null) ? $phaseItems[$phaseKey] : [];
-
+        foreach ($this->phaseItemRows($phaseItems) as $rows) {
             foreach ($rows as $row) {
                 if (! is_array($row) || ! filled($row['ingredient_id'] ?? null)) {
                     continue;
@@ -426,6 +488,18 @@ class InciGenerationService
         }
 
         $this->preloadIngredientGraph($ingredientIds);
+    }
+
+    /**
+     * @param  array<string, mixed>  $phaseItems
+     * @return array<string, array<int, mixed>>
+     */
+    private function phaseItemRows(array $phaseItems): array
+    {
+        return collect($phaseItems)
+            ->filter(fn (mixed $rows, mixed $phaseKey): bool => is_string($phaseKey) && is_array($rows))
+            ->map(fn (array $rows): array => $rows)
+            ->all();
     }
 
     /**
@@ -593,10 +667,12 @@ class InciGenerationService
         $manufacturingMode = (string) ($payload['manufacturing_mode'] ?? 'saponify_in_formula');
 
         if ($manufacturingMode !== 'saponify_in_formula') {
+            $declaredFormulaWeight = (float) ($payload['oil_weight'] ?? 0);
+
             return [
                 'label' => 'Current formula basis',
-                'note' => 'Percentages use the current finished blend basis from the live formula rows.',
-                'formula_weight' => round($phaseWeight, 5),
+                'note' => 'Percentages use the current finished blend basis from the total batch weight.',
+                'formula_weight' => round($declaredFormulaWeight > 0 ? $declaredFormulaWeight : $phaseWeight, 5),
                 'threshold_percent' => $thresholdPercent,
             ];
         }

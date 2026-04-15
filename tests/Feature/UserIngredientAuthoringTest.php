@@ -25,6 +25,8 @@ it('creates a minimal private user ingredient from the public editor', function 
 
     expect(method_exists($component->instance(), 'mountAction'))->toBeTrue();
 
+    $component->assertSee('Carrier oils and soap calculation');
+
     $component
         ->set('data.name', 'French Green Clay')
         ->set('data.category', IngredientCategory::Clay->value)
@@ -182,17 +184,55 @@ it('creates missing composite components as private ingredients before they are 
 it('keeps user carrier oils out of the soap saponification lane', function () {
     $user = User::factory()->create();
 
+    $ingredient = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'My experimental oil',
+        'category' => IngredientCategory::CarrierOil->value,
+        'inci_name' => 'EXPERIMENTAL OIL',
+        'sap_profile' => [
+            'koh_sap_value' => 0.188,
+            'iodine_value' => 86.4,
+            'ins_value' => 102.8,
+        ],
+        'fatty_acid_entries' => [],
+    ], $user);
+
+    expect($ingredient->is_potentially_saponifiable)->toBeFalse()
+        ->and($ingredient->availableWorkbenchPhases())
+        ->toContain('additives')
+        ->not->toContain('saponified_oils');
+});
+
+it('normalizes imported CAS and EC check digit padding when saving a user ingredient', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive oil virgin',
+        'inci_name' => 'Olea europaea fruit oil',
+        'cas_number' => '8001-25-00',
+        'ec_number' => '232-277-00',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'is_potentially_saponifiable' => false,
+        'source_file' => 'user',
+        'source_key' => 'USR-OLIVE',
+        'is_potentially_saponifiable' => true,
     ]);
 
-    expect($ingredient->availableWorkbenchPhases())
-        ->toContain('additives')
-        ->not->toContain('saponified_oils');
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->set('data.name', 'Olive oil virgin')
+        ->set('data.category', IngredientCategory::CarrierOil->value)
+        ->set('data.inci_name', 'Olea europaea fruit oil')
+        ->set('data.cas_number', '8001-25-00')
+        ->set('data.ec_number', '232-277-00')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $ingredient->refresh();
+
+    expect($ingredient->cas_number)->toBe('8001-25-0')
+        ->and($ingredient->ec_number)->toBe('232-277-0');
 });
 
 it('deletes replaced ingredient media from storage during update', function () {

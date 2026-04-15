@@ -209,6 +209,23 @@ class CarrierOilSeeder extends Seeder
             return;
         }
 
+        $fattyAcidEntries = $ingredient->fattyAcidEntries()
+            ->with('fattyAcid:id,iodine_factor')
+            ->get();
+
+        if ($iodineValue === null && $kohSapValue !== null) {
+            $iodineValue = $fattyAcidEntries
+                ->sum(function (IngredientFattyAcid $entry): float {
+                    $factor = $entry->fattyAcid?->iodine_factor;
+
+                    return $factor !== null ? $entry->percentage * $factor : 0.0;
+                });
+        }
+
+        if ($insValue === null && $iodineValue !== null && $kohSapValue !== null) {
+            $insValue = $iodineValue + ($kohSapValue * 1000) - 1000;
+        }
+
         IngredientSapProfile::query()->updateOrCreate(
             ['ingredient_id' => $ingredient->id],
             [

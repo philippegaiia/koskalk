@@ -25,9 +25,11 @@
             "gondoic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.188,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.134,
+        "inci_name": "Prunus Amygdalus Dulcis (Sweet Almond) Oil"
     },
     {
         "source_key": "andiroba_oil",
@@ -38,9 +40,10 @@
             "oleic": 51,
             "linoleic": 10
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.188,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.134
     },
     {
         "source_key": "apricot_oil",
@@ -55,9 +58,11 @@
             "arachidic": 0.2,
             "gondoic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.195,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.139,
+        "inci_name": "Prunus Armeniaca (Apricot) Kernel Oil"
     },
     {
         "source_key": "argan_oil",
@@ -73,9 +78,11 @@
             "gondoic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.191,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.136,
+        "inci_name": "Argania Spinosa (Argan) Kernel Oil"
     },
     {
         "source_key": "avocado_butter",
@@ -86,9 +93,10 @@
             "linoleic": 6,
             "linolenic": 2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.187,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.133
     },
     {
         "source_key": "avocado_oil",
@@ -101,9 +109,11 @@
             "linolenic": 1,
             "gondoic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.192,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.137,
+        "inci_name": "Persea Gratissima (Avocado) Oil"
     },
     {
         "source_key": "babassu_oil",
@@ -119,9 +129,11 @@
             "linoleic": 3,
             "arachidic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.245,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.175,
+        "inci_name": "Orbignya Oleifera (Babassu) Seed Oil"
     },
     {
         "source_key": "bacaba_kernel_oil",
@@ -134,9 +146,10 @@
             "linolenic": 2,
             "arachidic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.247,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.176
     },
     {
         "source_key": "bacaba_pulp_oil",
@@ -179,9 +192,11 @@
             "behenic": 0.6000000000000001,
             "erucic": 0.4
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.2,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.143,
+        "inci_name": "Adansonia Digitata (Baobab) Seed Oil"
     },
     {
         "source_key": "beef_tallow",
@@ -197,9 +212,10 @@
             "arachidic": 0.8,
             "gondoic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.2,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.143
     },
     {
         "source_key": "black_cumin_oil",
@@ -213,9 +229,11 @@
             "linolenic": 0.4,
             "arachidic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.195,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.139,
+        "inci_name": "Nigella Sativa (Black Cumin) Seed Oil"
     },
     {
         "source_key": "borago_oil",
@@ -248,9 +266,11 @@
             "gondoic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Bertholletia Excelsa (Brazil) Nut Oil"
     },
     {
         "source_key": "buriti_oil",
@@ -263,9 +283,11 @@
             "linoleic": 1,
             "linolenic": 1
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.223,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.159,
+        "inci_name": "Mauritia Flexuosa (Buriti) Fruit Oil"
     },
     {
         "source_key": "calendula_oil",
@@ -289,9 +311,11 @@
             "linoleic": 19,
             "linolenic": 45
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.172,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.123,
+        "inci_name": "Camelina Sativa (Camelina) Seed Oil"
     },
     {
         "source_key": "camellia_tea_seed_oil",
@@ -308,9 +332,10 @@
             "behenic": 0.2,
             "erucic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.193,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138
     },
     {
         "source_key": "canola_oil",
@@ -325,9 +350,10 @@
             "behenic": 0.4,
             "erucic": 0.4
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.186,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.133
     },
     {
         "source_key": "castor_oil",
@@ -338,9 +364,11 @@
             "linoleic": 4,
             "ricinoleic": 87
         },
-        "koh_sap_value": 0.1823,
+        "koh_sap_value": 0.18,
         "iodine_value": 95,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.128,
+        "inci_name": "Ricinus Communis (Castor) Seed Oil"
     },
     {
         "source_key": "cherry_kernel_oil",
@@ -355,9 +383,11 @@
             "linolenic": 0.2,
             "arachidic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Prunus Avium (Cherry) Kernel Oil"
     },
     {
         "source_key": "chicken_fat",
@@ -371,9 +401,10 @@
             "linolenic": 2,
             "gondoic": 1
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.195,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.139
     },
     {
         "source_key": "cocoa_butter",
@@ -391,9 +422,10 @@
             "arachidic": 1,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.194,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138
     },
     {
         "source_key": "coconut_oil",
@@ -410,9 +442,11 @@
             "linoleic": 2,
             "arachidic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.257,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.183,
+        "inci_name": "Cocos Nucifera (Coconut) Oil"
     },
     {
         "source_key": "copa_ba_oil",
@@ -445,9 +479,10 @@
             "gondoic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.192,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.137
     },
     {
         "source_key": "coroba_kernell_oil",
@@ -479,9 +514,10 @@
             "arachidic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.194,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138
     },
     {
         "source_key": "crisco",
@@ -491,9 +527,10 @@
             "oleic": 35,
             "linoleic": 42
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.193,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138
     },
     {
         "source_key": "cucumber_seed_oil",
@@ -509,9 +546,11 @@
             "gondoic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.185,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.132,
+        "inci_name": "Cucumis Sativus (Cucumber) Oil"
     },
     {
         "source_key": "cupuacu_butter",
@@ -526,9 +565,11 @@
             "gondoic": 0.4,
             "behenic": 2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.192,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.137,
+        "inci_name": "Theobroma Grandiflorum (Cupuacu) Seed Butter"
     },
     {
         "source_key": "duck_fat",
@@ -542,9 +583,10 @@
             "linolenic": 1,
             "gondoic": 1
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.194,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138
     },
     {
         "source_key": "emu_oil",
@@ -557,9 +599,10 @@
             "linoleic": 15,
             "linolenic": 1
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135
     },
     {
         "source_key": "evening_primrose_oil",
@@ -572,9 +615,11 @@
             "gamma_linolenic": 0.2,
             "arachidic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Oenothera Biennis (Evening Primrose) Oil"
     },
     {
         "source_key": "fractionated_coconut_oil",
@@ -583,9 +628,11 @@
             "lauric": 2,
             "myristic": 1
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.348,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.248,
+        "inci_name": "Caprylic/Capric Triglyceride"
     },
     {
         "source_key": "grape_seed_oil",
@@ -601,9 +648,11 @@
             "gondoic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Vitis Vinifera (Grape) Seed Oil, Tocopherol"
     },
     {
         "source_key": "hazelnut_oil",
@@ -617,9 +666,11 @@
             "linolenic": 0.4,
             "gondoic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.195,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.139,
+        "inci_name": "Corylus Avellana (Hazel) Seed Oil"
     },
     {
         "source_key": "hemp_oil",
@@ -632,9 +683,11 @@
             "arachidic": 0.6000000000000001,
             "behenic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.193,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138,
+        "inci_name": "Cannabis Sativa (Hemp) Seed Oil"
     },
     {
         "source_key": "illipe_butter",
@@ -645,9 +698,10 @@
             "linoleic": 2,
             "arachidic": 2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.185,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.132
     },
     {
         "source_key": "jojoba_oil",
@@ -659,9 +713,11 @@
             "arachidic": 30,
             "behenic": 14
         },
-        "koh_sap_value": 0.0981,
-        "iodine_value": 46,
-        "ins_value": null
+        "koh_sap_value": 0.092,
+        "iodine_value": 47,
+        "ins_value": null,
+        "naoh_sap_value": 0.066,
+        "inci_name": "Simmondsia chinensis (Jojoba) Seed Oil"
     },
     {
         "source_key": "karanja_oil",
@@ -675,9 +731,11 @@
             "gondoic": 1,
             "behenic": 4
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.183,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.13,
+        "inci_name": "Pongamia Glabra (Karanja) Seed Oil"
     },
     {
         "source_key": "kokum_butter",
@@ -687,9 +745,10 @@
             "oleic": 40,
             "linoleic": 2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135
     },
     {
         "source_key": "kukui_nut_oil",
@@ -700,9 +759,11 @@
             "linoleic": 42,
             "linolenic": 29
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.189,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Aleurites Moluccana (Kukui) Nut Oil"
     },
     {
         "source_key": "lard",
@@ -716,9 +777,10 @@
             "linolenic": 1,
             "arachidic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.198,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.141
     },
     {
         "source_key": "laurel_berries_oil",
@@ -732,9 +794,10 @@
             "linoleic": 11,
             "linolenic": 18
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.198,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.141
     },
     {
         "source_key": "licuri_coconut_oil",
@@ -764,9 +827,11 @@
             "arachidic": 0.6000000000000001,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Linum Usitatissimum (Linseed) Seed Oil"
     },
     {
         "source_key": "macadamia_nut_oil",
@@ -784,9 +849,11 @@
             "behenic": 0.8,
             "erucic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.188,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.134,
+        "inci_name": "Macadamia Integrifolia (Macadamia) Nut Oil"
     },
     {
         "source_key": "mango_butter",
@@ -814,9 +881,11 @@
             "arachidic": 3,
             "behenic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.193,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138,
+        "inci_name": "Mangifera Indica (Mango) Seed Butter"
     },
     {
         "source_key": "maracuja_passionfruit_oil",
@@ -832,9 +901,11 @@
             "gondoic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.18,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.128,
+        "inci_name": "Passiflora Edulis (Passionfruit) Seed Oil"
     },
     {
         "source_key": "marula_oil",
@@ -850,9 +921,11 @@
             "behenic": 0.2,
             "erucic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.192,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.137,
+        "inci_name": "Sclerocarya Birrea (Marula) Kernel Oil"
     },
     {
         "source_key": "moringa_oil",
@@ -869,9 +942,11 @@
             "behenic": 6,
             "erucic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.192,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.137,
+        "inci_name": "Moringa Oleifera Seed Oil"
     },
     {
         "source_key": "mowrah_butter",
@@ -882,9 +957,10 @@
             "linoleic": 11,
             "arachidic": 2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.194,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138
     },
     {
         "source_key": "murumuru_butter",
@@ -899,9 +975,11 @@
             "oleic": 11,
             "linoleic": 0.4
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.275,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.196,
+        "inci_name": "Astrocaryum Murumuru Seed Butter"
     },
     {
         "source_key": "mustard_oil",
@@ -917,9 +995,10 @@
             "behenic": 2,
             "erucic": 42
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.173,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.123
     },
     {
         "source_key": "neem_tree_oil",
@@ -935,9 +1014,11 @@
             "gondoic": 0.6000000000000001,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.195,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.139,
+        "inci_name": "Azadirachta Indica (Neem) Kernel Oil"
     },
     {
         "source_key": "olive_oil",
@@ -952,9 +1033,11 @@
             "gondoic": 0.4,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Olea Europaea (Olive) Fruit Oil"
     },
     {
         "source_key": "olive_pomace_oil",
@@ -1004,9 +1087,10 @@
             "arachidic": 0.2,
             "gondoic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.247,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.176
     },
     {
         "source_key": "palm_oil",
@@ -1024,9 +1108,11 @@
             "behenic": 0.2,
             "erucic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.199,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.142,
+        "inci_name": "Elaeis guineensis Palm kernel oil"
     },
     {
         "source_key": "palm_olein",
@@ -1075,9 +1161,11 @@
             "arachidic": 0.2,
             "gondoic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.191,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.136,
+        "inci_name": "Prunus Persica (Peach) Kernel Oil"
     },
     {
         "source_key": "peanut_oil",
@@ -1091,9 +1179,10 @@
             "gondoic": 1,
             "behenic": 3
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.192,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.137
     },
     {
         "source_key": "pecan_oil",
@@ -1107,9 +1196,10 @@
             "arachidic": 0.2,
             "gondoic": 0.4
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135
     },
     {
         "source_key": "pequi_oil",
@@ -1122,9 +1212,11 @@
             "linoleic": 1,
             "linolenic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.203,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.145,
+        "inci_name": "Caryocar Braziliensis (Pequi) Fruit Oil"
     },
     {
         "source_key": "pistachio_oil",
@@ -1134,9 +1226,10 @@
             "oleic": 63,
             "linoleic": 25
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.186,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.133
     },
     {
         "source_key": "poppyseed_oil",
@@ -1150,9 +1243,11 @@
             "linolenic": 0.6000000000000001,
             "arachidic": 0.4
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.163,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.116,
+        "inci_name": "Papaver Somniferum (Poppy) Seed Oil"
     },
     {
         "source_key": "pracaxi_oil",
@@ -1179,9 +1274,11 @@
             "oleic": 32,
             "linoleic": 49
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.195,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.139,
+        "inci_name": "Cucurbita Pepo (Pumpkin) Seed Oil"
     },
     {
         "source_key": "rice_bran_oil",
@@ -1194,9 +1291,11 @@
             "linoleic": 36,
             "linolenic": 0.8
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.187,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.133,
+        "inci_name": "Oryza sativa (Rice) Bran Oil"
     },
     {
         "source_key": "roasted_coffee_oil",
@@ -1206,9 +1305,10 @@
             "oleic": 9,
             "linoleic": 40
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.185,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.132
     },
     {
         "source_key": "rosehip_oil",
@@ -1224,9 +1324,11 @@
             "gondoic": 0.2,
             "behenic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.187,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.133,
+        "inci_name": "Rosa Canina (Rose Hip) Seed Oil"
     },
     {
         "source_key": "sacha_inchi_oil",
@@ -1238,9 +1340,11 @@
             "linoleic": 37,
             "linolenic": 44
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.188,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.134,
+        "inci_name": "Plukenetia Volubilis (Sacha Inchi) Seed Oil"
     },
     {
         "source_key": "safflower_oil",
@@ -1253,9 +1357,10 @@
             "linolenic": 0.2,
             "arachidic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.192,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.137
     },
     {
         "source_key": "safflower_oil_high_oleic",
@@ -1265,9 +1370,11 @@
             "oleic": 77,
             "linoleic": 15
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.188,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.134,
+        "inci_name": "Carthamus tinctorus (Safflower) Oil"
     },
     {
         "source_key": "sal_butter",
@@ -1278,9 +1385,10 @@
             "linoleic": 3,
             "arachidic": 9
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.185,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.132
     },
     {
         "source_key": "seeds_oil",
@@ -1304,9 +1412,11 @@
             "linoleic": 40,
             "arachidic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.188,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.134,
+        "inci_name": "Sesamum Indicum (Sesame) Seed Oil"
     },
     {
         "source_key": "shea_butter",
@@ -1317,9 +1427,11 @@
             "linoleic": 6,
             "arachidic": 1
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.179,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.128,
+        "inci_name": "Butyrospermum Parkii (Shea) Seed Butter"
     },
     {
         "source_key": "soy_oil",
@@ -1337,9 +1449,10 @@
             "behenic": 0.4,
             "erucic": 0.2
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.192,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.137
     },
     {
         "source_key": "soy_oil_hydrogenated",
@@ -1348,9 +1461,11 @@
             "stearic": 14,
             "oleic": 75
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.19,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Glycine soja (Soybean) Oil"
     },
     {
         "source_key": "stearine",
@@ -1374,9 +1489,10 @@
             "arachidic": 1,
             "behenic": 0.8
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.189,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135
     },
     {
         "source_key": "sunflower_oil_high_oleic",
@@ -1386,9 +1502,11 @@
             "oleic": 85,
             "linoleic": 5
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.191,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.136,
+        "inci_name": "Helianthus Annuus (Sunflower) Seed Oil"
     },
     {
         "source_key": "tallow_cow",
@@ -1423,9 +1541,10 @@
             "arachidic": 0.6000000000000001,
             "erucic": 0.6000000000000001
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.194,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.138
     },
     {
         "source_key": "tigernut_oil",
@@ -1525,9 +1644,11 @@
             "linolenic": 10,
             "gondoic": 0.4
         },
-        "koh_sap_value": null,
+        "koh_sap_value": 0.189,
         "iodine_value": null,
-        "ins_value": null
+        "ins_value": null,
+        "naoh_sap_value": 0.135,
+        "inci_name": "Juglans Regia (Walnut) Seed Oil"
     },
     {
         "source_key": "wheatgerm_oil",

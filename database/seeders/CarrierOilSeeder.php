@@ -44,12 +44,20 @@ class CarrierOilSeeder extends Seeder
                 [
                     'category' => IngredientCategory::CarrierOil,
                     'display_name' => $displayName,
-                    'inci_name' => $inciName,
-                    'soap_inci_naoh_name' => $saponifiedNames['naoh'],
-                    'soap_inci_koh_name' => $saponifiedNames['koh'],
                     'is_potentially_saponifiable' => true,
                 ]
             );
+
+            if (empty($ingredient->inci_name)) {
+                $ingredient->inci_name = $inciName;
+            }
+            if (empty($ingredient->soap_inci_naoh_name)) {
+                $ingredient->soap_inci_naoh_name = $saponifiedNames['naoh'];
+            }
+            if (empty($ingredient->soap_inci_koh_name)) {
+                $ingredient->soap_inci_koh_name = $saponifiedNames['koh'];
+            }
+            $ingredient->save();
 
             $fattyAcids = $this->normalizeFattyAcids($row['fatty_acids'] ?? [], $sourceKey, $fattyAcidIdsByKey);
             $this->syncFattyAcids($ingredient, $fattyAcids);

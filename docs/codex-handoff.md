@@ -145,7 +145,24 @@ All 201 tests passed after the latest recipe index product-type pass, but the br
   - IFRA/allergen/restricted-ingredient behavior is warning/reference only in v1; no save/export blocks.
   - Do not add preservative warnings in v1 until the catalog has reliable water/preservative metadata.
   - Water activity calculation may be a later value-add feature, not a v1 dependency.
-- Old CSV/Mendrulandia seeder review findings are deferred/superseded by the fresh curated catalog export decision. Do not spend time polishing the old CSV diff/import path unless it becomes necessary before the new seed/export path exists.
+ - Old CSV/Mendrulandia seeder review findings are deferred/superseded by the fresh curated catalog export decision. Do not spend time polishing the old CSV diff/import path unless it becomes necessary before the new seed/export path exists.
+
+## Carrier Oil Seeder (2026-04-16)
+
+`database/seeders/CarrierOilSeeder` seeds carrier oils from `database/seeders/data/mendrulandia_oils.json` (98 oils with fatty acids, KOH SAP, iodine, INS).
+
+**Seeding behavior:**
+- Uses `updateOrCreate` — existing records are updated, missing records are created.
+- Only fills **empty fields** — manually edited values in Filament are preserved on re-seed.
+- Auto-generates `soap_inci_naoh_name` and `soap_inci_koh_name` from INCI or display name using naming rules. These need manual review in Filament — castor, copaiba, and other exceptions won't be correct.
+- If you delete an oil from the DB and re-seed, it comes back. To permanently remove, delete from the JSON file too.
+
+**INCI lookup:** `app/Data/InciNameLookup.php` — covers ~50 common oils. Extends over time as needed.
+
+**Extraction scripts:**
+- `scripts/extract_mendrulandia_oils.php` — parses Mendrulandia calculator JS
+- `scripts/extract_soapcalc_sap.php` — merges SoapCalc SAP data
+- `scripts/extract_fnwl_sap.php` — merges FNWL saponification chart data
 
 ## Pre-shipping backlog
 

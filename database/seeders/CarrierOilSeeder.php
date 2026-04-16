@@ -33,6 +33,9 @@ class CarrierOilSeeder extends Seeder
 
             $this->command->info("Seeding {$displayName}...");
 
+            $inciName = InciNameLookup::find($displayName);
+            $saponifiedNames = $this->generateSaponifiedInciNames($inciName ?? $displayName);
+
             $ingredient = Ingredient::query()->updateOrCreate(
                 [
                     'source_file' => 'mendrulandia_oils',
@@ -41,7 +44,9 @@ class CarrierOilSeeder extends Seeder
                 [
                     'category' => IngredientCategory::CarrierOil,
                     'display_name' => $displayName,
-                    'inci_name' => InciNameLookup::find($displayName),
+                    'inci_name' => $inciName,
+                    'soap_inci_naoh_name' => $saponifiedNames['naoh'],
+                    'soap_inci_koh_name' => $saponifiedNames['koh'],
                     'is_potentially_saponifiable' => true,
                 ]
             );
@@ -234,5 +239,54 @@ class CarrierOilSeeder extends Seeder
                 'ins_value' => $insValue,
             ],
         );
+    }
+
+    /**
+     * Generate saponified INCI names from base INCI name.
+     * "Cocos Nucifera" -> Sodium Cocoate / Potassium Cocoate
+     * Falls back to display name if INCI not available.
+     */
+    private function generateSaponifiedInciNames(string $name): array
+    {
+        if ($name === '') {
+            return ['naoh' => null, 'koh' => null];
+        }
+
+        $baseName = preg_replace('/\s*(oil|butter|wax|fat|seed|kernel|nut)\s*$/i', '', $name);
+        $baseName = trim($baseName);
+
+        if ($baseName === '') {
+            return ['naoh' => null, 'koh' => null];
+        }
+
+        $words = explode(' ', $baseName);
+        array_walk($words, function (&$word): void {
+            $word = ucfirst(strtolower(trim($word)));
+            $word = preg_replace('/[^a-zA-Z]/', '', $word);
+        });
+        $words = array_filter($words, fn ($w) => $w !== '');
+
+        if (count($words) === 0) {
+            return ['naoh' => null, 'koh' => null];
+        }
+
+        $lastIdx = count($words) - 1;
+        $lastWord = &$words[$lastIdx];
+        $lastLen = strlen($lastWord);
+
+        if ($lastLen > 3 && str_ends_with($lastWord, 'o')) {
+            $lastWord = substr($lastWord, 0, -1).'oate';
+        } elseif ($lastLen > 3 && str_ends_with($lastWord, 'a') && strlen($lastWord) > 4) {
+            $lastWord = substr($lastWord, 0, -1).'ate';
+        } elseif ($lastLen > 3 && ! str_ends_with($lastWord, 'ate')) {
+            $lastWord = $lastWord.'ate';
+        }
+
+        $fullName = implode(' ', $words);
+
+        return [
+            'naoh' => 'Sodium '.$fullName,
+            'koh' => 'Potassium '.$fullName,
+        ];
     }
 }

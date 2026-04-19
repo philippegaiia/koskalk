@@ -6,6 +6,9 @@ use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\RecipeVersionCosting;
+use App\Models\RecipeVersionCostingItem;
+use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,14 +21,32 @@ it('renders the current saved recipe page with print actions', function () {
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('Saved recipe')
-        ->assertSee('v'.$publishedVersion->version_number)
-        ->assertSee('Open editable draft')
+        ->assertSee('Official saved recipe')
+        ->assertSee('Read-only reference formula')
+        ->assertDontSee('v'.$publishedVersion->version_number)
+        ->assertSee('Edit in draft')
         ->assertSee('Duplicate')
         ->assertDontSee('Recovery snapshots')
-        ->assertSee('Print recipe')
-        ->assertSee('Print full details')
-        ->assertSee('Published Formula');
+        ->assertSee('Batch production sheet')
+        ->assertSee('Technical recipe sheet')
+        ->assertSee('Costing sheet')
+        ->assertSee('Published Formula')
+        ->assertSee('1000<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">g</span>', false)
+        ->assertDontSee('1000.00');
+});
+
+it('renders the editable draft workbench with an official recipe confirmation modal', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+
+    $this->actingAs($user)
+        ->get(route('recipes.edit', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('Editable draft')
+        ->assertSee('Save draft')
+        ->assertSee('Save as official recipe')
+        ->assertSee('Update official recipe?')
+        ->assertSee('This will replace the official saved recipe with your current draft.')
+        ->assertDontSee('Save recipe');
 });
 
 it('shows recovery snapshots section when there are multiple saved versions', function () {
@@ -43,7 +64,11 @@ it('shows recovery snapshots section when there are multiple saved versions', fu
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('Recovery snapshots');
+        ->assertSee('<details class="sk-card overflow-hidden">', false)
+        ->assertSee('<summary', false)
+        ->assertSee('Recovery snapshots')
+        ->assertDontSee('v1')
+        ->assertDontSee('v2');
 });
 
 it('recalculates the saved formula view when a different oil quantity is requested', function () {
@@ -59,21 +84,37 @@ it('recalculates the saved formula view when a different oil quantity is request
         ->assertSee('Recalculate');
 });
 
-it('renders recipe print and full-details print pages for the current saved formula', function () {
+it('renders purpose-based print pages for the current saved formula', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
+    attachCostingToSavedVersion($user, $publishedVersion);
 
     $this->actingAs($user)
-        ->get(route('recipes.print.recipe', ['recipe' => $recipe->id]))
+        ->get(route('recipes.print.production', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('Recipe print')
+        ->assertSee('Batch production sheet')
+        ->assertSee('Batch no.')
+        ->assertSee('Made by')
+        ->assertSee('Checked by')
+        ->assertSee('document-sheet', false)
         ->assertDontSee('Declaration details');
 
     $this->actingAs($user)
-        ->get(route('recipes.print.details', ['recipe' => $recipe->id]))
+        ->get(route('recipes.print.technical', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('Full recipe details')
+        ->assertSee('Technical recipe sheet')
         ->assertSee('Ingredient list preview')
-        ->assertSee('Declaration details');
+        ->assertSee('Declaration details')
+        ->assertDontSee('Batch no.');
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.costing', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('Costing sheet')
+        ->assertSee('Ingredient costs')
+        ->assertSee('Packaging costs')
+        ->assertSee('Olive Oil')
+        ->assertSee('Bottle')
+        ->assertSee('Total batch cost');
 });
 
 it('does not expose the saved formula to other users', function () {
@@ -91,7 +132,7 @@ it('keeps the legacy saved-version url working by showing the current saved reci
     $this->actingAs($user)
         ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $publishedVersion->id]))
         ->assertSuccessful()
-        ->assertSee('Saved recipe')
+        ->assertSee('Official saved recipe')
         ->assertSee('Published Formula');
 });
 
@@ -427,6 +468,39 @@ function makeSavedRecipeIngredient(): Ingredient
     ]);
 
     return $ingredient;
+}
+
+function attachCostingToSavedVersion(User $user, RecipeVersion $version): RecipeVersionCosting
+{
+    $ingredient = Ingredient::query()
+        ->where('display_name', 'Olive Oil')
+        ->firstOrFail();
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'name' => 'Bottle',
+        'unit_cost' => 1.2,
+        'quantity' => 10,
+    ]);
+
+    return $costing;
 }
 
 /**

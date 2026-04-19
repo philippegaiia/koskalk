@@ -10,10 +10,10 @@ export function createVersionSection() {
 
         get formulaWorkbenchLabel() {
             if (!this.hasSavedRecipe || this.currentVersionNumber === null) {
-                return 'Draft';
+                return 'Editable draft';
             }
 
-            return this.currentVersionIsDraft ? 'Draft' : 'Saved';
+            return this.currentVersionIsDraft ? 'Editable draft' : 'Official saved recipe';
         },
 
         get needsCatalogReview() {

@@ -26,7 +26,7 @@ return new class extends Migration
             $table->foreignId('ingredient_id')->constrained()->cascadeOnDelete();
             $table->string('phase_key', 64);
             $table->unsignedInteger('position');
-            $table->decimal('price_per_kg', total: 10, places: 4)->nullable();
+            $table->decimal('price_per_kg', total: 18, places: 4)->nullable();
             $table->timestamps();
 
             $table->unique(['recipe_version_costing_id', 'ingredient_id', 'phase_key', 'position'], 'recipe_version_costing_items_unique_row');

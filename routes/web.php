@@ -22,7 +22,10 @@ Route::controller(RecipeController::class)
         Route::post('/{recipe}/saved/{version}/restore', 'restoreSavedFormula')->name('saved.restore');
         Route::post('/{recipe}/duplicate', 'duplicate')->name('duplicate');
         Route::get('/{recipe}/print', 'printSavedRecipe')->name('print.recipe');
+        Route::get('/{recipe}/print/production', 'printSavedProductionSheet')->name('print.production');
         Route::get('/{recipe}/print/details', 'printSavedDetails')->name('print.details');
+        Route::get('/{recipe}/print/technical', 'printSavedTechnicalSheet')->name('print.technical');
+        Route::get('/{recipe}/print/costing', 'printSavedCostingSheet')->name('print.costing');
         Route::get('/{recipe}/versions/{version}', 'version')->name('version');
         Route::delete('/{recipe}/versions/{version}', 'destroyVersion')->name('versions.destroy');
         Route::post('/{recipe}/versions/{version}/use-as-draft', 'useVersionAsDraft')->name('use-version-as-draft');

@@ -1,7 +1,7 @@
 @extends('layouts.app-shell')
 
-@section('title', $recipe->name.' · Saved Recipe · '.config('app.name'))
-@section('page_heading', 'Saved Recipe')
+@section('title', $recipe->name.' · Official Saved Recipe · '.config('app.name'))
+@section('page_heading', 'Official Saved Recipe')
 
 @section('content')
     <div class="mx-auto max-w-[90rem] space-y-6">
@@ -43,19 +43,19 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2">
-                        <p class="sk-eyebrow">Saved recipe</p>
-                        <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Saved recipe</span>
+                        <p class="sk-eyebrow">Official saved recipe</p>
+                        <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Official saved recipe</span>
                     </div>
                     <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $version->name }}</h1>
                     <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">
-                        This is the saved recipe. To change the formula, open the editable draft and save the recipe again. The oil quantity here is only for scaling and printing.
+                        Read-only reference formula. To change it, edit the draft and save that draft as the official recipe. The oil quantity here is only for scaling and printing.
                     </p>
 
                     <div class="mt-4 flex flex-wrap gap-2">
                         <form method="POST" action="{{ route('recipes.saved.edit-in-draft', $recipe->id) }}">
                             @csrf
                             <button type="submit" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                                Open editable draft
+                                Edit in draft
                             </button>
                         </form>
                         <form method="POST" action="{{ route('recipes.duplicate', $recipe->id) }}">
@@ -64,11 +64,14 @@
                                 Duplicate
                             </button>
                         </form>
-                        <a href="{{ route('recipes.print.recipe', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                            Print recipe
+                        <a href="{{ route('recipes.print.production', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                            Batch production sheet
                         </a>
-                        <a href="{{ route('recipes.print.details', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
-                            Print full details
+                        <a href="{{ route('recipes.print.technical', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                            Technical recipe sheet
+                        </a>
+                        <a href="{{ route('recipes.print.costing', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
+                            Costing sheet
                         </a>
                     </div>
                 </div>
@@ -93,8 +96,8 @@
         </section>
 
         @if (count($recoverySnapshots) > 1)
-        <section class="sk-card overflow-hidden">
-            <div class="border-b border-[var(--color-line)] px-5 py-4">
+        <details class="sk-card overflow-hidden">
+            <summary class="cursor-pointer list-none border-b border-[var(--color-line)] px-5 py-4 marker:hidden">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <p class="sk-eyebrow">Recovery snapshots</p>
@@ -104,7 +107,7 @@
                         {{ count($recoverySnapshots) - 1 }} previous saves
                     </span>
                 </div>
-            </div>
+            </summary>
 
             <div class="divide-y divide-[var(--color-line)]">
                 @foreach ($recoverySnapshots as $snapshotVersion)
@@ -113,7 +116,6 @@
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
                                 <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ $snapshotVersion['name'] }}</p>
-                                <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--color-ink-soft)]">v{{ $snapshotVersion['version_number'] }}</span>
                                 <span class="rounded-full border border-[var(--color-line)] bg-white px-2.5 py-0.5 text-[11px] font-medium text-[var(--color-ink-soft)]">Recovery</span>
                             </div>
                             <p class="mt-1 text-xs text-[var(--color-ink-soft)]">
@@ -131,7 +133,7 @@
                             <form method="POST" action="{{ route('recipes.saved.restore', ['recipe' => $recipe->id, 'version' => $snapshotVersion['id']]) }}">
                                 @csrf
                                 <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent)]">
-                                    Restore current
+                                    Restore as official recipe
                                 </button>
                             </form>
                         </div>
@@ -139,7 +141,7 @@
                     @endif
                 @endforeach
             </div>
-        </section>
+        </details>
         @endif
 
         @include('recipes.partials.version-sheet', [

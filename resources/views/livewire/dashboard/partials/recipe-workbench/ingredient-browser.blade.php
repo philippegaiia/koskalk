@@ -4,6 +4,7 @@
  <div class="sk-card p-4">
  <p class="sk-eyebrow">Ingredient browser</p>
  <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">Filtered by role</h3>
+ <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]"><span class="numeric" x-text="ingredients.length"></span> curated ingredients / INCI data / add your own</p>
  <input x-model="search" type="search" placeholder="Search name or INCI" class="mt-4 w-full rounded-lg bg-[var(--color-field)] px-4 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
 
  <div class="mt-4 flex flex-wrap gap-2">
@@ -16,7 +17,7 @@
  </div>
 
  <div class="overflow-hidden sk-card">
- <div class="border-b border-[var(--color-line)] px-5 py-4">
+ <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
  <p class="sk-eyebrow">Available ingredients</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]"><span class="numeric" x-text="filteredIngredients.length"></span> match the current filter</p>
  </div>

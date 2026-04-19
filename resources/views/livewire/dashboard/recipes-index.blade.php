@@ -10,7 +10,7 @@
  <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
  <p class="sk-eyebrow">Formulas</p>
- <h3 class="mt-3 text-3xl font-semibold text-[var(--color-ink-strong)]">One working draft, one current saved formula, and no visible version clutter.</h3>
+ <h3 class="mt-3 text-3xl font-semibold text-[var(--color-ink-strong)]">One working draft, one official recipe, and no visible version clutter.</h3>
  <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
  Keep one editable working draft per recipe. Save the formula when you want to replace the current official state, and duplicate when you want a truly separate branch.
  </p>
@@ -33,7 +33,7 @@
  <div>
  <p class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $recipeCount }}</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">
- {{ $currentUser ? 'Recipes currently visible for your account.' : 'Sign in through the public app or admin panel to see your saved formulas.' }}
+ {{ $currentUser ? 'Recipes currently visible for your account.' : 'Sign in through the public app or admin panel to see your official recipes.' }}
  </p>
  </div>
  <div class="grid gap-3 sm:grid-cols-2">
@@ -42,7 +42,7 @@
  <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $draftCount }}</p>
  </div>
  <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-white p-4">
- <p class="sk-eyebrow">Saved formulas</p>
+ <p class="sk-eyebrow">Official recipes</p>
  <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $savedFormulaCount }}</p>
  </div>
  </div>
@@ -71,7 +71,7 @@
  <section class="space-y-4">
  <div class="space-y-4">
  <div>
- <p class="sk-eyebrow">Saved formulas</p>
+ <p class="sk-eyebrow">Official recipes</p>
  <h3 class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">Recipes with their draft and saved states</h3>
  </div>
  @if ($currentUser)
@@ -216,7 +216,7 @@
  <div class="sk-card w-full max-w-md p-6" @click.stop>
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete &quot;{{ $recipe->name }}&quot;?</h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">
- This will delete the recipe, its draft, saved formula, and hidden recovery snapshots. This action cannot be undone.
+ This will delete the recipe, its draft, official recipe, and hidden recovery snapshots. This action cannot be undone.
  </p>
 
  <button type="button" @click="confirmText = recipeName" class="sk-btn sk-btn-outline mt-4">
@@ -243,8 +243,8 @@
 
  @if ($recipe->currentSavedVersion)
  <div class="mt-4 flex flex-wrap gap-2">
- <a href="{{ route('recipes.print.recipe', $recipe->id) }}" class="sk-action-link">
- Print recipe
+ <a href="{{ route('recipes.print.production', $recipe->id) }}" class="sk-action-link">
+ Batch production sheet
  </a>
  </div>
  @endif

@@ -92,7 +92,7 @@ class RecipeWorkbenchVersionDataService
                 'version_number' => $version->version_number,
                 'name' => $version->name,
                 'saved_at' => $version->saved_at?->toIso8601String(),
-                'label' => 'v'.$version->version_number.' · '.$version->name,
+                'label' => $version->name,
             ])
             ->all();
     }

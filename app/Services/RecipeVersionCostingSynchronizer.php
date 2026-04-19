@@ -13,6 +13,7 @@ use App\Models\UserIngredientPrice;
 use App\Models\UserPackagingItem;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Keeps formula costing rows in step with the draft version while preserving
@@ -29,6 +30,10 @@ use Illuminate\Support\Facades\DB;
  */
 class RecipeVersionCostingSynchronizer
 {
+    public function __construct(
+        private readonly UserIngredientPriceMemory $userIngredientPriceMemory,
+    ) {}
+
     /**
      * Build the full costing payload for the frontend.
      *
@@ -217,15 +222,25 @@ class RecipeVersionCostingSynchronizer
             ];
         }
 
-        $packagingItem = UserPackagingItem::query()
-            ->where('user_id', $user->id)
-            ->when(
-                isset($payload['id']) && is_numeric($payload['id']),
-                fn ($query) => $query->whereKey((int) $payload['id']),
-            )
-            ->first() ?? new UserPackagingItem([
-                'user_id' => $user->id,
-            ]);
+        $packagingItem = new UserPackagingItem([
+            'user_id' => $user->id,
+        ]);
+
+        if (isset($payload['id'])) {
+            if (! is_numeric($payload['id'])) {
+                throw ValidationException::withMessages([
+                    'packaging_item' => 'Only your own packaging items can be edited from the costing tab.',
+                ]);
+            }
+
+            $packagingItem = UserPackagingItem::query()->find((int) $payload['id']);
+
+            if (! $packagingItem instanceof UserPackagingItem || $packagingItem->user_id !== $user->id) {
+                throw ValidationException::withMessages([
+                    'packaging_item' => 'Only your own packaging items can be edited from the costing tab.',
+                ]);
+            }
+        }
 
         $packagingItem->fill([
             'name' => $name,
@@ -375,7 +390,7 @@ class RecipeVersionCostingSynchronizer
                 (int) $row['position'],
             ));
 
-        $costing->items()->get()->each(function (RecipeVersionCostingItem $item) use ($costing, $submittedItems, $user): void {
+        $costing->items()->get()->each(function (RecipeVersionCostingItem $item) use ($submittedItems, $user): void {
             $submittedRow = $submittedItems->get($this->costingKey(
                 (int) $item->ingredient_id,
                 $item->phase_key,
@@ -390,16 +405,10 @@ class RecipeVersionCostingSynchronizer
             $item->save();
 
             if ($item->price_per_kg !== null) {
-                UserIngredientPrice::query()->updateOrCreate(
-                    [
-                        'user_id' => $user->id,
-                        'ingredient_id' => $item->ingredient_id,
-                    ],
-                    [
-                        'price_per_kg' => $item->price_per_kg,
-                        'currency' => $costing->currency,
-                        'last_used_at' => now(),
-                    ],
+                $this->userIngredientPriceMemory->remember(
+                    $user,
+                    (int) $item->ingredient_id,
+                    (float) $item->price_per_kg,
                 );
             }
         });
@@ -452,7 +461,6 @@ class RecipeVersionCostingSynchronizer
 
                 $linkedPackagingItem->forceFill([
                     'unit_cost' => $unitCost,
-                    'currency' => $costing->currency,
                 ])->save();
             });
     }

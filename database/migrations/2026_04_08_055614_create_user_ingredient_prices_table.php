@@ -23,7 +23,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('ingredient_id')->constrained()->cascadeOnDelete();
-            $table->decimal('price_per_kg', total: 10, places: 4)->nullable();
+            $table->decimal('price_per_kg', total: 18, places: 4)->nullable();
             $table->string('currency', 3)->default('EUR');
             $table->timestamp('last_used_at')->nullable();
             $table->timestamps();

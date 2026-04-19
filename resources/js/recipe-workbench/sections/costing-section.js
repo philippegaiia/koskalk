@@ -219,16 +219,6 @@ export function createCostingSection(payload) {
             return this.packagingCatalog.filter((item) => !usedIds.has(item.id));
         },
 
-        get unusedPackagingCatalogItems() {
-            const usedIds = new Set(
-                this.packagingCostRows
-                    .map((row) => row.user_packaging_item_id)
-                    .filter((id) => id !== null),
-            );
-
-            return this.packagingCatalog.filter((item) => !usedIds.has(item.id));
-        },
-
         addPackagingCostRow(packagingItem = null) {
             this.packagingCostRows = [
                 ...this.packagingCostRows,

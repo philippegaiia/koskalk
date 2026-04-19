@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Dashboard\RecipeWorkbench;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
@@ -15,6 +16,7 @@ use App\Services\RecipeWorkbenchDraftPayloadMapper;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
@@ -53,7 +55,7 @@ it('requires a cosmetic product type before entering the shared cosmetic workben
             'type' => 'cream-lotion',
         ]))
         ->assertSuccessful()
-        ->assertSee('Formula name')
+        ->assertSee('Editable draft')
         ->assertSee('Formula')
         ->assertSee('Costing')
         ->assertSee('Output')
@@ -61,12 +63,120 @@ it('requires a cosmetic product type before entering the shared cosmetic workben
         ->assertSee('Cream / lotion')
         ->assertSee('Batch weight')
         ->assertSee('Formula ingredients')
+        ->assertSee('updateCosmeticPercentagesFromWeights', false)
         ->assertSee('Phase A')
         ->assertDontSee('Cosmetic workbench')
         ->assertDontSee('Lye type')
         ->assertDontSee('Water mode')
         ->assertDontSee('Superfat')
         ->assertDontSee('Saponified oils + lye water');
+});
+
+it('keeps cosmetic formula percentages balanced when editing weights', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/calculation.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replaceAll('export function', 'function');
+
+const stubs = `
+const number = (value) => {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+const nonNegativeNumber = (value) => Math.max(0, number(value));
+const roundTo = (value, decimals = 3) => {
+  const factor = 10 ** decimals;
+  return Math.round(number(value) * factor) / factor;
+};
+`;
+
+eval(`${stubs}\n${source}\nglobalThis.updateFormulaPercentagesFromWeights = updateFormulaPercentagesFromWeights;`);
+
+const rows = [
+  { id: 'water', percentage: 50 },
+  { id: 'glycerin', percentage: 50 },
+];
+
+const updated = globalThis.updateFormulaPercentagesFromWeights(rows, 100, 'water', 30);
+
+console.log(JSON.stringify({
+  totalWeight: updated.totalWeight,
+  water: updated.percentagesByRowId.get('water'),
+  glycerin: updated.percentagesByRowId.get('glycerin'),
+  totalPercentage: Array.from(updated.percentagesByRowId.values()).reduce((total, value) => total + value, 0),
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $result = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($result['totalWeight'])->toBe(80)
+        ->and($result['water'])->toBe(37.5)
+        ->and($result['glycerin'])->toBe(62.5)
+        ->and($result['totalPercentage'])->toBe(100);
+});
+
+it('does not preselect an IFRA category for new cosmetic formulas and exposes every active category', function () {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'name' => 'Cosmetic',
+        'slug' => 'cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $category1 = IfraProductCategory::factory()->create([
+        'code' => '1',
+        'is_active' => true,
+    ]);
+    $category9 = IfraProductCategory::factory()->create([
+        'code' => '9',
+        'is_active' => true,
+    ]);
+    $category12 = IfraProductCategory::factory()->create([
+        'code' => '12',
+        'is_active' => true,
+    ]);
+    IfraProductCategory::factory()->create([
+        'code' => '11',
+        'is_active' => false,
+    ]);
+
+    $productType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+        'default_ifra_product_category_id' => $category9->id,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount(null, 'cosmetic', 'cream-lotion');
+
+    $workbench = $component->render(app(RecipeWorkbenchService::class))->getData()['workbench'];
+
+    expect($workbench['defaultIfraProductCategoryId'])->toBeNull()
+        ->and(collect($workbench['ifraProductCategories'])->pluck('code')->all())->toBe(['1', '9', '12'])
+        ->and(collect($workbench['ifraProductCategories'])->pluck('id')->all())->toContain($category1->id, $category9->id, $category12->id)
+        ->and($workbench['productType']['id'])->toBe($productType->id);
+});
+
+it('uses wider cosmetic percentage and weight columns with half-gram weight steps', function () {
+    $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
+
+    expect($cosmeticFormula)
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('type="number" inputmode="decimal" step="0.5"');
 });
 
 it('allows incomplete cosmetic drafts but requires saved cosmetic formulas to total 100 percent', function () {

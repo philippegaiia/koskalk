@@ -116,8 +116,8 @@ class RecipeController extends Controller
                 ->route('recipes.saved', $recipe->id)
                 ->with('draftReplaceConfirmation', [
                     'title' => 'Replace the current draft?',
-                    'body' => 'The current draft differs from the saved formula. Confirming will replace the draft with the current saved formula data.',
-                    'action_label' => 'Replace draft with saved formula',
+                    'body' => 'The current draft differs from the official recipe. Confirming will replace the draft with the current official recipe data.',
+                    'action_label' => 'Replace draft with official recipe',
                     'action_url' => route('recipes.saved.edit-in-draft', $recipe->id),
                 ]);
         }
@@ -126,7 +126,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.edit', $recipe->id)
-            ->with('status', 'Draft refreshed from the current saved formula.');
+            ->with('status', 'Draft refreshed from the current official recipe.');
     }
 
     public function restoreSavedFormula(
@@ -144,7 +144,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.saved', $recipe->id)
-            ->with('status', 'Saved formula restored from the selected recovery snapshot.');
+            ->with('status', 'Official recipe restored from the selected recovery snapshot.');
     }
 
     public function version(
@@ -165,11 +165,20 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
+        return $this->printSavedProductionSheet($recipe, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+    }
+
+    public function printSavedProductionSheet(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
         [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
             ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight')),
-            'printMode' => 'recipe',
+            'printMode' => 'production',
         ]);
     }
 
@@ -191,11 +200,34 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
+        return $this->printSavedTechnicalSheet($recipe, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+    }
+
+    public function printSavedTechnicalSheet(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
         [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
             ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight')),
-            'printMode' => 'details',
+            'printMode' => 'technical',
+        ]);
+    }
+
+    public function printSavedCostingSheet(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
+        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+
+        return view('recipes.print', [
+            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight')),
+            'printMode' => 'costing',
         ]);
     }
 
@@ -231,8 +263,8 @@ class RecipeController extends Controller
                 ->route('recipes.saved', $recipe->id)
                 ->with('draftReplaceConfirmation', [
                     'title' => 'Replace the current draft?',
-                    'body' => 'The current draft differs from this recovery snapshot. Confirming will replace the draft with version v'.$version->version_number.'.',
-                    'action_label' => 'Replace draft with v'.$version->version_number,
+                    'body' => 'The current draft differs from this recovery snapshot. Confirming will replace the draft with the selected saved state.',
+                    'action_label' => 'Replace draft',
                     'action_url' => route('recipes.use-version-as-draft', ['recipe' => $recipe->id, 'version' => $version->id]),
                 ]);
         }
@@ -241,7 +273,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.edit', $recipe->id)
-            ->with('status', 'Working draft replaced with version v'.$version->version_number.'.');
+            ->with('status', 'Working draft replaced with the selected recovery snapshot.');
     }
 
     public function destroy(

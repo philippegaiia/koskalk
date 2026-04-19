@@ -24,7 +24,7 @@ return new class extends Migration
             $table->foreignId('recipe_version_costing_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_packaging_item_id')->nullable()->constrained()->nullOnDelete();
             $table->string('name');
-            $table->decimal('unit_cost', total: 10, places: 4);
+            $table->decimal('unit_cost', total: 18, places: 4);
             $table->decimal('quantity', total: 10, places: 3)->default(1);
             $table->timestamps();
         });

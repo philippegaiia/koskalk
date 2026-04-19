@@ -95,7 +95,7 @@ function createRecipeWorkbenchState(payload) {
         superfat: 5,
         search: '',
         activeCategory: 'all',
-        ifraProductCategories: (payload.ifraProductCategories ?? []).filter((category) => ['6', '7A', '8', '9', '10A'].includes(`${category.code ?? ''}`.toUpperCase())),
+        ifraProductCategories: payload.ifraProductCategories ?? [],
         selectedIfraProductCategoryId: payload.defaultIfraProductCategoryId === null || payload.defaultIfraProductCategoryId === undefined ? '' : String(payload.defaultIfraProductCategoryId),
         ingredients: payload.ingredients ?? [],
         backendCalculation: initialSnapshot?.calculation ?? null,
@@ -115,6 +115,7 @@ function createRecipeWorkbenchState(payload) {
         saveStatus: null,
         saveMessage: '',
         isSaving: false,
+        isOfficialSaveModalOpen: false,
         costingId: payload.costing?.settings?.id ?? null,
         costingOilWeight: payload.costing?.settings?.oilWeightForCosting ?? null,
         costingOilUnit: payload.costing?.settings?.oilUnitForCosting ?? null,
@@ -642,7 +643,16 @@ function createPersistenceSection() {
             await this.persist('saveDraft');
         },
 
+        requestOfficialRecipeSave() {
+            if (!this.canSaveRecipe || this.isSaving) {
+                return;
+            }
+
+            this.isOfficialSaveModalOpen = true;
+        },
+
         async saveRecipe() {
+            this.isOfficialSaveModalOpen = false;
             await this.persist('saveRecipe');
         },
 

@@ -23,7 +23,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('name');
-            $table->decimal('unit_cost', total: 10, places: 4);
+            $table->decimal('unit_cost', total: 18, places: 4);
             $table->string('currency', 3)->default('EUR');
             $table->text('notes')->nullable();
             $table->timestamps();

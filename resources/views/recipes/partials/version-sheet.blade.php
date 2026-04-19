@@ -1,5 +1,8 @@
 @php
     $formatNumber = static fn (mixed $value, int $decimals = 2): string => rtrim(rtrim(number_format((float) $value, $decimals, '.', ''), '0'), '.');
+    $formatSummaryNumber = static fn (mixed $value, mixed $unit): string => $unit === 'g'
+        ? number_format((float) $value, 0, '.', '')
+        : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
     $showDetails = $showDetails ?? false;
     $oilUnit = $snapshot['draft']['oilUnit'] ?? 'g';
 @endphp
@@ -10,7 +13,7 @@
             <article class="sk-card p-4">
                 <p class="sk-eyebrow">{{ $card['label'] }}</p>
                 <p class="numeric mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">
-                    {{ $formatNumber($card['value']) }}<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">{{ $card['unit'] }}</span>
+                    {{ $formatSummaryNumber($card['value'], $card['unit']) }}<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">{{ $card['unit'] }}</span>
                 </p>
             </article>
         @endforeach

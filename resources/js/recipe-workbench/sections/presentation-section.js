@@ -10,6 +10,53 @@ export function createPresentationSection() {
             return `width: ${width}%; background: linear-gradient(90deg, color-mix(in srgb, ${color} 72%, white 28%) 0%, ${color} 100%);`;
         },
 
+        qualityTone(key, value) {
+            const numeric = this.number(value);
+            const zone = this.qualityTargetZone(key);
+
+            if (!zone) {
+                return 'ideal';
+            }
+
+            if (['dos_risk', 'slime_risk'].includes(key)) {
+                if (numeric <= 20) return 'ideal';
+                if (numeric < 35) return 'low';
+                if (numeric < 60) return 'high';
+
+                return 'excess';
+            }
+
+            if (key === 'cleansing_strength') {
+                if (numeric < zone.start) return numeric < 10 ? 'very-low' : 'low';
+                if (numeric <= zone.end) return 'ideal';
+                if (numeric < 65) return 'high';
+
+                return 'excess';
+            }
+
+            if (numeric < zone.start) {
+                return numeric < 20 ? 'very-low' : 'low';
+            }
+
+            return 'ideal';
+        },
+
+        qualityToneColor(key, value) {
+            const colors = {
+                'very-low': 'var(--color-quality-very-low)',
+                low: 'var(--color-quality-low)',
+                ideal: 'var(--color-quality-ideal)',
+                high: 'var(--color-quality-high)',
+                excess: 'var(--color-quality-excess)',
+            };
+
+            return colors[this.qualityTone(key, value)] ?? colors.ideal;
+        },
+
+        qualityLevelStyle(key, value) {
+            return `--quality-tone: ${this.qualityToneColor(key, value)};`;
+        },
+
         fattyAcidRowBarStyle(value, color = 'var(--color-ink-soft)') {
             const rows = this.fattyAcidProfileRows;
             const maxFattyAcidValue = rows.reduce((maxValue, row) => Math.max(maxValue, this.number(row.value)), 0);
@@ -99,7 +146,7 @@ export function createPresentationSection() {
             return [
                 {
                     id: 'additives-total',
-                    label: 'Additives (% oils)',
+                    label: 'Additives (% base)',
                     value: `${this.format(this.totalAdditionPercentage(), 1)}%`,
                 },
                 {

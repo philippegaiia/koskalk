@@ -1,5 +1,5 @@
-<section class="overflow-hidden sk-card">
- <div class="border-b border-[var(--color-line)] px-5 py-4">
+<section class="overflow-hidden sk-card sk-phase-core">
+ <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
  <p class="sk-eyebrow">Reaction core</p>
  <div class="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">Saponified oils + lye water</h3>
@@ -39,10 +39,11 @@
  <span class="text-sm leading-none">⋮⋮</span>
  </button>
  </div>
- <div class="bg-white px-4 py-3">
- <div class="flex items-start justify-between gap-3">
- <div class="min-w-0">
+ <div class="flex items-center bg-white px-4 py-3">
+ <div class="flex w-full items-center justify-between gap-3">
+ <div class="min-w-0 flex-1">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
  <div x-data="{
  open: false,
@@ -57,7 +58,7 @@
  this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
  },
  }"
- class="relative shrink-0"
+ class="relative ml-auto shrink-0"
  x-cloak>
  <template x-if="ingredientHasInspector(row)">
  <button type="button"
@@ -107,9 +108,8 @@
  </template>
  </div>
  </div>
- <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
- <div class="bg-white px-3 py-3">
+ <div class="flex items-center bg-white px-3 py-3">
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(nonNegativeNumber($event.target.value), 2)" type="number" inputmode="decimal" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
@@ -117,7 +117,7 @@
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
- <div class="bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
+ <div class="flex items-center bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
  <template x-if="editMode === 'weight'">
  <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
@@ -134,9 +134,9 @@
 
  <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-3 py-3"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="px-4 py-3 font-medium">Oil total</div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric px-4 py-3 font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric px-4 py-3 font-medium" x-text="`${format(oilWeightTotal(), 1)}`"></div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-3 font-medium">Oil total</div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center px-4 py-3 font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+ <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center px-4 py-3 font-medium" x-text="`${format(oilWeightTotal(), 1)}`"></div>
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-4 py-3"></div>
  </div>
  </div>

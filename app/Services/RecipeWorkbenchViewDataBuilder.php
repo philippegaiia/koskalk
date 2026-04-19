@@ -37,8 +37,10 @@ class RecipeWorkbenchViewDataBuilder
             'phases' => $this->recipeWorkbenchService->phaseBlueprints($productFamily),
             'ingredients' => $this->recipeWorkbenchIngredientCatalogBuilder->build($user, $productFamily),
             'ifraProductCategories' => $this->recipeWorkbenchIfraOptionsBuilder->categories($productFamily),
-            'defaultIfraProductCategoryId' => $productType?->default_ifra_product_category_id
-                ?? $this->recipeWorkbenchIfraOptionsBuilder->defaultCategoryId($productFamily),
+            'defaultIfraProductCategoryId' => $productFamily->slug === 'cosmetic'
+                ? null
+                : ($productType?->default_ifra_product_category_id
+                    ?? $this->recipeWorkbenchIfraOptionsBuilder->defaultCategoryId($productFamily)),
             'costing' => null,
             'costingLoaded' => false,
             'defaultCurrency' => $defaultCurrency,

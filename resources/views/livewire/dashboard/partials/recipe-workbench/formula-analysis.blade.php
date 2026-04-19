@@ -17,14 +17,14 @@
  <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
  <div class="text-right">
  <div class="numeric font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
- <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+ <span :style="qualityLevelStyle(row.key, row.value)" class="sk-quality-pill mt-1 inline-flex border px-2 py-0.5 text-xs font-medium" x-text="row.level"></span>
  </div>
  </div>
  <div class="relative mt-3 h-2 overflow-hidden rounded-full bg-white/80">
  <template x-if="targetZoneStyle(row.key)">
  <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
  </template>
- <div class="relative h-full rounded-full" :style="qualityBarStyle(row.value)"></div>
+ <div class="relative h-full rounded-full" :style="qualityBarStyle(row.value, qualityToneColor(row.key, row.value))"></div>
  </div>
  <template x-if="row.explanation">
  <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="row.explanation"></p>
@@ -66,7 +66,7 @@
  <div class="text-right">
  <div class="numeric font-medium text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></div>
  <template x-if="row.level">
- <div class="text-xs text-[var(--color-ink-soft)]" x-text="row.level"></div>
+ <span :style="qualityLevelStyle(row.key, row.value)" class="sk-quality-pill mt-1 inline-flex border px-2 py-0.5 text-xs font-medium" x-text="row.level"></span>
  </template>
  </div>
  </div>
@@ -75,7 +75,7 @@
  <template x-if="targetZoneStyle(row.key)">
  <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
  </template>
- <div class="relative h-full rounded-full" :style="qualityBarStyle(row.value)"></div>
+ <div class="relative h-full rounded-full" :style="qualityBarStyle(row.value, qualityToneColor(row.key, row.value))"></div>
  </div>
  </template>
  <template x-if="row.explanation">

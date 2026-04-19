@@ -74,7 +74,15 @@ export async function persistWorkbench(workbench, method) {
 
         if (response.redirect) {
             const hash = workbench.activeWorkbenchTab ? `#${workbench.activeWorkbenchTab}` : '';
-            window.location.href = response.redirect + hash;
+            const target = response.redirect + hash;
+
+            if (window.Livewire?.navigate) {
+                window.Livewire.navigate(target);
+
+                return;
+            }
+
+            window.location.assign(target);
         }
     } catch (error) {
         workbench.saveStatus = 'error';

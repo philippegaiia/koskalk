@@ -37,7 +37,7 @@
  </div>
  </div>
 
- <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
+ <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% formula</div>
@@ -53,7 +53,7 @@
  'bg-[var(--color-accent-soft)]': isDropTarget(phase.key, row.id),
  'opacity-60': isDraggedRow(phase.key, row.id),
  }"
- class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] transition">
+ class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] transition">
  <div class="grid place-items-center bg-white px-2 py-3">
  <button type="button"
  draggable="true"
@@ -131,7 +131,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
  <template x-if="editMode === 'weight'">
- <input :value="format(rowWeight(row), 3)" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="0.001" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input :value="format(rowWeight(row), 3)" @input="updateCosmeticPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="0.5" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
@@ -165,7 +165,7 @@
  </template>
 
 	 <div class="overflow-hidden sk-inset">
-	 <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
+	 <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
 	 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="px-3 py-3"></div>
 	 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="px-4 py-3 font-medium">Formula total</div>
 	 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="numeric px-4 py-3 font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>

@@ -3,7 +3,12 @@
 namespace App\Services;
 
 use App\Models\Recipe;
+use App\Models\RecipeItem;
+use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
+use App\Models\RecipeVersionCosting;
+use App\Models\RecipeVersionCostingItem;
+use App\Models\RecipeVersionCostingPackagingItem;
 
 class RecipeVersionViewDataBuilder
 {
@@ -43,15 +48,23 @@ class RecipeVersionViewDataBuilder
 
         $isCosmetic = $recipe->productFamily?->calculation_basis === 'total_formula';
 
+        $phaseSections = $this->phaseSections($snapshot['draft'], $isCosmetic);
+        $costingData = $this->costingData($recipe, $version, $selectedOilWeight);
+
         return [
             'recipe' => $recipe,
             'version' => $version,
             'snapshot' => $snapshot,
-            'phaseSections' => $this->phaseSections($snapshot['draft'], $isCosmetic),
+            'phaseSections' => $phaseSections,
             'summaryCards' => $this->summaryCards($snapshot['draft'], $snapshot['calculation'], $isCosmetic),
             'contextRows' => $this->contextRows($snapshot['draft'], $snapshot['calculation'], $version, $isCosmetic),
             'lyeRows' => $isCosmetic ? [] : $this->lyeRows($snapshot['draft'], $snapshot['calculation']),
             'recoverySnapshots' => $this->recoverySnapshots($recipe, $version),
+            'costingSummary' => $costingData['summary'],
+            'costingIngredientRows' => $costingData['ingredientRows'],
+            'costingPackagingRows' => $costingData['packagingRows'],
+            'costingCurrency' => $costingData['currency'],
+            'hasCostingData' => $costingData['hasCostingData'],
             'selectedOilWeight' => $selectedOilWeight,
         ];
     }
@@ -267,8 +280,8 @@ class RecipeVersionViewDataBuilder
     {
         $rows = [
             [
-                'label' => 'Saved formula',
-                'value' => $version->saved_at !== null ? 'v'.$version->version_number : 'Not saved yet',
+                'label' => 'Official recipe',
+                'value' => $version->saved_at !== null ? 'Current saved recipe' : 'Not saved yet',
             ],
             [
                 'label' => 'Saved at',
@@ -369,5 +382,126 @@ class RecipeVersionViewDataBuilder
             })
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{
+     *     summary: array<int, array{label: string, value: string}>,
+     *     ingredientRows: array<int, array<string, mixed>>,
+     *     packagingRows: array<int, array<string, mixed>>,
+     *     currency: string,
+     *     hasCostingData: bool
+     * }
+     */
+    private function costingData(Recipe $recipe, RecipeVersion $version, float $selectedOilWeight): array
+    {
+        $costing = RecipeVersionCosting::query()
+            ->with(['items.ingredient', 'packagingItems'])
+            ->where('recipe_version_id', $version->id)
+            ->where('user_id', $recipe->owner_id)
+            ->first();
+
+        if (! $costing instanceof RecipeVersionCosting) {
+            return [
+                'summary' => [],
+                'ingredientRows' => [],
+                'packagingRows' => [],
+                'currency' => 'EUR',
+                'hasCostingData' => false,
+            ];
+        }
+
+        $currency = $costing->currency ?: 'EUR';
+        $weightsByKey = $this->costingWeightsByKey($version, $selectedOilWeight);
+
+        $ingredientRows = $costing->items
+            ->map(function (RecipeVersionCostingItem $item) use ($weightsByKey): array {
+                $key = $this->costingKey((int) $item->ingredient_id, $item->phase_key, (int) $item->position);
+                $weight = (float) ($weightsByKey[$key]['weight'] ?? 0);
+                $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
+                $lineCost = $pricePerKg === null ? null : round(($weight / 1000) * $pricePerKg, 4);
+
+                return [
+                    'phase' => $weightsByKey[$key]['phase'] ?? str($item->phase_key)->replace('_', ' ')->title()->toString(),
+                    'name' => $item->ingredient?->display_name ?? 'Ingredient',
+                    'weight' => $weight,
+                    'price_per_kg' => $pricePerKg,
+                    'line_cost' => $lineCost,
+                ];
+            })
+            ->values()
+            ->all();
+
+        $packagingRows = $costing->packagingItems
+            ->map(function (RecipeVersionCostingPackagingItem $item): array {
+                $unitCost = (float) $item->unit_cost;
+                $quantity = (float) $item->quantity;
+
+                return [
+                    'name' => $item->name,
+                    'unit_cost' => $unitCost,
+                    'quantity' => $quantity,
+                    'line_cost' => round($unitCost * $quantity, 4),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $ingredientTotal = collect($ingredientRows)->sum(fn (array $row): float => (float) ($row['line_cost'] ?? 0));
+        $packagingTotal = collect($packagingRows)->sum(fn (array $row): float => (float) ($row['line_cost'] ?? 0));
+        $batchTotal = round($ingredientTotal + $packagingTotal, 4);
+        $unitsProduced = $costing->units_produced;
+
+        return [
+            'summary' => [
+                ['label' => 'Ingredient total', 'value' => $this->money($ingredientTotal, $currency)],
+                ['label' => 'Packaging total', 'value' => $this->money($packagingTotal, $currency)],
+                ['label' => 'Total batch cost', 'value' => $this->money($batchTotal, $currency)],
+                ['label' => 'Cost per unit', 'value' => $unitsProduced !== null && $unitsProduced > 0 ? $this->money($batchTotal / $unitsProduced, $currency) : 'Not set'],
+            ],
+            'ingredientRows' => $ingredientRows,
+            'packagingRows' => $packagingRows,
+            'currency' => $currency,
+            'hasCostingData' => true,
+        ];
+    }
+
+    /**
+     * @return array<string, array{phase: string, weight: float}>
+     */
+    private function costingWeightsByKey(RecipeVersion $version, float $selectedOilWeight): array
+    {
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->with([
+                'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
+                'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
+            ])
+            ->findOrFail($version->id);
+
+        return $version->phases
+            ->flatMap(fn (RecipePhase $phase) => $phase->items
+                ->map(fn (RecipeItem $item): array => [
+                    'key' => $this->costingKey((int) $item->ingredient_id, $phase->slug, (int) $item->position),
+                    'phase' => $phase->name,
+                    'weight' => round($selectedOilWeight * ((float) $item->percentage / 100), 4),
+                ]))
+            ->mapWithKeys(fn (array $row): array => [
+                $row['key'] => [
+                    'phase' => $row['phase'],
+                    'weight' => $row['weight'],
+                ],
+            ])
+            ->all();
+    }
+
+    private function costingKey(int $ingredientId, string $phaseKey, int $position): string
+    {
+        return $ingredientId.'|'.$phaseKey.'|'.$position;
+    }
+
+    private function money(float $value, string $currency): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.').' '.$currency;
     }
 }

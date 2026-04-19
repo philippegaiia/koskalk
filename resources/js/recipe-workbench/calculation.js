@@ -57,6 +57,45 @@ export function updateOilPercentagesFromWeights(oilRows, oilWeight, rowId, weigh
     };
 }
 
+export function updateFormulaPercentagesFromWeights(rows, totalWeight, rowId, weightValue) {
+    const weightsByRowId = new Map(
+        rows.map((row) => [row.id, rowWeightForOilWeight(totalWeight, row)]),
+    );
+
+    weightsByRowId.set(rowId, nonNegativeNumber(weightValue));
+
+    const nextTotalWeight = Array.from(weightsByRowId.values())
+        .reduce((total, currentWeight) => total + nonNegativeNumber(currentWeight), 0);
+
+    const roundedTotalWeight = roundTo(nextTotalWeight);
+    const percentagesByRowId = new Map;
+
+    if (roundedTotalWeight <= 0) {
+        rows.forEach((row) => {
+            percentagesByRowId.set(row.id, 0);
+        });
+
+        return {
+            totalWeight: roundedTotalWeight,
+            percentagesByRowId,
+        };
+    }
+
+    rows.forEach((row) => {
+        const currentRowWeight = weightsByRowId.get(row.id) ?? 0;
+
+        percentagesByRowId.set(
+            row.id,
+            roundTo((nonNegativeNumber(currentRowWeight) / roundedTotalWeight) * 100),
+        );
+    });
+
+    return {
+        totalWeight: roundedTotalWeight,
+        percentagesByRowId,
+    };
+}
+
 export function sumPercentages(rows) {
     return rows.reduce((total, row) => total + nonNegativeNumber(row.percentage), 0);
 }

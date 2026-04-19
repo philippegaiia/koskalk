@@ -9,6 +9,7 @@ import {
     sumPercentages as calculateSumPercentages,
     totalAdditionPercentage as calculateTotalAdditionPercentage,
     totalFormulaPercentage as calculateTotalFormulaPercentage,
+    updateFormulaPercentagesFromWeights as buildFormulaPercentagesFromWeights,
     totalLyeToWeigh as calculateTotalLyeToWeigh,
     updateOilPercentagesFromWeights as buildOilPercentagesFromWeights,
     updatePercentageFromWeight as calculatePercentageFromWeight,
@@ -171,6 +172,15 @@ export function createFormulaSection() {
             });
         },
 
+        updateCosmeticPercentagesFromWeights(row, weightValue) {
+            const updatedWeights = buildFormulaPercentagesFromWeights(this.cosmeticFormulaRows(), this.oilWeight, row.id, parseDecimal(weightValue));
+
+            this.oilWeight = updatedWeights.totalWeight;
+            this.cosmeticFormulaRows().forEach((cosmeticRow) => {
+                cosmeticRow.percentage = updatedWeights.percentagesByRowId.get(cosmeticRow.id) ?? 0;
+            });
+        },
+
         totalOilPercentage() {
             if (this.isCosmeticFormula) {
                 return this.cosmeticFormulaPercentageTotal();
@@ -188,7 +198,7 @@ export function createFormulaSection() {
                 return this.oilPercentageIsBalanced ? 'Formula balanced' : 'Formula must reach 100%';
             }
 
-            return this.oilPercentageIsBalanced ? 'Oil basis balanced' : 'Oil basis must reach 100%';
+            return this.oilPercentageIsBalanced ? 'Base phase balanced' : 'Base phase must reach 100%';
         },
 
         get canSaveDraft() {

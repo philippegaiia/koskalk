@@ -9,7 +9,7 @@
  <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
  <div class="min-w-0">
  <p class="sk-eyebrow">Workspace</p>
- <h3 class="mt-3 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">Create formulas, keep one working draft, and save the current formula without extra version clutter.</h3>
+ <h3 class="mt-3 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">Create formulas, keep one working draft, and save one official recipe without extra version clutter.</h3>
  <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)] sm:text-[15px]">
  The dashboard is the real home for the formulation app. It should show what matters immediately: what you can create, what is already saved, and what personal ingredients belong to you.
  </p>
@@ -35,12 +35,12 @@
  <div class="sk-card p-5">
  <p class="sk-eyebrow">Current drafts</p>
  <p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $draftCount }}</p>
- <p class="mt-2 text-sm text-[var(--color-ink-soft)]">One working draft stays editable so you can experiment before replacing the saved formula.</p>
+ <p class="mt-2 text-sm text-[var(--color-ink-soft)]">One working draft stays editable so you can experiment before replacing the official recipe.</p>
  </div>
  <div class="sk-card p-5">
- <p class="sk-eyebrow">Saved formulas</p>
+ <p class="sk-eyebrow">Official recipes</p>
  <p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $savedFormulaCount }}</p>
- <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Each recipe can keep one current saved formula, while hidden recovery snapshots stay out of the way.</p>
+ <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Each recipe can keep one official recipe, while hidden recovery snapshots stay out of the way.</p>
  </div>
  </section>
 
@@ -49,7 +49,7 @@
  <div class="flex items-center justify-between px-5 py-4">
  <div>
  <p class="sk-eyebrow">Recipes</p>
- <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Your saved formulas and draft states</h3>
+ <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Your official recipes and draft states</h3>
  </div>
  <a href="{{ route('recipes.index') }}" wire:navigate class="rounded-lg px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel-strong)]">
  View all
@@ -59,11 +59,11 @@
  @if (! $currentUser)
  <div class="p-8 text-center">
  <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">No connected workspace yet</h4>
- <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Once you open the dashboard from your signed-in app or admin session, your saved formulas will appear here automatically.</p>
+ <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Once you open the dashboard from your signed-in app or admin session, your official recipes will appear here automatically.</p>
  </div>
  @elseif ($recipes->isEmpty())
  <div class="p-8 text-center">
- <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">No saved formulas yet</h4>
+ <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">No official recipes yet</h4>
  <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Create the first soap formula, give it a name in the workbench header, and save the draft. It will then show up here with its current status.</p>
  </div>
  @else

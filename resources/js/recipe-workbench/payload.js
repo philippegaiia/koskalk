@@ -41,6 +41,13 @@ export function serializeDraft(state) {
             name: phase.name,
         })),
         phase_items: phaseItems,
+        packaging_items: (state.packagingPlanRows ?? []).map((row, index) => ({
+            user_packaging_item_id: row.user_packaging_item_id ?? null,
+            name: row.name ?? '',
+            components_per_unit: nonNegativeNumber(row.components_per_unit),
+            notes: row.notes ?? null,
+            position: index + 1,
+        })),
     };
 }
 

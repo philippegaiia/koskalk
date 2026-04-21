@@ -26,6 +26,7 @@ import {
 } from './snapshot';
 import { humanizeKey as humanizeText } from './utils';
 import { createFormulaSection } from './sections/formula-section';
+import { createPackagingSection } from './sections/packaging-section';
 import { createCostingSection } from './sections/costing-section';
 import { createPresentationSection } from './sections/presentation-section';
 import { createVersionSection } from './sections/version-section';
@@ -123,8 +124,16 @@ function createRecipeWorkbenchState(payload) {
         costingCurrency: payload.costing?.settings?.currency ?? payload.defaultCurrency ?? 'EUR',
         persistedCostingItemPrices: payload.costing?.item_prices ?? [],
         costingPriceByRowId: {},
+        packagingPlanRows: (payload.packagingItems ?? []).map((row) => ({
+            id: row.id ?? `packaging-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            user_packaging_item_id: row.user_packaging_item_id ?? null,
+            name: row.name ?? '',
+            components_per_unit: row.components_per_unit ?? 1,
+            notes: row.notes ?? '',
+        })),
         packagingCostRows: [],
-        packagingCatalog: payload.costing?.packaging_catalog ?? [],
+        packagingCatalog: payload.packagingCatalog ?? payload.costing?.packaging_catalog ?? [],
+        packagingCatalogSearch: '',
         packagingCatalogForm: {
             id: null,
             name: '',
@@ -160,6 +169,12 @@ function createRecipeWorkbenchState(payload) {
             if (this.activeWorkbenchTab === 'costing') {
                 this.ensureCostingLoaded();
             }
+
+            this.$watch('activeWorkbenchTab', (tab) => {
+                if (tab === 'costing') {
+                    this.ensureCostingLoaded();
+                }
+            });
 
             if (!this.isCosmeticFormula && this.phaseItems.saponified_oils.length === 0) {
                 const defaultOil = this.filteredIngredients.find((ingredient) => ingredient.can_add_to_saponified_oils);
@@ -674,6 +689,7 @@ export function createRecipeWorkbench(payload) {
         createCatalogSection(),
         createPersistenceSection(),
         createFormulaSection(),
+        createPackagingSection(),
         createCostingSection(payload),
         createVersionSection(payload),
         createPresentationSection(),

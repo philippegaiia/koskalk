@@ -89,6 +89,8 @@ class RecipeVersionRecordService
             'phases.items.ingredient',
             'phases.items.ingredient.sapProfile',
             'phases.items.ingredient.fattyAcidEntries.fattyAcid',
+            'packagingItems',
+            'packagingItems.packagingItem',
         ];
     }
 

@@ -247,6 +247,18 @@ class RecipeWorkbenchService
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function packagingCatalogPayload(?User $user): array
+    {
+        if (! $user instanceof User) {
+            return [];
+        }
+
+        return $this->recipeVersionCostingSynchronizer->packagingCatalogPayload($user);
+    }
+
+    /**
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>
      */

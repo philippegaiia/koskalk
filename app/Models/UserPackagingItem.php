@@ -33,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read User $user
  * @property-read Collection<int, RecipeVersionCostingPackagingItem> $costingItems
+ * @property-read Collection<int, RecipeVersionPackagingItem> $recipeVersionPackagingItems
  */
 class UserPackagingItem extends Model
 {
@@ -46,6 +47,12 @@ class UserPackagingItem extends Model
     public function costingItems(): HasMany
     {
         return $this->hasMany(RecipeVersionCostingPackagingItem::class);
+    }
+
+    /** Recipe-version packaging plan rows that reference this catalog item. */
+    public function recipeVersionPackagingItems(): HasMany
+    {
+        return $this->hasMany(RecipeVersionPackagingItem::class);
     }
 
     protected function casts(): array

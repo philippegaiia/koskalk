@@ -8,6 +8,7 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
+use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
 use App\Models\UserIngredientPrice;
 use App\Models\UserPackagingItem;
@@ -308,6 +309,7 @@ class RecipeVersionCostingSynchronizer
             );
 
             $this->syncFormulaItems($costing);
+            $this->syncPackagingItems($costing);
 
             return $costing->fresh(['items', 'packagingItems']) ?? $costing->load(['items', 'packagingItems']);
         });
@@ -371,6 +373,47 @@ class RecipeVersionCostingSynchronizer
                 'price_per_kg' => $existingRow?->price_per_kg ?? $defaultPrice?->price_per_kg,
             ]);
         });
+    }
+
+    /**
+     * Rebuild costing packaging rows from the recipe-version packaging plan.
+     *
+     * Packaging plan rows are recipe structure. Costing rows keep the price used
+     * for this user's economics, preserving existing overrides when the plan row
+     * is still present.
+     */
+    private function syncPackagingItems(RecipeVersionCosting $costing): void
+    {
+        $recipeVersion = RecipeVersion::withoutGlobalScopes()
+            ->with(['packagingItems.packagingItem'])
+            ->findOrFail($costing->recipe_version_id);
+
+        $existingRows = $costing->packagingItems()
+            ->get()
+            ->keyBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
+                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->name,
+            ));
+
+        $costing->packagingItems()->delete();
+
+        $recipeVersion->packagingItems
+            ->sortBy('position')
+            ->each(function (RecipeVersionPackagingItem $item) use ($costing, $existingRows): void {
+                $key = $this->packagingKey(
+                    $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                    $item->name,
+                );
+                $existingRow = $existingRows->get($key);
+                $catalogItem = $item->packagingItem;
+
+                $costing->packagingItems()->create([
+                    'user_packaging_item_id' => $item->user_packaging_item_id,
+                    'name' => $item->name,
+                    'unit_cost' => $existingRow?->unit_cost ?? $catalogItem?->unit_cost ?? 0,
+                    'quantity' => $item->components_per_unit,
+                ]);
+            });
     }
 
     /**
@@ -469,6 +512,11 @@ class RecipeVersionCostingSynchronizer
     private function costingKey(int $ingredientId, string $phaseKey, int $position): string
     {
         return implode(':', [$ingredientId, $phaseKey, $position]);
+    }
+
+    private function packagingKey(?int $packagingItemId, string $name): string
+    {
+        return ($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
     }
 
     /** Cast a value to a rounded float, or null if non-numeric. */

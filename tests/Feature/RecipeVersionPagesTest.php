@@ -114,7 +114,45 @@ it('renders purpose-based print pages for the current saved formula', function (
         ->assertSee('Packaging costs')
         ->assertSee('Olive Oil')
         ->assertSee('Bottle')
-        ->assertSee('Total batch cost');
+        ->assertSee('Total batch cost')
+        ->assertSee('120 EUR');
+});
+
+it('passes batch context from the saved page to print sheets', function () {
+    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
+    attachCostingToSavedVersion($user, $publishedVersion);
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.saved', [
+            'recipe' => $recipe->id,
+            'oil_weight' => 1500,
+            'batch_basis' => 1250,
+            'batch_number' => 'B-2026-042',
+            'manufacture_date' => '2026-04-20',
+            'units_produced' => 24,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('B-2026-042')
+        ->assertSee('2026-04-20')
+        ->assertSee('value="24"', false);
+
+    $response->assertSee('batch_number=B-2026-042', false)
+        ->assertSee('batch_basis=1250', false)
+        ->assertSee('manufacture_date=2026-04-20', false)
+        ->assertSee('units_produced=24', false);
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.production', [
+            'recipe' => $recipe->id,
+            'oil_weight' => 1500,
+            'batch_number' => 'B-2026-042',
+            'manufacture_date' => '2026-04-20',
+            'units_produced' => 24,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('B-2026-042')
+        ->assertSee('2026-04-20')
+        ->assertSee('24');
 });
 
 it('does not expose the saved formula to other users', function () {

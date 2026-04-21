@@ -29,8 +29,6 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class IngredientForm
 {
-    private static ?array $cachedComponentOptions = null;
-
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -326,11 +324,7 @@ class IngredientForm
      */
     private static function componentIngredientOptions(?Ingredient $record): array
     {
-        if (static::$cachedComponentOptions !== null) {
-            return static::$cachedComponentOptions;
-        }
-
-        return static::$cachedComponentOptions = Ingredient::query()
+        return Ingredient::query()
             ->where('is_active', true)
             ->when($record?->exists, fn ($query) => $query->whereKeyNot($record?->getKey()))
             ->get()

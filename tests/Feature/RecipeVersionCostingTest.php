@@ -42,6 +42,40 @@ it('prefills a costing row from the user ingredient price memory', function () {
         ->and($costing['item_prices'][0]['price_per_kg'])->toBe(12.3456);
 });
 
+it('derives costing packaging rows from the packaging plan', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Label',
+        'unit_cost' => 0.08,
+        'currency' => 'EUR',
+    ]);
+
+    $draftVersion = app(RecipeWorkbenchService::class)->saveDraft($user, $soapFamily, soapDraftPayload($ingredient) + [
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => $packagingItem->id,
+                'name' => 'Label',
+                'components_per_unit' => 2,
+                'notes' => null,
+            ],
+        ],
+    ]);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $costing = app(RecipeWorkbenchService::class)->costingPayload($recipe, $user);
+
+    expect($costing['packaging_items'])->toHaveCount(1)
+        ->and($costing['packaging_items'][0]['name'])->toBe('Label')
+        ->and($costing['packaging_items'][0]['components_per_unit'])->toBe(2.0)
+        ->and($costing['packaging_items'][0]['unit_cost'])->toBe(0.08);
+});
+
 it('saves formula costing separately while updating the user price memory', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

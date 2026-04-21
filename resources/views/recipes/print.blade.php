@@ -22,6 +22,16 @@
         ? 'Not set'
         : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.').' '.$currency;
     $oilUnit = $snapshot['draft']['oilUnit'] ?? 'g';
+    $printQuery = [
+        'recipe' => $recipe->id,
+        'oil_weight' => $selectedOilWeight,
+    ];
+
+    foreach (['batch_number', 'batch_basis', 'manufacture_date', 'units_produced'] as $batchQueryKey) {
+        if (filled($batchContext[$batchQueryKey] ?? null)) {
+            $printQuery[$batchQueryKey] = $batchContext[$batchQueryKey];
+        }
+    }
 @endphp
 
 @section('title', $recipe->name.' · '.$modeTitle.' · '.config('app.name'))
@@ -35,16 +45,16 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('recipes.saved', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">
+                <a href="{{ route('recipes.saved', $printQuery) }}" class="inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">
                     Back
                 </a>
-                <a href="{{ route('recipes.print.production', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-lg border px-4 py-2 text-sm font-medium transition {{ $isProductionMode ? 'border-slate-900 text-slate-950' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">
+                <a href="{{ route('recipes.print.production', $printQuery) }}" class="inline-flex rounded-lg border px-4 py-2 text-sm font-medium transition {{ $isProductionMode ? 'border-slate-900 text-slate-950' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">
                     Batch production sheet
                 </a>
-                <a href="{{ route('recipes.print.technical', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-lg border px-4 py-2 text-sm font-medium transition {{ $isTechnicalMode ? 'border-slate-900 text-slate-950' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">
+                <a href="{{ route('recipes.print.technical', $printQuery) }}" class="inline-flex rounded-lg border px-4 py-2 text-sm font-medium transition {{ $isTechnicalMode ? 'border-slate-900 text-slate-950' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">
                     Technical recipe sheet
                 </a>
-                <a href="{{ route('recipes.print.costing', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-lg border px-4 py-2 text-sm font-medium transition {{ $isCostingMode ? 'border-slate-900 text-slate-950' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">
+                <a href="{{ route('recipes.print.costing', $printQuery) }}" class="inline-flex rounded-lg border px-4 py-2 text-sm font-medium transition {{ $isCostingMode ? 'border-slate-900 text-slate-950' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">
                     Costing sheet
                 </a>
                 <button type="button" onclick="window.print()" class="inline-flex rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700">
@@ -68,6 +78,14 @@
                         <dd class="numeric">{{ now()->format('Y-m-d H:i') }}</dd>
                         <dt class="font-semibold text-slate-500 sm:text-left">Basis</dt>
                         <dd class="numeric">{{ $formatNumber($selectedOilWeight, 2) }} {{ $oilUnit }}</dd>
+                        @if (filled($batchContext['batch_number'] ?? null))
+                            <dt class="font-semibold text-slate-500 sm:text-left">Batch</dt>
+                            <dd class="numeric">{{ $batchContext['batch_number'] }}</dd>
+                        @endif
+                        @if (filled($batchContext['units_produced'] ?? null))
+                            <dt class="font-semibold text-slate-500 sm:text-left">Units</dt>
+                            <dd class="numeric">{{ $batchContext['units_produced'] }}</dd>
+                        @endif
                     </dl>
                 </div>
             </header>
@@ -79,9 +97,15 @@
                         <tbody>
                             <tr class="border border-slate-300">
                                 <th class="w-32 bg-slate-100 px-2 py-2 text-left font-semibold">Batch no.</th>
-                                <td class="px-2 py-2">&nbsp;</td>
+                                <td class="px-2 py-2">{{ $batchContext['batch_number'] ?: '' }}&nbsp;</td>
                                 <th class="w-32 bg-slate-100 px-2 py-2 text-left font-semibold">Date made</th>
-                                <td class="px-2 py-2">&nbsp;</td>
+                                <td class="px-2 py-2">{{ $batchContext['manufacture_date'] ?: '' }}&nbsp;</td>
+                            </tr>
+                            <tr class="border border-slate-300">
+                                <th class="bg-slate-100 px-2 py-2 text-left font-semibold">Units produced</th>
+                                <td class="numeric px-2 py-2">{{ $batchContext['units_produced'] ?: '' }}&nbsp;</td>
+                                <th class="bg-slate-100 px-2 py-2 text-left font-semibold">Batch basis</th>
+                                <td class="numeric px-2 py-2">{{ $batchContext['batch_basis'] ?: $formatNumber($selectedOilWeight, 2) }} {{ $oilUnit }}</td>
                             </tr>
                             <tr class="border border-slate-300">
                                 <th class="bg-slate-100 px-2 py-2 text-left font-semibold">Made by</th>
@@ -308,8 +332,9 @@
                                     <tr class="border border-slate-300 bg-slate-100 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
                                         <th class="px-2 py-1.5">Packaging item</th>
                                         <th class="px-2 py-1.5">Unit cost</th>
-                                        <th class="px-2 py-1.5">Quantity</th>
-                                        <th class="px-2 py-1.5">Cost</th>
+                                        <th class="px-2 py-1.5">Components/unit</th>
+                                        <th class="px-2 py-1.5">Cost/unit</th>
+                                        <th class="px-2 py-1.5">Batch cost</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -318,6 +343,7 @@
                                             <td class="px-2 py-1.5 font-medium">{{ $row['name'] }}</td>
                                             <td class="numeric px-2 py-1.5">{{ $formatMoney($row['unit_cost'], $costingCurrency) }}</td>
                                             <td class="numeric px-2 py-1.5">{{ $formatNumber($row['quantity']) }}</td>
+                                            <td class="numeric px-2 py-1.5">{{ $formatMoney($row['cost_per_finished_unit'], $costingCurrency) }}</td>
                                             <td class="numeric px-2 py-1.5 font-medium">{{ $formatMoney($row['line_cost'], $costingCurrency) }}</td>
                                         </tr>
                                     @endforeach

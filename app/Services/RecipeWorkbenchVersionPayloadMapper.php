@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
+use App\Models\RecipeVersionPackagingItem;
 
 class RecipeWorkbenchVersionPayloadMapper
 {
@@ -85,6 +86,17 @@ class RecipeWorkbenchVersionPayloadMapper
             'selectedIfraProductCategoryId' => $version->ifra_product_category_id,
             'phases' => array_values($phases),
             'phaseItems' => $phaseRows,
+            'packagingItems' => $version->packagingItems
+                ->sortBy('position')
+                ->map(fn (RecipeVersionPackagingItem $item): array => [
+                    'id' => 'saved-packaging-'.$item->id,
+                    'user_packaging_item_id' => $item->user_packaging_item_id,
+                    'name' => $item->name,
+                    'components_per_unit' => (float) $item->components_per_unit,
+                    'notes' => $item->notes,
+                ])
+                ->values()
+                ->all(),
             'catalogReview' => $catalogReview,
         ];
     }

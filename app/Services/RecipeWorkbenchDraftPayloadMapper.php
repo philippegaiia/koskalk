@@ -50,6 +50,7 @@ class RecipeWorkbenchDraftPayloadMapper
             'ifra_product_category_id' => $draft['selectedIfraProductCategoryId'] ?? null,
             'phases' => $draft['phases'] ?? $this->phasesFromItems($draft['phaseItems'] ?? []),
             'phase_items' => $draft['phaseItems'] ?? [],
+            'packaging_items' => $draft['packagingItems'] ?? [],
         ];
     }
 

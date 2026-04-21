@@ -231,6 +231,8 @@ class RecipeWorkbenchVersionDataService
             'phases.items.ingredient.fattyAcidEntries.fattyAcid',
             'phases.items.ingredient.allergenEntries.allergen',
             'phases.items.ingredient.ifraCertificates.limits',
+            'packagingItems',
+            'packagingItems.packagingItem',
         ];
     }
 

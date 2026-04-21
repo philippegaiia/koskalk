@@ -27,20 +27,22 @@ it('renders packaging below ingredient costing with simplified wording', functio
         ->assertSuccessful()
         ->assertSeeInOrder([
             'Ingredient costing',
-            'Packaging',
+            'Packaging costing',
             'Cost summary',
         ])
-        ->assertSee('Add reusable packaging items used for one finished unit.')
+        ->assertSee('Packaging structure comes from the Packaging tab. Costing only updates the effective unit price.')
         ->assertSee('Packaging item')
         ->assertSee('New packaging item')
         ->assertSee('Components per unit')
         ->assertSee('Unit price')
         ->assertSee('Cost per unit')
         ->assertSee('Batch cost')
-        ->assertSee('Save and add')
+        ->assertSee('Save and add to plan')
         ->assertSee('Save only')
-        ->assertSee('No packaging added yet.')
-        ->assertSee('Add a reusable packaging item to include boxes, labels, stickers, and other unit-level packaging in this costing.')
+        ->assertSee('No packaging planned yet.')
+        ->assertSee('Add packaging on the Packaging tab, then save the draft to price it here.')
+        ->assertDontSee('Add reusable packaging items used for one finished unit.')
+        ->assertDontSee('Add a reusable packaging item to include boxes, labels, stickers, and other unit-level packaging in this costing.')
         ->assertDontSee('Packaging usage per finished unit')
         ->assertDontSee('Quantity');
 });

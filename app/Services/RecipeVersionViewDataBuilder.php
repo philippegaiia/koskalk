@@ -9,6 +9,7 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
+use App\Models\RecipeVersionPackagingItem;
 
 class RecipeVersionViewDataBuilder
 {
@@ -29,7 +30,7 @@ class RecipeVersionViewDataBuilder
      *     selectedOilWeight: float
      * }
      */
-    public function build(Recipe $recipe, RecipeVersion $version, mixed $requestedOilWeight = null): array
+    public function build(Recipe $recipe, RecipeVersion $version, mixed $requestedOilWeight = null, array $batchContext = []): array
     {
         $snapshot = $this->recipeWorkbenchService->versionSnapshot($recipe, $version->id);
 
@@ -47,9 +48,10 @@ class RecipeVersionViewDataBuilder
         }
 
         $isCosmetic = $recipe->productFamily?->calculation_basis === 'total_formula';
+        $normalizedBatchContext = $this->batchContext($batchContext, $selectedOilWeight);
 
         $phaseSections = $this->phaseSections($snapshot['draft'], $isCosmetic);
-        $costingData = $this->costingData($recipe, $version, $selectedOilWeight);
+        $costingData = $this->costingData($recipe, $version, $selectedOilWeight, $normalizedBatchContext);
 
         return [
             'recipe' => $recipe,
@@ -60,12 +62,53 @@ class RecipeVersionViewDataBuilder
             'contextRows' => $this->contextRows($snapshot['draft'], $snapshot['calculation'], $version, $isCosmetic),
             'lyeRows' => $isCosmetic ? [] : $this->lyeRows($snapshot['draft'], $snapshot['calculation']),
             'recoverySnapshots' => $this->recoverySnapshots($recipe, $version),
+            'packagingPlanRows' => $this->packagingPlanRows($version),
             'costingSummary' => $costingData['summary'],
             'costingIngredientRows' => $costingData['ingredientRows'],
             'costingPackagingRows' => $costingData['packagingRows'],
             'costingCurrency' => $costingData['currency'],
             'hasCostingData' => $costingData['hasCostingData'],
+            'batchContext' => $normalizedBatchContext,
             'selectedOilWeight' => $selectedOilWeight,
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function packagingPlanRows(RecipeVersion $version): array
+    {
+        return $version->packagingItems()
+            ->with('packagingItem')
+            ->get()
+            ->map(fn (RecipeVersionPackagingItem $item): array => [
+                'name' => $item->name,
+                'components_per_unit' => (float) $item->components_per_unit,
+                'notes' => $item->notes,
+                'catalog_price' => $item->packagingItem?->unit_cost === null ? null : (float) $item->packagingItem->unit_cost,
+                'currency' => $item->packagingItem?->currency,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array{batch_number: string, manufacture_date: string, batch_basis: string, units_produced: string}
+     */
+    private function batchContext(array $context, float $selectedOilWeight): array
+    {
+        $batchBasis = trim((string) ($context['batch_basis'] ?? $context['oil_weight'] ?? ''));
+
+        return [
+            'batch_number' => trim((string) ($context['batch_number'] ?? '')),
+            'manufacture_date' => trim((string) ($context['manufacture_date'] ?? '')) !== ''
+                ? trim((string) $context['manufacture_date'])
+                : now()->toDateString(),
+            'batch_basis' => $batchBasis !== ''
+                ? $batchBasis
+                : rtrim(rtrim(number_format($selectedOilWeight, 2, '.', ''), '0'), '.'),
+            'units_produced' => trim((string) ($context['units_produced'] ?? '')),
         ];
     }
 
@@ -394,7 +437,7 @@ class RecipeVersionViewDataBuilder
      *     hasCostingData: bool
      * }
      */
-    private function costingData(Recipe $recipe, RecipeVersion $version, float $selectedOilWeight): array
+    private function costingData(Recipe $recipe, RecipeVersion $version, float $selectedOilWeight, array $batchContext): array
     {
         $costing = RecipeVersionCosting::query()
             ->with(['items.ingredient', 'packagingItems'])
@@ -433,30 +476,37 @@ class RecipeVersionViewDataBuilder
             ->values()
             ->all();
 
+        $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null) ?? $costing->units_produced;
+
         $packagingRows = $costing->packagingItems
-            ->map(function (RecipeVersionCostingPackagingItem $item): array {
+            ->map(function (RecipeVersionCostingPackagingItem $item) use ($unitsProduced): array {
                 $unitCost = (float) $item->unit_cost;
                 $quantity = (float) $item->quantity;
+                $costPerFinishedUnit = round($unitCost * $quantity, 4);
 
                 return [
                     'name' => $item->name,
                     'unit_cost' => $unitCost,
                     'quantity' => $quantity,
-                    'line_cost' => round($unitCost * $quantity, 4),
+                    'cost_per_finished_unit' => $costPerFinishedUnit,
+                    'line_cost' => $unitsProduced !== null && $unitsProduced > 0
+                        ? round($costPerFinishedUnit * $unitsProduced, 4)
+                        : null,
                 ];
             })
             ->values()
             ->all();
 
         $ingredientTotal = collect($ingredientRows)->sum(fn (array $row): float => (float) ($row['line_cost'] ?? 0));
-        $packagingTotal = collect($packagingRows)->sum(fn (array $row): float => (float) ($row['line_cost'] ?? 0));
-        $batchTotal = round($ingredientTotal + $packagingTotal, 4);
-        $unitsProduced = $costing->units_produced;
+        $packagingTotal = $unitsProduced !== null && $unitsProduced > 0
+            ? collect($packagingRows)->sum(fn (array $row): float => (float) ($row['line_cost'] ?? 0))
+            : null;
+        $batchTotal = round($ingredientTotal + ($packagingTotal ?? 0), 4);
 
         return [
             'summary' => [
                 ['label' => 'Ingredient total', 'value' => $this->money($ingredientTotal, $currency)],
-                ['label' => 'Packaging total', 'value' => $this->money($packagingTotal, $currency)],
+                ['label' => 'Packaging total', 'value' => $packagingTotal !== null ? $this->money($packagingTotal, $currency) : 'Set units produced'],
                 ['label' => 'Total batch cost', 'value' => $this->money($batchTotal, $currency)],
                 ['label' => 'Cost per unit', 'value' => $unitsProduced !== null && $unitsProduced > 0 ? $this->money($batchTotal / $unitsProduced, $currency) : 'Not set'],
             ],
@@ -503,5 +553,16 @@ class RecipeVersionViewDataBuilder
     private function money(float $value, string $currency): string
     {
         return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.').' '.$currency;
+    }
+
+    private function positiveInt(mixed $value): ?int
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $normalized = (int) $value;
+
+        return $normalized > 0 ? $normalized : null;
     }
 }

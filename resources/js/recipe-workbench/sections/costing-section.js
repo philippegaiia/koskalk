@@ -209,42 +209,12 @@ export function createCostingSection(payload) {
                 : 0;
         },
 
-        get unusedPackagingCatalogItems() {
-            const usedIds = new Set(
-                this.packagingCostRows
-                    .map((row) => row.user_packaging_item_id)
-                    .filter((id) => id !== null),
-            );
-
-            return this.packagingCatalog.filter((item) => !usedIds.has(item.id));
-        },
-
-        addPackagingCostRow(packagingItem = null) {
-            this.packagingCostRows = [
-                ...this.packagingCostRows,
-                {
-                    id: this.makeLocalPackagingRowId(),
-                    user_packaging_item_id: packagingItem?.id ?? null,
-                    name: packagingItem?.name ?? '',
-                    unit_cost: packagingItem?.unit_cost ?? 0,
-                    quantity: 1,
-                },
-            ];
-
-            this.scheduleCostingSave();
-        },
-
         packagingCostPerFinishedUnitForRow(row) {
             return nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.quantity);
         },
 
         packagingBatchCostForRow(row) {
             return this.packagingCostPerFinishedUnitForRow(row) * this.costingUnitsProducedValue;
-        },
-
-        removePackagingCostRow(rowId) {
-            this.packagingCostRows = this.packagingCostRows.filter((row) => row.id !== rowId);
-            this.scheduleCostingSave();
         },
 
         scheduleCostingSave() {
@@ -306,7 +276,7 @@ export function createCostingSection(payload) {
             this.resetPackagingCatalogForm();
         },
 
-        async savePackagingCatalogItem(addToCosting = false) {
+        async savePackagingCatalogItem(addToPlan = false) {
             if (`${this.packagingCatalogForm.name ?? ''}`.trim() === '') {
                 this.packagingCatalogStatus = 'error';
                 this.packagingCatalogMessage = 'Packaging items need a name.';
@@ -317,8 +287,8 @@ export function createCostingSection(payload) {
             const saved = await persistPackagingCatalogItem(this, this.packagingCatalogForm);
 
             if (saved) {
-                if (addToCosting) {
-                    this.addPackagingCostRow(saved);
+                if (addToPlan) {
+                    this.addPackagingPlanRow(saved);
                 }
 
                 this.closePackagingCatalogModal(true);
@@ -327,16 +297,12 @@ export function createCostingSection(payload) {
             return saved;
         },
 
-        async savePackagingCatalogItemAndAddToCosting() {
+        async savePackagingCatalogItemAndAdd() {
             return this.savePackagingCatalogItem(true);
         },
 
         async savePackagingCatalogItemOnly() {
             return this.savePackagingCatalogItem(false);
-        },
-
-        makeLocalPackagingRowId() {
-            return `packaging-${Date.now()}-${Math.random().toString(16).slice(2)}`;
         },
 
         normalizeDecimalBlur(event) {

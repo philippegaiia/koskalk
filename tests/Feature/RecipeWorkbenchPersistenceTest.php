@@ -490,7 +490,128 @@ it('returns the saved packaging item payload when saving a packaging catalog ite
         ->value('unit_cost'))->toBe('1.2345');
 });
 
-it('defaults a new packaging row to one component per finished unit in the workbench flow', function () {
+it('serializes packaging plan row positions with the draft payload', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/payload.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace(/export function /g, 'function ');
+
+const normalizedIfraProductCategoryId = (value) => value;
+const rowWeight = () => 0;
+const nonNegativeNumber = (value) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : 0;
+
+eval(`${source}\nglobalThis.serializeDraft = serializeDraft;`);
+
+const payload = globalThis.serializeDraft({
+  formulaName: 'Positioned packaging',
+  oilUnit: 'g',
+  oilWeight: 1000,
+  phaseOrder: [],
+  phaseItems: {},
+  packagingPlanRows: [
+    { id: 'box', user_packaging_item_id: 11, name: 'Box', components_per_unit: 1, notes: null },
+    { id: 'label', user_packaging_item_id: 12, name: 'Label', components_per_unit: 2, notes: 'Front and back' },
+  ],
+});
+
+console.log(JSON.stringify(payload.packaging_items));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $rows = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($rows)->toHaveCount(2)
+        ->and($rows[0]['position'])->toBe(1)
+        ->and($rows[1]['position'])->toBe(2);
+});
+
+it('hydrates saved draft packaging rows into the workbench state', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/snapshot.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace(/export function /g, 'function ');
+
+const number = (value) => Number(value ?? 0);
+
+eval(`${source}\nglobalThis.draftStateFromDraft = draftStateFromDraft;`);
+
+const state = globalThis.draftStateFromDraft({
+  phases: [{ key: 'phase_a', name: 'Phase A' }],
+  phaseItems: { phase_a: [] },
+  packagingItems: [
+    {
+      id: 'saved-packaging-14',
+      user_packaging_item_id: 14,
+      name: 'Amber Jar',
+      components_per_unit: 1,
+      notes: 'Primary pack',
+    },
+  ],
+}, {
+  recipeId: 10,
+  draftVersionId: 20,
+  currentVersionNumber: null,
+  currentVersionIsDraft: true,
+  productTypeId: null,
+  formulaName: 'Draft',
+  oilUnit: 'g',
+  oilWeight: 100,
+  manufacturingMode: 'blend_only',
+  exposureMode: 'leave_on',
+  regulatoryRegime: 'eu',
+  editMode: 'percentage',
+  lyeType: 'naoh',
+  kohPurity: 90,
+  dualKohPercentage: 40,
+  waterMode: 'percent_of_oils',
+  waterValue: 38,
+  superfat: 5,
+  phaseOrder: [{ key: 'phase_a', name: 'Phase A' }],
+  packagingPlanRows: [],
+  catalogReview: null,
+});
+
+console.log(JSON.stringify({
+  packagingPlanRows: state.packagingPlanRows ?? [],
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['packagingPlanRows'])->toHaveCount(1)
+        ->and($payload['packagingPlanRows'][0])->toMatchArray([
+            'id' => 'saved-packaging-14',
+            'user_packaging_item_id' => 14,
+            'name' => 'Amber Jar',
+            'components_per_unit' => 1,
+            'notes' => 'Primary pack',
+        ]);
+});
+
+it('does not expose legacy packaging costing structure helpers', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
 
@@ -514,9 +635,12 @@ eval(`${source}\nglobalThis.createCostingSection = createCostingSection;`);
 
 Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
 
-state.addPackagingCostRow();
-
-console.log(JSON.stringify(state.packagingCostRows[0]));
+console.log(JSON.stringify({
+  hasAddPackagingCostRow: typeof state.addPackagingCostRow === 'function',
+  hasRemovePackagingCostRow: typeof state.removePackagingCostRow === 'function',
+  hasSaveAndAddToCosting: typeof state.savePackagingCatalogItemAndAddToCosting === 'function',
+  hasUnusedPackagingCatalogItems: Object.prototype.hasOwnProperty.call(Object.getOwnPropertyDescriptors(createCostingSection({})), 'unusedPackagingCatalogItems'),
+}));
 JS;
 
     $process = Process::fromShellCommandline(
@@ -528,18 +652,277 @@ JS;
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 
-    $row = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
 
-    expect($row['quantity'])->toBe(1);
+    expect($payload['hasAddPackagingCostRow'])->toBeFalse()
+        ->and($payload['hasRemovePackagingCostRow'])->toBeFalse()
+        ->and($payload['hasSaveAndAddToCosting'])->toBeFalse()
+        ->and($payload['hasUnusedPackagingCatalogItems'])->toBeFalse();
 });
 
-it('can save a packaging catalog item and add it to costing at one component per finished unit', function () {
+it('does not load costing when the packaging tab is opened', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const refreshWorkbenchLabelingPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({
+  addIngredient() {},
+});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({
+  initializeCostingState() {},
+  ensureCostingLoaded() {
+    this.ensureCostingLoadedCalls = (this.ensureCostingLoadedCalls ?? 0) + 1;
+  },
+  resetPackagingCatalogForm() {},
+  reconcileCostingPrices() {},
+});
+const createPresentationSection = () => ({
+  syncIngredientListVariantSelection() {},
+});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = {
+  location: { hash: '' },
+  addEventListener() {},
+  removeEventListener() {},
+};
+globalThis.document = {
+  addEventListener() {},
+  removeEventListener() {},
+};
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const watchers = {};
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [{ key: 'saponified_oils', name: 'Saponified Oils' }],
+  ingredients: [],
+  recipe: { id: 5, draft_version_id: 8 },
+});
+
+workbench.$watch = (key, callback) => {
+  watchers[key] = callback;
+};
+
+workbench.init();
+workbench.activeWorkbenchTab = 'packaging';
+watchers.activeWorkbenchTab?.('packaging');
+
+console.log(JSON.stringify({
+  ensureCostingLoadedCalls: workbench.ensureCostingLoadedCalls ?? 0,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['ensureCostingLoadedCalls'])->toBe(0);
+});
+
+it('seeds the packaging catalog from the initial workbench payload', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const refreshWorkbenchLabelingPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({
+  initializeCostingState() {},
+  ensureCostingLoaded() {},
+  resetPackagingCatalogForm() {},
+  reconcileCostingPrices() {},
+});
+const createPresentationSection = () => ({
+  syncIngredientListVariantSelection() {},
+});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  ingredients: [],
+  packagingCatalog: [
+    {
+      id: 44,
+      name: 'Amber Jar',
+      unit_cost: 0.82,
+      currency: 'EUR',
+      notes: 'Reusable catalog item',
+    },
+  ],
+  defaultCurrency: 'EUR',
+});
+
+console.log(JSON.stringify({
+  packagingCatalogCount: workbench.packagingCatalog.length,
+  firstPackagingItem: workbench.packagingCatalog[0] ?? null,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['packagingCatalogCount'])->toBe(1)
+        ->and($payload['firstPackagingItem'])->toMatchArray([
+            'id' => 44,
+            'name' => 'Amber Jar',
+            'unit_cost' => 0.82,
+            'currency' => 'EUR',
+            'notes' => 'Reusable catalog item',
+        ]);
+});
+
+it('filters the packaging catalog by a case-insensitive search term', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const state = {
+  packagingCatalogSearch: 'jar',
+  packagingCatalog: [
+    { id: 1, name: 'Amber Jar', notes: 'Glass' },
+    { id: 2, name: 'Wrap Label', notes: 'Paper band' },
+    { id: 3, name: 'Lid', notes: 'Jar closure' },
+  ],
+};
+
+const source = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createPackagingSection', 'function createPackagingSection');
+
+globalThis.createPackagingSection = undefined;
+eval(`${source}\nglobalThis.createPackagingSection = createPackagingSection;`);
+
+Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPackagingSection()));
+
+console.log(JSON.stringify({
+  filteredIds: state.filteredPackagingCatalog.map((item) => item.id),
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['filteredIds'])->toBe([1, 3]);
+});
+
+it('includes the user packaging catalog on the rendered workbench component', function () {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Amber Jar',
+        'unit_cost' => 0.82,
+        'currency' => 'EUR',
+        'notes' => 'Reusable catalog item',
+    ]);
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $workbench = $component->render(app(RecipeWorkbenchService::class))->getData()['workbench'];
+
+    expect($workbench['packagingCatalog'])->toHaveCount(1)
+        ->and($workbench['packagingCatalog'][0])->toMatchArray([
+            'name' => 'Amber Jar',
+            'unit_cost' => 0.82,
+            'currency' => 'EUR',
+            'notes' => 'Reusable catalog item',
+        ]);
+});
+
+it('can save a packaging catalog item and add it to the packaging plan', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
 
 const state = {
   costingCurrency: 'EUR',
   packagingCatalog: [],
+  packagingPlanRows: [],
   packagingCostRows: [],
   packagingCatalogStatus: null,
   packagingCatalogMessage: '',
@@ -601,22 +984,31 @@ const costingSource = fs
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createCostingSection', 'function createCostingSection');
 
+const packagingSource = fs
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createPackagingSection', 'function createPackagingSection');
+
 globalThis.persistPackagingCatalogItem = undefined;
 globalThis.persistCosting = async () => {};
 globalThis.createCostingSection = undefined;
+globalThis.createPackagingSection = undefined;
 eval(`${bridgeSource}\nglobalThis.persistPackagingCatalogItem = persistPackagingCatalogItem;`);
 eval(`const persistCosting = globalThis.persistCosting;\n${costingSource}\nglobalThis.createCostingSection = createCostingSection;`);
+eval(`${packagingSource}\nglobalThis.createPackagingSection = createPackagingSection;`);
 
+Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPackagingSection()));
 Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
 
-await state.savePackagingCatalogItemAndAddToCosting();
+await state.savePackagingCatalogItemAndAdd();
 
 console.log(JSON.stringify({
   packagingCatalogCount: state.packagingCatalog.length,
   packagingCatalogStatus: state.packagingCatalogStatus,
   packagingCatalogMessage: state.packagingCatalogMessage,
   packagingCatalogModalOpen: state.packagingCatalogModalOpen,
-  row: state.packagingCostRows[0] ?? null,
+  row: state.packagingPlanRows[0] ?? null,
+  costingRows: state.packagingCostRows.length,
   form: state.packagingCatalogForm,
 }));
 JS;
@@ -639,9 +1031,10 @@ JS;
         ->and($payload['row'])->toMatchArray([
             'user_packaging_item_id' => 41,
             'name' => 'Amber Jar',
-            'unit_cost' => 1.2345,
-            'quantity' => 1,
+            'components_per_unit' => 1,
+            'notes' => '',
         ])
+        ->and($payload['costingRows'])->toBe(0)
         ->and($payload['form'])->toMatchArray([
             'id' => null,
             'name' => '',
@@ -651,36 +1044,35 @@ JS;
         ]);
 });
 
-it('adds a saved catalog item to costing with one component per unit', function () {
+it('adds a saved catalog item to the packaging plan with one component per unit', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
 
 const state = {
-  packagingCostRows: [],
-  scheduleCostingSave() {},
-  makeLocalPackagingRowId() {
-    return `row-${this.packagingCostRows.length + 1}`;
+  packagingPlanRows: [],
+  makeLocalPackagingPlanRowId() {
+    return `row-${this.packagingPlanRows.length + 1}`;
   },
 };
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace('export function createCostingSection', 'function createCostingSection');
+  .replace('export function createPackagingSection', 'function createPackagingSection');
 
-globalThis.createCostingSection = undefined;
-eval(`${source}\nglobalThis.createCostingSection = createCostingSection;`);
+globalThis.createPackagingSection = undefined;
+eval(`${source}\nglobalThis.createPackagingSection = createPackagingSection;`);
 
-Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
+Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPackagingSection()));
 
-state.addPackagingCostRow({
+state.addPackagingPlanRow({
   id: 91,
   name: 'Soap box',
   unit_cost: 0.42,
 });
 
 console.log(JSON.stringify({
-  row: state.packagingCostRows[0] ?? null,
+  row: state.packagingPlanRows[0] ?? null,
 }));
 JS;
 
@@ -698,8 +1090,8 @@ JS;
     expect($payload['row'])->toMatchArray([
         'user_packaging_item_id' => 91,
         'name' => 'Soap box',
-        'unit_cost' => 0.42,
-        'quantity' => 1,
+        'components_per_unit' => 1,
+        'notes' => '',
     ]);
 });
 
@@ -732,6 +1124,7 @@ const buildDraftStateFromDraft = () => null;
 const buildSnapshotStateFromSnapshot = () => null;
 const humanizeText = (value) => value;
 const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
 const createCostingSection = () => ({});
 const createPresentationSection = () => ({});
 const createVersionSection = () => ({});
@@ -833,6 +1226,7 @@ const buildDraftStateFromDraft = () => null;
 const buildSnapshotStateFromSnapshot = () => null;
 const humanizeText = (value) => value;
 const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
 const createCostingSection = () => ({});
 const createPresentationSection = () => ({});
 const createVersionSection = () => ({});
@@ -919,6 +1313,7 @@ const buildDraftStateFromDraft = () => null;
 const buildSnapshotStateFromSnapshot = () => null;
 const humanizeText = (value) => value;
 const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
 const createCostingSection = () => ({});
 const createPresentationSection = () => ({});
 const createVersionSection = () => ({});
@@ -1006,6 +1401,7 @@ const buildDraftStateFromDraft = () => null;
 const buildSnapshotStateFromSnapshot = () => null;
 const humanizeText = (value) => value;
 const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
 const createCostingSection = () => ({});
 const createPresentationSection = () => ({});
 const createVersionSection = () => ({});
@@ -1490,6 +1886,17 @@ it('keeps formula table controls stepped and visually aligned', function () {
         ->toContain('type="number" inputmode="decimal" step="0.1"')
         ->toContain('type="number" inputmode="decimal" step="0.001"')
         ->toContain('format(rowWeight(row), 3)');
+});
+
+it('keeps packaging catalog controls below the intro in a horizontal row', function () {
+    $packagingTab = view('livewire.dashboard.partials.recipe-workbench.packaging-tab')->render();
+
+    expect($packagingTab)
+        ->toContain('max-w-3xl text-sm text-[var(--color-ink-soft)]')
+        ->toContain('flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center')
+        ->toContain('sm:w-72')
+        ->toContain('sm:min-w-72')
+        ->not->toContain('lg:flex-row lg:items-start lg:justify-between');
 });
 
 it('keeps formula visual states distinct and softly selected', function () {

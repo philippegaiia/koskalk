@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
+use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
+use App\Models\UserPackagingItem;
 use App\OwnerType;
 use App\Visibility;
 
@@ -57,6 +59,48 @@ class RecipeVersionStructureSynchronizer
                 $recipeItem->recipePhase()->associate($phase);
                 $recipeItem->save();
             }
+        }
+
+        $this->syncPackagingItems($recipeVersion, $user, $normalizedPayload['packaging_items'] ?? []);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $packagingItems
+     */
+    private function syncPackagingItems(RecipeVersion $recipeVersion, User $user, array $packagingItems): void
+    {
+        RecipeVersionPackagingItem::query()
+            ->where('recipe_version_id', $recipeVersion->id)
+            ->delete();
+
+        $linkedPackagingItems = UserPackagingItem::query()
+            ->where('user_id', $user->id)
+            ->whereIn('id', collect($packagingItems)
+                ->pluck('user_packaging_item_id')
+                ->filter(fn (mixed $id): bool => is_numeric($id))
+                ->map(fn (mixed $id): int => (int) $id)
+                ->all())
+            ->get()
+            ->keyBy('id');
+
+        foreach ($packagingItems as $index => $packagingItemPayload) {
+            $linkedPackagingItemId = isset($packagingItemPayload['user_packaging_item_id'])
+                && $linkedPackagingItems->has((int) $packagingItemPayload['user_packaging_item_id'])
+                    ? (int) $packagingItemPayload['user_packaging_item_id']
+                    : null;
+
+            $packagingItem = new RecipeVersionPackagingItem([
+                'user_packaging_item_id' => $linkedPackagingItemId,
+                'name' => trim((string) ($packagingItemPayload['name'] ?? '')),
+                'components_per_unit' => (float) ($packagingItemPayload['components_per_unit'] ?? 1),
+                'notes' => $packagingItemPayload['notes'] ?? null,
+                'position' => isset($packagingItemPayload['position']) && is_numeric($packagingItemPayload['position'])
+                    ? max(1, (int) $packagingItemPayload['position'])
+                    : $index + 1,
+            ]);
+
+            $packagingItem->recipeVersion()->associate($recipeVersion);
+            $packagingItem->save();
         }
     }
 }

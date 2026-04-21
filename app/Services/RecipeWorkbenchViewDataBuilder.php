@@ -43,6 +43,7 @@ class RecipeWorkbenchViewDataBuilder
                     ?? $this->recipeWorkbenchIfraOptionsBuilder->defaultCategoryId($productFamily)),
             'costing' => null,
             'costingLoaded' => false,
+            'packagingCatalog' => $this->recipeWorkbenchService->packagingCatalogPayload($user),
             'defaultCurrency' => $defaultCurrency,
             'currencies' => $this->currencyOptions(),
         ];

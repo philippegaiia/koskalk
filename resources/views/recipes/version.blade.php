@@ -8,6 +8,16 @@
         @php
             /** @var array<string, string>|null $draftReplaceConfirmation */
             $draftReplaceConfirmation = session('draftReplaceConfirmation');
+            $printQuery = [
+                'recipe' => $recipe->id,
+                'oil_weight' => $selectedOilWeight,
+            ];
+
+            foreach (['batch_number', 'batch_basis', 'manufacture_date', 'units_produced'] as $batchQueryKey) {
+                if (filled($batchContext[$batchQueryKey] ?? null)) {
+                    $printQuery[$batchQueryKey] = $batchContext[$batchQueryKey];
+                }
+            }
         @endphp
 
         @if (is_array($draftReplaceConfirmation))
@@ -64,13 +74,13 @@
                                 Duplicate
                             </button>
                         </form>
-                        <a href="{{ route('recipes.print.production', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                        <a href="{{ route('recipes.print.production', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
                             Batch production sheet
                         </a>
-                        <a href="{{ route('recipes.print.technical', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                        <a href="{{ route('recipes.print.technical', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
                             Technical recipe sheet
                         </a>
-                        <a href="{{ route('recipes.print.costing', ['recipe' => $recipe->id, 'oil_weight' => $selectedOilWeight]) }}" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
+                        <a href="{{ route('recipes.print.costing', $printQuery) }}" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
                             Costing sheet
                         </a>
                     </div>
@@ -143,6 +153,75 @@
             </div>
         </details>
         @endif
+
+        <section class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
+            <div class="sk-card overflow-hidden">
+                <div class="border-b border-[var(--color-line)] px-5 py-4">
+                    <p class="sk-eyebrow">Packaging plan</p>
+                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Packaging plan</h2>
+                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Read-only packaging structure for one finished unit.</p>
+                </div>
+
+                @if ($packagingPlanRows !== [])
+                    <div class="divide-y divide-[var(--color-line)]">
+                        @foreach ($packagingPlanRows as $packagingRow)
+                            <div class="flex flex-col gap-3 px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
+                                <div>
+                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $packagingRow['name'] }}</p>
+                                    @if ($packagingRow['notes'])
+                                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $packagingRow['notes'] }}</p>
+                                    @endif
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
+                                        {{ rtrim(rtrim(number_format((float) $packagingRow['components_per_unit'], 3, '.', ''), '0'), '.') }} per unit
+                                    </span>
+                                    @if ($packagingRow['catalog_price'] !== null)
+                                        <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
+                                            {{ $packagingRow['currency'] }} {{ rtrim(rtrim(number_format((float) $packagingRow['catalog_price'], 4, '.', ''), '0'), '.') }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
+                        No packaging plan is saved for this official recipe yet.
+                    </div>
+                @endif
+            </div>
+
+            <form method="GET" action="{{ route('recipes.saved', ['recipe' => $recipe->id]) }}" class="sk-card p-5">
+                <p class="sk-eyebrow">Prepare batch</p>
+                <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Prepare batch</h2>
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Set production context for printing without editing the official recipe.</p>
+
+                <label class="mt-4 block">
+                    <span class="text-sm font-medium text-[var(--color-ink-strong)]">Batch number</span>
+                    <input name="batch_number" value="{{ $batchContext['batch_number'] }}" type="text" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                </label>
+
+                <label class="mt-3 block">
+                    <span class="text-sm font-medium text-[var(--color-ink-strong)]">Manufacture date</span>
+                    <input name="manufacture_date" value="{{ $batchContext['manufacture_date'] }}" type="date" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                </label>
+
+                <label class="mt-3 block">
+                    <span class="text-sm font-medium text-[var(--color-ink-strong)]">Batch basis quantity</span>
+                    <input name="oil_weight" value="{{ $batchContext['batch_basis'] }}" type="text" inputmode="decimal" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                </label>
+
+                <label class="mt-3 block">
+                    <span class="text-sm font-medium text-[var(--color-ink-strong)]">Units produced</span>
+                    <input name="units_produced" value="{{ $batchContext['units_produced'] }}" type="text" inputmode="numeric" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                </label>
+
+                <button type="submit" class="mt-4 rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
+                    Update print context
+                </button>
+            </form>
+        </section>
 
         @include('recipes.partials.version-sheet', [
             'recipe' => $recipe,

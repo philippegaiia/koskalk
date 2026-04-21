@@ -75,7 +75,7 @@ class RecipeController extends Controller
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
         [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
-        $viewData = $recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'));
+        $viewData = $recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
 
         return view('recipes.version', $viewData);
     }
@@ -177,7 +177,7 @@ class RecipeController extends Controller
         [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
-            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight')),
+            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
             'printMode' => 'production',
         ]);
     }
@@ -212,7 +212,7 @@ class RecipeController extends Controller
         [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
-            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight')),
+            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
             'printMode' => 'technical',
         ]);
     }
@@ -226,7 +226,7 @@ class RecipeController extends Controller
         [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
-            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight')),
+            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
             'printMode' => 'costing',
         ]);
     }

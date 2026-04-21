@@ -1,4 +1,4 @@
-<nav class="grid gap-2 xl:grid-cols-4">
+<nav class="grid gap-2 xl:grid-cols-5">
  <button
  type="button"
  @click="activeWorkbenchTab = 'formula'"
@@ -8,6 +8,17 @@
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
  Formula
+ </button>
+
+ <button
+ type="button"
+ @click="activeWorkbenchTab = 'packaging'"
+ :class="activeWorkbenchTab === 'packaging'
+ ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
+ : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
+ class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
+ >
+ Packaging
  </button>
 
  <button

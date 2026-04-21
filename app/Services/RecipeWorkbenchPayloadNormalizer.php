@@ -27,7 +27,8 @@ class RecipeWorkbenchPayloadNormalizer
      *     ifra_product_category_id: int|null,
      *     water_settings: array{mode: string, value: float},
      *     calculation_context: array<string, mixed>,
-     *     phases: array<int, array<string, mixed>>
+     *     phases: array<int, array<string, mixed>>,
+     *     packaging_items: array<int, array<string, mixed>>
      * }
      */
     public function normalize(array $payload, ?ProductFamily $productFamily = null, bool $requireComplete = true): array
@@ -103,6 +104,7 @@ class RecipeWorkbenchPayloadNormalizer
                     })),
                 ];
             }, $normalizedRecipe['phases']),
+            'packaging_items' => $this->normalizePackagingItems($payload['packaging_items'] ?? []),
         ];
     }
 
@@ -120,7 +122,8 @@ class RecipeWorkbenchPayloadNormalizer
      *     ifra_product_category_id: int|null,
      *     water_settings: array<string, mixed>,
      *     calculation_context: array<string, mixed>,
-     *     phases: array<int, array<string, mixed>>
+     *     phases: array<int, array<string, mixed>>,
+     *     packaging_items: array<int, array<string, mixed>>
      * }
      */
     private function normalizeCosmetic(array $payload, ?ProductFamily $productFamily, bool $requireComplete): array
@@ -219,7 +222,40 @@ class RecipeWorkbenchPayloadNormalizer
                 'calculation_basis' => 'total_formula',
             ],
             'phases' => $normalizedPhases,
+            'packaging_items' => $this->normalizePackagingItems($payload['packaging_items'] ?? []),
         ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     user_packaging_item_id: int|null,
+     *     name: string,
+     *     components_per_unit: float,
+     *     notes: string|null,
+     *     position: int
+     * }>
+     */
+    private function normalizePackagingItems(mixed $items): array
+    {
+        return collect(is_array($items) ? $items : [])
+            ->filter(fn (mixed $row): bool => is_array($row))
+            ->map(function (array $row): array {
+                return [
+                    'user_packaging_item_id' => isset($row['user_packaging_item_id']) && is_numeric($row['user_packaging_item_id'])
+                        ? (int) $row['user_packaging_item_id']
+                        : null,
+                    'name' => trim((string) ($row['name'] ?? '')),
+                    'components_per_unit' => round(max(0, (float) ($row['components_per_unit'] ?? $row['quantity'] ?? 1)), 3),
+                    'notes' => filled($row['notes'] ?? null) ? (string) $row['notes'] : null,
+                ];
+            })
+            ->filter(fn (array $row): bool => $row['name'] !== '' && $row['components_per_unit'] > 0)
+            ->values()
+            ->map(fn (array $row, int $index): array => [
+                ...$row,
+                'position' => $index + 1,
+            ])
+            ->all();
     }
 
     /**

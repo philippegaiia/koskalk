@@ -5,6 +5,8 @@ use App\Filament\Resources\IfraCertificates\IfraCertificateResource;
 use App\Filament\Resources\IfraProductCategories\IfraProductCategoryResource;
 use App\Filament\Resources\IngredientAllergenEntries\IngredientAllergenEntryResource;
 use App\Filament\Resources\Ingredients\IngredientResource;
+use App\Filament\Resources\Ingredients\Pages\ListIngredients;
+use App\Filament\Resources\Ingredients\Schemas\IngredientForm;
 use App\Filament\Resources\IngredientSapProfiles\IngredientSapProfileResource;
 use App\IngredientCategory;
 use App\Models\Allergen;
@@ -17,6 +19,7 @@ use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -54,6 +57,49 @@ it('renders the catalog list resources in the admin panel', function () {
     $this->get(IngredientSapProfileResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Olive Oil');
+});
+
+it('keeps composite component ingredient options current within the request', function () {
+    $oliveOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive Oil',
+        'source_key' => 'OIL-OLIVE',
+        'is_active' => true,
+    ]);
+
+    $method = new ReflectionMethod(IngredientForm::class, 'componentIngredientOptions');
+    $method->setAccessible(true);
+
+    $firstOptions = $method->invoke(null, null);
+
+    expect($firstOptions)->toHaveKey($oliveOil->id);
+
+    $coconutOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Coconut Oil',
+        'source_key' => 'OIL-COCONUT',
+        'is_active' => true,
+    ]);
+
+    $secondOptions = $method->invoke(null, null);
+
+    expect($secondOptions)->toHaveKey($coconutOil->id);
+});
+
+it('offers a read-only view action on the ingredient admin table', function () {
+    $user = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive Oil',
+        'is_active' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(ListIngredients::class)
+        ->loadTable()
+        ->assertTableActionExists('view', null, $ingredient)
+        ->assertTableActionExists('edit', null, $ingredient);
 });
 
 it('renders the catalog create forms in the admin panel', function () {

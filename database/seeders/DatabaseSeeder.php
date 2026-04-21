@@ -15,12 +15,13 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             ProductFamilySeeder::class,
+            ProductTypeSeeder::class,
             FattyAcidSeeder::class,
             AllergenCatalogSeeder::class,
             IngredientFunctionSeeder::class,
             IfraProductCategorySeeder::class,
             IngredientCatalogSeeder::class,
-            CarrierOilChemistrySeeder::class,
+            CarrierOilSeeder::class,
         ]);
 
         User::query()->updateOrCreate(

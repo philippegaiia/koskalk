@@ -15,6 +15,11 @@ class RecipePolicy
         return true;
     }
 
+    /**
+     * Private recipes are visible to all company members but only
+     * editable/deletable by the author. is_private controls write
+     * access, not read access.
+     */
     public function view(User $user, Recipe $recipe): bool
     {
         return $recipe->isAccessibleBy($user);
@@ -27,6 +32,10 @@ class RecipePolicy
 
     public function update(User $user, Recipe $recipe): bool
     {
+        if ($recipe->is_private && $recipe->created_by !== $user->id) {
+            return false;
+        }
+
         if ($recipe->isOwnedBy($user)) {
             return true;
         }
@@ -37,6 +46,10 @@ class RecipePolicy
 
     public function delete(User $user, Recipe $recipe): bool
     {
+        if ($recipe->is_private && $recipe->created_by !== $user->id) {
+            return false;
+        }
+
         if ($recipe->isOwnedBy($user)) {
             return true;
         }

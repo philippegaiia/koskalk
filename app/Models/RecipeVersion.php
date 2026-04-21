@@ -67,6 +67,16 @@ class RecipeVersion extends Model
         return $this->hasMany(RecipeItem::class)->orderBy('position');
     }
 
+    public function costings(): HasMany
+    {
+        return $this->hasMany(RecipeVersionCosting::class);
+    }
+
+    public function packagingItems(): HasMany
+    {
+        return $this->hasMany(RecipeVersionPackagingItem::class)->orderBy('position');
+    }
+
     protected function casts(): array
     {
         return [

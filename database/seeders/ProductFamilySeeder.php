@@ -21,5 +21,15 @@ class ProductFamilySeeder extends Seeder
                 'description' => 'Cold-process and related soap formulations calculated from the initial oil phase.',
             ]
         );
+
+        ProductFamily::query()->updateOrCreate(
+            ['slug' => 'cosmetic'],
+            [
+                'name' => 'Cosmetic',
+                'calculation_basis' => 'total_formula',
+                'is_active' => true,
+                'description' => 'Non-saponified cosmetic formulations calculated from the total formula weight.',
+            ]
+        );
     }
 }

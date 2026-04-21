@@ -7,12 +7,15 @@ use App\Models\IfraCertificateLimit;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\OwnerType;
+use App\SoapSap;
 use App\Visibility;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 
 class UserIngredientAuthoringService
 {
+    private const TRUSTED_KOH_SAP_TOLERANCE = 0.03;
+
     public function __construct(
         protected IngredientDataEntryService $ingredientDataEntryService,
     ) {}
@@ -28,12 +31,22 @@ class UserIngredientAuthoringService
             'inci_name' => null,
             'supplier_name' => null,
             'supplier_reference' => null,
+            'cas_number' => null,
+            'ec_number' => null,
+            'is_organic' => false,
             'featured_image_path' => null,
             'icon_image_path' => null,
             'info_markdown' => null,
             'function_ids' => [],
             'allergen_entries' => [],
             'components' => [],
+            'sap_profile' => [
+                'koh_sap_value' => null,
+                'iodine_value' => null,
+                'ins_value' => null,
+                'source_notes' => null,
+            ],
+            'fatty_acid_entries' => [],
             'ifra' => [
                 'reference_label' => null,
                 'ifra_amendment' => null,
@@ -62,12 +75,22 @@ class UserIngredientAuthoringService
             'inci_name' => data_get($entryData, 'current_version.inci_name'),
             'supplier_name' => data_get($entryData, 'current_version.supplier_name'),
             'supplier_reference' => data_get($entryData, 'current_version.supplier_reference'),
+            'cas_number' => data_get($entryData, 'current_version.cas_number'),
+            'ec_number' => data_get($entryData, 'current_version.ec_number'),
+            'is_organic' => (bool) data_get($entryData, 'current_version.is_organic', false),
             'featured_image_path' => $ingredient->featured_image_path,
             'icon_image_path' => $ingredient->icon_image_path,
             'info_markdown' => $ingredient->info_markdown,
             'function_ids' => $entryData['function_ids'] ?? [],
             'allergen_entries' => $entryData['allergen_entries'] ?? [],
             'components' => $entryData['components'] ?? [],
+            'sap_profile' => [
+                'koh_sap_value' => data_get($entryData, 'sap_profile.koh_sap_value'),
+                'iodine_value' => data_get($entryData, 'sap_profile.iodine_value'),
+                'ins_value' => data_get($entryData, 'sap_profile.ins_value'),
+                'source_notes' => data_get($entryData, 'sap_profile.source_notes'),
+            ],
+            'fatty_acid_entries' => data_get($entryData, 'fatty_acid_entries', []),
             'ifra' => [
                 'reference_label' => $currentIfra?->certificate_name,
                 'ifra_amendment' => $currentIfra?->ifra_amendment,
@@ -134,6 +157,84 @@ class UserIngredientAuthoringService
         return $ingredient;
     }
 
+    public function duplicate(Ingredient $source, User $user): Ingredient
+    {
+        if ($source->owner_type !== null) {
+            throw ValidationException::withMessages([
+                'ingredient' => 'Only platform ingredients can be duplicated.',
+            ]);
+        }
+
+        $copy = $source->replicate([
+            'featured_image_path',
+            'icon_image_path',
+        ]);
+
+        $copy->source_file = 'user';
+        $copy->source_key = $this->ingredientDataEntryService->generateSourceKey('USR', 'user');
+        $copy->source_code_prefix = 'USR';
+        $copy->owner_type = OwnerType::User;
+        $copy->owner_id = $user->id;
+        $copy->workspace_id = null;
+        $copy->visibility = Visibility::Private;
+        $copy->requires_admin_review = false;
+        $copy->cas_number = $this->normalizeCasNumber($copy->cas_number);
+        $copy->ec_number = $this->normalizeEcNumber($copy->ec_number);
+        $copy->source_data = $this->duplicateSourceData($source);
+        $copy->featured_image_path = null;
+        $copy->icon_image_path = null;
+        $copy->save();
+
+        $this->deepCopyRelations($source, $copy);
+
+        return $copy->fresh([
+            'sapProfile',
+            'fattyAcidEntries.fattyAcid',
+            'components.componentIngredient',
+            'allergenEntries.allergen',
+            'functions',
+            'ifraCertificates.limits.ifraProductCategory',
+        ]);
+    }
+
+    private function deepCopyRelations(Ingredient $source, Ingredient $copy): void
+    {
+        // SAP profile
+        if ($source->sapProfile) {
+            $source->sapProfile->replicate()->fill([
+                'ingredient_id' => $copy->id,
+            ])->save();
+        }
+
+        // Fatty acid entries
+        $source->fattyAcidEntries->each(function ($entry) use ($copy): void {
+            $entry->replicate()->fill(['ingredient_id' => $copy->id])->save();
+        });
+
+        // Components
+        $source->components->each(function ($component) use ($copy): void {
+            $component->replicate()->fill(['ingredient_id' => $copy->id])->save();
+        });
+
+        // Allergen entries
+        $source->allergenEntries->each(function ($entry) use ($copy): void {
+            $entry->replicate()->fill(['ingredient_id' => $copy->id])->save();
+        });
+
+        // Functions
+        $copy->functions()->sync($source->functions->pluck('id'));
+
+        // IFRA certificates + limits
+        $source->ifraCertificates->each(function ($certificate) use ($copy): void {
+            $newCertificate = $certificate->replicate()->fill(['ingredient_id' => $copy->id]);
+            $newCertificate->save();
+
+            $certificate->limits->each(function ($limit) use ($newCertificate): void {
+                $limit->replicate()->fill(['ifra_certificate_id' => $newCertificate->id])->save();
+            });
+        });
+    }
+
     public function createInlineComponent(array $state, User $user): Ingredient
     {
         return $this->create([
@@ -142,6 +243,9 @@ class UserIngredientAuthoringService
             'inci_name' => $state['inci_name'] ?? null,
             'supplier_name' => $state['supplier_name'] ?? null,
             'supplier_reference' => $state['supplier_reference'] ?? null,
+            'cas_number' => $state['cas_number'] ?? null,
+            'ec_number' => $state['ec_number'] ?? null,
+            'is_organic' => (bool) ($state['is_organic'] ?? false),
             'featured_image_path' => null,
             'icon_image_path' => null,
             'info_markdown' => null,
@@ -174,7 +278,8 @@ class UserIngredientAuthoringService
         $ingredient->featured_image_path = Arr::get($state, 'featured_image_path');
         $ingredient->icon_image_path = Arr::get($state, 'icon_image_path');
         $ingredient->info_markdown = Arr::get($state, 'info_markdown');
-        $ingredient->is_potentially_saponifiable = false;
+        $ingredient->is_potentially_saponifiable = $ingredient->category === IngredientCategory::CarrierOil
+            && $this->canRetainUserSoapTrust($ingredient);
         $ingredient->is_active = true;
     }
 
@@ -183,18 +288,25 @@ class UserIngredientAuthoringService
      */
     private function syncState(Ingredient $ingredient, array $state): Ingredient
     {
+        $this->validateAllergenEntries(Arr::get($state, 'allergen_entries', []));
+        $this->validateIfraState(Arr::get($state, 'ifra', []));
+        $this->validateTrustedKohSapValue($ingredient, $state);
+
         $ingredient = $this->ingredientDataEntryService->syncCurrentData($ingredient, [
             'current_version' => [
                 'display_name' => Arr::get($state, 'name'),
                 'inci_name' => Arr::get($state, 'inci_name'),
                 'supplier_name' => Arr::get($state, 'supplier_name'),
                 'supplier_reference' => Arr::get($state, 'supplier_reference'),
+                'cas_number' => $this->normalizeCasNumber(Arr::get($state, 'cas_number')),
+                'ec_number' => $this->normalizeEcNumber(Arr::get($state, 'ec_number')),
+                'is_organic' => (bool) Arr::get($state, 'is_organic', false),
                 'is_active' => true,
                 'is_manufactured' => false,
             ],
             'function_ids' => Arr::get($state, 'function_ids', []),
-            'sap_profile' => [],
-            'fatty_acid_entries' => [],
+            'sap_profile' => Arr::get($state, 'sap_profile', []),
+            'fatty_acid_entries' => Arr::get($state, 'fatty_acid_entries', []),
             'allergen_entries' => Arr::get($state, 'allergen_entries', []),
             'components' => Arr::get($state, 'components', []),
         ]);
@@ -207,6 +319,8 @@ class UserIngredientAuthoringService
         }
 
         return $ingredient->fresh([
+            'sapProfile',
+            'fattyAcidEntries.fattyAcid',
             'components.componentIngredient',
             'allergenEntries.allergen',
             'functions',
@@ -260,5 +374,146 @@ class UserIngredientAuthoringService
         $limitsState->each(function (array $limitState) use ($certificate): void {
             $certificate->limits()->create($limitState);
         });
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function duplicateSourceData(Ingredient $source): ?array
+    {
+        $sourceData = is_array($source->source_data) ? $source->source_data : [];
+        $trustedKohSapValue = $source->sapProfile?->koh_sap_value;
+
+        if ($source->category !== IngredientCategory::CarrierOil || $trustedKohSapValue === null) {
+            return $sourceData === [] ? null : $sourceData;
+        }
+
+        return array_replace_recursive($sourceData, [
+            'user_authoring' => [
+                'trusted_koh_sap_value' => SoapSap::normalizeKohSapInput((float) $trustedKohSapValue),
+            ],
+        ]);
+    }
+
+    private function canRetainUserSoapTrust(Ingredient $ingredient): bool
+    {
+        return $ingredient->owner_type === OwnerType::User
+            && is_numeric(Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function validateTrustedKohSapValue(Ingredient $ingredient, array $state): void
+    {
+        if (! $this->canRetainUserSoapTrust($ingredient) || $ingredient->category !== IngredientCategory::CarrierOil) {
+            return;
+        }
+
+        $trustedKohSapValue = (float) Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value');
+        $kohSapValue = Arr::get($state, 'sap_profile.koh_sap_value');
+
+        if ($kohSapValue === null || $kohSapValue === '' || ! is_numeric($kohSapValue)) {
+            throw ValidationException::withMessages([
+                'sap_profile.koh_sap_value' => 'KOH SAP value is required for duplicated carrier oils trusted for soap calculation.',
+            ]);
+        }
+
+        $normalizedKohSapValue = SoapSap::normalizeKohSapInput((float) $kohSapValue);
+        $minimumValue = $trustedKohSapValue * (1 - self::TRUSTED_KOH_SAP_TOLERANCE);
+        $maximumValue = $trustedKohSapValue * (1 + self::TRUSTED_KOH_SAP_TOLERANCE);
+
+        if ($normalizedKohSapValue < $minimumValue || $normalizedKohSapValue > $maximumValue) {
+            throw ValidationException::withMessages([
+                'sap_profile.koh_sap_value' => 'KOH SAP value must be within ±3% of the duplicated platform value.',
+            ]);
+        }
+    }
+
+    private function normalizeCasNumber(mixed $value): ?string
+    {
+        $value = $this->normalizeIdentifier($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return preg_replace('/^([0-9]{2,7}-[0-9]{2})-0([0-9])$/', '$1-$2', $value) ?? $value;
+    }
+
+    private function normalizeEcNumber(mixed $value): ?string
+    {
+        $value = $this->normalizeIdentifier($value);
+
+        if ($value === null) {
+            return null;
+        }
+
+        return preg_replace('/^([0-9]{3}-[0-9]{3})-0([0-9])$/', '$1-$2', $value) ?? $value;
+    }
+
+    private function normalizeIdentifier(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $entries
+     */
+    private function validateAllergenEntries(array $entries): void
+    {
+        foreach ($entries as $index => $entry) {
+            $concentration = (float) ($entry['concentration_percent'] ?? 0);
+
+            if ($concentration < 0) {
+                throw ValidationException::withMessages([
+                    "allergen_entries.{$index}.concentration_percent" => 'Allergen concentration must not be negative.',
+                ]);
+            }
+
+            if ($concentration > 100) {
+                throw ValidationException::withMessages([
+                    "allergen_entries.{$index}.concentration_percent" => 'Allergen concentration must not exceed 100%.',
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function validateIfraState(array $state): void
+    {
+        $peroxideValue = Arr::get($state, 'peroxide_value');
+
+        if ($peroxideValue !== null && (float) $peroxideValue < 0) {
+            throw ValidationException::withMessages([
+                'ifra.peroxide_value' => 'Peroxide value must not be negative.',
+            ]);
+        }
+
+        $limits = collect(Arr::get($state, 'limits', []));
+
+        foreach ($limits as $index => $limit) {
+            $maxPercentage = (float) ($limit['max_percentage'] ?? 0);
+
+            if ($maxPercentage < 0) {
+                throw ValidationException::withMessages([
+                    "ifra.limits.{$index}.max_percentage" => 'Max concentration must not be negative.',
+                ]);
+            }
+
+            if ($maxPercentage > 100) {
+                throw ValidationException::withMessages([
+                    "ifra.limits.{$index}.max_percentage" => 'Max concentration must not exceed 100%.',
+                ]);
+            }
+        }
     }
 }

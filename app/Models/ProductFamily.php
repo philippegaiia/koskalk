@@ -26,6 +26,11 @@ class ProductFamily extends Model
         return $this->hasMany(ProductFamilyIfraCategory::class);
     }
 
+    public function productTypes(): HasMany
+    {
+        return $this->hasMany(ProductType::class);
+    }
+
     public function ifraProductCategories(): BelongsToMany
     {
         return $this->belongsToMany(

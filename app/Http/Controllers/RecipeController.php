@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
+use App\Services\RecipeVersionDeletionService;
+use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -19,9 +23,40 @@ class RecipeController extends Controller
         return view('recipes.index');
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('recipes.workbench');
+        $productFamilySlug = $request->string('family')->toString() ?: 'soap';
+        $productTypeSlug = $request->string('type')->toString();
+        $productFamily = ProductFamily::query()
+            ->where('slug', $productFamilySlug)
+            ->firstOrFail();
+
+        if ($productFamily->slug === 'cosmetic' && $productTypeSlug === '') {
+            return view('recipes.product-type-selector', [
+                'productFamily' => $productFamily,
+                'productTypes' => ProductType::query()
+                    ->whereBelongsTo($productFamily)
+                    ->where('is_active', true)
+                    ->orderBy('sort_order')
+                    ->orderBy('name')
+                    ->get(),
+            ]);
+        }
+
+        $productType = $productTypeSlug !== ''
+            ? ProductType::query()
+                ->whereBelongsTo($productFamily)
+                ->where('slug', $productTypeSlug)
+                ->where(function ($query): void {
+                    $query->where('is_active', true);
+                })
+                ->firstOrFail()
+            : null;
+
+        return view('recipes.workbench', [
+            'productFamily' => $productFamily,
+            'productType' => $productType,
+        ]);
     }
 
     public function edit(int $recipe, CurrentAppUserResolver $currentAppUserResolver): View
@@ -33,17 +68,118 @@ class RecipeController extends Controller
         ]);
     }
 
+    public function saved(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
+        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        $viewData = $recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
+
+        return view('recipes.version', $viewData);
+    }
+
+    public function duplicate(
+        int $recipe,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeWorkbenchService $recipeWorkbenchService,
+    ): RedirectResponse {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+
+        $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
+        $duplicateDraft = $recipeWorkbenchService->duplicateRecipe($user, $recipe);
+
+        return redirect()
+            ->route('recipes.edit', $duplicateDraft->recipe_id)
+            ->with('status', 'Formula duplicated into a new draft.');
+    }
+
+    public function editSavedFormulaInDraft(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeWorkbenchService $recipeWorkbenchService,
+    ): RedirectResponse {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+
+        if (
+            $recipeWorkbenchService->draftWouldBeReplacedByVersion($recipe, $savedFormula->id)
+            && ! $request->boolean('confirm_replace_draft')
+        ) {
+            return redirect()
+                ->route('recipes.saved', $recipe->id)
+                ->with('draftReplaceConfirmation', [
+                    'title' => 'Replace the current draft?',
+                    'body' => 'The current draft differs from the official recipe. Confirming will replace the draft with the current official recipe data.',
+                    'action_label' => 'Replace draft with official recipe',
+                    'action_url' => route('recipes.saved.edit-in-draft', $recipe->id),
+                ]);
+        }
+
+        $recipeWorkbenchService->useVersionAsDraft($user, $recipe, $savedFormula->id);
+
+        return redirect()
+            ->route('recipes.edit', $recipe->id)
+            ->with('status', 'Draft refreshed from the current official recipe.');
+    }
+
+    public function restoreSavedFormula(
+        int $recipe,
+        int $version,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeWorkbenchService $recipeWorkbenchService,
+    ): RedirectResponse {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+
+        $recipeWorkbenchService->restoreSavedFormula($user, $recipe, $version->id);
+
+        return redirect()
+            ->route('recipes.saved', $recipe->id)
+            ->with('status', 'Official recipe restored from the selected recovery snapshot.');
+    }
+
     public function version(
         int $recipe,
         int $version,
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
-        RecipeWorkbenchService $recipeWorkbenchService,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
-        $viewData = $this->versionViewData($recipe, $version, $request, $recipeWorkbenchService);
+        [$recipe] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
 
-        return view('recipes.version', $viewData);
+        return $this->saved($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+    }
+
+    public function printSavedRecipe(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
+        return $this->printSavedProductionSheet($recipe, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+    }
+
+    public function printSavedProductionSheet(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
+        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+
+        return view('recipes.print', [
+            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
+            'printMode' => 'production',
+        ]);
     }
 
     public function printRecipe(
@@ -51,13 +187,47 @@ class RecipeController extends Controller
         int $version,
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
-        RecipeWorkbenchService $recipeWorkbenchService,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+        [$recipe] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+
+        return $this->printSavedRecipe($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+    }
+
+    public function printSavedDetails(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
+        return $this->printSavedTechnicalSheet($recipe, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+    }
+
+    public function printSavedTechnicalSheet(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
+        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
-            ...$this->versionViewData($recipe, $version, $request, $recipeWorkbenchService),
-            'printMode' => 'recipe',
+            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
+            'printMode' => 'technical',
+        ]);
+    }
+
+    public function printSavedCostingSheet(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+    ): View {
+        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+
+        return view('recipes.print', [
+            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
+            'printMode' => 'costing',
         ]);
     }
 
@@ -66,32 +236,44 @@ class RecipeController extends Controller
         int $version,
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
-        RecipeWorkbenchService $recipeWorkbenchService,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+        [$recipe] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
 
-        return view('recipes.print', [
-            ...$this->versionViewData($recipe, $version, $request, $recipeWorkbenchService),
-            'printMode' => 'details',
-        ]);
+        return $this->printSavedDetails($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
     }
 
     public function useVersionAsDraft(
         int $recipe,
         int $version,
+        Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeWorkbenchService $recipeWorkbenchService,
     ): RedirectResponse {
-        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
         $user = $currentAppUserResolver->resolve();
 
-        abort_unless($user !== null, 404);
+        abort_unless($user !== null, 403);
+        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+
+        if (
+            $recipeWorkbenchService->draftWouldBeReplacedByVersion($recipe, $version->id)
+            && ! $request->boolean('confirm_replace_draft')
+        ) {
+            return redirect()
+                ->route('recipes.saved', $recipe->id)
+                ->with('draftReplaceConfirmation', [
+                    'title' => 'Replace the current draft?',
+                    'body' => 'The current draft differs from this recovery snapshot. Confirming will replace the draft with the selected saved state.',
+                    'action_label' => 'Replace draft',
+                    'action_url' => route('recipes.use-version-as-draft', ['recipe' => $recipe->id, 'version' => $version->id]),
+                ]);
+        }
 
         $recipeWorkbenchService->useVersionAsDraft($user, $recipe, $version->id);
 
         return redirect()
             ->route('recipes.edit', $recipe->id)
-            ->with('status', 'Working draft replaced with version v'.$version->version_number.'.');
+            ->with('status', 'Working draft replaced with the selected recovery snapshot.');
     }
 
     public function destroy(
@@ -129,6 +311,7 @@ class RecipeController extends Controller
         int $version,
         CurrentAppUserResolver $currentAppUserResolver,
         Request $request,
+        RecipeVersionDeletionService $recipeVersionDeletionService,
     ): RedirectResponse {
         $user = $currentAppUserResolver->resolve();
 
@@ -145,31 +328,10 @@ class RecipeController extends Controller
             abort_unless($request->string('confirm_name')->toString() === $version->name, 403, 'Confirmation name does not match.');
         }
 
-        $status = DB::transaction(function () use ($recipe, $version): string {
-            $lockedRecipe = Recipe::withoutGlobalScopes()
-                ->whereKey($recipe->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $lockedVersion = RecipeVersion::withoutGlobalScopes()
-                ->whereKey($version->id)
-                ->where('recipe_id', $lockedRecipe->id)
-                ->lockForUpdate()
-                ->firstOrFail();
-
-            $wasPublished = ! $lockedVersion->is_draft;
-
-            $lockedVersion->delete();
-
-            $hasPublishedVersions = RecipeVersion::withoutGlobalScopes()
-                ->where('recipe_id', $lockedRecipe->id)
-                ->where('is_draft', false)
-                ->exists();
-
-            return $wasPublished && ! $hasPublishedVersions
-                ? 'Last published version deleted. Recipe has no published versions.'
-                : 'Version deleted.';
-        });
+        $deletion = $recipeVersionDeletionService->delete($recipe, $version);
+        $status = $deletion['last_published_deleted']
+            ? 'Last published version deleted. Recipe has no published versions.'
+            : 'Version deleted.';
 
         return redirect()
             ->route('recipes.index')
@@ -205,237 +367,19 @@ class RecipeController extends Controller
     }
 
     /**
-     * @return array{
-     *     recipe: Recipe,
-     *     version: RecipeVersion,
-     *     snapshot: array<string, mixed>,
-     *     phaseSections: array<int, array<string, mixed>>,
-     *     summaryCards: array<int, array<string, scalar|null>>,
-     *     contextRows: array<int, array<string, scalar|null>>,
-     *     lyeRows: array<int, array<string, scalar|null>>,
-     *     versionOptions: array<int, array<string, mixed>>,
-     *     selectedOilWeight: float
-     * }
+     * @return array{0: Recipe, 1: RecipeVersion}
      */
-    private function versionViewData(
-        Recipe $recipe,
-        RecipeVersion $version,
-        Request $request,
-        RecipeWorkbenchService $recipeWorkbenchService,
+    private function accessibleCurrentSavedFormula(
+        int $recipeId,
+        CurrentAppUserResolver $currentAppUserResolver,
     ): array {
-        $snapshot = $recipeWorkbenchService->versionSnapshot($recipe, $version->id);
+        $recipe = $this->accessibleRecipe($recipeId, $currentAppUserResolver);
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $recipe->id)
+            ->where('is_draft', false)
+            ->orderByDesc('version_number')
+            ->firstOrFail();
 
-        abort_if($snapshot === null, 404);
-
-        $selectedOilWeight = $this->requestedOilWeight($request, $snapshot['draft']['oilWeight'] ?? $version->batch_size);
-
-        if (abs($selectedOilWeight - (float) ($snapshot['draft']['oilWeight'] ?? 0)) > 0.0001) {
-            $draft = $snapshot['draft'];
-            $draft['oilWeight'] = $selectedOilWeight;
-            $snapshot = $recipeWorkbenchService->snapshotFromWorkbenchDraft($draft);
-        }
-
-        return [
-            'recipe' => $recipe,
-            'version' => $version,
-            'snapshot' => $snapshot,
-            'phaseSections' => $this->phaseSections($snapshot['draft']),
-            'summaryCards' => $this->summaryCards($snapshot['draft'], $snapshot['calculation']),
-            'contextRows' => $this->contextRows($snapshot['draft'], $snapshot['calculation'], $version),
-            'lyeRows' => $this->lyeRows($snapshot['draft'], $snapshot['calculation']),
-            'versionOptions' => $recipeWorkbenchService->versionOptions($recipe),
-            'selectedOilWeight' => $selectedOilWeight,
-        ];
-    }
-
-    private function requestedOilWeight(Request $request, mixed $defaultWeight): float
-    {
-        $candidate = $request->query('oil_weight');
-
-        if (! is_numeric($candidate)) {
-            return round((float) $defaultWeight, 4);
-        }
-
-        $normalized = round((float) $candidate, 4);
-
-        return $normalized > 0 ? $normalized : round((float) $defaultWeight, 4);
-    }
-
-    /**
-     * @param  array<string, mixed>  $draft
-     * @return array<int, array<string, mixed>>
-     */
-    private function phaseSections(array $draft): array
-    {
-        $sectionLabels = [
-            'saponified_oils' => 'Saponified oils',
-            'additives' => 'Additives',
-            'fragrance' => 'Fragrance and aromatics',
-        ];
-
-        return collect($sectionLabels)
-            ->map(function (string $label, string $key) use ($draft): ?array {
-                $rows = collect($draft['phaseItems'][$key] ?? [])
-                    ->filter(fn (mixed $row): bool => is_array($row) && ((float) ($row['percentage'] ?? 0) > 0))
-                    ->map(function (array $row) use ($draft): array {
-                        $percentage = (float) ($row['percentage'] ?? 0);
-                        $weight = round(((float) ($draft['oilWeight'] ?? 0)) * ($percentage / 100), 4);
-
-                        return [
-                            'name' => $row['name'] ?? 'Unnamed ingredient',
-                            'inci_name' => $row['inci_name'] ?? null,
-                            'percentage' => $percentage,
-                            'weight' => $weight,
-                            'note' => $row['note'] ?? null,
-                        ];
-                    })
-                    ->values();
-
-                if ($rows->isEmpty()) {
-                    return null;
-                }
-
-                return [
-                    'key' => $key,
-                    'label' => $label,
-                    'rows' => $rows->all(),
-                    'total_percentage' => round((float) $rows->sum('percentage'), 4),
-                    'total_weight' => round((float) $rows->sum('weight'), 4),
-                ];
-            })
-            ->filter()
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @param  array<string, mixed>  $draft
-     * @param  array<string, mixed>|null  $calculation
-     * @return array<int, array<string, scalar|null>>
-     */
-    private function summaryCards(array $draft, ?array $calculation): array
-    {
-        $oilWeight = round((float) ($draft['oilWeight'] ?? 0), 4);
-        $additionWeight = collect([
-            ...($draft['phaseItems']['additives'] ?? []),
-            ...($draft['phaseItems']['fragrance'] ?? []),
-        ])->sum(fn (mixed $row): float => round($oilWeight * (((float) ($row['percentage'] ?? 0)) / 100), 4));
-
-        $selectedLye = $calculation['lye']['selected'] ?? [];
-        $waterWeight = (float) ($calculation['lye']['water']['weight'] ?? 0);
-        $lyeToWeigh = match ($draft['lyeType'] ?? 'naoh') {
-            'koh' => (float) ($selectedLye['koh_to_weigh'] ?? 0),
-            'dual' => (float) ($selectedLye['naoh_weight'] ?? 0) + (float) ($selectedLye['koh_to_weigh'] ?? 0),
-            default => (float) ($selectedLye['naoh_weight'] ?? 0),
-        };
-        $wetWeight = $oilWeight + $additionWeight + $waterWeight + $lyeToWeigh;
-        $nonWaterWeight = max(0, $wetWeight - $waterWeight);
-        $curedWeight = $wetWeight > 0 ? $nonWaterWeight / (1 - 0.11) : 0.0;
-
-        return [
-            [
-                'label' => 'Oil quantity',
-                'value' => round($oilWeight, 2),
-                'unit' => $draft['oilUnit'] ?? 'g',
-            ],
-            [
-                'label' => 'Wet batch weight',
-                'value' => round($wetWeight, 2),
-                'unit' => $draft['oilUnit'] ?? 'g',
-            ],
-            [
-                'label' => 'Weight after cure',
-                'value' => round($curedWeight, 2),
-                'unit' => $draft['oilUnit'] ?? 'g',
-            ],
-            [
-                'label' => 'Produced glycerine',
-                'value' => round((float) ($selectedLye['glycerine_weight'] ?? 0), 2),
-                'unit' => $draft['oilUnit'] ?? 'g',
-            ],
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $draft
-     * @param  array<string, mixed>|null  $calculation
-     * @return array<int, array<string, scalar|null>>
-     */
-    private function contextRows(array $draft, ?array $calculation, RecipeVersion $version): array
-    {
-        return [
-            [
-                'label' => 'Saved version',
-                'value' => 'v'.$version->version_number,
-            ],
-            [
-                'label' => 'Saved at',
-                'value' => $version->saved_at?->format('Y-m-d H:i') ?? 'Not saved yet',
-            ],
-            [
-                'label' => 'Exposure mode',
-                'value' => $draft['exposureMode'] === 'leave_on' ? 'Leave-on' : 'Rinse-off',
-            ],
-            [
-                'label' => 'Regime',
-                'value' => strtoupper((string) ($draft['regulatoryRegime'] ?? 'eu')),
-            ],
-            [
-                'label' => 'Manufacturing mode',
-                'value' => ($draft['manufacturingMode'] ?? 'saponify_in_formula') === 'blend_only'
-                    ? 'Blend only'
-                    : 'Saponify in formula',
-            ],
-            [
-                'label' => 'Superfat',
-                'value' => round((float) ($calculation['lye']['superfat_percentage'] ?? $draft['superfat'] ?? 0), 2).'%',
-            ],
-        ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $draft
-     * @param  array<string, mixed>|null  $calculation
-     * @return array<int, array<string, scalar|null>>
-     */
-    private function lyeRows(array $draft, ?array $calculation): array
-    {
-        if ($calculation === null) {
-            return [];
-        }
-
-        $selectedLye = $calculation['lye']['selected'] ?? [];
-
-        return [
-            [
-                'label' => 'Lye system',
-                'value' => strtoupper((string) ($draft['lyeType'] ?? 'naoh')),
-                'unit' => null,
-            ],
-            [
-                'label' => 'NaOH to weigh',
-                'value' => round((float) ($selectedLye['naoh_weight'] ?? 0), 2),
-                'unit' => $draft['oilUnit'] ?? 'g',
-            ],
-            [
-                'label' => 'KOH to weigh',
-                'value' => round((float) ($selectedLye['koh_to_weigh'] ?? 0), 2),
-                'unit' => $draft['oilUnit'] ?? 'g',
-            ],
-            [
-                'label' => 'Water',
-                'value' => round((float) ($calculation['lye']['water']['weight'] ?? 0), 2),
-                'unit' => $draft['oilUnit'] ?? 'g',
-            ],
-            [
-                'label' => 'Water setting',
-                'value' => match ($draft['waterMode'] ?? 'percent_of_oils') {
-                    'lye_ratio' => 'Lye ratio: '.round((float) ($draft['waterValue'] ?? 0), 2),
-                    'lye_concentration' => 'Lye concentration: '.round((float) ($draft['waterValue'] ?? 0), 2).'%',
-                    default => '% of oils: '.round((float) ($draft['waterValue'] ?? 0), 2).'%',
-                },
-                'unit' => null,
-            ],
-        ];
+        return [$recipe, $version];
     }
 }

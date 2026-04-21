@@ -171,6 +171,34 @@ it('reports carrier oils that are still missing soap chemistry', function () {
         ->and($output)->not->toContain('ADD-IGNORE');
 });
 
+it('diffs carrier oils from the common name csv header when columns are reordered', function () {
+    Ingredient::factory()->create([
+        'source_key' => 'OB-OLIVE',
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive oil',
+    ]);
+
+    $csvPath = $this->chemistryFixtureDirectory.'/carrier-oils.csv';
+    file_put_contents($csvPath, implode("\n", [
+        'row_id,common_name,notes',
+        '1,Olive oil,already imported',
+        '2,Coconut oil,missing',
+    ]));
+
+    $exitCode = Artisan::call('catalog:diff-carrier-oils', [
+        '--csv' => $csvPath,
+        '--format' => 'json',
+    ]);
+
+    $output = Artisan::output();
+
+    expect($exitCode)->toBe(0)
+        ->and($output)->toContain('"Olive oil"')
+        ->and($output)->toContain('"Coconut oil"')
+        ->and($output)->not->toContain('"1"')
+        ->and($output)->not->toContain('"2"');
+});
+
 function writeCarrierOilChemistryFixture(string $directory, array $rows): string
 {
     $path = $directory.'/carrier_oil_chemistry.json';

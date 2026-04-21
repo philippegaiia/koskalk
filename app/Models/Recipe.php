@@ -21,9 +21,13 @@ use Illuminate\Support\Collection;
 
 #[Fillable([
     'product_family_id',
+    'product_type_id',
     'owner_type',
     'owner_id',
     'workspace_id',
+    'brand_id',
+    'is_private',
+    'created_by',
     'visibility',
     'name',
     'description',
@@ -55,6 +59,21 @@ class Recipe extends Model implements HasRichContent
         return $this->belongsTo(ProductFamily::class);
     }
 
+    public function productType(): BelongsTo
+    {
+        return $this->belongsTo(ProductType::class);
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function versions(): HasMany
     {
         return $this->hasMany(RecipeVersion::class);
@@ -65,6 +84,14 @@ class Recipe extends Model implements HasRichContent
         return $this->hasMany(RecipeVersion::class)
             ->where('is_draft', false)
             ->orderByDesc('version_number');
+    }
+
+    public function currentSavedVersion(): HasOne
+    {
+        return $this->hasOne(RecipeVersion::class)
+            ->ofMany(['version_number' => 'max'], function ($query): void {
+                $query->where('is_draft', false);
+            });
     }
 
     public function currentDraftVersion(): HasOne
@@ -174,6 +201,7 @@ class Recipe extends Model implements HasRichContent
         return [
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
+            'is_private' => 'bool',
             'archived_at' => 'datetime',
         ];
     }

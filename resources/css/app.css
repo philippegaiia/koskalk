@@ -4,98 +4,301 @@
 @import '../../vendor/filament/schemas/resources/css/index.css';
 @import '../../vendor/filament/actions/resources/css/index.css';
 @import '../../vendor/filament/forms/resources/css/index.css';
+@import '../../vendor/filament/tables/resources/css/index.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-/*@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
 
-    --color-surface: oklch(96% .010 82);
-    --color-surface-strong: oklch(26% .030 158);
-    --color-hero: oklch(20% .028 156);
-    --color-hero-soft: oklch(24% .030 156);
-    --color-panel: oklch(99% .008 82);
-    --color-panel-strong: oklch(93% .018 80);
-
-    --color-line: oklch(85% .014 78);
-    --color-line-strong: oklch(68% .022 72);
-    --color-line-hero: oklch(42% .024 156);
-
-    --color-ink: oklch(28% .016 55);
-    --color-ink-strong: oklch(14% .010 50);
-    --color-ink-soft: oklch(50% .016 58);
-
-    --color-ink-sidebar: oklch(90% .020 158);
-    --color-ink-sidebar-soft: oklch(68% .025 158);
-
-    --color-accent: oklch(46% .100 154);
-    --color-accent-soft: oklch(92% .035 154);
-    --color-accent-strong: oklch(34% .085 154);
-
-    --color-success: oklch(52% .140 154);
-    --color-success-soft: oklch(95% .040 154);
-    --color-success-strong: oklch(35% .120 154);
-    --color-warning: oklch(75% .150 75);
-    --color-warning-soft: oklch(95% .040 75);
-    --color-warning-strong: oklch(55% .130 75);
-    --color-danger: oklch(55% .200 25);
-    --color-danger-soft: oklch(95% .050 25);
-    --color-danger-strong: oklch(45% .180 25);
-    --color-glow: oklch(74% .105 78);
-}*/
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-numeric: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+        'Liberation Mono', 'Courier New', monospace;
 
+    --color-surface: #f6f4ee;
+    --color-sidebar: #f2efe8;
+    --color-panel: #fffefb;
+    --color-panel-strong: #ece9df;
+    --color-field: #ffffff;
+    --color-field-muted: #f5f3ec;
+    --color-field-outline: #d6d1c5;
 
-    --color-surface: oklch(96% .008 240);
-    /* cool blue-gray bg */
-    --color-surface-strong: oklch(28% .025 230);
-    /* deep navy sidebar */
-    --color-hero: oklch(22% .030 235);
-    --color-hero-soft: oklch(27% .028 235);
-    --color-panel: oklch(99% .005 240);
-    /* near-white cool panel */
-    --color-panel-strong: oklch(93% .012 235);
+    --color-hero: oklch(22.0% .025 154);
+    --color-hero-soft: oklch(27.0% .028 154);
+    --color-surface-strong: oklch(30.0% .022 80);
 
+    --color-line: #ded9cf;
+    --color-line-strong: #c9c3b7;
+    --color-line-hero: oklch(40% .030 154);
 
-    --color-line: oklch(85% .012 230);
-    --color-line-strong: oklch(68% .018 225);
-    --color-line-hero: oklch(44% .028 230);
+    --color-ink: #3b372f;
+    --color-ink-strong: #211f1a;
+    --color-ink-soft: #68635a;
 
+    --color-ink-sidebar: #25231e;
+    --color-ink-sidebar-soft: #6b665d;
+    --color-inverse: oklch(98% .006 84);
+    --color-inverse-soft: oklch(76% .010 84);
+    --color-inverse-muted: oklch(58% .010 84);
 
-    --color-ink: oklch(28% .012 240);
-    --color-ink-strong: oklch(12% .008 235);
-    --color-ink-soft: oklch(50% .012 235);
+    --color-accent: #2d6a4f;
+    --color-accent-hover: #1b4332;
+    --color-accent-soft: #e9f3ee;
+    --color-accent-strong: #1b4332;
 
+    --color-warning: #b45309;
+    --color-warning-hover: #8a3f06;
+    --color-warning-soft: #f7ead7;
+    --color-warning-strong: #8a3f06;
 
-    --color-ink-sidebar: oklch(88% .018 220);
-    --color-ink-sidebar-soft: oklch(64% .022 220);
-
-
-    --color-accent: oklch(52% .130 210);
-    /* teal-blue */
-    --color-accent-hover: oklch(42% .120 210);
-    --color-accent-soft: oklch(94% .030 210);
-    --color-accent-strong: oklch(34% .110 210);
-
-
-    --color-success: oklch(52% .155 142);
-    --color-success-soft: oklch(95% .045 142);
-    --color-success-strong: oklch(36% .130 142);
-    --color-warning: oklch(72% .145 75);
-    --color-warning-hover: oklch(62% .135 75);
-    --color-warning-soft: oklch(95% .040 75);
-    --color-warning-strong: oklch(52% .125 75);
     --color-danger: oklch(55% .200 25);
     --color-danger-hover: oklch(46% .185 25);
     --color-danger-soft: oklch(95% .050 25);
     --color-danger-strong: oklch(45% .180 25);
-    --color-glow: oklch(74% .105 78);
+
+    --color-success: #2d6a4f;
+    --color-success-soft: #e9f3ee;
+    --color-success-strong: #1b4332;
+
+    --color-quality-very-low: #b45309;
+    --color-quality-low: #92760a;
+    --color-quality-ideal: #2d6a4f;
+    --color-quality-high: #9a3b1b;
+    --color-quality-excess: #7b1d1d;
+
+    /* Homepage palette */
+    --color-forest: #1a2e1e;
+    --color-forest-deep: #0e1a10;
+    --color-forest-mid: #243528;
+    --color-forest-light: #2e4433;
+    --color-sage: #7a9e7e;
+    --color-sage-light: #a8c5ab;
+    --color-sage-pale: #d4e6d6;
+    --color-cream: #f5f0e8;
+    --color-cream-warm: #ede6d6;
+    --color-cream-dark: #cfc5ad;
+    --color-amber: #c8882a;
+    --color-amber-light: #e8b96a;
+
+    /* Homepage fonts */
+    --font-serif: 'Lora', Georgia, serif;
+    --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+}
+
+@layer utilities {
+    .numeric {
+        font-family: var(--font-numeric);
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: 'tnum';
+    }
+}
+
+@layer components {
+    .sk-card {
+        border: 1px solid color-mix(in oklab, var(--color-line) 82%, var(--color-ink) 8%);
+        border-radius: 0.875rem;
+        background: var(--color-panel);
+        box-shadow:
+            0 1px 2px rgba(60, 50, 30, 0.04),
+            0 10px 18px rgba(60, 50, 30, 0.06);
+    }
+
+    .sk-inset {
+        border: 1px solid color-mix(in oklab, var(--color-line) 72%, var(--color-ink) 10%);
+        border-radius: 0.5rem;
+        background: color-mix(in oklab, var(--color-panel) 64%, var(--color-surface) 36%);
+    }
+
+    .sk-eyebrow {
+        color: color-mix(in oklab, var(--color-ink) 76%, var(--color-ink-soft));
+        font-size: 0.6875rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+    }
+
+    .sk-field {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 0.75rem;
+        border: 1px solid var(--color-line);
+        border-radius: 0.5rem;
+        background: white;
+        padding: 0.625rem 1rem;
+        color: var(--color-ink-soft);
+        font-size: 0.875rem;
+    }
+
+    .sk-field-control {
+        min-width: 0;
+        flex: 1 1 auto;
+        background: transparent;
+        color: var(--color-ink-strong);
+        font-size: 0.875rem;
+        outline: none;
+    }
+
+    .sk-field-control::placeholder {
+        color: var(--color-ink-soft);
+    }
+
+    .sk-select-control {
+        min-width: 9rem;
+        background: transparent;
+        color: var(--color-ink-strong);
+        font-size: 0.875rem;
+        outline: none;
+    }
+
+    .sk-input {
+        width: 100%;
+        border: 1px solid var(--color-line);
+        border-radius: 0.5rem;
+        background: var(--color-field);
+        padding: 0.75rem 1rem;
+        color: var(--color-ink-strong);
+        font-size: 0.875rem;
+        outline: 1px solid var(--color-field-outline);
+        transition: outline-color 150ms ease, outline-width 150ms ease;
+    }
+
+    .sk-input:focus {
+        outline: 2px solid var(--color-accent);
+    }
+
+    .sk-btn,
+    .sk-action-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 0.5rem;
+        background: transparent;
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1.25rem;
+        text-decoration: none;
+        transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease;
+    }
+
+    .sk-btn:disabled {
+        cursor: not-allowed;
+        opacity: 0.65;
+    }
+
+    .sk-btn-primary {
+        background: var(--color-accent);
+        color: white;
+    }
+
+    .sk-btn-primary:hover {
+        background: var(--color-accent-hover);
+    }
+
+    .sk-btn-ghost,
+    .sk-action-link {
+        color: var(--color-ink-soft);
+    }
+
+    .sk-btn-ghost:hover,
+    .sk-action-link:hover {
+        background: var(--color-panel-strong);
+        color: var(--color-ink-strong);
+    }
+
+    .sk-btn-outline {
+        border: 1px solid var(--color-line);
+        background: white;
+        color: var(--color-ink-soft);
+    }
+
+    .sk-btn-outline:hover {
+        background: var(--color-panel-strong);
+        color: var(--color-ink-strong);
+    }
+
+    .sk-btn-danger {
+        border: 1px solid var(--color-danger-soft);
+        color: var(--color-danger-strong);
+    }
+
+    .sk-btn-danger:hover {
+        background: var(--color-danger-soft);
+    }
+
+    .sk-badge {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid transparent;
+        border-radius: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1rem;
+    }
+
+    .sk-badge-success {
+        background: var(--color-success-soft);
+        color: var(--color-success-strong);
+    }
+
+    .sk-badge-neutral {
+        border: 1px solid var(--color-line);
+        color: var(--color-ink-soft);
+    }
+
+    .sk-badge-strong {
+        border: 1px solid var(--color-line-strong);
+        background: white;
+        color: var(--color-ink-strong);
+    }
+
+    .sk-workbench {
+        color: var(--color-ink);
+    }
+
+    .sk-workbench button,
+    .sk-workbench input,
+    .sk-workbench select,
+    .sk-workbench textarea {
+        border-radius: 0.5rem;
+    }
+
+    .sk-workbench .sk-inset {
+        border-radius: 0.5rem;
+    }
+
+    .sk-workbench .sk-card {
+        border-radius: 0.875rem;
+    }
+
+    .sk-section-header {
+        background: color-mix(in oklab, var(--color-panel) 82%, var(--color-surface) 18%);
+    }
+
+    .sk-phase-core {
+        background: var(--color-panel);
+    }
+
+    .sk-phase-craft {
+        background: color-mix(in oklab, var(--color-panel) 84%, var(--color-surface) 16%);
+    }
+
+    .sk-phase-craft .sk-section-header {
+        background: color-mix(in oklab, var(--color-panel) 72%, var(--color-surface) 28%);
+    }
+
+    .sk-quality-pill {
+        border-radius: 0.5rem;
+        background: color-mix(in oklab, var(--quality-tone, var(--color-quality-ideal)) 12%, white 88%);
+        border-color: color-mix(in oklab, var(--quality-tone, var(--color-quality-ideal)) 42%, white 58%);
+        color: var(--quality-tone, var(--color-quality-ideal));
+    }
 }
 
 @layer base {

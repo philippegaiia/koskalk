@@ -19,15 +19,15 @@ it('stores recipe images as webp within the configured bounds', function () {
 
     $file = UploadedFile::fake()->image('recipe.jpg', 1600, 900);
 
-    $path = MediaStorage::storeResizedWebp($file, 'recipes/featured-images', 1200, 900, 85);
+    $path = MediaStorage::storeResizedWebp($file, 'recipes/featured-images', 800, 600, 85);
     $image = getimagesizefromstring(Storage::disk('public')->get($path));
 
     expect($path)->toEndWith('.webp')
         ->and(Storage::disk('public')->exists($path))->toBeTrue()
         ->and($image)->not->toBeFalse()
         ->and($image['mime'] ?? null)->toBe('image/webp')
-        ->and($image[0] ?? null)->toBeLessThanOrEqual(1200)
-        ->and($image[1] ?? null)->toBeLessThanOrEqual(900);
+        ->and($image[0] ?? null)->toBeLessThanOrEqual(800)
+        ->and($image[1] ?? null)->toBeLessThanOrEqual(600);
 });
 
 it('stores ingredient icons as exact 96x96 webp images', function () {
@@ -49,6 +49,17 @@ it('stores ingredient icons as exact 96x96 webp images', function () {
         ->and($image['mime'] ?? null)->toBe('image/webp')
         ->and($image[0] ?? null)->toBe(96)
         ->and($image[1] ?? null)->toBe(96);
+});
+
+it('returns null for missing public media paths', function () {
+    Storage::fake('public');
+
+    config([
+        'media.disk' => 'public',
+        'media.visibility' => 'public',
+    ]);
+
+    expect(MediaStorage::publicUrl('ingredients/icons/missing.webp'))->toBeNull();
 });
 
 it('stores rich content images as bounded webp attachments', function () {

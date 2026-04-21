@@ -10,6 +10,7 @@ use App\Visibility;
 use Database\Factories\IngredientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -23,7 +24,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'source_code_prefix',
     'category',
     'display_name',
-    'display_name_en',
     'inci_name',
     'supplier_name',
     'supplier_reference',
@@ -31,8 +31,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'soap_inci_koh_name',
     'cas_number',
     'ec_number',
+    'is_organic',
     'unit',
-    'price_eur',
     'owner_type',
     'owner_id',
     'workspace_id',
@@ -100,6 +100,24 @@ class Ingredient extends Model
         return $this->hasMany(IfraCertificate::class);
     }
 
+    public function userPrices(): HasMany
+    {
+        return $this->hasMany(UserIngredientPrice::class);
+    }
+
+    protected function userPricePerKg(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->userPrices->first()?->price_per_kg,
+            set: fn () => [],
+        );
+    }
+
+    public function costingItems(): HasMany
+    {
+        return $this->hasMany(RecipeVersionCostingItem::class);
+    }
+
     public function featuredImageUrl(): ?string
     {
         return MediaStorage::publicUrl($this->featured_image_path);
@@ -120,9 +138,13 @@ class Ingredient extends Model
      */
     public function normalizedFattyAcidProfile(): array
     {
-        $profile = $this->fattyAcidEntries()
-            ->with('fattyAcid:id,key,display_order')
-            ->get()
+        $fattyAcidEntries = $this->relationLoaded('fattyAcidEntries')
+            ? $this->fattyAcidEntries->loadMissing('fattyAcid:id,key,display_order')
+            : $this->fattyAcidEntries()
+                ->with('fattyAcid:id,key,display_order')
+                ->get();
+
+        $profile = $fattyAcidEntries
             ->sortBy(fn (IngredientFattyAcid $entry): int => $entry->fattyAcid?->display_order ?? PHP_INT_MAX)
             ->mapWithKeys(function (IngredientFattyAcid $entry): array {
                 $key = $entry->fattyAcid?->key;
@@ -240,7 +262,7 @@ class Ingredient extends Model
             'category' => IngredientCategory::class,
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
-            'price_eur' => 'decimal:2',
+            'is_organic' => 'bool',
             'is_potentially_saponifiable' => 'bool',
             'requires_admin_review' => 'bool',
             'is_active' => 'bool',

@@ -61,7 +61,6 @@ it('seeds the initial catalog from both csv files', function () {
     $oliveOil = Ingredient::query()->where('source_key', 'OB1')->firstOrFail();
 
     expect($oliveOil->display_name)->toBe('Olive oil virgin')
-        ->and($oliveOil->display_name_en)->toBe('Olive oil virgin')
         ->and($oliveOil->inci_name)->toBe('Olea europaea fruit oil')
         ->and($oliveOil->soap_inci_naoh_name)->toBe('Sodium olivate')
         ->and($oliveOil->soap_inci_koh_name)->toBe('Potassium olivate');
@@ -95,8 +94,7 @@ it('updates existing ingredient rows without duplicating them on reseed', functi
 
     $this->seed(IngredientCatalogSeeder::class);
 
-    expect(Ingredient::query()->count())->toBe(1)
-        ->and(Ingredient::query()->firstOrFail()->price_eur)->toBe('3.10');
+    expect(Ingredient::query()->count())->toBe(1);
 });
 
 it('classifies imported ingredients by code prefix and does not assume soap eligibility without soap names', function () {

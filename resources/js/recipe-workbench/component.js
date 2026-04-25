@@ -59,6 +59,18 @@ function phaseItemsForBlueprints(blueprints) {
     }, {});
 }
 
+function canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey) {
+    if (sourcePhaseKey === targetPhaseKey) {
+        return true;
+    }
+
+    const oilAdditivePhases = ['saponified_oils', 'additives'];
+
+    return row?.category === 'carrier_oil'
+        && oilAdditivePhases.includes(sourcePhaseKey)
+        && oilAdditivePhases.includes(targetPhaseKey);
+}
+
 /**
  * This section owns the public state keys and the boot-time watchers that keep
  * the preview in sync while the user edits the workbench.
@@ -257,6 +269,14 @@ function createCatalogSection() {
             return buildIngredientFattyAcidRows(ingredient);
         },
 
+        categoryIngredientCount(category) {
+            if (category === 'all') {
+                return this.ingredients.length;
+            }
+
+            return this.ingredients.filter((ingredient) => ingredient.category === category).length;
+        },
+
         fattyAcidLabels() {
             return buildFattyAcidLabels();
         },
@@ -395,14 +415,14 @@ function createCatalogSection() {
                 return false;
             }
 
-            if (!this.isCosmeticFormula && phaseKey !== this.draggedRowPhaseKey) {
-                return false;
-            }
-
             const draggedRow = (this.phaseItems[this.draggedRowPhaseKey] ?? [])
                 .find((row) => row.id === this.draggedRowId);
 
             if (!draggedRow) {
+                return false;
+            }
+
+            if (!this.isCosmeticFormula && !canMoveSoapRowToPhase(draggedRow, this.draggedRowPhaseKey, phaseKey)) {
                 return false;
             }
 

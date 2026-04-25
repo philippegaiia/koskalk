@@ -30,6 +30,8 @@ it('renders the current saved recipe page with print actions', function () {
         ->assertSee('Batch production sheet')
         ->assertSee('Technical recipe sheet')
         ->assertSee('Costing sheet')
+        ->assertSee('Export Excel')
+        ->assertSee('Export CSV')
         ->assertSee('Published Formula')
         ->assertSee('1000<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">g</span>', false)
         ->assertDontSee('1000.00');
@@ -153,6 +155,82 @@ it('passes batch context from the saved page to print sheets', function () {
         ->assertSee('B-2026-042')
         ->assertSee('2026-04-20')
         ->assertSee('24');
+});
+
+it('downloads the saved formula as a simple csv', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.export.csv', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertDownload('published-formula.csv');
+
+    expect($response->streamedContent())
+        ->toContain('Phase,Ingredient,"INCI name",Percentage,Weight,Note')
+        ->toContain('"Saponified oils","Olive Oil","OLEA EUROPAEA FRUIT OIL",100,1000,');
+});
+
+it('downloads the saved formula as an excel workbook', function () {
+    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
+    attachCostingToSavedVersion($user, $publishedVersion);
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.export.xlsx', [
+            'recipe' => $recipe->id,
+            'batch_number' => 'B-2026-043',
+            'manufacture_date' => '2026-04-21',
+            'units_produced' => 12,
+        ]))
+        ->assertSuccessful()
+        ->assertDownload('published-formula.xlsx');
+
+    $content = $response->streamedContent();
+
+    expect(substr($content, 0, 2))->toBe('PK');
+
+    $path = tempnam(sys_get_temp_dir(), 'koskalk-export-test-');
+    file_put_contents($path, $content);
+
+    $zip = new ZipArchive;
+
+    expect($zip->open($path))->toBeTrue();
+
+    $workbookXml = (string) $zip->getFromName('xl/workbook.xml');
+    $worksheetXml = collect(range(1, 6))
+        ->map(fn (int $index): string => (string) $zip->getFromName("xl/worksheets/sheet{$index}.xml"))
+        ->implode("\n");
+
+    $zip->close();
+    unlink($path);
+
+    expect($workbookXml)
+        ->toContain('Summary')
+        ->toContain('Formula')
+        ->toContain('Packaging')
+        ->toContain('Outputs')
+        ->toContain('INCI Declaration')
+        ->toContain('Costing')
+        ->and($worksheetXml)
+        ->toContain('Published Formula')
+        ->toContain('Olive Oil')
+        ->toContain('B-2026-043')
+        ->toContain('<f>SUM(D4:D4)</f>')
+        ->toContain('<f>C10*D10/1000</f>')
+        ->toContain('customWidth="true"')
+        ->toContain('<autoFilter');
+});
+
+it('does not expose exports to other users', function () {
+    [$owner, $recipe] = createSavedRecipeVersion();
+    $otherUser = User::factory()->create();
+
+    $this->actingAs($otherUser)
+        ->get(route('recipes.export.csv', ['recipe' => $recipe->id]))
+        ->assertNotFound();
+
+    $this->actingAs($otherUser)
+        ->get(route('recipes.export.xlsx', ['recipe' => $recipe->id]))
+        ->assertNotFound();
 });
 
 it('does not expose the saved formula to other users', function () {

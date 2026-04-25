@@ -12,7 +12,7 @@
  <div class="p-5">
  <div class="relative sk-inset">
  <div class="overflow-hidden rounded-lg">
- <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
+ <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Oil</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% oils</div>
@@ -28,7 +28,7 @@
  'bg-[var(--color-accent-soft)]': isDropTarget('saponified_oils', row.id),
  'opacity-60': isDraggedRow('saponified_oils', row.id),
  }"
- class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] transition">
+ class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] transition">
  <div class="grid place-items-center bg-white px-2 py-3">
  <button type="button"
  draggable="true"
@@ -90,6 +90,7 @@
  <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="detail.value"></span>
  </div>
  </template>
+
  </div>
  <template x-if="ingredientFattyAcidRows(row).length > 0">
  <div class="mt-3">
@@ -111,7 +112,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3">
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(nonNegativeNumber($event.target.value), 2)" type="number" inputmode="decimal" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="number" inputmode="decimal" min="0" max="100" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'percentage'">
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -119,7 +120,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
  <template x-if="editMode === 'weight'">
- <input :value="format(rowWeight(row), 1)" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 1) }" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 1)" type="number" inputmode="decimal" step="1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)}`"></span>
@@ -130,9 +131,18 @@
  </div>
  </div>
  </template>
+
+ <template x-if="oilRows.length === 0">
+ <div @dragover="allowPhaseDrop('saponified_oils', $event)"
+ @drop="dropDraggedRow('saponified_oils', $event)"
+ :class="isDropTarget('saponified_oils') ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
+ class="px-4 py-4 text-center text-xs font-medium transition">
+ Drop carrier oil here
+ </div>
+ </template>
  </div>
 
- <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
+ <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-3 py-3"></div>
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-3 font-medium">Oil total</div>
  <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center px-4 py-3 font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>

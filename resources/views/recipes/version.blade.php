@@ -83,6 +83,12 @@
                         <a href="{{ route('recipes.print.costing', $printQuery) }}" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
                             Costing sheet
                         </a>
+                        <a href="{{ route('recipes.export.xlsx', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                            Export Excel
+                        </a>
+                        <a href="{{ route('recipes.export.csv', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                            Export CSV
+                        </a>
                     </div>
                 </div>
 

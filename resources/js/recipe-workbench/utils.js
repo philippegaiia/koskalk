@@ -24,6 +24,10 @@ export function nonNegativeNumber(value) {
     return Math.max(0, number(value));
 }
 
+export function clampPercentage(value) {
+    return Math.min(100, nonNegativeNumber(value));
+}
+
 export function roundTo(value, decimals = 3) {
     const factor = 10 ** decimals;
 

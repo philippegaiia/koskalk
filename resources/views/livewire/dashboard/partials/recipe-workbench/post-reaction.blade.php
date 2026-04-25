@@ -11,13 +11,13 @@
  </div>
 
  <div class="space-y-5 p-5">
- <template x-if="additiveRows.length > 0">
+ <template x-if="additiveRows.length > 0 || canDropRowInPhase('additives')">
  <div class="overflow-hidden sk-inset">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">Additives</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Colorants, preservatives, and other post-reaction functional materials. Drag to reorder the additives already in this phase.</p>
  </div>
- <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
+ <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% base</div>
@@ -33,7 +33,7 @@
  'bg-[var(--color-accent-soft)]': isDropTarget('additives', row.id),
  'opacity-60': isDraggedRow('additives', row.id),
  }"
- class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] transition">
+ class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] transition">
  <div class="grid place-items-center bg-white px-2 py-3">
  <button type="button"
  draggable="true"
@@ -50,7 +50,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3">
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = nonNegativeNumber($event.target.value)" type="number" inputmode="decimal" step="0.1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = clampPercentage($event.target.value)" type="number" inputmode="decimal" min="0" max="100" step="0.1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'percentage'">
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -58,7 +58,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
  <template x-if="editMode === 'weight'">
- <input :value="format(rowWeight(row), 3)" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="0.001" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.001" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
@@ -70,6 +70,15 @@
  </div>
  </template>
  </div>
+
+ <template x-if="additiveRows.length === 0">
+ <div @dragover="allowPhaseDrop('additives', $event)"
+ @drop="dropDraggedRow('additives', $event)"
+ :class="isDropTarget('additives') ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
+ class="px-4 py-4 text-center text-xs font-medium transition">
+ Drop carrier oil here to use it as an additive
+ </div>
+ </template>
  </div>
  </template>
 
@@ -79,7 +88,7 @@
  <p class="font-medium text-[var(--color-ink-strong)]">Fragrance and aromatics</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Essential oils and aromatic extracts with their own compliance context. Drag to reorder inside this aromatic phase.</p>
  </div>
- <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
+ <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% base</div>
@@ -95,7 +104,7 @@
  'bg-[var(--color-accent-soft)]': isDropTarget('fragrance', row.id),
  'opacity-60': isDraggedRow('fragrance', row.id),
  }"
- class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem] gap-px bg-[var(--color-line)] transition">
+ class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] transition">
  <div class="grid place-items-center bg-white px-2 py-3">
  <button type="button"
  draggable="true"
@@ -112,7 +121,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3">
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = nonNegativeNumber($event.target.value)" type="number" inputmode="decimal" step="0.1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = clampPercentage($event.target.value)" type="number" inputmode="decimal" min="0" max="100" step="0.1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'percentage'">
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -120,7 +129,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
  <template x-if="editMode === 'weight'">
- <input :value="format(rowWeight(row), 3)" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" type="number" inputmode="decimal" step="0.001" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.001" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>

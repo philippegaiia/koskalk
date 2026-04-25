@@ -26,6 +26,8 @@ Route::controller(RecipeController::class)
         Route::get('/{recipe}/print/details', 'printSavedDetails')->name('print.details');
         Route::get('/{recipe}/print/technical', 'printSavedTechnicalSheet')->name('print.technical');
         Route::get('/{recipe}/print/costing', 'printSavedCostingSheet')->name('print.costing');
+        Route::get('/{recipe}/export.xlsx', 'exportSavedWorkbook')->name('export.xlsx');
+        Route::get('/{recipe}/export.csv', 'exportSavedFormulaCsv')->name('export.csv');
         Route::get('/{recipe}/versions/{version}', 'version')->name('version');
         Route::delete('/{recipe}/versions/{version}', 'destroyVersion')->name('versions.destroy');
         Route::post('/{recipe}/versions/{version}/use-as-draft', 'useVersionAsDraft')->name('use-version-as-draft');

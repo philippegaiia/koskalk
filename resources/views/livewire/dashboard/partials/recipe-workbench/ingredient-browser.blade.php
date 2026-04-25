@@ -1,32 +1,31 @@
 @php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
 
 <aside class="space-y-4">
- <div class="sk-card p-4">
- <p class="sk-eyebrow">Ingredient browser</p>
- <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">Filtered by role</h3>
- <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]"><span class="numeric" x-text="ingredients.length"></span> curated ingredients / INCI data / add your own</p>
- <input x-model="search" type="search" placeholder="Search name or INCI" class="mt-4 w-full rounded-lg bg-[var(--color-field)] px-4 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
-
- <div class="mt-4 flex flex-wrap gap-2">
- <template x-for="option in categoryOptions" :key="option.value">
- <button type="button" @click="activeCategory = option.value" :class="activeCategory === option.value ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full border px-3 py-1.5 text-xs font-medium transition">
- <span x-text="option.label"></span>
- </button>
- </template>
- </div>
- </div>
-
  <div class="overflow-hidden sk-card">
- <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
- <p class="sk-eyebrow">Available ingredients</p>
- <p class="mt-1 text-sm text-[var(--color-ink-soft)]"><span class="numeric" x-text="filteredIngredients.length"></span> match the current filter</p>
+ <div class="border-b border-[var(--color-line)] px-5 py-5">
+ <p class="sk-eyebrow">Ingredient browser</p>
+ <h3 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Filtered by category</h3>
  </div>
 
- <div class="max-h-[44rem] divide-y divide-[var(--color-line)] overflow-y-auto px-3 pr-2">
+ <div class="space-y-3 border-b border-[var(--color-line)] px-5 py-4">
+ <input x-model="search" type="search" placeholder="Search name or INCI..." class="w-full rounded-[1.15rem] bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition placeholder:text-[var(--color-ink-soft)] focus:outline-2 focus:outline-[var(--color-accent)]" />
+
+ <select x-model="activeCategory" class="w-full rounded-[1.15rem] bg-[var(--color-field)] px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">
+ <template x-for="option in categoryOptions" :key="option.value">
+ <option :value="option.value" x-text="`${option.label} (${categoryIngredientCount(option.value)})`"></option>
+ </template>
+ </select>
+ </div>
+
+ <div class="border-b border-[var(--color-line)] px-5 py-3">
+ <p class="text-sm text-[var(--color-ink-soft)]"><span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="filteredIngredients.length"></span> match the current filter</p>
+ </div>
+
+ <div class="max-h-[44rem] divide-y divide-[var(--color-line)] overflow-y-auto">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
- <div class="px-2 py-2.5 transition hover:bg-[var(--color-panel)]">
- <div class="flex items-start gap-2.5">
- <div class="size-10 shrink-0 overflow-hidden rounded-lg bg-[var(--color-panel)]">
+ <div class="group px-4 py-2 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
+ <div class="flex items-center gap-3">
+ <div class="size-11 shrink-0 overflow-hidden rounded-xl bg-[var(--color-panel)]">
  <template x-if="ingredient.image_url">
  <img :src="ingredient.image_url" :alt="ingredient.name" class="size-full object-cover" />
  </template>
@@ -35,14 +34,11 @@
  </template>
  </div>
  <div class="min-w-0 flex-1">
- <div class="flex items-start gap-2">
- <div class="min-w-0 flex-1">
- <p class="break-words text-sm font-semibold leading-5 text-[var(--color-ink-strong)]" x-text="ingredient.name"></p>
+ <p class="truncate text-sm font-semibold leading-5 text-[var(--color-ink-strong)]" x-text="ingredient.name"></p>
+ <p class="mt-0.5 min-w-0 truncate text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
  </div>
- <span class="shrink-0 rounded-full border border-[var(--color-line)] bg-white px-2.5 py-0.5 text-[10px] font-medium text-[var(--color-ink-soft)]" x-text="ingredient.category_label"></span>
- </div>
- <p class="mt-0.5 min-w-0 break-words text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
- <div class="mt-2 flex items-start justify-between gap-2">
+
+ <div class="flex shrink-0 items-center gap-2">
  <div x-data="{
  open: false,
  panelStyle: '',
@@ -105,19 +101,17 @@
  </div>
  </template>
  </div>
- <div class="ml-auto flex flex-wrap justify-end gap-2">
+ <div class="flex justify-end">
  @if ($isCosmeticWorkbench)
  <template x-if="phaseOrder.length <= 1">
- <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" class="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
- <span class="text-sm leading-none">+</span>
- <span>Add</span>
+ <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-white opacity-100 transition hover:bg-[var(--color-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="Add ingredient">
+ <span>+</span>
  </button>
  </template>
  <template x-if="phaseOrder.length > 1">
  <div x-data="{ open: false }" class="relative">
- <button type="button" @click.stop="open = !open" class="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
- <span class="text-sm leading-none">+</span>
- <span>Add</span>
+ <button type="button" @click.stop="open = !open" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-white opacity-100 transition hover:bg-[var(--color-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="Choose phase for ingredient">
+ <span>+</span>
  </button>
  <div x-show="open"
  x-transition.opacity
@@ -134,26 +128,10 @@
  </div>
  </template>
  @else
- <template x-if="ingredient.can_add_to_saponified_oils">
- <button type="button" @click.stop="addIngredient(ingredient, 'saponified_oils')" class="inline-flex items-center gap-1 rounded-full bg-[var(--color-accent)] px-2.5 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
- <span class="text-sm leading-none">+</span>
- <span>Oil</span>
+ <button type="button" @click.stop="addIngredient(ingredient)" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-white opacity-100 transition hover:bg-[var(--color-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="Add ingredient">
+ <span>+</span>
  </button>
- </template>
- <template x-if="ingredient.can_add_to_additives">
- <button type="button" @click.stop="addIngredient(ingredient, 'additives')" class="inline-flex items-center gap-1 rounded-full border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-2.5 py-1.5 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">
- <span class="text-sm leading-none">+</span>
- <span>Additive</span>
- </button>
- </template>
- <template x-if="ingredient.can_add_to_fragrance">
- <button type="button" @click.stop="addIngredient(ingredient, 'fragrance')" class="inline-flex items-center gap-1 rounded-full border border-[var(--color-line)] bg-white px-2.5 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]">
- <span class="text-sm leading-none">+</span>
- <span>Aromatic</span>
- </button>
- </template>
  @endif
- </div>
  </div>
  </div>
  </div>

@@ -1095,7 +1095,7 @@ JS;
     ]);
 });
 
-it('keeps drag and drop limited to reordering within the same phase', function () {
+it('allows carrier oils to move between soap oils and additives', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
 
@@ -1151,7 +1151,7 @@ const workbench = globalThis.createRecipeWorkbench({
 
 workbench.phaseItems = {
   saponified_oils: [
-    { id: 'oil-1', ingredient_id: 1, name: 'Olive Oil' },
+    { id: 'oil-1', ingredient_id: 1, name: 'Olive Oil', category: 'carrier_oil' },
   ],
   additives: [],
   fragrance: [],
@@ -1176,7 +1176,7 @@ console.log(JSON.stringify({
   canDropIntoAdditives,
   oilCount: workbench.phaseItems.saponified_oils.length,
   additiveCount: workbench.phaseItems.additives.length,
-  oilRowId: workbench.phaseItems.saponified_oils[0]?.id ?? null,
+  additiveRowId: workbench.phaseItems.additives[0]?.id ?? null,
 }));
 JS;
 
@@ -1191,10 +1191,10 @@ JS;
 
     $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
 
-    expect($payload['canDropIntoAdditives'])->toBeFalse()
-        ->and($payload['oilCount'])->toBe(1)
-        ->and($payload['additiveCount'])->toBe(0)
-        ->and($payload['oilRowId'])->toBe('oil-1');
+    expect($payload['canDropIntoAdditives'])->toBeTrue()
+        ->and($payload['oilCount'])->toBe(0)
+        ->and($payload['additiveCount'])->toBe(1)
+        ->and($payload['additiveRowId'])->toBe('oil-1');
 });
 
 it('still allows reordering rows within the same phase', function () {
@@ -1876,16 +1876,20 @@ it('keeps formula table controls stepped and visually aligned', function () {
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
 
     expect($reactionCore)
-        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem]')
-        ->toContain('type="number" inputmode="decimal" step="1"')
-        ->toContain('row.percentage = format(nonNegativeNumber($event.target.value), 2)')
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('type="number" inputmode="decimal" min="0" max="100" step="1"')
+        ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('format(totalOilPercentage(), 2)')
         ->toContain("oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]'")
+        ->toContain('document.activeElement !== $el')
+        ->not->toContain(':value="format(rowWeight(row), 1)"')
         ->and($postReaction)
-        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_7rem_7rem_2.5rem]')
-        ->toContain('type="number" inputmode="decimal" step="0.1"')
+        ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
+        ->toContain('type="number" inputmode="decimal" min="0" max="100" step="0.1"')
         ->toContain('type="number" inputmode="decimal" step="0.001"')
-        ->toContain('format(rowWeight(row), 3)');
+        ->toContain('row.percentage = clampPercentage($event.target.value)')
+        ->toContain('document.activeElement !== $el')
+        ->not->toContain(':value="format(rowWeight(row), 3)"');
 });
 
 it('keeps packaging catalog controls below the intro in a horizontal row', function () {

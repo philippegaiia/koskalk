@@ -15,6 +15,7 @@ import {
     updatePercentageFromWeight as calculatePercentageFromWeight,
 } from '../calculation';
 import {
+    clampPercentage as clampPercentageValue,
     format as formatNumber,
     nonNegativeNumber as ensureNonNegativeNumber,
     number as coerceNumber,
@@ -149,6 +150,10 @@ export function createFormulaSection() {
 
         nonNegativeNumber(value) {
             return ensureNonNegativeNumber(value);
+        },
+
+        clampPercentage(value) {
+            return clampPercentageValue(value);
         },
 
         roundTo(value, decimals = 3) {

@@ -353,6 +353,10 @@ it('keeps cosmetic phase editing calm and guarded', function () {
 
     expect($cosmeticFormula)
         ->toContain('border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]')
+        ->toContain('type="number" inputmode="decimal" min="0" max="100" step="0.1"')
+        ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
+        ->toContain('document.activeElement !== $el')
+        ->not->toContain(':value="format(rowWeight(row), 3)"')
         ->not->toContain("'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'")
         ->toContain('Drop here')
         ->not->toContain('Drop here to move to the end of this phase')

@@ -8,13 +8,18 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
+use App\Services\RecipeCsvExporter;
+use App\Services\RecipeExportDataBuilder;
 use App\Services\RecipeVersionDeletionService;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
+use App\Services\RecipeWorkbookExporter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RecipeController extends Controller
 {
@@ -231,6 +236,42 @@ class RecipeController extends Controller
         ]);
     }
 
+    public function exportSavedWorkbook(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeExportDataBuilder $recipeExportDataBuilder,
+        RecipeWorkbookExporter $recipeWorkbookExporter,
+    ): StreamedResponse {
+        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        $exportData = $recipeExportDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
+        $filename = $this->exportFilename($recipe, 'xlsx');
+
+        return response()->streamDownload(
+            fn (): int => print $recipeWorkbookExporter->export($exportData),
+            $filename,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+        );
+    }
+
+    public function exportSavedFormulaCsv(
+        int $recipe,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeExportDataBuilder $recipeExportDataBuilder,
+        RecipeCsvExporter $recipeCsvExporter,
+    ): StreamedResponse {
+        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        $exportData = $recipeExportDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
+        $filename = $this->exportFilename($recipe, 'csv');
+
+        return response()->streamDownload(
+            fn (): int => print $recipeCsvExporter->export($exportData),
+            $filename,
+            ['Content-Type' => 'text/csv; charset=UTF-8'],
+        );
+    }
+
     public function printDetails(
         int $recipe,
         int $version,
@@ -381,5 +422,12 @@ class RecipeController extends Controller
             ->firstOrFail();
 
         return [$recipe, $version];
+    }
+
+    private function exportFilename(Recipe $recipe, string $extension): string
+    {
+        $slug = Str::slug($recipe->name);
+
+        return ($slug !== '' ? $slug : 'recipe').'.'.$extension;
     }
 }

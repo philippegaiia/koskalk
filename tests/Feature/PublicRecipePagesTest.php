@@ -63,7 +63,8 @@ it('renders the public soap workbench with filtered catalog data', function () {
         ->assertSee('Olive Oil')
         ->assertSee('Lavender Essential Oil')
         ->assertSee('Fatty acid profile')
-        ->assertSee('Live blend feedback.')
+        ->assertSee('Details')
+        ->assertDontSee('Live blend feedback.')
         ->assertDontSee('while you adjust the oil selection.');
 });
 

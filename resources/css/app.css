@@ -26,13 +26,13 @@
     --color-field-muted: #f5f3ec;
     --color-field-outline: #d6d1c5;
 
-    --color-hero: oklch(22.0% .025 154);
-    --color-hero-soft: oklch(27.0% .028 154);
+    --color-hero: oklch(22.0% .018 65);
+    --color-hero-soft: oklch(27.0% .020 65);
     --color-surface-strong: oklch(30.0% .022 80);
 
-    --color-line: #ded9cf;
-    --color-line-strong: #c9c3b7;
-    --color-line-hero: oklch(40% .030 154);
+    --color-line: #e8e3d8;
+    --color-line-strong: #d8d0c2;
+    --color-line-hero: oklch(40% .022 65);
 
     --color-ink: #3b372f;
     --color-ink-strong: #211f1a;
@@ -44,10 +44,10 @@
     --color-inverse-soft: oklch(76% .010 84);
     --color-inverse-muted: oklch(58% .010 84);
 
-    --color-accent: #2d6a4f;
-    --color-accent-hover: #1b4332;
-    --color-accent-soft: #e9f3ee;
-    --color-accent-strong: #1b4332;
+    --color-accent: #c0663a;
+    --color-accent-hover: #9e4e28;
+    --color-accent-soft: #f7ece6;
+    --color-accent-strong: #9e4e28;
 
     --color-warning: #b45309;
     --color-warning-hover: #8a3f06;
@@ -98,16 +98,16 @@
 
 @layer components {
     .sk-card {
-        border: 1px solid color-mix(in oklab, var(--color-line) 82%, var(--color-ink) 8%);
+        border: 1px solid transparent;
         border-radius: 0.875rem;
         background: var(--color-panel);
         box-shadow:
             0 1px 2px rgba(60, 50, 30, 0.04),
-            0 10px 18px rgba(60, 50, 30, 0.06);
+            0 12px 24px rgba(60, 50, 30, 0.07);
     }
 
     .sk-inset {
-        border: 1px solid color-mix(in oklab, var(--color-line) 72%, var(--color-ink) 10%);
+        border: 1px solid color-mix(in oklab, var(--color-line) 88%, var(--color-ink) 4%);
         border-radius: 0.5rem;
         background: color-mix(in oklab, var(--color-panel) 64%, var(--color-surface) 36%);
     }

@@ -38,7 +38,9 @@ export function createPresentationSection() {
                 return numeric < 20 ? 'very-low' : 'low';
             }
 
-            return 'ideal';
+            if (numeric <= zone.end) return 'ideal';
+
+            return numeric < 85 ? 'high' : 'excess';
         },
 
         qualityToneColor(key, value) {
@@ -55,6 +57,36 @@ export function createPresentationSection() {
 
         qualityLevelStyle(key, value) {
             return `--quality-tone: ${this.qualityToneColor(key, value)};`;
+        },
+
+        qualityCardStyle(key, value) {
+            const tone = this.qualityTone(key, value);
+
+            if (tone === 'ideal') {
+                return 'border-[var(--color-line)] bg-white';
+            }
+
+            if (tone === 'excess') {
+                return 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)]';
+            }
+
+            return 'border-[var(--color-line-strong)] bg-[var(--color-accent-soft)]';
+        },
+
+        qualityTargetLabel(key) {
+            const range = this.qualityTargetRangeLabel(key);
+
+            return range ? `Target ${range}` : null;
+        },
+
+        qualityTargetRangeLabel(key) {
+            const zone = this.qualityTargetZone(key);
+
+            if (!zone) {
+                return null;
+            }
+
+            return `${zone.start}-${zone.end}`;
         },
 
         fattyAcidRowBarStyle(value, color = 'var(--color-ink-soft)') {
@@ -84,6 +116,8 @@ export function createPresentationSection() {
                 dos_risk: { start: 0, end: 20 },
                 slime_risk: { start: 0, end: 20 },
                 cure_speed: { start: 35, end: 60 },
+                iodine: { start: 41, end: 70 },
+                ins: { start: 136, end: 165 },
             };
 
             return zones[key] ?? null;
@@ -115,6 +149,53 @@ export function createPresentationSection() {
                 ...segment,
                 percent: total > 0 ? (this.number(segment.value) / total) * 100 : 0,
             }));
+        },
+
+        fattyAcidChemistrySummaryRows() {
+            const quality = this.qualityMetrics();
+            const groups = this.backendCalculation?.properties?.fatty_acid_groups ?? {};
+            const rows = [];
+            const hasQualityValue = (key) => Object.prototype.hasOwnProperty.call(quality, key);
+
+            if (hasQualityValue('iodine')) {
+                rows.push({
+                    key: 'iodine',
+                    label: 'Iodine',
+                    value: this.format(quality.iodine, 1),
+                    bracket: this.qualityTargetRangeLabel('iodine'),
+                });
+            }
+
+            if (hasQualityValue('ins')) {
+                rows.push({
+                    key: 'ins',
+                    label: 'INS',
+                    value: this.format(quality.ins, 1),
+                    bracket: this.qualityTargetRangeLabel('ins'),
+                });
+            }
+
+            const saturated = this.number(groups.sat ?? (this.number(groups.vs) + this.number(groups.hs)));
+            const unsaturated = this.number(groups.unsat ?? (this.number(groups.mu) + this.number(groups.pu) + this.number(groups.sp)));
+
+            if (saturated > 0 || unsaturated > 0) {
+                rows.push({
+                    key: 'sat_unsat',
+                    label: 'Sat / Unsat',
+                    value: `${this.format(saturated, 0)} / ${this.format(unsaturated, 0)}`,
+                    bracket: this.fattyAcidSatUnsatRatio(saturated, unsaturated),
+                });
+            }
+
+            return rows;
+        },
+
+        fattyAcidSatUnsatRatio(saturated, unsaturated) {
+            if (unsaturated <= 0) {
+                return saturated > 0 ? 'Saturated only' : 'No ratio yet';
+            }
+
+            return `${this.format(saturated / unsaturated, 2)}:1`;
         },
 
         get totalSummaryCards() {
@@ -560,14 +641,12 @@ export function createPresentationSection() {
                 ['DOS risk', 'dos_risk'],
                 ['Slime risk', 'slime_risk'],
                 ['Cure speed', 'cure_speed'],
-                ['Iodine', 'iodine'],
-                ['INS', 'ins'],
             ].map(([label, key]) => ({
                 label,
                 key,
                 value: quality[key],
-                level: ['iodine', 'ins'].includes(key) ? null : this.qualityLabel(quality[key]),
-                explanation: ['iodine', 'ins'].includes(key) ? null : this.qualityExplanation(key, quality[key]),
+                level: this.qualityLabel(quality[key]),
+                explanation: this.qualityExplanation(key, quality[key]),
             }));
         },
 

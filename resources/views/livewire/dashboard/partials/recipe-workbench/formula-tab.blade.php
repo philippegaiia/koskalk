@@ -11,11 +11,8 @@
  @else
  @include('livewire.dashboard.partials.recipe-workbench.reaction-core')
  @include('livewire.dashboard.partials.recipe-workbench.post-reaction')
+ @include('livewire.dashboard.partials.recipe-workbench.formula-analysis')
  @endif
  </div>
-
- @unless ($isCosmeticWorkbench)
- @include('livewire.dashboard.partials.recipe-workbench.formula-analysis')
- @endunless
  </section>
 </div>

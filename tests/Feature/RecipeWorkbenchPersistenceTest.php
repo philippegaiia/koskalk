@@ -1912,12 +1912,66 @@ it('keeps formula visual states distinct and softly selected', function () {
     expect($reactionCore)
         ->toContain('class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
         ->and($formulaAnalysis)
-        ->toContain('rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm')
+        ->toContain('rounded-lg border px-4 py-3 text-sm')
         ->and($ingredientBrowser)
         ->toContain('flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs')
         ->toContain('min-w-0 flex-1 truncate text-[var(--color-ink-strong)]')
         ->and($navigation)
         ->toContain('bg-[var(--color-accent-soft)]');
+});
+
+it('keeps fatty acid chemistry compact with grouped profile first and collapsed details', function () {
+    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+    $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
+
+    expect($ingredientBrowser)
+        ->not->toContain('Live blend feedback.')
+        ->toContain('fattyAcidChemistrySummaryRows()')
+        ->toContain('grid grid-cols-3 gap-2')
+        ->toContain('<details class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]"', false)
+        ->toContain('<summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 marker:hidden"', false)
+        ->toContain('x-text="`${fattyAcidProfileRows.length} acids`"')
+        ->toContain('grid-cols-[minmax(0,5.5rem)_minmax(3rem,1fr)_4.25rem]')
+        ->and($presentationSection)
+        ->toContain('Sat / Unsat')
+        ->toContain('Iodine')
+        ->toContain('INS')
+        ->toContain('qualityTargetRangeLabel(\'iodine\')')
+        ->toContain('qualityTargetRangeLabel(\'ins\')')
+        ->toContain('fattyAcidSatUnsatRatio')
+        ->not->toContain('Unsaturation')
+        ->not->toContain('Soap balance');
+});
+
+it('presents soap qualities as compact tabbed metric cards', function () {
+    $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
+    $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
+
+    expect($formulaAnalysis)
+        ->not->toContain('xl:col-span-2')
+        ->toContain("x-data=\"{ soapQualityPanel: 'qualities' }\"", false)
+        ->toContain("soapQualityPanel = 'qualities'")
+        ->toContain("soapQualityPanel = 'advanced'")
+        ->toContain('defaultQualityRows()')
+        ->toContain('advancedQualityRows()')
+        ->toContain('grid gap-3 sm:grid-cols-2 xl:grid-cols-4')
+        ->toContain('rounded-lg border px-4 py-3 text-sm')
+        ->toContain('qualityCardStyle(row.key, row.value)')
+        ->toContain('qualityTargetLabel(row.key)')
+        ->toContain('targetZoneStyle(row.key)')
+        ->and($presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js')))
+        ->toContain('if (numeric <= zone.end) return \'ideal\';')
+        ->toContain('return numeric < 85 ? \'high\' : \'excess\';')
+        ->toContain('iodine: { start: 41, end: 70 }')
+        ->toContain('ins: { start: 136, end: 165 }')
+        ->and($formulaAnalysis)
+        ->not->toContain('sk-quality-pill shrink-0')
+        ->not->toContain('Compact interpretation first, deeper chemistry second.')
+        ->not->toContain('Deeper structure signals, including iodine and INS.')
+        ->not->toContain('Advanced metrics')
+        ->and($formulaTabSource)
+        ->toContain('@include(\'livewire.dashboard.partials.recipe-workbench.formula-analysis\')')
+        ->toContain('@include(\'livewire.dashboard.partials.recipe-workbench.post-reaction\')');
 });
 
 function makeCarrierOilIngredient(): Ingredient

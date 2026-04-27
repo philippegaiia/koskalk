@@ -145,7 +145,6 @@
  <div>
  <div>
  <p class="sk-eyebrow">Fatty acid profile</p>
- <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Live blend feedback.</p>
  </div>
  </div>
 
@@ -172,19 +171,37 @@
  </div>
  </div>
 
- <div class="grid gap-2">
- <template x-for="row in fattyAcidProfileRows" :key="row.key">
- <div class="rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm">
- <div class="flex items-center justify-between gap-3">
- <span class="text-[var(--color-ink-soft)]" x-text="row.label"></span>
- <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
- </div>
- <div class="mt-3 h-2 overflow-hidden rounded-full bg-white/80">
- <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="fattyAcidRowBarStyle(row.value, 'var(--color-ink-soft)')"></div>
- </div>
+ <template x-if="fattyAcidChemistrySummaryRows().length > 0">
+ <div class="grid grid-cols-3 gap-2">
+ <template x-for="row in fattyAcidChemistrySummaryRows()" :key="row.key">
+ <div class="min-w-0 rounded-lg bg-[var(--color-field)] px-2.5 py-2 text-center text-xs">
+ <div class="truncate font-medium text-[var(--color-ink-soft)]" x-text="row.label"></div>
+ <div class="numeric mt-1 truncate font-semibold text-[var(--color-ink-strong)]" x-text="row.value"></div>
+ <template x-if="row.bracket">
+ <div class="numeric mt-0.5 truncate text-[11px] leading-4 text-[var(--color-ink-soft)]" x-text="row.bracket"></div>
+ </template>
  </div>
  </template>
  </div>
+ </template>
+
+ <details class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]">
+ <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 marker:hidden">
+ <span class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-strong)]">Details</span>
+ <span class="numeric shrink-0 text-xs text-[var(--color-ink-soft)]" x-text="`${fattyAcidProfileRows.length} acids`"></span>
+ </summary>
+ <div class="grid gap-1.5 border-t border-[var(--color-line)] px-3 py-3">
+ <template x-for="row in fattyAcidProfileRows" :key="row.key">
+ <div class="grid grid-cols-[minmax(0,5.5rem)_minmax(3rem,1fr)_4.25rem] items-center gap-3 rounded-md bg-white/70 px-3 py-2 text-xs">
+ <span class="truncate text-[var(--color-ink-soft)]" x-text="row.label"></span>
+ <div class="h-1.5 overflow-hidden rounded-full bg-white">
+ <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="fattyAcidRowBarStyle(row.value, 'var(--color-ink-soft)')"></div>
+ </div>
+ <span class="numeric text-right font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
+ </div>
+ </template>
+ </div>
+ </details>
  </div>
  </template>
 

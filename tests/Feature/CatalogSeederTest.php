@@ -7,6 +7,8 @@ use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\ProductFamily;
 use Database\Seeders\AllergenCatalogSeeder;
+use Database\Seeders\CarrierOilSeeder;
+use Database\Seeders\FattyAcidSeeder;
 use Database\Seeders\IfraProductCategorySeeder;
 use Database\Seeders\IngredientCatalogSeeder;
 use Database\Seeders\IngredientFunctionSeeder;
@@ -123,6 +125,58 @@ it('classifies imported ingredients by code prefix and does not assume soap elig
         ->and($oil->isAvailableForInitialSoapCalculation())->toBeTrue()
         ->and($essentialOil->category)->toBe(IngredientCategory::EssentialOil)
         ->and($essentialOil->is_potentially_saponifiable)->toBeFalse();
+});
+
+it('enriches matching catalog carrier oils with mendrulandia chemistry without duplicating them or inventing soap inci names', function () {
+    [, $ingredientPath] = writeCatalogFixtures(
+        $this->catalogFixtureDirectory,
+        allergenRows: [
+            ['Nom INCI (à étiqueter)', 'Numéro CAS (International)', 'Numéro CE (Européen)', '', ''],
+        ],
+        ingredientRows: [
+            ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
+            ['OB4', 'Huile de coco', '', 'kg', '', '0.000', 'Yes', 'No', 'Cocos nucifera oil', '', '', '', '', '', 'Coconut oil'],
+        ],
+    );
+
+    config()->set('catalog-imports.ingredients.path', $ingredientPath);
+
+    $this->seed([
+        FattyAcidSeeder::class,
+        IngredientCatalogSeeder::class,
+        CarrierOilSeeder::class,
+    ]);
+
+    $coconutOil = Ingredient::query()
+        ->with(['sapProfile', 'fattyAcidEntries'])
+        ->where('source_file', $ingredientPath)
+        ->where('source_key', 'OB4')
+        ->firstOrFail();
+
+    $coconutOilRows = Ingredient::query()
+        ->get()
+        ->filter(fn (Ingredient $ingredient): bool => strtolower((string) $ingredient->display_name) === 'coconut oil');
+
+    expect($coconutOilRows)->toHaveCount(1)
+        ->and($coconutOil->is_potentially_saponifiable)->toBeTrue()
+        ->and((float) $coconutOil->sapProfile->koh_sap_value)->toBe(0.257)
+        ->and($coconutOil->sapProfile->source_notes)->toBe('Mendrulandia oils [coconut_oil]')
+        ->and($coconutOil->fattyAcidEntries)->not->toBeEmpty()
+        ->and($coconutOil->soap_inci_naoh_name)->toBeNull()
+        ->and($coconutOil->soap_inci_koh_name)->toBeNull()
+        ->and(Ingredient::query()
+            ->where('source_file', 'mendrulandia_oils')
+            ->where('source_key', 'coconut_oil')
+            ->exists())->toBeFalse();
+
+    $almondOil = Ingredient::query()
+        ->where('source_file', 'mendrulandia_oils')
+        ->where('source_key', 'almond_oil')
+        ->firstOrFail();
+
+    expect($almondOil->inci_name)->toBe('Prunus Amygdalus Dulcis (Sweet Almond) Oil')
+        ->and($almondOil->soap_inci_naoh_name)->toBeNull()
+        ->and($almondOil->soap_inci_koh_name)->toBeNull();
 });
 
 it('does not seed platform fragrance oils from the starter catalog', function () {

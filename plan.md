@@ -166,9 +166,13 @@ Only the minimum data needed for fast formulation:
 - Support a normalized fatty-acid catalog and per-ingredient-version fatty-acid rows
 - Expose grouped fatty-acid buckets and superfat behavior outputs in the calculation engine
 - Keep legacy soap-quality outputs during transition while introducing compact Koskalk qualities
+- Group Koskalk qualities as physical bar qualities, skin/use feel, lather, risk/context outputs, and classic references
 - Present only a small default quality set first, with lather summary and advanced disclosure for deeper metrics
 - Drive live workbench fatty-acid, lye, and quality displays from a backend preview payload instead of duplicated frontend chemistry formulas
-- Tune Koskalk quality formulas against benchmark archetypes (castile, high coconut, balanced palm/olive/coconut, high shea, tallow-style)
+- Add `soap_context`, quality applicability, and warnings so high-KOH/liquid soaps do not show misleading bar-quality claims
+- Allow negative superfat only in liquid/high-KOH workflows that require neutralization/pH control warnings
+- Treat PU above about 15% as high DOS/stability risk and above 20% as a strong warning zone
+- Tune Koskalk quality formulas against benchmark archetypes (castile, high coconut at 5% and 20% superfat, balanced palm/olive/coconut, high shea, tallow-style, PU-heavy, high-KOH/liquid)
 - Add short explanation text for quality cards and warning flags so the UI teaches tradeoffs instead of showing bare numbers only
 - Compare the current workbench against the loaded saved baseline with deltas on totals and key quality metrics
 - Improve admin data entry so normalized fatty-acid rows are edited directly on ingredient versions, with SAP-profile fatty-acid columns treated as legacy fallback only

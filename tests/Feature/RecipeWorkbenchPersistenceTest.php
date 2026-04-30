@@ -179,15 +179,48 @@ it('returns backend soap calculation preview data for the workbench', function (
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
-    $result = $component->previewCalculation(
-        workbenchSoapDraftPayload($ingredient, oilWeight: 1000),
-        app(RecipeWorkbenchService::class),
-    );
+    $payload = workbenchSoapDraftPayload($ingredient, oilWeight: 1000);
+    $payload['lye_type'] = 'koh';
+
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
 
     expect($result['ok'])->toBeTrue()
         ->and($result['calculation'])->not->toBeNull()
         ->and($result['calculation']['properties']['fatty_acid_profile']['oleic'])->toBe(71.0)
-        ->and($result['calculation']['properties']['qualities'])->toHaveKey('unmolding_firmness');
+        ->and($result['calculation']['properties']['qualities'])->toHaveKey('unmolding_firmness')
+        ->and($result['calculation']['properties']['warnings'])->toContain('high_koh_context_process_dependent');
+});
+
+it('returns a visible validation response for NaOH negative superfat previews', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $ingredient = makeCarrierOilIngredient();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = workbenchSoapDraftPayload($ingredient, oilWeight: 1000);
+    $payload['lye_type'] = 'naoh';
+    $payload['superfat'] = -5;
+
+    $calculationResult = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+    $labelingResult = $component->previewLabeling($payload, app(RecipeWorkbenchService::class));
+
+    expect($calculationResult['ok'])->toBeFalse()
+        ->and($calculationResult['message'])->toBe('Negative superfat is only supported for liquid or high-KOH soap workflows.')
+        ->and($calculationResult['calculation'])->toBeNull()
+        ->and($calculationResult['labeling'])->toBeNull()
+        ->and($labelingResult['ok'])->toBeFalse()
+        ->and($labelingResult['message'])->toBe('Negative superfat is only supported for liquid or high-KOH soap workflows.')
+        ->and($labelingResult['labeling'])->toBeNull();
 });
 
 it('does not re-render the workbench when refreshing the calculation preview', function () {
@@ -495,7 +528,7 @@ it('serializes packaging plan row positions with the draft payload', function ()
 import fs from 'node:fs';
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/payload.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/payload.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace(/export function /g, 'function ');
 
@@ -541,7 +574,7 @@ it('hydrates saved draft packaging rows into the workbench state', function () {
 import fs from 'node:fs';
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/snapshot.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/snapshot.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace(/export function /g, 'function ');
 
@@ -626,7 +659,7 @@ const state = {
 };
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createCostingSection', 'function createCostingSection');
 
@@ -665,7 +698,7 @@ it('does not load costing when the packaging tab is opened', function () {
 import fs from 'node:fs';
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
@@ -758,7 +791,7 @@ it('seeds the packaging catalog from the initial workbench payload', function ()
 import fs from 'node:fs';
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
@@ -856,7 +889,7 @@ const state = {
 };
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createPackagingSection', 'function createPackagingSection');
 
@@ -975,17 +1008,17 @@ const state = {
 };
 
 const bridgeSource = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/bridge.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace(/export async function /g, 'async function ');
 
 const costingSource = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createCostingSection', 'function createCostingSection');
 
 const packagingSource = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createPackagingSection', 'function createPackagingSection');
 
@@ -1056,7 +1089,7 @@ const state = {
 };
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createPackagingSection', 'function createPackagingSection');
 
@@ -1100,7 +1133,7 @@ it('allows carrier oils to move between soap oils and additives', function () {
 import fs from 'node:fs';
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
@@ -1202,7 +1235,7 @@ it('still allows reordering rows within the same phase', function () {
 import fs from 'node:fs';
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
@@ -1289,7 +1322,7 @@ it('only schedules the soap calculation preview when reaction-core rows change',
 import fs from 'node:fs';
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
@@ -1377,7 +1410,7 @@ it('still schedules the soap calculation preview when reaction-core rows change'
 import fs from 'node:fs';
 
 const source = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/component.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
@@ -1519,12 +1552,12 @@ const state = {
 };
 
 const bridgeSource = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/bridge.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace(/export async function /g, 'async function ');
 
 const costingSource = fs
-  .readFileSync('/Users/philippe/Herd/koskalk/resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
   .replace(/^import[\s\S]*?;\n/gm, '')
   .replace('export function createCostingSection', 'function createCostingSection');
 
@@ -1914,6 +1947,7 @@ it('keeps formula visual states distinct and softly selected', function () {
         ->and($formulaAnalysis)
         ->toContain('rounded-lg border px-4 py-3 text-sm')
         ->and($ingredientBrowser)
+        ->toContain('max-h-[600px] divide-y divide-[var(--color-line)] overflow-y-auto')
         ->toContain('flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs')
         ->toContain('min-w-0 flex-1 truncate text-[var(--color-ink-strong)]')
         ->and($navigation)
@@ -1950,6 +1984,10 @@ it('presents soap qualities as compact tabbed metric cards', function () {
     expect($formulaAnalysis)
         ->not->toContain('xl:col-span-2')
         ->toContain("x-data=\"{ soapQualityPanel: 'qualities' }\"", false)
+        ->toContain('Indicative values — additives, process, and cure conditions can change the real soap.')
+        ->not->toContain('3–4% essential oils')
+        ->not->toContain('sodium citrate')
+        ->not->toContain('experimentation remains')
         ->toContain("soapQualityPanel = 'qualities'")
         ->toContain("soapQualityPanel = 'advanced'")
         ->toContain('defaultQualityRows()')
@@ -1957,6 +1995,9 @@ it('presents soap qualities as compact tabbed metric cards', function () {
         ->toContain('grid gap-3 sm:grid-cols-2 xl:grid-cols-4')
         ->toContain('rounded-lg border px-4 py-3 text-sm')
         ->toContain('qualityCardStyle(row.key, row.value)')
+        ->toContain('qualityDisplayValue(row)')
+        ->toContain('isQualityScored(row.key)')
+        ->toContain('border border-[var(--color-line)] bg-transparent shadow-inner')
         ->toContain('qualityTargetLabel(row.key)')
         ->toContain('targetZoneStyle(row.key)')
         ->and($presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js')))
@@ -1964,6 +2005,11 @@ it('presents soap qualities as compact tabbed metric cards', function () {
         ->toContain('return numeric < 85 ? \'high\' : \'excess\';')
         ->toContain('iodine: { start: 41, end: 70 }')
         ->toContain('ins: { start: 136, end: 165 }')
+        ->toContain('qualityApplicability(key)')
+        ->toContain('isQualityTendency(key)')
+        ->toContain('return this.backendCalculation?.properties?.quality_applicability?.[key]')
+        ->toContain('Process-dependent tendency')
+        ->toContain('Not applicable for this soap context')
         ->and($formulaAnalysis)
         ->not->toContain('sk-quality-pill shrink-0')
         ->not->toContain('Compact interpretation first, deeper chemistry second.')
@@ -1972,6 +2018,150 @@ it('presents soap qualities as compact tabbed metric cards', function () {
         ->and($formulaTabSource)
         ->toContain('@include(\'livewire.dashboard.partials.recipe-workbench.formula-analysis\')')
         ->toContain('@include(\'livewire.dashboard.partials.recipe-workbench.post-reaction\')');
+});
+
+it('presents tendency quality metrics without score target treatment', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/sections/presentation-section.js', 'utf8')
+  .replace('export function createPresentationSection', 'function createPresentationSection');
+
+eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
+
+const workbench = {
+  backendCalculation: {
+    properties: {
+      quality_applicability: {
+        cleansing_strength: { applies: true, confidence: 0.35, display: 'tendency' },
+      },
+    },
+  },
+  number: (value) => Number(value ?? 0),
+  format: (value, decimals = 1) => Number(value ?? 0).toFixed(decimals),
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
+
+console.log(JSON.stringify({
+  tendency: workbench.isQualityTendency('cleansing_strength'),
+  targetLabel: workbench.qualityTargetLabel('cleansing_strength'),
+  targetZone: workbench.targetZoneStyle('cleansing_strength'),
+  tone: workbench.qualityTone('cleansing_strength', 70),
+  displayValue: workbench.qualityDisplayValue({ key: 'cleansing_strength', value: 70 }),
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $result = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($result['tendency'])->toBeTrue()
+        ->and($result['targetLabel'])->toBe('Process-dependent tendency')
+        ->and($result['targetZone'])->toBeNull()
+        ->and($result['tone'])->toBe('neutral')
+        ->and($result['displayValue'])->toBe('70.0 tendency');
+});
+
+it('maps backend calculation warnings into visible quality flags', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/sections/presentation-section.js', 'utf8')
+  .replace('export function createPresentationSection', 'function createPresentationSection');
+
+eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
+
+const workbench = {
+  backendCalculation: {
+    properties: {
+      fatty_acid_groups: {},
+      qualities: {},
+      warnings: [
+        'high_koh_context_process_dependent',
+        'negative_superfat_requires_neutralization_and_ph_control',
+      ],
+    },
+  },
+  number: (value) => Number(value ?? 0),
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
+
+console.log(JSON.stringify(workbench.qualityFlags()));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $flags = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+    $labels = array_column($flags, 'label');
+
+    expect($labels)
+        ->toContain('High-KOH process context')
+        ->toContain('Negative superfat needs pH control')
+        ->and($flags[0]['explanation'])->not->toBe('');
+});
+
+it('does not show bar-cure Castile guidance when liquid context makes bar metrics not applicable', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/sections/presentation-section.js', 'utf8')
+  .replace('export function createPresentationSection', 'function createPresentationSection');
+
+eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
+
+const workbench = {
+  backendCalculation: {
+    properties: {
+      fatty_acid_groups: { mu: 72, vs: 4, hs: 12 },
+      qualities: { cure_speed: 0, slime_risk: 0, cleansing_strength: 0, dos_risk: 0 },
+      quality_applicability: {
+        cure_speed: { applies: false, confidence: 0.2, display: 'hidden' },
+        slime_risk: { applies: false, confidence: 0.2, display: 'hidden' },
+      },
+      warnings: ['high_koh_context_process_dependent'],
+    },
+  },
+  number: (value) => Number(value ?? 0),
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
+
+console.log(JSON.stringify(workbench.qualityFlags().map((flag) => flag.label)));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $labels = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($labels)
+        ->toContain('High-KOH process context')
+        ->not->toContain('Castile-like');
 });
 
 function makeCarrierOilIngredient(): Ingredient

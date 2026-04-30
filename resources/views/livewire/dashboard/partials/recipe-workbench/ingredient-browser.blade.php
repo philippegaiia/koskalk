@@ -21,7 +21,7 @@
  <p class="text-sm text-[var(--color-ink-soft)]"><span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="filteredIngredients.length"></span> match the current filter</p>
  </div>
 
- <div class="max-h-[44rem] divide-y divide-[var(--color-line)] overflow-y-auto">
+ <div class="max-h-[600px] divide-y divide-[var(--color-line)] overflow-y-auto">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
  <div class="group px-4 py-2 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">

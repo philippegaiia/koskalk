@@ -8,6 +8,9 @@
 	 <template x-if="saveMessage">
 	 <span :class="saveStatus === 'error' ? 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)]'" class="rounded-full border px-3 py-1.5 text-xs font-medium" x-text="saveMessage"></span>
 	 </template>
+	 <template x-if="calculationPreviewMessage">
+	 <span class="rounded-full border border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)]" x-text="calculationPreviewMessage"></span>
+	 </template>
 	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="manufacturingModeLabel"></span>
 	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="exposureModeLabel"></span>
 	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`Regime ${regulatoryRegime.toUpperCase()}`"></span>

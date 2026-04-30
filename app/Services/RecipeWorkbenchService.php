@@ -129,6 +129,7 @@ class RecipeWorkbenchService
     public function saveDraft(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, false);
+        $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
         return $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
     }
@@ -136,6 +137,7 @@ class RecipeWorkbenchService
     public function saveRecipe(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true);
+        $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
         return $this->recipeVersionPublisher->publish($user, $productFamily, $normalizedPayload, $recipe);
     }
@@ -279,6 +281,62 @@ class RecipeWorkbenchService
     public function savePackagingCatalogItem(User $user, array $payload): array
     {
         return $this->recipeVersionCostingSynchronizer->savePackagingItem($user, $payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function validatePreviewableSoapCalculation(ProductFamily $productFamily, array $payload): void
+    {
+        if ($productFamily->slug !== 'soap') {
+            return;
+        }
+
+        $this->recipeWorkbenchPreviewService->previewSoapCalculation($this->previewPayloadFromNormalizedSavePayload($payload));
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function previewPayloadFromNormalizedSavePayload(array $payload): array
+    {
+        $calculationContext = is_array($payload['calculation_context'] ?? null)
+            ? $payload['calculation_context']
+            : [];
+        $waterSettings = is_array($payload['water_settings'] ?? null)
+            ? $payload['water_settings']
+            : [];
+        $phaseItems = [];
+
+        foreach (($payload['phases'] ?? []) as $phase) {
+            if (! is_array($phase)) {
+                continue;
+            }
+
+            $phaseKey = (string) ($phase['key'] ?? '');
+
+            if ($phaseKey === '') {
+                continue;
+            }
+
+            $phaseItems[$phaseKey] = is_array($phase['items'] ?? null) ? $phase['items'] : [];
+        }
+
+        return [
+            'manufacturing_mode' => $payload['manufacturing_mode'] ?? 'saponify_in_formula',
+            'exposure_mode' => $payload['exposure_mode'] ?? 'rinse_off',
+            'regulatory_regime' => $payload['regulatory_regime'] ?? 'eu',
+            'product_type_id' => $payload['product_type_id'] ?? null,
+            'oil_weight' => $calculationContext['oil_weight'] ?? $payload['oil_weight'] ?? 0,
+            'lye_type' => $calculationContext['lye_type'] ?? 'naoh',
+            'koh_purity_percentage' => $calculationContext['koh_purity_percentage'] ?? 90,
+            'dual_lye_koh_percentage' => $calculationContext['dual_lye_koh_percentage'] ?? 40,
+            'water_mode' => $waterSettings['mode'] ?? 'percent_of_oils',
+            'water_value' => $waterSettings['value'] ?? 38,
+            'superfat' => $calculationContext['superfat'] ?? 5,
+            'phase_items' => $phaseItems,
+        ];
     }
 
     private function duplicateName(string $name): string

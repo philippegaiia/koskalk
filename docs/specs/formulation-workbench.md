@@ -1,6 +1,6 @@
 # Formulation Workbench Spec
 
-Last updated: 2026-03-25
+Last updated: 2026-04-27
 
 ## Goal
 
@@ -142,7 +142,10 @@ Live soap outputs must include:
 - totals appear as a horizontal summary row above the quality and fatty-acid panels, including produced glycerine
 - lather shown as a compact summary first, with advanced lather metrics behind progressive disclosure
 - main quality cards and warning flags include short human-readable interpretation text, not only scores
-- quality bars use subtle fills and, where useful, show target zones instead of implying every metric should simply be maximized
+- quality bars use quiet full-length 0-100 outlined tracks with only the actual score portion filled, leaving the remaining space visibly empty
+- target-sensitive qualities show subtle target-zone markers instead of implying every metric should simply be maximized
+- risk metrics use the same scale but communicate clearly that higher means more risk
+- high-KOH/liquid contexts hide or mark bar-only metrics as not applicable instead of showing misleading zero bars
 - saved versions are selectable from the workbench for comparison or for reopening into the editor
 - compare the current live formula against the loaded saved baseline with delta rows and a compact what-changed summary for key totals and quality metrics
 - advanced soap chemistry metrics behind progressive disclosure
@@ -161,3 +164,34 @@ Recipes will later need media support for:
 - a gallery of additional images
 
 This can be added after the main formulation workflow is stable.
+
+## Soap quality presentation rules
+
+Koskalk practical outputs should be grouped separately from classic calculator references.
+
+Recommended groups:
+
+- physical bar qualities: unmolding firmness, cured hardness, longevity, cure speed
+- skin and use feel: cleansing strength, mildness, conditioning feel
+- lather: bubble volume, creamy lather, lather stability
+- risk and context: DOS/oxidation risk, slime risk, liquid clarity/separation warnings where applicable
+- classic references: iodine, INS, and any transitional SoapCalc-style values
+
+For normal bar soap, show the practical quality scores as compact bars with short explanations. The bars should be calm and readable, not dashboard gauges.
+
+Lather metrics should not collapse all foam behavior into one SoapCalc-style number:
+
+- bubble volume should mostly represent quick soluble lather from lauric/myristic-rich oils such as coconut, palm kernel, and babassu
+- hard saturated fats such as palmitic/stearic should support creamy body and persistent foam, not heavily erase bubble volume; high HS can mildly slow immediate bubbling because the soap is less soluble
+- ricinoleic/castor should improve lather quality and stability in the useful 4-10% range, then saturate rather than add linearly
+- formulas with about 20% coconut/palm-kernel-type oil should generally land near the lower edge of the bubble-volume target band, while palm/butters should shift the lather toward creaminess and stability rather than near-zero bubbles
+
+For high-KOH or liquid soap, the workbench should not show bar-only metrics as if they were meaningful. It should instead show:
+
+- KOH / NaOH lye summary
+- KOH purity correction
+- superfat or lye-excess warning
+- fatty-acid tendencies
+- liquid-soap caveat that final behavior depends on process, dilution, neutralization, final pH, thickeners/solvents, preservatives, and packaging
+
+Not-applicable metrics should render as a muted explanation such as “Not applicable for liquid/high-KOH soap”, not as an empty 0 score.

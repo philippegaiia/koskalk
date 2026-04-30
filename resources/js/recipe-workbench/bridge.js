@@ -1,8 +1,9 @@
 import { serializeCosting, serializeDraft } from './payload';
 
 /**
- * Preview calls are intentionally best-effort. We clear derived outputs on failure
- * but avoid surfacing save-style errors while the user is still editing.
+ * Preview calls are best-effort for incomplete drafts, but validation failures
+ * returned by the server are surfaced so reachable controls do not silently
+ * remove calculated outputs.
  */
 export async function refreshCalculationPreview(workbench) {
     try {
@@ -13,10 +14,16 @@ export async function refreshCalculationPreview(workbench) {
             workbench.backendLabeling = response.labeling ?? null;
             workbench.syncIngredientListVariantSelection();
             workbench.inciCopyMessage = '';
+            workbench.calculationPreviewMessage = '';
+        } else {
+            workbench.backendCalculation = null;
+            workbench.backendLabeling = null;
+            workbench.calculationPreviewMessage = response?.message ?? 'The live calculation preview is not available for these inputs.';
         }
     } catch (error) {
         workbench.backendCalculation = null;
         workbench.backendLabeling = null;
+        workbench.calculationPreviewMessage = 'The live calculation preview is not available for these inputs.';
     } finally {
         workbench.isPreviewingCalculation = false;
         workbench.calculationPreviewTimer = null;

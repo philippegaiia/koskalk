@@ -117,6 +117,7 @@ function createRecipeWorkbenchState(payload) {
         selectedIngredientListVariantKey: initialSnapshot?.labeling?.default_variant_key ?? (isCosmeticFormula ? 'incorporated_ingredients' : 'saponified_with_superfat'),
         savedRecipeUrl: payload.recipe?.saved_formula_url ?? null,
         inciCopyMessage: '',
+        calculationPreviewMessage: '',
         calculationPreviewTimer: null,
         labelingPreviewTimer: null,
         isPreviewingCalculation: false,

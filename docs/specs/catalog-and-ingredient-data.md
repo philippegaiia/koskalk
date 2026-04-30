@@ -1,6 +1,6 @@
 # Catalog And Ingredient Data Spec
 
-Last updated: 2026-03-23
+Last updated: 2026-04-27
 
 ## Scope
 
@@ -108,7 +108,7 @@ It is required for:
 - formulation guidance
 - future richer reporting
 
-For carrier oils, the app uses a fixed core fatty-acid set instead of arbitrary keys:
+For carrier oils, the app supports a controlled fatty-acid vocabulary rather than arbitrary ad-hoc keys. The visible/common set remains:
 
 - lauric
 - myristic
@@ -119,16 +119,50 @@ For carrier oils, the app uses a fixed core fatty-acid set instead of arbitrary 
 - linoleic
 - linolenic
 
+The data model and calculation engine may also use extended fatty acids when present, including caprylic, capric, palmitoleic, arachidic, behenic, gondoic/eicosenoic, erucic, and other catalogued minor acids. Missing extended values must be treated as zero, not as invalid data.
+
+Normalized fatty-acid data supports two different output families:
+
+- classic calculator references such as iodine, INS, and transitional SoapCalc-style values
+- Koskalk practical quality outputs based on grouped fatty-acid behavior, superfat, water/lye context, and NaOH/KOH context
+
 ## Soap quality strategy
 
-Soap quality outputs should be transparent derived values, not manually curated opaque numbers.
+Soap quality outputs should be transparent derived values, not manually curated opaque numbers. Koskalk should not blindly reproduce SoapCalc as the source of truth.
 
 Current direction:
 
-- store KOH SAP
-- store the fixed fatty-acid set
+- store KOH SAP as canonical source where available
 - derive NaOH SAP
-- derive hardness, cleansing, conditioning, bubbly, creamy, iodine, and INS from those inputs
+- store normalized fatty-acid data for platform oils
+- derive grouped fatty-acid buckets: very soluble saturates, hard structural saturates, monounsaturated, polyunsaturated, ricinoleic/special lather, saturated, and unsaturated
+- keep iodine and INS as technical references
+- keep legacy calculator references separate from Koskalk's practical quality model
+- derive practical qualities such as unmolding firmness, cured hardness, longevity, cleansing strength, mildness, lather behavior, DOS/oxidation risk, slime risk, and cure speed
+
+Quality calculations must account for:
+
+- fatty-acid profile
+- superfat as a global behavior modifier
+- water / lye concentration for process qualities
+- NaOH/KOH context
+
+Lather calculations must distinguish creation, body, and persistence:
+
+- lauric/myristic-rich oils create quick open bubbles and should be the main bubble-volume driver
+- caprylic/capric contribute soluble lather but should be weighted separately from lauric/myristic
+- palmitic/stearic hard saturated fats give body, creaminess, and foam persistence; they should only mildly dampen immediate bubble volume when high
+- ricinoleic/castor improves lather quality and stability in a capped useful range around 4-10%, and should not add linearly beyond that
+- excess ricinoleic should not make up for too little soluble lather fat
+
+Polyunsaturated fatty acids need sharper practical risk handling:
+
+- PU <= 10%: generally acceptable
+- PU 10-15%: caution zone
+- PU > 15%: high risk for soap stability / DOS
+- PU > 20%: very high risk / strong warning
+
+Liquid/high-KOH soap must not reuse the full bar-quality model. High-KOH contexts should hide or mark bar-only metrics not applicable and instead show KOH calculation, superfat/lye-excess warnings, fatty-acid tendencies, and liquid-soap process caveats.
 
 ## Out of scope for now
 

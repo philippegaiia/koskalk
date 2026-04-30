@@ -87,6 +87,39 @@ it('can still save through a mounted component after the auth session is gone', 
         ->and($recipe->name)->toBe('Fallback Draft');
 });
 
+it('returns a validation response instead of crashing when saving NaOH soap with negative superfat', function () {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchLifecycleOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->saveDraft(
+        recipeWorkbenchLifecyclePayload($oil, [
+            'name' => 'Invalid NaOH Negative Superfat',
+            'lye_type' => 'naoh',
+            'superfat' => -2,
+        ]),
+        app(RecipeWorkbenchService::class),
+        app(RecipeContentUpdater::class),
+    );
+
+    expect($result['ok'])->toBeFalse()
+        ->and($result['message'])->toBe('Negative superfat is only supported for liquid or high-KOH soap workflows.')
+        ->and(Recipe::withoutGlobalScopes()->where('name', 'Invalid NaOH Negative Superfat')->exists())->toBeFalse();
+});
+
 it('replaces the working draft with the selected saved version using the same workbench payload shape', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

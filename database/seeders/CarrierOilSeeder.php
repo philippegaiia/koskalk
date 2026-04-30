@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Data\InciNameLookup;
 use App\IngredientCategory;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use JsonException;
 use RuntimeException;
@@ -25,6 +25,7 @@ class CarrierOilSeeder extends Seeder
         }
 
         $fattyAcidIdsByKey = FattyAcid::query()->pluck('id', 'key')->all();
+        $ingredientsByDisplayName = $this->ingredientsByDisplayName();
         $count = 0;
 
         foreach ($rows as $row) {
@@ -33,10 +34,11 @@ class CarrierOilSeeder extends Seeder
 
             $this->command->info("Seeding {$displayName}...");
 
-            $inciName = InciNameLookup::find($displayName);
-            $saponifiedNames = $this->generateSaponifiedInciNames($inciName ?? $displayName);
-
-            $ingredient = Ingredient::query()->updateOrCreate(
+            $ingredient = $this->existingIngredientFor(
+                ingredientsByDisplayName: $ingredientsByDisplayName,
+                displayName: $displayName,
+                sourceKey: $sourceKey,
+            ) ?? Ingredient::query()->updateOrCreate(
                 [
                     'source_file' => 'mendrulandia_oils',
                     'source_key' => $sourceKey,
@@ -48,26 +50,31 @@ class CarrierOilSeeder extends Seeder
                 ]
             );
 
-            if (empty($ingredient->inci_name)) {
-                $ingredient->inci_name = $inciName;
+            $ingredient->forceFill([
+                'category' => IngredientCategory::CarrierOil,
+                'is_potentially_saponifiable' => true,
+            ]);
+
+            if (empty($ingredient->inci_name) && $row['inci_name'] !== null) {
+                $ingredient->inci_name = $row['inci_name'];
             }
-            if (empty($ingredient->soap_inci_naoh_name)) {
-                $ingredient->soap_inci_naoh_name = $saponifiedNames['naoh'];
-            }
-            if (empty($ingredient->soap_inci_koh_name)) {
-                $ingredient->soap_inci_koh_name = $saponifiedNames['koh'];
-            }
+
             $ingredient->save();
 
             $fattyAcids = $this->normalizeFattyAcids($row['fatty_acids'] ?? [], $sourceKey, $fattyAcidIdsByKey);
-            $this->syncFattyAcids($ingredient, $fattyAcids);
+            $sourceNotes = "Mendrulandia oils [{$sourceKey}]";
+
+            $this->syncFattyAcids($ingredient, $fattyAcids, $sourceNotes);
 
             $this->syncSapProfile(
                 ingredient: $ingredient,
                 kohSapValue: $row['koh_sap_value'],
                 iodineValue: $row['iodine_value'],
                 insValue: $row['ins_value'],
+                sourceNotes: $sourceNotes,
             );
+
+            $this->rememberIngredientByDisplayName($ingredientsByDisplayName, $ingredient);
 
             $count++;
         }
@@ -76,7 +83,7 @@ class CarrierOilSeeder extends Seeder
     }
 
     /**
-     * @return array<int, array{source_key: string, fatty_acids: array<string, float>, koh_sap_value: ?float, iodine_value: ?float, ins_value: ?float}>
+     * @return array<int, array{source_key: string, fatty_acids: array<string, float>, koh_sap_value: ?float, iodine_value: ?float, ins_value: ?float, inci_name: ?string}>
      */
     private function rows(string $path): array
     {
@@ -122,6 +129,7 @@ class CarrierOilSeeder extends Seeder
                 'koh_sap_value' => $this->nullableFloat($row['koh_sap_value'] ?? null),
                 'iodine_value' => $this->nullableFloat($row['iodine_value'] ?? null),
                 'ins_value' => $this->nullableFloat($row['ins_value'] ?? null),
+                'inci_name' => $this->nullableString($row['inci_name'] ?? null),
             ];
         }
 
@@ -141,9 +149,90 @@ class CarrierOilSeeder extends Seeder
         return round((float) $value, 5);
     }
 
+    private function nullableString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $trimmedValue = trim((string) $value);
+
+        return $trimmedValue === '' ? null : $trimmedValue;
+    }
+
     private function toDisplayName(string $slug): string
     {
         return Str::title(str_replace('_', ' ', $slug));
+    }
+
+    /**
+     * @return Collection<string, Collection<int, Ingredient>>
+     */
+    private function ingredientsByDisplayName(): Collection
+    {
+        return Ingredient::query()
+            ->where('category', IngredientCategory::CarrierOil)
+            ->get()
+            ->groupBy(fn (Ingredient $ingredient): string => $this->normalizeDisplayName($ingredient->display_name));
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, Ingredient>>  $ingredientsByDisplayName
+     */
+    private function existingIngredientFor(Collection $ingredientsByDisplayName, string $displayName, string $sourceKey): ?Ingredient
+    {
+        $matches = $ingredientsByDisplayName->get($this->normalizeDisplayName($displayName), collect());
+
+        $catalogIngredient = $matches->first(
+            fn (Ingredient $ingredient): bool => $this->isPlatformCatalogIngredient($ingredient)
+        );
+
+        if ($catalogIngredient instanceof Ingredient) {
+            return $catalogIngredient;
+        }
+
+        $mendrulandiaIngredient = $matches->first(
+            fn (Ingredient $ingredient): bool => $ingredient->source_file === 'mendrulandia_oils'
+                && $ingredient->source_key === $sourceKey
+        );
+
+        return $mendrulandiaIngredient instanceof Ingredient ? $mendrulandiaIngredient : null;
+    }
+
+    private function isPlatformCatalogIngredient(Ingredient $ingredient): bool
+    {
+        return $ingredient->source_file !== 'mendrulandia_oils'
+            && ! in_array($ingredient->source_file, ['admin', 'user'], true)
+            && $ingredient->owner_type === null
+            && $ingredient->workspace_id === null;
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, Ingredient>>  $ingredientsByDisplayName
+     */
+    private function rememberIngredientByDisplayName(Collection $ingredientsByDisplayName, Ingredient $ingredient): void
+    {
+        $displayName = $this->normalizeDisplayName($ingredient->display_name);
+
+        $matches = $ingredientsByDisplayName
+            ->get($displayName, collect())
+            ->reject(fn (Ingredient $candidate): bool => $candidate->is($ingredient))
+            ->push($ingredient)
+            ->values();
+
+        $ingredientsByDisplayName->put($displayName, $matches);
+    }
+
+    private function normalizeDisplayName(?string $displayName): string
+    {
+        return Str::of($displayName ?? '')
+            ->squish()
+            ->lower()
+            ->toString();
     }
 
     /**
@@ -191,7 +280,7 @@ class CarrierOilSeeder extends Seeder
     /**
      * @param  array<int, array{fatty_acid_id: int, percentage: float}>  $fattyAcids
      */
-    private function syncFattyAcids(Ingredient $ingredient, array $fattyAcids): void
+    private function syncFattyAcids(Ingredient $ingredient, array $fattyAcids, string $sourceNotes): void
     {
         IngredientFattyAcid::query()
             ->where('ingredient_id', $ingredient->id)
@@ -202,6 +291,7 @@ class CarrierOilSeeder extends Seeder
                 'ingredient_id' => $ingredient->id,
                 'fatty_acid_id' => $fattyAcid['fatty_acid_id'],
                 'percentage' => $fattyAcid['percentage'],
+                'source_notes' => $sourceNotes,
             ]);
         }
     }
@@ -211,6 +301,7 @@ class CarrierOilSeeder extends Seeder
         ?float $kohSapValue,
         ?float $iodineValue,
         ?float $insValue,
+        string $sourceNotes,
     ): void {
         $hasChemistryState = $kohSapValue !== null
             || $iodineValue !== null
@@ -245,56 +336,8 @@ class CarrierOilSeeder extends Seeder
                 'koh_sap_value' => $kohSapValue,
                 'iodine_value' => $iodineValue,
                 'ins_value' => $insValue,
+                'source_notes' => $sourceNotes,
             ],
         );
-    }
-
-    /**
-     * Generate saponified INCI names from base INCI name.
-     * "Cocos Nucifera" -> Sodium Cocoate / Potassium Cocoate
-     * Falls back to display name if INCI not available.
-     */
-    private function generateSaponifiedInciNames(string $name): array
-    {
-        if ($name === '') {
-            return ['naoh' => null, 'koh' => null];
-        }
-
-        $baseName = preg_replace('/\s*(oil|butter|wax|fat|seed|kernel|nut)\s*$/i', '', $name);
-        $baseName = trim($baseName);
-
-        if ($baseName === '') {
-            return ['naoh' => null, 'koh' => null];
-        }
-
-        $words = explode(' ', $baseName);
-        array_walk($words, function (&$word): void {
-            $word = ucfirst(strtolower(trim($word)));
-            $word = preg_replace('/[^a-zA-Z]/', '', $word);
-        });
-        $words = array_filter($words, fn ($w) => $w !== '');
-
-        if (count($words) === 0) {
-            return ['naoh' => null, 'koh' => null];
-        }
-
-        $lastIdx = count($words) - 1;
-        $lastWord = &$words[$lastIdx];
-        $lastLen = strlen($lastWord);
-
-        if ($lastLen > 3 && str_ends_with($lastWord, 'o')) {
-            $lastWord = substr($lastWord, 0, -1).'oate';
-        } elseif ($lastLen > 3 && str_ends_with($lastWord, 'a') && strlen($lastWord) > 4) {
-            $lastWord = substr($lastWord, 0, -1).'ate';
-        } elseif ($lastLen > 3 && ! str_ends_with($lastWord, 'ate')) {
-            $lastWord = $lastWord.'ate';
-        }
-
-        $fullName = implode(' ', $words);
-
-        return [
-            'naoh' => 'Sodium '.$fullName,
-            'koh' => 'Potassium '.$fullName,
-        ];
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Data\InciNameLookup;
 use App\IngredientCategory;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
@@ -70,9 +69,8 @@ class ImportCarrierOilChemistryFromMendrulandia extends Command
                 $ingredient->forceFill(['is_potentially_saponifiable' => true])->save();
             }
 
-            $inciName = InciNameLookup::find($displayName);
-            if ($inciName !== null) {
-                $ingredient->forceFill(['inci_name' => $inciName])->save();
+            if (! filled($ingredient->inci_name) && filled($row['inci_name'] ?? null)) {
+                $ingredient->forceFill(['inci_name' => $row['inci_name']])->save();
             }
 
             $this->syncSapProfile($ingredient, $row);
@@ -87,7 +85,7 @@ class ImportCarrierOilChemistryFromMendrulandia extends Command
     }
 
     /**
-     * @return array<int, array{source_key:string, fatty_acids:array<string,float|null>, koh_sap_value:float|null, iodine_value:float|null, ins_value:float|null}>
+     * @return array<int, array{source_key:string, fatty_acids:array<string,float|null>, koh_sap_value:float|null, iodine_value:float|null, ins_value:float|null, inci_name?:string|null}>
      */
     private function rows(string $path): array
     {

@@ -1,0 +1,42 @@
+# Dependencies
+vendor/
+node_modules/
+
+# Build and compiled assets
+public/build/
+public/hot
+public/mix-manifest.json
+public/css/filament/
+public/fonts/filament/
+public/js/filament/
+bootstrap/cache/
+
+# Runtime and generated storage
+storage/
+
+# Environment and secrets
+.env
+.env.*
+
+# Local database files
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# Agent and tool instructions
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.claude/
+.opencode/
+.gemini/
+.codex/
+
+# Test coverage and caches
+coverage/
+.phpunit.result.cache
+
+# IDE and OS noise
+.idea/
+.vscode/
+.DS_Store

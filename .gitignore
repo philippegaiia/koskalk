@@ -29,3 +29,7 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Graphify local/generated artifacts
+.graphify_python
+graphify-out/

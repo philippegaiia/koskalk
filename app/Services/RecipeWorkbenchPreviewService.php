@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Ingredient;
-use InvalidArgumentException;
 
 class RecipeWorkbenchPreviewService
 {
@@ -72,18 +71,14 @@ class RecipeWorkbenchPreviewService
             return null;
         }
 
-        try {
-            return $this->soapCalculationService->calculate($oils, [
-                'superfat' => (float) ($payload['superfat'] ?? 5),
-                'lye_type' => $payload['lye_type'] ?? 'naoh',
-                'dual_lye_koh_percentage' => (float) ($payload['dual_lye_koh_percentage'] ?? 40),
-                'koh_purity_percentage' => (float) ($payload['koh_purity_percentage'] ?? 90),
-                'water_mode' => $payload['water_mode'] ?? 'percent_of_oils',
-                'water_value' => (float) ($payload['water_value'] ?? 38),
-            ]);
-        } catch (InvalidArgumentException) {
-            return null;
-        }
+        return $this->soapCalculationService->calculate($oils, [
+            'superfat' => (float) ($payload['superfat'] ?? 5),
+            'lye_type' => $payload['lye_type'] ?? 'naoh',
+            'dual_lye_koh_percentage' => (float) ($payload['dual_lye_koh_percentage'] ?? 40),
+            'koh_purity_percentage' => (float) ($payload['koh_purity_percentage'] ?? 90),
+            'water_mode' => $payload['water_mode'] ?? 'percent_of_oils',
+            'water_value' => (float) ($payload['water_value'] ?? 38),
+        ]);
     }
 
     /**

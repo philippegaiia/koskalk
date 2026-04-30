@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-03-25
+Last updated: 2026-04-27
 
 ## Stack
 
@@ -72,16 +72,21 @@ These currently cover:
 
 - KOH-first SAP handling with derived NaOH
 - professional-style SAP normalization such as `245` => `0.245`
-- superfat
+- superfat, including negative superfat only for high-KOH/liquid contexts
 - NaOH, KOH, and dual-lye selection
 - KOH purity handling for 90% commercial KOH
-- water modes
+- water modes, including lye-concentration process modifiers for firmness and cure speed
 - produced glycerine estimation
-- fatty acid aggregation
-- transparent legacy soap quality metrics derived from fatty acids and KOH SAP
+- fatty acid aggregation from normalized fatty-acid rows
+- transparent legacy soap quality reference metrics derived from fatty acids and KOH SAP
 - grouped fatty-acid buckets (`vs`, `hs`, `mu`, `pu`, `sp`, `sat`, `unsat`)
-- superfat behavior outputs (`base_cleansing_potential`, `superfat_buffer`, `effective_cleansing`, `dos_risk_modifier`)
+- context-aware soap output through `soap_context` (`bar`, `soft`, `liquid`)
+- quality applicability metadata through `properties.quality_applicability`
+- warnings for liquid/high-KOH superfat and neutralization situations
+- superfat behavior outputs (`base_cleansing_potential`, `superfat_buffer`, `effective_cleansing`, `dos_risk_modifier`, `superfat_softening`, `superfat_lather_penalty`)
 - first parallel Koskalk quality outputs alongside the legacy SoapCalc-style keys
+- nonlinear PU-aware DOS risk, with PU above about 15% escalating strongly
+- lather model direction separates quick soluble bubbles, hard-fat foam body/persistence, and capped ricinoleic stability support
 - soap recipe normalization on an oil-weight basis
 
 The next normalization change already agreed in the specs is:

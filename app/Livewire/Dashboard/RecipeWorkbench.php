@@ -222,13 +222,22 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     #[Renderless]
     public function previewCalculation(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
     {
-        $calculation = $recipeWorkbenchService->previewSoapCalculation($draft);
+        try {
+            $calculation = $recipeWorkbenchService->previewSoapCalculation($draft);
 
-        return [
-            'ok' => true,
-            'calculation' => $calculation,
-            'labeling' => $recipeWorkbenchService->previewInci($draft, $calculation),
-        ];
+            return [
+                'ok' => true,
+                'calculation' => $calculation,
+                'labeling' => $recipeWorkbenchService->previewInci($draft, $calculation),
+            ];
+        } catch (InvalidArgumentException $exception) {
+            return [
+                'ok' => false,
+                'message' => $exception->getMessage(),
+                'calculation' => null,
+                'labeling' => null,
+            ];
+        }
     }
 
     /**
@@ -238,10 +247,18 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     #[Renderless]
     public function previewLabeling(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
     {
-        return [
-            'ok' => true,
-            'labeling' => $recipeWorkbenchService->previewInci($draft),
-        ];
+        try {
+            return [
+                'ok' => true,
+                'labeling' => $recipeWorkbenchService->previewInci($draft),
+            ];
+        } catch (InvalidArgumentException $exception) {
+            return [
+                'ok' => false,
+                'message' => $exception->getMessage(),
+                'labeling' => null,
+            ];
+        }
     }
 
     /**

@@ -10,7 +10,43 @@ export function createPresentationSection() {
             return `width: ${width}%; background: linear-gradient(90deg, color-mix(in srgb, ${color} 72%, white 28%) 0%, ${color} 100%);`;
         },
 
+        qualityApplicability(key) {
+            return this.backendCalculation?.properties?.quality_applicability?.[key] ?? { applies: true, confidence: 1, display: 'score' };
+        },
+
+        isQualityApplicable(key) {
+            return this.qualityApplicability(key).applies !== false;
+        },
+
+        isQualityTendency(key) {
+            return this.qualityApplicability(key).display === 'tendency';
+        },
+
+        isQualityScored(key) {
+            return this.isQualityApplicable(key) && !this.isQualityTendency(key);
+        },
+
+        qualityDisplayValue(row) {
+            if (!this.isQualityApplicable(row.key)) {
+                return 'N/A';
+            }
+
+            if (this.isQualityTendency(row.key)) {
+                return `${this.format(row.value, 1)} tendency`;
+            }
+
+            return this.format(row.value, 1);
+        },
+
         qualityTone(key, value) {
+            if (!this.isQualityApplicable(key)) {
+                return 'ideal';
+            }
+
+            if (this.isQualityTendency(key)) {
+                return 'neutral';
+            }
+
             const numeric = this.number(value);
             const zone = this.qualityTargetZone(key);
 
@@ -48,6 +84,7 @@ export function createPresentationSection() {
                 'very-low': 'var(--color-quality-very-low)',
                 low: 'var(--color-quality-low)',
                 ideal: 'var(--color-quality-ideal)',
+                neutral: 'var(--color-line-strong)',
                 high: 'var(--color-quality-high)',
                 excess: 'var(--color-quality-excess)',
             };
@@ -60,6 +97,14 @@ export function createPresentationSection() {
         },
 
         qualityCardStyle(key, value) {
+            if (!this.isQualityApplicable(key)) {
+                return 'border-[var(--color-line)] bg-[var(--color-field)] opacity-80';
+            }
+
+            if (this.isQualityTendency(key)) {
+                return 'border-[var(--color-line)] bg-[var(--color-field)]';
+            }
+
             const tone = this.qualityTone(key, value);
 
             if (tone === 'ideal') {
@@ -74,6 +119,14 @@ export function createPresentationSection() {
         },
 
         qualityTargetLabel(key) {
+            if (!this.isQualityApplicable(key)) {
+                return 'Not applicable for this soap context';
+            }
+
+            if (this.isQualityTendency(key)) {
+                return 'Process-dependent tendency';
+            }
+
             const range = this.qualityTargetRangeLabel(key);
 
             return range ? `Target ${range}` : null;
@@ -124,6 +177,10 @@ export function createPresentationSection() {
         },
 
         targetZoneStyle(key) {
+            if (!this.isQualityScored(key)) {
+                return null;
+            }
+
             const zone = this.qualityTargetZone(key);
 
             if (!zone) {
@@ -656,23 +713,23 @@ export function createPresentationSection() {
             const vs = groups.vs ?? 0;
             const hs = groups.hs ?? 0;
             const mu = groups.mu ?? 0;
-            const flags = [];
+            const flags = this.backendCalculationWarningFlags();
 
-            if (quality.cure_speed < 35) {
+            if (this.isQualityApplicable('cure_speed') && quality.cure_speed < 35) {
                 flags.push({
                     label: 'Slow cure',
                     explanation: 'This bar likely benefits from a longer cure before it shows its best hardness, feel, and lather.',
                 });
             }
 
-            if (quality.dos_risk >= 35) {
+            if (this.isQualityApplicable('dos_risk') && quality.dos_risk >= 35) {
                 flags.push({
                     label: 'DOS risk',
                     explanation: 'Higher unsaturation means storage conditions, fresh oils, and antioxidants matter more here.',
                 });
             }
 
-            if (quality.slime_risk >= 35) {
+            if (this.isQualityApplicable('slime_risk') && quality.slime_risk >= 35) {
                 flags.push({
                     label: 'Slime tendency',
                     explanation: 'High-oleic styles can feel slimy early on, especially before a long cure has finished smoothing them out.',
@@ -686,7 +743,7 @@ export function createPresentationSection() {
                 });
             }
 
-            if (mu > 65 && vs < 12 && hs < 20) {
+            if (this.isQualityApplicable('cure_speed') && this.isQualityApplicable('slime_risk') && mu > 65 && vs < 12 && hs < 20) {
                 flags.push({
                     label: 'Castile-like',
                     explanation: 'This profile behaves like a high-oleic soap: gentle and slow, often improving dramatically with a long cure.',
@@ -694,6 +751,36 @@ export function createPresentationSection() {
             }
 
             return flags;
+        },
+
+        backendCalculationWarningFlags() {
+            const warnings = this.backendCalculation?.properties?.warnings ?? [];
+            const warningLabels = {
+                high_koh_context_process_dependent: {
+                    label: 'High-KOH process context',
+                    explanation: 'High-KOH and liquid soap metrics are process-dependent tendencies, not bar-soap score targets.',
+                },
+                negative_superfat_requires_neutralization_and_ph_control: {
+                    label: 'Negative superfat needs pH control',
+                    explanation: 'Negative superfat liquid soap requires neutralization strategy and pH control before use.',
+                },
+                positive_liquid_superfat_may_cloud_or_separate: {
+                    label: 'Liquid superfat stability',
+                    explanation: 'Positive superfat in liquid soap may cloud, thicken unpredictably, or separate.',
+                },
+                high_polyunsaturated_dos_risk: {
+                    label: 'High polyunsaturated DOS risk',
+                    explanation: 'The polyunsaturated fatty-acid level increases DOS sensitivity, so fresh oils and careful storage matter.',
+                },
+                very_high_polyunsaturated_dos_risk: {
+                    label: 'Very high DOS risk',
+                    explanation: 'The polyunsaturated fatty-acid level is very high and may need reformulation, antioxidants, or stricter storage controls.',
+                },
+            };
+
+            return warnings
+                .map((warning) => warningLabels[warning] ?? null)
+                .filter((warning) => warning !== null);
         },
     };
 }

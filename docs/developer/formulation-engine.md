@@ -1,6 +1,6 @@
 # Formulation Engine
 
-Last updated: 2026-03-25
+Last updated: 2026-04-27
 
 ## Current services
 
@@ -24,6 +24,7 @@ Current responsibilities:
 - expose a backend preview payload so the workbench consumes server-side fatty-acid profiles, lye outputs, and quality metrics as the live source of truth
 - keep compact Koskalk quality indices normalized to a 0-100 display range even when underlying chemistry helpers exceed that range
 - benchmark quality behavior against archetypes like castile, high-coconut, balanced palm/olive/coconut, and high-shea profiles before further UI expansion
+- model lather as separate behaviors: soluble lauric/myristic fats create quick bubbles, hard palmitic/stearic fats give body and persistent foam, and ricinoleic/castor improves lather quality/stability in a capped useful range around 4-10%
 
 ### `RecipeNormalizationService`
 
@@ -90,3 +91,54 @@ Recipe media is a later concern. The current domain target is to support one fea
 - soap qualities are derived outputs, not manually persisted inputs
 - superfat is moving toward a practical behavior model rather than a guessed unsaponified-fatty-acid model
 - soap molecule density remains a future research idea, not a v1 dependency
+
+## Next soap-quality engine revision
+
+The next calculation contract should add explicit context and applicability instead of treating every soap as a bar soap.
+
+Required payload additions:
+
+```json
+{
+  "soap_context": {
+    "type": "bar|hybrid|soft_or_liquid|liquid",
+    "koh_percentage": 0,
+    "bar_context": 1.0,
+    "liquid_context": 0.0,
+    "bar_metrics_applicable": true
+  },
+  "properties": {
+    "quality_applicability": {},
+    "warnings": []
+  }
+}
+```
+
+Initial context rules:
+
+- NaOH only: bar
+- KOH only: liquid
+- dual lye 0-20% KOH: bar
+- dual lye 20-40% KOH: hybrid
+- dual lye 40-60% KOH: soft_or_liquid
+- dual lye 60-100% KOH: liquid
+
+Bar-only metrics should be hidden or marked not applicable in high-KOH/liquid contexts instead of shown as empty/zero scores. This applies to unmolding firmness, cured hardness, bar longevity, bar cure speed, Castile-bar slime risk, and DOS as orange-spot bar risk.
+
+Superfat handling must become context-aware:
+
+- bar soap: non-negative normal superfat
+- liquid/high-KOH soap: guarded negative superfat can be allowed for neutralization workflows
+- negative liquid superfat warns about neutralization and final pH control
+- positive liquid superfat above about 3% warns about cloudiness/separation
+
+Scoring corrections needed:
+
+- superfat should soften physical bar qualities, not only lower cleansing
+- high superfat should reduce lather punch/stability and longevity
+- water / lye concentration should mainly modify unmolding and cure speed
+- PU/DOS risk must be nonlinear, with PU above about 15% treated as high risk and above 20% as very high risk
+- bubble volume must not treat hard saturated fats as a large direct anti-bubble penalty; HS should mainly increase creamy lather and foam persistence, with only a small solubility dampener at high levels
+- ricinoleic/castor should improve lather quality and stability around 4-10%, then saturate instead of adding linearly; excess ricinoleic should not compensate for too little coconut/palm-kernel/babassu-type soluble lather fats
+
+Liquid soap behavior is process-dependent. The engine should show formulation tendencies and warnings, not precise final liquid-soap quality predictions.

@@ -199,6 +199,30 @@ it('diffs carrier oils from the common name csv header when columns are reordere
         ->and($output)->not->toContain('"2"');
 });
 
+it('imports explicit mendrulandia inci names without using the latin lookup fallback', function () {
+    $this->seed(FattyAcidSeeder::class);
+
+    $ingredient = Ingredient::factory()->create([
+        'source_key' => 'OB-ALMOND',
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Almond Oil',
+        'inci_name' => null,
+        'soap_inci_naoh_name' => null,
+        'soap_inci_koh_name' => null,
+    ]);
+
+    $exitCode = Artisan::call('catalog:import-carrier-oil-chemistry');
+
+    $freshIngredient = $ingredient->fresh(['sapProfile', 'fattyAcidEntries']);
+
+    expect($exitCode)->toBe(0)
+        ->and($freshIngredient->inci_name)->toBe('Prunus Amygdalus Dulcis (Sweet Almond) Oil')
+        ->and($freshIngredient->soap_inci_naoh_name)->toBeNull()
+        ->and($freshIngredient->soap_inci_koh_name)->toBeNull()
+        ->and((float) $freshIngredient->sapProfile->koh_sap_value)->toBe(0.188)
+        ->and($freshIngredient->fattyAcidEntries)->not->toBeEmpty();
+});
+
 function writeCarrierOilChemistryFixture(string $directory, array $rows): string
 {
     $path = $directory.'/carrier_oil_chemistry.json';

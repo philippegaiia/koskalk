@@ -1,22 +1,17 @@
-<div class="mx-auto max-w-[90rem] xl:max-w-[90rem] space-y-8">
+<div class="mx-auto max-w-[90rem] space-y-6">
  @if (session('status'))
  <div class="rounded-xl bg-[var(--color-success-soft)] px-6 py-4 text-sm text-[var(--color-success-strong)]">
  {{ session('status') }}
  </div>
  @endif
 
- <section class="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_22rem]">
- <div class="sk-card p-6">
- <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+ <section class="sk-card p-6">
+ <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
  <div class="min-w-0">
  <p class="sk-eyebrow">Formulas</p>
- <h3 class="mt-3 text-3xl font-semibold text-[var(--color-ink-strong)]">One working draft, one official recipe, and no visible version clutter.</h3>
- <p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
- Keep one editable working draft per recipe. Save the formula when you want to replace the current official state, and duplicate when you want a truly separate branch.
- </p>
+ <h3 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">Your recipes</h3>
  </div>
-
- <div class="flex flex-wrap gap-2 lg:justify-end">
+ <div class="flex flex-wrap gap-2">
  <a href="{{ route('recipes.create') }}" wire:navigate class="sk-btn sk-btn-primary">
  Create soap formula
  </a>
@@ -25,55 +20,8 @@
  </a>
  </div>
  </div>
- </div>
-
- <div class="sk-card p-6">
- <p class="sk-eyebrow">Saved work</p>
- <div class="mt-4 space-y-4">
- <div>
- <p class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $recipeCount }}</p>
- <p class="mt-1 text-sm text-[var(--color-ink-soft)]">
- {{ $currentUser ? 'Recipes currently visible for your account.' : 'Sign in through the public app or admin panel to see your official recipes.' }}
- </p>
- </div>
- <div class="grid gap-3 sm:grid-cols-2">
- <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-white p-4">
- <p class="sk-eyebrow">Drafts</p>
- <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $draftCount }}</p>
- </div>
- <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-white p-4">
- <p class="sk-eyebrow">Official recipes</p>
- <p class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $savedFormulaCount }}</p>
- </div>
- </div>
- </div>
- </div>
  </section>
 
- <section class="grid gap-4 lg:grid-cols-3">
- <div class="sk-card p-5">
- <p class="sk-eyebrow">Carrier oils</p>
- <p class="mt-4 text-4xl font-semibold text-[var(--color-ink-strong)]">{{ $catalogStats['carrier_oils'] }}</p>
- <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Only truly saponifiable carrier oils belong in the reaction-core picker.</p>
- </div>
- <div class="sk-card p-5">
- <p class="sk-eyebrow">Aromatic materials</p>
- <p class="mt-4 text-4xl font-semibold text-[var(--color-ink-strong)]">{{ $catalogStats['aromatics'] }}</p>
- <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Essential oils and aromatic extracts sit behind category filters and compliance context.</p>
- </div>
- <div class="sk-card p-5">
- <p class="sk-eyebrow">Additions</p>
- <p class="mt-4 text-4xl font-semibold text-[var(--color-ink-strong)]">{{ $catalogStats['additives'] }}</p>
- <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Colorants, preservatives, and other post-reaction additions stay separate from the soap core.</p>
- </div>
- </section>
-
- <section class="space-y-4">
- <div class="space-y-4">
- <div>
- <p class="sk-eyebrow">Official recipes</p>
- <h3 class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">Recipes with their draft and saved states</h3>
- </div>
  @if ($currentUser)
  <div class="flex min-w-0 flex-col items-stretch gap-2">
  <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
@@ -111,11 +59,10 @@
  @endif
  </div>
  <p class="px-1 text-xs text-[var(--color-ink-soft)]">
- {{ $recipeCount }} {{ $searchTerm !== '' || $selectedProductFamily !== '' || $selectedProductType !== '' ? 'matching formulas' : 'visible formulas' }}
+ {{ $recipeCount }} {{ $searchTerm !== '' || $selectedProductFamily !== '' || $selectedProductType !== '' ? 'matching formulas' : 'formulas' }}
  </p>
  </div>
  @endif
- </div>
 
  @if (! $currentUser)
  <div class="sk-card p-8 text-center">
@@ -136,83 +83,97 @@
  @endif
  </div>
  @else
- <div class="grid gap-4 xl:grid-cols-2">
+ <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
  @foreach ($recipes as $recipe)
  @php
  $productFamilyName = $recipe->productFamily?->name ?? 'Formula';
  $productFamilySlug = $recipe->productFamily?->slug ?? 'formula';
  $productTypeName = $recipe->productType?->name;
+ $categoryLabel = $productTypeName ?? $productFamilyName;
  $thumbnailUrl = $recipe->featuredImageUrl() ?? $recipe->productType?->fallbackImageUrl();
  $fallbackThumbnailClasses = match ($productFamilySlug) {
- 'soap' => 'border-[var(--color-accent-soft)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]',
- default => 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]',
+ 'soap' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
+ default => 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]',
  };
- $fallbackThumbnailLabel = \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($productTypeName ?? $productFamilyName, 0, 4));
+ $fallbackLabel = \Illuminate\Support\Str::upper(\Illuminate\Support\Str::substr($categoryLabel, 0, 4));
  @endphp
- <article class="sk-card p-5">
- <div class="flex items-start gap-4">
+
+ <article
+ class="sk-card overflow-hidden"
+ x-data="{ menuOpen: false, deleteOpen: false, confirmText: '', recipeName: @js($recipe->name) }"
+ >
+ <div class="relative aspect-[4/3] {{ $thumbnailUrl ? '' : $fallbackThumbnailClasses }}">
  @if ($thumbnailUrl)
- <div class="h-20 w-20 shrink-0 overflow-hidden rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)]">
  <img src="{{ $thumbnailUrl }}" alt="{{ $recipe->name }}" class="h-full w-full object-cover" />
- </div>
  @else
- <div class="grid h-20 w-20 shrink-0 place-items-center rounded-[1.25rem] border text-center {{ $fallbackThumbnailClasses }}">
- <div>
- <p class="text-[10px] font-semibold tracking-[0.18em]">{{ $fallbackThumbnailLabel }}</p>
- <p class="mt-1 text-[11px] font-medium">{{ $productTypeName ?? $productFamilyName }}</p>
+ <div class="grid h-full w-full place-items-center">
+ <div class="text-center">
+ <p class="text-lg font-semibold tracking-[0.18em]">{{ $fallbackLabel }}</p>
+ <p class="mt-1 text-sm font-medium">{{ $categoryLabel }}</p>
  </div>
  </div>
  @endif
 
- <div class="min-w-0 flex-1">
- <div class="flex flex-wrap items-center gap-2">
- <h4 class="truncate text-xl font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
- @if ($recipe->currentDraftVersion)
- <span class="sk-badge sk-badge-success">Draft</span>
- @endif
- @if ($recipe->currentSavedVersion)
- <span class="sk-badge sk-badge-neutral">Saved</span>
- @endif
- </div>
- <div class="mt-3 flex flex-wrap gap-2">
- @if ($productTypeName)
- <span class="sk-badge sk-badge-strong">
- {{ $productTypeName }}
- </span>
- @endif
- <span class="sk-badge sk-badge-neutral">
- {{ $productFamilyName }}
- </span>
- </div>
- <p class="mt-3 text-xs text-[var(--color-ink-soft)]">
- Updated {{ $recipe->updated_at?->diffForHumans() ?? 'just now' }} / Created {{ $recipe->created_at?->diffForHumans() ?? 'just now' }}
- </p>
- </div>
- </div>
+ <div class="absolute top-3 right-3">
+ <button
+ type="button"
+ @click="menuOpen = !menuOpen"
+ class="grid size-10 place-items-center rounded-lg bg-white/80 backdrop-blur transition hover:bg-white sm:size-8"
+ >
+ <span class="sr-only">Actions</span>
+ <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-[var(--color-ink-soft)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+ <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+ </svg>
+ </button>
 
- <div x-data="{ open: false, confirmText: '', recipeName: @js($recipe->name) }" class="mt-4">
- <div class="flex flex-wrap gap-2">
- <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate class="sk-btn sk-btn-primary">
+ <div
+ x-show="menuOpen"
+ x-cloak
+ @click.away="menuOpen = false"
+ x-transition:enter="transition ease-out duration-100"
+ x-transition:enter-start="opacity-0 scale-95"
+ x-transition:enter-end="opacity-100 scale-100"
+ x-transition:leave="transition ease-in duration-75"
+ x-transition:leave-start="opacity-100 scale-100"
+ x-transition:leave-end="opacity-0 scale-95"
+ class="absolute right-0 top-full z-10 mt-1 w-48 rounded-xl bg-white shadow-lg ring-1 ring-[var(--color-line)]"
+ >
+ <div class="p-1.5">
+ <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
  Open draft
  </a>
+ <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+ Edit formula
+ </a>
  @if ($recipe->currentSavedVersion)
- <a href="{{ route('recipes.saved', $recipe->id) }}" wire:navigate class="sk-action-link">
- Open recipe
+ <a href="{{ route('recipes.saved', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+ Use recipe
  </a>
  @endif
  <form method="POST" action="{{ route('recipes.duplicate', $recipe->id) }}">
  @csrf
- <button type="submit" class="sk-action-link">
+ <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
  Duplicate
  </button>
  </form>
-
- <button type="button" @click="open = true" class="sk-btn sk-btn-danger">
- Delete recipe
+ <hr class="my-1 border-[var(--color-line)]" />
+ <button type="button" @click="deleteOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]">
+ Delete
  </button>
  </div>
+ </div>
+ </div>
+ </div>
 
- <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="open = false">
+ <div class="p-4">
+ <span class="sk-badge sk-badge-neutral">{{ $categoryLabel }}</span>
+ <h4 class="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
+ <p class="mt-1.5 text-xs text-[var(--color-ink-soft)]">
+ Updated {{ $recipe->updated_at?->diffForHumans() ?? 'just now' }}
+ </p>
+ </div>
+
+ <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="deleteOpen = false">
  <div class="sk-card w-full max-w-md p-6" @click.stop>
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete &quot;{{ $recipe->name }}&quot;?</h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">
@@ -234,23 +195,13 @@
  </button>
  </form>
 
- <button type="button" @click="open = false" class="sk-btn sk-btn-outline mt-3 w-full">
+ <button type="button" @click="deleteOpen = false" class="sk-btn sk-btn-outline mt-3 w-full">
  Cancel
  </button>
  </div>
  </div>
- </div>
-
- @if ($recipe->currentSavedVersion)
- <div class="mt-4 flex flex-wrap gap-2">
- <a href="{{ route('recipes.print.production', $recipe->id) }}" class="sk-action-link">
- Batch production sheet
- </a>
- </div>
- @endif
  </article>
  @endforeach
  </div>
  @endif
- </section>
 </div>

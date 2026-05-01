@@ -13,6 +13,7 @@ use App\OwnerType;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -112,7 +113,7 @@ it('allows deleting an unused personal ingredient from the catalog table', funct
 
     Livewire::test(IngredientsIndex::class)
         ->loadTable()
-        ->callTableAction('delete', $ingredient);
+        ->callAction(TestAction::make('delete')->table($ingredient));
 
     expect(Ingredient::query()->find($ingredient->id))->toBeNull()
         ->and(Storage::disk('public')->exists('ingredients/featured-images/delete-me.webp'))->toBeFalse()
@@ -166,7 +167,7 @@ it('disables deleting a personal ingredient that is already used in costing', fu
 
     Livewire::test(IngredientsIndex::class)
         ->loadTable()
-        ->assertTableActionDisabled('delete', $ingredient);
+        ->assertActionDisabled(TestAction::make('delete')->table($ingredient));
 });
 
 it('disables deleting a personal ingredient that is used in a recipe formula', function () {
@@ -209,7 +210,7 @@ it('disables deleting a personal ingredient that is used in a recipe formula', f
 
     Livewire::test(IngredientsIndex::class)
         ->loadTable()
-        ->assertTableActionDisabled('delete', $ingredient);
+        ->assertActionDisabled(TestAction::make('delete')->table($ingredient));
 });
 
 it('does not allow editing another users private ingredient', function () {

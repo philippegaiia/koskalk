@@ -20,6 +20,7 @@ use App\Models\ProductFamily;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Filament\Actions\Testing\TestAction;
 
 uses(RefreshDatabase::class);
 
@@ -98,8 +99,8 @@ it('offers a read-only view action on the ingredient admin table', function () {
 
     Livewire::test(ListIngredients::class)
         ->loadTable()
-        ->assertTableActionExists('view', null, $ingredient)
-        ->assertTableActionExists('edit', null, $ingredient);
+        ->assertActionExists(TestAction::make('view')->table($ingredient))
+        ->assertActionExists(TestAction::make('edit')->table($ingredient));
 });
 
 it('renders the catalog create forms in the admin panel', function () {

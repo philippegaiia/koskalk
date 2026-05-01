@@ -13,6 +13,7 @@ use App\Services\UserPackagingItemAuthoringService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Filament\Actions\Testing\TestAction;
 
 use function Pest\Laravel\actingAs;
 
@@ -195,7 +196,7 @@ it('allows deleting an unused packaging item from the catalog table', function (
 
     Livewire::test(PackagingItemsIndex::class)
         ->loadTable()
-        ->callTableAction('delete', $packagingItem);
+        ->callAction(TestAction::make('delete')->table($packagingItem));
 
     expect(UserPackagingItem::query()->find($packagingItem->id))->toBeNull();
 });
@@ -245,5 +246,5 @@ it('disables deleting a packaging item that is already used in costing', functio
 
     Livewire::test(PackagingItemsIndex::class)
         ->loadTable()
-        ->assertTableActionDisabled('delete', $packagingItem);
+        ->assertActionDisabled(TestAction::make('delete')->table($packagingItem));
 });

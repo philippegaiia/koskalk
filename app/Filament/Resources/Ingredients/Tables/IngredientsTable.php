@@ -63,7 +63,7 @@ class IngredientsTable
                 ViewAction::make(),
                 EditAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     ExportBulkAction::make()
                         ->exporter(IngredientExporter::class),

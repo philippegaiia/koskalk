@@ -61,7 +61,7 @@ class FattyAcidsTable
             ->recordActions([
                 EditAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     ExportBulkAction::make()
                         ->exporter(FattyAcidExporter::class),

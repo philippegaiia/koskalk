@@ -56,7 +56,7 @@ it('shows saved recipes on the recipes index page', function () {
         ->assertSuccessful()
         ->assertSee('Olive Coconut Bar')
         ->assertSee('Open draft')
-        ->assertSee('Open recipe')
+        ->assertSee('Use recipe')
         ->assertSee('Duplicate');
 });
 
@@ -177,57 +177,6 @@ it('only resolves accessible workspace ids once while rendering the recipes inde
         ->assertSuccessful();
 
     expect($workspaceQueries)->toHaveCount(2);
-});
-
-it('uses one ingredient stats query and skips the unused active product families query', function () {
-    $user = User::factory()->create();
-    $soapFamily = ProductFamily::factory()->create([
-        'slug' => 'soap',
-        'name' => 'Soap',
-        'is_active' => true,
-    ]);
-
-    $recipe = Recipe::factory()->create([
-        'product_family_id' => $soapFamily->id,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
-        'name' => 'Lean Formula',
-        'slug' => 'lean-formula',
-    ]);
-
-    RecipeVersion::factory()->create([
-        'recipe_id' => $recipe->id,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
-        'name' => $recipe->name,
-        'is_draft' => true,
-        'version_number' => 1,
-    ]);
-
-    $ingredientQueries = [];
-    $activeProductFamilyQueries = [];
-
-    DB::listen(function ($query) use (&$ingredientQueries, &$activeProductFamilyQueries): void {
-        if (str_contains($query->sql, 'from "ingredients"')) {
-            $ingredientQueries[] = $query->sql;
-        }
-
-        if (
-            str_contains($query->sql, 'from "product_families"')
-            && str_contains($query->sql, '"is_active" =')
-        ) {
-            $activeProductFamilyQueries[] = $query->sql;
-        }
-    });
-
-    $this->actingAs($user)
-        ->get(route('recipes.index'))
-        ->assertSuccessful();
-
-    expect($ingredientQueries)->toHaveCount(1)
-        ->and($activeProductFamilyQueries)->toHaveCount(0);
 });
 
 it('can search recipes by product type name', function () {

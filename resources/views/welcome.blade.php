@@ -71,10 +71,10 @@
             </p>
 
             <div class="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a href="{{ route('recipes.create') }}" class="inline-flex justify-center rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-white no-underline shadow-[0_12px_24px_rgba(192,102,58,0.24)] transition hover:bg-accent-hover hover:-translate-y-px">
+                <a href="{{ route('recipes.create') }}" class="inline-flex justify-center rounded-lg bg-accent px-6 py-3.5 text-sm font-semibold text-white no-underline shadow-[0_12px_24px_rgba(192,102,58,0.24)] transition hover:bg-accent-hover hover:-translate-y-px">
                     Use the free calculator
                 </a>
-                <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-lg border border-line-strong bg-panel px-6 py-3 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent">
+                <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-lg border border-line-strong bg-panel px-6 py-3.5 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent">
                     Create free workspace
                 </a>
             </div>
@@ -84,11 +84,11 @@
             </p>
         </div>
 
-        <div class="relative">
+        <div class="relative" aria-hidden="true">
             <div class="rounded-[1.25rem] border border-line-strong bg-panel p-4 shadow-[0_28px_70px_rgba(59,55,47,0.14)]">
                 <div class="flex items-center justify-between border-b border-line pb-3">
                     <div>
-                        <p class="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">Soap calculator</p>
+                        <p class="font-mono text-xs uppercase tracking-[0.12em] text-ink-soft">Soap calculator</p>
                         <p class="mt-1 font-serif text-xl text-ink-strong">Olive + shea bar</p>
                     </div>
                     <span class="rounded-full bg-accent-soft px-3 py-1 text-xs font-semibold text-accent-strong">Unsaved</span>
@@ -96,7 +96,7 @@
 
                 <div class="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
                     <div>
-                        <p class="mb-3 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">Formula</p>
+                        <p class="mb-3 font-mono text-xs uppercase tracking-[0.12em] text-ink-soft">Formula</p>
                         <div class="space-y-2">
                             @foreach ($formulaRows as $row)
                                 <div class="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-lg border border-line bg-field-muted px-3 py-2 text-sm">
@@ -109,12 +109,12 @@
                     </div>
 
                     <div>
-                        <p class="mb-3 font-mono text-[10px] uppercase tracking-[0.12em] text-ink-soft">Result</p>
+                        <p class="mb-3 font-mono text-xs uppercase tracking-[0.12em] text-ink-soft">Result</p>
                         <div class="grid gap-2">
                             @foreach ($calculatorOutputs as $output)
                                 <div class="rounded-lg bg-hero px-4 py-3 text-inverse">
                                     <p class="font-mono text-lg font-semibold">{{ $output['value'] }}</p>
-                                    <p class="mt-0.5 font-mono text-[10px] uppercase tracking-[0.12em] text-inverse-muted">{{ $output['label'] }}</p>
+                                    <p class="mt-0.5 font-mono text-xs uppercase tracking-[0.12em] text-inverse-muted">{{ $output['label'] }}</p>
                                 </div>
                             @endforeach
                         </div>
@@ -123,15 +123,15 @@
 
                 <div class="mt-5 grid gap-3 border-t border-line pt-5 sm:grid-cols-3">
                     <div class="rounded-lg bg-success-soft px-3 py-3">
-                        <p class="font-mono text-[10px] uppercase tracking-[0.1em] text-success-strong">Label</p>
+                        <p class="font-mono text-xs uppercase tracking-[0.1em] text-success-strong">Label</p>
                         <p class="mt-1 text-sm font-medium text-ink-strong">Allergen signals</p>
                     </div>
                     <div class="rounded-lg bg-warning-soft px-3 py-3">
-                        <p class="font-mono text-[10px] uppercase tracking-[0.1em] text-warning-strong">IFRA</p>
+                        <p class="font-mono text-xs uppercase tracking-[0.1em] text-warning-strong">IFRA</p>
                         <p class="mt-1 text-sm font-medium text-ink-strong">Reference rates</p>
                     </div>
                     <div class="rounded-lg bg-accent-soft px-3 py-3">
-                        <p class="font-mono text-[10px] uppercase tracking-[0.1em] text-accent-strong">Save</p>
+                        <p class="font-mono text-xs uppercase tracking-[0.1em] text-accent-strong">Save</p>
                         <p class="mt-1 text-sm font-medium text-ink-strong">Free workspace</p>
                     </div>
                 </div>
@@ -141,6 +141,7 @@
 </section>
 
 <section id="benefits" class="border-y border-line bg-panel">
+    <h2 class="sr-only">Benefits</h2>
     <div class="mx-auto grid max-w-[1180px] gap-px bg-line px-5 lg:grid-cols-4 lg:px-10">
         @foreach ($benefits as $benefit)
             <div class="bg-panel py-7 lg:px-6">
@@ -283,10 +284,10 @@
         </p>
 
         <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <a href="{{ route('recipes.create') }}" class="inline-flex justify-center rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-white no-underline transition hover:bg-accent-hover hover:-translate-y-px">
+            <a href="{{ route('recipes.create') }}" class="inline-flex justify-center rounded-lg bg-accent px-6 py-3.5 text-sm font-semibold text-white no-underline transition hover:bg-accent-hover hover:-translate-y-px">
                 Use the free calculator
             </a>
-            <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-lg border border-line-strong bg-panel px-6 py-3 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent">
+            <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-lg border border-line-strong bg-panel px-6 py-3.5 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent">
                 Create free workspace
             </a>
         </div>

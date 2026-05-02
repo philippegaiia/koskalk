@@ -44,10 +44,8 @@ class RecipesIndex extends Component
                 ])
                 ->whereNull('archived_at');
 
-            $optionRecipesQuery = clone $recipesQuery;
-            $optionRecipesQuery->setEagerLoads([]);
-
-            $optionRecipes = $optionRecipesQuery
+            $optionRecipes = Recipe::query()
+                ->whereNull('archived_at')
                 ->with([
                     'productFamily',
                     'productType',
@@ -72,7 +70,7 @@ class RecipesIndex extends Component
             }
 
             if ($searchTerm !== '') {
-                $searchOperator = $this->caseInsensitiveLikeOperator();
+                $searchOperator = $recipesQuery->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
                 $searchValue = '%'.$searchTerm.'%';
 
                 $recipesQuery->where(function (Builder $query) use ($searchOperator, $searchValue): void {
@@ -112,11 +110,6 @@ class RecipesIndex extends Component
         $this->search = '';
         $this->productFamilyFilter = '';
         $this->productTypeFilter = '';
-    }
-
-    private function caseInsensitiveLikeOperator(): string
-    {
-        return Recipe::query()->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
     }
 
     /**

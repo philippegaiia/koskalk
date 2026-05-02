@@ -9,11 +9,11 @@
                 </p>
             </div>
 
-            <div class="inline-flex rounded-[1.15rem] border border-[var(--color-line)] bg-[var(--color-field)] p-1">
-                <button type="button" @click="soapQualityPanel = 'qualities'" :class="soapQualityPanel === 'qualities' ? 'bg-white text-[var(--color-accent)] shadow-sm' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-[0.9rem] px-4 py-2 text-sm font-semibold transition">
+            <div role="tablist" aria-label="Quality metrics view" class="inline-flex rounded-[1.15rem] border border-[var(--color-line)] bg-[var(--color-field)] p-1">
+                <button id="tab-qualities" type="button" role="tab" :aria-selected="soapQualityPanel === 'qualities'" @click="soapQualityPanel = 'qualities'" :class="soapQualityPanel === 'qualities' ? 'bg-white text-[var(--color-accent)] shadow-sm' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-[0.9rem] px-4 py-2.5 text-sm font-semibold transition">
                     Qualities
                 </button>
-                <button type="button" @click="soapQualityPanel = 'advanced'" :class="soapQualityPanel === 'advanced' ? 'bg-white text-[var(--color-accent)] shadow-sm' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-[0.9rem] px-4 py-2 text-sm font-semibold transition">
+                <button id="tab-advanced" type="button" role="tab" :aria-selected="soapQualityPanel === 'advanced'" @click="soapQualityPanel = 'advanced'" :class="soapQualityPanel === 'advanced' ? 'bg-white text-[var(--color-accent)] shadow-sm' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-[0.9rem] px-4 py-2.5 text-sm font-semibold transition">
                     Advanced
                 </button>
             </div>
@@ -21,7 +21,7 @@
 
         <template x-if="hasQualityMetricsData">
             <div class="space-y-4 px-5 py-5">
-                <div x-show="soapQualityPanel === 'qualities'" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div x-show="soapQualityPanel === 'qualities'" role="tabpanel" aria-labelledby="tab-qualities" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <template x-for="row in defaultQualityRows()" :key="row.key">
                         <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
                             <span class="block min-h-10 text-sm font-medium leading-5 text-[var(--color-ink-soft)]" x-text="row.label"></span>
@@ -31,17 +31,17 @@
                                     <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
                                 </template>
                                 <template x-if="isQualityScored(row.key)">
-                                    <div class="relative h-full rounded-full" :style="qualityBarStyle(row.value, qualityToneColor(row.key, row.value))"></div>
+                                    <div role="progressbar" :aria-valuenow="Math.round(row.value)" aria-valuemin="0" aria-valuemax="100" :aria-label="row.label" class="relative h-full rounded-full" :style="qualityBarStyle(row.value, qualityToneColor(row.key, row.value))"></div>
                                 </template>
                             </div>
                             <template x-if="qualityTargetLabel(row.key)">
-                                <div class="mt-2 text-[11px] font-medium leading-4 text-[var(--color-ink-soft)]" x-text="qualityTargetLabel(row.key)"></div>
+                                <div class="mt-2 text-xs font-medium leading-4 text-[var(--color-ink-soft)]" x-text="qualityTargetLabel(row.key)"></div>
                             </template>
                         </div>
                     </template>
                 </div>
 
-                <div x-show="soapQualityPanel === 'advanced'" x-cloak class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div x-show="soapQualityPanel === 'advanced'" x-cloak role="tabpanel" aria-labelledby="tab-advanced" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <template x-for="row in advancedQualityRows()" :key="row.key">
                         <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
                             <span class="block min-h-10 text-sm font-medium leading-5 text-[var(--color-ink-soft)]" x-text="row.label"></span>
@@ -51,11 +51,11 @@
                                     <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
                                 </template>
                                 <template x-if="isQualityScored(row.key)">
-                                    <div class="relative h-full rounded-full" :style="qualityBarStyle(row.value, qualityToneColor(row.key, row.value))"></div>
+                                    <div role="progressbar" :aria-valuenow="Math.round(row.value)" aria-valuemin="0" aria-valuemax="100" :aria-label="row.label" class="relative h-full rounded-full" :style="qualityBarStyle(row.value, qualityToneColor(row.key, row.value))"></div>
                                 </template>
                             </div>
                             <template x-if="qualityTargetLabel(row.key)">
-                                <div class="mt-2 text-[11px] font-medium leading-4 text-[var(--color-ink-soft)]" x-text="qualityTargetLabel(row.key)"></div>
+                                <div class="mt-2 text-xs font-medium leading-4 text-[var(--color-ink-soft)]" x-text="qualityTargetLabel(row.key)"></div>
                             </template>
                         </div>
                     </template>

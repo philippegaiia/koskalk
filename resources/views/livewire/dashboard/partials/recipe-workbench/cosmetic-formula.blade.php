@@ -20,7 +20,7 @@
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div class="min-w-0 flex-1">
  <p class="sk-eyebrow">Phase</p>
- <input x-model="phase.name" type="text" class="mt-1 w-full rounded-lg bg-[var(--color-field)] px-3 py-2 text-sm font-semibold text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="phase.name" type="text" aria-label="Phase name" class="mt-1 w-full rounded-lg bg-[var(--color-field)] px-3 py-2 text-sm font-semibold text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
  <div class="flex flex-wrap items-center gap-2">
  <button type="button" @click="moveCosmeticPhase(phase.key, 'up')" :disabled="cosmeticPhaseIsFirst(phase.key)" :class="cosmeticPhaseIsFirst(phase.key) ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)] hover:bg-white'" class="rounded-full border px-3 py-1.5 text-xs font-medium transition">
@@ -93,7 +93,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
- class="grid size-6 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]">
+ class="grid size-6 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details">
  i
  </button>
  </template>
@@ -123,7 +123,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3">
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="number" inputmode="decimal" min="0" max="100" step="0.1" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="number" inputmode="decimal" min="0" max="100" step="0.1" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'percentage'">
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -131,7 +131,7 @@
  </div>
  <div class="flex items-center bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
  <template x-if="editMode === 'weight'">
- <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updateCosmeticPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.5" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updateCosmeticPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.5" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>

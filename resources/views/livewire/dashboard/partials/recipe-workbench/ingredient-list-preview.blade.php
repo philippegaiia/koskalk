@@ -55,7 +55,7 @@
  </div>
 
  <template x-if="labelingWarnings.length > 0">
- <div class="mt-4 space-y-2">
+ <div class="mt-4 space-y-2" role="alert">
  <template x-for="warning in labelingWarnings" :key="warning">
  <div class="rounded-[1.25rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]" x-text="warning"></div>
  </template>

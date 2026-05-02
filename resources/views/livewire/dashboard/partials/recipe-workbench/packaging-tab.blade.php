@@ -1,4 +1,4 @@
-<div x-show="activeWorkbenchTab === 'packaging'" class="space-y-6">
+<div x-show="activeWorkbenchTab === 'packaging'" role="tabpanel" aria-labelledby="tab-packaging" id="panel-packaging" class="space-y-6">
  <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-4">
@@ -11,9 +11,10 @@
  <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
  <template x-if="packagingCatalog.length > 0">
  <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
- <input x-model="packagingCatalogSearch" type="search" placeholder="Search packaging items" class="w-full rounded-lg bg-[var(--color-field)] px-4 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)] sm:w-72" />
+ <input x-model="packagingCatalogSearch" type="search" placeholder="Search packaging items" aria-label="Search packaging items" class="w-full rounded-lg bg-[var(--color-field)] px-4 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)] sm:w-72" />
  <select
  @change="if ($event.target.value) { addPackagingPlanRow(JSON.parse($event.target.value)); $event.target.value = ''; }"
+ aria-label="Add from packaging catalog"
  class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)] sm:min-w-72"
  >
  <option value="" x-text="filteredPackagingCatalog.length > 0 ? 'Add from catalog...' : 'No matching packaging items'"></option>
@@ -54,10 +55,10 @@
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
  <div class="flex items-center bg-white px-3 py-3">
- <input :value="row.components_per_unit" @blur="normalizeDecimalBlur($event); updatePackagingPlanComponents(row, $event.target.value)" type="text" inputmode="decimal" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input :value="row.components_per_unit" @blur="normalizeDecimalBlur($event); updatePackagingPlanComponents(row, $event.target.value)" type="text" inputmode="decimal" :aria-label="'Components per unit for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
  <div class="flex items-center bg-white px-3 py-3">
- <input x-model="row.notes" type="text" class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="row.notes" type="text" :aria-label="'Notes for ' + row.name" class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
  <div class="flex items-center justify-end bg-white px-4 py-3">
  <button type="button" @click="removePackagingPlanRow(row.id)" class="grid size-8 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove packaging item">×</button>

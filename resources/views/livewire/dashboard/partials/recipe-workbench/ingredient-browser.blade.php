@@ -8,9 +8,9 @@
  </div>
 
  <div class="space-y-3 border-b border-[var(--color-line)] px-5 py-4">
- <input x-model="search" type="search" placeholder="Search name or INCI..." class="w-full rounded-[1.15rem] bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition placeholder:text-[var(--color-ink-soft)] focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="search" type="search" placeholder="Search name or INCI..." aria-label="Search ingredients" class="w-full rounded-[1.15rem] bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition placeholder:text-[var(--color-ink-soft)] focus:outline-2 focus:outline-[var(--color-accent)]" />
 
- <select x-model="activeCategory" class="w-full rounded-[1.15rem] bg-[var(--color-field)] px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">
+ <select x-model="activeCategory" aria-label="Filter by category" class="w-full rounded-[1.15rem] bg-[var(--color-field)] px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">
  <template x-for="option in categoryOptions" :key="option.value">
  <option :value="option.value" x-text="`${option.label} (${categoryIngredientCount(option.value)})`"></option>
  </template>
@@ -21,7 +21,7 @@
  <p class="text-sm text-[var(--color-ink-soft)]"><span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="filteredIngredients.length"></span> match the current filter</p>
  </div>
 
- <div class="max-h-[600px] divide-y divide-[var(--color-line)] overflow-y-auto">
+ <div class="max-h-[600px] divide-y divide-[var(--color-line)] overflow-y-auto" role="region" aria-label="Ingredient list">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
  <div class="group px-4 py-2 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
@@ -62,7 +62,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
- class="grid size-6 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]">
+ class="grid size-6 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details">
  i
  </button>
  </template>

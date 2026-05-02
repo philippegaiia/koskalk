@@ -1,6 +1,6 @@
 @php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
 
-<div x-show="activeWorkbenchTab === 'output'" x-cloak class="space-y-6">
+<div x-show="activeWorkbenchTab === 'output'" x-cloak role="tabpanel" aria-labelledby="tab-output" id="panel-output" class="space-y-6">
 @if ($isCosmeticWorkbench)
  <section class="sk-card p-5">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">

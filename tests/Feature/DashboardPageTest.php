@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('renders the simplified dashboard with creation buttons and saved recipes', function () {
+it('renders the simplified dashboard with creation buttons and stat cards', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -51,15 +51,13 @@ it('renders the simplified dashboard with creation buttons and saved recipes', f
         ->get(route('dashboard'))
         ->assertSuccessful()
         ->assertSee('Create soap formula')
-        ->assertSee('Create formula')
-        ->assertSee('Dashboard Test Formula')
-        ->assertSee('Open draft')
-        ->assertSee('Open recipe')
-        ->assertSee('Duplicate')
-        ->assertSee('Personal ingredients');
+        ->assertSee('Create cosmetic formula')
+        ->assertSee('Recipes')
+        ->assertSee('Ingredients')
+        ->assertSee('Drafts');
 });
 
-it('does not show recipes from another user on the dashboard', function () {
+it('shows recipe and draft counts for the current user only', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -67,56 +65,48 @@ it('does not show recipes from another user on the dashboard', function () {
         'name' => 'Soap',
     ]);
 
-    $visibleRecipe = Recipe::factory()->create([
+    $userRecipe = Recipe::factory()->create([
         'product_family_id' => $soapFamily->id,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'name' => 'Visible Dashboard Formula',
-        'slug' => 'visible-dashboard-formula',
+        'name' => 'User Recipe',
+        'slug' => 'user-recipe',
     ]);
 
-    $hiddenRecipe = Recipe::factory()->create([
+    RecipeVersion::factory()->create([
+        'recipe_id' => $userRecipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => $userRecipe->name,
+        'is_draft' => true,
+        'version_number' => 1,
+    ]);
+
+    Recipe::factory()->create([
         'product_family_id' => $soapFamily->id,
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
-        'name' => 'Hidden Dashboard Formula',
-        'slug' => 'hidden-dashboard-formula',
+        'name' => 'Other User Recipe',
+        'slug' => 'other-user-recipe',
     ]);
 
-    RecipeVersion::factory()->create([
-        'recipe_id' => $visibleRecipe->id,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
-        'name' => $visibleRecipe->name,
-        'is_draft' => true,
-        'version_number' => 1,
-    ]);
+    $response = $this->actingAs($user)
+        ->get(route('dashboard'));
 
-    RecipeVersion::factory()->create([
-        'recipe_id' => $hiddenRecipe->id,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $otherUser->id,
-        'visibility' => Visibility::Private,
-        'name' => $hiddenRecipe->name,
-        'is_draft' => true,
-        'version_number' => 1,
-    ]);
+    $response->assertSuccessful();
 
-    $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertSuccessful()
-        ->assertSee('Visible Dashboard Formula')
-        ->assertDontSee('Hidden Dashboard Formula');
+    $recipeCount = $response->viewData('recipeCount');
+    expect($recipeCount)->toBe(1);
 });
 
-it('shows the current users personal ingredient summary on the dashboard', function () {
+it('shows the current users personal ingredient count on the dashboard', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
 
-    $visibleIngredient = Ingredient::factory()->create([
+    Ingredient::factory()->create([
         'category' => IngredientCategory::Clay,
         'display_name' => 'French Green Clay',
         'owner_type' => OwnerType::User,
@@ -126,7 +116,7 @@ it('shows the current users personal ingredient summary on the dashboard', funct
         'source_key' => 'USR-CLAY',
     ]);
 
-    $hiddenIngredient = Ingredient::factory()->create([
+    Ingredient::factory()->create([
         'category' => IngredientCategory::Glycol,
         'display_name' => 'Propylene Glycol',
         'owner_type' => OwnerType::User,
@@ -136,10 +126,11 @@ it('shows the current users personal ingredient summary on the dashboard', funct
         'source_key' => 'USR-GLY',
     ]);
 
-    $this->actingAs($user)
-        ->get(route('dashboard'))
-        ->assertSuccessful()
-        ->assertSee('French Green Clay')
-        ->assertDontSee('Propylene Glycol')
-        ->assertSee('Browse my ingredients');
+    $response = $this->actingAs($user)
+        ->get(route('dashboard'));
+
+    $response->assertSuccessful();
+
+    $ingredientCount = $response->viewData('ingredientCount');
+    expect($ingredientCount)->toBe(1);
 });

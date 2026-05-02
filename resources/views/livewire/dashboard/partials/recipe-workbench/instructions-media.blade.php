@@ -1,4 +1,4 @@
-<section x-show="activeWorkbenchTab === 'instructions'" x-cloak class="sk-card">
+<section x-show="activeWorkbenchTab === 'instructions'" x-cloak role="tabpanel" aria-labelledby="tab-instructions" id="panel-instructions" class="sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
  <p class="sk-eyebrow">Content &amp; Media</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Presentation, manufacturing steps, and product image</h3>
@@ -8,7 +8,7 @@
  <div class="px-5 py-5">
  <form wire:submit="saveRecipeContent" class="space-y-4">
  @if ($recipeContentMessage)
- <div class="{{ $recipeContentStatus === 'success' ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' }} rounded-[1.5rem] border px-4 py-3 text-sm">
+ <div class="{{ $recipeContentStatus === 'success' ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' }} rounded-[1.5rem] border px-4 py-3 text-sm" role="status">
  {{ $recipeContentMessage }}
  </div>
  @endif

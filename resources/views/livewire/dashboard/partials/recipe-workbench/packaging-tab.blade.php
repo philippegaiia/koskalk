@@ -42,10 +42,10 @@
  <div class="overflow-x-auto">
  <div class="min-w-[58rem]">
  <div class="grid grid-cols-[minmax(0,1.9fr)_9rem_minmax(0,1.3fr)_7rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Packaging item</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Components per unit</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Notes</div>
- <div class="bg-[var(--color-panel)] px-4 py-3"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Packaging item</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Components per unit</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Notes</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
  </div>
 
  <div class="divide-y divide-[var(--color-line)] bg-white">

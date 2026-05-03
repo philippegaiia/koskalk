@@ -76,12 +76,12 @@
  <div class="overflow-x-auto">
  <div class="min-w-[52rem]">
  <div class="grid grid-cols-[8rem_minmax(0,1.8fr)_5rem_7rem_8rem_8rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Phase</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">%</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${costingBaseOilUnit})`"></div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Price / kg</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Line cost</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Phase</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">%</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${costingBaseOilUnit})`"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Price / kg</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Line cost</div>
  </div>
 
  <div class="divide-y divide-[var(--color-line)] bg-white">
@@ -109,12 +109,12 @@
  </template>
 
  <div class="grid grid-cols-[8rem_minmax(0,1.8fr)_5rem_7rem_8rem_8rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="bg-[var(--color-panel)] px-4 py-3"></div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]">Ingredient subtotal</div>
- <div class="bg-[var(--color-panel)] px-4 py-3"></div>
- <div class="bg-[var(--color-panel)] px-4 py-3"></div>
- <div class="bg-[var(--color-panel)] px-4 py-3"></div>
- <div class="numeric bg-[var(--color-panel)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]">Ingredient subtotal</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
+ <div class="numeric bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></div>
  </div>
  </div>
  </div>
@@ -148,11 +148,11 @@
  <div class="overflow-x-auto">
  <div class="min-w-[58rem]">
  <div class="grid grid-cols-[minmax(0,1.8fr)_9rem_9rem_9rem_9rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Packaging item</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Components per unit</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Unit price</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Cost per unit</div>
- <div class="bg-[var(--color-panel)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Batch cost</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Packaging item</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Components per unit</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Unit price</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Cost per unit</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Batch cost</div>
  </div>
 
  <div class="divide-y divide-[var(--color-line)] bg-white">

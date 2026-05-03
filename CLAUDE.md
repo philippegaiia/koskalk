@@ -178,6 +178,49 @@ Project documentation lives in `docs/`:
 - `resources/js/recipe-workbench/` - Frontend formulation workspace
 - `plan.md` - Complete product build plan
 
+## Frontend Accessibility Standards
+
+These rules apply to every Blade view, partial, and layout. Agents must follow them when creating or editing any HTML — no separate audit should be needed.
+
+### Forms and inputs
+- Every `<input>` and `<select>` must have `aria-label` or `aria-labelledby` pointing to a visible label
+- Alpine dynamic labels: `:aria-label="'Percentage for ' + row.name"`
+
+### Tab navigation
+- Tab bar container: `role="tablist" aria-label="..."`
+- Each tab button: `role="tab" :aria-selected="activeTab === 'x'" id="tab-x"`
+- Tab panel: `role="tabpanel" aria-labelledby="tab-x" id="panel-x"`
+
+### Toggle pill groups (radio-style)
+- Container: `role="radiogroup" aria-label="..."`
+- Each button: `role="radio" :aria-checked="value === 'x'"`
+
+### Modals and dialogs
+- Overlay/container: `role="dialog" aria-modal="true" aria-labelledby="modal-heading-id"`
+- Heading inside modal gets the matching `id`
+- Escape handler on inner card, not window
+
+### Sections and regions
+- Every `<section>` needs `aria-labelledby` (pointing to its heading) or `aria-label`
+- Scrollable lists: `role="region" aria-label="..."`
+
+### Dynamic messages
+- Status feedback (save confirmations, counts): `role="status"`
+- Warnings and errors: `role="alert"`
+- Do not use `aria-live` on container that exists on page load — only on dynamically shown/hidden content
+
+### Touch targets and sizing
+- Toggle pill buttons: minimum `py-2.5` (~36px)
+- Modal action buttons: minimum `py-2.5`
+- Never use `text-[11px]` — minimum is `text-xs` (12px)
+
+### Icon-only buttons
+- Every icon-only or glyph button must have `aria-label` describing its action (e.g., `aria-label="Show ingredient details"`)
+
+### Disabled or placeholder links
+- Use `aria-disabled="true" tabindex="-1"` and `title="Coming soon"` or similar
+- Change `href` to `javascript:void(0)` so the link is not navigable
+
 ## Development Context
 
 This is a professional tool targeting SoapCalc users who want better data structure and compliance support. The goal is clarity and speed, not visual flourish. When making decisions, prioritize:

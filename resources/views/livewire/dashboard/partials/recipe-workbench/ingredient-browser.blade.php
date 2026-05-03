@@ -195,7 +195,7 @@
  <div class="grid grid-cols-[minmax(0,5.5rem)_minmax(3rem,1fr)_4.25rem] items-center gap-3 rounded-md bg-white/70 px-3 py-2 text-xs">
  <span class="truncate text-[var(--color-ink-soft)]" x-text="row.label"></span>
  <div class="h-1.5 overflow-hidden rounded-full bg-white">
- <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="fattyAcidRowBarStyle(row.value, 'var(--color-ink-soft)')"></div>
+ <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="fattyAcidRowBarStyle(row.value, row.color)"></div>
  </div>
  <span class="numeric text-right font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
  </div>

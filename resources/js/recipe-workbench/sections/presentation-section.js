@@ -190,15 +190,24 @@ export function createPresentationSection() {
             return `left: ${zone.start}%; width: ${Math.max(0, zone.end - zone.start)}%;`;
         },
 
+        fattyAcidGroupDefinitions() {
+            return [
+                { key: 'vs', shortLabel: 'VS', label: 'Quick-cleansing saturated fats', color: '#a16207' },
+                { key: 'hs', shortLabel: 'HS', label: 'Hard saturated fats', color: '#7c5a3a' },
+                { key: 'mu', shortLabel: 'MU', label: 'Monounsaturated fats', color: '#5f6f52' },
+                { key: 'pu', shortLabel: 'PU', label: 'Polyunsaturated fats', color: '#5b6c8f' },
+                { key: 'sp', shortLabel: 'SP', label: 'Special lather fats', color: '#8b6f8f' },
+            ];
+        },
+
         fattyAcidGroupSegments() {
             const groups = this.backendCalculation?.properties?.fatty_acid_groups ?? {};
-            const segments = [
-                { key: 'vs', shortLabel: 'VS', label: 'Quick-cleansing saturated fats', value: groups.vs ?? 0, color: '#a16207' },
-                { key: 'hs', shortLabel: 'HS', label: 'Hard saturated fats', value: groups.hs ?? 0, color: '#7c5a3a' },
-                { key: 'mu', shortLabel: 'MU', label: 'Monounsaturated fats', value: groups.mu ?? 0, color: '#5f6f52' },
-                { key: 'pu', shortLabel: 'PU', label: 'Polyunsaturated fats', value: groups.pu ?? 0, color: '#5b6c8f' },
-                { key: 'sp', shortLabel: 'SP', label: 'Special lather fats', value: groups.sp ?? 0, color: '#8b6f8f' },
-            ].filter((segment) => this.number(segment.value) > 0);
+            const segments = this.fattyAcidGroupDefinitions()
+                .map((segment) => ({
+                    ...segment,
+                    value: groups[segment.key] ?? 0,
+                }))
+                .filter((segment) => this.number(segment.value) > 0);
 
             const total = segments.reduce((sum, segment) => sum + this.number(segment.value), 0);
 
@@ -206,6 +215,33 @@ export function createPresentationSection() {
                 ...segment,
                 percent: total > 0 ? (this.number(segment.value) / total) * 100 : 0,
             }));
+        },
+
+        fattyAcidGroupColorFor(key) {
+            const groupByFattyAcid = {
+                caprylic: 'vs',
+                capric: 'vs',
+                lauric: 'vs',
+                myristic: 'vs',
+                palmitic: 'hs',
+                stearic: 'hs',
+                arachidic: 'hs',
+                behenic: 'hs',
+                lignoceric: 'hs',
+                oleic: 'mu',
+                palmitoleic: 'mu',
+                gondoic: 'mu',
+                erucic: 'mu',
+                nervonic: 'mu',
+                linoleic: 'pu',
+                linolenic: 'pu',
+                gamma_linolenic: 'pu',
+                punicic: 'pu',
+                ricinoleic: 'sp',
+            };
+            const groupKey = groupByFattyAcid[key];
+
+            return this.fattyAcidGroupDefinitions().find((group) => group.key === groupKey)?.color ?? 'var(--color-ink-soft)';
         },
 
         fattyAcidChemistrySummaryRows() {
@@ -537,6 +573,7 @@ export function createPresentationSection() {
                     key,
                     label,
                     value: profile[key] ?? 0,
+                    color: this.fattyAcidGroupColorFor(key),
                 }))
                 .filter((row) => this.number(row.value) > 0);
         },

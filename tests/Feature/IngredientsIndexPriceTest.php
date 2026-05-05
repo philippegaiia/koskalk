@@ -45,9 +45,42 @@ it('shows platform ingredients whether or not the user has priced them', functio
 
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
+        ->assertSee('Use platform ingredients or maintain your own.')
+        ->assertSee('Ingredient catalog')
+        ->assertSee('All ingredients')
+        ->assertSeeHtml('role="radiogroup"')
+        ->assertSeeHtml('aria-checked="true"')
+        ->assertSee('Price/kg (EUR)')
+        ->assertSee('5.25')
+        ->assertDontSee('5.2500')
         ->assertSee('Olive Oil')
         ->assertSee('Coconut Oil')
         ->assertSee('Platform');
+});
+
+it('shows the ingredient price column in the users current default currency', function () {
+    $user = User::factory()->create();
+    Workspace::factory()->create([
+        'owner_user_id' => $user->id,
+        'default_currency' => 'GBP',
+    ]);
+
+    Ingredient::factory()->create([
+        'display_name' => 'My Lavender',
+        'category' => IngredientCategory::EssentialOil,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'is_active' => true,
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->loadTable()
+        ->assertTableColumnExists(
+            'user_price_per_kg',
+            fn ($column): bool => $column->getLabel() === 'Price/kg (GBP)',
+        );
 });
 
 it('does not show inactive platform ingredients in the unified table', function () {
@@ -100,7 +133,7 @@ it('can filter the unified ingredient table by platform catalog records', functi
 
     Livewire::test(IngredientsIndex::class)
         ->loadTable()
-        ->filterTable('ownership', 'platform')
+        ->call('setOwnershipFilter', 'platform')
         ->assertCanSeeTableRecords([$platform])
         ->assertCanNotSeeTableRecords([$mine]);
 });

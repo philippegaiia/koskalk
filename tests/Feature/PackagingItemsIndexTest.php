@@ -8,12 +8,13 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\UserPackagingItemAuthoringService;
 use App\Visibility;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Filament\Actions\Testing\TestAction;
 
 use function Pest\Laravel\actingAs;
 
@@ -34,7 +35,48 @@ it('lets a signed-in user open the packaging items page and see saved items', fu
         ->get(route('packaging-items.index'))
         ->assertSuccessful()
         ->assertSee('Packaging Items')
+        ->assertSee('Manage packaging used in recipe costing.')
+        ->assertSee('Packaging catalog')
+        ->assertSee('Unit price (EUR)')
+        ->assertSee('0.12')
+        ->assertDontSee('0.1200')
         ->assertSee('Tube 50 g');
+});
+
+it('shows packaging prices in the users current default currency', function () {
+    $user = User::factory()->create();
+    Workspace::factory()->create([
+        'owner_user_id' => $user->id,
+        'default_currency' => 'GBP',
+    ]);
+
+    UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Tube 50 g',
+        'unit_cost' => 0.1200,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('packaging-items.index'))
+        ->assertSuccessful()
+        ->assertSee('Unit price (GBP)')
+        ->assertDontSee('EUR');
+
+    actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->loadTable()
+        ->assertTableColumnExists(
+            'unit_cost',
+            fn ($column): bool => $column->getLabel() === 'Unit price (GBP)'
+                && $column->getPrefixLabel() === null,
+        )
+        ->assertTableColumnExists(
+            'name',
+            fn ($column): bool => $column->getWidth() === '34rem',
+        );
 });
 
 it('renders the packaging item create page for signed in users', function () {
@@ -66,6 +108,10 @@ it('does not allow editing another users packaging item', function () {
 
 it('creates a packaging item from the dedicated editor', function () {
     $user = User::factory()->create();
+    Workspace::factory()->create([
+        'owner_user_id' => $user->id,
+        'default_currency' => 'GBP',
+    ]);
 
     actingAs($user);
 
@@ -79,7 +125,8 @@ it('creates a packaging item from the dedicated editor', function () {
 
     expect(UserPackagingItem::query()->where('user_id', $user->id)->first())
         ->not->toBeNull()
-        ->name->toBe('Kraft soap box');
+        ->name->toBe('Kraft soap box')
+        ->currency->toBe('GBP');
 });
 
 it('stores the packaging image path through the packaging authoring service', function () {
@@ -146,6 +193,72 @@ it('only shows the signed-in users packaging items in the packaging table and su
         ->assertCanNotSeeTableRecords(
             UserPackagingItem::query()->where('user_id', $user->id)->where('notes', 'First alpha entry')->get(),
         );
+});
+
+it('updates a packaging item unit price from the catalog table', function () {
+    $user = User::factory()->create();
+
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Bottle label',
+        'unit_cost' => 0.1200,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->loadTable()
+        ->call('updateTableColumnState', 'unit_cost', (string) $packagingItem->getKey(), '0.35');
+
+    expect((float) $packagingItem->refresh()->unit_cost)->toBe(0.35);
+});
+
+it('updates the packaging item currency to the current default currency when editing inline', function () {
+    $user = User::factory()->create();
+    Workspace::factory()->create([
+        'owner_user_id' => $user->id,
+        'default_currency' => 'GBP',
+    ]);
+
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Bottle label',
+        'unit_cost' => 0.1200,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->loadTable()
+        ->call('updateTableColumnState', 'unit_cost', (string) $packagingItem->getKey(), '0.35');
+
+    expect($packagingItem->refresh()->currency)->toBe('GBP');
+});
+
+it('keeps the packaging catalog unit price required when editing inline', function () {
+    $user = User::factory()->create();
+
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Bottle label',
+        'unit_cost' => 0.1200,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->loadTable()
+        ->call('updateTableColumnState', 'unit_cost', (string) $packagingItem->getKey(), '')
+        ->assertReturned(fn (array $return): bool => str_contains($return['error'] ?? '', 'unit price')
+            && str_contains($return['error'] ?? '', 'required'));
+
+    expect((float) $packagingItem->refresh()->unit_cost)->toBe(0.12);
 });
 
 it('allows signed-out visitors to open the packaging items page and shows the sign in prompt', function () {

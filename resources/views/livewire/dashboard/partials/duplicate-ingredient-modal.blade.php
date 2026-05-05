@@ -1,5 +1,5 @@
 <div x-data="duplicateModal()" class="inline-flex">
-    <button type="button" @click="open = true" class="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-white">
+    <button type="button" @click="open = true" class="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
         Duplicate platform ingredient
     </button>
 

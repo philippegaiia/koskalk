@@ -3,13 +3,13 @@
  <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
  <div class="min-w-0">
  <p class="sk-eyebrow">Packaging items</p>
- <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">Search and maintain your reusable packaging catalog.</h3>
+ <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">Manage packaging used in recipe costing.</h3>
  <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
- The quick-add modal in costing stays fast, while the catalog page stays clean and manageable.
+ Add boxes, jars, labels, inserts, and other reusable packaging with a unit price. Saved items can be selected in recipe packaging and costing instead of retyped.
  </p>
  </div>
 
- <a href="{{ route('dashboard') }}" wire:navigate class="inline-flex justify-center rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+ <a href="{{ route('dashboard') }}" wire:navigate class="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
  Back to dashboard
  </a>
  </div>

@@ -53,6 +53,8 @@ class UserPackagingItemAuthoringService
             ]);
         }
 
+        $packagingItem->currency = $user->defaultCurrency();
+
         $previousFeaturedImagePath = $packagingItem->featured_image_path;
         $packagingItem = $this->persist($packagingItem, $state);
 
@@ -61,6 +63,35 @@ class UserPackagingItemAuthoringService
         }
 
         return $packagingItem;
+    }
+
+    public function updateUnitCost(UserPackagingItem $packagingItem, User $user, mixed $unitCost): UserPackagingItem
+    {
+        if ($packagingItem->user_id !== $user->id) {
+            throw ValidationException::withMessages([
+                'packaging_item' => 'Only your own packaging items can be edited from the public app.',
+            ]);
+        }
+
+        if ($unitCost === null || $unitCost === '') {
+            throw ValidationException::withMessages([
+                'unit_cost' => 'The unit price field is required.',
+            ]);
+        }
+
+        $unitCost = round((float) $unitCost, 4);
+
+        if ($unitCost < 0) {
+            throw ValidationException::withMessages([
+                'unit_cost' => 'The unit price must not be negative.',
+            ]);
+        }
+
+        $packagingItem->unit_cost = $unitCost;
+        $packagingItem->currency = $user->defaultCurrency();
+        $packagingItem->save();
+
+        return $packagingItem->fresh();
     }
 
     public function delete(UserPackagingItem $packagingItem, User $user): bool

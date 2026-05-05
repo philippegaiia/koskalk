@@ -11,6 +11,7 @@ use Filament\Actions\Action;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\TextInputColumn;
 use Filament\Tables\Table;
 use Filament\Tables\TableComponent;
 use Illuminate\Contracts\View\View;
@@ -25,15 +26,23 @@ class PackagingItemsIndex extends TableComponent
     #[Locked]
     public ?int $currentUserId = null;
 
+    #[Locked]
+    public ?string $currentCurrency = null;
+
     public function mount(CurrentAppUserResolver $resolver): void
     {
-        $this->currentUserId = $resolver->resolve()?->id;
+        $user = $resolver->resolve();
+
+        $this->currentUserId = $user?->id;
+        $this->currentCurrency = $user?->defaultCurrency();
     }
 
     public function table(Table $table): Table
     {
         return $table
             ->query($this->tableQuery())
+            ->heading('Packaging catalog')
+            ->description('Saved boxes, jars, labels, inserts, and other packaging costs available to recipe costing.')
             ->columns([
                 ImageColumn::make('featured_image_path')
                     ->label('Picture')
@@ -46,15 +55,24 @@ class PackagingItemsIndex extends TableComponent
                     ->label('Name')
                     ->searchable()
                     ->sortable()
-                    ->weight('600'),
-                TextColumn::make('unit_cost')
-                    ->label('Unit price')
+                    ->weight('600')
+                    ->width('34rem')
+                    ->extraHeaderAttributes(['style' => 'min-width: 30rem;'])
+                    ->extraCellAttributes(['style' => 'min-width: 30rem;']),
+                TextInputColumn::make('unit_cost')
+                    ->label(fn (): string => $this->priceColumnLabel('Unit price'))
                     ->sortable()
-                    ->formatStateUsing(fn (string $state, UserPackagingItem $record): string => sprintf(
-                        '%s %s',
-                        $record->currency,
-                        number_format((float) $state, 4, '.', ''),
-                    )),
+                    ->width('12rem')
+                    ->grow(false)
+                    ->extraAttributes(['class' => 'max-w-48'])
+                    ->extraCellAttributes(['class' => 'w-48'])
+                    ->state(fn (UserPackagingItem $record): string => self::formatRequiredPriceInput($record->unit_cost))
+                    ->type('number')
+                    ->inputMode('decimal')
+                    ->step('0.01')
+                    ->rules(['required', 'numeric', 'min:0'])
+                    ->disabled(fn (UserPackagingItem $record): bool => $record->user_id !== $this->currentUserId)
+                    ->updateStateUsing(fn (UserPackagingItem $record, mixed $state): string => $this->updatePackagingItemUnitCost($record, $state)),
                 TextColumn::make('notes')
                     ->label('Notes')
                     ->searchable()
@@ -131,8 +149,31 @@ class PackagingItemsIndex extends TableComponent
         return app(UserPackagingItemAuthoringService::class)->delete($packagingItem, $user);
     }
 
+    private function updatePackagingItemUnitCost(UserPackagingItem $packagingItem, mixed $state): string
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User || $packagingItem->user_id !== $user->id) {
+            return self::formatRequiredPriceInput($packagingItem->unit_cost);
+        }
+
+        $packagingItem = app(UserPackagingItemAuthoringService::class)->updateUnitCost($packagingItem, $user, $state);
+
+        return self::formatRequiredPriceInput($packagingItem->unit_cost);
+    }
+
     private function currentUser(): ?User
     {
         return app(CurrentAppUserResolver::class)->resolve($this->currentUserId);
+    }
+
+    private function priceColumnLabel(string $label): string
+    {
+        return sprintf('%s (%s)', $label, $this->currentCurrency ?? config('currencies.default', 'EUR'));
+    }
+
+    private static function formatRequiredPriceInput(mixed $value): string
+    {
+        return number_format((float) $value, 2, '.', '');
     }
 }

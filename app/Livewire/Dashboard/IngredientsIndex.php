@@ -13,7 +13,6 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\TextInputColumn;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Tables\TableComponent;
 use Illuminate\Contracts\View\View;
@@ -28,15 +27,25 @@ class IngredientsIndex extends TableComponent
     #[Locked]
     public ?int $currentUserId = null;
 
+    #[Locked]
+    public ?string $currentCurrency = null;
+
+    public string $ownershipFilter = 'all';
+
     public function mount(CurrentAppUserResolver $resolver): void
     {
-        $this->currentUserId = $resolver->resolve()?->id;
+        $user = $resolver->resolve();
+
+        $this->currentUserId = $user?->id;
+        $this->currentCurrency = $user?->defaultCurrency();
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->query($this->tableQuery())
+            ->query(fn (): Builder => $this->tableQuery())
+            ->heading('Ingredient catalog')
+            ->description('Price platform ingredients for costing, or create private ingredients that only you can edit.')
             ->columns([
                 ImageColumn::make('catalog_image')
                     ->label('Picture')
@@ -65,45 +74,23 @@ class IngredientsIndex extends TableComponent
                     ->state(fn (Ingredient $record): string => $record->owner_type === OwnerType::User ? 'Mine' : 'Platform')
                     ->color(fn (string $state): string => $state === 'Mine' ? 'warning' : 'gray'),
                 TextInputColumn::make('user_price_per_kg')
-                    ->label('Price/kg')
+                    ->label(fn (): string => $this->priceColumnLabel('Price/kg'))
+                    ->state(fn (Ingredient $record): ?string => self::formatPriceInput($record->user_price_per_kg))
                     ->type('number')
                     ->inputMode('decimal')
+                    ->step('0.01')
+                    ->rules(['nullable', 'numeric', 'min:0'])
                     ->updateStateUsing(function (Ingredient $record, $state) {
                         $user = $this->currentUser();
 
                         if (! $user instanceof User) {
-                            return $state;
+                            return self::formatPriceInput($record->user_price_per_kg);
                         }
 
                         app(UserIngredientPriceMemory::class)->remember($user, $record->id, (float) ($state ?? 0));
                         $record->load(['userPrices' => fn ($q) => $q->where('user_id', $user->id)]);
 
-                        return $state;
-                    }),
-            ])
-            ->filters([
-                SelectFilter::make('ownership')
-                    ->label('Show')
-                    ->options([
-                        'mine' => 'My ingredients',
-                        'platform' => 'Platform catalog',
-                        'priced' => 'Priced platform',
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        $value = $data['value'] ?? null;
-
-                        if ($value === 'mine') {
-                            $query->where('owner_type', OwnerType::User->value)
-                                ->where('owner_id', $this->currentUserId);
-                        } elseif ($value === 'platform') {
-                            $query->whereNull('owner_type')
-                                ->where('is_active', true);
-                        } elseif ($value === 'priced') {
-                            $query->whereNull('owner_type')
-                                ->whereHas('userPrices', fn (Builder $q): Builder => $q->where('user_id', $this->currentUserId));
-                        }
-
-                        return $query;
+                        return self::formatPriceInput($state);
                     }),
             ])
             ->striped()
@@ -154,6 +141,30 @@ class IngredientsIndex extends TableComponent
         ]);
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public function ownershipFilterOptions(): array
+    {
+        return [
+            'all' => 'All ingredients',
+            'mine' => 'Mine',
+            'platform' => 'Platform',
+            'priced' => 'Priced',
+        ];
+    }
+
+    public function setOwnershipFilter(string $filter): void
+    {
+        if (! array_key_exists($filter, $this->ownershipFilterOptions())) {
+            return;
+        }
+
+        $this->ownershipFilter = $filter;
+        $this->resetPage();
+        $this->flushCachedTableRecords();
+    }
+
     private function tableQuery(): Builder
     {
         $user = $this->currentUser();
@@ -168,7 +179,17 @@ class IngredientsIndex extends TableComponent
             ->where(function (Builder $q) use ($user) {
                 $q->where(fn (Builder $qq) => $qq->where('owner_type', OwnerType::User->value)->where('owner_id', $user->id))
                     ->orWhere(fn (Builder $qq) => $qq->whereNull('owner_type')->where('is_active', true));
-            });
+            })
+            ->when($this->ownershipFilter === 'mine', fn (Builder $query): Builder => $query
+                ->where('owner_type', OwnerType::User->value)
+                ->where('owner_id', $user->id))
+            ->when($this->ownershipFilter === 'platform', fn (Builder $query): Builder => $query
+                ->whereNull('owner_type')
+                ->where('is_active', true))
+            ->when($this->ownershipFilter === 'priced', fn (Builder $query): Builder => $query
+                ->whereNull('owner_type')
+                ->where('is_active', true)
+                ->whereHas('userPrices', fn (Builder $q): Builder => $q->where('user_id', $user->id)));
     }
 
     private function deleteIngredient(Ingredient $ingredient): bool
@@ -197,5 +218,19 @@ class IngredientsIndex extends TableComponent
     private function currentUser(): ?User
     {
         return app(CurrentAppUserResolver::class)->resolve($this->currentUserId);
+    }
+
+    private function priceColumnLabel(string $label): string
+    {
+        return sprintf('%s (%s)', $label, $this->currentCurrency ?? config('currencies.default', 'EUR'));
+    }
+
+    private static function formatPriceInput(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return number_format((float) $value, 2, '.', '');
     }
 }

@@ -215,6 +215,7 @@ class RecipeVersionCostingSynchronizer
     public function savePackagingItem(User $user, array $payload): array
     {
         $name = trim((string) ($payload['name'] ?? ''));
+        $currency = $this->normalizeCurrency($payload['currency'] ?? $user->defaultCurrency());
 
         if ($name === '') {
             return [
@@ -246,7 +247,7 @@ class RecipeVersionCostingSynchronizer
         $packagingItem->fill([
             'name' => $name,
             'unit_cost' => (float) ($payload['unit_cost'] ?? 0),
-            'currency' => $this->normalizeCurrency($payload['currency'] ?? $user->defaultCurrency()),
+            'currency' => $currency,
             'notes' => $payload['notes'] ?? null,
         ]);
         $packagingItem->save();
@@ -270,6 +271,8 @@ class RecipeVersionCostingSynchronizer
      */
     public function packagingCatalogPayload(User $user): array
     {
+        $currency = $user->defaultCurrency();
+
         return UserPackagingItem::query()
             ->where('user_id', $user->id)
             ->orderBy('name')
@@ -279,7 +282,7 @@ class RecipeVersionCostingSynchronizer
                 'id' => $item->id,
                 'name' => $item->name,
                 'unit_cost' => (float) $item->unit_cost,
-                'currency' => $item->currency,
+                'currency' => $currency,
                 'notes' => $item->notes,
             ])
             ->values()

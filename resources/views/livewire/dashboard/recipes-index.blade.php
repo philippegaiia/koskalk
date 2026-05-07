@@ -177,7 +177,7 @@
  <div class="sk-card w-full max-w-md p-6" @click.stop>
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete &quot;{{ $recipe->name }}&quot;?</h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">
- This will delete the recipe, its draft, official recipe, and hidden recovery snapshots. This action cannot be undone.
+ This will delete the recipe, its draft, reference formula, and hidden recovery snapshots. This action cannot be undone.
  </p>
 
  <button type="button" @click="confirmText = recipeName" class="sk-btn sk-btn-outline mt-4">

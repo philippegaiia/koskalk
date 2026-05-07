@@ -28,6 +28,7 @@
  </section>
 
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')
+ @include('livewire.dashboard.partials.recipe-workbench.restrictions-preview')
 @else
  <section class="sk-card p-5">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -58,6 +59,7 @@
  </section>
 
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')
+ @include('livewire.dashboard.partials.recipe-workbench.restrictions-preview')
 
  <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">

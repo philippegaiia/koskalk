@@ -6,6 +6,10 @@ use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\ProductFamily;
+use App\Models\RegulatoryRegime;
+use App\Models\RegulatoryRegimeAllergen;
+use App\Models\RegulatoryRegimeSubstanceRule;
+use App\Models\Substance;
 use Database\Seeders\AllergenCatalogSeeder;
 use Database\Seeders\CarrierOilSeeder;
 use Database\Seeders\FattyAcidSeeder;
@@ -13,6 +17,8 @@ use Database\Seeders\IfraProductCategorySeeder;
 use Database\Seeders\IngredientCatalogSeeder;
 use Database\Seeders\IngredientFunctionSeeder;
 use Database\Seeders\ProductFamilySeeder;
+use Database\Seeders\RegulatoryRegimeSeeder;
+use Database\Seeders\SubstanceSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -260,6 +266,57 @@ it('seeds official ingredient functions and ifra product categories', function (
         ->and(IfraProductCategory::query()->count())->toBe(18)
         ->and($category9->short_name)->toBe('Soap / shower gel / rinse-off')
         ->and($category9->description)->toContain('primarily rinse-off');
+});
+
+it('seeds the platform allergen label regimes with conservative mappings', function () {
+    $this->seed([
+        AllergenCatalogSeeder::class,
+        RegulatoryRegimeSeeder::class,
+    ]);
+
+    $regimeCodes = RegulatoryRegime::query()
+        ->orderBy('code')
+        ->pluck('code')
+        ->all();
+    $allergenCount = Allergen::query()->count();
+
+    expect($regimeCodes)->toBe([
+        'canada_2026',
+        'canada_expanded_preview',
+        'eu',
+        'us_mocra_preview',
+    ])
+        ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'eu')->firstOrFail())->count())->toBe($allergenCount)
+        ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'canada_2026')->firstOrFail())->count())->toBe(24)
+        ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'canada_expanded_preview')->firstOrFail())->count())->toBe($allergenCount)
+        ->and(RegulatoryRegimeAllergen::query()->whereBelongsTo(RegulatoryRegime::query()->where('code', 'us_mocra_preview')->firstOrFail())->count())->toBe(0);
+});
+
+it('seeds the starter substance catalog and watch regime rules', function () {
+    $this->seed([
+        AllergenCatalogSeeder::class,
+        RegulatoryRegimeSeeder::class,
+        SubstanceSeeder::class,
+    ]);
+
+    $substanceNames = Substance::query()
+        ->orderBy('name')
+        ->pluck('name')
+        ->all();
+    $linalool = Substance::query()->where('name', 'Linalool')->firstOrFail();
+
+    expect($substanceNames)->toContain(
+        'Beta-asarone',
+        'Furocoumarins',
+        'Linalool',
+        'Methyl eugenol',
+        'Pulegone',
+        'Safrole',
+    )
+        ->and($linalool->source_name)->toBe('Platform starter substance catalog')
+        ->and($linalool->allergen)->not->toBeNull()
+        ->and(RegulatoryRegimeSubstanceRule::query()->count())->toBeGreaterThanOrEqual(12)
+        ->and(RegulatoryRegimeSubstanceRule::query()->where('rule_type', 'watch')->count())->toBeGreaterThan(0);
 });
 
 function writeCatalogFixtures(string $directory, array $allergenRows, array $ingredientRows): array

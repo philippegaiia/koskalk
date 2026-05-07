@@ -22,6 +22,10 @@ class RecipeWorkbenchDraftPayloadMapper
             'water_mode' => $draft['waterMode'] ?? 'percent_of_oils',
             'water_value' => $draft['waterValue'] ?? 38,
             'superfat' => $draft['superfat'] ?? 5,
+            'final_ingredient_list' => $draft['finalIngredientList'] ?? null,
+            'final_ingredient_list_basis_hash' => $draft['finalIngredientListBasisHash'] ?? null,
+            'final_plain_ingredient_list' => $draft['finalPlainIngredientList'] ?? null,
+            'final_plain_ingredient_list_basis_hash' => $draft['finalPlainIngredientListBasisHash'] ?? null,
             'phase_items' => $draft['phaseItems'] ?? [],
         ];
     }
@@ -48,6 +52,10 @@ class RecipeWorkbenchDraftPayloadMapper
             'water_value' => $draft['waterValue'] ?? 38,
             'superfat' => $draft['superfat'] ?? 5,
             'ifra_product_category_id' => $draft['selectedIfraProductCategoryId'] ?? null,
+            'final_ingredient_list' => $draft['finalIngredientList'] ?? null,
+            'final_ingredient_list_basis_hash' => $draft['finalIngredientListBasisHash'] ?? null,
+            'final_plain_ingredient_list' => $draft['finalPlainIngredientList'] ?? null,
+            'final_plain_ingredient_list_basis_hash' => $draft['finalPlainIngredientListBasisHash'] ?? null,
             'phases' => $draft['phases'] ?? $this->phasesFromItems($draft['phaseItems'] ?? []),
             'phase_items' => $draft['phaseItems'] ?? [],
             'packaging_items' => $draft['packagingItems'] ?? [],

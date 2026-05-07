@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\RegulatoryRegime;
 use App\Models\User;
 use App\OwnerType;
 use App\Visibility;
@@ -64,7 +65,14 @@ class RecipeVersionRecordService
         $recipeVersion->manufacturing_mode = $normalizedPayload['manufacturing_mode'];
         $recipeVersion->exposure_mode = $normalizedPayload['exposure_mode'];
         $recipeVersion->regulatory_regime = $normalizedPayload['regulatory_regime'];
+        $recipeVersion->regulatory_regime_id = RegulatoryRegime::query()
+            ->where('code', $normalizedPayload['regulatory_regime'])
+            ->value('id');
         $recipeVersion->ifra_product_category_id = $normalizedPayload['ifra_product_category_id'];
+        $recipeVersion->final_ingredient_list = $normalizedPayload['final_ingredient_list'];
+        $recipeVersion->final_ingredient_list_basis_hash = $normalizedPayload['final_ingredient_list_basis_hash'];
+        $recipeVersion->final_plain_ingredient_list = $normalizedPayload['final_plain_ingredient_list'];
+        $recipeVersion->final_plain_ingredient_list_basis_hash = $normalizedPayload['final_plain_ingredient_list_basis_hash'];
         $recipeVersion->water_settings = $normalizedPayload['water_settings'];
         $recipeVersion->calculation_context = $normalizedPayload['calculation_context'];
         $recipeVersion->saved_at = $isDraft ? null : ($recipeVersion->saved_at ?? now());

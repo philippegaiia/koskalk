@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-04-27
+Last updated: 2026-05-07
 
 ## Stack
 
@@ -21,6 +21,11 @@ Last updated: 2026-04-27
 - `ingredient_version_fatty_acids`
 - `allergen_catalog`
 - `ingredient_allergen_entries`
+- `regulatory_regimes`
+- `regulatory_regime_allergens`
+- `substance_catalog`
+- `ingredient_substance_entries`
+- `regulatory_regime_substance_rules`
 - `ifra_product_categories`
 - `product_family_ifra_categories`
 - `ifra_certificates`
@@ -31,6 +36,8 @@ CSV seeders are in place for:
 
 - the starter ingredient catalog
 - the EU allergen reference list
+- seeded regulatory regimes for EU, Canada, and US preview
+- a starter substance catalog with watch-only regime rules
 
 ### Ingredient model split
 
@@ -46,9 +53,16 @@ For aromatic materials, there is now an additional compliance layer:
 
 - `Allergen`: permanent declarable-allergen reference rows
 - `IngredientAllergenEntry`: allergen percentages by ingredient version
+- `RegulatoryRegime`: selectable market rule set for allergen declarations and substance checks
+- `RegulatoryRegimeAllergen`: per-regime allergen declaration rules with exposure thresholds
+- `Substance`: neutral tracked substance catalog for constituents, whole ingredients, and groups
+- `IngredientSubstanceEntry`: factual substance concentration data by ingredient
+- `RegulatoryRegimeSubstanceRule`: per-regime prohibited, restricted, or watch-only substance rules
 - `IfraCertificate`: source IFRA documents attached to an ingredient version
 - `IfraCertificateLimit`: certificate limits by normalized IFRA product category
 - `IfraProductCategory`: the product context a recipe version can be evaluated against
+
+The catalog is deliberately split from the rule type. A substance row only means the platform tracks that substance. The selected regulatory regime decides whether the substance is prohibited, restricted, watch-only, or ignored.
 
 ### Ownership foundations
 
@@ -103,6 +117,11 @@ Filament resources currently exist for:
 - SAP profiles
 - allergens
 - ingredient allergen entries
+- regulatory regimes
+- regime allergen rules
+- substance catalog
+- ingredient substance entries
+- regime substance rules
 - IFRA product categories
 - IFRA certificates
 
@@ -123,9 +142,8 @@ The next product slice should focus on using this data foundation inside the pub
 - expose category-filtered ingredient picking in the workbench
 - model the soap reaction core separately from post-reaction additions in the recipe editor
 - support both oil-basis and derived total-basis percentage views for soap
-- let recipe versions carry an IFRA product category
-- prepare live compliance summaries for aromatic materials
-- then build the first real recipe creation and editing workflow on top of the public shell
+- keep expanding curated allergen, substance, and IFRA data through admin stewardship
+- refine official source import/review workflows after launch, instead of auto-activating bulk regulatory imports
 
 Recipe images are understood as a later slice:
 

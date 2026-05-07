@@ -13,7 +13,7 @@ export function createVersionSection() {
                 return 'Editable draft';
             }
 
-            return this.currentVersionIsDraft ? 'Editable draft' : 'Official saved recipe';
+            return this.currentVersionIsDraft ? 'Editable draft' : 'Reference formula';
         },
 
         get needsCatalogReview() {
@@ -26,6 +26,35 @@ export function createVersionSection() {
 
         get exposureModeLabel() {
             return this.exposureMode === 'leave_on' ? 'Leave-on' : 'Rinse-off';
+        },
+
+        get selectedRegulatoryRegimeRecord() {
+            return this.regulatoryRegimes.find((regime) => regime.code === this.regulatoryRegime) ?? null;
+        },
+
+        get regulatoryRegimeLabel() {
+            return this.selectedRegulatoryRegimeRecord?.name ?? this.regulatoryRegime.toUpperCase();
+        },
+
+        get regulatoryRegimeCoverageLabel() {
+            const allergenCount = Number(this.selectedRegulatoryRegimeRecord?.allergen_rule_count ?? 0);
+            const substanceCount = Number(this.selectedRegulatoryRegimeRecord?.substance_rule_count ?? 0);
+
+            if (allergenCount <= 0 && substanceCount <= 0) {
+                return 'No screening rules for this regime.';
+            }
+
+            const labels = [];
+
+            if (allergenCount > 0) {
+                labels.push(`${allergenCount} ${allergenCount === 1 ? 'allergen' : 'allergens'}`);
+            }
+
+            if (substanceCount > 0) {
+                labels.push(`${substanceCount} ${substanceCount === 1 ? 'substance' : 'substances'}`);
+            }
+
+            return labels.join(' · ');
         },
 
         get hasPostReactionRows() {

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\ProductFamily;
 use App\Models\ProductType;
+use App\Models\RegulatoryRegime;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -67,11 +68,15 @@ class RecipeWorkbenchPayloadNormalizer
             'oil_unit' => in_array($payload['oil_unit'] ?? 'g', ['g', 'oz', 'lb'], true) ? $payload['oil_unit'] : 'g',
             'manufacturing_mode' => $this->normalizeManufacturingMode($payload['manufacturing_mode'] ?? 'saponify_in_formula'),
             'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'rinse_off'),
-            'regulatory_regime' => $this->normalizeRegulatoryRegime($payload['regulatory_regime'] ?? 'eu'),
+            'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu'),
             'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
             'ifra_product_category_id' => isset($payload['ifra_product_category_id']) && is_numeric($payload['ifra_product_category_id'])
                 ? (int) $payload['ifra_product_category_id']
                 : null,
+            'final_ingredient_list' => $this->nullableTrimmedText($payload['final_ingredient_list'] ?? null),
+            'final_ingredient_list_basis_hash' => $this->nullableTrimmedText($payload['final_ingredient_list_basis_hash'] ?? null),
+            'final_plain_ingredient_list' => $this->nullableTrimmedText($payload['final_plain_ingredient_list'] ?? null),
+            'final_plain_ingredient_list_basis_hash' => $this->nullableTrimmedText($payload['final_plain_ingredient_list_basis_hash'] ?? null),
             'water_settings' => [
                 'mode' => in_array($payload['water_mode'] ?? 'percent_of_oils', ['percent_of_oils', 'lye_ratio', 'lye_concentration'], true)
                     ? $payload['water_mode']
@@ -84,7 +89,7 @@ class RecipeWorkbenchPayloadNormalizer
                     ? $payload['lye_type']
                     : 'naoh',
                 'koh_purity_percentage' => (float) ($payload['koh_purity_percentage'] ?? 90),
-                'dual_lye_koh_percentage' => (float) ($payload['dual_lye_koh_percentage'] ?? 40),
+                'dual_lye_koh_percentage' => $this->boundedPercentage($payload['dual_lye_koh_percentage'] ?? 40),
                 'superfat' => (float) ($payload['superfat'] ?? 5),
                 'oil_weight' => $normalizedRecipe['oil_weight'],
                 'oil_unit' => in_array($payload['oil_unit'] ?? 'g', ['g', 'oz', 'lb'], true) ? $payload['oil_unit'] : 'g',
@@ -207,11 +212,15 @@ class RecipeWorkbenchPayloadNormalizer
             'oil_unit' => in_array($payload['oil_unit'] ?? 'g', ['g', 'oz', 'lb'], true) ? $payload['oil_unit'] : 'g',
             'manufacturing_mode' => 'blend_only',
             'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'leave_on'),
-            'regulatory_regime' => $this->normalizeRegulatoryRegime($payload['regulatory_regime'] ?? 'eu'),
+            'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu'),
             'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
             'ifra_product_category_id' => isset($payload['ifra_product_category_id']) && is_numeric($payload['ifra_product_category_id'])
                 ? (int) $payload['ifra_product_category_id']
                 : null,
+            'final_ingredient_list' => $this->nullableTrimmedText($payload['final_ingredient_list'] ?? null),
+            'final_ingredient_list_basis_hash' => $this->nullableTrimmedText($payload['final_ingredient_list_basis_hash'] ?? null),
+            'final_plain_ingredient_list' => $this->nullableTrimmedText($payload['final_plain_ingredient_list'] ?? null),
+            'final_plain_ingredient_list_basis_hash' => $this->nullableTrimmedText($payload['final_plain_ingredient_list_basis_hash'] ?? null),
             'water_settings' => [],
             'calculation_context' => [
                 'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
@@ -414,6 +423,11 @@ class RecipeWorkbenchPayloadNormalizer
         return ($weight / $totalBatchWeight) * 100;
     }
 
+    private function boundedPercentage(mixed $value): float
+    {
+        return max(0.0, min(100.0, (float) $value));
+    }
+
     private function normalizationErrorField(string $message): string
     {
         $normalizedMessage = str($message)->lower();
@@ -451,10 +465,10 @@ class RecipeWorkbenchPayloadNormalizer
             : 'rinse_off';
     }
 
-    private function normalizeRegulatoryRegime(?string $value): string
+    private function nullableTrimmedText(mixed $value): ?string
     {
-        return in_array($value, ['eu'], true)
-            ? $value
-            : 'eu';
+        $text = trim((string) $value);
+
+        return $text !== '' ? $text : null;
     }
 }

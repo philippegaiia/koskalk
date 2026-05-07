@@ -269,6 +269,23 @@ it('aggregates duplicate cosmetic INCI ingredients across phases by total formul
         ->and($labeling['final_label_text'])->toBe('AQUA, GLYCERIN');
 });
 
+it('generates a plain-language cosmetic ingredient list by decreasing formula percentage', function () {
+    $water = cosmeticIngredient('Water', 'AQUA');
+    $glycerin = cosmeticIngredient('Glycerin', 'GLYCERIN');
+    $lavender = cosmeticIngredient('Lavender Essential Oil', 'LAVANDULA ANGUSTIFOLIA OIL');
+
+    $labeling = app(InciGenerationService::class)->generate(cosmeticDraftPayload(null, [
+        'phase_a' => [
+            cosmeticPayloadRow($glycerin, 10, 50),
+            cosmeticPayloadRow($water, 89, 445),
+            cosmeticPayloadRow($lavender, 1, 5),
+        ],
+    ]));
+
+    expect($labeling['plain_language_list']['final_label_text'])
+        ->toBe('Water, Glycerin, Lavender Essential Oil');
+});
+
 it('lets the shared recipe workbench save incomplete cosmetic drafts', function () {
     $user = User::factory()->create();
     $cosmeticFamily = ProductFamily::factory()->create([
@@ -384,13 +401,14 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
     expect($header)
         ->toContain('manufacturingModeLabel')
         ->toContain('exposureModeLabel')
-        ->toContain('Regime ${regulatoryRegime.toUpperCase()}')
+        ->toContain('regulatoryRegimeLabel')
         ->not->toContain('mt-4 flex flex-wrap gap-2 border-t')
         ->and($settings)
         ->toContain('lg:grid-cols-2 xl:grid-cols-4')
         ->toContain('Batch weight')
         ->toContain('Entry mode')
         ->toContain('Exposure')
+        ->toContain('Label regime')
         ->toContain('IFRA context')
         ->not->toContain('Product type')
         ->and($cosmeticFormula)

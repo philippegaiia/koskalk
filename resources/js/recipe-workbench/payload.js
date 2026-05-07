@@ -36,6 +36,10 @@ export function serializeDraft(state) {
         water_value: state.waterValue,
         superfat: state.superfat,
         ifra_product_category_id: normalizedIfraProductCategoryId(state.selectedIfraProductCategoryId),
+        final_ingredient_list: state.finalIngredientList ?? null,
+        final_ingredient_list_basis_hash: state.finalIngredientListBasisHash ?? null,
+        final_plain_ingredient_list: state.finalPlainIngredientList ?? null,
+        final_plain_ingredient_list_basis_hash: state.finalPlainIngredientListBasisHash ?? null,
         phases: (state.phaseOrder ?? []).map((phase) => ({
             key: phase.key,
             name: phase.name,

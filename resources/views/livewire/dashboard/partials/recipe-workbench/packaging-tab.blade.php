@@ -5,7 +5,7 @@
  <div>
  <p class="sk-eyebrow">Packaging plan</p>
  <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Packaging plan</h3>
- <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">Define what one finished unit uses. Prices stay in Costing so the official recipe structure stays clear.</p>
+ <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">Define what one finished unit uses. Prices stay in Costing so the reference formula structure stays clear.</p>
  </div>
 
  <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">

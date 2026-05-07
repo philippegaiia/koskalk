@@ -9,6 +9,7 @@ class RecipeWorkbenchPreviewService
     public function __construct(
         private readonly SoapCalculationService $soapCalculationService,
         private readonly InciGenerationService $inciGenerationService,
+        private readonly SubstanceComplianceService $substanceComplianceService,
         private readonly RecipeWorkbenchDraftPayloadMapper $recipeWorkbenchDraftPayloadMapper,
     ) {}
 
@@ -128,8 +129,36 @@ class RecipeWorkbenchPreviewService
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $calculation
+     * @return array<string, mixed>
+     */
+    public function previewRestrictions(array $payload, ?array $calculation = null): array
+    {
+        return $this->substanceComplianceService->evaluate(
+            $payload,
+            $calculation ?? $this->previewSoapCalculation($payload),
+        );
+    }
+
+    /**
      * @param  array<string, mixed>  $draft
-     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>}
+     * @param  array<string, mixed>|null  $calculation
+     * @return array<string, mixed>
+     */
+    public function restrictionsFromWorkbenchDraft(array $draft, ?array $calculation = null): array
+    {
+        $previewPayload = $this->recipeWorkbenchDraftPayloadMapper->toPreviewPayload($draft);
+
+        return $this->previewRestrictions(
+            $previewPayload,
+            $calculation ?? $this->calculationFromWorkbenchDraft($draft),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}
      */
     public function snapshotFromWorkbenchDraft(array $draft): array
     {
@@ -139,6 +168,7 @@ class RecipeWorkbenchPreviewService
             'draft' => $draft,
             'calculation' => $calculation,
             'labeling' => $this->labelingFromWorkbenchDraft($draft, $calculation),
+            'restrictions' => $this->restrictionsFromWorkbenchDraft($draft, $calculation),
         ];
     }
 

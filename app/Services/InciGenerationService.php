@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Models\Ingredient;
+use App\Models\IngredientAllergenEntry;
+use App\Models\RegulatoryRegime;
+use App\Models\RegulatoryRegimeAllergen;
 use Illuminate\Support\Str;
 
 class InciGenerationService
@@ -11,10 +14,9 @@ class InciGenerationService
 
     private const INCORPORATED_LIST_VARIANT_KEY = 'incorporated_ingredients';
 
-    /**
-     * @var array<int, Ingredient|null>
-     */
-    private array $ingredientCache = [];
+    public function __construct(
+        private readonly IngredientFormulaContextResolver $ingredientFormulaContextResolver,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $payload
@@ -81,23 +83,134 @@ class InciGenerationService
      */
     public function generate(array $payload, ?array $soapCalculation = null): array
     {
-        $this->ingredientCache = [];
-        $this->preloadIngredientsForPayload($payload);
-
-        $rowContexts = $this->resolveRowContexts($payload);
-        $basis = $this->basisState($payload, $rowContexts, $soapCalculation);
-        $listVariants = $this->listVariants($payload, $rowContexts, $basis, $soapCalculation);
+        $rowContexts = $this->ingredientFormulaContextResolver->resolve($payload, [
+            'allergenEntries.allergen',
+        ]);
+        $declarationRuleState = $this->declarationRuleState($payload);
+        $basis = $this->basisState(
+            $payload,
+            $rowContexts,
+            $soapCalculation,
+            $declarationRuleState['default_threshold_percent'],
+        );
+        $listVariants = $this->listVariants($payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState);
         $defaultVariant = $this->defaultListVariant($listVariants);
+        $plainLanguageList = $this->plainLanguageList($payload, $rowContexts, $soapCalculation);
+        $ingredientListBasisHash = $this->ingredientListBasisHash($payload);
+        $finalIngredientList = $this->finalIngredientListState(
+            $payload,
+            $ingredientListBasisHash,
+            $defaultVariant['final_label_text'],
+        );
+        $plainLanguageList = [
+            ...$plainLanguageList,
+            ...$this->finalPlainLanguageListState($payload, $ingredientListBasisHash, $plainLanguageList['final_label_text']),
+        ];
 
         return [
             'basis' => $basis,
+            'ingredient_list_basis_hash' => $ingredientListBasisHash,
             'ingredient_rows' => $defaultVariant['ingredient_rows'],
             'declaration_rows' => $defaultVariant['declaration_rows'],
             'list_variants' => $listVariants,
             'default_variant_key' => $defaultVariant['key'],
             'final_labels' => $defaultVariant['final_labels'],
             'final_label_text' => $defaultVariant['final_label_text'],
+            'final_ingredient_list' => $finalIngredientList,
+            'plain_language_list' => $plainLanguageList,
+            'print_ingredient_list_text' => $finalIngredientList['final_text'],
+            'print_plain_ingredient_list_text' => $plainLanguageList['final_text'],
             'warnings' => $this->warnings($payload, $rowContexts, $this->variantWarnings($listVariants), $soapCalculation),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{
+     *     uses_regime_rules: bool,
+     *     default_threshold_percent: float,
+     *     rules_by_allergen_id: array<int, array{label: string, threshold_percent: float, threshold_operator: string}>,
+     *     regime_code: string,
+     *     regime_label: string
+     * }
+     */
+    private function declarationRuleState(array $payload): array
+    {
+        $exposureMode = (string) ($payload['exposure_mode'] ?? 'rinse_off');
+        $regimeCode = Str::lower(trim((string) ($payload['regulatory_regime'] ?? 'eu')));
+        $regimeCode = $regimeCode !== '' ? $regimeCode : 'eu';
+        $defaultThresholdPercent = $this->thresholdPercent($exposureMode);
+        $today = now()->toDateString();
+
+        $regime = RegulatoryRegime::query()
+            ->where('code', $regimeCode)
+            ->whereIn('status', ['active', 'preview'])
+            ->where(function ($query) use ($today): void {
+                $query->whereNull('effective_from')
+                    ->orWhereDate('effective_from', '<=', $today);
+            })
+            ->where(function ($query) use ($today): void {
+                $query->whereNull('effective_until')
+                    ->orWhereDate('effective_until', '>=', $today);
+            })
+            ->with(['allergenRules' => function ($query) use ($today): void {
+                $query
+                    ->where('is_active', true)
+                    ->where(function ($query) use ($today): void {
+                        $query->whereNull('effective_from')
+                            ->orWhereDate('effective_from', '<=', $today);
+                    })
+                    ->where(function ($query) use ($today): void {
+                        $query->whereNull('effective_until')
+                            ->orWhereDate('effective_until', '>=', $today);
+                    })
+                    ->with('allergen');
+            }])
+            ->first();
+
+        if (! $regime instanceof RegulatoryRegime) {
+            return [
+                'uses_regime_rules' => false,
+                'default_threshold_percent' => $defaultThresholdPercent,
+                'rules_by_allergen_id' => [],
+                'regime_code' => $regimeCode,
+                'regime_label' => Str::upper($regimeCode),
+            ];
+        }
+
+        $rulesByAllergenId = [];
+
+        foreach ($regime->allergenRules as $rule) {
+            if (! $rule instanceof RegulatoryRegimeAllergen) {
+                continue;
+            }
+
+            $allergenId = (int) $rule->allergen_id;
+            $label = $this->normalizePrintedLabel(
+                $rule->declaration_label
+                    ?? $rule->group_label
+                    ?? $rule->allergen?->inci_name,
+            );
+
+            if ($allergenId <= 0 || $label === null) {
+                continue;
+            }
+
+            $rulesByAllergenId[$allergenId] = [
+                'label' => $label,
+                'threshold_percent' => $this->ruleThresholdPercent($rule, $exposureMode),
+                'threshold_operator' => filled($rule->threshold_operator)
+                    ? (string) $rule->threshold_operator
+                    : 'greater_than_or_equal',
+            ];
+        }
+
+        return [
+            'uses_regime_rules' => true,
+            'default_threshold_percent' => $defaultThresholdPercent,
+            'rules_by_allergen_id' => $rulesByAllergenId,
+            'regime_code' => $regime->code,
+            'regime_label' => $regime->name,
         ];
     }
 
@@ -151,6 +264,7 @@ class InciGenerationService
         array $rowContexts,
         array $basis,
         ?array $soapCalculation,
+        array $declarationRuleState,
     ): array {
         if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') === 'blend_only') {
             return $this->buildListVariants([
@@ -159,7 +273,7 @@ class InciGenerationService
                     'label' => 'Ingredient list',
                     'note' => 'Uses the ingredients as entered on the full formula basis.',
                 ],
-            ], $payload, $rowContexts, $basis, $soapCalculation);
+            ], $payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState);
         }
 
         $variantDefinitions = [
@@ -175,7 +289,7 @@ class InciGenerationService
             ],
         ];
 
-        return $this->buildListVariants($variantDefinitions, $payload, $rowContexts, $basis, $soapCalculation);
+        return $this->buildListVariants($variantDefinitions, $payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState);
     }
 
     /**
@@ -230,20 +344,22 @@ class InciGenerationService
         array $rowContexts,
         array $basis,
         ?array $soapCalculation,
+        array $declarationRuleState,
     ): array {
-        return array_map(function (array $definition) use ($payload, $rowContexts, $basis, $soapCalculation): array {
+        return array_map(function (array $definition) use ($payload, $rowContexts, $basis, $soapCalculation, $declarationRuleState): array {
             $ingredientRowsState = $this->ingredientRowsState(
                 $payload,
                 $rowContexts,
                 $basis['formula_weight'],
                 $soapCalculation,
                 $definition['key'],
+                $declarationRuleState,
             );
             $declarationRows = $this->declarationRows(
                 $rowContexts,
                 $ingredientRowsState['label_keys'],
                 $basis['formula_weight'],
-                $basis['threshold_percent'],
+                $declarationRuleState,
             );
             $finalLabels = $this->finalLabels($ingredientRowsState['rows'], $declarationRows);
 
@@ -379,6 +495,316 @@ class InciGenerationService
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }>  $rowContexts
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array{label: string, note: string, final_labels: array<int, string>, final_label_text: string}
+     */
+    private function plainLanguageList(array $payload, array $rowContexts, ?array $soapCalculation): array
+    {
+        if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') === 'saponify_in_formula') {
+            return $this->soapPlainLanguageList($rowContexts, $soapCalculation);
+        }
+
+        $rowsByLabel = [];
+
+        foreach ($rowContexts as $context) {
+            $this->appendPlainLanguageRow(
+                $rowsByLabel,
+                $this->plainIngredientLabel($context, false),
+                (float) $context['weight'],
+            );
+        }
+
+        $labels = $this->sortedPlainLanguageLabels($rowsByLabel);
+
+        return [
+            'label' => 'Plain-language ingredient list',
+            'note' => 'Uses ingredient display names in decreasing order on the full formula basis.',
+            'final_labels' => $labels,
+            'final_label_text' => implode(', ', $labels),
+        ];
+    }
+
+    /**
+     * @param  array<int, array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }>  $rowContexts
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array{label: string, note: string, final_labels: array<int, string>, final_label_text: string}
+     */
+    private function soapPlainLanguageList(array $rowContexts, ?array $soapCalculation): array
+    {
+        $oilNamesByKey = [];
+        $restRowsByLabel = [];
+
+        foreach ($rowContexts as $context) {
+            if ($context['phase_key'] === 'saponified_oils') {
+                $oilLabel = $this->plainSaponifiedOilLabel($context);
+
+                if ($oilLabel !== null) {
+                    $oilNamesByKey[$this->normalizeLabel($oilLabel)] = $oilLabel;
+                }
+
+                continue;
+            }
+
+            $this->appendPlainLanguageRow(
+                $restRowsByLabel,
+                $this->plainIngredientLabel($context, true),
+                (float) $context['weight'],
+            );
+        }
+
+        if (is_array($soapCalculation)) {
+            $this->appendPlainLanguageRow(
+                $restRowsByLabel,
+                'Water',
+                (float) data_get($soapCalculation, 'lye.water.weight', 0),
+            );
+            $this->appendPlainLanguageRow(
+                $restRowsByLabel,
+                'Glycerin',
+                (float) data_get($soapCalculation, 'lye.selected.glycerine_weight', 0),
+            );
+        }
+
+        $labels = [];
+        $oilNames = array_values($oilNamesByKey);
+
+        if ($oilNames !== []) {
+            $labels[] = 'Saponified Oils of ('.implode(', ', $oilNames).')';
+        }
+
+        $labels = [
+            ...$labels,
+            ...$this->sortedPlainLanguageLabels($restRowsByLabel),
+        ];
+
+        return [
+            'label' => 'Plain-language ingredient list',
+            'note' => 'Starts with the saponified oil basis, then lists remaining materials in decreasing order.',
+            'final_labels' => $labels,
+            'final_label_text' => implode(', ', $labels),
+        ];
+    }
+
+    /**
+     * @param  array<string, array{label: string, weight: float}>  $rowsByLabel
+     */
+    private function appendPlainLanguageRow(array &$rowsByLabel, ?string $label, float $weight): void
+    {
+        if ($label === null || $weight <= 0) {
+            return;
+        }
+
+        $labelKey = $this->normalizeLabel($label);
+
+        if (! array_key_exists($labelKey, $rowsByLabel)) {
+            $rowsByLabel[$labelKey] = [
+                'label' => $label,
+                'weight' => 0.0,
+            ];
+        }
+
+        $rowsByLabel[$labelKey]['weight'] += $weight;
+    }
+
+    /**
+     * @param  array<string, array{label: string, weight: float}>  $rowsByLabel
+     * @return array<int, string>
+     */
+    private function sortedPlainLanguageLabels(array $rowsByLabel): array
+    {
+        $rows = array_values($rowsByLabel);
+
+        usort($rows, function (array $left, array $right): int {
+            if ($left['weight'] === $right['weight']) {
+                return strcmp($left['label'], $right['label']);
+            }
+
+            return $right['weight'] <=> $left['weight'];
+        });
+
+        return array_map(
+            fn (array $row): string => $row['label'],
+            $rows,
+        );
+    }
+
+    /**
+     * @param  array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }  $context
+     */
+    private function plainIngredientLabel(array $context, bool $titleCase): ?string
+    {
+        $label = $context['ingredient'] instanceof Ingredient
+            ? $context['ingredient']->display_name
+            : $context['ingredient_name'];
+
+        $label = Str::squish((string) $label);
+
+        if ($label === '') {
+            return null;
+        }
+
+        return $titleCase ? Str::title($label) : $label;
+    }
+
+    /**
+     * @param  array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }  $context
+     */
+    private function plainSaponifiedOilLabel(array $context): ?string
+    {
+        $label = $this->plainIngredientLabel($context, true);
+
+        if ($label === null) {
+            return null;
+        }
+
+        // US-style soap common-name lists group the commodity suffix once in "Saponified Oils of (...)".
+        $label = preg_replace('/\s+(Oil|Oils|Butter|Butters)\z/i', '', $label) ?? $label;
+
+        return trim($label) !== '' ? trim($label) : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{
+     *     text: string|null,
+     *     basis_hash: string|null,
+     *     current_basis_hash: string,
+     *     is_present: bool,
+     *     is_outdated: bool,
+     *     generated_text: string,
+     *     final_text: string
+     * }
+     */
+    private function finalIngredientListState(array $payload, string $basisHash, string $generatedText): array
+    {
+        return $this->finalListState(
+            $payload['final_ingredient_list'] ?? null,
+            $payload['final_ingredient_list_basis_hash'] ?? null,
+            $basisHash,
+            $generatedText,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{
+     *     text: string|null,
+     *     basis_hash: string|null,
+     *     current_basis_hash: string,
+     *     is_present: bool,
+     *     is_outdated: bool,
+     *     generated_text: string,
+     *     final_text: string
+     * }
+     */
+    private function finalPlainLanguageListState(array $payload, string $basisHash, string $generatedText): array
+    {
+        return $this->finalListState(
+            $payload['final_plain_ingredient_list'] ?? null,
+            $payload['final_plain_ingredient_list_basis_hash'] ?? null,
+            $basisHash,
+            $generatedText,
+        );
+    }
+
+    /**
+     * @return array{
+     *     text: string|null,
+     *     basis_hash: string|null,
+     *     current_basis_hash: string,
+     *     is_present: bool,
+     *     is_outdated: bool,
+     *     generated_text: string,
+     *     final_text: string
+     * }
+     */
+    private function finalListState(mixed $text, mixed $basisHash, string $currentBasisHash, string $generatedText): array
+    {
+        $finalText = trim((string) $text);
+        $finalText = $finalText !== '' ? $finalText : null;
+        $storedBasisHash = Str::squish((string) $basisHash);
+        $storedBasisHash = $storedBasisHash !== '' ? $storedBasisHash : null;
+
+        return [
+            'text' => $finalText,
+            'basis_hash' => $storedBasisHash,
+            'current_basis_hash' => $currentBasisHash,
+            'is_present' => $finalText !== null,
+            'is_outdated' => $finalText !== null
+                && $storedBasisHash !== null
+                && $storedBasisHash !== $currentBasisHash,
+            'generated_text' => $generatedText,
+            'final_text' => $finalText ?? $generatedText,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function ingredientListBasisHash(array $payload): string
+    {
+        $basisPayload = $payload;
+
+        foreach ([
+            'final_ingredient_list',
+            'final_ingredient_list_basis_hash',
+            'final_plain_ingredient_list',
+            'final_plain_ingredient_list_basis_hash',
+        ] as $key) {
+            unset($basisPayload[$key]);
+        }
+
+        $basisPayload = $this->sortArrayRecursively($basisPayload);
+
+        return hash('sha256', json_encode($basisPayload, JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * @param  array<string, mixed>  $value
+     * @return array<string, mixed>
+     */
+    private function sortArrayRecursively(array $value): array
+    {
+        foreach ($value as $key => $item) {
+            if (is_array($item)) {
+                $value[$key] = $this->sortArrayRecursively($item);
+            }
+        }
+
+        if (! array_is_list($value)) {
+            ksort($value);
+        }
+
+        return $value;
+    }
+
+    /**
      * @param  array<int, array{
      *     key: string,
      *     label: string,
@@ -422,226 +848,6 @@ class InciGenerationService
 
     /**
      * @param  array<string, mixed>  $payload
-     * @return array<int, array{
-     *     phase_key: string,
-     *     weight: float,
-     *     ingredient: Ingredient|null,
-     *     ingredient_name: string,
-     *     is_user_owned: bool
-     * }>
-     */
-    private function resolveRowContexts(array $payload): array
-    {
-        $phaseItems = is_array($payload['phase_items'] ?? null) ? $payload['phase_items'] : [];
-
-        $contexts = [];
-
-        foreach ($this->phaseItemRows($phaseItems) as $phaseKey => $rows) {
-            foreach ($rows as $row) {
-                if (! is_array($row)) {
-                    continue;
-                }
-
-                $ingredientId = filled($row['ingredient_id'] ?? null)
-                    ? (int) $row['ingredient_id']
-                    : null;
-
-                $ingredient = $ingredientId === null
-                    ? null
-                    : $this->ingredientById($ingredientId);
-
-                $contexts = [
-                    ...$contexts,
-                    ...$this->expandedContexts(
-                        $phaseKey,
-                        $this->rowWeight($row, $payload),
-                        $ingredient,
-                        $ingredient?->display_name ?? trim((string) ($row['name'] ?? '')),
-                        [],
-                    ),
-                ];
-            }
-        }
-
-        return array_values(array_filter(
-            $contexts,
-            fn (array $context): bool => $context['weight'] > 0,
-        ));
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
-     */
-    private function preloadIngredientsForPayload(array $payload): void
-    {
-        $phaseItems = is_array($payload['phase_items'] ?? null) ? $payload['phase_items'] : [];
-        $ingredientIds = [];
-
-        foreach ($this->phaseItemRows($phaseItems) as $rows) {
-            foreach ($rows as $row) {
-                if (! is_array($row) || ! filled($row['ingredient_id'] ?? null)) {
-                    continue;
-                }
-
-                $ingredientIds[] = (int) $row['ingredient_id'];
-            }
-        }
-
-        $this->preloadIngredientGraph($ingredientIds);
-    }
-
-    /**
-     * @param  array<string, mixed>  $phaseItems
-     * @return array<string, array<int, mixed>>
-     */
-    private function phaseItemRows(array $phaseItems): array
-    {
-        return collect($phaseItems)
-            ->filter(fn (mixed $rows, mixed $phaseKey): bool => is_string($phaseKey) && is_array($rows))
-            ->map(fn (array $rows): array => $rows)
-            ->all();
-    }
-
-    /**
-     * @param  array<int, int>  $ingredientIds
-     */
-    private function preloadIngredientGraph(array $ingredientIds): void
-    {
-        $pendingIds = collect($ingredientIds)
-            ->filter(fn (mixed $id): bool => is_int($id) && $id > 0)
-            ->unique()
-            ->values()
-            ->all();
-
-        while ($pendingIds !== []) {
-            $idsToLoad = array_values(array_filter(
-                $pendingIds,
-                fn (int $id): bool => ! array_key_exists($id, $this->ingredientCache),
-            ));
-
-            if ($idsToLoad === []) {
-                break;
-            }
-
-            $loadedIngredients = Ingredient::query()
-                ->with($this->ingredientGraphRelations())
-                ->whereKey($idsToLoad)
-                ->get()
-                ->keyBy('id');
-
-            foreach ($idsToLoad as $ingredientId) {
-                $this->ingredientCache[$ingredientId] = $loadedIngredients->get($ingredientId);
-            }
-
-            $pendingIds = $loadedIngredients
-                ->flatMap(fn (Ingredient $ingredient) => $ingredient->components->pluck('component_ingredient_id'))
-                ->filter(fn (mixed $id): bool => is_int($id) && $id > 0)
-                ->unique()
-                ->values()
-                ->all();
-        }
-    }
-
-    private function ingredientById(int $ingredientId): ?Ingredient
-    {
-        if (! array_key_exists($ingredientId, $this->ingredientCache)) {
-            $this->ingredientCache[$ingredientId] = Ingredient::query()
-                ->with($this->ingredientGraphRelations())
-                ->find($ingredientId);
-        }
-
-        return $this->ingredientCache[$ingredientId];
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function ingredientGraphRelations(): array
-    {
-        return [
-            'allergenEntries.allergen',
-            'components',
-        ];
-    }
-
-    /**
-     * @return array<int, array{
-     *     phase_key: string,
-     *     weight: float,
-     *     ingredient: Ingredient|null,
-     *     ingredient_name: string,
-     *     is_user_owned: bool
-     * }>
-     */
-    private function expandedContexts(
-        string $phaseKey,
-        float $weight,
-        ?Ingredient $ingredient,
-        string $fallbackName,
-        array $ancestry = [],
-    ): array {
-        if ($weight <= 0) {
-            return [];
-        }
-
-        if (! $ingredient instanceof Ingredient) {
-            return [[
-                'phase_key' => $phaseKey,
-                'weight' => $weight,
-                'ingredient' => null,
-                'ingredient_name' => $fallbackName,
-                'is_user_owned' => false,
-            ]];
-        }
-
-        if (in_array($ingredient->id, $ancestry, true)) {
-            return [[
-                'phase_key' => $phaseKey,
-                'weight' => $weight,
-                'ingredient' => $ingredient,
-                'ingredient_name' => $ingredient->display_name,
-                'is_user_owned' => $ingredient->owner_type !== null,
-            ]];
-        }
-
-        $validComponents = $ingredient->components
-            ->filter(fn ($component): bool => $component->component_ingredient_id !== null && (float) $component->percentage_in_parent > 0)
-            ->values();
-
-        if ($validComponents->isEmpty()) {
-            return [[
-                'phase_key' => $phaseKey,
-                'weight' => $weight,
-                'ingredient' => $ingredient,
-                'ingredient_name' => $ingredient->display_name,
-                'is_user_owned' => $ingredient->owner_type !== null,
-            ]];
-        }
-
-        $expandedContexts = [];
-        $nextAncestry = [...$ancestry, $ingredient->id];
-
-        foreach ($validComponents as $component) {
-            $componentIngredient = $this->ingredientById((int) $component->component_ingredient_id);
-            $componentWeight = $weight * (((float) $component->percentage_in_parent) / 100);
-
-            $expandedContexts = [
-                ...$expandedContexts,
-                ...$this->expandedContexts(
-                    $phaseKey,
-                    $componentWeight,
-                    $componentIngredient,
-                    $componentIngredient?->display_name ?? $ingredient->display_name,
-                    $nextAncestry,
-                ),
-            ];
-        }
-
-        return $expandedContexts;
-    }
-
-    /**
-     * @param  array<string, mixed>  $payload
      * @param  array<int, array{
      *     phase_key: string,
      *     weight: float,
@@ -657,9 +863,8 @@ class InciGenerationService
      *     threshold_percent: float
      * }
      */
-    private function basisState(array $payload, array $rowContexts, ?array $soapCalculation): array
+    private function basisState(array $payload, array $rowContexts, ?array $soapCalculation, float $thresholdPercent): array
     {
-        $thresholdPercent = $this->thresholdPercent((string) ($payload['exposure_mode'] ?? 'rinse_off'));
         $phaseWeight = array_sum(array_map(
             fn (array $context): float => (float) $context['weight'],
             $rowContexts,
@@ -727,19 +932,19 @@ class InciGenerationService
         float $formulaWeight,
         ?array $soapCalculation,
         string $variantKey,
+        array $declarationRuleState,
     ): array {
         $rowsByLabel = [];
         $fallbackWarnings = [];
-        $thresholdPercent = $this->thresholdPercent((string) ($payload['exposure_mode'] ?? 'rinse_off'));
 
         foreach ($rowContexts as $context) {
             $rowContributions = $this->ingredientRowContributions(
                 $context,
                 $payload,
                 $formulaWeight,
-                $thresholdPercent,
                 $soapCalculation,
                 $variantKey,
+                $declarationRuleState,
             );
 
             foreach ($rowContributions as $contribution) {
@@ -871,9 +1076,9 @@ class InciGenerationService
         array $context,
         array $payload,
         float $formulaWeight,
-        float $thresholdPercent,
         ?array $soapCalculation,
         string $variantKey,
+        array $declarationRuleState,
     ): array {
         if ($variantKey === self::INCORPORATED_LIST_VARIANT_KEY) {
             $labelState = $this->incorporatedIngredientLabel($context);
@@ -895,18 +1100,15 @@ class InciGenerationService
             $contributions = [];
 
             if ($saponifiedWeight > 0) {
-                $labelState = $this->ingredientListLabel(
-                    $context,
-                    $payload,
-                    $formulaWeight,
-                    $thresholdPercent,
-                );
-
-                $contributions[] = [
-                    'label' => $labelState['label'],
-                    'weight' => $saponifiedWeight,
-                    'kind' => $labelState['kind'],
-                    'warning' => $labelState['warning'],
+                $contributions = [
+                    ...$contributions,
+                    ...$this->saponifiedOilContributions(
+                        $context,
+                        $payload,
+                        $formulaWeight,
+                        $saponifiedWeight,
+                        $declarationRuleState,
+                    ),
                 ];
             }
 
@@ -928,7 +1130,7 @@ class InciGenerationService
             $context,
             $payload,
             $formulaWeight,
-            $thresholdPercent,
+            $declarationRuleState,
         );
 
         return [[
@@ -937,6 +1139,77 @@ class InciGenerationService
             'kind' => $labelState['kind'],
             'warning' => $labelState['warning'],
         ]];
+    }
+
+    /**
+     * @param  array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }  $context
+     * @param  array<string, mixed>  $payload
+     * @return array<int, array{label: string|null, weight: float, kind: string, warning: string|null}>
+     */
+    private function saponifiedOilContributions(
+        array $context,
+        array $payload,
+        float $formulaWeight,
+        float $saponifiedWeight,
+        array $declarationRuleState,
+    ): array {
+        $ingredient = $context['ingredient'];
+
+        if ($ingredient instanceof Ingredient && ($payload['lye_type'] ?? 'naoh') === 'dual') {
+            $naohLabel = $this->normalizePrintedLabel($ingredient->soap_inci_naoh_name);
+            $kohLabel = $this->normalizePrintedLabel($ingredient->soap_inci_koh_name);
+
+            if ($naohLabel !== null && $kohLabel !== null && $naohLabel !== $kohLabel) {
+                $kohRatio = $this->dualKohRatio($payload);
+
+                return array_values(array_filter([
+                    [
+                        'label' => $naohLabel,
+                        'weight' => $saponifiedWeight * (1 - $kohRatio),
+                        'kind' => 'saponified_oil',
+                        'warning' => null,
+                    ],
+                    [
+                        'label' => $kohLabel,
+                        'weight' => $saponifiedWeight * $kohRatio,
+                        'kind' => 'saponified_oil',
+                        'warning' => null,
+                    ],
+                ], fn (array $contribution): bool => $contribution['weight'] > 0));
+            }
+        }
+
+        $labelState = $this->ingredientListLabel(
+            $context,
+            $payload,
+            $formulaWeight,
+            $declarationRuleState,
+        );
+
+        return [[
+            'label' => $labelState['label'],
+            'weight' => $saponifiedWeight,
+            'kind' => $labelState['kind'],
+            'warning' => $labelState['warning'],
+        ]];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function dualKohRatio(array $payload): float
+    {
+        $kohPercentage = is_numeric($payload['dual_lye_koh_percentage'] ?? null)
+            ? (float) $payload['dual_lye_koh_percentage']
+            : 50.0;
+
+        return max(0.0, min(100.0, $kohPercentage)) / 100;
     }
 
     /**
@@ -965,7 +1238,7 @@ class InciGenerationService
         array $rowContexts,
         array $ingredientLabelKeys,
         float $formulaWeight,
-        float $thresholdPercent,
+        array $declarationRuleState,
     ): array {
         $rowsByLabel = [];
 
@@ -979,35 +1252,52 @@ class InciGenerationService
             $ingredientPercentOfFormula = ($context['weight'] / $formulaWeight) * 100;
 
             foreach ($ingredient->allergenEntries as $entry) {
-                $label = $this->normalizePrintedLabel($entry->allergen?->inci_name);
+                $rule = $this->declarationRuleForEntry($entry, $declarationRuleState);
+
+                if (($declarationRuleState['uses_regime_rules'] ?? false) && $rule === null) {
+                    continue;
+                }
+
+                $label = $this->declarationLabelForEntry($entry, $rule);
 
                 if ($label === null) {
                     continue;
                 }
 
                 $labelKey = $this->normalizeLabel($label);
+                $thresholdPercent = (float) ($rule['threshold_percent'] ?? $declarationRuleState['default_threshold_percent']);
+                $thresholdOperator = (string) ($rule['threshold_operator'] ?? 'greater_than_or_equal');
 
                 if (! array_key_exists($labelKey, $rowsByLabel)) {
                     $rowsByLabel[$labelKey] = [
                         'label' => $label,
                         'percent_of_formula' => 0.0,
+                        'threshold_percent' => $thresholdPercent,
+                        'threshold_operator' => $thresholdOperator,
                         'source_ingredients' => [],
                         'source_is_user_owned' => [],
                     ];
                 }
 
                 $rowsByLabel[$labelKey]['percent_of_formula'] += $ingredientPercentOfFormula * (((float) $entry->concentration_percent) / 100);
+                $rowsByLabel[$labelKey]['threshold_percent'] = min(
+                    (float) $rowsByLabel[$labelKey]['threshold_percent'],
+                    $thresholdPercent,
+                );
                 $rowsByLabel[$labelKey]['source_ingredients'][] = $context['ingredient_name'];
                 $rowsByLabel[$labelKey]['source_is_user_owned'][] = $context['is_user_owned'];
             }
         }
 
         $rows = array_values(array_map(
-            function (array $row) use ($ingredientLabelKeys, $thresholdPercent): array {
+            function (array $row) use ($ingredientLabelKeys): array {
                 $percentOfFormula = round((float) $row['percent_of_formula'], 5);
-                $suppressedByExistingLabel = $percentOfFormula >= $thresholdPercent
+                $thresholdPercent = (float) $row['threshold_percent'];
+                $thresholdOperator = (string) $row['threshold_operator'];
+                $exceedsThreshold = $this->passesDeclarationThreshold($percentOfFormula, $thresholdPercent, $thresholdOperator);
+                $suppressedByExistingLabel = $exceedsThreshold
                     && in_array($this->normalizeLabel($row['label']), $ingredientLabelKeys, true);
-                $includedInInci = $percentOfFormula >= $thresholdPercent && ! $suppressedByExistingLabel;
+                $includedInInci = $exceedsThreshold && ! $suppressedByExistingLabel;
 
                 $sourceIngredients = array_values(array_unique(array_filter(
                     $row['source_ingredients'],
@@ -1023,19 +1313,17 @@ class InciGenerationService
                     'label' => $row['label'],
                     'percent_of_formula' => $percentOfFormula,
                     'threshold_percent' => $thresholdPercent,
-                    'exceeds_threshold' => $percentOfFormula >= $thresholdPercent,
+                    'exceeds_threshold' => $exceedsThreshold,
                     'included_in_inci' => $includedInInci,
                     'suppressed_by_existing_label' => $suppressedByExistingLabel,
                     'status_label' => $this->declarationStatusLabel(
-                        $percentOfFormula,
-                        $thresholdPercent,
+                        $exceedsThreshold,
                         $suppressedByExistingLabel,
                     ),
                     'source_ingredients' => $sourceIngredients,
                     'source_is_user_owned' => $sourceIsUserOwned,
                     'notes' => $this->declarationNotes(
-                        $percentOfFormula,
-                        $thresholdPercent,
+                        $exceedsThreshold,
                         $suppressedByExistingLabel,
                     ),
                 ];
@@ -1073,7 +1361,7 @@ class InciGenerationService
         array $context,
         array $payload,
         float $formulaWeight,
-        float $thresholdPercent,
+        array $declarationRuleState,
     ): array {
         $ingredient = $context['ingredient'];
         $ingredientName = $context['ingredient_name'] !== '' ? $context['ingredient_name'] : 'Unnamed ingredient';
@@ -1126,7 +1414,7 @@ class InciGenerationService
                 $context,
                 $label,
                 $formulaWeight,
-                $thresholdPercent,
+                $declarationRuleState,
             );
 
             return [
@@ -1206,7 +1494,7 @@ class InciGenerationService
         array $context,
         string $defaultLabel,
         float $formulaWeight,
-        float $thresholdPercent,
+        array $declarationRuleState,
     ): ?string {
         $ingredient = $context['ingredient'];
 
@@ -1221,7 +1509,13 @@ class InciGenerationService
         $ingredientPercentOfFormula = ($context['weight'] / $formulaWeight) * 100;
 
         foreach ($ingredient->allergenEntries->sortBy(fn ($entry) => $entry->allergen?->inci_name) as $entry) {
-            $label = $this->normalizePrintedLabel($entry->allergen?->inci_name);
+            $rule = $this->declarationRuleForEntry($entry, $declarationRuleState);
+
+            if (($declarationRuleState['uses_regime_rules'] ?? false) && $rule === null) {
+                continue;
+            }
+
+            $label = $this->declarationLabelForEntry($entry, $rule);
             $concentrationPercent = (float) $entry->concentration_percent;
 
             if (
@@ -1233,8 +1527,10 @@ class InciGenerationService
             }
 
             $declarationPercentOfFormula = $ingredientPercentOfFormula * ($concentrationPercent / 100);
+            $thresholdPercent = (float) ($rule['threshold_percent'] ?? $declarationRuleState['default_threshold_percent']);
+            $thresholdOperator = (string) ($rule['threshold_operator'] ?? 'greater_than_or_equal');
 
-            if ($declarationPercentOfFormula < $thresholdPercent) {
+            if (! $this->passesDeclarationThreshold($declarationPercentOfFormula, $thresholdPercent, $thresholdOperator)) {
                 continue;
             }
 
@@ -1390,9 +1686,9 @@ class InciGenerationService
         return max(0.0, min(0.99999, $superfatPercentage / 100));
     }
 
-    private function declarationStatusLabel(float $percentOfFormula, float $thresholdPercent, bool $suppressedByExistingLabel): string
+    private function declarationStatusLabel(bool $exceedsThreshold, bool $suppressedByExistingLabel): string
     {
-        if ($percentOfFormula < $thresholdPercent) {
+        if (! $exceedsThreshold) {
             return 'Below threshold';
         }
 
@@ -1401,9 +1697,9 @@ class InciGenerationService
             : 'Added to INCI';
     }
 
-    private function declarationNotes(float $percentOfFormula, float $thresholdPercent, bool $suppressedByExistingLabel): ?string
+    private function declarationNotes(bool $exceedsThreshold, bool $suppressedByExistingLabel): ?string
     {
-        if ($percentOfFormula < $thresholdPercent) {
+        if (! $exceedsThreshold) {
             return 'Present in the formula but currently below the declaration threshold.';
         }
 
@@ -1460,31 +1756,60 @@ class InciGenerationService
         return array_values(array_unique($warnings));
     }
 
-    /**
-     * @param  array<string, mixed>  $row
-     * @param  array<string, mixed>  $payload
-     */
-    private function rowWeight(array $row, array $payload): float
-    {
-        $explicitWeight = (float) ($row['weight'] ?? 0);
-
-        if ($explicitWeight > 0) {
-            return $explicitWeight;
-        }
-
-        $oilWeight = (float) ($payload['oil_weight'] ?? 0);
-        $percentage = (float) ($row['percentage'] ?? 0);
-
-        if ($oilWeight <= 0 || $percentage <= 0) {
-            return 0;
-        }
-
-        return $oilWeight * ($percentage / 100);
-    }
-
     private function thresholdPercent(string $exposureMode): float
     {
         return $exposureMode === 'leave_on' ? 0.001 : 0.01;
+    }
+
+    private function ruleThresholdPercent(RegulatoryRegimeAllergen $rule, string $exposureMode): float
+    {
+        $threshold = $exposureMode === 'leave_on'
+            ? $rule->leave_on_threshold_percent
+            : $rule->rinse_off_threshold_percent;
+
+        return is_numeric($threshold)
+            ? max(0.0, (float) $threshold)
+            : $this->thresholdPercent($exposureMode);
+    }
+
+    /**
+     * @param  array{
+     *     uses_regime_rules: bool,
+     *     default_threshold_percent: float,
+     *     rules_by_allergen_id: array<int, array{label: string, threshold_percent: float, threshold_operator: string}>,
+     *     regime_code: string,
+     *     regime_label: string
+     * }  $declarationRuleState
+     * @return array{label: string, threshold_percent: float, threshold_operator: string}|null
+     */
+    private function declarationRuleForEntry(IngredientAllergenEntry $entry, array $declarationRuleState): ?array
+    {
+        $allergenId = (int) $entry->allergen_id;
+
+        if ($allergenId <= 0) {
+            return null;
+        }
+
+        return $declarationRuleState['rules_by_allergen_id'][$allergenId] ?? null;
+    }
+
+    /**
+     * @param  array{label: string, threshold_percent: float, threshold_operator: string}|null  $rule
+     */
+    private function declarationLabelForEntry(IngredientAllergenEntry $entry, ?array $rule): ?string
+    {
+        return $this->normalizePrintedLabel(
+            $rule['label']
+                ?? $entry->allergen?->inci_name,
+        );
+    }
+
+    private function passesDeclarationThreshold(float $percentOfFormula, float $thresholdPercent, string $thresholdOperator): bool
+    {
+        return match ($thresholdOperator) {
+            'greater_than' => $percentOfFormula > $thresholdPercent,
+            default => $percentOfFormula >= $thresholdPercent,
+        };
     }
 
     private function normalizePrintedLabel(?string $value): ?string

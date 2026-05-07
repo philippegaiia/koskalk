@@ -39,7 +39,7 @@ export function draftStateFromDraft(draft, currentState) {
         oilWeight: number(draft.oilWeight ?? currentState.oilWeight),
         manufacturingMode: ['saponify_in_formula', 'blend_only'].includes(draft.manufacturingMode) ? draft.manufacturingMode : currentState.manufacturingMode,
         exposureMode: ['rinse_off', 'leave_on'].includes(draft.exposureMode) ? draft.exposureMode : currentState.exposureMode,
-        regulatoryRegime: ['eu'].includes(draft.regulatoryRegime) ? draft.regulatoryRegime : currentState.regulatoryRegime,
+        regulatoryRegime: typeof draft.regulatoryRegime === 'string' && draft.regulatoryRegime.trim() !== '' ? draft.regulatoryRegime : currentState.regulatoryRegime,
         editMode: draft.editMode === 'weight' ? 'weight' : 'percentage',
         lyeType: ['naoh', 'koh', 'dual'].includes(draft.lyeType) ? draft.lyeType : currentState.lyeType,
         kohPurity: number(draft.kohPurity ?? currentState.kohPurity),
@@ -47,6 +47,10 @@ export function draftStateFromDraft(draft, currentState) {
         waterMode: ['percent_of_oils', 'lye_ratio', 'lye_concentration'].includes(draft.waterMode) ? draft.waterMode : currentState.waterMode,
         waterValue: number(draft.waterValue ?? currentState.waterValue),
         superfat: number(draft.superfat ?? currentState.superfat),
+        finalIngredientList: draft.finalIngredientList ?? currentState.finalIngredientList ?? '',
+        finalIngredientListBasisHash: draft.finalIngredientListBasisHash ?? currentState.finalIngredientListBasisHash ?? '',
+        finalPlainIngredientList: draft.finalPlainIngredientList ?? currentState.finalPlainIngredientList ?? '',
+        finalPlainIngredientListBasisHash: draft.finalPlainIngredientListBasisHash ?? currentState.finalPlainIngredientListBasisHash ?? '',
         phaseOrder,
         phaseItems: phaseItemsFromDraft(draft, phaseOrder),
         packagingPlanRows: Array.isArray(draft.packagingItems)
@@ -80,6 +84,7 @@ export function snapshotStateFromSnapshot(snapshot, currentState, options = {}) 
         ...draftStateFromDraft(snapshot.draft, currentState),
         backendCalculation: snapshot.calculation ?? null,
         backendLabeling: snapshot.labeling ?? null,
+        backendRestrictions: snapshot.restrictions ?? null,
         inciCopyMessage: '',
     };
 

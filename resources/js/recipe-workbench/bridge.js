@@ -12,17 +12,20 @@ export async function refreshCalculationPreview(workbench) {
         if (response?.ok) {
             workbench.backendCalculation = response.calculation ?? null;
             workbench.backendLabeling = response.labeling ?? null;
+            workbench.backendRestrictions = response.restrictions ?? null;
             workbench.syncIngredientListVariantSelection();
             workbench.inciCopyMessage = '';
             workbench.calculationPreviewMessage = '';
         } else {
             workbench.backendCalculation = null;
             workbench.backendLabeling = null;
+            workbench.backendRestrictions = null;
             workbench.calculationPreviewMessage = response?.message ?? 'The live calculation preview is not available for these inputs.';
         }
     } catch (error) {
         workbench.backendCalculation = null;
         workbench.backendLabeling = null;
+        workbench.backendRestrictions = null;
         workbench.calculationPreviewMessage = 'The live calculation preview is not available for these inputs.';
     } finally {
         workbench.isPreviewingCalculation = false;
@@ -41,11 +44,13 @@ export async function refreshLabelingPreview(workbench) {
 
         if (response?.ok) {
             workbench.backendLabeling = response.labeling ?? null;
+            workbench.backendRestrictions = response.restrictions ?? null;
             workbench.syncIngredientListVariantSelection();
             workbench.inciCopyMessage = '';
         }
     } catch (error) {
         workbench.backendLabeling = null;
+        workbench.backendRestrictions = null;
     } finally {
         workbench.labelingPreviewTimer = null;
     }

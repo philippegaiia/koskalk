@@ -10,7 +10,7 @@
         default => 'Batch production sheet',
     };
     $modeDescription = match (true) {
-        $isCostingMode => 'Costs used for the current official recipe.',
+        $isCostingMode => 'Costs used for the current reference formula.',
         $isTechnicalMode => 'Formula, labeling, and declaration details for review.',
         default => 'Working document for making the batch.',
     };
@@ -67,9 +67,9 @@
             <header class="border-b-2 border-slate-950 pb-3">
                 <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_16rem]">
                     <div>
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">{{ $modeTitle }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ $modeTitle }}</p>
                         <h1 class="mt-1 text-2xl font-semibold tracking-[-0.02em] text-slate-950">{{ $recipe->name }}</h1>
-                        <p class="mt-1 text-xs text-slate-600">Official saved recipe</p>
+                        <p class="mt-1 text-xs text-slate-600">Reference formula</p>
                     </div>
                     <dl class="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-2 gap-y-1 text-xs text-slate-700 sm:text-right">
                         <dt class="font-semibold text-slate-500 sm:text-left">Saved</dt>
@@ -183,7 +183,7 @@
 
                             <table class="mt-2 w-full border-collapse text-sm">
                                 <thead>
-                                    <tr class="border border-slate-300 bg-slate-100 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                    <tr class="border border-slate-300 bg-slate-100 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
                                         <th class="px-2 py-1.5">Ingredient</th>
                                         @if ($isTechnicalMode)
                                             <th class="px-2 py-1.5">INCI</th>
@@ -224,12 +224,31 @@
             @if ($isTechnicalMode)
                 <section class="mt-4 break-inside-avoid">
                     @php($listVariants = $snapshot['labeling']['list_variants'] ?? [])
+                    @php($printIngredientListText = $snapshot['labeling']['print_ingredient_list_text'] ?? ($snapshot['labeling']['final_label_text'] ?? ''))
+                    @php($printPlainIngredientListText = $snapshot['labeling']['print_plain_ingredient_list_text'] ?? ($snapshot['labeling']['plain_language_list']['final_label_text'] ?? ''))
                     <h2 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ingredient list preview</h2>
+                    <div class="mt-2 grid gap-3 lg:grid-cols-2">
+                        <div class="border border-slate-300 px-3 py-2">
+                            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Final ingredient list</p>
+                            <p class="mt-1 text-sm leading-6 font-medium text-slate-950">{{ $printIngredientListText ?: 'No ingredient list yet.' }}</p>
+                            @if (($snapshot['labeling']['final_ingredient_list']['is_outdated'] ?? false) === true)
+                                <p class="mt-1 text-xs font-medium text-slate-700">Formula changed after this list was saved.</p>
+                            @endif
+                        </div>
+                        <div class="border border-slate-300 px-3 py-2">
+                            <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">Plain-language list</p>
+                            <p class="mt-1 text-sm leading-6 font-medium text-slate-950">{{ $printPlainIngredientListText ?: 'No plain-language list yet.' }}</p>
+                            @if (($snapshot['labeling']['plain_language_list']['is_outdated'] ?? false) === true)
+                                <p class="mt-1 text-xs font-medium text-slate-700">Formula changed after this list was saved.</p>
+                            @endif
+                        </div>
+                    </div>
+
                     @if ($listVariants !== [])
-                        <div class="mt-2 grid gap-3 lg:grid-cols-2">
+                        <div class="mt-3 grid gap-3 lg:grid-cols-2">
                             @foreach ($listVariants as $variant)
                                 <div class="border border-slate-300 px-3 py-2">
-                                    <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">{{ $variant['label'] }}</p>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{{ $variant['label'] }}</p>
                                     <p class="mt-1 text-sm leading-6 font-medium text-slate-950">{{ $variant['final_label_text'] ?: 'No generated ingredient list yet.' }}</p>
                                 </div>
                             @endforeach
@@ -302,7 +321,7 @@
                         <h2 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ingredient costs</h2>
                         <table class="mt-2 w-full border-collapse text-sm">
                             <thead>
-                                <tr class="border border-slate-300 bg-slate-100 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                <tr class="border border-slate-300 bg-slate-100 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
                                     <th class="px-2 py-1.5">Phase</th>
                                     <th class="px-2 py-1.5">Ingredient</th>
                                     <th class="px-2 py-1.5">Weight</th>
@@ -329,7 +348,7 @@
                         @if ($costingPackagingRows !== [])
                             <table class="mt-2 w-full border-collapse text-sm">
                                 <thead>
-                                    <tr class="border border-slate-300 bg-slate-100 text-left text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                    <tr class="border border-slate-300 bg-slate-100 text-left text-xs font-semibold uppercase tracking-[0.12em] text-slate-600">
                                         <th class="px-2 py-1.5">Packaging item</th>
                                         <th class="px-2 py-1.5">Unit cost</th>
                                         <th class="px-2 py-1.5">Components/unit</th>
@@ -357,7 +376,7 @@
                     </section>
                 @else
                     <section class="mt-4 border border-slate-300 px-3 py-2 text-sm text-slate-700">
-                        No costing is saved for this official recipe yet.
+                        No costing is saved for this reference formula yet.
                     </section>
                 @endif
             @endif

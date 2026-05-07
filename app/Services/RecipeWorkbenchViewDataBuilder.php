@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
+use App\Models\RegulatoryRegime;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 class RecipeWorkbenchViewDataBuilder
 {
@@ -37,6 +39,7 @@ class RecipeWorkbenchViewDataBuilder
             'phases' => $this->recipeWorkbenchService->phaseBlueprints($productFamily),
             'ingredients' => $this->recipeWorkbenchIngredientCatalogBuilder->build($user, $productFamily),
             'ifraProductCategories' => $this->recipeWorkbenchIfraOptionsBuilder->categories($productFamily),
+            'regulatoryRegimes' => $this->regulatoryRegimes(),
             'defaultIfraProductCategoryId' => $productFamily->slug === 'cosmetic'
                 ? null
                 : ($productType?->default_ifra_product_category_id
@@ -62,6 +65,59 @@ class RecipeWorkbenchViewDataBuilder
             ])
             ->sort()
             ->all();
+    }
+
+    /**
+     * @return array<int, array{code: string, name: string, version_label: string|null, status: string, allergen_rule_count: int, substance_rule_count: int}>
+     */
+    private function regulatoryRegimes(): array
+    {
+        $today = now()->toDateString();
+        $regimes = RegulatoryRegime::query()
+            ->whereIn('status', ['active', 'preview'])
+            ->withCount([
+                'allergenRules as allergen_rule_count' => fn (Builder $query): Builder => $this->activeRuleCountQuery($query, $today),
+                'substanceRules as substance_rule_count' => fn (Builder $query): Builder => $this->activeRuleCountQuery($query, $today),
+            ])
+            ->orderByDesc('is_default')
+            ->orderBy('market_code')
+            ->orderBy('name')
+            ->get(['id', 'code', 'name', 'version_label', 'status'])
+            ->map(fn (RegulatoryRegime $regime): array => [
+                'code' => $regime->code,
+                'name' => $regime->name,
+                'version_label' => $regime->version_label,
+                'status' => $regime->status,
+                'allergen_rule_count' => (int) $regime->allergen_rule_count,
+                'substance_rule_count' => (int) $regime->substance_rule_count,
+            ])
+            ->values()
+            ->all();
+
+        return $regimes !== []
+            ? $regimes
+            : [[
+                'code' => 'eu',
+                'name' => 'EU regime',
+                'version_label' => null,
+                'status' => 'active',
+                'allergen_rule_count' => 0,
+                'substance_rule_count' => 0,
+            ]];
+    }
+
+    private function activeRuleCountQuery(Builder $query, string $today): Builder
+    {
+        return $query
+            ->where('is_active', true)
+            ->where(function (Builder $query) use ($today): void {
+                $query->whereNull('effective_from')
+                    ->orWhereDate('effective_from', '<=', $today);
+            })
+            ->where(function (Builder $query) use ($today): void {
+                $query->whereNull('effective_until')
+                    ->orWhereDate('effective_until', '>=', $today);
+            });
     }
 
     /**

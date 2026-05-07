@@ -13,6 +13,37 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+it('uses Soapkraft design tokens for restriction status styling', function () {
+    $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
+    $restrictionsPreview = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/restrictions-preview.blade.php'));
+
+    expect($presentationSection)->toContain('--color-danger-soft')
+        ->and($presentationSection)->toContain('--color-warning-soft')
+        ->and($presentationSection)->toContain('--color-success-soft')
+        ->and($presentationSection)->not->toContain('bg-red-50')
+        ->and($presentationSection)->not->toContain('bg-amber-50')
+        ->and($presentationSection)->not->toContain('bg-emerald-50')
+        ->and($restrictionsPreview)->toContain('--color-warning-soft')
+        ->and($restrictionsPreview)->not->toContain('bg-amber-50');
+});
+
+it('shows the selected regulatory regime coverage below the selector', function () {
+    $versionSection = file_get_contents(resource_path('js/recipe-workbench/sections/version-section.js'));
+    $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+
+    expect($versionSection)->toContain('regulatoryRegimeCoverageLabel')
+        ->and($formulaSettings)->toContain('x-text="regulatoryRegimeCoverageLabel"');
+});
+
+it('names the selected regulatory regime record separately from the selected regime code', function () {
+    $versionSection = file_get_contents(resource_path('js/recipe-workbench/sections/version-section.js'));
+    $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
+
+    expect($versionSection)->toContain('get selectedRegulatoryRegimeRecord()')
+        ->and($versionSection)->not->toContain('get selectedRegulatoryRegime()')
+        ->and($presentationSection)->toContain('selectedRegulatoryRegimeRecord?.name');
+});
+
 it('keeps the workbench draft payload intact when building a snapshot', function () {
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -165,6 +196,50 @@ it('returns the saved version through the workbench payload and snapshot contrac
         ->and($payload['phaseItems']['fragrance'])->toBe([])
         ->and($snapshot['calculation'])->not->toBeNull()
         ->and($snapshot['labeling'])->toHaveKeys(['default_variant_key', 'final_label_text', 'list_variants']);
+});
+
+it('persists editable final ingredient lists and reports when their formula basis is outdated', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchCarrierOil([
+        'display_name' => 'Olive Oil',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'soap_inci_naoh_name' => 'SODIUM OLIVATE',
+        'soap_inci_koh_name' => 'POTASSIUM OLIVATE',
+    ]);
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->saveDraft($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
+        'name' => 'Custom Ingredient Lists',
+        'final_ingredient_list' => 'SODIUM OLIVATE, AQUA, GLYCERIN',
+        'final_ingredient_list_basis_hash' => 'old-legal-basis',
+        'final_plain_ingredient_list' => 'Saponified oils of olive oil, water, glycerin',
+        'final_plain_ingredient_list_basis_hash' => 'old-plain-basis',
+    ]));
+
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $payload = $service->draftPayload($recipe);
+    $snapshot = $service->draftSnapshot($recipe);
+    $freshVersion = $draftVersion->fresh();
+
+    expect($freshVersion->final_ingredient_list)->toBe('SODIUM OLIVATE, AQUA, GLYCERIN')
+        ->and($freshVersion->final_plain_ingredient_list)->toBe('Saponified oils of olive oil, water, glycerin')
+        ->and($payload['finalIngredientList'])->toBe('SODIUM OLIVATE, AQUA, GLYCERIN')
+        ->and($payload['finalPlainIngredientList'])->toBe('Saponified oils of olive oil, water, glycerin')
+        ->and($snapshot['labeling']['final_ingredient_list']['text'])->toBe('SODIUM OLIVATE, AQUA, GLYCERIN')
+        ->and($snapshot['labeling']['final_ingredient_list']['is_outdated'])->toBeTrue()
+        ->and($snapshot['labeling']['plain_language_list']['final_text'])->toBe('Saponified oils of olive oil, water, glycerin')
+        ->and($snapshot['labeling']['plain_language_list']['is_outdated'])->toBeTrue()
+        ->and($snapshot['labeling']['print_ingredient_list_text'])->toBe('SODIUM OLIVATE, AQUA, GLYCERIN')
+        ->and($snapshot['labeling']['print_plain_ingredient_list_text'])->toBe('Saponified oils of olive oil, water, glycerin');
 });
 
 it('falls back to the latest saved version when no working draft exists', function () {

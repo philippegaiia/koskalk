@@ -21,7 +21,7 @@ it('renders the current saved recipe page with print actions', function () {
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('Official saved recipe')
+        ->assertSee('Reference formula')
         ->assertSee('Read-only reference formula')
         ->assertDontSee('v'.$publishedVersion->version_number)
         ->assertSee('Edit in draft')
@@ -37,7 +37,7 @@ it('renders the current saved recipe page with print actions', function () {
         ->assertDontSee('1000.00');
 });
 
-it('renders the editable draft workbench with an official recipe confirmation modal', function () {
+it('renders the editable draft workbench with an reference formula confirmation modal', function () {
     [$user, $recipe] = createSavedRecipeVersion();
 
     $this->actingAs($user)
@@ -45,9 +45,9 @@ it('renders the editable draft workbench with an official recipe confirmation mo
         ->assertSuccessful()
         ->assertSee('Editable draft')
         ->assertSee('Save draft')
-        ->assertSee('Save as official recipe')
-        ->assertSee('Update official recipe?')
-        ->assertSee('This will replace the official saved recipe with your current draft.')
+        ->assertSee('Save as reference formula')
+        ->assertSee('Update reference formula?')
+        ->assertSee('This will replace the reference formula with your current draft.')
         ->assertDontSee('Save recipe');
 });
 
@@ -248,7 +248,7 @@ it('keeps the legacy saved-version url working by showing the current saved reci
     $this->actingAs($user)
         ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $publishedVersion->id]))
         ->assertSuccessful()
-        ->assertSee('Official saved recipe')
+        ->assertSee('Reference formula')
         ->assertSee('Published Formula');
 });
 

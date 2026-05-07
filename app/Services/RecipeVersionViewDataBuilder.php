@@ -323,7 +323,7 @@ class RecipeVersionViewDataBuilder
     {
         $rows = [
             [
-                'label' => 'Official recipe',
+                'label' => 'Reference formula',
                 'value' => $version->saved_at !== null ? 'Current saved recipe' : 'Not saved yet',
             ],
             [

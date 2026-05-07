@@ -26,6 +26,15 @@
 	 <button type="button" role="radio" :aria-checked="exposureMode === 'rinse_off'" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">Rinse-off</button>
 	 <button type="button" role="radio" :aria-checked="exposureMode === 'leave_on'" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">Leave-on</button>
 	 </div>
+	 <div class="mt-4 border-t border-[var(--color-line)] pt-4">
+	 <p id="setting-regime" class="sk-eyebrow">Label regime</p>
+	 <select aria-labelledby="setting-regime" x-model="regulatoryRegime" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">
+	 <template x-for="regime in regulatoryRegimes" :key="regime.code">
+	 <option :value="regime.code" x-text="regime.version_label ? `${regime.name} - ${regime.version_label}` : regime.name"></option>
+	 </template>
+	 </select>
+	 <p class="mt-2 text-xs text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></p>
+	 </div>
 	 </div>
 	 <div class="sk-inset p-4">
 	 <p id="setting-ifra" class="sk-eyebrow">IFRA context</p>
@@ -108,12 +117,21 @@
  </div>
  <div class="sk-inset p-4">
  <p id="setting-exposure-soap" class="sk-eyebrow">Exposure</p>
- <div role="radiogroup" aria-label="Exposure type" class="mt-3 flex flex-wrap gap-2">
- <button type="button" role="radio" :aria-checked="exposureMode === 'rinse_off'" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">Rinse-off</button>
- <button type="button" role="radio" :aria-checked="exposureMode === 'leave_on'" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">Leave-on</button>
- </div>
- <div class="mt-4 border-t border-[var(--color-line)] pt-4">
- <p id="setting-ifra-soap" class="sk-eyebrow">IFRA context</p>
+<div role="radiogroup" aria-label="Exposure type" class="mt-3 flex flex-wrap gap-2">
+<button type="button" role="radio" :aria-checked="exposureMode === 'rinse_off'" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">Rinse-off</button>
+<button type="button" role="radio" :aria-checked="exposureMode === 'leave_on'" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">Leave-on</button>
+</div>
+<div class="mt-4 border-t border-[var(--color-line)] pt-4">
+<p id="setting-regime-soap" class="sk-eyebrow">Label regime</p>
+<select aria-labelledby="setting-regime-soap" x-model="regulatoryRegime" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">
+<template x-for="regime in regulatoryRegimes" :key="regime.code">
+<option :value="regime.code" x-text="regime.version_label ? `${regime.name} - ${regime.version_label}` : regime.name"></option>
+</template>
+</select>
+<p class="mt-2 text-xs text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></p>
+</div>
+<div class="mt-4 border-t border-[var(--color-line)] pt-4">
+<p id="setting-ifra-soap" class="sk-eyebrow">IFRA context</p>
  <template x-if="$data.ifraProductCategories?.length">
  <select aria-labelledby="setting-ifra-soap" :value="`${selectedIfraProductCategoryId ?? ''}`" @change="selectedIfraProductCategoryId = $event.target.value" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">
  <option value="">No IFRA context</option>

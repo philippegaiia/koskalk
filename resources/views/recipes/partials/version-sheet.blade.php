@@ -135,6 +135,8 @@
     @if ($showDetails)
         <section class="sk-card p-5">
             @php($listVariants = $snapshot['labeling']['list_variants'] ?? [])
+            @php($printIngredientListText = $snapshot['labeling']['print_ingredient_list_text'] ?? ($snapshot['labeling']['final_label_text'] ?? ''))
+            @php($printPlainIngredientListText = $snapshot['labeling']['print_plain_ingredient_list_text'] ?? ($snapshot['labeling']['plain_language_list']['final_label_text'] ?? ''))
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <p class="sk-eyebrow">Ingredient list preview</p>
@@ -152,6 +154,28 @@
                     @endforeach
                 </div>
             @endif
+
+            <div class="mt-4 grid gap-4 xl:grid-cols-2">
+                <div class="sk-inset px-4 py-3">
+                    <p class="sk-eyebrow">Final ingredient list</p>
+                    <p class="mt-2 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
+                        {{ $printIngredientListText ?: 'No ingredient list yet.' }}
+                    </p>
+                    @if (($snapshot['labeling']['final_ingredient_list']['is_outdated'] ?? false) === true)
+                        <p class="mt-2 text-xs font-medium text-[var(--color-warning-strong)]">Formula changed after this list was saved.</p>
+                    @endif
+                </div>
+
+                <div class="sk-inset px-4 py-3">
+                    <p class="sk-eyebrow">Plain-language list</p>
+                    <p class="mt-2 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
+                        {{ $printPlainIngredientListText ?: 'No plain-language list yet.' }}
+                    </p>
+                    @if (($snapshot['labeling']['plain_language_list']['is_outdated'] ?? false) === true)
+                        <p class="mt-2 text-xs font-medium text-[var(--color-warning-strong)]">Formula changed after this list was saved.</p>
+                    @endif
+                </div>
+            </div>
 
             @if ($listVariants !== [])
                 <div class="mt-4 grid gap-4 xl:grid-cols-2">

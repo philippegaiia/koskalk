@@ -29,7 +29,7 @@ Rules that apply to every workbench Blade partial:
 - **Form labels**: Every input and select needs `aria-label` or `aria-labelledby`. For repeated rows inside Alpine `x-for` loops, use `:aria-label` with context (e.g., `'Percentage for ' + row.name`).
 - **Tab navigation**: The main workbench tabs (Formula, Packaging, Costing, Output, Instructions) and any sub-tabs (Qualities, Advanced) must use `role="tablist"`, `role="tab"`, `role="tabpanel"`, and `aria-selected`.
 - **Toggle pill groups**: Lye type, water mode, exposure, entry mode, batch weight units, KOH purity, costing units — all behave as radio groups and must use `role="radiogroup"` on the container and `role="radio" :aria-checked` on each button.
-- **Modals**: The save-as-official modal and packaging catalog modal must have `role="dialog" aria-modal="true" aria-labelledby`.
+- **Modals**: The save-as-reference modal and packaging catalog modal must have `role="dialog" aria-modal="true" aria-labelledby`.
 - **Inspector popovers**: The info ("i") buttons on ingredient rows must have `aria-label="Show ingredient details"`.
 - **Sections**: Each major section (reaction core, post-reaction, formula settings, ingredient browser) needs `aria-labelledby` pointing to its heading.
 - **Dynamic messages**: Save confirmations and status counts use `role="status"`. Imbalance warnings and error banners use `role="alert"`.

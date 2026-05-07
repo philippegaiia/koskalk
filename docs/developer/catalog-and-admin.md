@@ -1,6 +1,6 @@
 # Catalog And Admin
 
-Last updated: 2026-03-23
+Last updated: 2026-05-07
 
 ## Catalog philosophy
 
@@ -23,7 +23,7 @@ Current categories:
 - preservative
 - additive
 - alkali
-- liquid
+- solvent
 
 Important business rules:
 
@@ -65,6 +65,11 @@ Current Filament resources:
 - `SAP Profiles`
 - `Allergens`
 - `Ingredient Allergen Entries`
+- `Regulatory Regimes`
+- `Regime Allergen Rules`
+- `Substances`
+- `Ingredient Substance Entries`
+- `Regime Substance Rules`
 - `IFRA Product Categories`
 - `IFRA Certificates`
 
@@ -75,6 +80,11 @@ Resource responsibilities:
 - `SAP Profiles`: KOH SAP entry, derived NaOH display, and the fixed carrier-oil fatty-acid set
 - `Allergens`: permanent declarable-allergen reference catalog
 - `Ingredient Allergen Entries`: per-ingredient-version allergen percentages for aromatic materials
+- `Regulatory Regimes`: selectable market rule sets used by formula INCI allergen screening
+- `Regime Allergen Rules`: per-regime allergen mappings, thresholds, labels, and effective/source metadata
+- `Substances`: neutral platform catalog for tracked constituents, whole ingredients, and groups
+- `Ingredient Substance Entries`: factual ingredient composition rows for tracked substances
+- `Regime Substance Rules`: per-regime prohibited, restricted, or watch-only substance rules
 - `IFRA Product Categories`: the product contexts recipes are evaluated against
 - `IFRA Certificates`: versioned source documents and per-category limits for aromatic materials
 
@@ -84,10 +94,17 @@ The aromatic compliance model is now split intentionally:
 
 - `allergen_catalog` stores the permanent allergen reference list
 - `ingredient_allergen_entries` ties allergen percentages to a specific ingredient version
+- `regulatory_regimes` stores selectable market regimes such as EU, Canada, or US preview
+- `regulatory_regime_allergens` stores which allergens are declared by each regime and at what thresholds
+- `substance_catalog` stores neutral tracked substances. Catalog membership does not imply a legal restriction.
+- `ingredient_substance_entries` stores factual concentration data for a substance inside one ingredient.
+- `regulatory_regime_substance_rules` stores the market meaning for each substance: prohibited, restricted, or watch-only.
 - `ifra_product_categories` normalizes the product classes used during compliance
 - `product_family_ifra_categories` lets product families advertise which IFRA categories they support
 - `recipe_versions.ifra_product_category_id` stores the product context a formula will eventually be checked against
 - `ifra_certificates` and `ifra_certificate_limits` store the versioned IFRA document data used during compliance
+
+Allergen declaration and substance compliance are separate engines. A substance may optionally link to an allergen through `allergen_id`, but most substances are not allergens. The link exists for overlap cases such as Linalool; it is not required for heavy metals, prohibited colorants, preservatives, or other tracked substances.
 
 ## Admin access
 

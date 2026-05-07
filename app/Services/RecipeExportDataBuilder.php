@@ -93,10 +93,11 @@ class RecipeExportDataBuilder
         $labeling = is_array($snapshot['labeling'] ?? null) ? $snapshot['labeling'] : [];
 
         return collect([
-            'Ingredient list' => $labeling['ingredient_list'] ?? null,
+            'Ingredient list' => $labeling['print_ingredient_list_text'] ?? $labeling['final_label_text'] ?? null,
+            'Plain-language list' => $labeling['print_plain_ingredient_list_text'] ?? data_get($labeling, 'plain_language_list.final_label_text'),
             'Contains' => $labeling['contains'] ?? null,
             'Allergens' => $labeling['allergens'] ?? null,
-            'Warnings' => $labeling['warnings'] ?? null,
+            'Warnings' => is_array($labeling['warnings'] ?? null) ? implode('; ', $labeling['warnings']) : ($labeling['warnings'] ?? null),
         ])
             ->filter(fn (mixed $value): bool => filled($value))
             ->map(fn (mixed $value, string $label): array => [

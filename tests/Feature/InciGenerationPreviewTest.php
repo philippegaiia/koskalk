@@ -8,6 +8,8 @@ use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientComponent;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
+use App\Models\RegulatoryRegime;
+use App\Models\RegulatoryRegimeAllergen;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -83,6 +85,71 @@ it('returns a generated ingredient list and declaration details in the live prev
             'LINALOOL',
         )
         ->and($incorporatedVariant['final_labels'])->not->toContain('SODIUM OLIVATE', 'GLYCERIN');
+});
+
+it('generates a plain-language soap ingredient list starting with saponified oils', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $coconutOil = makeSoapOilIngredient([
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA OIL',
+        'soap_inci_naoh_name' => 'SODIUM COCOATE',
+        'soap_inci_koh_name' => 'POTASSIUM COCOATE',
+    ]);
+    $sheaButter = makeSoapOilIngredient([
+        'display_name' => 'Shea Butter',
+        'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+        'soap_inci_naoh_name' => 'SODIUM SHEA BUTTERATE',
+        'soap_inci_koh_name' => 'POTASSIUM SHEA BUTTERATE',
+    ]);
+    $greenClay = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Green Clay',
+        'inci_name' => 'ILLITE',
+        'is_active' => true,
+    ]);
+    $lavenderOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Lavender Essential Oil',
+        'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+        'is_active' => true,
+    ]);
+
+    $payload = soapDraftPayloadWithFragrance($coconutOil, $lavenderOil);
+    $payload['phase_items']['saponified_oils'] = [
+        [
+            'ingredient_id' => $coconutOil->id,
+            'percentage' => 70,
+            'weight' => 700,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $sheaButter->id,
+            'percentage' => 30,
+            'weight' => 300,
+            'note' => null,
+        ],
+    ];
+    $payload['phase_items']['additives'][] = [
+        'ingredient_id' => $greenClay->id,
+        'percentage' => 1,
+        'weight' => 10,
+        'note' => null,
+    ];
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation(
+        $payload,
+        app(RecipeWorkbenchService::class),
+    );
+
+    expect($result['labeling']['plain_language_list']['final_label_text'])
+        ->toBe('Saponified Oils of (Coconut, Shea), Water, Glycerin, Lavender Essential Oil, Green Clay');
 });
 
 it('suppresses duplicate declaration rows when the ingredient list already names the same label', function () {
@@ -252,6 +319,120 @@ it('expands composite aromatics into child inci rows and child-derived declarati
         ->and($declarationRows['LIMONENE']['included_in_inci'])->toBeTrue();
 });
 
+it('screens allergen declarations through the selected regulatory regime mapping', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeSoapOilIngredient();
+    $lavenderOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Lavender Essential Oil',
+        'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+        'is_active' => true,
+    ]);
+
+    $linalool = Allergen::factory()->create([
+        'inci_name' => 'LINALOOL',
+    ]);
+    $geraniol = Allergen::factory()->create([
+        'inci_name' => 'GERANIOL',
+    ]);
+
+    IngredientAllergenEntry::factory()->create([
+        'ingredient_id' => $lavenderOil->id,
+        'allergen_id' => $linalool->id,
+        'concentration_percent' => 90,
+        'source_notes' => null,
+    ]);
+    IngredientAllergenEntry::factory()->create([
+        'ingredient_id' => $lavenderOil->id,
+        'allergen_id' => $geraniol->id,
+        'concentration_percent' => 2,
+        'source_notes' => null,
+    ]);
+
+    $regime = RegulatoryRegime::factory()->create([
+        'code' => 'custom_market',
+        'name' => 'Custom Market',
+        'status' => 'active',
+    ]);
+
+    RegulatoryRegimeAllergen::factory()->create([
+        'regulatory_regime_id' => $regime->id,
+        'allergen_id' => $geraniol->id,
+        'rinse_off_threshold_percent' => 0.01,
+        'leave_on_threshold_percent' => 0.001,
+        'is_active' => true,
+    ]);
+
+    $payload = soapDraftPayloadWithFragrance($oliveOil, $lavenderOil);
+    $payload['regulatory_regime'] = 'custom_market';
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation(
+        $payload,
+        app(RecipeWorkbenchService::class),
+    );
+
+    $declarationRows = collect($result['labeling']['declaration_rows'])->keyBy('label');
+
+    expect($result['ok'])->toBeTrue()
+        ->and($declarationRows->keys()->all())->toBe(['GERANIOL'])
+        ->and($declarationRows['GERANIOL']['included_in_inci'])->toBeTrue()
+        ->and($result['labeling']['final_labels'])->toContain('GERANIOL')
+        ->and($result['labeling']['final_labels'])->not->toContain('LINALOOL');
+});
+
+it('does not fall back to every recorded allergen when the selected regime has no active mappings', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeSoapOilIngredient();
+    $lavenderOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Lavender Essential Oil',
+        'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+        'is_active' => true,
+    ]);
+    $linalool = Allergen::factory()->create([
+        'inci_name' => 'LINALOOL',
+    ]);
+
+    IngredientAllergenEntry::factory()->create([
+        'ingredient_id' => $lavenderOil->id,
+        'allergen_id' => $linalool->id,
+        'concentration_percent' => 90,
+        'source_notes' => null,
+    ]);
+
+    RegulatoryRegime::factory()->create([
+        'code' => 'empty_market',
+        'name' => 'Empty Market',
+        'status' => 'active',
+    ]);
+
+    $payload = soapDraftPayloadWithFragrance($oliveOil, $lavenderOil);
+    $payload['regulatory_regime'] = 'empty_market';
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation(
+        $payload,
+        app(RecipeWorkbenchService::class),
+    );
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['labeling']['declaration_rows'])->toBe([])
+        ->and($result['labeling']['final_labels'])->not->toContain('LINALOOL');
+});
+
 it('batches ingredient graph loading for composite aromatics', function () {
     ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -361,6 +542,71 @@ it('splits each saponified oil into soap and theoretical superfat rows', functio
     expect($ingredientRows['SODIUM OLIVATE']['weight'])->toBe(720.0)
         ->and($ingredientRows['OLEA EUROPAEA FRUIT OIL']['weight'])->toBe(80.0)
         ->and($ingredientRows['SODIUM COCOATE']['weight'])->toBe(180.0)
+        ->and($ingredientRows['COCOS NUCIFERA OIL']['weight'])->toBe(20.0);
+});
+
+it('splits dual lye saponified oils into separate sodium and potassium rows', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeSoapOilIngredient();
+    $coconutOil = makeSoapOilIngredient([
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA OIL',
+        'soap_inci_naoh_name' => 'SODIUM COCOATE',
+        'soap_inci_koh_name' => 'POTASSIUM COCOATE',
+    ], 0.257);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $payload = soapDraftPayloadWithFragrance($oliveOil, Ingredient::factory()->create([
+        'category' => IngredientCategory::FragranceOil,
+        'display_name' => 'Unscented Base',
+        'inci_name' => 'PARFUM',
+        'is_active' => true,
+    ]));
+    $payload['lye_type'] = 'dual';
+    $payload['dual_lye_koh_percentage'] = 40;
+    $payload['superfat'] = 10;
+    $payload['phase_items']['fragrance'] = [];
+    $payload['phase_items']['saponified_oils'] = [
+        [
+            'ingredient_id' => $oliveOil->id,
+            'percentage' => 80,
+            'weight' => 800,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $coconutOil->id,
+            'percentage' => 20,
+            'weight' => 200,
+            'note' => null,
+        ],
+    ];
+
+    $result = $component->previewCalculation(
+        $payload,
+        app(RecipeWorkbenchService::class),
+    );
+
+    $ingredientRows = collect($result['labeling']['ingredient_rows'])->keyBy('label');
+
+    expect($result['labeling']['final_labels'])->toContain(
+        'SODIUM OLIVATE',
+        'POTASSIUM OLIVATE',
+        'SODIUM COCOATE',
+        'POTASSIUM COCOATE',
+    )
+        ->and($ingredientRows)->not->toHaveKey('SODIUM OLIVATE, POTASSIUM OLIVATE')
+        ->and($ingredientRows)->not->toHaveKey('SODIUM COCOATE, POTASSIUM COCOATE')
+        ->and($ingredientRows['SODIUM OLIVATE']['weight'])->toBe(432.0)
+        ->and($ingredientRows['POTASSIUM OLIVATE']['weight'])->toBe(288.0)
+        ->and($ingredientRows['SODIUM COCOATE']['weight'])->toBe(108.0)
+        ->and($ingredientRows['POTASSIUM COCOATE']['weight'])->toBe(72.0)
+        ->and($ingredientRows['OLEA EUROPAEA FRUIT OIL']['weight'])->toBe(80.0)
         ->and($ingredientRows['COCOS NUCIFERA OIL']['weight'])->toBe(20.0);
 });
 

@@ -229,6 +229,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 'ok' => true,
                 'calculation' => $calculation,
                 'labeling' => $recipeWorkbenchService->previewInci($draft, $calculation),
+                'restrictions' => $recipeWorkbenchService->previewRestrictions($draft, $calculation),
             ];
         } catch (InvalidArgumentException $exception) {
             return [
@@ -236,6 +237,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 'message' => $exception->getMessage(),
                 'calculation' => null,
                 'labeling' => null,
+                'restrictions' => null,
             ];
         }
     }
@@ -251,12 +253,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             return [
                 'ok' => true,
                 'labeling' => $recipeWorkbenchService->previewInci($draft),
+                'restrictions' => $recipeWorkbenchService->previewRestrictions($draft),
             ];
         } catch (InvalidArgumentException $exception) {
             return [
                 'ok' => false,
                 'message' => $exception->getMessage(),
                 'labeling' => null,
+                'restrictions' => null,
             ];
         }
     }

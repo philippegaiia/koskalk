@@ -87,6 +87,11 @@ class Ingredient extends Model
         return $this->hasMany(IngredientAllergenEntry::class);
     }
 
+    public function substanceEntries(): HasMany
+    {
+        return $this->hasMany(IngredientSubstanceEntry::class);
+    }
+
     public function functions(): BelongsToMany
     {
         return $this->belongsToMany(IngredientFunction::class, 'ingredient_function_ingredient')

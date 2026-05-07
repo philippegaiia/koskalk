@@ -18,6 +18,8 @@ class DatabaseSeeder extends Seeder
             ProductTypeSeeder::class,
             FattyAcidSeeder::class,
             AllergenCatalogSeeder::class,
+            RegulatoryRegimeSeeder::class,
+            SubstanceSeeder::class,
             IngredientFunctionSeeder::class,
             IfraProductCategorySeeder::class,
             IngredientCatalogSeeder::class,

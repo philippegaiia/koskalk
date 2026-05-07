@@ -27,8 +27,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'manufacturing_mode',
     'exposure_mode',
     'regulatory_regime',
+    'regulatory_regime_id',
     'ifra_product_category_id',
     'notes',
+    'final_ingredient_list',
+    'final_ingredient_list_basis_hash',
+    'final_plain_ingredient_list',
+    'final_plain_ingredient_list_basis_hash',
     'water_settings',
     'calculation_context',
     'saved_at',
@@ -55,6 +60,11 @@ class RecipeVersion extends Model
     public function ifraProductCategory(): BelongsTo
     {
         return $this->belongsTo(IfraProductCategory::class);
+    }
+
+    public function regulatoryRegime(): BelongsTo
+    {
+        return $this->belongsTo(RegulatoryRegime::class);
     }
 
     public function phases(): HasMany

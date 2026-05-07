@@ -6,6 +6,7 @@ use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionPackagingItem;
+use App\Models\RegulatoryRegime;
 
 class RecipeWorkbenchVersionPayloadMapper
 {
@@ -69,9 +70,9 @@ class RecipeWorkbenchVersionPayloadMapper
             'exposureMode' => in_array($version->exposure_mode, ['rinse_off', 'leave_on'], true)
                 ? $version->exposure_mode
                 : 'rinse_off',
-            'regulatoryRegime' => in_array($version->regulatory_regime, ['eu'], true)
-                ? $version->regulatory_regime
-                : 'eu',
+            'regulatoryRegime' => RegulatoryRegime::normalizeCode(
+                $version->regulatoryRegime?->code ?? $version->regulatory_regime,
+            ),
             'editMode' => ($calculationContext['editing_mode'] ?? null) === 'weight' ? 'weight' : 'percentage',
             'lyeType' => in_array($lyeType, ['naoh', 'koh', 'dual'], true)
                 ? $lyeType
@@ -84,6 +85,10 @@ class RecipeWorkbenchVersionPayloadMapper
             'waterValue' => (float) ($waterSettings['value'] ?? 38),
             'superfat' => (float) ($calculationContext['superfat'] ?? 5),
             'selectedIfraProductCategoryId' => $version->ifra_product_category_id,
+            'finalIngredientList' => $version->final_ingredient_list,
+            'finalIngredientListBasisHash' => $version->final_ingredient_list_basis_hash,
+            'finalPlainIngredientList' => $version->final_plain_ingredient_list,
+            'finalPlainIngredientListBasisHash' => $version->final_plain_ingredient_list_basis_hash,
             'phases' => array_values($phases),
             'phaseItems' => $phaseRows,
             'packagingItems' => $version->packagingItems

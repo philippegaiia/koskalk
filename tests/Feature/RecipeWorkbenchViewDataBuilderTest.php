@@ -1,6 +1,10 @@
 <?php
 
 use App\Models\ProductFamily;
+use App\Models\RegulatoryRegime;
+use App\Models\RegulatoryRegimeAllergen;
+use App\Models\RegulatoryRegimeSubstanceRule;
+use App\Models\Substance;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Services\RecipeWorkbenchIfraOptionsBuilder;
@@ -12,6 +16,57 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
+
+it('includes active allergen and substance rule counts for each regime', function () {
+    $productFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $regime = RegulatoryRegime::factory()->create([
+        'code' => 'eu',
+        'name' => 'EU regime',
+        'status' => 'active',
+        'is_default' => true,
+    ]);
+    $substance = Substance::factory()->create([
+        'name' => 'Linalool',
+    ]);
+
+    RegulatoryRegimeAllergen::factory()
+        ->count(2)
+        ->for($regime, 'regulatoryRegime')
+        ->create(['is_active' => true]);
+    RegulatoryRegimeAllergen::factory()
+        ->for($regime, 'regulatoryRegime')
+        ->create(['is_active' => false]);
+    RegulatoryRegimeSubstanceRule::factory()
+        ->for($regime, 'regulatoryRegime')
+        ->for($substance, 'substance')
+        ->create(['is_active' => true]);
+
+    mock(RecipeWorkbenchService::class, function ($mock): void {
+        $mock->shouldReceive('draftPayload')->once()->andReturn(null);
+        $mock->shouldReceive('packagingCatalogPayload')->once()->andReturn([]);
+        $mock->shouldReceive('phaseBlueprints')->once()->andReturn([]);
+    });
+
+    mock(RecipeWorkbenchIngredientCatalogBuilder::class, function ($mock): void {
+        $mock->shouldReceive('build')->once()->andReturn([]);
+    });
+
+    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
+        $mock->shouldReceive('categories')->once()->andReturn([]);
+        $mock->shouldReceive('defaultCategoryId')->once()->andReturn(null);
+    });
+
+    $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, null);
+    $regimePayload = collect($payload['regulatoryRegimes'])->firstWhere('code', 'eu');
+
+    expect($regimePayload)->toMatchArray([
+        'allergen_rule_count' => 2,
+        'substance_rule_count' => 1,
+    ]);
+});
 
 it('builds the initial workbench payload without eager preview or costing data', function () {
     $productFamily = ProductFamily::factory()->create([

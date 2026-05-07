@@ -118,8 +118,28 @@ class RecipeWorkbenchService
     }
 
     /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $calculation
+     * @return array<string, mixed>
+     */
+    public function previewRestrictions(array $payload, ?array $calculation = null): array
+    {
+        return $this->recipeWorkbenchPreviewService->previewRestrictions($payload, $calculation);
+    }
+
+    /**
      * @param  array<string, mixed>  $draft
-     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>}
+     * @param  array<string, mixed>|null  $calculation
+     * @return array<string, mixed>
+     */
+    public function restrictionsFromWorkbenchDraft(array $draft, ?array $calculation = null): array
+    {
+        return $this->recipeWorkbenchPreviewService->restrictionsFromWorkbenchDraft($draft, $calculation);
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}
      */
     public function snapshotFromWorkbenchDraft(array $draft): array
     {

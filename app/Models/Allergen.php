@@ -30,6 +30,16 @@ class Allergen extends Model
         return $this->hasMany(IngredientAllergenEntry::class);
     }
 
+    public function regulatoryRegimeRules(): HasMany
+    {
+        return $this->hasMany(RegulatoryRegimeAllergen::class);
+    }
+
+    public function substances(): HasMany
+    {
+        return $this->hasMany(Substance::class);
+    }
+
     protected function casts(): array
     {
         return [

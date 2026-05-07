@@ -142,7 +142,7 @@ it('renders packaging as its own workbench tab', function () {
         ->assertSee('Components per unit');
 });
 
-it('shows packaging and batch use controls on the official recipe page', function () {
+it('shows packaging and batch use controls on the reference formula page', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 

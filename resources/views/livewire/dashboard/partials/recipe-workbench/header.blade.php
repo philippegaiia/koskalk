@@ -13,7 +13,7 @@
 	 </template>
 	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="manufacturingModeLabel"></span>
 	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="exposureModeLabel"></span>
-	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`Regime ${regulatoryRegime.toUpperCase()}`"></span>
+	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="regulatoryRegimeLabel"></span>
 	 </div>
 	 <input x-model="formulaName" type="text" aria-label="Formula name" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
 	 </div>
@@ -23,10 +23,10 @@
  <span x-text="isSaving ? 'Saving…' : 'Save draft'"></span>
  </button>
  <button type="button" @click="requestOfficialRecipeSave()" :disabled="!canSaveRecipe || isSaving" :class="!canSaveRecipe || isSaving ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line-strong)] bg-white text-[var(--color-ink-strong)] hover:bg-[var(--color-accent-soft)]'" class="rounded-full border px-4 py-2.5 text-sm font-medium transition">
- Save as official recipe
+ Save as reference formula
  </button>
  <a x-show="hasCurrentSavedFormula" x-cloak :href="savedRecipeUrl" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
- Open official recipe
+ Open reference formula
  </a>
  <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-accent-soft)]'" class="rounded-full border px-4 py-2.5 text-sm font-medium transition">
  Duplicate
@@ -36,17 +36,17 @@
 
  <div x-show="isOfficialSaveModalOpen" x-cloak role="dialog" aria-modal="true" aria-labelledby="official-save-heading" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @keydown.escape.window="isOfficialSaveModalOpen = false" @click.self="isOfficialSaveModalOpen = false">
  <div @keydown.escape="isOfficialSaveModalOpen = false" class="w-full max-w-lg rounded-lg border border-[var(--color-line)] bg-white p-5 shadow-xl">
- <p class="sk-eyebrow">Official recipe</p>
- <h2 id="official-save-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Update official recipe?</h2>
+ <p class="sk-eyebrow">Reference formula</p>
+ <h2 id="official-save-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Update reference formula?</h2>
  <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">
- This will replace the official saved recipe with your current draft. The official recipe is what you open, print, duplicate, and use as the reference formula.
+ This will replace the reference formula with your current draft. The reference formula is what you open, print, duplicate, and use as the reference formula.
  </p>
  <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
  <button type="button" @click="isOfficialSaveModalOpen = false" class="rounded-lg border border-[var(--color-line)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
  Cancel
  </button>
  <button type="button" @click="saveRecipe()" :disabled="isSaving" class="rounded-lg bg-[var(--color-accent-strong)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:bg-[var(--color-line)] disabled:text-[var(--color-ink-soft)]">
- Update official recipe
+ Update reference formula
  </button>
  </div>
  </div>

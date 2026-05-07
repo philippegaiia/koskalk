@@ -54,6 +54,88 @@
  </template>
  </div>
 
+ <div class="mt-4 sk-inset px-5 py-4">
+ <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+ <div>
+ <p class="font-medium text-[var(--color-ink-strong)]">Plain-language ingredient list</p>
+ <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Common names, decreasing order.</p>
+ </div>
+ <template x-if="generatedPlainLanguageListText">
+ <button type="button" @click="useGeneratedPlainIngredientListAsFinal()" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+ Use as final
+ </button>
+ </template>
+ </div>
+ <template x-if="generatedPlainLanguageListText">
+ <p class="mt-3 text-[0.95rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]" x-text="generatedPlainLanguageListText"></p>
+ </template>
+ <template x-if="!generatedPlainLanguageListText">
+ <p class="mt-3 text-sm text-[var(--color-ink-soft)]">No plain-language list yet.</p>
+ </template>
+ </div>
+
+ <div class="mt-5 grid gap-4 xl:grid-cols-2">
+ <div class="sk-inset px-5 py-4">
+ <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+ <p class="font-medium text-[var(--color-ink-strong)]">Final ingredient list</p>
+ <div class="flex flex-wrap gap-2">
+ <template x-if="drySoapOutputListText">
+ <button type="button" @click="useGeneratedIngredientListAsFinal()" class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+ Use generated
+ </button>
+ </template>
+ <template x-if="finalIngredientList">
+ <button type="button" @click="clearFinalIngredientList()" class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+ Clear
+ </button>
+ </template>
+ </div>
+ </div>
+ <template x-if="finalIngredientListIsOutdated">
+ <div class="mt-3 rounded-[1rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-xs font-medium text-[var(--color-warning-strong)]">
+ Formula changed after this list was saved.
+ </div>
+ </template>
+ <textarea
+ x-model="finalIngredientList"
+ @input="touchFinalIngredientList()"
+ rows="5"
+ class="mt-3 w-full resize-y rounded-[1rem] border border-[var(--color-line)] bg-white px-4 py-3 text-sm leading-6 text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]"
+ placeholder="Final INCI ingredient list"
+ ></textarea>
+ </div>
+
+ <div class="sk-inset px-5 py-4">
+ <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+ <p class="font-medium text-[var(--color-ink-strong)]">Final plain-language list</p>
+ <div class="flex flex-wrap gap-2">
+ <template x-if="generatedPlainLanguageListText">
+ <button type="button" @click="useGeneratedPlainIngredientListAsFinal()" class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+ Use generated
+ </button>
+ </template>
+ <template x-if="finalPlainIngredientList">
+ <button type="button" @click="clearFinalPlainIngredientList()" class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+ Clear
+ </button>
+ </template>
+ </div>
+ </div>
+ <template x-if="finalPlainIngredientListIsOutdated">
+ <div class="mt-3 rounded-[1rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-xs font-medium text-[var(--color-warning-strong)]">
+ Formula changed after this list was saved.
+ </div>
+ </template>
+ <textarea
+ x-model="finalPlainIngredientList"
+ @input="touchFinalPlainIngredientList()"
+ rows="5"
+ class="mt-3 w-full resize-y rounded-[1rem] border border-[var(--color-line)] bg-white px-4 py-3 text-sm leading-6 text-[var(--color-ink-strong)] outline-none transition focus:border-[var(--color-line-strong)]"
+ placeholder="Final plain-language ingredient list"
+ ></textarea>
+ </div>
+ </div>
+
  <template x-if="labelingWarnings.length > 0">
  <div class="mt-4 space-y-2" role="alert">
  <template x-for="warning in labelingWarnings" :key="warning">

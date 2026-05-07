@@ -121,8 +121,8 @@ class RecipeController extends Controller
                 ->route('recipes.saved', $recipe->id)
                 ->with('draftReplaceConfirmation', [
                     'title' => 'Replace the current draft?',
-                    'body' => 'The current draft differs from the official recipe. Confirming will replace the draft with the current official recipe data.',
-                    'action_label' => 'Replace draft with official recipe',
+                    'body' => 'The current draft differs from the reference formula. Confirming will replace the draft with the current reference formula data.',
+                    'action_label' => 'Replace draft with reference formula',
                     'action_url' => route('recipes.saved.edit-in-draft', $recipe->id),
                 ]);
         }
@@ -131,7 +131,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.edit', $recipe->id)
-            ->with('status', 'Draft refreshed from the current official recipe.');
+            ->with('status', 'Draft refreshed from the current reference formula.');
     }
 
     public function restoreSavedFormula(
@@ -149,7 +149,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.saved', $recipe->id)
-            ->with('status', 'Official recipe restored from the selected recovery snapshot.');
+            ->with('status', 'Reference formula restored from the selected recovery snapshot.');
     }
 
     public function version(

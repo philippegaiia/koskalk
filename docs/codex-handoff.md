@@ -108,13 +108,13 @@ All 201 tests passed after the latest recipe index product-type pass, but the br
 - Existing company/workspace/member architecture can stay in the data model, but team/member UI should remain hidden until the higher tier is ready.
 - Recipe lifecycle model should remain conceptually simple:
   - Draft = editable working copy.
-  - Saved recipe = current official saved state.
+  - Reference formula = current saved state.
   - Recovery snapshots = hidden safety backups, not user-facing version history.
 - The UI should avoid exposing technical version numbers like `v16` as the primary concept. Recovery snapshots should be labeled by date/time and hidden behind a collapsed "recovery snapshots available" drawer.
 - Workbench action language should stay plain:
   - `Save draft` keeps the working copy only.
-  - `Save recipe` updates the current saved recipe from the draft.
-  - `View saved recipe` opens the read-only/print/export surface.
+  - `Save reference formula` updates the current saved recipe from the draft.
+  - `Open reference formula` opens the read-only/print/export surface.
   - `Duplicate` creates a separate recipe branch.
 - Recipes should stay on one shared recipe index page, not split into separate soap/cosmetic pages. Default ordering should be latest/recent recipes first. Existing search should remain and become broad/wildcard enough to search recipe/product name, and ideally ingredients if performance is acceptable. Add filters for product family and product type/category. Recipe card UI needs a separate cleanup pass.
 - Recipe cards should use a simple blog-card pattern: image, title/product name, product type/category badge, small created/updated metadata, and minimal status. Do not show ingredient summaries on the card.

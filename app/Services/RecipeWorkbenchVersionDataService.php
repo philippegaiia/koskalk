@@ -42,7 +42,7 @@ class RecipeWorkbenchVersionDataService
     }
 
     /**
-     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>}|null
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}|null
      */
     public function draftSnapshot(?Recipe $recipe): ?array
     {
@@ -66,7 +66,7 @@ class RecipeWorkbenchVersionDataService
     }
 
     /**
-     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>}|null
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}|null
      */
     public function currentSavedSnapshot(?Recipe $recipe): ?array
     {
@@ -118,7 +118,7 @@ class RecipeWorkbenchVersionDataService
     }
 
     /**
-     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>}|null
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}|null
      */
     public function versionSnapshot(?Recipe $recipe, int $versionId): ?array
     {
@@ -207,7 +207,7 @@ class RecipeWorkbenchVersionDataService
     }
 
     /**
-     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>}
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}
      */
     private function snapshotForVersion(RecipeVersion $version): array
     {
@@ -224,6 +224,7 @@ class RecipeWorkbenchVersionDataService
         return [
             'recipe',
             'recipe.productFamily',
+            'regulatoryRegime',
             'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
             'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
             'phases.items.ingredient',

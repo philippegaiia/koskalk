@@ -53,12 +53,12 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2">
-                        <p class="sk-eyebrow">Official saved recipe</p>
-                        <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Official saved recipe</span>
+                        <p class="sk-eyebrow">Reference formula</p>
+                        <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Reference formula</span>
                     </div>
                     <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $version->name }}</h1>
                     <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">
-                        Read-only reference formula. To change it, edit the draft and save that draft as the official recipe. The oil quantity here is only for scaling and printing.
+                        Read-only reference formula. To change it, edit the draft and save that draft as the reference formula. The oil quantity here is only for scaling and printing.
                     </p>
 
                     <div class="mt-4 flex flex-wrap gap-2">
@@ -149,7 +149,7 @@
                             <form method="POST" action="{{ route('recipes.saved.restore', ['recipe' => $recipe->id, 'version' => $snapshotVersion['id']]) }}">
                                 @csrf
                                 <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[var(--color-accent)]">
-                                    Restore as official recipe
+                                    Restore as reference formula
                                 </button>
                             </form>
                         </div>
@@ -193,7 +193,7 @@
                     </div>
                 @else
                     <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
-                        No packaging plan is saved for this official recipe yet.
+                        No packaging plan is saved for this reference formula yet.
                     </div>
                 @endif
             </div>
@@ -201,7 +201,7 @@
             <form method="GET" action="{{ route('recipes.saved', ['recipe' => $recipe->id]) }}" class="sk-card p-5">
                 <p class="sk-eyebrow">Prepare batch</p>
                 <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Prepare batch</h2>
-                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Set production context for printing without editing the official recipe.</p>
+                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Set production context for printing without editing the reference formula.</p>
 
                 <label class="mt-4 block">
                     <span class="text-sm font-medium text-[var(--color-ink-strong)]">Batch number</span>

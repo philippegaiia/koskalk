@@ -8,6 +8,11 @@ use App\Filament\Resources\Ingredients\IngredientResource;
 use App\Filament\Resources\Ingredients\Pages\ListIngredients;
 use App\Filament\Resources\Ingredients\Schemas\IngredientForm;
 use App\Filament\Resources\IngredientSapProfiles\IngredientSapProfileResource;
+use App\Filament\Resources\IngredientSubstanceEntries\IngredientSubstanceEntryResource;
+use App\Filament\Resources\RegulatoryRegimeAllergens\RegulatoryRegimeAllergenResource;
+use App\Filament\Resources\RegulatoryRegimes\RegulatoryRegimeResource;
+use App\Filament\Resources\RegulatoryRegimeSubstanceRules\RegulatoryRegimeSubstanceRuleResource;
+use App\Filament\Resources\Substances\SubstanceResource;
 use App\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\IfraCertificate;
@@ -16,11 +21,16 @@ use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientSapProfile;
+use App\Models\IngredientSubstanceEntry;
 use App\Models\ProductFamily;
+use App\Models\RegulatoryRegime;
+use App\Models\RegulatoryRegimeAllergen;
+use App\Models\RegulatoryRegimeSubstanceRule;
+use App\Models\Substance;
 use App\Models\User;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
-use Filament\Actions\Testing\TestAction;
 
 uses(RefreshDatabase::class);
 
@@ -146,6 +156,40 @@ it('renders the compliance resources in the admin panel', function () {
             'concentration_percent' => 0.85000,
         ]);
 
+    $regulatoryRegime = RegulatoryRegime::factory()->create([
+        'code' => 'eu',
+        'name' => 'EU regime',
+        'version_label' => 'Full 82 fragrance allergens',
+    ]);
+
+    RegulatoryRegimeAllergen::factory()
+        ->for($regulatoryRegime, 'regulatoryRegime')
+        ->for($allergen, 'allergen')
+        ->create([
+            'declaration_label' => 'LINALOOL',
+        ]);
+    $substance = Substance::factory()
+        ->for($allergen, 'allergen')
+        ->create([
+            'name' => 'Linalool',
+            'entity_type' => 'constituent',
+        ]);
+
+    IngredientSubstanceEntry::factory()
+        ->for($ingredient, 'ingredient')
+        ->for($substance, 'substance')
+        ->create([
+            'concentration_percent' => 0.85000,
+            'concentration_source' => 'supplier',
+        ]);
+
+    RegulatoryRegimeSubstanceRule::factory()
+        ->for($regulatoryRegime, 'regulatoryRegime')
+        ->for($substance, 'substance')
+        ->create([
+            'rule_type' => 'watch',
+        ]);
+
     $ifraProductCategory = IfraProductCategory::factory()->create([
         'code' => '9',
         'name' => 'Category 9',
@@ -187,6 +231,31 @@ it('renders the compliance resources in the admin panel', function () {
         ->assertSee('Lavender Essential Oil')
         ->assertSee('LINALOOL');
 
+    $this->get(RegulatoryRegimeResource::getUrl(panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('EU regime')
+        ->assertSee('Full 82 fragrance allergens');
+
+    $this->get(RegulatoryRegimeAllergenResource::getUrl(panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('EU regime')
+        ->assertSee('LINALOOL');
+
+    $this->get(SubstanceResource::getUrl(panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Linalool')
+        ->assertSee('constituent');
+
+    $this->get(IngredientSubstanceEntryResource::getUrl(panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Lavender Essential Oil')
+        ->assertSee('Linalool');
+
+    $this->get(RegulatoryRegimeSubstanceRuleResource::getUrl(panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('EU regime')
+        ->assertSee('Linalool');
+
     $this->get(IfraProductCategoryResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Category 9');
@@ -225,6 +294,33 @@ it('renders the compliance create forms in the admin panel', function () {
         ->assertSee('Allergen Composition')
         ->assertSee('Concentration');
 
+    $this->get(RegulatoryRegimeResource::getUrl('create', panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Regime Identity')
+        ->assertSee('Effective Window')
+        ->assertSee('Source Traceability');
+
+    $this->get(RegulatoryRegimeAllergenResource::getUrl('create', panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Regime Rule')
+        ->assertSee('Thresholds')
+        ->assertSee('Grouping And Effective Window');
+
+    $this->get(SubstanceResource::getUrl('create', panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Substance Catalog')
+        ->assertSee('Allergen link');
+
+    $this->get(IngredientSubstanceEntryResource::getUrl('create', panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Ingredient Substance Composition')
+        ->assertSee('Concentration');
+
+    $this->get(RegulatoryRegimeSubstanceRuleResource::getUrl('create', panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Regime Substance Rule')
+        ->assertSee('Exposure Limits');
+
     $this->get(IfraProductCategoryResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Category Identity')
@@ -249,5 +345,8 @@ it('blocks non-admin users from the admin panel resources', function () {
         ->assertForbidden();
 
     $this->get(IfraCertificateResource::getUrl(panel: 'admin'))
+        ->assertForbidden();
+
+    $this->get(RegulatoryRegimeResource::getUrl(panel: 'admin'))
         ->assertForbidden();
 });

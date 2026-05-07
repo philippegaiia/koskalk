@@ -379,6 +379,40 @@ export function createPresentationSection() {
                 ?? '';
         },
 
+        get ingredientListBasisHash() {
+            return this.backendLabeling?.ingredient_list_basis_hash ?? '';
+        },
+
+        get generatedPlainLanguageListText() {
+            return this.backendLabeling?.plain_language_list?.final_label_text ?? '';
+        },
+
+        get finalIngredientListIsOutdated() {
+            return Boolean(
+                this.finalIngredientList
+                && this.finalIngredientListBasisHash
+                && this.ingredientListBasisHash
+                && this.finalIngredientListBasisHash !== this.ingredientListBasisHash,
+            );
+        },
+
+        get finalPlainIngredientListIsOutdated() {
+            return Boolean(
+                this.finalPlainIngredientList
+                && this.finalPlainIngredientListBasisHash
+                && this.ingredientListBasisHash
+                && this.finalPlainIngredientListBasisHash !== this.ingredientListBasisHash,
+            );
+        },
+
+        get printIngredientListText() {
+            return this.finalIngredientList || this.drySoapOutputListText;
+        },
+
+        get printPlainIngredientListText() {
+            return this.finalPlainIngredientList || this.generatedPlainLanguageListText;
+        },
+
         get generatedIngredientRows() {
             return this.activeIngredientListVariant?.ingredient_rows
                 ?? this.backendLabeling?.ingredient_rows
@@ -393,6 +427,59 @@ export function createPresentationSection() {
 
         get labelingWarnings() {
             return this.backendLabeling?.warnings ?? [];
+        },
+
+        get restrictionSummary() {
+            return this.backendRestrictions?.summary ?? {
+                status: 'pass',
+                fail_count: 0,
+                warning_count: 0,
+                pass_count: 0,
+                row_count: 0,
+            };
+        },
+
+        get restrictionRows() {
+            return this.backendRestrictions?.rows ?? [];
+        },
+
+        get restrictionWarnings() {
+            return this.backendRestrictions?.warnings ?? [];
+        },
+
+        get restrictionRegimeLabel() {
+            return this.backendRestrictions?.regime?.label ?? this.selectedRegulatoryRegimeRecord?.name ?? 'Selected regime';
+        },
+
+        get restrictionBasisLabel() {
+            return this.backendRestrictions?.basis?.label ?? 'Current formula basis';
+        },
+
+        get restrictionSummaryLabel() {
+            return {
+                fail: 'Needs correction',
+                warning: 'Needs review',
+                pass: 'No restriction flags',
+            }[this.restrictionSummary.status] ?? 'No restriction flags';
+        },
+
+        restrictionSummaryStyle(status) {
+            return {
+                fail: 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]',
+                warning: 'border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]',
+                pass: 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]',
+            }[status] ?? 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]';
+        },
+
+        restrictionStatusStyle(status) {
+            return {
+                prohibited: 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]',
+                over_limit: 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]',
+                unknown_concentration: 'border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]',
+                watch: 'border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]',
+                no_limit_recorded: 'border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]',
+                within_limit: 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]',
+            }[status] ?? 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]';
         },
 
         get drySoapOutputListText() {
@@ -538,6 +625,34 @@ export function createPresentationSection() {
         selectIngredientListVariant(key) {
             this.selectedIngredientListVariantKey = key;
             this.inciCopyMessage = '';
+        },
+
+        useGeneratedIngredientListAsFinal() {
+            this.finalIngredientList = this.drySoapOutputListText;
+            this.finalIngredientListBasisHash = this.ingredientListBasisHash;
+        },
+
+        useGeneratedPlainIngredientListAsFinal() {
+            this.finalPlainIngredientList = this.generatedPlainLanguageListText;
+            this.finalPlainIngredientListBasisHash = this.ingredientListBasisHash;
+        },
+
+        touchFinalIngredientList() {
+            this.finalIngredientListBasisHash = this.ingredientListBasisHash;
+        },
+
+        touchFinalPlainIngredientList() {
+            this.finalPlainIngredientListBasisHash = this.ingredientListBasisHash;
+        },
+
+        clearFinalIngredientList() {
+            this.finalIngredientList = '';
+            this.finalIngredientListBasisHash = '';
+        },
+
+        clearFinalPlainIngredientList() {
+            this.finalPlainIngredientList = '';
+            this.finalPlainIngredientListBasisHash = '';
         },
 
         syncIngredientListVariantSelection() {

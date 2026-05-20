@@ -82,6 +82,10 @@ class RecipeNormalizationService
                     ? $this->normalizeNumericValue($item['weight'] ?? 0, 'item weight')
                     : $this->weightFromPercentage($percentage, $normalizedOilWeight);
 
+                if ($percentage < 0 || $weight < 0) {
+                    throw new InvalidArgumentException('Formula percentages and weights must not be negative.');
+                }
+
                 $normalizedItems[] = [
                     'ingredient_id' => isset($item['ingredient_id']) ? (int) $item['ingredient_id'] : null,
                     'percentage' => $this->roundValue($percentage),

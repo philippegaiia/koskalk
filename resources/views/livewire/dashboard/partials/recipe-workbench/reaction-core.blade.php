@@ -1,4 +1,4 @@
-<section class="overflow-hidden sk-card sk-phase-core" aria-labelledby="reaction-core-heading">
+<section class="overflow-hidden sk-card sk-phase-core sk-tone-chemistry" aria-labelledby="reaction-core-heading">
  <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
  <p class="sk-eyebrow">Reaction core</p>
  <div class="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -12,7 +12,7 @@
  <div class="p-5">
  <div class="relative sk-inset">
  <div class="overflow-hidden rounded-lg">
- <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
+	 <div class="hidden touch-pan-x lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Oil</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% oils</div>
@@ -28,18 +28,20 @@
  'bg-[var(--color-accent-soft)]': isDropTarget('saponified_oils', row.id),
  'opacity-60': isDraggedRow('saponified_oils', row.id),
  }"
- class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] transition">
- <div class="grid place-items-center bg-white px-2 py-3">
+ :data-workbench-row-id="row.id"
+ x-effect="animateAddedIngredientRow($el, row.id)"
+	 class="grid grid-cols-1 gap-3 bg-white p-3 transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+	 <div class="flex justify-start bg-white lg:grid lg:place-items-center lg:px-2 lg:py-3">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('saponified_oils', row.id, $event)"
  @dragend="endRowDrag()"
- class="grid size-7 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
+	 class="grid size-10 cursor-grab place-items-center rounded-md text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] active:cursor-grabbing"
  aria-label="Drag to reorder or move this oil">
  <span class="text-sm leading-none">⋮⋮</span>
  </button>
  </div>
- <div class="flex items-center bg-white px-4 py-3">
+	 <div class="flex items-center bg-white lg:px-4 lg:py-3">
  <div class="flex w-full items-center justify-between gap-3">
  <div class="min-w-0 flex-1">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
@@ -68,7 +70,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
- class="grid size-6 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details">
+	 class="grid size-10 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
  i
  </button>
  </template>
@@ -77,8 +79,9 @@
  x-transition.opacity
  @mouseenter="open = true"
  @mouseleave="open = false"
- @click.outside="open = false"
- @scroll.window="if (open) { reposition(); }"
+	 @click.outside="open = false"
+	 @keydown.escape.window="open = false"
+	 @scroll.window="if (open) { reposition(); }"
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
  class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
@@ -110,7 +113,8 @@
  </div>
  </div>
  </div>
- <div class="flex items-center bg-white px-3 py-3">
+	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
+	 <span class="sk-eyebrow lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="number" inputmode="decimal" min="0" max="100" step="1" :aria-label="'Percentage of oils for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
@@ -118,7 +122,8 @@
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
- <div class="flex items-center bg-white px-3 py-3 text-sm text-[var(--color-ink-soft)]">
+	 <div class="flex flex-col gap-2 bg-white text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3 lg:py-3">
+	 <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
  <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 1) }" @input="updateOilPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 1)" type="number" inputmode="decimal" step="1" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </template>
@@ -126,8 +131,8 @@
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 1)}`"></span>
  </template>
  </div>
- <div class="flex items-center justify-center bg-white px-2 py-3">
- <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-8 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove oil">×</button>
+	 <div class="flex items-center justify-end bg-white lg:justify-center lg:px-2 lg:py-3">
+	 <button type="button" @click="removeIngredient('saponified_oils', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove oil">×</button>
  </div>
  </div>
  </template>
@@ -142,12 +147,12 @@
  </template>
  </div>
 
- <div class="grid grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] gap-px bg-[var(--color-line)] text-sm">
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-3 py-3"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-3 font-medium">Oil total</div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center px-4 py-3 font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center px-4 py-3 font-medium" x-text="`${format(oilWeightTotal(), 1)}`"></div>
- <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="px-4 py-3"></div>
+	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0">
+	 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-3 py-3 lg:block"></div>
+	 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-3 font-medium">Oil total</div>
+	 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center justify-between gap-3 px-4 py-3 font-medium lg:block" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+	 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center justify-between gap-3 px-4 py-3 font-medium lg:block" x-text="`${format(oilWeightTotal(), 1)}`"></div>
+	 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-4 py-3 lg:block"></div>
  </div>
  </div>
  </div>
@@ -158,18 +163,13 @@
  <p class="sk-eyebrow">Calculated lye and water</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">This block is derived from the saponified oils, lye type, water mode, and superfat.</p>
  </div>
- <template x-if="oilsMissingSap.length > 0">
- <div class="rounded-[1.25rem] border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink-strong)]">
- Missing KOH SAP for <span class="font-medium" x-text="oilsMissingSap.map((row) => row.name).join(', ')"></span>.
- </div>
- </template>
  </div>
 
- <div class="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+ <div class="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
  <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
- <div class="sk-inset flex min-h-[4.25rem] flex-col justify-between px-3 py-2.5">
+ <div class="sk-inset flex min-h-[4.25rem] min-w-0 flex-col justify-between px-3 py-2.5">
  <p class="sk-eyebrow" x-text="card.label"></p>
- <p class="numeric text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
+ <p class="numeric whitespace-nowrap text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
  </div>
  </template>
  </div>

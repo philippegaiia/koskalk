@@ -104,8 +104,7 @@ class RecipeWorkbenchPayloadNormalizer
                     'phase_type' => $phaseBlueprint['phase_type'] ?? null,
                     'is_system' => (bool) ($phaseBlueprint['is_system'] ?? false),
                     'items' => array_values(array_filter($phase['items'], function (array $item): bool {
-                        return $item['ingredient_id'] !== null
-                            && ($item['percentage'] > 0 || $item['weight'] > 0);
+                        return $item['ingredient_id'] !== null;
                     })),
                 ];
             }, $normalizedRecipe['phases']),
@@ -155,19 +154,22 @@ class RecipeWorkbenchPayloadNormalizer
                     ? $this->numericValue($item['weight'] ?? 0)
                     : $this->weightFromPercentage($percentage, $totalBatchWeight);
 
+                if ($percentage < 0 || $weight < 0) {
+                    throw ValidationException::withMessages([
+                        'formula_total' => 'Formula percentages and weights must not be negative.',
+                    ]);
+                }
+
+                $hasIngredient = $item['ingredient_id'] !== null;
                 $hasValue = $percentage > 0 || $weight > 0;
 
-                if ($item['ingredient_id'] === null) {
+                if (! $hasIngredient) {
                     if ($hasValue && $requireComplete) {
                         throw ValidationException::withMessages([
                             'formula_total' => 'Choose an ingredient for every cosmetic row with a percentage or weight.',
                         ]);
                     }
 
-                    continue;
-                }
-
-                if (! $hasValue) {
                     continue;
                 }
 
@@ -283,7 +285,7 @@ class RecipeWorkbenchPayloadNormalizer
                 'name' => $phase['name'],
                 'items' => array_map(function (array $row): array {
                     return [
-                        'ingredient_id' => isset($row['ingredient_id']) ? (int) $row['ingredient_id'] : null,
+                        'ingredient_id' => $this->ingredientId($row['ingredient_id'] ?? null),
                         'percentage' => (float) ($row['percentage'] ?? 0),
                         'weight' => (float) ($row['weight'] ?? 0),
                         'note' => $row['note'] ?? null,
@@ -343,7 +345,7 @@ class RecipeWorkbenchPayloadNormalizer
                         : 'Phase '.chr(65 + $index),
                     'items' => array_map(function (array $row): array {
                         return [
-                            'ingredient_id' => isset($row['ingredient_id']) ? (int) $row['ingredient_id'] : null,
+                            'ingredient_id' => $this->ingredientId($row['ingredient_id'] ?? null),
                             'percentage' => $row['percentage'] ?? 0,
                             'weight' => $row['weight'] ?? 0,
                             'note' => $row['note'] ?? null,
@@ -407,6 +409,17 @@ class RecipeWorkbenchPayloadNormalizer
         }
 
         return (float) $value;
+    }
+
+    private function ingredientId(mixed $value): ?int
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $ingredientId = (int) $value;
+
+        return $ingredientId > 0 ? $ingredientId : null;
     }
 
     private function weightFromPercentage(float $percentage, float $totalBatchWeight): float

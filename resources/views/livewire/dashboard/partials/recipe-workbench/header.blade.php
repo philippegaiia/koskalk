@@ -3,35 +3,47 @@
  <div class="min-w-0 flex-1">
 	 <div class="flex flex-wrap items-center gap-2">
 	 <p class="sk-eyebrow">Editable draft</p>
-	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="formulaWorkbenchLabel"></span>
+	 <span class="rounded-full bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] shadow-sm" x-text="formulaWorkbenchLabel"></span>
 	 <span x-show="productTypeName" x-cloak class="sk-badge sk-badge-neutral" x-text="productTypeName"></span>
 	 <template x-if="saveMessage">
-	 <span role="status" :class="saveStatus === 'error' ? 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)]'" class="rounded-full border px-3 py-1.5 text-xs font-medium" x-text="saveMessage"></span>
+	 <span role="status" :class="saveStatus === 'error' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-1.5 text-xs font-medium shadow-sm" x-text="saveMessage"></span>
 	 </template>
 	 <template x-if="calculationPreviewMessage">
-	 <span role="status" class="rounded-full border border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)]" x-text="calculationPreviewMessage"></span>
+	 <span role="status" class="rounded-full bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] shadow-sm" x-text="calculationPreviewMessage"></span>
 	 </template>
-	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="manufacturingModeLabel"></span>
-	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="exposureModeLabel"></span>
-	 <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="regulatoryRegimeLabel"></span>
 	 </div>
 	 <input x-model="formulaName" type="text" aria-label="Formula name" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
 	 </div>
 
- <div class="flex flex-wrap gap-2 lg:justify-end">
- <button type="button" @click="saveDraft()" :disabled="!canSaveDraft || isSaving" :class="!canSaveDraft || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
- <span x-text="isSaving ? 'Saving…' : 'Save draft'"></span>
- </button>
- <button type="button" @click="requestOfficialRecipeSave()" :disabled="!canSaveRecipe || isSaving" :class="!canSaveRecipe || isSaving ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line-strong)] bg-white text-[var(--color-ink-strong)] hover:bg-[var(--color-accent-soft)]'" class="rounded-full border px-4 py-2.5 text-sm font-medium transition">
- Save as reference formula
- </button>
- <a x-show="hasCurrentSavedFormula" x-cloak :href="savedRecipeUrl" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
- Open reference formula
- </a>
- <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-accent-soft)]'" class="rounded-full border px-4 py-2.5 text-sm font-medium transition">
- Duplicate
+	 <div class="flex flex-wrap gap-2 lg:justify-end">
+	 <button type="button" @click="saveDraft()" :disabled="!canSaveDraft || isSaving" :class="!canSaveDraft || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
+	 <span x-text="isSaving ? 'Saving…' : 'Save draft'"></span>
+	 </button>
+	 <details x-data="{ open: false }" :open="open" @toggle="open = $el.open" @click.outside="open = false" @keydown.escape.prevent.stop="open = false" class="relative">
+	 <summary class="list-none rounded-full bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] shadow-sm transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)] [&::-webkit-details-marker]:hidden" aria-haspopup="menu" :aria-expanded="open.toString()">
+	 More formula actions
+	 </summary>
+	 <div class="absolute right-0 z-40 mt-2 w-72 rounded-lg bg-white p-2 shadow-xl">
+	 <div class="px-3 py-2">
+	 <p class="sk-eyebrow">Formula context</p>
+	 <div class="mt-2 space-y-1 text-xs leading-5 text-[var(--color-ink-soft)]">
+	 <p x-text="manufacturingModeLabel"></p>
+	 <p x-text="exposureModeLabel"></p>
+	 <p x-text="regulatoryRegimeLabel"></p>
+	 </div>
+	 </div>
+	 <button type="button" @click="requestOfficialRecipeSave()" :disabled="!canSaveRecipe || isSaving" :class="!canSaveRecipe || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-strong)] hover:bg-[var(--color-accent-soft)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
+	 Save as reference formula
+	 </button>
+	 <a x-show="hasCurrentSavedFormula" x-cloak :href="savedRecipeUrl" class="mt-1 flex rounded-md px-3 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
+	 Open reference formula
+	 </a>
+	 <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-ink-strong)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
+	 Duplicate
 	 </button>
 	 </div>
+	 </details>
+		 </div>
 	 </div>
 
  <div x-show="isOfficialSaveModalOpen" x-cloak role="dialog" aria-modal="true" aria-labelledby="official-save-heading" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @keydown.escape.window="isOfficialSaveModalOpen = false" @click.self="isOfficialSaveModalOpen = false">

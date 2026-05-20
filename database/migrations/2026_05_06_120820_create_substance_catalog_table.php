@@ -11,6 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('substance_catalog')) {
+            return;
+        }
+
+        if (Schema::hasTable('regulated_substance_catalog')) {
+            Schema::rename('regulated_substance_catalog', 'substance_catalog');
+
+            return;
+        }
+
         Schema::create('substance_catalog', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -38,6 +48,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (Schema::hasTable('substance_catalog') && ! Schema::hasTable('regulated_substance_catalog')) {
+            Schema::rename('substance_catalog', 'regulated_substance_catalog');
+
+            return;
+        }
+
         Schema::dropIfExists('substance_catalog');
     }
 };

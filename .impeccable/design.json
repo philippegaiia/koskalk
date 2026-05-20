@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-20T09:00:00+02:00",
+  "title": "Design System: Soapkraft",
+  "extensions": {
+    "colorMeta": {
+      "warm-bench-surface": {
+        "role": "neutral",
+        "displayName": "Warm Bench Surface",
+        "canonical": "oklch(96.7% 0.008 91)",
+        "tonalRamp": [
+          "oklch(18% 0.008 91)",
+          "oklch(28% 0.008 91)",
+          "oklch(40% 0.008 91)",
+          "oklch(54% 0.008 91)",
+          "oklch(68% 0.008 91)",
+          "oklch(82% 0.008 91)",
+          "oklch(92% 0.008 91)",
+          "oklch(97% 0.008 91)"
+        ]
+      },
+      "living-green": {
+        "role": "primary",
+        "displayName": "Living Green",
+        "canonical": "oklch(53.0% 0.075 145)",
+        "tonalRamp": [
+          "oklch(18% 0.045 145)",
+          "oklch(28% 0.060 145)",
+          "oklch(38% 0.070 145)",
+          "oklch(53% 0.075 145)",
+          "oklch(66% 0.062 145)",
+          "oklch(78% 0.046 145)",
+          "oklch(89% 0.032 145)",
+          "oklch(95% 0.020 145)"
+        ]
+      },
+      "chemistry-amber": {
+        "role": "secondary",
+        "displayName": "Chemistry Amber",
+        "canonical": "oklch(55.5% 0.146 49)",
+        "tonalRamp": [
+          "oklch(20% 0.070 49)",
+          "oklch(31% 0.100 49)",
+          "oklch(43% 0.125 49)",
+          "oklch(56% 0.146 49)",
+          "oklch(68% 0.120 49)",
+          "oklch(80% 0.080 49)",
+          "oklch(91% 0.040 49)",
+          "oklch(96% 0.024 49)"
+        ]
+      },
+      "forest-deep": {
+        "role": "tertiary",
+        "displayName": "Forest Deep",
+        "canonical": "oklch(20.3% 0.026 149)",
+        "tonalRamp": [
+          "oklch(14% 0.018 149)",
+          "oklch(20% 0.026 149)",
+          "oklch(28% 0.035 149)",
+          "oklch(38% 0.040 149)",
+          "oklch(50% 0.038 149)",
+          "oklch(64% 0.034 149)",
+          "oklch(80% 0.026 149)",
+          "oklch(93% 0.018 149)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Public Display",
+        "purpose": "Landing-page hero and brand-scale headlines only."
+      },
+      "title": {
+        "displayName": "Product Title",
+        "purpose": "App headings, cards, workbench panels, and form sections."
+      },
+      "numeric": {
+        "displayName": "Tabular Numeric",
+        "purpose": "Weights, percentages, costs, lye, water, and quality values."
+      }
+    },
+    "shadows": [
+      {
+        "name": "public-card-elevation",
+        "value": "0 2px 4px rgba(60, 50, 30, 0.04), 0 12px 24px rgba(60, 50, 30, 0.08)",
+        "purpose": "Marketing cards and lifted public preview panels."
+      },
+      {
+        "name": "app-card-elevation",
+        "value": "0 1px 2px rgba(60, 50, 30, 0.04), 0 12px 24px rgba(60, 50, 30, 0.07)",
+        "purpose": "Authenticated product cards."
+      },
+      {
+        "name": "shell-line",
+        "value": "0 1px 0 rgba(60, 50, 30, 0.08)",
+        "purpose": "Public navigation and footer separation."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-transition",
+        "value": "150ms ease",
+        "purpose": "Buttons, fields, borders, and color changes."
+      },
+      {
+        "name": "hero-rise",
+        "value": "900ms cubic-bezier(0.22, 1, 0.36, 1)",
+        "purpose": "Public landing hero entrance only."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main local action for product workflows.",
+      "html": "<button class=\"ds-btn-primary\">Save draft</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 8px; background: var(--color-accent); color: white; padding: 10px 16px; font-family: var(--font-sans); font-size: 14px; font-weight: 500; line-height: 20px; transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease; } .ds-btn-primary:hover { background: var(--color-accent-hover); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary action that should stay quieter than the main action.",
+      "html": "<button class=\"ds-btn-ghost\">Open formula</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; justify-content: center; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--color-ink-soft); padding: 10px 16px; font-family: var(--font-sans); font-size: 14px; font-weight: 500; line-height: 20px; transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease; } .ds-btn-ghost:hover { background: var(--color-panel-strong); color: var(--color-ink-strong); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Standard dense product field with visible focus.",
+      "html": "<label class=\"ds-field-label\">Formula name<input class=\"ds-input\" value=\"Winter olive bar\" /></label>",
+      "css": ".ds-field-label { display: grid; gap: 8px; color: var(--color-ink-soft); font-family: var(--font-sans); font-size: 12px; font-weight: 600; } .ds-input { width: 100%; border: 1px solid var(--color-line); border-radius: 8px; background: var(--color-field); color: var(--color-ink-strong); padding: 12px 16px; font-family: var(--font-sans); font-size: 14px; outline: 1px solid var(--color-field-outline); transition: outline-color 150ms ease, outline-width 150ms ease; } .ds-input:focus { outline: 2px solid var(--color-accent); }"
+    },
+    {
+      "name": "Product Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Authenticated product card used around dense work surfaces.",
+      "html": "<section class=\"ds-card\"><p class=\"ds-eyebrow\">Editable draft</p><h3>Winter olive bar</h3><p>Formula settings, calculation, and save actions stay grouped.</p></section>",
+      "css": ".ds-card { border: 1px solid transparent; border-radius: 14px; background: var(--color-panel); color: var(--color-ink); padding: 20px; box-shadow: 0 1px 2px rgba(60, 50, 30, 0.04), 0 12px 24px rgba(60, 50, 30, 0.07); font-family: var(--font-sans); } .ds-card h3 { margin: 8px 0 0; color: var(--color-ink-strong); font-size: 20px; line-height: 1.25; } .ds-card p { margin: 8px 0 0; color: var(--color-ink-soft); font-size: 14px; line-height: 1.6; } .ds-eyebrow { margin: 0; color: color-mix(in oklab, var(--color-ink) 76%, var(--color-ink-soft)); font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Status Badge",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Compact semantic status chip for formula state and quality context.",
+      "html": "<span class=\"ds-badge-success\">Saved</span>",
+      "css": ".ds-badge-success { display: inline-flex; align-items: center; border: 1px solid transparent; border-radius: 8px; background: var(--color-success-soft); color: var(--color-success-strong); padding: 4px 12px; font-family: var(--font-sans); font-size: 12px; font-weight: 500; line-height: 16px; }"
+    },
+    {
+      "name": "Numeric Row",
+      "kind": "custom",
+      "refersTo": "formula-row",
+      "description": "Dense formula row with aligned percentages and weights.",
+      "html": "<div class=\"ds-row\"><span>Olive oil</span><strong>62%</strong><strong>620 g</strong></div>",
+      "css": ".ds-row { display: grid; grid-template-columns: minmax(0, 1fr) 56px 72px; gap: 12px; align-items: center; border-radius: 8px; background: var(--color-panel-strong); color: var(--color-ink); padding: 12px 16px; font-family: var(--font-sans); font-size: 14px; } .ds-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-row strong { color: var(--color-ink-strong); font-family: var(--font-numeric); font-size: 14px; font-weight: 500; font-variant-numeric: tabular-nums; text-align: right; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Formulation Bench",
+    "overview": "Soapkraft should feel like a calm, practical, professional bench for soap and cosmetic formulation. It carries natural warmth through cream, stone, and green, but it stays precise enough for lye calculations, formulation tables, costing, label signals, and compliance preparation.",
+    "keyCharacteristics": [
+      "Warm laboratory neutrals with one relaxed green accent.",
+      "Dense, work-focused surfaces with clear hierarchy.",
+      "Tonal layering first, soft warm elevation second.",
+      "Numeric values use tabular monospace styling.",
+      "Compliance is visible and calm, never visually dominant by default."
+    ],
+    "rules": [
+      {
+        "name": "The Green Earns Attention Rule",
+        "body": "Living Green is for primary actions, selected states, focus, and meaningful state indicators. Do not use it as decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Semantic Color Rule",
+        "body": "Amber, blue, red, and teal must explain state. They are not palette variety.",
+        "section": "colors"
+      },
+      {
+        "name": "The Structural Lines Rule",
+        "body": "Borders are allowed for tables, inputs, app shell separation, and dense grouped rows. Decorative colored side stripes are forbidden.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do use the tokens in resources/css/shared/soapkraft.css as the visual source of truth.",
+      "Do use Living Green for primary action, active state, and focus only.",
+      "Do use Chemistry Amber for lye, warning, and chemistry signals.",
+      "Do use numeric or the numeric font stack for weights, percentages, costs, lye, water, and quality values."
+    ],
+    "donts": [
+      "Don't make Soapkraft look like an Etsy craft template.",
+      "Don't use generic SaaS card grids as the default landing or dashboard answer.",
+      "Don't use flashy AI gradients, gradient text, or neon dark lab sci-fi styling.",
+      "Don't use decorative handmade soap blog motifs, blobs, bubbles, leaf patterns, or soap textures as UI decoration."
+    ]
+  }
+}

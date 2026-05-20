@@ -6,6 +6,7 @@
 @import '../../vendor/filament/forms/resources/css/index.css';
 @import '../../vendor/filament/tables/resources/css/index.css';
 @import './shared/soapkraft.css';
+@import './shared/filament-soapkraft.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -23,7 +24,6 @@
 
 @layer components {
     .sk-card {
-        border: 1px solid transparent;
         border-radius: 0.875rem;
         background: var(--color-panel);
         box-shadow:
@@ -265,15 +265,6 @@
         letter-spacing: 0.007em;
     }
 
-    button:focus-visible,
-    input:focus-visible,
-    select:focus-visible,
-    textarea:focus-visible,
-    a:focus-visible {
-        outline: 2px solid var(--color-accent);
-        outline-offset: 2px;
-        border-radius: 0.25rem;
-    }
 }
 
 @keyframes hero-rise {

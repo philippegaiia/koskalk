@@ -1,8 +1,8 @@
 @php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
 
 <aside class="space-y-4">
- <div class="overflow-hidden sk-card">
- <div class="border-b border-[var(--color-line)] px-5 py-5">
+ <div class="overflow-hidden sk-card sk-tone-catalog">
+ <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-5">
  <p class="sk-eyebrow">Ingredient browser</p>
  <h3 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Filtered by category</h3>
  </div>
@@ -21,7 +21,7 @@
  <p class="text-sm text-[var(--color-ink-soft)]"><span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="filteredIngredients.length"></span> match the current filter</p>
  </div>
 
- <div class="max-h-[600px] divide-y divide-[var(--color-line)] overflow-y-auto" role="region" aria-label="Ingredient list">
+ <div class="max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="Ingredient list">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
  <div class="group px-4 py-2 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
@@ -62,7 +62,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
- class="grid size-6 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details">
+	 class="grid size-10 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
  i
  </button>
  </template>
@@ -71,8 +71,9 @@
  x-transition.opacity
  @mouseenter="open = true"
  @mouseleave="open = false"
- @click.outside="open = false"
- @scroll.window="if (open) { reposition(); }"
+	 @click.outside="open = false"
+	 @keydown.escape.window="open = false"
+	 @scroll.window="if (open) { reposition(); }"
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
  class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
@@ -109,15 +110,37 @@
  </button>
  </template>
  <template x-if="phaseOrder.length > 1">
- <div x-data="{ open: false }" class="relative">
- <button type="button" @click.stop="open = !open" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-white opacity-100 transition hover:bg-[var(--color-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="Choose phase for ingredient">
+ <div x-data="{
+ open: false,
+ panelStyle: '',
+ reposition() {
+ const panelWidth = 192;
+ const panelHeight = Math.min(256, Math.max(48, (this.phaseOrder?.length ?? 1) * 40 + 8));
+ const gutter = 16;
+ const rect = this.$refs.trigger.getBoundingClientRect();
+ const left = Math.max(gutter, Math.min(window.innerWidth - panelWidth - gutter, rect.right - panelWidth));
+ const belowTop = rect.bottom + 8;
+ const aboveTop = rect.top - panelHeight - 8;
+ const top = belowTop + panelHeight > window.innerHeight - gutter
+ ? Math.max(gutter, aboveTop)
+ : belowTop;
+
+ this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
+ },
+ }" class="relative">
+ <button type="button" x-ref="trigger" @click.stop="open = !open; if (open) { $nextTick(() => reposition()); }" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-white opacity-100 transition hover:bg-[var(--color-accent-hover)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="Choose phase for ingredient" aria-haspopup="menu" :aria-expanded="open.toString()">
  <span>+</span>
  </button>
+ <template x-teleport="body">
  <div x-show="open"
  x-transition.opacity
  x-cloak
  @click.outside="open = false"
- class="absolute right-0 z-50 mt-2 w-48 rounded-lg border border-[var(--color-line)] bg-white p-1 shadow-lg">
+ @keydown.escape.window="open = false"
+ @scroll.window="if (open) { reposition(); }"
+ @resize.window="if (open) { reposition(); }"
+ :style="panelStyle"
+ class="z-[90] max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto rounded-lg border border-[var(--color-line)] bg-white p-1 shadow-lg">
  <template x-for="phase in phaseOrder" :key="`${ingredient.id}-${phase.key}-add-option`">
  <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]">
  <span class="truncate" x-text="`Add to ${phase.name || humanizeKey(phase.key)}`"></span>
@@ -125,6 +148,7 @@
  </button>
  </template>
  </div>
+ </template>
  </div>
  </template>
  @else
@@ -140,76 +164,4 @@
  </div>
  </div>
 
- @unless ($isCosmeticWorkbench)
- <div class="sk-card p-5">
- <div>
- <div>
- <p class="sk-eyebrow">Fatty acid profile</p>
- </div>
- </div>
-
- <template x-if="hasFattyAcidProfileData">
- <div class="mt-4 space-y-4">
- <div class="sk-inset p-4">
- <p class="sk-eyebrow">Grouped profile</p>
- <div class="mt-3 flex h-3 overflow-hidden rounded-full bg-white/80">
- <template x-for="segment in fattyAcidGroupSegments()" :key="segment.key">
- <div class="h-full shrink-0" :style="{ width: `${segment.percent}%`, backgroundColor: segment.color }"></div>
- </template>
- </div>
- <div class="mt-3 grid gap-2">
- <template x-for="segment in fattyAcidGroupSegments()" :key="`${segment.key}-legend`">
- <div class="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs">
- <div class="flex min-w-0 flex-1 items-center gap-2">
- <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: segment.color }"></span>
- <span class="shrink-0 rounded-full px-2 py-0.5 font-medium text-white" :style="{ backgroundColor: segment.color }" x-text="segment.shortLabel"></span>
- <span class="min-w-0 flex-1 truncate text-[var(--color-ink-strong)]" x-text="segment.label"></span>
- </div>
- <span class="numeric shrink-0 text-right text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
- </div>
- </template>
- </div>
- </div>
-
- <template x-if="fattyAcidChemistrySummaryRows().length > 0">
- <div class="grid grid-cols-3 gap-2">
- <template x-for="row in fattyAcidChemistrySummaryRows()" :key="row.key">
- <div class="min-w-0 rounded-lg bg-[var(--color-field)] px-2.5 py-2 text-center text-xs">
- <div class="truncate font-medium text-[var(--color-ink-soft)]" x-text="row.label"></div>
- <div class="numeric mt-1 truncate font-semibold text-[var(--color-ink-strong)]" x-text="row.value"></div>
- <template x-if="row.bracket">
- <div class="numeric mt-0.5 truncate text-[11px] leading-4 text-[var(--color-ink-soft)]" x-text="row.bracket"></div>
- </template>
- </div>
- </template>
- </div>
- </template>
-
- <details class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]">
- <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 marker:hidden">
- <span class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-strong)]">Details</span>
- <span class="numeric shrink-0 text-xs text-[var(--color-ink-soft)]" x-text="`${fattyAcidProfileRows.length} acids`"></span>
- </summary>
- <div class="grid gap-1.5 border-t border-[var(--color-line)] px-3 py-3">
- <template x-for="row in fattyAcidProfileRows" :key="row.key">
- <div class="grid grid-cols-[minmax(0,5.5rem)_minmax(3rem,1fr)_4.25rem] items-center gap-3 rounded-md bg-white/70 px-3 py-2 text-xs">
- <span class="truncate text-[var(--color-ink-soft)]" x-text="row.label"></span>
- <div class="h-1.5 overflow-hidden rounded-full bg-white">
- <div class="h-full rounded-full bg-[var(--color-ink-strong)]" :style="fattyAcidRowBarStyle(row.value, row.color)"></div>
- </div>
- <span class="numeric text-right font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.value, 1)}%`"></span>
- </div>
- </template>
- </div>
- </details>
- </div>
- </template>
-
- <template x-if="!hasFattyAcidProfileData">
- <div class="mt-4 rounded-lg bg-[var(--color-field)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
- Fill the fatty acid profile on the selected carrier oils to see the blended profile here.
- </div>
- </template>
- </div>
- @endunless
 </aside>

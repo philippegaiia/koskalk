@@ -39,9 +39,9 @@
  </template>
 
  <template x-if="packagingPlanRows.length > 0">
- <div class="overflow-x-auto">
- <div class="min-w-[58rem]">
- <div class="grid grid-cols-[minmax(0,1.9fr)_9rem_minmax(0,1.3fr)_7rem] gap-px bg-[var(--color-line)] text-sm">
+	 <div class="overflow-hidden touch-pan-x">
+	 <div>
+	 <div class="hidden text-sm lg:grid lg:grid-cols-[minmax(0,1.9fr)_9rem_minmax(0,1.3fr)_7rem] lg:gap-px lg:bg-[var(--color-line)]">
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Packaging item</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Components per unit</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Notes</div>
@@ -50,18 +50,20 @@
 
  <div class="divide-y divide-[var(--color-line)] bg-white">
  <template x-for="row in packagingPlanRows" :key="row.id">
- <div class="grid grid-cols-[minmax(0,1.9fr)_9rem_minmax(0,1.3fr)_7rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="flex items-center bg-white px-4 py-3">
+	 <div class="grid grid-cols-1 gap-3 bg-white p-3 text-sm lg:grid-cols-[minmax(0,1.9fr)_9rem_minmax(0,1.3fr)_7rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+	 <div class="flex items-center bg-white lg:px-4 lg:py-3">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
- <div class="flex items-center bg-white px-3 py-3">
+	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
+	 <span class="sk-eyebrow lg:hidden">Components per unit</span>
  <input :value="row.components_per_unit" @blur="normalizeDecimalBlur($event); updatePackagingPlanComponents(row, $event.target.value)" type="text" inputmode="decimal" :aria-label="'Components per unit for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
- <div class="flex items-center bg-white px-3 py-3">
+	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
+	 <span class="sk-eyebrow lg:hidden">Notes</span>
  <input x-model="row.notes" type="text" :aria-label="'Notes for ' + row.name" class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </div>
- <div class="flex items-center justify-end bg-white px-4 py-3">
- <button type="button" @click="removePackagingPlanRow(row.id)" class="grid size-8 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove packaging item">×</button>
+	 <div class="flex items-center justify-end bg-white lg:px-4 lg:py-3">
+	 <button type="button" @click="removePackagingPlanRow(row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove packaging item">×</button>
  </div>
  </div>
  </template>

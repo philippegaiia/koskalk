@@ -1,0 +1,6 @@
+@import 'tailwindcss' source(none);
+@custom-variant dark (&:where(.dark, .dark *));
+@import './shared/soapkraft.css';
+
+@source '../views/layouts/public.blade.php';
+@source '../views/welcome.blade.php';

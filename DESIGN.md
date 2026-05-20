@@ -1,322 +1,249 @@
-# Koskalk — Design System
-
-> **Creative North Star: "The Clinical Naturalist"**
-> The interface of a professional soap chemist: rigorous precision of a lab tool,
-> organic warmth of the craft. Premium feel through intentional restraint —
-> no decoration, no "crafty" aesthetics. Complex chemical data made legible and authoritative.
-
+---
+name: Soapkraft
+description: Calm formulation software for soap and cosmetic makers.
+colors:
+  warm-bench-surface: "oklch(96.7% 0.008 91)"
+  sidebar-clay: "oklch(95.3% 0.010 87)"
+  clean-panel: "oklch(99.7% 0.004 91)"
+  recessed-stone: "oklch(93.4% 0.014 93)"
+  field-paper: "oklch(99.4% 0.003 91)"
+  field-muted: "oklch(96.4% 0.010 94)"
+  field-outline: "oklch(86.1% 0.017 88)"
+  bench-ink: "oklch(33.8% 0.015 85)"
+  bench-ink-strong: "oklch(24.0% 0.010 89)"
+  bench-ink-soft: "oklch(50.2% 0.015 82)"
+  living-green: "oklch(53.0% 0.075 145)"
+  living-green-hover: "oklch(42.5% 0.078 145)"
+  living-green-soft: "oklch(94.8% 0.028 145)"
+  living-green-strong: "oklch(34.5% 0.072 145)"
+  chemistry-amber: "oklch(55.5% 0.146 49)"
+  chemistry-amber-soft: "oklch(94.2% 0.029 78)"
+  quiet-blue: "oklch(50.0% 0.075 230)"
+  danger-red: "oklch(55% .200 25)"
+  success-teal: "oklch(49.0% 0.085 166)"
+  forest-deep: "oklch(20.3% 0.026 149)"
+  forest: "oklch(27.9% 0.039 150)"
+  cream: "oklch(95.7% 0.012 80)"
+  cream-warm: "oklch(92.6% 0.023 87)"
+typography:
+  display:
+    fontFamily: "Instrument Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "clamp(2.5rem, 5vw, 4.25rem)"
+    fontWeight: 600
+    lineHeight: 1.02
+    letterSpacing: "0.015em"
+  headline:
+    fontFamily: "Instrument Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "clamp(2rem, 4vw, 3.25rem)"
+    fontWeight: 600
+    lineHeight: 1.08
+  title:
+    fontFamily: "Instrument Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "1.25rem"
+    fontWeight: 600
+    lineHeight: 1.25
+  body:
+    fontFamily: "Instrument Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "0.875rem"
+    fontWeight: 400
+    lineHeight: 1.6
+  label:
+    fontFamily: "Instrument Sans, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "0.6875rem"
+    fontWeight: 700
+    letterSpacing: "0.08em"
+  numeric:
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace"
+    fontSize: "0.875rem"
+    fontWeight: 400
+rounded:
+  sm: "8px"
+  md: "14px"
+  lg: "20px"
+  pill: "9999px"
+spacing:
+  xs: "4px"
+  sm: "8px"
+  md: "16px"
+  lg: "24px"
+  xl: "32px"
+components:
+  button-primary:
+    backgroundColor: "{colors.living-green}"
+    textColor: "{colors.cream}"
+    rounded: "{rounded.sm}"
+    padding: "10px 16px"
+  button-primary-hover:
+    backgroundColor: "{colors.living-green-hover}"
+    textColor: "{colors.cream}"
+    rounded: "{rounded.sm}"
+    padding: "10px 16px"
+  card:
+    backgroundColor: "{colors.clean-panel}"
+    textColor: "{colors.bench-ink}"
+    rounded: "{rounded.md}"
+    padding: "20px"
+  field:
+    backgroundColor: "{colors.field-paper}"
+    textColor: "{colors.bench-ink-strong}"
+    rounded: "{rounded.sm}"
+    padding: "12px 16px"
 ---
 
-## 1. Stack Context
+# Design System: Soapkraft
 
-- **Frontend (user-facing):** Blade + Livewire
-- **Admin (internal only):** Filament — users never see this
-- **Filament components reused in user UI:** Tables and Forms for Ingredients and Packaging pages only
-- **CSS:** Tailwind v4 with `@theme` OKLCH tokens in `resources/css/app.css`
-- **Font:** Instrument Sans (already loaded via Fontshare)
-- **Rule:** Never modify files in `vendor/filament/`. Only modify `.blade.php` files and the `@theme` block in `app.css`.
+## 1. Overview
 
----
+**Creative North Star: "The Formulation Bench"**
 
-## 2. Color Tokens — `@theme` block
+Soapkraft should feel like a calm, practical, professional bench for soap and cosmetic formulation. It carries natural warmth through cream, stone, and green, but it stays precise enough for lye calculations, formulation tables, costing, label signals, and compliance preparation.
 
-Paste this into `resources/css/app.css`, replacing the existing `@theme {}` block:
+The product is dense by design. Users need many values on screen, especially in the workbench, so the visual system uses restrained color, compact controls, numeric alignment, and predictable structure. Warmth comes from the palette and soft elevation, not from craft decoration.
 
-```css
-@theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-numeric: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-        'Liberation Mono', 'Courier New', monospace;
+This system explicitly rejects the anti-references in PRODUCT.md: Etsy craft templates, generic SaaS card grids, flashy AI gradients, neon dark lab interfaces, and decorative handmade soap blog aesthetics.
 
-    --color-surface: oklch(98.3% .011 85);
-    --color-sidebar: oklch(96.8% .010 86);
-    --color-panel: oklch(99.5% .003 80);
-    --color-panel-strong: oklch(95.1% .014 84);
-    --color-field: oklch(99.7% .002 82);
-    --color-field-muted: oklch(96.8% .010 84);
-    --color-field-outline: oklch(78% .012 82);
+**Key Characteristics:**
 
-    --color-hero: oklch(22.0% .025 154);
-    --color-hero-soft: oklch(27.0% .028 154);
-    --color-surface-strong: oklch(30.0% .022 80);
+- Warm laboratory neutrals with one relaxed green accent.
+- Dense, work-focused surfaces with clear hierarchy.
+- Tonal layering first, soft warm elevation second.
+- Numeric values use tabular monospace styling.
+- Compliance is visible and calm, never visually dominant by default.
 
-    --color-line: oklch(88% .010 80);
-    --color-line-strong: oklch(72% .018 80);
-    --color-line-hero: oklch(40% .030 154);
+## 2. Colors
 
-    --color-ink: oklch(28% .012 75);
-    --color-ink-strong: oklch(13% .008 70);
-    --color-ink-soft: oklch(54% .012 75);
+The palette is Warm Laboratory Neutrals plus Living Green, with amber, blue, red, and teal reserved for semantic meaning.
 
-    --color-ink-sidebar: oklch(24% .025 150);
-    --color-ink-sidebar-soft: oklch(48% .025 150);
-    --color-inverse: oklch(98% .006 84);
-    --color-inverse-soft: oklch(76% .010 84);
-    --color-inverse-muted: oklch(58% .010 84);
+### Primary
 
-    --color-accent: oklch(53.0% .077 163);
-    --color-accent-hover: oklch(38% .105 154);
-    --color-accent-soft: oklch(94% .036 154);
-    --color-accent-strong: oklch(32% .092 154);
+- **Living Green** (`--color-accent`): primary actions, selected states, focus rings, and the most important active affordances.
+- **Living Green Soft** (`--color-accent-soft`): selected navigation, subtle active backgrounds, hover fields, and quiet positive context.
+- **Living Green Strong** (`--color-accent-strong`): active labels and text placed over soft green.
 
-    --color-warning: oklch(45.7% .087 65);
-    --color-warning-hover: oklch(38% .100 55);
-    --color-warning-soft: oklch(93% .038 68);
-    --color-warning-strong: oklch(36% .095 55);
+### Secondary
 
-    --color-danger: oklch(55% .200 25);
-    --color-danger-hover: oklch(46% .185 25);
-    --color-danger-soft: oklch(95% .050 25);
-    --color-danger-strong: oklch(45% .180 25);
+- **Chemistry Amber** (`--color-warning`, `--color-chemistry`): lye, chemistry, warning, and below-target signals.
+- **Quiet Blue** (`--color-info`): informational states that are not success, warning, or danger.
+- **Success Teal** (`--color-success`): success states and ideal quality results.
+- **Danger Red** (`--color-danger`): destructive actions, high-risk conditions, and error states.
 
-    --color-success: oklch(52% .155 142);
-    --color-success-soft: oklch(95% .040 142);
-    --color-success-strong: oklch(36% .130 142);
-}
-```
+### Tertiary
 
----
+- **Forest Landing Palette** (`--color-forest`, `--color-forest-deep`, `--color-forest-night`): public landing-page depth, brand contrast, and photo-led hero treatments.
+- **Cream Landing Palette** (`--color-cream`, `--color-cream-warm`, `--color-cream-dark`): public shell backgrounds and warm brand sections.
 
-## 3. Surface Architecture — The "No-Line" Rule
+### Neutral
 
-Depth is created by **background shifts only**. 1px solid borders for sectioning are prohibited.
+- **Warm Bench Surface** (`--color-surface`): authenticated app background.
+- **Sidebar Clay** (`--color-sidebar`): app navigation rail background.
+- **Clean Panel** (`--color-panel`): primary cards, tables, and modal surfaces.
+- **Recessed Stone** (`--color-panel-strong`): inset rows, grouped controls, and secondary panels.
+- **Field Paper** (`--color-field`): input and select backgrounds.
+- **Field Outline** (`--color-field-outline`): accessible field outline.
+- **Bench Ink** (`--color-ink`, `--color-ink-strong`, `--color-ink-soft`): body, headings, and secondary text.
 
-```
-Level 0 — Page background
-  --color-surface  oklch(97.5% .008 82)  Warm Stone
+### Named Rules
 
-  Level 1 — Primary cards (lifted)
-    --color-panel  oklch(99.5% .003 80)  Quasi-white
+**The Green Earns Attention Rule.** Living Green is for primary actions, selected states, focus, and meaningful state indicators. Do not use it as decoration.
 
-    Level 2 — Insets / recessed zones (rows, data wells)
-      --color-panel-strong  oklch(93.5% .014 80)  Slightly darker
-```
+**The Semantic Color Rule.** Amber, blue, red, and teal must explain state. They are not palette variety.
 
-**Cards have NO border.** Elevation comes from shadow only (see Section 5).
+**The Brand Override Rule.** The landing page may use the forest and cream palette more boldly. The authenticated product stays restrained.
 
-**Exception — ghost border for inputs only:**
-Use `outline: 1px solid oklch(from var(--color-ink) l c h / 0.15)` on `<input>` and `<select>` for accessibility.
-It should be felt, not seen.
+## 3. Typography
 
----
+**Display Font:** Instrument Sans with system sans fallbacks.
+**Body Font:** Instrument Sans with system sans fallbacks.
+**Label/Mono Font:** System monospace stack for numeric values.
 
-## 4. Border Radius — 3 Levels Only
+**Character:** One humanist sans carries the product. The voice is calm and technical without feeling sterile. Type hierarchy comes from weight, scale, case, and spacing, not from decorative font pairing.
 
-| Level | Value | Used for |
-|---|---|---|
-| Card / section wrapper | `0.75rem` (12px) | All section cards |
-| Inner / row / input | `0.5rem` (8px) | Ingredient rows, input fields, inner zones |
-| Badge / pill | `9999px` | NaOH/KOH/Water badges, category tags |
+### Hierarchy
 
-**Nested radius rule:** when an inner element sits inside a padded container,
-`inner-radius = outer-radius - container-padding`. If padding ≥ outer-radius, inner = 0.
+- **Display** (600, `clamp(2.5rem, 5vw, 4.25rem)`, 1.02): public landing hero headlines only.
+- **Headline** (600, `clamp(2rem, 4vw, 3.25rem)`, 1.08): public landing sections and major page statements.
+- **Title** (600, `1.25rem`, 1.25): app cards, workbench panels, and page headings.
+- **Body** (400, `0.875rem`, 1.6): dense product text, helper copy, table labels, and control text.
+- **Label** (700, `0.6875rem`, `0.08em`, uppercase): metadata labels such as workbench sections, card eyebrows, and panel context.
+- **Numeric** (400, `0.875rem`, tabular monospace): weights, percentages, costs, qualities, lye, water, and chemistry values.
 
-Never apply the same radius uniformly to all elements.
+### Named Rules
 
----
+**The Metadata Label Rule.** Uppercase labels describe context; they are not section headlines. Use them sparingly and keep them small.
 
-## 5. Elevation & Shadows
+**The Numeric Trust Rule.** Any measured formulation value uses the numeric class or monospace stack so columns align without extra grid noise.
 
-Only **Level 1 cards** receive a shadow. Rows, badges, and inputs have no shadow.
+## 4. Elevation
 
-```css
-/* Card shadow — warm umber double-layer, never pure black */
-box-shadow:
-  0 2px 4px rgba(60, 50, 30, 0.04),
-  0 12px 24px rgba(60, 50, 30, 0.08);
-```
+Soapkraft uses a hybrid of tonal layering and soft warm elevation. In dense product surfaces, background shifts and thin structural lines help tables and form groups stay legible. Primary cards use warm umber shadows when they need to lift from the surface.
 
-In Tailwind: `shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]`
+### Shadow Vocabulary
 
----
+- **Public Card Elevation** (`0 2px 4px rgba(60, 50, 30, 0.04), 0 12px 24px rgba(60, 50, 30, 0.08)`): marketing cards and lifted public preview panels.
+- **App Card Elevation** (`0 1px 2px rgba(60, 50, 30, 0.04), 0 12px 24px rgba(60, 50, 30, 0.07)`): authenticated product cards.
+- **Shell Lines** (`0 1px 0 rgba(60, 50, 30, 0.08)`): public navigation and footer separation.
 
-## 6. Typography
+### Named Rules
 
-**Font:** Instrument Sans — single typeface, weight variation only. No second font family needed.
+**The Structural Lines Rule.** Borders are allowed for tables, inputs, app shell separation, and dense grouped rows. Decorative colored side stripes are forbidden.
 
-### Section metadata labels
-Section headers (`REACTION CORE`, `FATTY ACID PROFILE`, etc.) are **metadata, not titles**.
+**The Warm Shadow Rule.** Shadows use warm umber values, never pure black. If the shadow reads as dramatic, it is too heavy for the product.
 
-```html
-<p class="text-[0.6875rem] font-medium uppercase tracking-[0.05em] text-[var(--color-ink-soft)]">
-    Reaction Core
-</p>
-```
-Use `<p>` or `<span>`, never `<h2>`/`<h3>` for these labels.
-
-### Numeric values
-All weights (g), percentages (%), INS values, and chemical quantities:
-```html
-<span class="font-mono text-sm">47.3</span>
-```
-Monospace ensures column alignment without drawing grid lines.
-
-### Size scale
-| Context | Size | Weight |
-|---|---|---|
-| Page/section title | `text-xl` | semibold |
-| Section metadata label | `0.6875rem` | medium + uppercase |
-| Body / UI | `text-sm` (14px) | regular |
-| Readable content | `text-base` (16px) | regular |
-| Numeric values | `text-sm font-mono` | regular |
-| Tiny metadata | `text-xs` | regular |
-
----
-
-## 7. Components
-
-### Card (Section wrapper — Level 1)
-```html
-<div class="rounded-xl bg-[var(--color-panel)]
-            shadow-[0_2px_4px_rgba(60,50,30,0.04),0_12px_24px_rgba(60,50,30,0.08)]
-            p-5">
-    <!-- content -->
-</div>
-```
-
-### Inset zone (Level 2 — ingredient rows, data wells)
-```html
-<div class="rounded-lg bg-[var(--color-panel-strong)] px-4 py-3">
-    <!-- row content -->
-</div>
-```
-
-### Ingredient row (inside card, spaced with gap not dividers)
-```html
-<div class="flex items-center gap-3 rounded-lg bg-[var(--color-panel-strong)] px-4 py-3">
-    <span class="flex-1 text-sm text-[var(--color-ink)]">Olive oil virgin</span>
-    <span class="text-sm font-mono text-[var(--color-ink-soft)] w-12 text-right">60%</span>
-    <span class="text-sm font-mono text-[var(--color-ink)] w-16 text-right">600 g</span>
-    <button class="text-[var(--color-ink-soft)] hover:text-[var(--color-danger)] ml-1">×</button>
-</div>
-```
-Use `space-y-2` between rows — **never** use `<hr>` or border-bottom for row separation.
-
-### Input field (ghost border, focus transitions)
-```html
-<input class="w-full rounded-lg bg-[var(--color-panel-strong)] px-3 py-2 text-sm
-              outline outline-1 outline-[oklch(from_var(--color-ink)_l_c_h_/_0.15)]
-              focus:outline-2 focus:outline-[var(--color-accent)]
-              transition-all duration-150">
-```
+## 5. Components
 
 ### Buttons
-```html
-<!-- Primary CTA (solid sage — one per section max) -->
-<button class="rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)]
-               text-white text-sm font-medium px-4 py-2 transition-colors">
-    Save Formula
-</button>
 
-<!-- Secondary (ghost) -->
-<button class="rounded-lg border border-[oklch(from_var(--color-accent)_l_c_h_/_0.40)]
-               text-[var(--color-accent)] hover:bg-[var(--color-accent-soft)]
-               text-sm font-medium px-4 py-2 transition-colors">
-    Save Draft
-</button>
+- **Shape:** Compact rounded rectangle or pill depending on context. App primitive uses 8px; public CTAs may use pills.
+- **Primary:** Living Green background with inverse text. Use for the main action in a local workflow.
+- **Hover / Focus:** Hover deepens to Living Green Hover. Focus uses a 2px Living Green outline with 2px offset.
+- **Secondary / Ghost / Tertiary:** Ghost actions use soft neutral text and panel hover. Outline actions use the line token and neutral text.
 
-<!-- Tertiary / navigation (text only) -->
-<button class="text-sm text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]
-               transition-colors px-2 py-1">
-    Open Recipe
-</button>
-```
+### Chips
 
-### Badges
-```html
-<!-- Alkaline — NaOH / KOH -->
-<span class="rounded-full px-3 py-0.5 text-xs font-semibold
-             bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]">
-    NaOH  47.3 g
-</span>
+- **Style:** Small rounded chips use either soft semantic backgrounds or a line token with neutral text.
+- **State:** Active chips use soft green with strong green text. Neutral category chips should not look like CTAs.
 
-<!-- Hydration — Water -->
-<span class="rounded-full px-3 py-0.5 text-xs font-semibold
-             bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]">
-    Water  113.0 g
-</span>
+### Cards / Containers
 
-<!-- Neutral — category tag -->
-<span class="rounded-full px-3 py-0.5 text-xs font-medium
-             bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]">
-    Carrier Oil
-</span>
-```
+- **Corner Style:** App cards use a 14px radius. Inset zones and fields use 8px. Large modal or hero objects may use 20px or more only when the scale earns it.
+- **Background:** Primary cards use Clean Panel. Insets use Recessed Stone or mixed panel/surface backgrounds.
+- **Shadow Strategy:** Cards may use App Card Elevation or Public Card Elevation. Rows, badges, and most inputs stay flat.
+- **Border:** Product cards may carry transparent or structural borders. Tables and dense rows may use line tokens for legibility.
+- **Internal Padding:** Product cards usually use 20px to 24px. Dense rows use 12px to 16px.
 
-### Koskalk Quality metric bar
-```html
-<div class="space-y-3">
-    <!-- Example row — repeat per metric -->
-    <div>
-        <div class="flex justify-between mb-1">
-            <span class="text-[0.6875rem] uppercase tracking-[0.05em] text-[var(--color-ink-soft)]">
-                Unmolding Firmness
-            </span>
-            <span class="text-xs font-mono text-[var(--color-ink)]">27.6</span>
-        </div>
-        <div class="h-1.5 rounded-full bg-[var(--color-panel-strong)] overflow-hidden">
-            <div class="h-full rounded-full transition-all duration-500"
-                 style="width: 35%; background: var(--color-warning);">
-            </div>
-        </div>
-    </div>
-</div>
-```
-Bar color mapping:
-- `var(--color-warning)` — Low / below target range
-- `var(--color-accent)` — Moderate / Good / target range
-- `var(--color-danger)` — High risk (DOS risk, Slime risk)
+### Inputs / Fields
 
-### Glassmorphism (tooltips and small overlays ONLY)
-```css
-.tooltip-overlay {
-    background: oklch(99.5% .003 80 / 0.60);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-}
-```
-**Do not apply glassmorphism to:** sidebars, navigation panels, section cards, or any persistent UI element.
+- **Style:** Field Paper background, 8px radius, soft line or outline, 14px text.
+- **Focus:** 2px Living Green outline. Focus must be visible against warm surfaces.
+- **Error / Disabled:** Error uses Danger Red soft and strong tokens. Disabled fields use Field Muted and reduced opacity.
 
----
+### Navigation
 
-## 8. Do's and Don'ts
+Navigation is familiar and work-focused. The authenticated app uses a left sidebar with 17rem width on desktop, collapsible behavior on smaller screens, 8px nav item radius, and soft green active states. The public nav is fixed, warm, lightly translucent, and uses simple text links plus one calculator CTA.
 
-### ✅ Do
-- Use background shifts to define boundaries — never lines
-- Use `space-y-2` / `space-y-3` between rows and items
-- Use `font-mono` for all weights, percentages, and chemical values
-- Use `0.6875rem uppercase tracking-[0.05em]` for section labels
-- Limit accent color to CTAs and active states only
-- Use 8px radius for inner elements, 12px for section cards, pill for badges
-- Apply shadow to cards only — one level of elevation
+### Signature Component: Formula Workbench
 
-### ❌ Don't
-- **No gradient buttons** — solid accent color only
-- **No colored left-border on cards** — `border-left: 3px solid accent` is forbidden
-- **No icons in colored circles or squares** — icons are naked and monochrome
-- **No `<hr>` or border-bottom** to separate rows — use spacing instead
-- **No background decorations** — no blobs, bubbles, patterns, leaf/soap textures
-- **No more than 2 non-neutral hues** visible in any single viewport
-- **No uniform radius** — always differentiate card / inner / badge levels
-- **No shadow on rows, badges, or inputs** — shadow is for card elevation only
-- **No pure black `#000` shadows** — always use warm umber `rgba(60, 50, 30, ...)`
-- **No glassmorphism outside tooltips** — not on panels, sidebars, or cards
-- **No `<h2>`/`<h3>` for section labels** — use `<p>` with metadata style
+The workbench combines an ingredient browser, formula tables, diagnostics, quality bars, and save controls. It should stay dense, scannable, and predictable. Ingredient rows, percentages, weights, totals, lye, water, costing, and quality values must keep numeric alignment. Progressive disclosure is allowed for compliance and advanced diagnostics, but the core soap calculation remains visible.
 
----
+## 6. Do's and Don'ts
 
-## 9. Agent Instructions Summary
+### Do:
 
-When receiving a design or frontend task for Koskalk, the agent must:
+- **Do** use the tokens in `resources/css/shared/soapkraft.css` as the visual source of truth.
+- **Do** use Living Green for primary action, active state, and focus only.
+- **Do** use Chemistry Amber for lye, warning, and chemistry signals.
+- **Do** use `numeric` or the numeric font stack for weights, percentages, costs, lye, water, and quality values.
+- **Do** keep workbench surfaces compact, structured, and easy to scan.
+- **Do** keep compliance visible but calm, especially for users using Soapkraft as a calculator or recipe portfolio.
+- **Do** preserve keyboard focus, reduced-motion behavior, and mobile/tablet usability.
 
-1. Read this file before touching any Blade template or CSS
-2. Use `var(--color-*)` tokens — never hardcode hex values
-3. Use `font-mono` on all numeric/chemical values
-4. Apply the 3-level radius system — never uniform radius
-5. Apply shadow to cards only — never to rows, inputs, or badges
-6. Separate items with spacing (`space-y-*`) — never with `<hr>` or `border-bottom`
-7. Keep accent color (`var(--color-accent)`) strictly for CTAs and active states
-8. Section labels are `<p>` with metadata style — not heading elements
-9. Do not modify `vendor/filament/` files under any circumstances
-10. Glassmorphism is allowed only for tooltips and small floating overlays
+### Don't:
+
+- **Don't** make Soapkraft look like an Etsy craft template.
+- **Don't** use generic SaaS card grids as the default landing or dashboard answer.
+- **Don't** use flashy AI gradients, gradient text, or neon dark lab sci-fi styling.
+- **Don't** use decorative handmade soap blog motifs, blobs, bubbles, leaf patterns, or soap textures as UI decoration.
+- **Don't** use colored left-border or right-border stripes on cards, rows, callouts, or alerts.
+- **Don't** use amber, blue, red, or teal for decoration. They must communicate state.
+- **Don't** make compliance visually dominate ordinary calculator and recipe work.
+- **Don't** imply the product replaces professional regulatory review where that review is required.

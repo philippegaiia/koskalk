@@ -4,11 +4,11 @@
  role="tab"
  type="button"
  @click="activeWorkbenchTab = 'formula'"
- :aria-selected="activeWorkbenchTab === 'formula'"
- :class="activeWorkbenchTab === 'formula'
- ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
- : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
- class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
+	 :aria-selected="activeWorkbenchTab === 'formula'"
+	 :class="activeWorkbenchTab === 'formula'
+	 ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] shadow-inner'
+	 : 'bg-white text-[var(--color-ink-soft)] shadow-sm hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]'"
+	 class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
  Formula
  </button>
@@ -18,10 +18,10 @@
  role="tab"
  type="button"
  @click="activeWorkbenchTab = 'packaging'"
- :aria-selected="activeWorkbenchTab === 'packaging'"
- :class="activeWorkbenchTab === 'packaging'
- ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
- : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
+	 :aria-selected="activeWorkbenchTab === 'packaging'"
+	 :class="activeWorkbenchTab === 'packaging'
+	 ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] shadow-inner'
+	 : 'bg-white text-[var(--color-ink-soft)] shadow-sm hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]'"
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
  Packaging
@@ -32,10 +32,10 @@
  role="tab"
  type="button"
  @click="activeWorkbenchTab = 'costing'; ensureCostingLoaded()"
- :aria-selected="activeWorkbenchTab === 'costing'"
- :class="activeWorkbenchTab === 'costing'
- ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
- : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
+	 :aria-selected="activeWorkbenchTab === 'costing'"
+	 :class="activeWorkbenchTab === 'costing'
+	 ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] shadow-inner'
+	 : 'bg-white text-[var(--color-ink-soft)] shadow-sm hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]'"
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
  Costing
@@ -46,10 +46,10 @@
  role="tab"
  type="button"
  @click="activeWorkbenchTab = 'output'"
- :aria-selected="activeWorkbenchTab === 'output'"
- :class="activeWorkbenchTab === 'output'
- ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
- : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
+	 :aria-selected="activeWorkbenchTab === 'output'"
+	 :class="activeWorkbenchTab === 'output'
+	 ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] shadow-inner'
+	 : 'bg-white text-[var(--color-ink-soft)] shadow-sm hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]'"
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
  Output
@@ -60,10 +60,10 @@
  role="tab"
  type="button"
  @click="activeWorkbenchTab = 'instructions'"
- :aria-selected="activeWorkbenchTab === 'instructions'"
- :class="activeWorkbenchTab === 'instructions'
- ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] border-t-2'
- : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]'"
+	 :aria-selected="activeWorkbenchTab === 'instructions'"
+	 :class="activeWorkbenchTab === 'instructions'
+	 ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)] shadow-inner'
+	 : 'bg-white text-[var(--color-ink-soft)] shadow-sm hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]'"
  class="rounded-lg px-5 py-3.5 text-left text-base font-semibold transition"
  >
  Instructions &amp; Media

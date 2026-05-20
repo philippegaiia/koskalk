@@ -112,10 +112,10 @@ export function createPresentationSection() {
             }
 
             if (tone === 'excess') {
-                return 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)]';
+                return 'border-[var(--color-danger-soft)] bg-white';
             }
 
-            return 'border-[var(--color-line-strong)] bg-[var(--color-accent-soft)]';
+            return 'border-[var(--color-line)] bg-white';
         },
 
         qualityTargetLabel(key) {

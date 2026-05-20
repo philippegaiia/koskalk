@@ -1,0 +1,325 @@
+/* Filament v5 component overrides. Audit these .fi-* selectors when upgrading Filament. */
+@layer components {
+    .fi-body {
+        background: var(--color-surface);
+        color: var(--color-ink);
+    }
+
+    .fi-main,
+    .fi-simple-main {
+        color: var(--color-ink);
+    }
+
+    .fi-sidebar,
+    .fi-sidebar.fi-sidebar-open {
+        background: var(--color-sidebar);
+        border-inline-end: 1px solid var(--color-line);
+    }
+
+    .fi-topbar {
+        background: color-mix(in oklab, var(--color-panel) 90%, transparent);
+        box-shadow: 0 1px 0 var(--color-line);
+        backdrop-filter: blur(18px);
+    }
+
+    .fi-simple-main,
+    .fi-section:not(.fi-section-not-contained):not(.fi-aside),
+    .fi-section:not(.fi-section-not-contained).fi-aside > .fi-section-content-ctn,
+    .fi-sc-tabs.fi-contained,
+    .fi-ta-ctn,
+    .fi-tabs:not(.fi-contained),
+    .fi-dropdown-panel,
+    .fi-modal-window {
+        background: var(--color-panel);
+        border-radius: 0.875rem;
+        box-shadow:
+            0 0 0 1px var(--color-line),
+            0 12px 24px rgba(60, 50, 30, 0.06);
+    }
+
+    .fi-section.fi-secondary:not(.fi-section-not-contained):not(.fi-aside),
+    .fi-section.fi-secondary:not(.fi-section-not-contained).fi-aside > .fi-section-content-ctn,
+    .fi-ta-table > thead > tr,
+    .fi-ta-table > tfoot,
+    .fi-ta-table-stacked-header-row .fi-ta-table-stacked-header-cell,
+    .fi-ta-reorder-indicator,
+    .fi-ta-selection-indicator,
+    .fi-ta-filter-indicators {
+        background: color-mix(in oklab, var(--color-panel-strong) 62%, var(--color-panel) 38%);
+    }
+
+    .fi-section-content-ctn,
+    .fi-section-footer,
+    .fi-ta-header,
+    .fi-ta-header-toolbar,
+    .fi-ta-filters-above-content-ctn,
+    .fi-ta-filters-before-content-ctn,
+    .fi-ta-filters-after-content-ctn,
+    .fi-ta-table,
+    .fi-ta-table > thead,
+    .fi-ta-table > tbody,
+    .fi-pagination,
+    .fi-input-wrp-prefix:not(.fi-inline),
+    .fi-input-wrp-suffix:not(.fi-inline),
+    .fi-tabs.fi-contained {
+        border-color: var(--color-line);
+    }
+
+    .fi-section-header-heading,
+    .fi-ta-header-heading,
+    .fi-ta-header-cell,
+    .fi-ta-summary-row-heading-cell,
+    .fi-fieldset-legend-label,
+    .fi-fo-field-wrp-label span,
+    .fi-sc-section-label,
+    .fi-modal-heading {
+        color: var(--color-ink-strong);
+    }
+
+    .fi-section-header-description,
+    .fi-ta-header-description,
+    .fi-fo-field-wrp-helper-text,
+    .fi-input-wrp-label,
+    .fi-ta-placeholder,
+    .fi-breadcrumbs-item-label,
+    .fi-topbar-item-label,
+    .fi-sidebar-group-label {
+        color: var(--color-ink-soft);
+    }
+
+    .fi-sidebar-item-btn,
+    .fi-topbar-item-btn,
+    .fi-tabs-item,
+    .fi-icon-btn {
+        border-radius: 0.5rem;
+    }
+
+    .fi-sidebar-item-label {
+        color: var(--color-ink-sidebar-soft);
+    }
+
+    .fi-sidebar-item > .fi-sidebar-item-btn > .fi-icon,
+    .fi-topbar-item-btn > .fi-icon,
+    .fi-tabs-item > .fi-icon {
+        color: color-mix(in oklab, var(--color-ink-soft) 74%, var(--color-line-strong));
+    }
+
+    .fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
+    .fi-sidebar-item.fi-sidebar-item-has-active-child-items > .fi-sidebar-item-btn,
+    .fi-topbar-item.fi-active .fi-topbar-item-btn,
+    .fi-tabs-item.fi-active {
+        background: var(--color-accent-soft);
+    }
+
+    .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon,
+    .fi-sidebar-item.fi-sidebar-item-has-active-child-items > .fi-sidebar-item-btn > .fi-icon,
+    .fi-sidebar-item.fi-active .fi-sidebar-item-label,
+    .fi-sidebar-item.fi-sidebar-item-has-active-child-items .fi-sidebar-item-label,
+    .fi-topbar-item.fi-active .fi-topbar-item-label,
+    .fi-topbar-item.fi-active .fi-topbar-item-btn > .fi-icon,
+    .fi-tabs-item.fi-active .fi-tabs-item-label,
+    .fi-tabs-item.fi-active > .fi-icon {
+        color: var(--color-accent-strong);
+    }
+
+    .fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn:hover,
+    .fi-sidebar-group-dropdown-trigger-btn:hover,
+    .fi-topbar-item-btn:hover,
+    .fi-tabs-item:hover,
+    .fi-icon-btn:hover {
+        background: var(--color-field-muted);
+    }
+
+    .fi-input-wrp {
+        background: var(--color-field);
+        border-radius: 0.5rem;
+        box-shadow: 0 0 0 1px var(--color-field-outline);
+    }
+
+    .fi-input-wrp:not(.fi-disabled):not(:has(.fi-ac-action:focus)):focus-within {
+        box-shadow: 0 0 0 2px var(--color-accent);
+    }
+
+    .fi-input-wrp.fi-disabled {
+        background: var(--color-field-muted);
+    }
+
+    input.fi-input,
+    textarea.fi-textarea,
+    select.fi-select-input {
+        color: var(--color-ink-strong);
+    }
+
+    input.fi-input::placeholder,
+    textarea.fi-textarea::placeholder {
+        color: var(--color-ink-soft);
+    }
+
+    .fi-btn {
+        border-radius: 0.5rem;
+    }
+
+    .fi-btn:not(.fi-color):not(.fi-outlined),
+    .fi-btn.fi-outlined:not(.fi-color) {
+        background: var(--color-panel);
+        color: var(--color-ink-strong);
+        box-shadow: 0 0 0 1px var(--color-line);
+    }
+
+    .fi-btn:not(.fi-color):not(.fi-outlined):hover,
+    .fi-btn.fi-outlined:not(.fi-color):hover {
+        background: var(--color-field-muted);
+    }
+
+    .fi-ta-table > tbody > tr {
+        background: var(--color-panel);
+    }
+
+    .fi-ta-table > tbody > tr:hover {
+        background: color-mix(in oklab, var(--color-accent-soft) 44%, var(--color-panel) 56%);
+    }
+
+    .fi-ta-cell .fi-ta-cell-content,
+    .fi-ta-selection-indicator > :first-child,
+    .fi-ta-filter-indicators-label {
+        color: var(--color-ink);
+    }
+
+    .fi-badge {
+        border-radius: 0.5rem;
+    }
+
+    .dark .fi-body {
+        background: var(--color-forest-deep);
+        color: var(--color-inverse);
+    }
+
+    .dark .fi-main,
+    .dark .fi-simple-main {
+        color: var(--color-inverse);
+    }
+
+    .dark .fi-sidebar,
+    .dark .fi-sidebar.fi-sidebar-open {
+        background: color-mix(in oklab, var(--color-forest-deep) 72%, var(--color-forest-night) 28%);
+        border-color: color-mix(in oklab, var(--color-forest-light) 44%, var(--color-forest-night));
+    }
+
+    .dark .fi-topbar {
+        background: color-mix(in oklab, var(--color-forest-deep) 84%, transparent);
+        box-shadow: 0 1px 0 color-mix(in oklab, var(--color-forest-light) 42%, var(--color-forest-night));
+    }
+
+    .dark .fi-simple-main,
+    .dark .fi-section:not(.fi-section-not-contained):not(.fi-aside),
+    .dark .fi-section:not(.fi-section-not-contained).fi-aside > .fi-section-content-ctn,
+    .dark .fi-sc-tabs.fi-contained,
+    .dark .fi-ta-ctn,
+    .dark .fi-tabs:not(.fi-contained),
+    .dark .fi-dropdown-panel,
+    .dark .fi-modal-window {
+        background: color-mix(in oklab, var(--color-forest-deep) 72%, var(--color-forest-mid) 28%);
+        box-shadow:
+            0 0 0 1px color-mix(in oklab, var(--color-forest-light) 42%, var(--color-forest-night)),
+            0 18px 32px rgb(14 26 16 / 0.22);
+    }
+
+    .dark .fi-section.fi-secondary:not(.fi-section-not-contained):not(.fi-aside),
+    .dark .fi-section.fi-secondary:not(.fi-section-not-contained).fi-aside > .fi-section-content-ctn,
+    .dark .fi-ta-table > thead > tr,
+    .dark .fi-ta-table > tfoot,
+    .dark .fi-ta-table-stacked-header-row .fi-ta-table-stacked-header-cell,
+    .dark .fi-ta-reorder-indicator,
+    .dark .fi-ta-selection-indicator,
+    .dark .fi-ta-filter-indicators {
+        background: color-mix(in oklab, var(--color-forest-mid) 62%, var(--color-forest-night) 38%);
+    }
+
+    .dark .fi-section-content-ctn,
+    .dark .fi-section-footer,
+    .dark .fi-ta-header,
+    .dark .fi-ta-header-toolbar,
+    .dark .fi-ta-filters-above-content-ctn,
+    .dark .fi-ta-filters-before-content-ctn,
+    .dark .fi-ta-filters-after-content-ctn,
+    .dark .fi-ta-table,
+    .dark .fi-ta-table > thead,
+    .dark .fi-ta-table > tbody,
+    .dark .fi-pagination,
+    .dark .fi-input-wrp-prefix:not(.fi-inline),
+    .dark .fi-input-wrp-suffix:not(.fi-inline),
+    .dark .fi-tabs.fi-contained {
+        border-color: color-mix(in oklab, var(--color-forest-light) 46%, var(--color-forest-night));
+    }
+
+    .dark .fi-section-header-heading,
+    .dark .fi-ta-header-heading,
+    .dark .fi-ta-header-cell,
+    .dark .fi-ta-summary-row-heading-cell,
+    .dark .fi-fieldset-legend-label,
+    .dark .fi-fo-field-wrp-label span,
+    .dark .fi-sc-section-label,
+    .dark .fi-modal-heading {
+        color: var(--color-inverse);
+    }
+
+    .dark .fi-section-header-description,
+    .dark .fi-ta-header-description,
+    .dark .fi-fo-field-wrp-helper-text,
+    .dark .fi-input-wrp-label,
+    .dark .fi-ta-placeholder,
+    .dark .fi-breadcrumbs-item-label,
+    .dark .fi-topbar-item-label,
+    .dark .fi-sidebar-group-label,
+    .dark .fi-sidebar-item-label {
+        color: var(--color-inverse-soft);
+    }
+
+    .dark .fi-input-wrp {
+        background: color-mix(in oklab, var(--color-forest-mid) 58%, var(--color-forest-night) 42%);
+        box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-forest-light) 46%, var(--color-forest-night));
+    }
+
+    .dark input.fi-input,
+    .dark textarea.fi-textarea,
+    .dark select.fi-select-input {
+        color: var(--color-inverse);
+    }
+
+    .dark .fi-btn:not(.fi-color):not(.fi-outlined),
+    .dark .fi-btn.fi-outlined:not(.fi-color),
+    .dark .fi-ta-table > tbody > tr {
+        background: color-mix(in oklab, var(--color-forest-deep) 72%, var(--color-forest-mid) 28%);
+        color: var(--color-inverse);
+        box-shadow: 0 0 0 1px color-mix(in oklab, var(--color-forest-light) 42%, var(--color-forest-night));
+    }
+
+    .dark .fi-btn:not(.fi-color):not(.fi-outlined):hover,
+    .dark .fi-btn.fi-outlined:not(.fi-color):hover,
+    .dark .fi-ta-table > tbody > tr:hover,
+    .dark .fi-sidebar-item.fi-sidebar-item-has-url > .fi-sidebar-item-btn:hover,
+    .dark .fi-sidebar-group-dropdown-trigger-btn:hover,
+    .dark .fi-topbar-item-btn:hover,
+    .dark .fi-tabs-item:hover,
+    .dark .fi-icon-btn:hover {
+        background: color-mix(in oklab, var(--color-forest-light) 34%, var(--color-forest-night));
+    }
+
+    .dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
+    .dark .fi-sidebar-item.fi-sidebar-item-has-active-child-items > .fi-sidebar-item-btn,
+    .dark .fi-topbar-item.fi-active .fi-topbar-item-btn,
+    .dark .fi-tabs-item.fi-active {
+        background: color-mix(in oklab, var(--color-accent) 24%, var(--color-forest-deep));
+    }
+
+    .dark .fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon,
+    .dark .fi-sidebar-item.fi-sidebar-item-has-active-child-items > .fi-sidebar-item-btn > .fi-icon,
+    .dark .fi-sidebar-item.fi-active .fi-sidebar-item-label,
+    .dark .fi-sidebar-item.fi-sidebar-item-has-active-child-items .fi-sidebar-item-label,
+    .dark .fi-topbar-item.fi-active .fi-topbar-item-label,
+    .dark .fi-topbar-item.fi-active .fi-topbar-item-btn > .fi-icon,
+    .dark .fi-tabs-item.fi-active .fi-tabs-item-label,
+    .dark .fi-tabs-item.fi-active > .fi-icon {
+        color: var(--color-amber-light);
+    }
+}

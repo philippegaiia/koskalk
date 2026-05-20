@@ -10,10 +10,13 @@ use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\OwnerType;
 use App\Services\InciGenerationService;
 use App\Services\RecipeContentUpdater;
+use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchDraftPayloadMapper;
 use App\Services\RecipeWorkbenchService;
+use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\Process\Process;
@@ -244,6 +247,130 @@ it('allows incomplete cosmetic drafts but requires saved cosmetic formulas to to
 
     expect($savedDraftVersion->is_draft)->toBeTrue()
         ->and(Recipe::withoutGlobalScopes()->findOrFail($recipe->id)->product_type_id)->toBe($productType->id);
+});
+
+it('keeps selected zero-quantity ingredients across draft and saved cosmetic formulas', function () {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'name' => 'Cosmetic',
+        'slug' => 'cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $productType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+    ]);
+    $water = cosmeticIngredient('Water', 'AQUA');
+    $glycerin = cosmeticIngredient('Glycerin', 'GLYCERIN');
+    $preservative = cosmeticIngredient('Preservative', 'PHENOXYETHANOL');
+    $service = app(RecipeWorkbenchService::class);
+    $payload = cosmeticDraftPayload($productType, [
+        'phase_a' => [
+            cosmeticPayloadRow($water, percentage: 100, weight: 500),
+            cosmeticPayloadRow($glycerin, percentage: 0, weight: 0),
+        ],
+        'cool_down' => [
+            cosmeticPayloadRow($preservative, percentage: 0, weight: 0),
+        ],
+    ]);
+
+    $draftVersion = $service->saveDraft($user, $cosmeticFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $draftPayload = $service->draftPayload($recipe);
+
+    $savedVersion = $service->saveRecipe($user, $cosmeticFamily, $payload, $recipe);
+    $savedPayload = $service->versionPayload($recipe, $savedVersion->id);
+    $publishedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_draft', false)
+        ->latest('version_number')
+        ->firstOrFail();
+    $phaseSections = app(RecipeVersionViewDataBuilder::class)
+        ->build($recipe, $publishedVersion)['phaseSections'];
+
+    $draftZeroRow = collect($draftPayload['phaseItems']['phase_a'])
+        ->firstWhere('ingredient_id', $glycerin->id);
+    $savedZeroRow = collect($savedPayload['phaseItems']['cool_down'])
+        ->firstWhere('ingredient_id', $preservative->id);
+    $visibleCosmeticRows = collect($phaseSections)
+        ->flatMap(fn (array $section): array => $section['rows'])
+        ->pluck('name')
+        ->all();
+
+    expect(collect($draftPayload['phaseItems']['phase_a'])->pluck('ingredient_id')->all())
+        ->toBe([$water->id, $glycerin->id])
+        ->and(collect($draftPayload['phaseItems']['cool_down'])->pluck('ingredient_id')->all())
+        ->toBe([$preservative->id])
+        ->and(collect($savedPayload['phaseItems']['phase_a'])->pluck('ingredient_id')->all())
+        ->toBe([$water->id, $glycerin->id])
+        ->and(collect($savedPayload['phaseItems']['cool_down'])->pluck('ingredient_id')->all())
+        ->toBe([$preservative->id])
+        ->and($draftZeroRow['percentage'])->toBe(0.0)
+        ->and($draftZeroRow['weight'])->toBe(0.0)
+        ->and($savedZeroRow['percentage'])->toBe(0.0)
+        ->and($savedZeroRow['weight'])->toBe(0.0)
+        ->and($visibleCosmeticRows)->toBe(['Water']);
+});
+
+it('rejects inaccessible zero-quantity ingredients before saving cosmetic formulas', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'name' => 'Cosmetic',
+        'slug' => 'cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $productType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+    ]);
+    $water = cosmeticIngredient('Water', 'AQUA');
+    $privateIngredient = Ingredient::factory()->create([
+        'display_name' => 'Private Extract',
+        'inci_name' => 'PRIVATE EXTRACT',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+
+    $payload = cosmeticDraftPayload($productType, [
+        'phase_a' => [
+            cosmeticPayloadRow($water, percentage: 100, weight: 500),
+            cosmeticPayloadRow($privateIngredient, percentage: 0, weight: 0),
+        ],
+    ]);
+
+    expect(fn () => app(RecipeWorkbenchService::class)->saveDraft($user, $cosmeticFamily, $payload))
+        ->toThrow(ValidationException::class, 'One or more selected ingredients are no longer available.');
+});
+
+it('rejects negative cosmetic formula row values before saving', function () {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'name' => 'Cosmetic',
+        'slug' => 'cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $productType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+    ]);
+    $water = cosmeticIngredient('Water', 'AQUA');
+    $glycerin = cosmeticIngredient('Glycerin', 'GLYCERIN');
+
+    $payload = cosmeticDraftPayload($productType, [
+        'phase_a' => [
+            cosmeticPayloadRow($water, percentage: 110, weight: 550),
+            cosmeticPayloadRow($glycerin, percentage: -10, weight: -50),
+        ],
+    ]);
+
+    expect(fn () => app(RecipeWorkbenchService::class)->saveDraft($user, $cosmeticFamily, $payload))
+        ->toThrow(ValidationException::class, 'Formula percentages and weights must not be negative.');
 });
 
 it('aggregates duplicate cosmetic INCI ingredients across phases by total formula percentage', function () {

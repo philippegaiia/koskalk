@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class RecipeWorkbenchService
@@ -149,6 +151,7 @@ class RecipeWorkbenchService
     public function saveDraft(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, false);
+        $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
         return $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
@@ -157,6 +160,7 @@ class RecipeWorkbenchService
     public function saveRecipe(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true);
+        $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
         return $this->recipeVersionPublisher->publish($user, $productFamily, $normalizedPayload, $recipe);
@@ -313,6 +317,38 @@ class RecipeWorkbenchService
         }
 
         $this->recipeWorkbenchPreviewService->previewSoapCalculation($this->previewPayloadFromNormalizedSavePayload($payload));
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function validateIngredientAccess(User $user, array $payload): void
+    {
+        $ingredientIds = collect($payload['phases'] ?? [])
+            ->filter(fn (mixed $phase): bool => is_array($phase))
+            ->flatMap(fn (array $phase): array => is_array($phase['items'] ?? null) ? $phase['items'] : [])
+            ->filter(fn (mixed $item): bool => is_array($item) && is_numeric($item['ingredient_id'] ?? null))
+            ->map(fn (array $item): int => (int) $item['ingredient_id'])
+            ->filter(fn (int $ingredientId): bool => $ingredientId > 0)
+            ->unique()
+            ->values();
+
+        if ($ingredientIds->isEmpty()) {
+            return;
+        }
+
+        $accessibleIngredientIds = Ingredient::query()
+            ->accessibleTo($user)
+            ->whereKey($ingredientIds->all())
+            ->pluck('id')
+            ->map(fn (mixed $ingredientId): int => (int) $ingredientId)
+            ->all();
+
+        if ($ingredientIds->diff($accessibleIngredientIds)->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'phase_items' => 'One or more selected ingredients are no longer available.',
+            ]);
+        }
     }
 
     /**

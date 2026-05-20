@@ -1,6 +1,6 @@
 <div>
-    <div x-data="{ soapQualityPanel: 'qualities' }" class="sk-card overflow-hidden">
-        <div class="flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+    <div x-data="{ soapQualityPanel: 'qualities' }" class="sk-card sk-tone-analysis overflow-hidden">
+        <div class="sk-section-header flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="sk-eyebrow">Soapkraft qualities</p>
                 <h3 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">At a glance</h3>

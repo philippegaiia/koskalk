@@ -20,7 +20,7 @@ it('renders the public home page', function () {
         ->assertSeeText('Build soap and cosmetic formulas')
         ->assertSeeText('Save your soap and cosmetic formulas')
         ->assertSeeText('Start saving formulas')
-        ->assertSeeText('No account needed for quick calculations. Create an account when you want to save formulas, ingredients, and history.')
+        ->assertSeeText('No account needed to calculate. Sign in appears only when you choose to save formulas, ingredients, and history.')
         ->assertDontSeeText('Create free workspace');
 });
 

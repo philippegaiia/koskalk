@@ -570,15 +570,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $manufacturingInstructions = $this->pendingRichContentValue('manufacturing_instructions');
         $featuredImagePath = $this->data['featured_image_path'] ?? null;
 
-        if (filled($description) || filled($manufacturingInstructions)) {
-            return true;
-        }
-
-        if (is_string($featuredImagePath)) {
-            return filled($featuredImagePath);
-        }
-
-        return is_array($featuredImagePath) && $featuredImagePath !== [];
+        return filled($description)
+            || filled($manufacturingInstructions)
+            || filled($featuredImagePath);
     }
 
     private function persistRecipeContent(Recipe $recipe, RecipeContentUpdater $recipeContentUpdater): Recipe

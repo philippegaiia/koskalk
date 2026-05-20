@@ -59,6 +59,22 @@ function phaseItemsForBlueprints(blueprints) {
     }, {});
 }
 
+const FORMULA_DIAGNOSTICS_PREFERENCE_KEY = 'soapkraft.formulaDiagnosticsDetailsOpen';
+
+function preferredFormulaDiagnosticsOpen() {
+    try {
+        const storedPreference = window.localStorage.getItem(FORMULA_DIAGNOSTICS_PREFERENCE_KEY);
+
+        if (storedPreference !== null) {
+            return storedPreference === 'true';
+        }
+    } catch (error) {
+        void error;
+    }
+
+    return false;
+}
+
 function canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey) {
     if (sourcePhaseKey === targetPhaseKey) {
         return true;
@@ -107,7 +123,11 @@ function createRecipeWorkbenchState(payload) {
         waterValue: 38,
         superfat: 5,
         search: '',
-        activeCategory: 'all',
+        activeCategory: isCosmeticFormula ? 'all' : 'carrier_oil',
+        isComplianceSettingsOpen: false,
+        isFormulaSettingsOpen: initialDraft === null,
+        formulaDiagnosticsPreferenceKey: FORMULA_DIAGNOSTICS_PREFERENCE_KEY,
+        isFormulaDiagnosticsOpen: preferredFormulaDiagnosticsOpen(),
         ifraProductCategories: payload.ifraProductCategories ?? [],
         regulatoryRegimes: payload.regulatoryRegimes?.length ? payload.regulatoryRegimes : [{ code: 'eu', name: 'EU regime', version_label: null, status: 'active', allergen_rule_count: 0, substance_rule_count: 0 }],
         selectedIfraProductCategoryId: payload.defaultIfraProductCategoryId === null || payload.defaultIfraProductCategoryId === undefined ? '' : String(payload.defaultIfraProductCategoryId),
@@ -175,6 +195,7 @@ function createRecipeWorkbenchState(payload) {
         dirtyBaselineSignature: null,
         unsavedBeforeUnloadHandler: null,
         unsavedNavigateHandler: null,
+        lastAddedIngredientRowId: null,
         phaseItems: phaseItemsForBlueprints(phaseOrder),
 
         init() {
@@ -184,6 +205,10 @@ function createRecipeWorkbenchState(payload) {
             this.resetPackagingCatalogForm();
             this.refreshDirtyBaseline();
             this.installUnsavedChangesGuard();
+
+            this.$watch('isFormulaDiagnosticsOpen', (isOpen) => {
+                this.persistFormulaDiagnosticsPreference(isOpen);
+            });
 
             if (this.activeWorkbenchTab === 'costing') {
                 this.ensureCostingLoaded();
@@ -199,7 +224,7 @@ function createRecipeWorkbenchState(payload) {
                 const defaultOil = this.filteredIngredients.find((ingredient) => ingredient.can_add_to_saponified_oils);
 
                 if (defaultOil) {
-                    this.addIngredient(defaultOil, 'saponified_oils');
+                    this.addIngredient(defaultOil, 'saponified_oils', false);
                 }
             }
 
@@ -225,6 +250,22 @@ function createRecipeWorkbenchState(payload) {
 
         destroy() {
             this.removeUnsavedChangesGuard();
+        },
+
+        toggleFormulaDiagnostics() {
+            this.isFormulaDiagnosticsOpen = !this.isFormulaDiagnosticsOpen;
+        },
+
+        toggleFormulaSettings() {
+            this.isFormulaSettingsOpen = !this.isFormulaSettingsOpen;
+        },
+
+        persistFormulaDiagnosticsPreference(isOpen) {
+            try {
+                window.localStorage.setItem(this.formulaDiagnosticsPreferenceKey, isOpen ? 'true' : 'false');
+            } catch (error) {
+                void error;
+            }
         },
     };
 }
@@ -303,7 +344,7 @@ function createCatalogSection() {
             return JSON.stringify(this.phaseItems?.saponified_oils ?? []);
         },
 
-        addIngredient(ingredient, requestedPhase = null) {
+        addIngredient(ingredient, requestedPhase = null, shouldAnimate = true) {
             const targetPhase = this.resolveTargetPhase(ingredient, requestedPhase);
 
             if (!targetPhase) {
@@ -320,7 +361,7 @@ function createCatalogSection() {
                 return;
             }
 
-            this.phaseItems[targetPhase].push({
+            const nextRow = {
                 id: `${ingredient.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
                 ingredient_id: ingredient.id,
                 name: ingredient.name,
@@ -336,18 +377,75 @@ function createCatalogSection() {
                     ? 100
                     : 0,
                 note: '',
-            });
+            };
 
-            if (targetPhase !== 'saponified_oils') {
+            this.phaseItems[targetPhase].push(nextRow);
+
+            if (shouldAnimate) {
+                this.lastAddedIngredientRowId = nextRow.id;
+            }
+
+            if (this.isCosmeticFormula) {
+                this.highlightCosmeticPhase(targetPhase);
+            } else if (targetPhase !== 'saponified_oils') {
                 this.highlightPostReaction();
             }
         },
 
+        prefersReducedMotion() {
+            return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        },
+
+        animateAddedIngredientRow(element, rowId) {
+            if (!element || rowId !== this.lastAddedIngredientRowId) {
+                return;
+            }
+
+            if (element.dataset.addedIngredientAnimation === rowId) {
+                return;
+            }
+
+            element.dataset.addedIngredientAnimation = rowId;
+
+            if (this.prefersReducedMotion() || typeof element.animate !== 'function') {
+                return;
+            }
+
+            element.animate([
+                {
+                    opacity: 0.78,
+                    transform: 'translateY(-6px) scale(0.992)',
+                    backgroundColor: 'color-mix(in oklab, var(--color-accent-soft) 52%, white)',
+                },
+                {
+                    opacity: 1,
+                    transform: 'translateY(0) scale(1)',
+                    backgroundColor: 'white',
+                },
+            ], {
+                duration: 240,
+                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            });
+        },
+
         highlightPostReaction() {
             const el = document.getElementById('post-reaction-phases');
-            if (!el) return;
 
-            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            this.highlightFormulaTarget(el);
+        },
+
+        highlightCosmeticPhase(phaseKey) {
+            const el = document.getElementById(`cosmetic-phase-${phaseKey}`);
+
+            this.highlightFormulaTarget(el);
+        },
+
+        highlightFormulaTarget(el) {
+            if (!el) {
+                return;
+            }
+
+            el.scrollIntoView({ behavior: this.prefersReducedMotion() ? 'auto' : 'smooth', block: 'nearest' });
             el.classList.add('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');
             setTimeout(() => {
                 el.classList.remove('ring-2', 'ring-[var(--color-accent)]', 'ring-offset-2');

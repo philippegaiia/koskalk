@@ -3,7 +3,6 @@ import {
     curedBatchWeight as calculateCuredBatchWeight,
     finalBatchWeight as calculateFinalBatchWeight,
     lyeBreakdown as buildLyeBreakdown,
-    normalizeSapValue as getNormalizedSapValue,
     oilPercentageTotal as getOilPercentageTotal,
     rowWeight as calculateRowWeight,
     sumPercentages as calculateSumPercentages,
@@ -45,8 +44,240 @@ export function createFormulaSection() {
             return this.phaseItems.fragrance ?? [];
         },
 
-        get oilsMissingSap() {
-            return this.oilRows.filter((row) => this.normalizeSapValue(row.koh_sap_value) <= 0);
+        formulaIngredientRows() {
+            if (this.isCosmeticFormula) {
+                return this.cosmeticFormulaRows();
+            }
+
+            return [
+                ...this.oilRows,
+                ...this.additiveRows,
+                ...this.fragranceRows,
+            ];
+        },
+
+        zeroQuantityRows() {
+            return this.formulaIngredientRows()
+                .filter((row) => this.nonNegativeNumber(row.percentage) <= 0);
+        },
+
+        get lyeTypeSummaryLabel() {
+            if (this.lyeType === 'koh') {
+                return this.kohPurity === 90 ? 'KOH 90%' : 'KOH';
+            }
+
+            if (this.lyeType === 'dual') {
+                return `Dual ${this.format(this.dualNaohPercentage, 0)} / ${this.format(this.dualKohPercentage, 0)}`;
+            }
+
+            return 'NaOH';
+        },
+
+        get waterModeSummaryLabel() {
+            if (this.waterMode === 'lye_ratio') {
+                return `Ratio ${this.format(this.waterValue, 2)}:1`;
+            }
+
+            if (this.waterMode === 'lye_concentration') {
+                return `Lye ${this.format(this.waterValue, 1)}%`;
+            }
+
+            return `${this.format(this.waterValue, 1)}% oils`;
+        },
+
+        get formulaSetupLabelSummary() {
+            const labels = [this.regulatoryRegime?.toUpperCase() ?? ''];
+
+            if (this.selectedIfraProductCategory) {
+                labels.push(`IFRA ${this.selectedIfraProductCategory.code}`);
+            }
+
+            return labels.filter(Boolean).join(' · ');
+        },
+
+        get formulaSetupSummaryCards() {
+            const cards = [
+                {
+                    id: 'formula-weight',
+                    label: this.isCosmeticFormula ? 'Batch' : 'Base',
+                    value: `${this.format(this.oilWeight, this.oilUnit === 'g' ? 0 : 2)} ${this.oilUnit}`,
+                    tone: 'neutral',
+                },
+                {
+                    id: 'formula-entry',
+                    label: 'Entry',
+                    value: this.editMode === 'weight' ? 'Weight' : (this.isCosmeticFormula ? '% formula' : '% base'),
+                    tone: 'neutral',
+                },
+            ];
+
+            if (!this.isCosmeticFormula) {
+                cards.splice(
+                    1,
+                    0,
+                    {
+                        id: 'formula-lye',
+                        label: 'Lye',
+                        value: this.lyeTypeSummaryLabel,
+                        tone: 'chemistry',
+                    },
+                    {
+                        id: 'formula-water',
+                        label: 'Water',
+                        value: this.waterModeSummaryLabel,
+                        tone: 'chemistry',
+                    },
+                    {
+                        id: 'formula-superfat',
+                        label: 'Superfat',
+                        value: `${this.format(this.superfat, 1)}%`,
+                        tone: this.superfat < 0 ? 'danger' : 'chemistry',
+                    },
+                );
+            }
+
+            cards.push(
+                {
+                    id: 'formula-exposure',
+                    label: 'Exposure',
+                    value: this.exposureModeLabel,
+                    tone: 'info',
+                },
+                {
+                    id: 'formula-label',
+                    label: 'Label',
+                    value: this.formulaSetupLabelSummary,
+                    tone: 'info',
+                },
+            );
+
+            return cards;
+        },
+
+        get formulaBalanceDiagnostic() {
+            const total = this.totalOilPercentage();
+            const delta = Math.abs(100 - total);
+
+            return {
+                id: 'formula-balance',
+                label: this.isCosmeticFormula ? 'Formula balance' : 'Base balance',
+                value: `${this.format(total, 2)}%`,
+                detail: this.oilPercentageIsBalanced
+                    ? 'Ready for saving and output previews.'
+                    : `${this.format(delta, 2)}% still needs balancing.`,
+                tone: this.oilPercentageIsBalanced ? 'success' : 'danger',
+            };
+        },
+
+        get lyeWaterDiagnostic() {
+            const waterCard = this.lyeSummaryCards.find((card) => card.id === 'water');
+            const waterWeight = this.number(waterCard?.value ?? this.lyeBreakdown().water_weight);
+            const lyeWeight = this.totalLyeToWeigh();
+            const hasResolvedWeights = this.oilWeightTotal() > 0 && lyeWeight > 0;
+
+            return {
+                id: 'lye-water',
+                label: 'Lye / water',
+                value: hasResolvedWeights
+                    ? `${this.format(lyeWeight, 1)} / ${this.format(waterWeight, 1)} ${this.oilUnit}`
+                    : 'Pending',
+                detail: hasResolvedWeights && this.oilPercentageIsBalanced
+                    ? 'Live weights are ready to weigh.'
+                    : 'Waiting for live lye weights from the current base.',
+                tone: hasResolvedWeights ? 'chemistry' : 'warning',
+            };
+        },
+
+        get zeroQuantityDiagnostic() {
+            const zeroRows = this.zeroQuantityRows();
+            const rowCount = this.formulaIngredientRows().length;
+
+            return {
+                id: 'zero-quantity',
+                label: 'Zero quantity',
+                value: zeroRows.length > 0 ? `${zeroRows.length} at 0` : 'None',
+                detail: zeroRows.length > 0
+                    ? 'Draft keeps these ingredients so quantities can be filled later.'
+                    : `${rowCount} ${rowCount === 1 ? 'ingredient has' : 'ingredients have'} a quantity.`,
+                tone: zeroRows.length > 0 ? 'warning' : 'success',
+            };
+        },
+
+        get complianceDiagnostic() {
+            return {
+                id: 'compliance-context',
+                label: 'Label context',
+                value: this.regulatoryRegimeLabel,
+                detail: this.regulatoryRegimeCoverageLabel,
+                tone: 'info',
+            };
+        },
+
+        get draftDiagnostic() {
+            const hasUnsavedChanges = this.hasUnsavedWorkbenchChanges();
+            const hasSaveError = this.saveStatus === 'error';
+
+            return {
+                id: 'draft-state',
+                label: 'Save state',
+                value: this.isSaving ? 'Saving' : (hasSaveError ? "Couldn't save" : (hasUnsavedChanges ? 'Unsaved' : 'Saved')),
+                detail: this.saveMessage || (this.isSaving ? 'Saving current edits.' : (hasUnsavedChanges ? 'Save draft keeps these changes.' : 'Current edits are saved.')),
+                tone: hasSaveError ? 'danger' : (this.isSaving ? 'neutral' : (hasUnsavedChanges ? 'warning' : 'success')),
+            };
+        },
+
+        get formulaDiagnosticCards() {
+            const cards = [
+                this.formulaBalanceDiagnostic,
+                this.zeroQuantityDiagnostic,
+                this.complianceDiagnostic,
+                this.draftDiagnostic,
+            ];
+
+            if (!this.isCosmeticFormula) {
+                cards.splice(1, 0, this.lyeWaterDiagnostic);
+            }
+
+            return cards;
+        },
+
+        get formulaDiagnosticSummaryCards() {
+            return [
+                this.formulaBalanceDiagnostic,
+                this.zeroQuantityDiagnostic,
+                this.draftDiagnostic,
+            ];
+        },
+
+        pulseDiagnosticValue(element, signature) {
+            if (!element || !signature) {
+                return;
+            }
+
+            if (element.dataset.diagnosticSignature === undefined) {
+                element.dataset.diagnosticSignature = signature;
+
+                return;
+            }
+
+            if (element.dataset.diagnosticSignature === signature) {
+                return;
+            }
+
+            element.dataset.diagnosticSignature = signature;
+
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || typeof element.animate !== 'function') {
+                return;
+            }
+
+            element.animate([
+                { transform: 'translateY(0)', opacity: 0.82 },
+                { transform: 'translateY(-2px)', opacity: 1 },
+                { transform: 'translateY(0)', opacity: 1 },
+            ], {
+                duration: 220,
+                easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+            });
         },
 
         get dualNaohPercentage() {
@@ -416,10 +647,6 @@ export function createFormulaSection() {
 
         parseDecimalInput(value) {
             return parseDecimal(value);
-        },
-
-        normalizeSapValue(value) {
-            return getNormalizedSapValue(value);
         },
 
         confirmNegativeSuperfat(event) {

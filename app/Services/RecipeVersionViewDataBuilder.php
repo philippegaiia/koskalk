@@ -98,18 +98,23 @@ class RecipeVersionViewDataBuilder
      */
     private function batchContext(array $context, float $selectedOilWeight): array
     {
-        $batchBasis = trim((string) ($context['batch_basis'] ?? $context['oil_weight'] ?? ''));
+        $batchBasis = $this->stringValue($context['batch_basis'] ?? $context['oil_weight'] ?? '');
 
         return [
-            'batch_number' => trim((string) ($context['batch_number'] ?? '')),
-            'manufacture_date' => trim((string) ($context['manufacture_date'] ?? '')) !== ''
-                ? trim((string) $context['manufacture_date'])
+            'batch_number' => $this->stringValue($context['batch_number'] ?? ''),
+            'manufacture_date' => filled($this->stringValue($context['manufacture_date'] ?? ''))
+                ? $this->stringValue($context['manufacture_date'])
                 : now()->toDateString(),
-            'batch_basis' => $batchBasis !== ''
+            'batch_basis' => filled($batchBasis)
                 ? $batchBasis
                 : rtrim(rtrim(number_format($selectedOilWeight, 2, '.', ''), '0'), '.'),
-            'units_produced' => trim((string) ($context['units_produced'] ?? '')),
+            'units_produced' => $this->stringValue($context['units_produced'] ?? ''),
         ];
+    }
+
+    private function stringValue(mixed $value): string
+    {
+        return trim((string) $value);
     }
 
     private function requestedOilWeight(mixed $candidate, mixed $defaultWeight): float

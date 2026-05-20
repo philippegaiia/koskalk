@@ -72,7 +72,11 @@ class SubstanceComplianceService
         $warningCount = count(array_filter($rows, fn (array $row): bool => in_array($row['status'], $warningStatuses, true)));
 
         return [
-            'status' => $failCount > 0 ? 'fail' : ($warningCount > 0 ? 'warning' : 'pass'),
+            'status' => match (true) {
+                $failCount > 0 => 'fail',
+                $warningCount > 0 => 'warning',
+                default => 'pass',
+            },
             'fail_count' => $failCount,
             'warning_count' => $warningCount,
             'pass_count' => count($rows) - $failCount - $warningCount,

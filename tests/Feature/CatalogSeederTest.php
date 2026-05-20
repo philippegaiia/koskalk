@@ -5,6 +5,7 @@ use App\Models\Allergen;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\IngredientSubstanceEntry;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
@@ -317,6 +318,131 @@ it('seeds the starter substance catalog and watch regime rules', function () {
         ->and($linalool->allergen)->not->toBeNull()
         ->and(RegulatoryRegimeSubstanceRule::query()->count())->toBeGreaterThanOrEqual(12)
         ->and(RegulatoryRegimeSubstanceRule::query()->where('rule_type', 'watch')->count())->toBeGreaterThan(0);
+});
+
+it('reuses legacy starter substance rows when reseeding the renamed catalog', function () {
+    $this->seed([
+        AllergenCatalogSeeder::class,
+        RegulatoryRegimeSeeder::class,
+    ]);
+
+    $legacySourceName = 'Platform starter regulated substance watch list';
+    $substanceNames = [
+        'Beta-asarone',
+        'Furocoumarins',
+        'Linalool',
+        'Methyl eugenol',
+        'Pulegone',
+        'Safrole',
+    ];
+
+    $regimes = RegulatoryRegime::query()
+        ->whereIn('code', ['eu', 'canada_2026', 'canada_expanded_preview', 'us_mocra_preview'])
+        ->get();
+
+    foreach ($substanceNames as $substanceName) {
+        $substance = Substance::query()->create([
+            'name' => $substanceName,
+            'entity_type' => $substanceName === 'Furocoumarins' ? 'group' : 'constituent',
+            'source_name' => $legacySourceName,
+            'source_data' => [
+                'seed_scope' => 'legacy_starter_rule',
+            ],
+        ]);
+
+        foreach ($regimes as $regime) {
+            RegulatoryRegimeSubstanceRule::query()->create([
+                'regulatory_regime_id' => $regime->id,
+                'substance_id' => $substance->id,
+                'rule_type' => 'watch',
+                'source_reference' => 'Legacy starter rule.',
+            ]);
+        }
+    }
+
+    $this->seed(SubstanceSeeder::class);
+
+    expect(Substance::query()->whereIn('name', $substanceNames)->count())->toBe(6)
+        ->and(Substance::query()->where('source_name', $legacySourceName)->count())->toBe(0)
+        ->and(RegulatoryRegimeSubstanceRule::query()->count())->toBe(24);
+});
+
+it('preserves richer legacy starter substance child data while deduplicating', function () {
+    $this->seed([
+        AllergenCatalogSeeder::class,
+        RegulatoryRegimeSeeder::class,
+    ]);
+
+    $sourceName = 'Platform starter substance catalog';
+    $legacySourceName = 'Platform starter regulated substance watch list';
+    $regime = RegulatoryRegime::query()->where('code', 'eu')->firstOrFail();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Lavender Essential Oil',
+        'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+    ]);
+    $canonical = Substance::query()->create([
+        'name' => 'Linalool',
+        'entity_type' => 'constituent',
+        'source_name' => $sourceName,
+    ]);
+    $legacy = Substance::query()->create([
+        'name' => 'Linalool',
+        'entity_type' => 'constituent',
+        'source_name' => $legacySourceName,
+    ]);
+
+    IngredientSubstanceEntry::query()->create([
+        'ingredient_id' => $ingredient->id,
+        'substance_id' => $canonical->id,
+        'concentration_percent' => 1.5,
+        'concentration_source' => 'unknown',
+        'source_notes' => 'Canonical starter placeholder.',
+    ]);
+    IngredientSubstanceEntry::query()->create([
+        'ingredient_id' => $ingredient->id,
+        'substance_id' => $legacy->id,
+        'concentration_percent' => 24.5,
+        'concentration_source' => 'supplier_document',
+        'source_notes' => 'Legacy supplier document.',
+    ]);
+    RegulatoryRegimeSubstanceRule::query()->create([
+        'regulatory_regime_id' => $regime->id,
+        'substance_id' => $canonical->id,
+        'rule_type' => 'watch',
+        'source_reference' => 'Canonical starter rule.',
+    ]);
+    RegulatoryRegimeSubstanceRule::query()->create([
+        'regulatory_regime_id' => $regime->id,
+        'substance_id' => $legacy->id,
+        'rule_type' => 'restricted',
+        'rinse_off_max_percent' => 0.1,
+        'leave_on_max_percent' => 0.05,
+        'threshold_operator' => 'less_than_or_equal',
+        'exposure_scope' => 'both',
+        'label_warning_text' => 'Legacy stricter rule.',
+        'source_reference' => 'Legacy official source.',
+    ]);
+
+    $this->seed(SubstanceSeeder::class);
+
+    $deduplicated = Substance::query()->where('name', 'Linalool')->firstOrFail();
+    $ingredientEntry = IngredientSubstanceEntry::query()
+        ->where('ingredient_id', $ingredient->id)
+        ->where('substance_id', $deduplicated->id)
+        ->firstOrFail();
+    $rule = RegulatoryRegimeSubstanceRule::query()
+        ->where('regulatory_regime_id', $regime->id)
+        ->where('substance_id', $deduplicated->id)
+        ->firstOrFail();
+
+    expect(Substance::query()->where('name', 'Linalool')->count())->toBe(1)
+        ->and($ingredientEntry->concentration_percent)->toEqual('24.50000')
+        ->and($ingredientEntry->concentration_source)->toBe('supplier_document')
+        ->and($ingredientEntry->source_notes)->toBe('Legacy supplier document.')
+        ->and($rule->rule_type)->toBe('restricted')
+        ->and($rule->rinse_off_max_percent)->toEqual('0.10000')
+        ->and($rule->leave_on_max_percent)->toEqual('0.05000')
+        ->and($rule->source_reference)->toBe('Legacy official source.');
 });
 
 function writeCatalogFixtures(string $directory, array $allergenRows, array $ingredientRows): array

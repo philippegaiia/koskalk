@@ -13,11 +13,15 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\OwnerType;
 use App\Services\RecipeContentUpdater;
+use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
+use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Symfony\Component\Process\Process;
 
@@ -379,6 +383,159 @@ it('preserves ingredient order across draft and saved versions', function () {
         ->toBe([$coconutOil->id, $oliveOil->id])
         ->and($publishedVersion->phases->firstWhere('slug', 'additives')?->items->pluck('ingredient_id')->all())
         ->toBe([$oatMilk->id, $spirulina->id]);
+});
+
+it('keeps selected zero-quantity ingredients across draft and saved soap versions', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeCarrierOilIngredient();
+    $coconutOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA OIL',
+        'is_potentially_saponifiable' => true,
+        'is_active' => true,
+    ]);
+    $clay = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Green Clay',
+        'inci_name' => 'ILLITE',
+        'is_active' => true,
+    ]);
+
+    $payload = workbenchSoapDraftPayload($oliveOil, name: 'Zero Placeholder Formula');
+    $payload['phase_items']['saponified_oils'] = [
+        [
+            'ingredient_id' => $oliveOil->id,
+            'percentage' => 100,
+            'weight' => 1000,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $coconutOil->id,
+            'percentage' => 0,
+            'weight' => 0,
+            'note' => null,
+        ],
+    ];
+    $payload['phase_items']['additives'] = [
+        [
+            'ingredient_id' => $clay->id,
+            'percentage' => 0,
+            'weight' => 0,
+            'note' => null,
+        ],
+    ];
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->saveDraft($user, $soapFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $draftPayload = $service->draftPayload($recipe);
+
+    $savedVersion = $service->saveRecipe($user, $soapFamily, $payload, $recipe);
+    $savedPayload = $service->versionPayload($recipe, $savedVersion->id);
+    $publishedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_draft', false)
+        ->latest('version_number')
+        ->firstOrFail();
+    $phaseSections = app(RecipeVersionViewDataBuilder::class)
+        ->build($recipe, $publishedVersion)['phaseSections'];
+
+    $draftZeroOil = collect($draftPayload['phaseItems']['saponified_oils'])
+        ->firstWhere('ingredient_id', $coconutOil->id);
+    $savedZeroAdditive = collect($savedPayload['phaseItems']['additives'])
+        ->firstWhere('ingredient_id', $clay->id);
+    $visibleSoapRows = collect($phaseSections)
+        ->flatMap(fn (array $section): array => $section['rows'])
+        ->pluck('name')
+        ->all();
+
+    expect(collect($draftPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
+        ->toBe([$oliveOil->id, $coconutOil->id])
+        ->and(collect($draftPayload['phaseItems']['additives'])->pluck('ingredient_id')->all())
+        ->toBe([$clay->id])
+        ->and(collect($savedPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
+        ->toBe([$oliveOil->id, $coconutOil->id])
+        ->and(collect($savedPayload['phaseItems']['additives'])->pluck('ingredient_id')->all())
+        ->toBe([$clay->id])
+        ->and($draftZeroOil['percentage'])->toBe(0.0)
+        ->and($draftZeroOil['weight'])->toBe(0.0)
+        ->and($savedZeroAdditive['percentage'])->toBe(0.0)
+        ->and($savedZeroAdditive['weight'])->toBe(0.0)
+        ->and($visibleSoapRows)->toBe(['Olive Oil']);
+});
+
+it('rejects inaccessible zero-quantity ingredients before saving soap formulas', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeCarrierOilIngredient();
+    $privateOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Other User Oil',
+        'inci_name' => 'PRIVATE OIL',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+        'visibility' => Visibility::Private,
+        'is_potentially_saponifiable' => true,
+        'is_active' => true,
+    ]);
+
+    $payload = workbenchSoapDraftPayload($oliveOil, name: 'Private Ingredient Probe');
+    $payload['phase_items']['saponified_oils'][] = [
+        'ingredient_id' => $privateOil->id,
+        'percentage' => 0,
+        'weight' => 0,
+        'note' => null,
+    ];
+
+    expect(fn () => app(RecipeWorkbenchService::class)->saveDraft($user, $soapFamily, $payload))
+        ->toThrow(ValidationException::class, 'One or more selected ingredients are no longer available.');
+});
+
+it('rejects negative soap formula row values before saving', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeCarrierOilIngredient();
+    $coconutOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA OIL',
+        'is_potentially_saponifiable' => true,
+        'is_active' => true,
+    ]);
+
+    $payload = workbenchSoapDraftPayload($oliveOil, name: 'Negative Soap Formula');
+    $payload['phase_items']['saponified_oils'] = [
+        [
+            'ingredient_id' => $oliveOil->id,
+            'percentage' => 110,
+            'weight' => 1100,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $coconutOil->id,
+            'percentage' => -10,
+            'weight' => -100,
+            'note' => null,
+        ],
+    ];
+
+    expect(fn () => app(RecipeWorkbenchService::class)->saveDraft($user, $soapFamily, $payload))
+        ->toThrow(ValidationException::class, 'Formula percentages and weights must not be negative.');
 });
 
 it('flags a saved formula for review when linked ingredient data changes', function () {

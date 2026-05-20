@@ -52,9 +52,7 @@ class RecipeController extends Controller
             ? ProductType::query()
                 ->whereBelongsTo($productFamily)
                 ->where('slug', $productTypeSlug)
-                ->where(function ($query): void {
-                    $query->where('is_active', true);
-                })
+                ->where('is_active', true)
                 ->firstOrFail()
             : null;
 

@@ -31,9 +31,10 @@ function setSidebarState(open, persist = true) {
     }
 
     const isDesktop = sidebarIsDesktop();
-    const nextOpen = isDesktop ? open : false;
+    const nextOpen = open;
 
     shell.dataset.sidebarOpen = nextOpen ? 'true' : 'false';
+    document.documentElement.style.setProperty('--app-sidebar-width', isDesktop && nextOpen ? '17rem' : '0rem');
     shell.style.gridTemplateColumns = isDesktop
         ? `${nextOpen ? '17rem' : '0'} minmax(0, 1fr)`
         : '';
@@ -59,13 +60,13 @@ function setSidebarState(open, persist = true) {
         headerToggle.classList.toggle('lg:opacity-0', nextOpen && isDesktop);
     }
 
-    if (persist) {
+    if (persist && isDesktop) {
         window.localStorage.setItem(SIDEBAR_STORAGE_KEY, nextOpen ? 'true' : 'false');
     }
 }
 
 function initializeSidebar() {
-    setSidebarState(sidebarStoredState(), false);
+    setSidebarState(sidebarIsDesktop() ? sidebarStoredState() : false, false);
 }
 
 document.addEventListener('click', (event) => {

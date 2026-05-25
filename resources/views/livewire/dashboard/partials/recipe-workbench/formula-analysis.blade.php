@@ -3,7 +3,7 @@
         <div class="sk-section-header flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="sk-eyebrow">Soapkraft qualities</p>
-                <h3 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">At a glance</h3>
+                <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">At a glance</h3>
                 <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">
                     (Indicative values — additives, process, and cure conditions can change the real soap.)
                 </p>

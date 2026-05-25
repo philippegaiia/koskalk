@@ -18,11 +18,11 @@
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Colorants, preservatives, and other post-reaction functional materials. Drag to reorder the additives already in this phase.</p>
  </div>
 	 <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)]">
- <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% base</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
+	 <div class="bg-[var(--color-field-muted)] px-3 py-3.5"></div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]">% base</div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-3.5"></div>
  </div>
 
  <div class="divide-y divide-[var(--color-line)] bg-white">
@@ -36,7 +36,7 @@
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
 	 class="grid grid-cols-1 gap-3 bg-white p-3 transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
-	 <div class="flex justify-start bg-white lg:grid lg:place-items-center lg:px-2 lg:py-3">
+		 <div class="flex justify-start bg-white lg:grid lg:place-items-center lg:px-2 lg:py-3.5">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('additives', row.id, $event)"
@@ -46,11 +46,11 @@
  <span class="text-sm leading-none">⋮⋮</span>
  </button>
  </div>
-	 <div class="flex flex-col justify-center bg-white lg:px-4 lg:py-3">
+		 <div class="flex flex-col justify-center bg-white lg:px-4 lg:py-3.5">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
-	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
+		 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3.5">
 	 <span class="sk-eyebrow lg:hidden">% base</span>
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = clampPercentage($event.target.value)" type="number" inputmode="decimal" min="0" max="100" step="0.1" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
@@ -59,7 +59,7 @@
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
-	 <div class="flex flex-col gap-2 bg-white text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3 lg:py-3">
+		 <div class="flex flex-col gap-2 bg-white text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3 lg:py-3.5">
 	 <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
  <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.001" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
@@ -68,7 +68,7 @@
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
  </template>
  </div>
-	 <div class="flex items-center justify-end bg-white lg:justify-center lg:px-2 lg:py-3">
+		 <div class="flex items-center justify-end bg-white lg:justify-center lg:px-2 lg:py-3.5">
 	 <button type="button" @click="removeIngredient('additives', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove additive">×</button>
  </div>
  </div>
@@ -79,7 +79,7 @@
  <div @dragover="allowPhaseDrop('additives', $event)"
  @drop="dropDraggedRow('additives', $event)"
  :class="isDropTarget('additives') ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
- class="px-4 py-4 text-center text-xs font-medium transition">
+	 class="px-4 py-3.5 text-center text-xs font-medium transition">
  Drop carrier oil here to use it as an additive
  </div>
  </template>
@@ -93,11 +93,11 @@
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Essential oils and aromatic extracts with their own compliance context. Drag to reorder inside this aromatic phase.</p>
  </div>
 	 <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)]">
- <div class="bg-[var(--color-field-muted)] px-3 py-3"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">% base</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
+	 <div class="bg-[var(--color-field-muted)] px-3 py-3.5"></div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]">% base</div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-3.5"></div>
  </div>
 
  <div class="divide-y divide-[var(--color-line)] bg-white">
@@ -111,7 +111,7 @@
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
 	 class="grid grid-cols-1 gap-3 bg-white p-3 transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
-	 <div class="flex justify-start bg-white lg:grid lg:place-items-center lg:px-2 lg:py-3">
+		 <div class="flex justify-start bg-white lg:grid lg:place-items-center lg:px-2 lg:py-3.5">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag('fragrance', row.id, $event)"
@@ -121,11 +121,11 @@
  <span class="text-sm leading-none">⋮⋮</span>
  </button>
  </div>
-	 <div class="flex flex-col justify-center bg-white lg:px-4 lg:py-3">
+		 <div class="flex flex-col justify-center bg-white lg:px-4 lg:py-3.5">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
-	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
+		 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3.5">
 	 <span class="sk-eyebrow lg:hidden">% base</span>
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = clampPercentage($event.target.value)" type="number" inputmode="decimal" min="0" max="100" step="0.1" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
@@ -134,7 +134,7 @@
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
-	 <div class="flex flex-col gap-2 bg-white text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3 lg:py-3">
+		 <div class="flex flex-col gap-2 bg-white text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3 lg:py-3.5">
 	 <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
  <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.001" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
@@ -143,7 +143,7 @@
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
  </template>
  </div>
-	 <div class="flex items-center justify-end bg-white lg:grid lg:place-items-center lg:px-2 lg:py-3">
+		 <div class="flex items-center justify-end bg-white lg:grid lg:place-items-center lg:px-2 lg:py-3.5">
 	 <button type="button" @click="removeIngredient('fragrance', row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove aromatic ingredient">×</button>
  </div>
  </div>

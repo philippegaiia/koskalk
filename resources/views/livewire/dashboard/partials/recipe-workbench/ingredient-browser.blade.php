@@ -4,7 +4,7 @@
  <div class="overflow-hidden sk-card sk-tone-catalog">
  <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-5">
  <p class="sk-eyebrow">Ingredient browser</p>
- <h3 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Filtered by category</h3>
+ <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">Select ingredients</h3>
  </div>
 
  <div class="space-y-3 border-b border-[var(--color-line)] px-5 py-4">

@@ -85,33 +85,87 @@ it('adapts recipe workbench tables for narrow screens before desktop grids', fun
         ->not->toContain('min-w-[58rem]');
 });
 
-it('places soap fatty acid profile after formula tables on mobile and keeps the ingredient list shorter', function () {
+it('keeps formula table lines at a balanced fourteen pixel vertical padding', function () {
+    $tablePartials = [
+        view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render(),
+        view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render(),
+        view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render(),
+    ];
+
+    $combinedFormulaTableMarkup = implode("\n", $tablePartials);
+
+    expect($combinedFormulaTableMarkup)
+        ->toContain('py-3.5')
+        ->toContain('lg:py-3.5')
+        ->not->toContain('px-4 py-4 text-center');
+});
+
+it('keeps dashboard select chevrons away from the right edge', function () {
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    expect($appStylesSource)
+        ->toContain('[data-app-shell] select:not([multiple]):not([size])')
+        ->toContain('appearance: none')
+        ->toContain('padding-inline-end: 3rem')
+        ->toContain('background-position: right 1.25rem center');
+});
+
+it('keeps the ingredient browser rail sticky on large screens and moves soap fatty acids below the table on mobile', function () {
     $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
 
+    expect($formulaTabSource)
+        ->toContain('lg:grid-cols-[19rem_minmax(0,1fr)]')
+        ->toContain('class="space-y-4 lg:sticky lg:top-4 lg:self-start"')
+        ->toContain('class="hidden lg:block"')
+        ->toContain('class="lg:hidden"')
+        ->not->toContain('lg:max-h-[calc(100vh-7rem)]')
+        ->not->toContain('lg:overflow-y-auto')
+        ->not->toContain('lg:pr-1')
+        ->not->toContain('class="hidden xl:block"')
+        ->not->toContain('class="xl:hidden"');
+
     expect($ingredientBrowser)
+        ->toContain('Select ingredients')
+        ->toContain('mt-2 text-lg font-semibold')
+        ->not->toContain('Filtered by category')
+        ->not->toContain('mt-2 text-xl font-semibold')
         ->toContain('max-h-[18rem]')
         ->toContain('md:max-h-[22rem]')
         ->toContain('lg:max-h-[24rem]')
         ->toContain('xl:max-h-[600px]')
         ->not->toContain('Fatty acid profile');
 
-    expect($formulaTabSource)
-        ->toContain('class="hidden xl:block"')
-        ->toContain('class="xl:hidden"');
-
-    expect(strpos($formulaTabSource, 'class="xl:hidden"'))
+    expect(strpos($formulaTabSource, 'class="lg:hidden"'))
         ->toBeGreaterThan(strpos($formulaTabSource, 'post-reaction'))
         ->toBeLessThan(strpos($formulaTabSource, 'formula-analysis'));
 });
 
-it('keeps the ingredient browser column lean on smaller desktop displays', function () {
+it('keeps the ingredient browser column lean on desktop displays', function () {
     $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
 
     expect($formulaTabSource)
-        ->toContain('xl:grid-cols-[19rem_minmax(0,1fr)]')
+        ->toContain('lg:grid-cols-[19rem_minmax(0,1fr)]')
         ->toContain('2xl:grid-cols-[22rem_minmax(0,1fr)]')
-        ->not->toContain('class="grid gap-4 xl:grid-cols-[22rem_minmax(0,1fr)]');
+        ->not->toContain('class="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]');
+});
+
+it('keeps workbench card subheadings at the compact card title size', function () {
+    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+    $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
+    $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
+
+    $combinedCardMarkup = implode("\n", [
+        $ingredientBrowser,
+        $reactionCore,
+        $cosmeticFormula,
+        $formulaAnalysis,
+    ]);
+
+    expect($combinedCardMarkup)
+        ->toContain('text-lg font-semibold text-[var(--color-ink-strong)]')
+        ->not->toContain('text-xl font-semibold text-[var(--color-ink-strong)]');
 });
 
 it('keeps live formula diagnostics in a compact bottom save bar without SAP gap warnings', function () {
@@ -151,8 +205,6 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
         ->toContain('requestOfficialRecipeSave()')
         ->toContain('Save draft')
         ->toContain('Save as reference')
-        ->not->toContain('lg:sticky')
-        ->not->toContain('lg:top-4')
         ->not->toContain('SAP')
         ->not->toContain('Missing KOH SAP')
         ->and($formulaSectionSource)

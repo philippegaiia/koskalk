@@ -20,6 +20,7 @@ use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -217,7 +218,7 @@ it('builds numeric production cost preview rows from live costing data', functio
 
 it('records a soap production snapshot and freezes current prices', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
-    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $costingRows = productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
 
     $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
         'production_batch_number' => 'B-2026-010',
@@ -250,11 +251,26 @@ it('records a soap production snapshot and freezes current prices', function ():
         ->and($batch->packagingItems->first()->name)->toBe('Soap box')
         ->and($batch->production_notes)->toBe('Reached medium trace.');
 
-    $batch->ingredients->first()->update([
+    $costingRows['costing_item']->update([
         'price_per_kg' => 99,
     ]);
+    $costingRows['packaging_item']->update([
+        'unit_cost' => 9,
+    ]);
+    $costingRows['packaging_costing_item']->update([
+        'unit_cost' => 7,
+    ]);
 
-    expect($batch->fresh()->ingredients->first()->price_per_kg)->toBe('99.0000');
+    $recordedBatch = $batch->fresh(['ingredients', 'packagingItems']);
+
+    expect($recordedBatch->ingredient_total)->toBe('12.7500')
+        ->and($recordedBatch->packaging_total)->toBe('3.0000')
+        ->and($recordedBatch->total_cost)->toBe('15.7500')
+        ->and($recordedBatch->cost_per_unit)->toBe('1.3125')
+        ->and($recordedBatch->ingredients->first()->price_per_kg)->toBe('8.5000')
+        ->and($recordedBatch->ingredients->first()->line_cost)->toBe('12.7500')
+        ->and($recordedBatch->packagingItems->first()->unit_cost)->toBe('0.2500')
+        ->and($recordedBatch->packagingItems->first()->line_cost)->toBe('3.0000');
 });
 
 it('records a cosmetic production snapshot using total batch quantity language', function (): void {
@@ -275,6 +291,63 @@ it('records a cosmetic production snapshot using total batch quantity language',
         ->and($batch->ingredients->first()->quantity)->toBe('500.0000')
         ->and($batch->total_cost)->toBe('12.0000')
         ->and($batch->cost_per_unit)->toBe('2.4000');
+});
+
+it('does not record production snapshots with unpriced packaging rows', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+
+    $version->packagingItems()->create([
+        'user_packaging_item_id' => null,
+        'name' => 'Unpriced wrap',
+        'components_per_unit' => 2,
+        'position' => 1,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    expect(fn () => app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]))->toThrow(ValidationException::class, 'Production snapshots require prices');
+
+    expect(ProductionBatch::query()->count())->toBe(0)
+        ->and(ProductionBatchIngredient::query()->count())->toBe(0)
+        ->and(ProductionBatchPackagingItem::query()->count())->toBe(0)
+        ->and(RecipeVersionCostingPackagingItem::query()->count())->toBe(0);
+});
+
+it('does not record production snapshots with unpriced ingredient rows', function (): void {
+    [$user, $recipe, $version] = productionSnapshotSoapRecipe();
+
+    expect(fn () => app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]))->toThrow(ValidationException::class, 'Production snapshots require prices');
+
+    expect(ProductionBatch::query()->count())->toBe(0)
+        ->and(ProductionBatchIngredient::query()->count())->toBe(0)
+        ->and(ProductionBatchPackagingItem::query()->count())->toBe(0)
+        ->and(RecipeVersionCosting::query()
+            ->where('recipe_version_id', $version->id)
+            ->where('user_id', $user->id)
+            ->exists())->toBeFalse();
 });
 
 it('marks packaging plan rows without source prices as unpriced in production cost previews', function (): void {
@@ -561,7 +634,8 @@ function productionSnapshotIngredient(): Ingredient
     return $ingredient;
 }
 
-function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ingredient $ingredient, float $ingredientPrice, float $packagingPrice): void
+/** @return array{packaging_item: UserPackagingItem, costing_item: RecipeVersionCostingItem, packaging_costing_item: RecipeVersionCostingPackagingItem} */
+function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ingredient $ingredient, float $ingredientPrice, float $packagingPrice): array
 {
     $packagingItem = UserPackagingItem::query()->create([
         'user_id' => $user->id,
@@ -586,7 +660,7 @@ function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ing
         'currency' => 'EUR',
     ]);
 
-    RecipeVersionCostingItem::query()->create([
+    $costingItem = RecipeVersionCostingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
         'ingredient_id' => $ingredient->id,
         'phase_key' => 'saponified_oils',
@@ -594,13 +668,19 @@ function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ing
         'price_per_kg' => $ingredientPrice,
     ]);
 
-    RecipeVersionCostingPackagingItem::query()->create([
+    $packagingCostingItem = RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
         'user_packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'unit_cost' => $packagingPrice,
         'quantity' => 1,
     ]);
+
+    return [
+        'packaging_item' => $packagingItem,
+        'costing_item' => $costingItem,
+        'packaging_costing_item' => $packagingCostingItem,
+    ];
 }
 
 /** @return array{0: User, 1: Recipe, 2: RecipeVersion, 3: Ingredient} */

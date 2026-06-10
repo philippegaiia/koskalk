@@ -7,6 +7,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class ProductionSnapshotService
 {
@@ -45,10 +46,12 @@ class ProductionSnapshotService
      */
     public function record(Recipe $recipe, RecipeVersion $version, User $user, array $input): ProductionBatch
     {
-        $preview = $this->preview($recipe, $version, $user, $input);
         $ingredientLotNumbers = $input['ingredient_lot_numbers'] ?? [];
 
-        return DB::transaction(function () use ($ingredientLotNumbers, $input, $preview, $recipe, $user, $version): ProductionBatch {
+        return DB::transaction(function () use ($ingredientLotNumbers, $input, $recipe, $user, $version): ProductionBatch {
+            $preview = $this->preview($recipe, $version, $user, $input);
+            $this->ensurePreviewIsPriced($preview);
+
             $recipe->loadMissing('productFamily');
 
             $batch = ProductionBatch::query()->create([
@@ -116,6 +119,22 @@ class ProductionSnapshotService
         return $recipe->productFamily?->calculation_basis === 'total_formula'
             ? 'Total batch quantity'
             : 'Oil quantity';
+    }
+
+    /**
+     * @param  array<string, mixed>  $preview
+     *
+     * @throws ValidationException
+     */
+    private function ensurePreviewIsPriced(array $preview): void
+    {
+        if (! (bool) ($preview['has_unpriced_rows'] ?? false)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'costing' => 'Production snapshots require prices for every ingredient and packaging row before recording.',
+        ]);
     }
 
     private function positiveFloat(mixed $value): ?float

@@ -61,6 +61,7 @@ class RecipeVersionCostPreviewBuilder
 
         $ingredientRows = $this->ingredientRows($version, $ingredientPricesByKey, $batchBasisValue, $unit);
         $packagingRows = $this->packagingRows($version, $costing, $existingCosting, $unitsProduced);
+        $this->deleteGeneratedMissingPackagingRows($version, $costing, $existingCosting);
 
         $ingredientTotal = round((float) collect($ingredientRows)->sum(fn (array $row): float => (float) $row['line_cost']), 4);
         $packagingTotal = round((float) collect($packagingRows)->sum(fn (array $row): float => (float) $row['line_cost']), 4);
@@ -224,10 +225,6 @@ class RecipeVersionCostPreviewBuilder
         $costingUnitCost = (float) $costingItem->unit_cost;
 
         if ($existingCostingItem instanceof RecipeVersionCostingPackagingItem) {
-            if ($costingUnitCost === 0.0 && $catalogUnitCost === null) {
-                return null;
-            }
-
             return $costingUnitCost;
         }
 
@@ -236,6 +233,37 @@ class RecipeVersionCostPreviewBuilder
         }
 
         return $catalogUnitCost;
+    }
+
+    private function deleteGeneratedMissingPackagingRows(RecipeVersion $version, RecipeVersionCosting $costing, ?RecipeVersionCosting $existingCosting): void
+    {
+        $existingKeys = ($existingCosting?->packagingItems ?? collect())->map(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
+            $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+            $item->name,
+        ));
+
+        $version->packagingItems
+            ->filter(fn (RecipeVersionPackagingItem $item): bool => $item->packagingItem?->unit_cost === null)
+            ->each(function (RecipeVersionPackagingItem $item) use ($costing, $existingKeys): void {
+                $key = $this->packagingKey(
+                    $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                    $item->name,
+                );
+
+                if ($existingKeys->contains($key)) {
+                    return;
+                }
+
+                $costing->packagingItems()
+                    ->where('name', $item->name)
+                    ->where('unit_cost', 0)
+                    ->when(
+                        $item->user_packaging_item_id === null,
+                        fn ($query) => $query->whereNull('user_packaging_item_id'),
+                        fn ($query) => $query->where('user_packaging_item_id', $item->user_packaging_item_id),
+                    )
+                    ->delete();
+            });
     }
 
     private function preserveExistingUnplannedPackagingRows(RecipeVersionCosting $costing, RecipeVersion $version, ?RecipeVersionCosting $existingCosting): void

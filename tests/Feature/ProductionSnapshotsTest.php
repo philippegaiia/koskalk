@@ -311,6 +311,66 @@ it('keeps unpriced packaging rows unpriced across repeated production cost previ
         ->and($secondPreview['packaging_rows'][0]['is_unpriced'])->toBeTrue();
 });
 
+it('preserves deliberately saved zero cost unlinked packaging rows across repeated production cost preview builds', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+
+    $version->packagingItems()->create([
+        'user_packaging_item_id' => null,
+        'name' => 'Free insert',
+        'components_per_unit' => 1,
+        'position' => 1,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'user_packaging_item_id' => null,
+        'name' => 'Free insert',
+        'unit_cost' => 0,
+        'quantity' => 1,
+    ]);
+
+    $builder = app(RecipeVersionCostPreviewBuilder::class);
+    $builder->build(
+        recipe: $recipe,
+        version: $version,
+        user: $user,
+        batchBasisValue: 1000,
+        unitsProduced: 10,
+    );
+
+    $secondPreview = $builder->build(
+        recipe: $recipe,
+        version: $version,
+        user: $user,
+        batchBasisValue: 1000,
+        unitsProduced: 10,
+    );
+
+    expect($secondPreview['packaging_total'])->toBe(0.0)
+        ->and($secondPreview['has_unpriced_rows'])->toBeFalse()
+        ->and($secondPreview['packaging_rows'][0]['unit_cost'])->toBe(0.0)
+        ->and($secondPreview['packaging_rows'][0]['cost_per_finished_unit'])->toBe(0.0)
+        ->and($secondPreview['packaging_rows'][0]['line_cost'])->toBe(0.0)
+        ->and($secondPreview['packaging_rows'][0]['is_unpriced'])->toBeFalse();
+});
+
 it('does not create production cost preview data for saved formula views without existing costing', function (): void {
     [$user, $recipe, $version] = productionSnapshotSoapRecipe();
 

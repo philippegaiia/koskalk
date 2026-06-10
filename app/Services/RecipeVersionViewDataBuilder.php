@@ -3,18 +3,16 @@
 namespace App\Services;
 
 use App\Models\Recipe;
-use App\Models\RecipeItem;
-use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
-use App\Models\RecipeVersionCostingItem;
-use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
+use App\Models\User;
 
 class RecipeVersionViewDataBuilder
 {
     public function __construct(
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
+        private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
     ) {}
 
     /**
@@ -68,6 +66,7 @@ class RecipeVersionViewDataBuilder
             'costingPackagingRows' => $costingData['packagingRows'],
             'costingCurrency' => $costingData['currency'],
             'hasCostingData' => $costingData['hasCostingData'],
+            'hasUnpricedRows' => $costingData['hasUnpricedRows'],
             'batchContext' => $normalizedBatchContext,
             'selectedOilWeight' => $selectedOilWeight,
         ];
@@ -439,125 +438,90 @@ class RecipeVersionViewDataBuilder
      *     ingredientRows: array<int, array<string, mixed>>,
      *     packagingRows: array<int, array<string, mixed>>,
      *     currency: string,
-     *     hasCostingData: bool
+     *     hasCostingData: bool,
+     *     hasUnpricedRows: bool
      * }
      */
     private function costingData(Recipe $recipe, RecipeVersion $version, float $selectedOilWeight, array $batchContext): array
     {
-        $costing = RecipeVersionCosting::query()
-            ->with(['items.ingredient', 'packagingItems'])
-            ->where('recipe_version_id', $version->id)
-            ->where('user_id', $recipe->owner_id)
-            ->first();
+        $user = $recipe->ownerUser();
 
-        if (! $costing instanceof RecipeVersionCosting) {
+        if (! $user instanceof User) {
             return [
                 'summary' => [],
                 'ingredientRows' => [],
                 'packagingRows' => [],
                 'currency' => 'EUR',
                 'hasCostingData' => false,
+                'hasUnpricedRows' => false,
             ];
         }
 
-        $currency = $costing->currency ?: 'EUR';
-        $weightsByKey = $this->costingWeightsByKey($version, $selectedOilWeight);
+        $existingCosting = RecipeVersionCosting::query()
+            ->where('recipe_version_id', $version->id)
+            ->where('user_id', $user->id)
+            ->first();
 
-        $ingredientRows = $costing->items
-            ->map(function (RecipeVersionCostingItem $item) use ($weightsByKey): array {
-                $key = $this->costingKey((int) $item->ingredient_id, $item->phase_key, (int) $item->position);
-                $weight = (float) ($weightsByKey[$key]['weight'] ?? 0);
-                $pricePerKg = $item->price_per_kg === null ? null : (float) $item->price_per_kg;
-                $lineCost = $pricePerKg === null ? null : round(($weight / 1000) * $pricePerKg, 4);
+        $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null) ?? $existingCosting?->units_produced;
+        $preview = $this->costPreviewBuilder->build(
+            recipe: $recipe,
+            version: $version,
+            user: $user,
+            batchBasisValue: $this->positiveFloat($batchContext['batch_basis'] ?? null) ?? $selectedOilWeight,
+            unitsProduced: $unitsProduced,
+        );
 
-                return [
-                    'phase' => $weightsByKey[$key]['phase'] ?? str($item->phase_key)->replace('_', ' ')->title()->toString(),
-                    'name' => $item->ingredient?->display_name ?? 'Ingredient',
-                    'weight' => $weight,
-                    'price_per_kg' => $pricePerKg,
-                    'line_cost' => $lineCost,
-                ];
-            })
+        $ingredientRows = collect($preview['ingredient_rows'])
+            ->map(fn (array $row): array => [
+                ...$row,
+                'phase' => $row['phase_name'],
+                'name' => $row['ingredient_name'],
+                'weight' => $row['quantity'],
+                'line_cost' => $row['is_unpriced'] ? null : $row['line_cost'],
+            ])
             ->values()
             ->all();
 
-        $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null) ?? $costing->units_produced;
-
-        $packagingRows = $costing->packagingItems
-            ->map(function (RecipeVersionCostingPackagingItem $item) use ($unitsProduced): array {
-                $unitCost = (float) $item->unit_cost;
-                $quantity = (float) $item->quantity;
-                $costPerFinishedUnit = round($unitCost * $quantity, 4);
-
-                return [
-                    'name' => $item->name,
-                    'unit_cost' => $unitCost,
-                    'quantity' => $quantity,
-                    'cost_per_finished_unit' => $costPerFinishedUnit,
-                    'line_cost' => $unitsProduced !== null && $unitsProduced > 0
-                        ? round($costPerFinishedUnit * $unitsProduced, 4)
-                        : null,
-                ];
-            })
+        $packagingRows = collect($preview['packaging_rows'])
+            ->map(fn (array $row): array => [
+                ...$row,
+                'quantity' => $row['components_per_unit'],
+                'line_cost' => $unitsProduced !== null && $unitsProduced > 0 ? $row['line_cost'] : null,
+            ])
             ->values()
             ->all();
 
-        $ingredientTotal = collect($ingredientRows)->sum(fn (array $row): float => (float) ($row['line_cost'] ?? 0));
-        $packagingTotal = $unitsProduced !== null && $unitsProduced > 0
-            ? collect($packagingRows)->sum(fn (array $row): float => (float) ($row['line_cost'] ?? 0))
-            : null;
-        $batchTotal = round($ingredientTotal + ($packagingTotal ?? 0), 4);
+        $packagingTotal = $unitsProduced !== null && $unitsProduced > 0 ? $preview['packaging_total'] : null;
 
         return [
             'summary' => [
-                ['label' => 'Ingredient total', 'value' => $this->money($ingredientTotal, $currency)],
-                ['label' => 'Packaging total', 'value' => $packagingTotal !== null ? $this->money($packagingTotal, $currency) : 'Set units produced'],
-                ['label' => 'Total batch cost', 'value' => $this->money($batchTotal, $currency)],
-                ['label' => 'Cost per unit', 'value' => $unitsProduced !== null && $unitsProduced > 0 ? $this->money($batchTotal / $unitsProduced, $currency) : 'Not set'],
+                ['label' => 'Ingredient total', 'value' => $this->money($preview['ingredient_total'], $preview['currency'])],
+                ['label' => 'Packaging total', 'value' => $packagingTotal !== null ? $this->money($packagingTotal, $preview['currency']) : 'Set units produced'],
+                ['label' => 'Total batch cost', 'value' => $this->money($preview['total_cost'], $preview['currency'])],
+                ['label' => 'Cost per unit', 'value' => $preview['cost_per_unit'] !== null ? $this->money($preview['cost_per_unit'], $preview['currency']) : 'Not set'],
             ],
             'ingredientRows' => $ingredientRows,
             'packagingRows' => $packagingRows,
-            'currency' => $currency,
-            'hasCostingData' => true,
+            'currency' => $preview['currency'],
+            'hasCostingData' => $ingredientRows !== [] || $packagingRows !== [],
+            'hasUnpricedRows' => $preview['has_unpriced_rows'],
         ];
-    }
-
-    /**
-     * @return array<string, array{phase: string, weight: float}>
-     */
-    private function costingWeightsByKey(RecipeVersion $version, float $selectedOilWeight): array
-    {
-        $version = RecipeVersion::withoutGlobalScopes()
-            ->with([
-                'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
-                'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
-            ])
-            ->findOrFail($version->id);
-
-        return $version->phases
-            ->flatMap(fn (RecipePhase $phase) => $phase->items
-                ->map(fn (RecipeItem $item): array => [
-                    'key' => $this->costingKey((int) $item->ingredient_id, $phase->slug, (int) $item->position),
-                    'phase' => $phase->name,
-                    'weight' => round($selectedOilWeight * ((float) $item->percentage / 100), 4),
-                ]))
-            ->mapWithKeys(fn (array $row): array => [
-                $row['key'] => [
-                    'phase' => $row['phase'],
-                    'weight' => $row['weight'],
-                ],
-            ])
-            ->all();
-    }
-
-    private function costingKey(int $ingredientId, string $phaseKey, int $position): string
-    {
-        return $ingredientId.'|'.$phaseKey.'|'.$position;
     }
 
     private function money(float $value, string $currency): string
     {
         return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.').' '.$currency;
+    }
+
+    private function positiveFloat(mixed $value): ?float
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $normalized = (float) $value;
+
+        return $normalized > 0 ? $normalized : null;
     }
 
     private function positiveInt(mixed $value): ?int

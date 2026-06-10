@@ -1,11 +1,21 @@
 <?php
 
+use App\IngredientCategory;
+use App\Models\Ingredient;
+use App\Models\IngredientSapProfile;
+use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
 use App\Models\ProductionBatchIngredient;
 use App\Models\ProductionBatchPackagingItem;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\RecipeVersionCosting;
+use App\Models\RecipeVersionCostingItem;
+use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
+use App\Models\UserPackagingItem;
+use App\Services\RecipeVersionCostPreviewBuilder;
+use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -134,3 +144,158 @@ it('preserves production snapshots when the source recipe is deleted', function 
         ->and($preservedBatch->packagingItems->first()->name)->toBe('Soap box')
         ->and($preservedBatch->packagingItems->first()->line_cost)->toBe('3.0000');
 });
+
+it('builds numeric production cost preview rows from live costing data', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Soap box',
+        'unit_cost' => 0.25,
+        'currency' => 'EUR',
+    ]);
+
+    $version->packagingItems()->create([
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => 'Soap box',
+        'components_per_unit' => 1,
+        'position' => 1,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => 'Soap box',
+        'unit_cost' => 0.25,
+        'quantity' => 1,
+    ]);
+
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
+        recipe: $recipe,
+        version: $version,
+        user: $user,
+        batchBasisValue: 1500,
+        unitsProduced: 12,
+    );
+
+    expect($preview['currency'])->toBe('EUR')
+        ->and($preview['ingredient_total'])->toBe(12.75)
+        ->and($preview['packaging_total'])->toBe(3.0)
+        ->and($preview['total_cost'])->toBe(15.75)
+        ->and($preview['cost_per_unit'])->toBe(1.3125)
+        ->and($preview['has_unpriced_rows'])->toBeFalse()
+        ->and($preview['ingredient_rows'][0]['ingredient_id'])->toBe($ingredient->id)
+        ->and($preview['ingredient_rows'][0]['phase_key'])->toBe('saponified_oils')
+        ->and($preview['ingredient_rows'][0]['phase_name'])->toBe('Saponified oils')
+        ->and($preview['ingredient_rows'][0]['percentage'])->toBe(100.0)
+        ->and($preview['ingredient_rows'][0]['quantity'])->toBe(1500.0)
+        ->and($preview['ingredient_rows'][0]['unit'])->toBe('g')
+        ->and($preview['ingredient_rows'][0]['line_cost'])->toBe(12.75)
+        ->and($preview['packaging_rows'][0]['user_packaging_item_id'])->toBe($packagingItem->id)
+        ->and($preview['packaging_rows'][0]['components_per_unit'])->toBe(1.0)
+        ->and($preview['packaging_rows'][0]['line_cost'])->toBe(3.0);
+});
+
+/** @return array{0: User, 1: Recipe, 2: RecipeVersion, 3: Ingredient} */
+function productionSnapshotSoapRecipe(): array
+{
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+        'calculation_basis' => 'oil_weight',
+    ]);
+    $ingredient = productionSnapshotIngredient();
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->saveDraft(
+        $user,
+        $soapFamily,
+        productionSnapshotDraftPayload($ingredient, 'Snapshot Soap'),
+    );
+
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $service->saveAsNewVersion(
+        $user,
+        $soapFamily,
+        productionSnapshotDraftPayload($ingredient, 'Snapshot Soap'),
+        $recipe,
+    );
+
+    $version = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_draft', false)
+        ->latest('version_number')
+        ->firstOrFail();
+
+    return [$user, $recipe, $version, $ingredient];
+}
+
+function productionSnapshotIngredient(): Ingredient
+{
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Olive Oil',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'soap_inci_naoh_name' => 'SODIUM OLIVATE',
+        'soap_inci_koh_name' => 'POTASSIUM OLIVATE',
+        'is_potentially_saponifiable' => true,
+        'is_active' => true,
+    ]);
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    return $ingredient;
+}
+
+/** @return array<string, mixed> */
+function productionSnapshotDraftPayload(Ingredient $ingredient, string $name): array
+{
+    return [
+        'name' => $name,
+        'oil_unit' => 'g',
+        'oil_weight' => 1000,
+        'manufacturing_mode' => 'saponify_in_formula',
+        'exposure_mode' => 'rinse_off',
+        'regulatory_regime' => 'eu',
+        'editing_mode' => 'percentage',
+        'lye_type' => 'naoh',
+        'koh_purity_percentage' => 90,
+        'dual_lye_koh_percentage' => 40,
+        'water_mode' => 'percent_of_oils',
+        'water_value' => 38,
+        'superfat' => 5,
+        'ifra_product_category_id' => null,
+        'phase_items' => [
+            'saponified_oils' => [
+                [
+                    'ingredient_id' => $ingredient->id,
+                    'percentage' => 100,
+                    'weight' => 1000,
+                    'note' => null,
+                ],
+            ],
+            'additives' => [],
+            'fragrance' => [],
+        ],
+    ];
+}

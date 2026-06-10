@@ -74,6 +74,15 @@ class Recipe extends Model implements HasRichContent
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function ownerUser(): ?User
+    {
+        if ($this->tenantOwnerType() !== OwnerType::User || $this->owner_id === null) {
+            return null;
+        }
+
+        return User::query()->find((int) $this->owner_id);
+    }
+
     public function versions(): HasMany
     {
         return $this->hasMany(RecipeVersion::class);

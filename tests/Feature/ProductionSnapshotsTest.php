@@ -212,6 +212,52 @@ it('builds numeric production cost preview rows from live costing data', functio
         ->and($preview['packaging_rows'][0]['line_cost'])->toBe(3.0);
 });
 
+it('marks packaging plan rows without source prices as unpriced in production cost previews', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+
+    $version->packagingItems()->create([
+        'user_packaging_item_id' => null,
+        'name' => 'Unpriced wrap',
+        'components_per_unit' => 2,
+        'position' => 1,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
+        recipe: $recipe,
+        version: $version,
+        user: $user,
+        batchBasisValue: 1000,
+        unitsProduced: 10,
+    );
+
+    expect($preview['packaging_total'])->toBe(0.0)
+        ->and($preview['total_cost'])->toBe(8.5)
+        ->and($preview['has_unpriced_rows'])->toBeTrue()
+        ->and($preview['packaging_rows'][0]['name'])->toBe('Unpriced wrap')
+        ->and($preview['packaging_rows'][0]['components_per_unit'])->toBe(2.0)
+        ->and($preview['packaging_rows'][0]['unit_cost'])->toBeNull()
+        ->and($preview['packaging_rows'][0]['cost_per_finished_unit'])->toBe(0.0)
+        ->and($preview['packaging_rows'][0]['line_cost'])->toBe(0.0)
+        ->and($preview['packaging_rows'][0]['is_unpriced'])->toBeTrue();
+});
+
 /** @return array{0: User, 1: Recipe, 2: RecipeVersion, 3: Ingredient} */
 function productionSnapshotSoapRecipe(): array
 {

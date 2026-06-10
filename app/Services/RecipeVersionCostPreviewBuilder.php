@@ -134,23 +134,30 @@ class RecipeVersionCostPreviewBuilder
             $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
             $item->name,
         ));
+        $existingRowsByKey = ($existingCosting?->packagingItems ?? collect())->keyBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
+            $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+            $item->name,
+        ));
 
         $rows = $version->packagingItems
             ->toBase()
-            ->map(function (RecipeVersionPackagingItem $item) use ($costingRowsByKey, $unitsProduced): array {
-                $costingItem = $costingRowsByKey->get($this->packagingKey(
+            ->map(function (RecipeVersionPackagingItem $item) use ($costingRowsByKey, $existingRowsByKey, $unitsProduced): array {
+                $key = $this->packagingKey(
                     $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
                     $item->name,
-                ));
+                );
+                $costingItem = $costingRowsByKey->get($key);
 
                 return $this->packagingRow(
                     packagingItemId: $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
                     position: (int) $item->position,
                     name: $item->name,
                     componentsPerUnit: $costingItem?->quantity === null ? (float) $item->components_per_unit : (float) $costingItem->quantity,
-                    unitCost: $costingItem?->unit_cost === null
-                        ? ($item->packagingItem?->unit_cost === null ? null : (float) $item->packagingItem->unit_cost)
-                        : (float) $costingItem->unit_cost,
+                    unitCost: $this->plannedPackagingUnitCost(
+                        costingItem: $costingItem,
+                        existingCostingItem: $existingRowsByKey->get($key),
+                        recipePackagingItem: $item,
+                    ),
                     unitsProduced: $unitsProduced,
                 );
             });
@@ -202,6 +209,29 @@ class RecipeVersionCostPreviewBuilder
     private function packagingKey(?int $packagingItemId, string $name): string
     {
         return ($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
+    }
+
+    private function plannedPackagingUnitCost(?RecipeVersionCostingPackagingItem $costingItem, ?RecipeVersionCostingPackagingItem $existingCostingItem, RecipeVersionPackagingItem $recipePackagingItem): ?float
+    {
+        $catalogUnitCost = $recipePackagingItem->packagingItem?->unit_cost === null
+            ? null
+            : (float) $recipePackagingItem->packagingItem->unit_cost;
+
+        if (! $costingItem instanceof RecipeVersionCostingPackagingItem) {
+            return $catalogUnitCost;
+        }
+
+        $costingUnitCost = (float) $costingItem->unit_cost;
+
+        if ($existingCostingItem instanceof RecipeVersionCostingPackagingItem) {
+            return $costingUnitCost;
+        }
+
+        if ($costingUnitCost !== 0.0) {
+            return $costingUnitCost;
+        }
+
+        return $catalogUnitCost;
     }
 
     private function preserveExistingUnplannedPackagingRows(RecipeVersionCosting $costing, RecipeVersion $version, ?RecipeVersionCosting $existingCosting): void

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('production_batches', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('recipe_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('recipe_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('recipe_version_id')->nullable()->constrained()->nullOnDelete();
             $table->string('recipe_name');
             $table->unsignedInteger('recipe_version_number');

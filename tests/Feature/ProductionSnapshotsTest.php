@@ -78,3 +78,59 @@ it('stores production snapshot headers with frozen ingredient and packaging rows
         ->and($version->productionBatches()->first()->is($batch))->toBeTrue()
         ->and($user->productionBatches()->first()->is($batch))->toBeTrue();
 });
+
+it('preserves production snapshots when the source recipe is deleted', function (): void {
+    $user = User::factory()->create();
+    $recipe = Recipe::factory()->create(['owner_id' => $user->id]);
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_id' => $user->id,
+        'is_draft' => false,
+        'version_number' => 3,
+    ]);
+
+    $batch = ProductionBatch::factory()
+        ->for($user)
+        ->for($recipe)
+        ->for($version, 'recipeVersion')
+        ->create([
+            'recipe_name' => 'Castile Soap',
+            'recipe_version_number' => 3,
+            'production_batch_number' => 'B-2026-001',
+            'production_notes' => 'Trace accelerated slightly.',
+        ]);
+
+    ProductionBatchIngredient::factory()
+        ->for($batch)
+        ->create([
+            'ingredient_name' => 'Olive Oil',
+            'ingredient_lot_number' => 'OO-LOT-1',
+            'line_cost' => 8.5,
+        ]);
+
+    ProductionBatchPackagingItem::factory()
+        ->for($batch)
+        ->create([
+            'name' => 'Soap box',
+            'line_cost' => 3,
+        ]);
+
+    $recipe->delete();
+
+    $preservedBatch = ProductionBatch::query()
+        ->with(['ingredients', 'packagingItems'])
+        ->findOrFail($batch->id);
+
+    expect($preservedBatch->recipe_id)->toBeNull()
+        ->and($preservedBatch->recipe_version_id)->toBeNull()
+        ->and($preservedBatch->recipe_name)->toBe('Castile Soap')
+        ->and($preservedBatch->recipe_version_number)->toBe(3)
+        ->and($preservedBatch->production_batch_number)->toBe('B-2026-001')
+        ->and($preservedBatch->production_notes)->toBe('Trace accelerated slightly.')
+        ->and($preservedBatch->ingredients)->toHaveCount(1)
+        ->and($preservedBatch->ingredients->first()->ingredient_name)->toBe('Olive Oil')
+        ->and($preservedBatch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-1')
+        ->and($preservedBatch->packagingItems)->toHaveCount(1)
+        ->and($preservedBatch->packagingItems->first()->name)->toBe('Soap box')
+        ->and($preservedBatch->packagingItems->first()->line_cost)->toBe('3.0000');
+});

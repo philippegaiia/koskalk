@@ -87,6 +87,13 @@ class RecipeVersion extends Model
         return $this->hasMany(RecipeVersionPackagingItem::class)->orderBy('position');
     }
 
+    public function productionBatches(): HasMany
+    {
+        return $this->hasMany(ProductionBatch::class)
+            ->latest('manufacture_date')
+            ->latest('id');
+    }
+
     protected function casts(): array
     {
         return [

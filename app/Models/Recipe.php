@@ -86,6 +86,13 @@ class Recipe extends Model implements HasRichContent
             ->orderByDesc('version_number');
     }
 
+    public function productionBatches(): HasMany
+    {
+        return $this->hasMany(ProductionBatch::class)
+            ->latest('manufacture_date')
+            ->latest('id');
+    }
+
     public function currentSavedVersion(): HasOne
     {
         return $this->hasOne(RecipeVersion::class)

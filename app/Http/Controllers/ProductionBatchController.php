@@ -28,7 +28,9 @@ class ProductionBatchController extends Controller
             ->with('productFamily')
             ->findOrFail($recipe);
 
-        abort_unless($recipe->owner_id === $user->id && $recipe->isAccessibleBy($user), 404);
+        abort_unless($recipe->isAccessibleBy($user), 404);
+
+        $this->authorize('update', $recipe);
 
         $version = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
@@ -61,10 +63,17 @@ class ProductionBatchController extends Controller
         $this->authorize('update', $productionBatch);
 
         $validated = $request->validated();
-        $productionBatch->update([
-            'production_batch_number' => $validated['production_batch_number'] ?? null,
-            'production_notes' => $validated['production_notes'] ?? null,
-        ]);
+        $updates = [];
+
+        foreach (['production_batch_number', 'production_notes'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $updates[$field] = $validated[$field];
+            }
+        }
+
+        if ($updates !== []) {
+            $productionBatch->update($updates);
+        }
 
         $ingredientLotNumbers = $validated['ingredient_lot_numbers'] ?? [];
 

@@ -15,10 +15,15 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
+use App\OwnerType;
 use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
+use App\Visibility;
+use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -310,6 +315,64 @@ it('does not allow another user to view a production snapshot', function (): voi
     $this->actingAs(User::factory()->create())
         ->get(route('production-batches.show', $batch))
         ->assertForbidden();
+});
+
+it('updates production lot numbers without clearing omitted annotations', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-035',
+        'manufacture_date' => '2026-06-12',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+        'production_notes' => 'Keep these notes.',
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('production-batches.update', $batch), [
+            'ingredient_lot_numbers' => [
+                "{$ingredient->id}:saponified_oils:1" => 'OO-LOT-35',
+            ],
+        ])
+        ->assertRedirect(route('production-batches.show', $batch));
+
+    $batch = $batch->fresh(['ingredients']);
+
+    expect($batch->production_batch_number)->toBe('B-2026-035')
+        ->and($batch->production_notes)->toBe('Keep these notes.')
+        ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-35');
+});
+
+it('allows workspace editors authorized to update the recipe to store production snapshots', function (): void {
+    [$owner, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    $editor = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($editor)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+
+    $recipe->update([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_private' => false,
+        'created_by' => $owner->id,
+    ]);
+
+    productionSnapshotAttachCosting($editor, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+
+    $this->actingAs($editor)
+        ->post(route('recipes.production-batches.store', $recipe), [
+            'production_batch_number' => 'B-2026-036',
+            'manufacture_date' => '2026-06-12',
+            'batch_basis' => 1000,
+            'units_produced' => 10,
+        ])
+        ->assertRedirect();
+
+    expect(ProductionBatch::query()->where('user_id', $editor->id)->count())->toBe(1);
 });
 
 it('validates required production recording fields', function (): void {

@@ -224,6 +224,10 @@ class RecipeVersionCostPreviewBuilder
         $costingUnitCost = (float) $costingItem->unit_cost;
 
         if ($existingCostingItem instanceof RecipeVersionCostingPackagingItem) {
+            if ($costingUnitCost === 0.0 && $catalogUnitCost === null) {
+                return null;
+            }
+
             return $costingUnitCost;
         }
 

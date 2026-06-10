@@ -462,6 +462,17 @@ class RecipeVersionViewDataBuilder
             ->where('user_id', $user->id)
             ->first();
 
+        if (! $existingCosting instanceof RecipeVersionCosting) {
+            return [
+                'summary' => [],
+                'ingredientRows' => [],
+                'packagingRows' => [],
+                'currency' => $user->defaultCurrency(),
+                'hasCostingData' => false,
+                'hasUnpricedRows' => false,
+            ];
+        }
+
         $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null) ?? $existingCosting?->units_produced;
         $preview = $this->costPreviewBuilder->build(
             recipe: $recipe,

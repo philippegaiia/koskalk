@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
 use App\Http\Controllers\PackagingItemController;
+use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\RecipeController;
 use Illuminate\Support\Facades\Route;
 
@@ -20,6 +21,7 @@ Route::controller(RecipeController::class)
         Route::get('/{recipe}/saved', 'saved')->name('saved');
         Route::post('/{recipe}/saved/edit-in-draft', 'editSavedFormulaInDraft')->name('saved.edit-in-draft');
         Route::post('/{recipe}/saved/{version}/restore', 'restoreSavedFormula')->name('saved.restore');
+        Route::post('/{recipe}/production-batches', [ProductionBatchController::class, 'store'])->name('production-batches.store');
         Route::post('/{recipe}/duplicate', 'duplicate')->name('duplicate');
         Route::get('/{recipe}/print', 'printSavedRecipe')->name('print.recipe');
         Route::get('/{recipe}/print/production', 'printSavedProductionSheet')->name('print.production');
@@ -34,6 +36,15 @@ Route::controller(RecipeController::class)
         Route::get('/{recipe}/versions/{version}/print', 'printRecipe')->name('legacy.print.recipe');
         Route::get('/{recipe}/versions/{version}/print/details', 'printDetails')->name('legacy.print.details');
         Route::get('/{recipe}', 'edit')->name('edit');
+    });
+
+Route::controller(ProductionBatchController::class)
+    ->prefix('/dashboard/production-batches')
+    ->name('production-batches.')
+    ->group(function (): void {
+        Route::get('/{productionBatch}', 'show')->name('show');
+        Route::patch('/{productionBatch}', 'update')->name('update');
+        Route::get('/{productionBatch}/print', 'print')->name('print');
     });
 
 Route::controller(IngredientController::class)

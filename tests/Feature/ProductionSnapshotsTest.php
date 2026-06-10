@@ -273,6 +273,74 @@ it('records a soap production snapshot and freezes current prices', function ():
         ->and($recordedBatch->packagingItems->first()->line_cost)->toBe('3.0000');
 });
 
+it('stores a production snapshot from the saved formula route', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+
+    $this->actingAs($user)
+        ->post(route('recipes.production-batches.store', $recipe), [
+            'production_batch_number' => 'B-2026-020',
+            'manufacture_date' => '2026-06-12',
+            'batch_basis' => 1500,
+            'units_produced' => 12,
+            'production_notes' => 'QC: pH checked.',
+            'ingredient_lot_numbers' => [
+                "{$ingredient->id}:saponified_oils:1" => 'OO-LOT-20',
+            ],
+        ])
+        ->assertRedirect();
+
+    $batch = ProductionBatch::query()->firstOrFail();
+
+    expect($batch->production_batch_number)->toBe('B-2026-020')
+        ->and($batch->production_notes)->toBe('QC: pH checked.')
+        ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-20');
+});
+
+it('does not allow another user to view a production snapshot', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-030',
+        'manufacture_date' => '2026-06-12',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('production-batches.show', $batch))
+        ->assertForbidden();
+});
+
+it('validates required production recording fields', function (): void {
+    [$user, $recipe] = productionSnapshotSoapRecipe();
+
+    $this->actingAs($user)
+        ->post(route('recipes.production-batches.store', $recipe), [
+            'manufacture_date' => '',
+            'batch_basis' => 0,
+            'units_produced' => 0,
+        ])
+        ->assertSessionHasErrors(['manufacture_date', 'batch_basis', 'units_produced']);
+});
+
+it('redirects back with validation errors when recording unpriced production rows', function (): void {
+    [$user, $recipe] = productionSnapshotSoapRecipe();
+
+    $this->actingAs($user)
+        ->from(route('recipes.saved', $recipe))
+        ->post(route('recipes.production-batches.store', $recipe), [
+            'production_batch_number' => 'B-2026-040',
+            'manufacture_date' => '2026-06-12',
+            'batch_basis' => 1000,
+            'units_produced' => 10,
+        ])
+        ->assertRedirect(route('recipes.saved', $recipe))
+        ->assertSessionHasErrors(['costing']);
+
+    expect(ProductionBatch::query()->count())->toBe(0);
+});
+
 it('records a cosmetic production snapshot using total batch quantity language', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotCosmeticRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 20, packagingPrice: 0.4);

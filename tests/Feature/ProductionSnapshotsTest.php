@@ -7,6 +7,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
 use App\Models\ProductionBatchIngredient;
 use App\Models\ProductionBatchPackagingItem;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
@@ -14,6 +15,7 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
@@ -211,6 +213,68 @@ it('builds numeric production cost preview rows from live costing data', functio
         ->and($preview['packaging_rows'][0]['user_packaging_item_id'])->toBe($packagingItem->id)
         ->and($preview['packaging_rows'][0]['components_per_unit'])->toBe(1.0)
         ->and($preview['packaging_rows'][0]['line_cost'])->toBe(3.0);
+});
+
+it('records a soap production snapshot and freezes current prices', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-010',
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1500,
+        'units_produced' => 12,
+        'production_notes' => 'Reached medium trace.',
+        'ingredient_lot_numbers' => [
+            "{$ingredient->id}:saponified_oils:1" => 'OO-LOT-10',
+        ],
+    ]);
+
+    expect($batch)->toBeInstanceOf(ProductionBatch::class)
+        ->and($batch->recipe_name)->toBe('Snapshot Soap')
+        ->and($batch->product_family_slug)->toBe('soap')
+        ->and($batch->production_batch_number)->toBe('B-2026-010')
+        ->and($batch->batch_basis_label)->toBe('Oil quantity')
+        ->and($batch->batch_basis_value)->toBe('1500.000')
+        ->and($batch->batch_basis_unit)->toBe('g')
+        ->and($batch->units_produced)->toBe(12)
+        ->and($batch->ingredient_total)->toBe('12.7500')
+        ->and($batch->packaging_total)->toBe('3.0000')
+        ->and($batch->total_cost)->toBe('15.7500')
+        ->and($batch->cost_per_unit)->toBe('1.3125')
+        ->and($batch->ingredients)->toHaveCount(1)
+        ->and($batch->ingredients->first()->ingredient_name)->toBe('Olive Oil')
+        ->and($batch->ingredients->first()->quantity)->toBe('1500.0000')
+        ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-10')
+        ->and($batch->packagingItems)->toHaveCount(1)
+        ->and($batch->packagingItems->first()->name)->toBe('Soap box')
+        ->and($batch->production_notes)->toBe('Reached medium trace.');
+
+    $batch->ingredients->first()->update([
+        'price_per_kg' => 99,
+    ]);
+
+    expect($batch->fresh()->ingredients->first()->price_per_kg)->toBe('99.0000');
+});
+
+it('records a cosmetic production snapshot using total batch quantity language', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotCosmeticRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 20, packagingPrice: 0.4);
+
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => null,
+        'manufacture_date' => '2026-06-11',
+        'batch_basis' => 500,
+        'units_produced' => 5,
+        'production_notes' => '',
+        'ingredient_lot_numbers' => [],
+    ]);
+
+    expect($batch->batch_basis_label)->toBe('Total batch quantity')
+        ->and($batch->batch_basis_value)->toBe('500.000')
+        ->and($batch->ingredients->first()->quantity)->toBe('500.0000')
+        ->and($batch->total_cost)->toBe('12.0000')
+        ->and($batch->cost_per_unit)->toBe('2.4000');
 });
 
 it('marks packaging plan rows without source prices as unpriced in production cost previews', function (): void {
@@ -497,6 +561,88 @@ function productionSnapshotIngredient(): Ingredient
     return $ingredient;
 }
 
+function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ingredient $ingredient, float $ingredientPrice, float $packagingPrice): void
+{
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Soap box',
+        'unit_cost' => $packagingPrice,
+        'currency' => 'EUR',
+    ]);
+
+    $version->packagingItems()->create([
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => 'Soap box',
+        'components_per_unit' => 1,
+        'position' => 1,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => $ingredientPrice,
+    ]);
+
+    RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => 'Soap box',
+        'unit_cost' => $packagingPrice,
+        'quantity' => 1,
+    ]);
+}
+
+/** @return array{0: User, 1: Recipe, 2: RecipeVersion, 3: Ingredient} */
+function productionSnapshotCosmeticRecipe(): array
+{
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'slug' => 'cosmetic',
+        'name' => 'Cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $productType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+    ]);
+    $ingredient = productionSnapshotIngredient();
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->saveDraft(
+        $user,
+        $cosmeticFamily,
+        productionSnapshotCosmeticDraftPayload($ingredient, $productType, 'Snapshot Lotion'),
+    );
+
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $service->saveAsNewVersion(
+        $user,
+        $cosmeticFamily,
+        productionSnapshotCosmeticDraftPayload($ingredient, $productType, 'Snapshot Lotion'),
+        $recipe,
+    );
+
+    $version = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_draft', false)
+        ->latest('version_number')
+        ->firstOrFail();
+
+    return [$user, $recipe, $version, $ingredient];
+}
+
 /** @return array<string, mixed> */
 function productionSnapshotDraftPayload(Ingredient $ingredient, string $name): array
 {
@@ -526,6 +672,38 @@ function productionSnapshotDraftPayload(Ingredient $ingredient, string $name): a
             ],
             'additives' => [],
             'fragrance' => [],
+        ],
+    ];
+}
+
+/** @return array<string, mixed> */
+function productionSnapshotCosmeticDraftPayload(Ingredient $ingredient, ProductType $productType, string $name): array
+{
+    return [
+        'name' => $name,
+        'product_type_id' => $productType->id,
+        'oil_unit' => 'g',
+        'oil_weight' => 500,
+        'manufacturing_mode' => 'blend_only',
+        'exposure_mode' => 'leave_on',
+        'regulatory_regime' => 'eu',
+        'editing_mode' => 'percentage',
+        'ifra_product_category_id' => null,
+        'phases' => [
+            [
+                'key' => 'saponified_oils',
+                'name' => 'Phase A',
+            ],
+        ],
+        'phase_items' => [
+            'saponified_oils' => [
+                [
+                    'ingredient_id' => $ingredient->id,
+                    'percentage' => 100,
+                    'weight' => 500,
+                    'note' => null,
+                ],
+            ],
         ],
     ];
 }

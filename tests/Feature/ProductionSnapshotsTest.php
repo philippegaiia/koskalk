@@ -392,6 +392,56 @@ it('does not create production cost preview data for saved formula views without
             ->exists())->toBeFalse();
 });
 
+it('does not mutate existing costing rows when building saved formula view data', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+
+    $version->packagingItems()->create([
+        'user_packaging_item_id' => null,
+        'name' => 'Free insert',
+        'components_per_unit' => 1,
+        'position' => 1,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    $costingItem = RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    $packagingCostingItem = RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'user_packaging_item_id' => null,
+        'name' => 'Free insert',
+        'unit_cost' => 0,
+        'quantity' => 1,
+    ]);
+
+    $viewData = app(RecipeVersionViewDataBuilder::class)->build($recipe, $version);
+
+    expect($viewData['hasCostingData'])->toBeTrue()
+        ->and(RecipeVersionCostingItem::query()
+            ->where('recipe_version_costing_id', $costing->id)
+            ->pluck('id')
+            ->all())->toBe([$costingItem->id])
+        ->and(RecipeVersionCostingPackagingItem::query()
+            ->where('recipe_version_costing_id', $costing->id)
+            ->pluck('id')
+            ->all())->toBe([$packagingCostingItem->id])
+        ->and($packagingCostingItem->fresh()->unit_cost)->toBe('0.0000')
+        ->and($packagingCostingItem->fresh()->quantity)->toBe('1.000');
+});
+
 /** @return array{0: User, 1: Recipe, 2: RecipeVersion, 3: Ingredient} */
 function productionSnapshotSoapRecipe(): array
 {

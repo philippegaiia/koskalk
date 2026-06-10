@@ -474,10 +474,10 @@ class RecipeVersionViewDataBuilder
         }
 
         $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null) ?? $existingCosting?->units_produced;
-        $preview = $this->costPreviewBuilder->build(
+        $preview = $this->costPreviewBuilder->buildFromCosting(
             recipe: $recipe,
             version: $version,
-            user: $user,
+            costing: $existingCosting,
             batchBasisValue: $this->positiveFloat($batchContext['batch_basis'] ?? null) ?? $selectedOilWeight,
             unitsProduced: $unitsProduced,
         );

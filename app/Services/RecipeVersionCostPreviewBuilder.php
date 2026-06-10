@@ -53,6 +53,66 @@ class RecipeVersionCostPreviewBuilder
         $this->preserveExistingUnplannedPackagingRows($costing, $version, $existingCosting);
 
         $costing = $costing->fresh(['items.ingredient', 'packagingItems.packagingItem']) ?? $costing->load(['items.ingredient', 'packagingItems.packagingItem']);
+        $preview = $this->buildPreview($version, $costing, $existingCosting, $batchBasisValue, $unit, $unitsProduced, $currency);
+        $this->deleteGeneratedMissingPackagingRows($version, $costing, $existingCosting);
+
+        return $preview;
+    }
+
+    /**
+     * @return array{
+     *     currency: string,
+     *     ingredient_rows: array<int, array<string, mixed>>,
+     *     packaging_rows: array<int, array<string, mixed>>,
+     *     ingredient_total: float,
+     *     packaging_total: float,
+     *     total_cost: float,
+     *     cost_per_unit: float|null,
+     *     has_unpriced_rows: bool
+     * }
+     */
+    public function buildFromCosting(Recipe $recipe, RecipeVersion $version, RecipeVersionCosting $costing, float $batchBasisValue, ?int $unitsProduced): array
+    {
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->with([
+                'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
+                'phases.items' => fn ($query) => $query->withoutGlobalScopes()->with('ingredient')->orderBy('position'),
+                'packagingItems' => fn ($query) => $query->withoutGlobalScopes()->with('packagingItem')->orderBy('position'),
+            ])
+            ->findOrFail($version->id);
+
+        $costing = $costing->loadMissing(['items.ingredient', 'packagingItems.packagingItem']);
+
+        return $this->buildPreview(
+            version: $version,
+            costing: $costing,
+            existingCosting: $costing,
+            batchBasisValue: $batchBasisValue,
+            unit: $version->batch_unit ?: 'g',
+            unitsProduced: $unitsProduced,
+            currency: $costing->currency ?: $recipe->ownerUser()?->defaultCurrency() ?? 'EUR',
+        );
+    }
+
+    public function lotKey(int $ingredientId, string $phaseKey, int $position): string
+    {
+        return implode(':', [$ingredientId, $phaseKey, $position]);
+    }
+
+    /**
+     * @return array{
+     *     currency: string,
+     *     ingredient_rows: array<int, array<string, mixed>>,
+     *     packaging_rows: array<int, array<string, mixed>>,
+     *     ingredient_total: float,
+     *     packaging_total: float,
+     *     total_cost: float,
+     *     cost_per_unit: float|null,
+     *     has_unpriced_rows: bool
+     * }
+     */
+    private function buildPreview(RecipeVersion $version, RecipeVersionCosting $costing, ?RecipeVersionCosting $existingCosting, float $batchBasisValue, string $unit, ?int $unitsProduced, string $currency): array
+    {
         $ingredientPricesByKey = $costing->items->keyBy(fn (RecipeVersionCostingItem $item): string => $this->lotKey(
             (int) $item->ingredient_id,
             $item->phase_key,
@@ -61,8 +121,6 @@ class RecipeVersionCostPreviewBuilder
 
         $ingredientRows = $this->ingredientRows($version, $ingredientPricesByKey, $batchBasisValue, $unit);
         $packagingRows = $this->packagingRows($version, $costing, $existingCosting, $unitsProduced);
-        $this->deleteGeneratedMissingPackagingRows($version, $costing, $existingCosting);
-
         $ingredientTotal = round((float) collect($ingredientRows)->sum(fn (array $row): float => (float) $row['line_cost']), 4);
         $packagingTotal = round((float) collect($packagingRows)->sum(fn (array $row): float => (float) $row['line_cost']), 4);
         $totalCost = round($ingredientTotal + $packagingTotal, 4);
@@ -82,11 +140,6 @@ class RecipeVersionCostPreviewBuilder
                 ->merge($packagingRows)
                 ->contains(fn (array $row): bool => (bool) $row['is_unpriced']),
         ];
-    }
-
-    public function lotKey(int $ingredientId, string $phaseKey, int $position): string
-    {
-        return implode(':', [$ingredientId, $phaseKey, $position]);
     }
 
     /**

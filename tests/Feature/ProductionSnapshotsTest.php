@@ -323,6 +323,20 @@ it('shows record production controls on the saved formula page', function (): vo
         ->assertDontSee('Prepare batch');
 });
 
+it('shows record production controls on the legacy saved version page', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+
+    $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $version->id]))
+        ->assertSuccessful()
+        ->assertSee('Record production')
+        ->assertSee('Production batch number')
+        ->assertSee('Oil quantity')
+        ->assertSee('Ingredient cost')
+        ->assertSee('Cost per finished unit');
+});
+
 it('shows production history only for the production batch owner', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);

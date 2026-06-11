@@ -174,10 +174,11 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
     ): View {
         [$recipe] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
 
-        return $this->saved($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+        return $this->saved($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder, $recipeVersionCostPreviewBuilder);
     }
 
     public function printSavedRecipe(

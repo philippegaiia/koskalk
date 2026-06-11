@@ -177,9 +177,10 @@ it('shows packaging and batch use controls on the reference formula page', funct
         ->assertSee('Packaging plan')
         ->assertSee('Soap box')
         ->assertSee('1 per unit')
-        ->assertSee('Prepare batch')
-        ->assertSee('Batch number')
+        ->assertSee('Record production')
+        ->assertSee('Production batch number')
         ->assertSee('Manufacture date')
+        ->assertSee('Oil quantity')
         ->assertSee('Units produced');
 });
 

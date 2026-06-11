@@ -302,6 +302,51 @@ it('stores a production snapshot from the saved formula route', function (): voi
         ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-20');
 });
 
+it('shows record production controls on the saved formula page', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('Record production')
+        ->assertSee('Production batch number')
+        ->assertSee('Manufacture date')
+        ->assertSee('Oil quantity')
+        ->assertSee('Units produced')
+        ->assertSee('Ingredient lot numbers')
+        ->assertSee('Production notes')
+        ->assertSee('Ingredient cost')
+        ->assertSee('Packaging cost')
+        ->assertSee('Cost per finished unit')
+        ->assertSee('Record production')
+        ->assertDontSee('Prepare batch');
+});
+
+it('shows production history only for the production batch owner', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-040',
+        'manufacture_date' => '2026-06-13',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee('Production history')
+        ->assertSee('B-2026-040')
+        ->assertSee(route('production-batches.show', $batch), false);
+
+    $otherUser = User::factory()->create();
+
+    $this->actingAs($otherUser)
+        ->get(route('recipes.saved', $recipe))
+        ->assertNotFound();
+});
+
 it('does not allow another user to view a production snapshot', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
@@ -658,6 +703,25 @@ it('does not create production cost preview data for saved formula views without
             ->where('recipe_version_id', $version->id)
             ->where('user_id', $user->id)
             ->exists())->toBeFalse();
+});
+
+it('does not create costing rows when viewing the saved formula route without existing costing', function (): void {
+    [$user, $recipe, $version] = productionSnapshotSoapRecipe();
+
+    expect(RecipeVersionCosting::query()
+        ->where('recipe_version_id', $version->id)
+        ->where('user_id', $user->id)
+        ->exists())->toBeFalse();
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee('Some rows are unpriced. Add prices before recording production.');
+
+    expect(RecipeVersionCosting::query()
+        ->where('recipe_version_id', $version->id)
+        ->where('user_id', $user->id)
+        ->exists())->toBeFalse();
 });
 
 it('does not mutate existing costing rows when building saved formula view data', function (): void {

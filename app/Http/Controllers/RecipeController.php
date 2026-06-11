@@ -6,10 +6,13 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\RecipeVersionCosting;
+use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use App\Services\RecipeCsvExporter;
 use App\Services\RecipeExportDataBuilder;
+use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionDeletionService;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
@@ -76,11 +79,26 @@ class RecipeController extends Controller
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
     ): View {
+        $user = $currentAppUserResolver->resolve();
         [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
         $viewData = $recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
+        $canRecordProduction = $user !== null && $user->can('update', $recipe);
 
-        return view('recipes.version', $viewData);
+        return view('recipes.version', [
+            ...$viewData,
+            'canRecordProduction' => $canRecordProduction,
+            'productionPreview' => $user !== null
+                ? $this->productionPreview($recipe, $savedFormula, $user, $viewData, $recipeVersionCostPreviewBuilder)
+                : null,
+            'productionBatches' => $canRecordProduction
+                ? $recipe->productionBatches()
+                    ->where('user_id', $user->id)
+                    ->limit(8)
+                    ->get()
+                : collect(),
+        ]);
     }
 
     public function duplicate(
@@ -427,5 +445,92 @@ class RecipeController extends Controller
         $slug = Str::slug($recipe->name);
 
         return ($slug !== '' ? $slug : 'recipe').'.'.$extension;
+    }
+
+    /**
+     * @param  array<string, mixed>  $viewData
+     * @return array<string, mixed>
+     */
+    private function productionPreview(
+        Recipe $recipe,
+        RecipeVersion $version,
+        User $user,
+        array $viewData,
+        RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
+    ): array {
+        $batchContext = is_array($viewData['batchContext'] ?? null) ? $viewData['batchContext'] : [];
+        $basisValue = $this->positiveFloat($batchContext['batch_basis'] ?? null)
+            ?? $this->positiveFloat($viewData['selectedOilWeight'] ?? null)
+            ?? 0.0;
+        $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null);
+        $basisLabel = $this->productionBatchBasisLabel($recipe);
+        $basisUnit = $version->batch_unit ?: 'g';
+        $existingCosting = RecipeVersionCosting::query()
+            ->with(['items.ingredient', 'packagingItems.packagingItem'])
+            ->where('recipe_version_id', $version->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($existingCosting instanceof RecipeVersionCosting) {
+            return [
+                ...$recipeVersionCostPreviewBuilder->buildFromCosting(
+                    recipe: $recipe,
+                    version: $version,
+                    costing: $existingCosting,
+                    batchBasisValue: $basisValue,
+                    unitsProduced: $unitsProduced,
+                ),
+                'batch_basis_label' => $basisLabel,
+                'batch_basis_value' => $basisValue,
+                'batch_basis_unit' => $basisUnit,
+                'units_produced' => $unitsProduced,
+            ];
+        }
+
+        return [
+            'currency' => $user->defaultCurrency(),
+            'ingredient_rows' => [],
+            'packaging_rows' => [],
+            'ingredient_total' => 0.0,
+            'packaging_total' => 0.0,
+            'total_cost' => 0.0,
+            'cost_per_unit' => null,
+            'has_unpriced_rows' => true,
+            'batch_basis_label' => $basisLabel,
+            'batch_basis_value' => $basisValue,
+            'batch_basis_unit' => $basisUnit,
+            'units_produced' => $unitsProduced,
+        ];
+    }
+
+    private function productionBatchBasisLabel(Recipe $recipe): string
+    {
+        $recipe->loadMissing('productFamily');
+
+        return $recipe->productFamily?->calculation_basis === 'total_formula'
+            ? 'Total batch quantity'
+            : 'Oil quantity';
+    }
+
+    private function positiveFloat(mixed $value): ?float
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $normalized = (float) $value;
+
+        return $normalized > 0 ? $normalized : null;
+    }
+
+    private function positiveInt(mixed $value): ?int
+    {
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $normalized = (int) $value;
+
+        return $normalized > 0 ? $normalized : null;
     }
 }

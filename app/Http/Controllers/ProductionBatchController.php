@@ -32,13 +32,15 @@ class ProductionBatchController extends Controller
 
         $this->authorize('update', $recipe);
 
+        $validated = $request->validated();
+
         $version = RecipeVersion::withoutGlobalScopes()
+            ->whereKey((int) $validated['recipe_version_id'])
             ->where('recipe_id', $recipe->id)
             ->where('is_draft', false)
-            ->orderByDesc('version_number')
             ->firstOrFail();
 
-        $productionBatch = $productionSnapshotService->record($recipe, $version, $user, $request->validated());
+        $productionBatch = $productionSnapshotService->record($recipe, $version, $user, $validated);
 
         return redirect()
             ->route('production-batches.show', $productionBatch)

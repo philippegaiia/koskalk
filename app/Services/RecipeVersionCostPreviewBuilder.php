@@ -171,7 +171,7 @@ class RecipeVersionCostPreviewBuilder
                         'quantity' => $quantity,
                         'unit' => $unit,
                         'price_per_kg' => $pricePerKg,
-                        'line_cost' => $pricePerKg === null ? 0.0 : round(($quantity / 1000) * $pricePerKg, 4),
+                        'line_cost' => $pricePerKg === null ? 0.0 : round($this->quantityToKilograms($quantity, $unit) * $pricePerKg, 4),
                         'is_unpriced' => $pricePerKg === null,
                     ];
                 }))
@@ -184,23 +184,20 @@ class RecipeVersionCostPreviewBuilder
      */
     private function packagingRows(RecipeVersion $version, RecipeVersionCosting $costing, ?RecipeVersionCosting $existingCosting, ?int $unitsProduced): array
     {
-        $costingRowsByKey = $costing->packagingItems->keyBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-            $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
-            $item->name,
-        ));
-        $existingRowsByKey = ($existingCosting?->packagingItems ?? collect())->keyBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-            $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
-            $item->name,
-        ));
+        $costingRowsByKey = $this->packagingCostingRowsByKey($costing->packagingItems);
+        $existingRowsByKey = $this->packagingCostingRowsByKey($existingCosting?->packagingItems ?? collect());
+        $costingRowOccurrences = [];
+        $existingRowOccurrences = [];
 
         $rows = $version->packagingItems
             ->toBase()
-            ->map(function (RecipeVersionPackagingItem $item) use ($costingRowsByKey, $existingRowsByKey, $unitsProduced): array {
+            ->map(function (RecipeVersionPackagingItem $item) use ($costingRowsByKey, &$costingRowOccurrences, $existingRowsByKey, &$existingRowOccurrences, $unitsProduced): array {
                 $key = $this->packagingKey(
                     $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
                     $item->name,
                 );
-                $costingItem = $costingRowsByKey->get($key);
+                $costingItem = $this->nextPackagingCostingRow($costingRowsByKey, $key, $costingRowOccurrences);
+                $existingCostingItem = $this->nextPackagingCostingRow($existingRowsByKey, $key, $existingRowOccurrences);
 
                 return $this->packagingRow(
                     packagingItemId: $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
@@ -209,7 +206,7 @@ class RecipeVersionCostPreviewBuilder
                     componentsPerUnit: $costingItem?->quantity === null ? (float) $item->components_per_unit : (float) $costingItem->quantity,
                     unitCost: $this->plannedPackagingUnitCost(
                         costingItem: $costingItem,
-                        existingCostingItem: $existingRowsByKey->get($key),
+                        existingCostingItem: $existingCostingItem,
                         recipePackagingItem: $item,
                     ),
                     unitsProduced: $unitsProduced,
@@ -263,6 +260,49 @@ class RecipeVersionCostPreviewBuilder
     private function packagingKey(?int $packagingItemId, string $name): string
     {
         return ($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
+    }
+
+    private function quantityToKilograms(float $quantity, string $unit): float
+    {
+        return match ($unit) {
+            'kg' => $quantity,
+            'oz' => $quantity * 0.028349523125,
+            'lb' => $quantity * 0.45359237,
+            default => $quantity / 1000,
+        };
+    }
+
+    /**
+     * @param  Collection<int, RecipeVersionCostingPackagingItem>  $items
+     * @return Collection<string, Collection<int, RecipeVersionCostingPackagingItem>>
+     */
+    private function packagingCostingRowsByKey(Collection $items): Collection
+    {
+        return $items
+            ->groupBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
+                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->name,
+            ))
+            ->map(fn (Collection $rows): Collection => $rows->values());
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, RecipeVersionCostingPackagingItem>>  $rowsByKey
+     * @param  array<string, int>  $occurrences
+     */
+    private function nextPackagingCostingRow(Collection $rowsByKey, string $key, array &$occurrences): ?RecipeVersionCostingPackagingItem
+    {
+        $index = $occurrences[$key] ?? 0;
+        $occurrences[$key] = $index + 1;
+        $rows = $rowsByKey->get($key);
+
+        if (! $rows instanceof Collection) {
+            return null;
+        }
+
+        $row = $rows->get($index);
+
+        return $row instanceof RecipeVersionCostingPackagingItem ? $row : null;
     }
 
     private function plannedPackagingUnitCost(?RecipeVersionCostingPackagingItem $costingItem, ?RecipeVersionCostingPackagingItem $existingCostingItem, RecipeVersionPackagingItem $recipePackagingItem): ?float

@@ -207,6 +207,7 @@
             @if ($canRecordProduction && is_array($productionPreview))
                 <form method="POST" action="{{ route('recipes.production-batches.store', ['recipe' => $recipe->id]) }}" class="sk-card p-5">
                     @csrf
+                    <input type="hidden" name="recipe_version_id" value="{{ $version->id }}" />
 
                     <p class="sk-eyebrow">Production</p>
                     <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Record production</h2>

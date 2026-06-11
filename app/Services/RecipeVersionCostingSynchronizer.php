@@ -398,23 +398,19 @@ class RecipeVersionCostingSynchronizer
             ->with(['packagingItems.packagingItem'])
             ->findOrFail($costing->recipe_version_id);
 
-        $existingRows = $costing->packagingItems()
-            ->get()
-            ->keyBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
-                $item->name,
-            ));
+        $existingRowsByKey = $this->packagingCostingRowsByKey($costing->packagingItems()->get());
+        $existingRowOccurrences = [];
 
         $costing->packagingItems()->delete();
 
         $recipeVersion->packagingItems
             ->sortBy('position')
-            ->each(function (RecipeVersionPackagingItem $item) use ($costing, $existingRows): void {
+            ->each(function (RecipeVersionPackagingItem $item) use ($costing, &$existingRowOccurrences, $existingRowsByKey): void {
                 $key = $this->packagingKey(
                     $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
                     $item->name,
                 );
-                $existingRow = $existingRows->get($key);
+                $existingRow = $this->nextPackagingCostingRow($existingRowsByKey, $key, $existingRowOccurrences);
                 $catalogItem = $item->packagingItem;
 
                 $costing->packagingItems()->create([
@@ -536,6 +532,39 @@ class RecipeVersionCostingSynchronizer
     private function packagingKey(?int $packagingItemId, string $name): string
     {
         return ($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
+    }
+
+    /**
+     * @param  Collection<int, RecipeVersionCostingPackagingItem>  $items
+     * @return Collection<string, Collection<int, RecipeVersionCostingPackagingItem>>
+     */
+    private function packagingCostingRowsByKey(Collection $items): Collection
+    {
+        return $items
+            ->groupBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
+                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->name,
+            ))
+            ->map(fn (Collection $rows): Collection => $rows->values());
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, RecipeVersionCostingPackagingItem>>  $rowsByKey
+     * @param  array<string, int>  $occurrences
+     */
+    private function nextPackagingCostingRow(Collection $rowsByKey, string $key, array &$occurrences): ?RecipeVersionCostingPackagingItem
+    {
+        $index = $occurrences[$key] ?? 0;
+        $occurrences[$key] = $index + 1;
+        $rows = $rowsByKey->get($key);
+
+        if (! $rows instanceof Collection) {
+            return null;
+        }
+
+        $row = $rows->get($index);
+
+        return $row instanceof RecipeVersionCostingPackagingItem ? $row : null;
     }
 
     /** Cast a value to a rounded float, or null if non-numeric. */

@@ -223,6 +223,121 @@ it('builds numeric production cost preview rows from live costing data', functio
         ->and($preview['packaging_rows'][0]['line_cost'])->toBe(3.0);
 });
 
+it('prices production ingredient quantities using the saved batch unit', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+
+    $version->update([
+        'batch_size' => 2,
+        'batch_unit' => 'lb',
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 2,
+        'oil_unit_for_costing' => 'lb',
+        'units_produced' => 4,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 10,
+    ]);
+
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version->fresh(), $user, [
+        'production_batch_number' => 'B-2026-LB',
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 2,
+        'units_produced' => 4,
+    ]);
+
+    expect($batch->batch_basis_unit)->toBe('lb')
+        ->and($batch->ingredients->first()->quantity)->toBe('2.0000')
+        ->and($batch->ingredients->first()->unit)->toBe('lb')
+        ->and($batch->ingredient_total)->toBe('9.0718')
+        ->and($batch->total_cost)->toBe('9.0718')
+        ->and($batch->cost_per_unit)->toBe('2.2680');
+});
+
+it('costs duplicate planned packaging rows independently', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Soap box',
+        'unit_cost' => 0.25,
+        'currency' => 'EUR',
+    ]);
+
+    $version->packagingItems()->createMany([
+        [
+            'user_packaging_item_id' => $packagingItem->id,
+            'name' => 'Soap box',
+            'components_per_unit' => 1,
+            'position' => 1,
+        ],
+        [
+            'user_packaging_item_id' => $packagingItem->id,
+            'name' => 'Soap box',
+            'components_per_unit' => 2,
+            'position' => 2,
+        ],
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => 'Soap box',
+        'unit_cost' => 0.31,
+        'quantity' => 1,
+    ]);
+
+    RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => 'Soap box',
+        'unit_cost' => 0.72,
+        'quantity' => 2,
+    ]);
+
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
+        recipe: $recipe,
+        version: $version,
+        user: $user,
+        batchBasisValue: 1000,
+        unitsProduced: 10,
+    );
+
+    expect($preview['packaging_rows'])->toHaveCount(2)
+        ->and($preview['packaging_rows'][0]['components_per_unit'])->toBe(1.0)
+        ->and($preview['packaging_rows'][0]['unit_cost'])->toBe(0.31)
+        ->and($preview['packaging_rows'][0]['line_cost'])->toBe(3.1)
+        ->and($preview['packaging_rows'][1]['components_per_unit'])->toBe(2.0)
+        ->and($preview['packaging_rows'][1]['unit_cost'])->toBe(0.72)
+        ->and($preview['packaging_rows'][1]['line_cost'])->toBe(14.4)
+        ->and($preview['packaging_total'])->toBe(17.5);
+});
+
 it('records a soap production snapshot and freezes current prices', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     $costingRows = productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
@@ -328,6 +443,7 @@ it('stores a production snapshot from the saved formula route', function (): voi
 
     $this->actingAs($user)
         ->post(route('recipes.production-batches.store', $recipe), [
+            'recipe_version_id' => $version->id,
             'production_batch_number' => 'B-2026-020',
             'manufacture_date' => '2026-06-12',
             'batch_basis' => 1500,
@@ -346,6 +462,34 @@ it('stores a production snapshot from the saved formula route', function (): voi
         ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-20');
 });
 
+it('records the posted production version instead of a newer saved version', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+
+    RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_id' => $user->id,
+        'is_draft' => false,
+        'version_number' => 99,
+        'batch_size' => 2000,
+        'batch_unit' => 'g',
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('recipes.production-batches.store', $recipe), [
+            'recipe_version_id' => $version->id,
+            'production_batch_number' => 'B-2026-021',
+            'manufacture_date' => '2026-06-12',
+            'batch_basis' => 1500,
+            'units_produced' => 12,
+        ])
+        ->assertRedirect();
+
+    expect(ProductionBatch::query()->firstOrFail())
+        ->recipe_version_id->toBe($version->id)
+        ->recipe_version_number->toBe($version->version_number);
+});
+
 it('shows record production controls on the saved formula page', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
@@ -360,6 +504,8 @@ it('shows record production controls on the saved formula page', function (): vo
         ->assertSee('Units produced')
         ->assertSee('Ingredient lot numbers')
         ->assertSee('Production notes')
+        ->assertSee('name="recipe_version_id"', false)
+        ->assertSee('value="'.$version->id.'"', false)
         ->assertSee('Ingredient cost')
         ->assertSee('Packaging cost')
         ->assertSee('Cost per finished unit')
@@ -547,6 +693,7 @@ it('allows workspace editors authorized to update the recipe to store production
 
     $this->actingAs($editor)
         ->post(route('recipes.production-batches.store', $recipe), [
+            'recipe_version_id' => $version->id,
             'production_batch_number' => 'B-2026-036',
             'manufacture_date' => '2026-06-12',
             'batch_basis' => 1000,
@@ -566,15 +713,16 @@ it('validates required production recording fields', function (): void {
             'batch_basis' => 0,
             'units_produced' => 0,
         ])
-        ->assertSessionHasErrors(['manufacture_date', 'batch_basis', 'units_produced']);
+        ->assertSessionHasErrors(['recipe_version_id', 'manufacture_date', 'batch_basis', 'units_produced']);
 });
 
 it('redirects back with validation errors when recording unpriced production rows', function (): void {
-    [$user, $recipe] = productionSnapshotSoapRecipe();
+    [$user, $recipe, $version] = productionSnapshotSoapRecipe();
 
     $this->actingAs($user)
         ->from(route('recipes.saved', $recipe))
         ->post(route('recipes.production-batches.store', $recipe), [
+            'recipe_version_id' => $version->id,
             'production_batch_number' => 'B-2026-040',
             'manufacture_date' => '2026-06-12',
             'batch_basis' => 1000,

@@ -376,6 +376,85 @@ it('does not allow another user to view a production snapshot', function (): voi
         ->assertForbidden();
 });
 
+it('shows a read-only production snapshot with editable annotations', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-050',
+        'manufacture_date' => '2026-06-14',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+        'production_notes' => 'Initial notes',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('production-batches.show', $batch))
+        ->assertSuccessful()
+        ->assertSee('Production snapshot')
+        ->assertSee('B-2026-050')
+        ->assertSee('Oil quantity')
+        ->assertSee('1000')
+        ->assertSee('Olive Oil')
+        ->assertSee('Soap box')
+        ->assertSee('Initial notes')
+        ->assertSee('Production notes')
+        ->assertSee('Save notes')
+        ->assertDontSee('Recalculate');
+});
+
+it('edits production annotations without recalculating frozen totals', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-060',
+        'manufacture_date' => '2026-06-15',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]);
+
+    $this->actingAs($user)
+        ->patch(route('production-batches.update', $batch), [
+            'production_batch_number' => 'B-2026-060-A',
+            'production_notes' => 'Updated QC notes.',
+            'ingredient_lot_numbers' => [
+                "{$ingredient->id}:saponified_oils:1" => 'OO-LOT-60',
+            ],
+            'batch_basis' => 9000,
+            'units_produced' => 99,
+        ])
+        ->assertRedirect(route('production-batches.show', $batch));
+
+    $batch->refresh();
+
+    expect($batch->production_batch_number)->toBe('B-2026-060-A')
+        ->and($batch->production_notes)->toBe('Updated QC notes.')
+        ->and($batch->batch_basis_value)->toBe('1000.000')
+        ->and($batch->units_produced)->toBe(10)
+        ->and($batch->total_cost)->toBe('11.0000')
+        ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-60');
+});
+
+it('prints production notes without helper text and leaves writing space', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-070',
+        'manufacture_date' => '2026-06-16',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+        'production_notes' => 'Cured on rack A.',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('production-batches.print', $batch))
+        ->assertSuccessful()
+        ->assertSee('Production notes')
+        ->assertSee('Cured on rack A.')
+        ->assertSee('min-h-[8rem]', false)
+        ->assertDontSee('Use this space')
+        ->assertDontSee('helper');
+});
+
 it('updates production lot numbers without clearing omitted annotations', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);

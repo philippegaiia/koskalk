@@ -6,10 +6,14 @@ use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
+use App\Models\RecipeVersionCostingItem;
+use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Models\UserIngredientPrice;
 use App\Models\UserPackagingItem;
 use App\Services\RecipeWorkbenchService;
+use App\Services\UserIngredientPriceMemory;
+use App\Services\UserPackagingItemAuthoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -279,6 +283,18 @@ it('updates the saved packaging item amount from costing overrides without chang
         'unit_cost' => 0.4400,
         'currency' => 'EUR',
     ]);
+    $secondDraftVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient, name: 'Second Packaged Recipe') + [
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => $packagingItem->id,
+                'name' => $packagingItem->name,
+                'components_per_unit' => 2,
+                'notes' => null,
+            ],
+        ],
+    ]);
+    $secondRecipe = Recipe::withoutGlobalScopes()->findOrFail($secondDraftVersion->recipe_id);
+    $service->costingPayload($secondRecipe, $user);
 
     $service->saveCosting($user, $recipe, [
         'oil_weight_for_costing' => 1000,
@@ -298,7 +314,11 @@ it('updates the saved packaging item amount from costing overrides without chang
 
     expect($packagingItem->fresh())
         ->unit_cost->toBe('0.7300')
-        ->currency->toBe('EUR');
+        ->currency->toBe('EUR')
+        ->and(RecipeVersionCostingPackagingItem::query()
+            ->where('user_packaging_item_id', $packagingItem->id)
+            ->whereHas('costing', fn ($query) => $query->where('recipe_version_id', $secondDraftVersion->id))
+            ->value('unit_cost'))->toBe('0.7300');
 });
 
 it('rejects editing another users packaging catalog item from costing', function () {
@@ -428,6 +448,241 @@ it('keeps a formula costing stable after the user default ingredient price chang
     $costing = $service->costingPayload($recipe->fresh(), $user);
 
     expect($costing['item_prices'][0]['price_per_kg'])->toBe(6.4);
+});
+
+it('preserves duplicate ingredient row prices while updating price memory', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $payload = soapDraftPayload($ingredient);
+    $payload['phase_items']['saponified_oils'] = [
+        [
+            'ingredient_id' => $ingredient->id,
+            'percentage' => 60,
+            'weight' => 600,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $ingredient->id,
+            'percentage' => 40,
+            'weight' => 400,
+            'note' => null,
+        ],
+    ];
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->saveDraft($user, $soapFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->saveCosting($user, $recipe, [
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+        'items' => [
+            [
+                'ingredient_id' => $ingredient->id,
+                'phase_key' => 'saponified_oils',
+                'position' => 1,
+                'price_per_kg' => 3.1,
+            ],
+            [
+                'ingredient_id' => $ingredient->id,
+                'phase_key' => 'saponified_oils',
+                'position' => 2,
+                'price_per_kg' => 7.2,
+            ],
+        ],
+        'packaging_items' => [],
+    ]);
+
+    $costing = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $draftVersion->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect(RecipeVersionCostingItem::query()
+        ->where('recipe_version_costing_id', $costing->id)
+        ->orderBy('position')
+        ->pluck('price_per_kg')
+        ->all())->toBe(['3.1000', '7.2000'])
+        ->and(UserIngredientPrice::query()
+            ->where('user_id', $user->id)
+            ->where('ingredient_id', $ingredient->id)
+            ->value('price_per_kg'))->toBe('7.2000');
+});
+
+it('preserves duplicate packaging row prices while updating the packaging catalog', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Gift Box',
+        'unit_cost' => 0.44,
+        'currency' => 'EUR',
+    ]);
+
+    $service->saveCosting($user, $recipe, [
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+        'items' => [],
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => $packagingItem->id,
+                'name' => $packagingItem->name,
+                'unit_cost' => 0.31,
+                'components_per_unit' => 1,
+            ],
+            [
+                'user_packaging_item_id' => $packagingItem->id,
+                'name' => $packagingItem->name,
+                'unit_cost' => 0.72,
+                'components_per_unit' => 2,
+            ],
+        ],
+    ]);
+
+    $costing = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $draftVersion->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect(RecipeVersionCostingPackagingItem::query()
+        ->where('recipe_version_costing_id', $costing->id)
+        ->orderBy('id')
+        ->pluck('unit_cost')
+        ->all())->toBe(['0.3100', '0.7200'])
+        ->and($packagingItem->fresh()->unit_cost)->toBe('0.7200');
+});
+
+it('propagates ingredient price memory changes to linked live costing rows', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $otherIngredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $firstVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient, name: 'First Recipe'));
+    $firstRecipe = Recipe::withoutGlobalScopes()->findOrFail($firstVersion->recipe_id);
+    $service->costingPayload($firstRecipe, $user);
+
+    $secondVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient, name: 'Second Recipe'));
+    $secondRecipe = Recipe::withoutGlobalScopes()->findOrFail($secondVersion->recipe_id);
+    $service->costingPayload($secondRecipe, $user);
+
+    $otherUserVersion = $service->saveDraft($otherUser, $soapFamily, soapDraftPayload($ingredient, name: 'Other User Recipe'));
+    $otherUserRecipe = Recipe::withoutGlobalScopes()->findOrFail($otherUserVersion->recipe_id);
+    $service->costingPayload($otherUserRecipe, $otherUser);
+
+    $otherIngredientVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($otherIngredient, name: 'Other Ingredient Recipe'));
+    $otherIngredientRecipe = Recipe::withoutGlobalScopes()->findOrFail($otherIngredientVersion->recipe_id);
+    $service->costingPayload($otherIngredientRecipe, $user);
+
+    app(UserIngredientPriceMemory::class)->remember($user, $ingredient->id, 17.43219);
+
+    expect(RecipeVersionCostingItem::query()
+        ->where('ingredient_id', $ingredient->id)
+        ->whereHas('costing', fn ($query) => $query->where('user_id', $user->id))
+        ->orderBy('id')
+        ->pluck('price_per_kg')
+        ->all())->toBe(['17.4322', '17.4322'])
+        ->and(RecipeVersionCostingItem::query()
+            ->where('ingredient_id', $ingredient->id)
+            ->whereHas('costing', fn ($query) => $query->where('user_id', $otherUser->id))
+            ->value('price_per_kg'))->toBeNull()
+        ->and(RecipeVersionCostingItem::query()
+            ->where('ingredient_id', $otherIngredient->id)
+            ->whereHas('costing', fn ($query) => $query->where('user_id', $user->id))
+            ->value('price_per_kg'))->toBeNull();
+});
+
+it('propagates packaging catalog unit cost changes to linked live costing rows', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Gift Box',
+        'unit_cost' => 0.44,
+        'currency' => 'EUR',
+    ]);
+    $otherPackagingItem = UserPackagingItem::query()->create([
+        'user_id' => $otherUser->id,
+        'name' => 'Other Gift Box',
+        'unit_cost' => 0.88,
+        'currency' => 'EUR',
+    ]);
+
+    $firstVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient, name: 'First Recipe') + [
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => $packagingItem->id,
+                'name' => $packagingItem->name,
+                'components_per_unit' => 1,
+                'notes' => null,
+            ],
+        ],
+    ]);
+    $service->costingPayload(Recipe::withoutGlobalScopes()->findOrFail($firstVersion->recipe_id), $user);
+
+    $secondVersion = $service->saveDraft($user, $soapFamily, soapDraftPayload($ingredient, name: 'Second Recipe') + [
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => $packagingItem->id,
+                'name' => $packagingItem->name,
+                'components_per_unit' => 2,
+                'notes' => null,
+            ],
+        ],
+    ]);
+    $service->costingPayload(Recipe::withoutGlobalScopes()->findOrFail($secondVersion->recipe_id), $user);
+
+    $otherUserVersion = $service->saveDraft($otherUser, $soapFamily, soapDraftPayload($ingredient, name: 'Other User Recipe') + [
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => $otherPackagingItem->id,
+                'name' => $otherPackagingItem->name,
+                'components_per_unit' => 1,
+                'notes' => null,
+            ],
+        ],
+    ]);
+    $service->costingPayload(Recipe::withoutGlobalScopes()->findOrFail($otherUserVersion->recipe_id), $otherUser);
+
+    app(UserPackagingItemAuthoringService::class)->updateUnitCost($packagingItem, $user, 1.23789);
+
+    expect(RecipeVersionCostingPackagingItem::query()
+        ->where('user_packaging_item_id', $packagingItem->id)
+        ->whereHas('costing', fn ($query) => $query->where('user_id', $user->id))
+        ->orderBy('id')
+        ->pluck('unit_cost')
+        ->all())->toBe(['1.2379', '1.2379'])
+        ->and(RecipeVersionCostingPackagingItem::query()
+            ->where('user_packaging_item_id', $otherPackagingItem->id)
+            ->whereHas('costing', fn ($query) => $query->where('user_id', $otherUser->id))
+            ->value('unit_cost'))->toBe('0.8800');
 });
 
 it('copies pricing and packaging rows forward when a draft is published into a new version', function () {

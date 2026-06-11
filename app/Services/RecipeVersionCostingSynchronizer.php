@@ -33,6 +33,7 @@ class RecipeVersionCostingSynchronizer
 {
     public function __construct(
         private readonly UserIngredientPriceMemory $userIngredientPriceMemory,
+        private readonly LiveCostingPricePropagationService $liveCostingPricePropagationService,
     ) {}
 
     /**
@@ -252,6 +253,12 @@ class RecipeVersionCostingSynchronizer
         ]);
         $packagingItem->save();
 
+        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
+            $user,
+            $packagingItem->id,
+            (float) $packagingItem->unit_cost,
+        );
+
         return [
             'packaging_catalog' => $this->packagingCatalogPayload($user),
             'packaging_item' => [
@@ -436,7 +443,7 @@ class RecipeVersionCostingSynchronizer
                 (int) $row['position'],
             ));
 
-        $costing->items()->get()->each(function (RecipeVersionCostingItem $item) use ($submittedItems, $user): void {
+        $costing->items()->get()->each(function (RecipeVersionCostingItem $item) use ($costing, $submittedItems, $user): void {
             $submittedRow = $submittedItems->get($this->costingKey(
                 (int) $item->ingredient_id,
                 $item->phase_key,
@@ -455,6 +462,7 @@ class RecipeVersionCostingSynchronizer
                     $user,
                     (int) $item->ingredient_id,
                     (float) $item->price_per_kg,
+                    exceptCostingId: $costing->id,
                 );
             }
         });
@@ -482,11 +490,12 @@ class RecipeVersionCostingSynchronizer
                 ->all())
             ->get()
             ->keyBy('id');
+        $user = $costing->user;
 
         $costing->packagingItems()->delete();
 
         $submittedItems
-            ->each(function (array $row) use ($costing, $linkedPackagingItems): void {
+            ->each(function (array $row) use ($costing, $linkedPackagingItems, $user): void {
                 $linkedPackagingItemId = isset($row['user_packaging_item_id']) && is_numeric($row['user_packaging_item_id'])
                     ? (int) $row['user_packaging_item_id']
                     : null;
@@ -508,6 +517,13 @@ class RecipeVersionCostingSynchronizer
                 $linkedPackagingItem->forceFill([
                     'unit_cost' => $unitCost,
                 ])->save();
+
+                $this->liveCostingPricePropagationService->packagingUnitCostChanged(
+                    $user,
+                    $linkedPackagingItem->id,
+                    $unitCost,
+                    exceptCostingId: $costing->id,
+                );
             });
     }
 

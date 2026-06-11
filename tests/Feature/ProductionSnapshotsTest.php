@@ -22,6 +22,8 @@ use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
+use App\Services\UserIngredientPriceMemory;
+use App\Services\UserPackagingItemAuthoringService;
 use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -276,6 +278,48 @@ it('records a soap production snapshot and freezes current prices', function ():
         ->and($recordedBatch->ingredients->first()->line_cost)->toBe('12.7500')
         ->and($recordedBatch->packagingItems->first()->unit_cost)->toBe('0.2500')
         ->and($recordedBatch->packagingItems->first()->line_cost)->toBe('3.0000');
+});
+
+it('keeps production snapshots frozen after live price propagation', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    $costingRows = productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-011',
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1500,
+        'units_produced' => 12,
+        'production_notes' => null,
+        'ingredient_lot_numbers' => [],
+    ]);
+
+    app(UserIngredientPriceMemory::class)->remember($user, $ingredient->id, 12.75);
+    app(UserPackagingItemAuthoringService::class)->updateUnitCost($costingRows['packaging_item'], $user, 0.89);
+
+    $recordedBatch = $batch->fresh(['ingredients', 'packagingItems']);
+    $liveCosting = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $version->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect($recordedBatch->ingredient_total)->toBe('12.7500')
+        ->and($recordedBatch->packaging_total)->toBe('3.0000')
+        ->and($recordedBatch->total_cost)->toBe('15.7500')
+        ->and($recordedBatch->cost_per_unit)->toBe('1.3125')
+        ->and($recordedBatch->ingredients->first()->price_per_kg)->toBe('8.5000')
+        ->and($recordedBatch->ingredients->first()->line_cost)->toBe('12.7500')
+        ->and($recordedBatch->packagingItems->first()->unit_cost)->toBe('0.2500')
+        ->and($recordedBatch->packagingItems->first()->line_cost)->toBe('3.0000')
+        ->and(RecipeVersionCostingItem::query()
+            ->where('recipe_version_costing_id', $liveCosting->id)
+            ->where('ingredient_id', $ingredient->id)
+            ->where('phase_key', 'saponified_oils')
+            ->where('position', 1)
+            ->value('price_per_kg'))->toBe('12.7500')
+        ->and(RecipeVersionCostingPackagingItem::query()
+            ->where('recipe_version_costing_id', $liveCosting->id)
+            ->where('user_packaging_item_id', $costingRows['packaging_item']->id)
+            ->value('unit_cost'))->toBe('0.8900');
 });
 
 it('stores a production snapshot from the saved formula route', function (): void {

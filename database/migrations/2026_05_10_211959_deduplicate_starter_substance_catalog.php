@@ -15,49 +15,54 @@ return new class extends Migration
             return;
         }
 
-        $sourceName = 'Platform starter substance catalog';
-        $legacySourceName = 'Platform starter regulated substance watch list';
-        $substanceNames = [
-            'Beta-asarone',
-            'Furocoumarins',
-            'Linalool',
-            'Methyl eugenol',
-            'Pulegone',
-            'Safrole',
-        ];
+        DB::transaction(function (): void {
+            $sourceName = 'Platform starter substance catalog';
+            $legacySourceName = 'Platform starter regulated substance watch list';
+            $substanceNames = [
+                'Beta-asarone',
+                'Furocoumarins',
+                'Linalool',
+                'Methyl eugenol',
+                'Pulegone',
+                'Safrole',
+            ];
 
-        foreach ($substanceNames as $substanceName) {
-            $substances = DB::table('substance_catalog')
-                ->where('name', $substanceName)
-                ->whereIn('source_name', [$sourceName, $legacySourceName])
-                ->orderByRaw('case when source_name = ? then 0 else 1 end, id', [$sourceName])
-                ->get(['id']);
+            foreach ($substanceNames as $substanceName) {
+                $substances = DB::table('substance_catalog')
+                    ->where('name', $substanceName)
+                    ->whereIn('source_name', [$sourceName, $legacySourceName])
+                    ->orderByRaw('case when source_name = ? then 0 else 1 end, id', [$sourceName])
+                    ->get(['id']);
 
-            $canonical = $substances->first();
+                $canonical = $substances->first();
 
-            if ($canonical === null) {
-                continue;
+                if ($canonical === null) {
+                    continue;
+                }
+
+                $canonicalId = (int) $canonical->id;
+
+                DB::table('substance_catalog')
+                    ->where('id', $canonicalId)
+                    ->update([
+                        'source_name' => $sourceName,
+                        'updated_at' => now(),
+                    ]);
+
+                foreach ($substances->skip(1) as $duplicate) {
+                    $this->mergeDuplicateSubstance((int) $duplicate->id, $canonicalId);
+                }
             }
-
-            $canonicalId = (int) $canonical->id;
-
-            DB::table('substance_catalog')
-                ->where('id', $canonicalId)
-                ->update([
-                    'source_name' => $sourceName,
-                    'updated_at' => now(),
-                ]);
-
-            foreach ($substances->skip(1) as $duplicate) {
-                $this->mergeDuplicateSubstance((int) $duplicate->id, $canonicalId);
-            }
-        }
+        });
     }
 
     /**
      * Reverse the migrations.
      */
-    public function down(): void {}
+    public function down(): void
+    {
+        throw new LogicException('Irreversible data migration.');
+    }
 
     private function mergeDuplicateSubstance(int $duplicateId, int $canonicalId): void
     {

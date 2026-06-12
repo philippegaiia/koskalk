@@ -10,7 +10,7 @@
         default => 'Batch production sheet',
     };
     $modeDescription = match (true) {
-        $isCostingMode => 'Costs used for the current reference formula.',
+        $isCostingMode => 'Costs used for the current formula.',
         $isTechnicalMode => 'Formula, labeling, and declaration details for review.',
         default => 'Working document for making the batch.',
     };
@@ -69,7 +69,7 @@
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ $modeTitle }}</p>
                         <h1 class="mt-1 text-2xl font-semibold tracking-[-0.02em] text-slate-950">{{ $recipe->name }}</h1>
-                        <p class="mt-1 text-xs text-slate-600">Reference formula</p>
+                        <p class="mt-1 text-xs text-slate-600">Saved formula</p>
                     </div>
                     <dl class="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-2 gap-y-1 text-xs text-slate-700 sm:text-right">
                         <dt class="font-semibold text-slate-500 sm:text-left">Saved</dt>
@@ -376,7 +376,7 @@
                     </section>
                 @else
                     <section class="mt-4 border border-slate-300 px-3 py-2 text-sm text-slate-700">
-                        No costing is saved for this reference formula yet.
+                        No costing is saved for this formula yet.
                     </section>
                 @endif
             @endif

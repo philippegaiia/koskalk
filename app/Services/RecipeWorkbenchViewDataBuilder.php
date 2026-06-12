@@ -22,7 +22,7 @@ class RecipeWorkbenchViewDataBuilder
      */
     public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user, ?ProductType $productType = null): array
     {
-        $savedDraft = $this->recipeWorkbenchService->draftPayload($recipe);
+        $savedDraft = $this->recipeWorkbenchService->currentVersionPayload($recipe);
         $defaultCurrency = $user?->defaultCurrency() ?? 'EUR';
         $productType ??= $recipe?->productType;
 
@@ -129,9 +129,9 @@ class RecipeWorkbenchViewDataBuilder
             return null;
         }
 
-        $hasSavedFormula = $recipe->relationLoaded('currentSavedVersion')
-            ? $recipe->currentSavedVersion !== null
-            : $recipe->currentSavedVersion()->exists();
+        $hasSavedFormula = $recipe->relationLoaded('latestPublishedVersion')
+            ? $recipe->latestPublishedVersion !== null
+            : $recipe->latestPublishedVersion()->exists();
 
         return [
             'id' => $recipe->id,
@@ -139,6 +139,9 @@ class RecipeWorkbenchViewDataBuilder
             'description' => $recipe->description,
             'manufacturing_instructions' => $recipe->manufacturing_instructions,
             'featured_image_url' => $recipe->featuredImageUrl(),
+            'is_locked' => $recipe->isLocked(),
+            'locked_at' => $recipe->locked_at?->toISOString(),
+            'locked_by' => $recipe->locked_by,
             'has_saved_formula' => $hasSavedFormula,
             'saved_formula_url' => $hasSavedFormula
                 ? route('recipes.saved', $recipe->id)

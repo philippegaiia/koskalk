@@ -20,9 +20,9 @@ class RecipeWorkbenchVersionDataService
     /**
      * @return array<string, mixed>|null
      */
-    public function draftPayload(?Recipe $recipe): ?array
+    public function currentVersionPayload(?Recipe $recipe): ?array
     {
-        $version = $this->draftOrLatestVersion($recipe);
+        $version = $this->currentOrLatestVersion($recipe);
 
         return $version instanceof RecipeVersion
             ? $this->payloadForVersion($version)
@@ -32,9 +32,9 @@ class RecipeWorkbenchVersionDataService
     /**
      * @return array<string, mixed>|null
      */
-    public function currentDraftPayload(?Recipe $recipe): ?array
+    public function currentVersionOnlyPayload(?Recipe $recipe): ?array
     {
-        $version = $this->currentDraftVersion($recipe);
+        $version = $this->currentVersion($recipe);
 
         return $version instanceof RecipeVersion
             ? $this->payloadForVersion($version)
@@ -44,9 +44,9 @@ class RecipeWorkbenchVersionDataService
     /**
      * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}|null
      */
-    public function draftSnapshot(?Recipe $recipe): ?array
+    public function currentVersionSnapshot(?Recipe $recipe): ?array
     {
-        $version = $this->draftOrLatestVersion($recipe);
+        $version = $this->currentOrLatestVersion($recipe);
 
         return $version instanceof RecipeVersion
             ? $this->snapshotForVersion($version)
@@ -56,9 +56,9 @@ class RecipeWorkbenchVersionDataService
     /**
      * @return array<string, mixed>|null
      */
-    public function currentSavedPayload(?Recipe $recipe): ?array
+    public function latestPublishedPayload(?Recipe $recipe): ?array
     {
-        $version = $this->latestSavedVersion($recipe);
+        $version = $this->latestPublishedVersion($recipe);
 
         return $version instanceof RecipeVersion
             ? $this->payloadForVersion($version)
@@ -68,9 +68,9 @@ class RecipeWorkbenchVersionDataService
     /**
      * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}|null
      */
-    public function currentSavedSnapshot(?Recipe $recipe): ?array
+    public function latestPublishedSnapshot(?Recipe $recipe): ?array
     {
-        $version = $this->latestSavedVersion($recipe);
+        $version = $this->latestPublishedVersion($recipe);
 
         return $version instanceof RecipeVersion
             ? $this->snapshotForVersion($version)
@@ -80,11 +80,11 @@ class RecipeWorkbenchVersionDataService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function versionOptions(Recipe $recipe): array
+    public function publishedVersionHistory(Recipe $recipe): array
     {
         return RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', false)
+            ->where('is_current', false)
             ->orderByDesc('version_number')
             ->get()
             ->map(fn (RecipeVersion $version): array => [
@@ -100,9 +100,9 @@ class RecipeWorkbenchVersionDataService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function savedFormulaHistory(Recipe $recipe): array
+    public function versionHistory(Recipe $recipe): array
     {
-        return $this->versionOptions($recipe);
+        return $this->publishedVersionHistory($recipe);
     }
 
     /**
@@ -136,7 +136,7 @@ class RecipeWorkbenchVersionDataService
     {
         $version = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', false)
+            ->where('is_current', false)
             ->whereKey($versionId)
             ->with($this->versionWorkbenchRelations())
             ->firstOrFail();
@@ -144,17 +144,17 @@ class RecipeWorkbenchVersionDataService
         return $this->payloadForVersion($version);
     }
 
-    private function draftOrLatestVersion(?Recipe $recipe): ?RecipeVersion
+    private function currentOrLatestVersion(?Recipe $recipe): ?RecipeVersion
     {
         if (! $recipe instanceof Recipe) {
             return null;
         }
 
-        return $this->currentDraftVersion($recipe)
-            ?? $this->latestSavedVersion($recipe);
+        return $this->currentVersion($recipe)
+            ?? $this->latestPublishedVersion($recipe);
     }
 
-    private function currentDraftVersion(?Recipe $recipe): ?RecipeVersion
+    private function currentVersion(?Recipe $recipe): ?RecipeVersion
     {
         if (! $recipe instanceof Recipe) {
             return null;
@@ -162,12 +162,12 @@ class RecipeWorkbenchVersionDataService
 
         return RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', true)
+            ->where('is_current', true)
             ->with($this->versionWorkbenchRelations())
             ->first();
     }
 
-    private function latestSavedVersion(?Recipe $recipe): ?RecipeVersion
+    private function latestPublishedVersion(?Recipe $recipe): ?RecipeVersion
     {
         if (! $recipe instanceof Recipe) {
             return null;
@@ -175,7 +175,7 @@ class RecipeWorkbenchVersionDataService
 
         return RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', false)
+            ->where('is_current', false)
             ->with($this->versionWorkbenchRelations())
             ->orderByDesc('version_number')
             ->first();

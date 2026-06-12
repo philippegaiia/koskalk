@@ -19,7 +19,7 @@ it('renders packaging below ingredient costing with simplified wording', functio
     $ingredient = makeCostingContentCarrierOilIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft($user, $soapFamily, costingContentDraftPayload($ingredient));
+    $draftVersion = $service->save($user, $soapFamily, costingContentDraftPayload($ingredient));
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $this->actingAs($user)
@@ -40,7 +40,7 @@ it('renders packaging below ingredient costing with simplified wording', functio
         ->assertSee('Save and add to plan')
         ->assertSee('Save only')
         ->assertSee('No packaging planned yet.')
-        ->assertSee('Add packaging on the Packaging tab, then save the draft to price it here.')
+        ->assertSee('Add packaging on the Packaging tab, then save the formula to price it here.')
         ->assertDontSee('Add reusable packaging items used for one finished unit.')
         ->assertDontSee('Add a reusable packaging item to include boxes, labels, stickers, and other unit-level packaging in this costing.')
         ->assertDontSee('Packaging usage per finished unit')
@@ -56,7 +56,7 @@ it('shows units-produced fallback on batch-dependent costing summary outputs', f
     $ingredient = makeCostingContentCarrierOilIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft($user, $soapFamily, costingContentDraftPayload($ingredient));
+    $draftVersion = $service->save($user, $soapFamily, costingContentDraftPayload($ingredient));
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $this->actingAs($user)

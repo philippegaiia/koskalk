@@ -8,6 +8,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Models\Workspace;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -73,13 +74,13 @@ it('saves and publishes packaging rows with the recipe version', function () {
     ];
 
     $service = app(RecipeWorkbenchService::class);
-    $draft = $service->saveDraft($user, $soapFamily, $payload);
+    $draft = $service->save($user, $soapFamily, $payload);
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draft->recipe_id);
-    $service->saveRecipe($user, $soapFamily, $payload, $recipe);
+    $service->publish($user, $soapFamily, $payload, $recipe);
 
     $published = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
@@ -106,7 +107,7 @@ it('includes packaging rows in the workbench payload', function () {
         'currency' => 'EUR',
     ]);
 
-    $draft = app(RecipeWorkbenchService::class)->saveDraft($user, $soapFamily, packagingPlanDraftPayload($ingredient, 'Wrapped soap') + [
+    $draft = app(RecipeWorkbenchService::class)->save($user, $soapFamily, packagingPlanDraftPayload($ingredient, 'Wrapped soap') + [
         'packaging_items' => [
             [
                 'user_packaging_item_id' => $packagingItem->id,
@@ -118,7 +119,7 @@ it('includes packaging rows in the workbench payload', function () {
     ]);
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draft->recipe_id);
 
-    $payload = app(RecipeWorkbenchService::class)->draftPayload($recipe);
+    $payload = app(RecipeWorkbenchService::class)->currentVersionPayload($recipe);
 
     expect($payload['packagingItems'])->toHaveCount(1)
         ->and($payload['packagingItems'][0]['user_packaging_item_id'])->toBe($packagingItem->id)
@@ -129,6 +130,10 @@ it('includes packaging rows in the workbench payload', function () {
 
 it('renders packaging as its own workbench tab', function () {
     $user = User::factory()->create();
+    Workspace::factory()->create([
+        'owner_user_id' => $user->id,
+        'default_currency' => 'GBP',
+    ]);
     ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -139,7 +144,10 @@ it('renders packaging as its own workbench tab', function () {
         ->assertSuccessful()
         ->assertSee('Packaging')
         ->assertSee('Packaging plan')
-        ->assertSee('Components per unit');
+        ->assertSee('Components per unit')
+        ->assertSee('Effective unit price (GBP)')
+        ->assertSee('aria-label="Search and add packaging item"', false)
+        ->assertDontSee('aria-label="Search packaging items"', false);
 });
 
 it('shows packaging and batch use controls on the reference formula page', function () {
@@ -168,18 +176,19 @@ it('shows packaging and batch use controls on the reference formula page', funct
         ],
     ];
     $service = app(RecipeWorkbenchService::class);
-    $draft = $service->saveDraft($user, $soapFamily, $payload);
+    $draft = $service->save($user, $soapFamily, $payload);
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draft->recipe_id);
-    $service->saveRecipe($user, $soapFamily, $payload, $recipe);
+    $service->publish($user, $soapFamily, $payload, $recipe);
 
     $this->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
         ->assertSee('Packaging plan')
         ->assertSee('Soap box')
         ->assertSee('1 per unit')
-        ->assertSee('Prepare batch')
-        ->assertSee('Batch number')
+        ->assertSee('Record production')
+        ->assertSee('Production batch number')
         ->assertSee('Manufacture date')
+        ->assertSee('Oil quantity')
         ->assertSee('Units produced');
 });
 

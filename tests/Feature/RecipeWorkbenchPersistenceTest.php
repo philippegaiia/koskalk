@@ -38,14 +38,14 @@ it('syncs the parent recipe name when a saved draft is renamed', function () {
     $ingredient = makeCarrierOilIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         workbenchSoapDraftPayload($ingredient, name: 'Recipe A'),
     );
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->saveDraft(
+    $service->save(
         $user,
         $soapFamily,
         workbenchSoapDraftPayload($ingredient, name: 'Recipe B'),
@@ -57,7 +57,7 @@ it('syncs the parent recipe name when a saved draft is renamed', function () {
     expect($recipe->name)->toBe('Recipe B')
         ->and(RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $draftVersion->recipe_id)
-            ->where('is_draft', true)
+            ->where('is_current', true)
             ->count())->toBe(1);
 });
 
@@ -74,7 +74,7 @@ it('returns a structured error instead of throwing when oil weight is invalid', 
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
-    $result = $component->saveDraft(
+    $result = $component->save(
         workbenchSoapDraftPayload($ingredient, oilWeight: 0),
         app(RecipeWorkbenchService::class),
         app(RecipeContentUpdater::class),
@@ -100,7 +100,7 @@ it('can still save a draft from a mounted component after the auth session is go
 
     auth()->logout();
 
-    $result = $component->saveDraft(
+    $result = $component->save(
         workbenchSoapDraftPayload($ingredient, name: 'Fallback Draft'),
         app(RecipeWorkbenchService::class),
         app(RecipeContentUpdater::class),
@@ -132,7 +132,7 @@ it('keeps instructions and media entered before the first draft is saved', funct
     $component->data['manufacturing_instructions'] = '<p>Step 1: Prepare the mould.</p>';
     $component->data['featured_image_path'] = ['recipes/featured-images/first-draft.webp'];
 
-    $result = $component->saveDraft(
+    $result = $component->save(
         workbenchSoapDraftPayload($ingredient, name: 'Draft With Content'),
         app(RecipeWorkbenchService::class),
         app(RecipeContentUpdater::class),
@@ -273,14 +273,14 @@ it('stores formula context on recipe versions and returns it in the draft payloa
     $ingredient = makeCarrierOilIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         workbenchSoapDraftPayload($ingredient, exposureMode: 'leave_on'),
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
-    $draft = $service->draftPayload($recipe);
+    $draft = $service->currentVersionPayload($recipe);
     $freshDraftVersion = $draftVersion->fresh();
 
     expect($freshDraftVersion)->not->toBeNull()
@@ -353,14 +353,14 @@ it('preserves ingredient order across draft and saved versions', function () {
     ];
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft($user, $soapFamily, $payload);
+    $draftVersion = $service->save($user, $soapFamily, $payload);
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $service->saveAsNewVersion($user, $soapFamily, $payload, $recipe);
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
     $publishedVersion->load([
@@ -368,12 +368,12 @@ it('preserves ingredient order across draft and saved versions', function () {
         'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
     ]);
 
-    $draftPayload = $service->draftPayload($recipe);
+    $currentVersionPayload = $service->currentVersionPayload($recipe);
     $publishedPayload = $service->versionPayload($recipe, $publishedVersion->id);
 
-    expect(collect($draftPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
+    expect(collect($currentVersionPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
         ->toBe([$coconutOil->id, $oliveOil->id])
-        ->and(collect($draftPayload['phaseItems']['additives'])->pluck('ingredient_id')->all())
+        ->and(collect($currentVersionPayload['phaseItems']['additives'])->pluck('ingredient_id')->all())
         ->toBe([$oatMilk->id, $spirulina->id])
         ->and(collect($publishedPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
         ->toBe([$coconutOil->id, $oliveOil->id])
@@ -432,21 +432,21 @@ it('keeps selected zero-quantity ingredients across draft and saved soap version
     ];
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft($user, $soapFamily, $payload);
+    $draftVersion = $service->save($user, $soapFamily, $payload);
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
-    $draftPayload = $service->draftPayload($recipe);
+    $currentVersionPayload = $service->currentVersionPayload($recipe);
 
-    $savedVersion = $service->saveRecipe($user, $soapFamily, $payload, $recipe);
+    $savedVersion = $service->publish($user, $soapFamily, $payload, $recipe);
     $savedPayload = $service->versionPayload($recipe, $savedVersion->id);
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
     $phaseSections = app(RecipeVersionViewDataBuilder::class)
         ->build($recipe, $publishedVersion)['phaseSections'];
 
-    $draftZeroOil = collect($draftPayload['phaseItems']['saponified_oils'])
+    $draftZeroOil = collect($currentVersionPayload['phaseItems']['saponified_oils'])
         ->firstWhere('ingredient_id', $coconutOil->id);
     $savedZeroAdditive = collect($savedPayload['phaseItems']['additives'])
         ->firstWhere('ingredient_id', $clay->id);
@@ -455,9 +455,9 @@ it('keeps selected zero-quantity ingredients across draft and saved soap version
         ->pluck('name')
         ->all();
 
-    expect(collect($draftPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
+    expect(collect($currentVersionPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
         ->toBe([$oliveOil->id, $coconutOil->id])
-        ->and(collect($draftPayload['phaseItems']['additives'])->pluck('ingredient_id')->all())
+        ->and(collect($currentVersionPayload['phaseItems']['additives'])->pluck('ingredient_id')->all())
         ->toBe([$clay->id])
         ->and(collect($savedPayload['phaseItems']['saponified_oils'])->pluck('ingredient_id')->all())
         ->toBe([$oliveOil->id, $coconutOil->id])
@@ -498,7 +498,7 @@ it('rejects inaccessible zero-quantity ingredients before saving soap formulas',
         'note' => null,
     ];
 
-    expect(fn () => app(RecipeWorkbenchService::class)->saveDraft($user, $soapFamily, $payload))
+    expect(fn () => app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload))
         ->toThrow(ValidationException::class, 'One or more selected ingredients are no longer available.');
 });
 
@@ -534,7 +534,7 @@ it('rejects negative soap formula row values before saving', function () {
         ],
     ];
 
-    expect(fn () => app(RecipeWorkbenchService::class)->saveDraft($user, $soapFamily, $payload))
+    expect(fn () => app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload))
         ->toThrow(ValidationException::class, 'Formula percentages and weights must not be negative.');
 });
 
@@ -547,7 +547,7 @@ it('flags a saved formula for review when linked ingredient data changes', funct
     $ingredient = makeCarrierOilIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         workbenchSoapDraftPayload($ingredient),
@@ -555,7 +555,7 @@ it('flags a saved formula for review when linked ingredient data changes', funct
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    expect($service->draftPayload($recipe)['catalogReview']['needs_review'])->toBeFalse();
+    expect($service->currentVersionPayload($recipe)['catalogReview']['needs_review'])->toBeFalse();
 
     $this->travel(1)->seconds();
 
@@ -563,7 +563,7 @@ it('flags a saved formula for review when linked ingredient data changes', funct
         'display_name' => 'Updated Oil Name',
     ]);
 
-    $updatedDraft = $service->draftPayload($recipe);
+    $updatedDraft = $service->currentVersionPayload($recipe);
 
     expect($updatedDraft['catalogReview']['needs_review'])->toBeTrue()
         ->and($updatedDraft['catalogReview']['message'])->toContain('Recheck INCI and compliance');
@@ -583,7 +583,7 @@ it('loads a saved version for comparison', function () {
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         workbenchSoapDraftPayload($ingredient, name: 'Baseline Draft'),
@@ -600,7 +600,7 @@ it('loads a saved version for comparison', function () {
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
@@ -753,7 +753,7 @@ const state = globalThis.draftStateFromDraft({
   ],
 }, {
   recipeId: 10,
-  draftVersionId: 20,
+  currentVersionId: 20,
   currentVersionNumber: null,
   currentVersionIsDraft: true,
   productTypeId: null,
@@ -913,7 +913,7 @@ const watchers = {};
 const workbench = globalThis.createRecipeWorkbench({
   phases: [{ key: 'saponified_oils', name: 'Saponified Oils' }],
   ingredients: [],
-  recipe: { id: 5, draft_version_id: 8 },
+  recipe: { id: 5, current_version_id: 8 },
 });
 
 workbench.$watch = (key, callback) => {
@@ -1847,7 +1847,7 @@ it('keeps comparison snapshots aligned with the version payload and backend calc
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         workbenchSoapDraftPayload($ingredient, name: 'Comparison Draft'),
@@ -1864,7 +1864,7 @@ it('keeps comparison snapshots aligned with the version payload and backend calc
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
@@ -1899,7 +1899,7 @@ it('loads saved versions with the same snapshot contract used for comparison', f
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         workbenchSoapDraftPayload($ingredient, name: 'Workbench Draft'),
@@ -1916,7 +1916,7 @@ it('loads saved versions with the same snapshot contract used for comparison', f
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
@@ -2097,6 +2097,7 @@ it('keeps formula visual states distinct and softly selected', function () {
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
     $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+    $fattyAcidProfile = view('livewire.dashboard.partials.recipe-workbench.fatty-acid-profile')->render();
     $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
 
     expect($reactionCore)
@@ -2104,7 +2105,8 @@ it('keeps formula visual states distinct and softly selected', function () {
         ->and($formulaAnalysis)
         ->toContain('rounded-lg border px-4 py-3 text-sm')
         ->and($ingredientBrowser)
-        ->toContain('max-h-[600px] divide-y divide-[var(--color-line)] overflow-y-auto')
+        ->toContain('max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]')
+        ->and($fattyAcidProfile)
         ->toContain('flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs')
         ->toContain('min-w-0 flex-1 truncate text-[var(--color-ink-strong)]')
         ->and($navigation)
@@ -2112,10 +2114,10 @@ it('keeps formula visual states distinct and softly selected', function () {
 });
 
 it('keeps fatty acid chemistry compact with grouped profile first and collapsed details', function () {
-    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+    $fattyAcidProfile = view('livewire.dashboard.partials.recipe-workbench.fatty-acid-profile')->render();
     $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
 
-    expect($ingredientBrowser)
+    expect($fattyAcidProfile)
         ->not->toContain('Live blend feedback.')
         ->toContain('fattyAcidChemistrySummaryRows()')
         ->toContain('grid grid-cols-3 gap-2')

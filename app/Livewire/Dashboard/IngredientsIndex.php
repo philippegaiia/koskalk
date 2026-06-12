@@ -120,7 +120,7 @@ class IngredientsIndex extends TableComponent
                     ->visible(fn (Ingredient $record): bool => $record->owner_type === OwnerType::User)
                     ->disabled(fn (Ingredient $record): bool => (int) ($record->costing_items_count ?? 0) > 0 || (int) ($record->recipe_items_count ?? 0) > 0)
                     ->tooltip(fn (Ingredient $record): ?string => (int) ($record->recipe_items_count ?? 0) > 0
-                        ? 'This ingredient is used in reference formulas.'
+                        ? 'This ingredient is used in saved formulas.'
                         : ((int) ($record->costing_items_count ?? 0) > 0
                             ? 'This ingredient is used in saved costing rows.'
                             : null))

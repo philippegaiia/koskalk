@@ -140,7 +140,7 @@
  <template x-if="packagingCostRows.length === 0">
  <div class="px-5 py-8 text-sm text-[var(--color-ink-soft)]">
  <p class="font-medium text-[var(--color-ink-strong)]">No packaging planned yet.</p>
- <p class="mt-2">Add packaging on the Packaging tab, then save the draft to price it here.</p>
+ <p class="mt-2">Add packaging on the Packaging tab, then save the formula to price it here.</p>
  </div>
  </template>
 
@@ -205,7 +205,7 @@
 
  <template x-if="!hasSavedRecipe">
  <div class="rounded-[1.5rem] border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink-strong)]">
- Save the first draft to keep ingredient prices, packaging rows, and costing settings for this formula.
+ Save the formula to keep ingredient prices, packaging rows, and costing settings.
  </div>
  </template>
 </div>

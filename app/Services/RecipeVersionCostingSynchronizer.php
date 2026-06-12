@@ -33,6 +33,7 @@ class RecipeVersionCostingSynchronizer
 {
     public function __construct(
         private readonly UserIngredientPriceMemory $userIngredientPriceMemory,
+        private readonly LiveCostingPricePropagationService $liveCostingPricePropagationService,
     ) {}
 
     /**
@@ -50,14 +51,14 @@ class RecipeVersionCostingSynchronizer
             ? $this->packagingCatalogPayload($user)
             : [];
 
-        $draftVersion = $recipe instanceof Recipe
+        $currentVersion = $recipe instanceof Recipe
             ? RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $recipe->id)
-                ->where('is_draft', true)
+                ->where('is_current', true)
                 ->first()
             : null;
 
-        if (! $draftVersion instanceof RecipeVersion || ! $user instanceof User) {
+        if (! $currentVersion instanceof RecipeVersion || ! $user instanceof User) {
             return [
                 'settings' => null,
                 'item_prices' => [],
@@ -66,7 +67,7 @@ class RecipeVersionCostingSynchronizer
             ];
         }
 
-        $costing = $this->ensureCosting($draftVersion, $user);
+        $costing = $this->ensureCosting($currentVersion, $user);
 
         return [
             'settings' => [
@@ -252,6 +253,12 @@ class RecipeVersionCostingSynchronizer
         ]);
         $packagingItem->save();
 
+        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
+            $user,
+            $packagingItem->id,
+            (float) $packagingItem->unit_cost,
+        );
+
         return [
             'packaging_catalog' => $this->packagingCatalogPayload($user),
             'packaging_item' => [
@@ -391,23 +398,19 @@ class RecipeVersionCostingSynchronizer
             ->with(['packagingItems.packagingItem'])
             ->findOrFail($costing->recipe_version_id);
 
-        $existingRows = $costing->packagingItems()
-            ->get()
-            ->keyBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
-                $item->name,
-            ));
+        $existingRowsByKey = $this->packagingCostingRowsByKey($costing->packagingItems()->get());
+        $existingRowOccurrences = [];
 
         $costing->packagingItems()->delete();
 
         $recipeVersion->packagingItems
             ->sortBy('position')
-            ->each(function (RecipeVersionPackagingItem $item) use ($costing, $existingRows): void {
+            ->each(function (RecipeVersionPackagingItem $item) use ($costing, &$existingRowOccurrences, $existingRowsByKey): void {
                 $key = $this->packagingKey(
                     $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
                     $item->name,
                 );
-                $existingRow = $existingRows->get($key);
+                $existingRow = $this->nextPackagingCostingRow($existingRowsByKey, $key, $existingRowOccurrences);
                 $catalogItem = $item->packagingItem;
 
                 $costing->packagingItems()->create([
@@ -436,7 +439,7 @@ class RecipeVersionCostingSynchronizer
                 (int) $row['position'],
             ));
 
-        $costing->items()->get()->each(function (RecipeVersionCostingItem $item) use ($submittedItems, $user): void {
+        $costing->items()->get()->each(function (RecipeVersionCostingItem $item) use ($costing, $submittedItems, $user): void {
             $submittedRow = $submittedItems->get($this->costingKey(
                 (int) $item->ingredient_id,
                 $item->phase_key,
@@ -455,6 +458,7 @@ class RecipeVersionCostingSynchronizer
                     $user,
                     (int) $item->ingredient_id,
                     (float) $item->price_per_kg,
+                    exceptCostingId: $costing->id,
                 );
             }
         });
@@ -482,11 +486,12 @@ class RecipeVersionCostingSynchronizer
                 ->all())
             ->get()
             ->keyBy('id');
+        $user = $costing->user;
 
         $costing->packagingItems()->delete();
 
         $submittedItems
-            ->each(function (array $row) use ($costing, $linkedPackagingItems): void {
+            ->each(function (array $row) use ($costing, $linkedPackagingItems, $user): void {
                 $linkedPackagingItemId = isset($row['user_packaging_item_id']) && is_numeric($row['user_packaging_item_id'])
                     ? (int) $row['user_packaging_item_id']
                     : null;
@@ -508,6 +513,13 @@ class RecipeVersionCostingSynchronizer
                 $linkedPackagingItem->forceFill([
                     'unit_cost' => $unitCost,
                 ])->save();
+
+                $this->liveCostingPricePropagationService->packagingUnitCostChanged(
+                    $user,
+                    $linkedPackagingItem->id,
+                    $unitCost,
+                    exceptCostingId: $costing->id,
+                );
             });
     }
 
@@ -520,6 +532,39 @@ class RecipeVersionCostingSynchronizer
     private function packagingKey(?int $packagingItemId, string $name): string
     {
         return ($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
+    }
+
+    /**
+     * @param  Collection<int, RecipeVersionCostingPackagingItem>  $items
+     * @return Collection<string, Collection<int, RecipeVersionCostingPackagingItem>>
+     */
+    private function packagingCostingRowsByKey(Collection $items): Collection
+    {
+        return $items
+            ->groupBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
+                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->name,
+            ))
+            ->map(fn (Collection $rows): Collection => $rows->values());
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, RecipeVersionCostingPackagingItem>>  $rowsByKey
+     * @param  array<string, int>  $occurrences
+     */
+    private function nextPackagingCostingRow(Collection $rowsByKey, string $key, array &$occurrences): ?RecipeVersionCostingPackagingItem
+    {
+        $index = $occurrences[$key] ?? 0;
+        $occurrences[$key] = $index + 1;
+        $rows = $rowsByKey->get($key);
+
+        if (! $rows instanceof Collection) {
+            return null;
+        }
+
+        $row = $rows->get($index);
+
+        return $row instanceof RecipeVersionCostingPackagingItem ? $row : null;
     }
 
     /** Cast a value to a rounded float, or null if non-numeric. */

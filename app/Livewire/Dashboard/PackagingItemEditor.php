@@ -108,7 +108,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                             ->required()
                             ->maxLength(255),
                         TextInput::make('unit_cost')
-                            ->label('Effective unit price')
+                            ->label(fn (): string => $this->priceFieldLabel('Effective unit price'))
                             ->numeric()
                             ->inputMode('decimal')
                             ->minValue(0)
@@ -178,5 +178,10 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     private function isEditing(): bool
     {
         return $this->packagingItemId !== null;
+    }
+
+    private function priceFieldLabel(string $label): string
+    {
+        return sprintf('%s (%s)', $label, $this->currentUser()?->defaultCurrency() ?? 'EUR');
     }
 }

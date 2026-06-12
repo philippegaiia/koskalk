@@ -58,8 +58,8 @@ it('requires a cosmetic product type before entering the shared cosmetic workben
             'type' => 'cream-lotion',
         ]))
         ->assertSuccessful()
-        ->assertSee('Editable draft')
         ->assertSee('Formula')
+        ->assertDontSee('Editable draft')
         ->assertSee('Costing')
         ->assertSee('Output')
         ->assertSee('Instructions &amp; Media', false)
@@ -197,7 +197,7 @@ it('allows incomplete cosmetic drafts but requires saved cosmetic formulas to to
     $ingredient = cosmeticIngredient('Glycerin', 'GLYCERIN');
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $cosmeticFamily,
         cosmeticDraftPayload($productType, [
@@ -217,13 +217,13 @@ it('allows incomplete cosmetic drafts but requires saved cosmetic formulas to to
 
     expect($recipe->product_type_id)->toBe($productType->id)
         ->and($recipe->product_family_id)->toBe($cosmeticFamily->id)
-        ->and($draftVersion->is_draft)->toBeTrue()
+        ->and($draftVersion->is_current)->toBeTrue()
         ->and($draftVersion->batch_size)->toEqual('500.000')
         ->and($draftVersion->calculation_context['formula_total_percentage'])->toEqual(60.0)
         ->and($phase->name)->toBe('Phase A')
         ->and((float) $item->percentage)->toBe(60.0);
 
-    expect(fn () => $service->saveRecipe(
+    expect(fn () => $service->publish(
         $user,
         $cosmeticFamily,
         cosmeticDraftPayload($productType, [
@@ -234,7 +234,7 @@ it('allows incomplete cosmetic drafts but requires saved cosmetic formulas to to
         $recipe,
     ))->toThrow(ValidationException::class, 'Cosmetic formula must total 100% before it can be saved.');
 
-    $savedDraftVersion = $service->saveRecipe(
+    $savedDraftVersion = $service->publish(
         $user,
         $cosmeticFamily,
         cosmeticDraftPayload($productType, [
@@ -245,7 +245,7 @@ it('allows incomplete cosmetic drafts but requires saved cosmetic formulas to to
         $recipe,
     );
 
-    expect($savedDraftVersion->is_draft)->toBeTrue()
+    expect($savedDraftVersion->is_current)->toBeTrue()
         ->and(Recipe::withoutGlobalScopes()->findOrFail($recipe->id)->product_type_id)->toBe($productType->id);
 });
 
@@ -275,21 +275,21 @@ it('keeps selected zero-quantity ingredients across draft and saved cosmetic for
         ],
     ]);
 
-    $draftVersion = $service->saveDraft($user, $cosmeticFamily, $payload);
+    $draftVersion = $service->save($user, $cosmeticFamily, $payload);
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
-    $draftPayload = $service->draftPayload($recipe);
+    $currentVersionPayload = $service->currentVersionPayload($recipe);
 
-    $savedVersion = $service->saveRecipe($user, $cosmeticFamily, $payload, $recipe);
+    $savedVersion = $service->publish($user, $cosmeticFamily, $payload, $recipe);
     $savedPayload = $service->versionPayload($recipe, $savedVersion->id);
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
     $phaseSections = app(RecipeVersionViewDataBuilder::class)
         ->build($recipe, $publishedVersion)['phaseSections'];
 
-    $draftZeroRow = collect($draftPayload['phaseItems']['phase_a'])
+    $draftZeroRow = collect($currentVersionPayload['phaseItems']['phase_a'])
         ->firstWhere('ingredient_id', $glycerin->id);
     $savedZeroRow = collect($savedPayload['phaseItems']['cool_down'])
         ->firstWhere('ingredient_id', $preservative->id);
@@ -298,9 +298,9 @@ it('keeps selected zero-quantity ingredients across draft and saved cosmetic for
         ->pluck('name')
         ->all();
 
-    expect(collect($draftPayload['phaseItems']['phase_a'])->pluck('ingredient_id')->all())
+    expect(collect($currentVersionPayload['phaseItems']['phase_a'])->pluck('ingredient_id')->all())
         ->toBe([$water->id, $glycerin->id])
-        ->and(collect($draftPayload['phaseItems']['cool_down'])->pluck('ingredient_id')->all())
+        ->and(collect($currentVersionPayload['phaseItems']['cool_down'])->pluck('ingredient_id')->all())
         ->toBe([$preservative->id])
         ->and(collect($savedPayload['phaseItems']['phase_a'])->pluck('ingredient_id')->all())
         ->toBe([$water->id, $glycerin->id])
@@ -343,7 +343,7 @@ it('rejects inaccessible zero-quantity ingredients before saving cosmetic formul
         ],
     ]);
 
-    expect(fn () => app(RecipeWorkbenchService::class)->saveDraft($user, $cosmeticFamily, $payload))
+    expect(fn () => app(RecipeWorkbenchService::class)->save($user, $cosmeticFamily, $payload))
         ->toThrow(ValidationException::class, 'One or more selected ingredients are no longer available.');
 });
 
@@ -369,7 +369,7 @@ it('rejects negative cosmetic formula row values before saving', function () {
         ],
     ]);
 
-    expect(fn () => app(RecipeWorkbenchService::class)->saveDraft($user, $cosmeticFamily, $payload))
+    expect(fn () => app(RecipeWorkbenchService::class)->save($user, $cosmeticFamily, $payload))
         ->toThrow(ValidationException::class, 'Formula percentages and weights must not be negative.');
 });
 
@@ -432,7 +432,7 @@ it('lets the shared recipe workbench save incomplete cosmetic drafts', function 
 
     $component = app(RecipeWorkbench::class);
     $component->mount(null, 'cosmetic', 'cream-lotion');
-    $result = $component->saveDraft(
+    $result = $component->save(
         cosmeticDraftPayload($productType, [
             'phase_a' => [
                 cosmeticPayloadRow($aqua, percentage: 60, weight: 60),
@@ -451,11 +451,11 @@ it('lets the shared recipe workbench save incomplete cosmetic drafts', function 
         ->and($recipe->product_type_id)->toBe($productType->id)
         ->and(RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', false)
+            ->where('is_current', false)
             ->exists())->toBeFalse()
         ->and(RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', true)
+            ->where('is_current', true)
             ->exists())->toBeTrue();
 });
 
@@ -559,7 +559,7 @@ it('reloads weight mode cosmetic drafts without losing saved item weights', func
     ]);
     $aqua = cosmeticIngredient('Water', 'AQUA');
 
-    $draftVersion = app(RecipeWorkbenchService::class)->saveDraft(
+    $draftVersion = app(RecipeWorkbenchService::class)->save(
         $user,
         $cosmeticFamily,
         [
@@ -575,7 +575,7 @@ it('reloads weight mode cosmetic drafts without losing saved item weights', func
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $draft = app(RecipeWorkbenchService::class)->draftPayload($recipe);
+    $draft = app(RecipeWorkbenchService::class)->currentVersionPayload($recipe);
 
     expect($draft['editMode'])->toBe('weight')
         ->and($draft['phaseItems']['phase_a'][0]['weight'])->toBe(100.0);
@@ -584,7 +584,7 @@ it('reloads weight mode cosmetic drafts without losing saved item weights', func
 
     $component = app(RecipeWorkbench::class);
     $component->mount($recipe);
-    $result = $component->saveDraft(
+    $result = $component->save(
         app(RecipeWorkbenchDraftPayloadMapper::class)->toSavePayload($draft),
         app(RecipeWorkbenchService::class),
         app(RecipeContentUpdater::class),
@@ -593,7 +593,7 @@ it('reloads weight mode cosmetic drafts without losing saved item weights', func
     $item = RecipeItem::withoutGlobalScopes()
         ->whereHas('recipeVersion', fn ($query) => $query
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', true))
+            ->where('is_current', true))
         ->firstOrFail();
 
     expect($result['ok'])->toBeTrue()
@@ -617,7 +617,7 @@ it('keeps cosmetic phases when duplicating and restoring saved formulas', functi
     $glycerin = cosmeticIngredient('Glycerin', 'GLYCERIN');
     $service = app(RecipeWorkbenchService::class);
 
-    $savedVersion = $service->saveRecipe(
+    $savedVersion = $service->publish(
         $user,
         $cosmeticFamily,
         cosmeticDraftPayloadWithPhases($productType, [
@@ -631,11 +631,11 @@ it('keeps cosmetic phases when duplicating and restoring saved formulas', functi
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id);
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->firstOrFail();
 
     $duplicate = $service->duplicateRecipe($user, $recipe);
-    $service->useVersionAsDraft($user, $recipe, $publishedVersion->id);
+    $service->restoreCurrentVersion($user, $recipe, $publishedVersion->id);
 
     expect(RecipePhase::withoutGlobalScopes()
         ->where('recipe_version_id', $duplicate->id)
@@ -645,7 +645,7 @@ it('keeps cosmetic phases when duplicating and restoring saved formulas', functi
     expect(RecipePhase::withoutGlobalScopes()
         ->where('recipe_version_id', RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', true)
+            ->where('is_current', true)
             ->value('id'))
         ->pluck('slug')
         ->all())->toContain('phase_a', 'cool_down');
@@ -665,7 +665,7 @@ it('rejects completed cosmetic formulas with valued rows that have no ingredient
     ]);
     $aqua = cosmeticIngredient('Water', 'AQUA');
 
-    expect(fn () => app(RecipeWorkbenchService::class)->saveRecipe(
+    expect(fn () => app(RecipeWorkbenchService::class)->publish(
         $user,
         $cosmeticFamily,
         cosmeticDraftPayload($productType, [
@@ -700,7 +700,7 @@ it('redirects new cosmetic drafts to the recipe URL after first save', function 
 
     $component = app(RecipeWorkbench::class);
     $component->mount(null, 'cosmetic', 'cream-lotion');
-    $result = $component->saveDraft(
+    $result = $component->save(
         cosmeticDraftPayload($productType, [
             'phase_a' => [
                 cosmeticPayloadRow($aqua, percentage: 100, weight: 100),
@@ -718,7 +718,7 @@ it('redirects new cosmetic drafts to the recipe URL after first save', function 
         ->and($result['redirect'])->toBe(route('recipes.edit', $recipe->id));
 });
 
-it('renders saved cosmetic phases in the read-only recipe view', function () {
+it('renders saved cosmetic formula sheet with selected ingredients only', function () {
     $user = User::factory()->create();
     $cosmeticFamily = ProductFamily::factory()->create([
         'name' => 'Cosmetic',
@@ -733,7 +733,7 @@ it('renders saved cosmetic phases in the read-only recipe view', function () {
     $aqua = cosmeticIngredient('Water', 'AQUA');
     $glycerin = cosmeticIngredient('Glycerin', 'GLYCERIN');
 
-    $savedVersion = app(RecipeWorkbenchService::class)->saveRecipe(
+    $savedVersion = app(RecipeWorkbenchService::class)->publish(
         $user,
         $cosmeticFamily,
         cosmeticDraftPayloadWithPhases($productType, [
@@ -748,10 +748,10 @@ it('renders saved cosmetic phases in the read-only recipe view', function () {
     $this->actingAs($user)
         ->get(route('recipes.saved', $savedVersion->recipe_id))
         ->assertSuccessful()
-        ->assertSee('Phase A')
-        ->assertSee('Cool Down')
-        ->assertSee('Water')
-        ->assertSee('Glycerin');
+        ->assertSee('Final ingredient list')
+        ->assertSee('Plain-language list')
+        ->assertSee('Packaging plan')
+        ->assertSee('Record production');
 });
 
 function cosmeticIngredient(string $name, string $inciName): Ingredient

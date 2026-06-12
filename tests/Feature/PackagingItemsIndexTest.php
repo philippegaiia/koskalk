@@ -81,12 +81,16 @@ it('shows packaging prices in the users current default currency', function () {
 
 it('renders the packaging item create page for signed in users', function () {
     $user = User::factory()->create();
+    Workspace::factory()->create([
+        'owner_user_id' => $user->id,
+        'default_currency' => 'GBP',
+    ]);
 
     $this->actingAs($user)
         ->get(route('packaging-items.create'))
         ->assertSuccessful()
         ->assertSee('Packaging image')
-        ->assertSee('Effective unit price');
+        ->assertSee('Effective unit price (GBP)');
 });
 
 it('does not allow editing another users packaging item', function () {

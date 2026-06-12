@@ -54,7 +54,7 @@ it('uses normalized fatty acid entries in workbench payloads', function () {
     $recipeVersion = RecipeVersion::factory()->create([
         'recipe_id' => $recipe->id,
         'name' => 'Test Recipe',
-        'is_draft' => true,
+        'is_current' => true,
         'version_number' => 1,
         'calculation_context' => [
             'editing_mode' => 'percentage',
@@ -84,7 +84,7 @@ it('uses normalized fatty acid entries in workbench payloads', function () {
         'position' => 1,
     ]);
 
-    $payload = app(RecipeWorkbenchService::class)->draftPayload($recipe);
+    $payload = app(RecipeWorkbenchService::class)->currentVersionPayload($recipe);
 
     expect($payload)->not->toBeNull()
         ->and($payload['phaseItems']['saponified_oils'][0]['fatty_acid_profile'])

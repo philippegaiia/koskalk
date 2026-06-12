@@ -29,7 +29,7 @@ export function createCostingSection(payload) {
         },
 
         async ensureCostingLoaded(force = false) {
-            if (!this.hasSavedRecipe) {
+            if (!this.hasCurrentFormula) {
                 return;
             }
 
@@ -218,9 +218,9 @@ export function createCostingSection(payload) {
         },
 
         scheduleCostingSave() {
-            if (!this.hasSavedRecipe) {
+            if (!this.hasCurrentFormula) {
                 this.costingSaveStatus = 'warning';
-                this.costingSaveMessage = 'Save the first draft before pricing can be kept.';
+                this.costingSaveMessage = 'Save the formula before pricing can be kept.';
 
                 return;
             }
@@ -235,7 +235,7 @@ export function createCostingSection(payload) {
         },
 
         async persistCosting() {
-            if (!this.hasSavedRecipe) {
+            if (!this.hasCurrentFormula) {
                 return;
             }
 

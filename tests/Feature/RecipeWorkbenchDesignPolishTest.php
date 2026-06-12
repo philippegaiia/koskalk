@@ -29,7 +29,7 @@ it('keeps formula-start compliance controls available but collapsed by default',
         ->toBeLessThan(strpos($soapSettings, 'Label &amp; compliance'));
 });
 
-it('keeps workbench navigation and reference actions visually quiet', function () {
+it('keeps workbench navigation and secondary formula actions visually quiet', function () {
     $header = view('livewire.dashboard.partials.recipe-workbench.header')->render();
     $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
 
@@ -38,7 +38,8 @@ it('keeps workbench navigation and reference actions visually quiet', function (
         ->and($header)
         ->toContain('More formula actions')
         ->toContain('<details')
-        ->not->toContain('Open reference formula</a>');
+        ->not->toContain('Open reference formula</a>')
+        ->not->toContain('Save as reference formula');
 });
 
 it('hardens compact workbench controls for touch and keyboard use', function () {
@@ -201,10 +202,11 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
         ->toContain('aria-controls="formula-bottom-diagnostics-details"')
         ->toContain('x-show="isFormulaDiagnosticsOpen"')
         ->toContain(':aria-expanded="isFormulaDiagnosticsOpen.toString()"')
-        ->toContain('saveDraft()')
-        ->toContain('requestOfficialRecipeSave()')
-        ->toContain('Save draft')
-        ->toContain('Save as reference')
+        ->toContain('publish()')
+        ->toContain('Save')
+        ->not->toContain('requestOfficialRecipeSave()')
+        ->not->toContain('Save draft')
+        ->not->toContain('Save as reference')
         ->not->toContain('SAP')
         ->not->toContain('Missing KOH SAP')
         ->and($formulaSectionSource)

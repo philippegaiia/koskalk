@@ -80,7 +80,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      * @param  array<string, mixed>  $draft
      * @return array<string, mixed>
      */
-    public function saveDraft(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
+    public function save(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
     {
         $user = $this->currentUser();
 
@@ -91,10 +91,17 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ];
         }
 
+        if ($this->currentRecipe()?->isLocked()) {
+            return [
+                'ok' => false,
+                'message' => 'Unlock this formula before editing it.',
+            ];
+        }
+
         $wasUnsavedRecipe = ! ($this->currentRecipe() instanceof Recipe);
 
         try {
-            $recipeVersion = $recipeWorkbenchService->saveDraft(
+            $recipeVersion = $recipeWorkbenchService->save(
                 $user,
                 $this->productFamily(),
                 $this->draftWithWorkbenchContext($draft),
@@ -112,14 +119,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $recipe = $this->persistRecipeContent($recipe, $recipeContentUpdater);
         }
 
-        $snapshot = $recipeWorkbenchService->draftSnapshot($recipe);
+        $snapshot = $recipeWorkbenchService->currentVersionSnapshot($recipe);
         $this->refreshRecipeContentForm($recipe);
 
         return [
             'ok' => true,
             'message' => $wasUnsavedRecipe && $this->hasPendingRecipeContent()
-                ? 'Draft saved. Content and media were kept too.'
-                : 'Draft saved.',
+                ? 'Formula saved. Content and media were kept too.'
+                : 'Formula saved.',
             'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
             'snapshot' => $snapshot,
         ];
@@ -129,7 +136,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      * @param  array<string, mixed>  $draft
      * @return array<string, mixed>
      */
-    public function saveRecipe(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
+    public function publish(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
     {
         $user = $this->currentUser();
 
@@ -140,10 +147,17 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ];
         }
 
+        if ($this->currentRecipe()?->isLocked()) {
+            return [
+                'ok' => false,
+                'message' => 'Unlock this formula before editing it.',
+            ];
+        }
+
         $wasUnsavedRecipe = ! ($this->currentRecipe() instanceof Recipe);
 
         try {
-            $recipeVersion = $recipeWorkbenchService->saveRecipe(
+            $recipeVersion = $recipeWorkbenchService->publish(
                 $user,
                 $this->productFamily(),
                 $this->draftWithWorkbenchContext($draft),
@@ -161,14 +175,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $recipe = $this->persistRecipeContent($recipe, $recipeContentUpdater);
         }
 
-        $snapshot = $recipeWorkbenchService->draftSnapshot($recipe);
+        $snapshot = $recipeWorkbenchService->currentVersionSnapshot($recipe);
         $this->refreshRecipeContentForm($recipe);
 
         return [
             'ok' => true,
             'message' => $wasUnsavedRecipe && $this->hasPendingRecipeContent()
-                ? 'Recipe saved. The draft stays open, and the content and media were kept too.'
-                : 'Recipe saved. The draft stays open for continued editing.',
+                ? 'Formula saved. Content and media were kept too.'
+                : 'Formula saved.',
             'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
             'snapshot' => $snapshot,
         ];
@@ -180,7 +194,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      */
     public function saveAsNewVersion(array $draft, RecipeWorkbenchService $recipeWorkbenchService, RecipeContentUpdater $recipeContentUpdater): array
     {
-        return $this->saveRecipe($draft, $recipeWorkbenchService, $recipeContentUpdater);
+        return $this->publish($draft, $recipeWorkbenchService, $recipeContentUpdater);
     }
 
     /**
@@ -210,7 +224,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         return [
             'ok' => true,
-            'message' => 'Formula duplicated into a new draft.',
+            'message' => 'Formula duplicated.',
             'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
         ];
     }
@@ -278,7 +292,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         if (! $user instanceof User || ! $recipe instanceof Recipe) {
             return [
                 'ok' => false,
-                'message' => 'Save the first draft before keeping costing details.',
+                'message' => 'Save the formula before keeping costing details.',
             ];
         }
 
@@ -301,7 +315,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         if (! $user instanceof User || ! $recipe instanceof Recipe) {
             return [
                 'ok' => false,
-                'message' => 'Save the first draft before pricing can be loaded.',
+                'message' => 'Save the formula before pricing can be loaded.',
             ];
         }
 
@@ -395,7 +409,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         if (! $recipe instanceof Recipe) {
             $this->recipeContentStatus = 'error';
-            $this->recipeContentMessage = 'Save the first draft before adding recipe content and images.';
+            $this->recipeContentMessage = 'Save the formula before adding recipe content and images.';
 
             return;
         }
@@ -430,7 +444,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         $this->authorize('delete', $version);
 
-        if (! $version->is_draft) {
+        if (! $version->is_current) {
             if ($confirmName !== $version->name) {
                 throw ValidationException::withMessages([
                     'confirmName' => 'Confirmation name does not match.',
@@ -440,7 +454,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         $deletion = app(RecipeVersionDeletionService::class)->delete($recipe, $version);
 
-        if ($deletion['deleted_draft']) {
+        if ($deletion['deleted_current']) {
             session()->flash('status', 'Draft deleted.');
             $this->redirect(route('recipes.index'), navigate: true);
 
@@ -448,9 +462,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         $recipeWorkbenchService = app(RecipeWorkbenchService::class);
-        $savedSnapshot = $recipeWorkbenchService->draftSnapshot($recipe);
+        $savedSnapshot = $recipeWorkbenchService->currentVersionSnapshot($recipe);
         $versionOptions = $recipe instanceof Recipe
-            ? $recipeWorkbenchService->versionOptions($recipe)
+            ? $recipeWorkbenchService->publishedVersionHistory($recipe)
             : [];
         $status = $deletion['last_published_deleted']
             ? 'Last published version deleted. Recipe has no published versions.'

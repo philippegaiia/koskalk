@@ -9,6 +9,10 @@ use Illuminate\Validation\ValidationException;
 
 class UserPackagingItemAuthoringService
 {
+    public function __construct(
+        private readonly LiveCostingPricePropagationService $liveCostingPricePropagationService,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -42,7 +46,15 @@ class UserPackagingItemAuthoringService
             'currency' => $user->defaultCurrency(),
         ]);
 
-        return $this->persist($packagingItem, $state);
+        $packagingItem = $this->persist($packagingItem, $state);
+
+        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
+            $user,
+            $packagingItem->id,
+            (float) $packagingItem->unit_cost,
+        );
+
+        return $packagingItem;
     }
 
     public function update(UserPackagingItem $packagingItem, array $state, User $user): UserPackagingItem
@@ -61,6 +73,12 @@ class UserPackagingItemAuthoringService
         if ($previousFeaturedImagePath !== $packagingItem->featured_image_path) {
             MediaStorage::deletePublicPath($previousFeaturedImagePath);
         }
+
+        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
+            $user,
+            $packagingItem->id,
+            (float) $packagingItem->unit_cost,
+        );
 
         return $packagingItem;
     }
@@ -91,7 +109,15 @@ class UserPackagingItemAuthoringService
         $packagingItem->currency = $user->defaultCurrency();
         $packagingItem->save();
 
-        return $packagingItem->fresh();
+        $packagingItem = $packagingItem->fresh();
+
+        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
+            $user,
+            $packagingItem->id,
+            (float) $packagingItem->unit_cost,
+        );
+
+        return $packagingItem;
     }
 
     public function delete(UserPackagingItem $packagingItem, User $user): bool

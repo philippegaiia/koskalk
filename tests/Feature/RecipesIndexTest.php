@@ -37,7 +37,7 @@ it('shows saved recipes on the recipes index page', function () {
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'name' => 'Published Olive Coconut Bar',
-        'is_draft' => false,
+        'is_current' => false,
         'version_number' => 2,
         'saved_at' => now(),
     ]);
@@ -47,7 +47,7 @@ it('shows saved recipes on the recipes index page', function () {
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'name' => $recipe->name,
-        'is_draft' => true,
+        'is_current' => true,
         'version_number' => 3,
     ]);
 
@@ -55,9 +55,12 @@ it('shows saved recipes on the recipes index page', function () {
         ->get(route('recipes.index'))
         ->assertSuccessful()
         ->assertSee('Olive Coconut Bar')
-        ->assertSee('Open draft')
-        ->assertSee('Use recipe')
-        ->assertSee('Duplicate');
+        ->assertSee('Open')
+        ->assertSee('Duplicate')
+        ->assertSee('Lock formula')
+        ->assertDontSee('Open draft')
+        ->assertDontSee('Edit formula')
+        ->assertDontSee('Use recipe');
 });
 
 it('only shows recipes that belong to the current user', function () {
@@ -92,7 +95,7 @@ it('only shows recipes that belong to the current user', function () {
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'name' => $visibleRecipe->name,
-        'is_draft' => true,
+        'is_current' => true,
         'version_number' => 1,
     ]);
 
@@ -102,7 +105,7 @@ it('only shows recipes that belong to the current user', function () {
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
         'name' => $hiddenRecipe->name,
-        'is_draft' => true,
+        'is_current' => true,
         'version_number' => 1,
     ]);
 
@@ -145,7 +148,7 @@ it('only resolves accessible workspace ids once while rendering the recipes inde
         'workspace_id' => $workspace->id,
         'visibility' => Visibility::Private,
         'name' => $recipe->name,
-        'is_draft' => true,
+        'is_current' => true,
         'version_number' => 1,
     ]);
 
@@ -156,7 +159,7 @@ it('only resolves accessible workspace ids once while rendering the recipes inde
         'workspace_id' => $workspace->id,
         'visibility' => Visibility::Private,
         'name' => 'Workspace Formula Published',
-        'is_draft' => false,
+        'is_current' => false,
         'version_number' => 2,
         'saved_at' => now(),
     ]);

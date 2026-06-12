@@ -35,6 +35,8 @@ use Illuminate\Support\Collection;
     'featured_image_path',
     'slug',
     'archived_at',
+    'locked_at',
+    'locked_by',
 ])]
 class Recipe extends Model implements HasRichContent
 {
@@ -74,6 +76,25 @@ class Recipe extends Model implements HasRichContent
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function ownerUser(): ?User
+    {
+        if ($this->tenantOwnerType() !== OwnerType::User || $this->owner_id === null) {
+            return null;
+        }
+
+        return User::query()->find((int) $this->owner_id);
+    }
+
+    public function lockedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'locked_by');
+    }
+
+    public function isLocked(): bool
+    {
+        return $this->locked_at !== null;
+    }
+
     public function versions(): HasMany
     {
         return $this->hasMany(RecipeVersion::class);
@@ -82,21 +103,28 @@ class Recipe extends Model implements HasRichContent
     public function publishedVersions(): HasMany
     {
         return $this->hasMany(RecipeVersion::class)
-            ->where('is_draft', false)
+            ->where('is_current', false)
             ->orderByDesc('version_number');
     }
 
-    public function currentSavedVersion(): HasOne
+    public function productionBatches(): HasMany
+    {
+        return $this->hasMany(ProductionBatch::class)
+            ->latest('manufacture_date')
+            ->latest('id');
+    }
+
+    public function latestPublishedVersion(): HasOne
     {
         return $this->hasOne(RecipeVersion::class)
             ->ofMany(['version_number' => 'max'], function ($query): void {
-                $query->where('is_draft', false);
+                $query->where('is_current', false);
             });
     }
 
-    public function currentDraftVersion(): HasOne
+    public function currentVersion(): HasOne
     {
-        return $this->hasOne(RecipeVersion::class)->where('is_draft', true);
+        return $this->hasOne(RecipeVersion::class)->where('is_current', true);
     }
 
     public function featuredImageUrl(): ?string
@@ -203,6 +231,7 @@ class Recipe extends Model implements HasRichContent
             'visibility' => Visibility::class,
             'is_private' => 'bool',
             'archived_at' => 'datetime',
+            'locked_at' => 'datetime',
         ];
     }
 

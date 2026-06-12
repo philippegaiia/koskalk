@@ -13,13 +13,13 @@ class DashboardController extends Controller
     {
         $currentUser = $currentAppUserResolver->resolve();
         $recipeCount = 0;
-        $draftCount = 0;
+        $lockedFormulaCount = 0;
         $ingredientCount = 0;
 
         if ($currentUser !== null) {
             $baseQuery = Recipe::query()->whereNull('archived_at');
             $recipeCount = (clone $baseQuery)->count();
-            $draftCount = (clone $baseQuery)->whereHas('currentDraftVersion')->count();
+            $lockedFormulaCount = (clone $baseQuery)->whereNotNull('locked_at')->count();
             $ingredientCount = Ingredient::query()
                 ->accessibleTo($currentUser)
                 ->count();
@@ -28,7 +28,7 @@ class DashboardController extends Controller
         return view('dashboard', [
             'currentUser' => $currentUser,
             'recipeCount' => $recipeCount,
-            'draftCount' => $draftCount,
+            'lockedFormulaCount' => $lockedFormulaCount,
             'ingredientCount' => $ingredientCount,
         ]);
     }

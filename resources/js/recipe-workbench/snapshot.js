@@ -30,9 +30,9 @@ export function draftStateFromDraft(draft, currentState) {
 
     const nextState = {
         recipeId: draft.recipe?.id ?? currentState.recipeId,
-        draftVersionId: draft.recipe?.draft_version_id ?? currentState.draftVersionId,
+        currentVersionId: draft.recipe?.current_version_id ?? currentState.currentVersionId,
         currentVersionNumber: draft.recipe?.version_number ?? currentState.currentVersionNumber,
-        currentVersionIsDraft: draft.recipe?.is_draft ?? currentState.currentVersionIsDraft,
+        currentVersionIsDraft: draft.recipe?.is_current ?? currentState.currentVersionIsDraft,
         productTypeId: draft.productTypeId ?? currentState.productTypeId,
         formulaName: draft.formulaName ?? currentState.formulaName,
         oilUnit: draft.oilUnit ?? currentState.oilUnit,

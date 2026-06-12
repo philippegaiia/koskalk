@@ -27,7 +27,7 @@ class RecipeVersionFactory extends Factory
             'workspace_id' => null,
             'visibility' => Visibility::Private,
             'version_number' => 1,
-            'is_draft' => true,
+            'is_current' => true,
             'name' => fake()->words(3, true),
             'batch_size' => 1000,
             'batch_unit' => 'g',

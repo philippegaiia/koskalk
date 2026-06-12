@@ -51,14 +51,14 @@ class RecipeVersionCostingSynchronizer
             ? $this->packagingCatalogPayload($user)
             : [];
 
-        $draftVersion = $recipe instanceof Recipe
+        $currentVersion = $recipe instanceof Recipe
             ? RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $recipe->id)
-                ->where('is_draft', true)
+                ->where('is_current', true)
                 ->first()
             : null;
 
-        if (! $draftVersion instanceof RecipeVersion || ! $user instanceof User) {
+        if (! $currentVersion instanceof RecipeVersion || ! $user instanceof User) {
             return [
                 'settings' => null,
                 'item_prices' => [],
@@ -67,7 +67,7 @@ class RecipeVersionCostingSynchronizer
             ];
         }
 
-        $costing = $this->ensureCosting($draftVersion, $user);
+        $costing = $this->ensureCosting($currentVersion, $user);
 
         return [
             'settings' => [

@@ -41,6 +41,16 @@
                     <a href="{{ route('production-batches.print', $productionBatch) }}" class="inline-flex rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
                         Print
                     </a>
+                    @can('delete', $productionBatch)
+                        <form method="POST" action="{{ route('production-batches.destroy', $productionBatch) }}" x-data="{ confirming: false }" @submit.prevent="confirming ? $el.submit() : (confirming = true)" class="inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" :class="confirming ? 'bg-[var(--color-danger-strong)] text-white' : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]'" class="inline-flex rounded-full px-4 py-2 text-sm font-medium transition">
+                                <span x-show="!confirming">Delete</span>
+                                <span x-show="confirming" x-cloak>Click again to confirm</span>
+                            </button>
+                        </form>
+                    @endcan
                 </div>
             </div>
         </section>

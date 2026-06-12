@@ -56,9 +56,9 @@ class RecipeWorkbenchVersionPayloadMapper
         return [
             'recipe' => [
                 'id' => $version->recipe_id,
-                'draft_version_id' => $version->id,
+                'current_version_id' => $version->id,
                 'version_number' => $version->version_number,
-                'is_draft' => $version->is_draft,
+                'is_current' => $version->is_current,
             ],
             'productTypeId' => $version->recipe?->product_type_id,
             'formulaName' => $version->name,

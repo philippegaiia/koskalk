@@ -25,6 +25,8 @@ it('renders the simplified dashboard with creation buttons and stat cards', func
         'visibility' => Visibility::Private,
         'name' => 'Dashboard Test Formula',
         'slug' => 'dashboard-test-formula',
+        'locked_at' => now(),
+        'locked_by' => $user->id,
     ]);
 
     RecipeVersion::factory()->create([
@@ -33,7 +35,7 @@ it('renders the simplified dashboard with creation buttons and stat cards', func
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'name' => 'Dashboard Published Formula',
-        'is_draft' => false,
+        'is_current' => false,
         'version_number' => 2,
         'saved_at' => now(),
     ]);
@@ -43,7 +45,7 @@ it('renders the simplified dashboard with creation buttons and stat cards', func
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'name' => $recipe->name,
-        'is_draft' => true,
+        'is_current' => true,
         'version_number' => 3,
     ]);
 
@@ -54,10 +56,10 @@ it('renders the simplified dashboard with creation buttons and stat cards', func
         ->assertSee('Create cosmetic formula')
         ->assertSee('Recipes')
         ->assertSee('Ingredients')
-        ->assertSee('Drafts');
+        ->assertSee('Locked');
 });
 
-it('shows recipe and draft counts for the current user only', function () {
+it('shows recipe and lock counts for the current user only', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -72,6 +74,8 @@ it('shows recipe and draft counts for the current user only', function () {
         'visibility' => Visibility::Private,
         'name' => 'User Recipe',
         'slug' => 'user-recipe',
+        'locked_at' => now(),
+        'locked_by' => $user->id,
     ]);
 
     RecipeVersion::factory()->create([
@@ -80,7 +84,7 @@ it('shows recipe and draft counts for the current user only', function () {
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'name' => $userRecipe->name,
-        'is_draft' => true,
+        'is_current' => true,
         'version_number' => 1,
     ]);
 
@@ -99,7 +103,10 @@ it('shows recipe and draft counts for the current user only', function () {
     $response->assertSuccessful();
 
     $recipeCount = $response->viewData('recipeCount');
-    expect($recipeCount)->toBe(1);
+    $lockedFormulaCount = $response->viewData('lockedFormulaCount');
+
+    expect($recipeCount)->toBe(1)
+        ->and($lockedFormulaCount)->toBe(1);
 });
 
 it('shows the current users personal ingredient count on the dashboard', function () {

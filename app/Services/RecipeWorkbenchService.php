@@ -44,25 +44,25 @@ class RecipeWorkbenchService
     /**
      * @return array<string, mixed>|null
      */
-    public function draftPayload(?Recipe $recipe): ?array
+    public function currentVersionPayload(?Recipe $recipe): ?array
     {
-        return $this->recipeWorkbenchVersionDataService->draftPayload($recipe);
+        return $this->recipeWorkbenchVersionDataService->currentVersionPayload($recipe);
     }
 
     /**
      * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null}|null
      */
-    public function draftSnapshot(?Recipe $recipe): ?array
+    public function currentVersionSnapshot(?Recipe $recipe): ?array
     {
-        return $this->recipeWorkbenchVersionDataService->draftSnapshot($recipe);
+        return $this->recipeWorkbenchVersionDataService->currentVersionSnapshot($recipe);
     }
 
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function versionOptions(Recipe $recipe): array
+    public function publishedVersionHistory(Recipe $recipe): array
     {
-        return $this->recipeWorkbenchVersionDataService->versionOptions($recipe);
+        return $this->recipeWorkbenchVersionDataService->publishedVersionHistory($recipe);
     }
 
     /**
@@ -148,7 +148,7 @@ class RecipeWorkbenchService
         return $this->recipeWorkbenchPreviewService->snapshotFromWorkbenchDraft($draft);
     }
 
-    public function saveDraft(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
+    public function save(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, false);
         $this->validateIngredientAccess($user, $normalizedPayload);
@@ -157,7 +157,7 @@ class RecipeWorkbenchService
         return $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
     }
 
-    public function saveRecipe(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
+    public function publish(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true);
         $this->validateIngredientAccess($user, $normalizedPayload);
@@ -168,7 +168,7 @@ class RecipeWorkbenchService
 
     public function saveAsNewVersion(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
-        return $this->saveRecipe($user, $productFamily, $payload, $recipe);
+        return $this->publish($user, $productFamily, $payload, $recipe);
     }
 
     public function duplicate(User $user, ProductFamily $productFamily, array $payload): RecipeVersion
@@ -176,15 +176,15 @@ class RecipeWorkbenchService
         $copyPayload = $payload;
         $copyPayload['name'] = $this->duplicateName((string) ($payload['name'] ?? 'Soap Formula'));
 
-        return $this->saveDraft($user, $productFamily, $copyPayload);
+        return $this->save($user, $productFamily, $copyPayload);
     }
 
     public function duplicateRecipe(User $user, Recipe $recipe): RecipeVersion
     {
-        $workbenchPayload = $this->recipeWorkbenchVersionDataService->draftPayload($recipe);
+        $workbenchPayload = $this->recipeWorkbenchVersionDataService->currentVersionPayload($recipe);
         $sourceVersion = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', true)
+            ->where('is_current', true)
             ->first();
 
         if (! is_array($workbenchPayload)) {
@@ -202,9 +202,9 @@ class RecipeWorkbenchService
         return $duplicate;
     }
 
-    public function useVersionAsDraft(User $user, Recipe $recipe, int $versionId): RecipeVersion
+    public function restoreCurrentVersion(User $user, Recipe $recipe, int $versionId): RecipeVersion
     {
-        $draftVersion = $this->saveDraft(
+        $currentVersion = $this->save(
             $user,
             $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
             $this->recipeWorkbenchDraftPayloadMapper->toSavePayload(
@@ -217,47 +217,42 @@ class RecipeWorkbenchService
             ->where('recipe_id', $recipe->id)
             ->find($versionId);
 
-        $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $draftVersion, $user);
+        $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $currentVersion, $user);
 
-        return $draftVersion;
+        return $currentVersion;
     }
 
-    public function draftWouldBeReplacedByVersion(Recipe $recipe, int $versionId): bool
+    public function currentVersionWouldBeReplacedByVersion(Recipe $recipe, int $versionId): bool
     {
-        $currentDraftPayload = $this->recipeWorkbenchVersionDataService->currentDraftPayload($recipe);
+        $currentVersionPayload = $this->recipeWorkbenchVersionDataService->currentVersionPayload($recipe);
 
-        if (! is_array($currentDraftPayload)) {
+        if (! is_array($currentVersionPayload)) {
             return false;
         }
 
-        $currentDraftSavePayload = $this->recipeWorkbenchDraftPayloadMapper->toSavePayload($currentDraftPayload);
+        $currentVersionSavePayload = $this->recipeWorkbenchDraftPayloadMapper->toSavePayload($currentVersionPayload);
         $targetVersionSavePayload = $this->recipeWorkbenchDraftPayloadMapper->toSavePayload(
             $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId),
         );
 
         $productFamily = $recipe->productFamily()->withoutGlobalScopes()->firstOrFail();
 
-        return $this->recipeWorkbenchPayloadNormalizer->normalize($currentDraftSavePayload, $productFamily, false) !==
+        return $this->recipeWorkbenchPayloadNormalizer->normalize($currentVersionSavePayload, $productFamily, false) !==
             $this->recipeWorkbenchPayloadNormalizer->normalize($targetVersionSavePayload, $productFamily, false);
     }
 
-    public function restoreSavedFormula(User $user, Recipe $recipe, int $versionId): RecipeVersion
+    public function restorePublishedFormula(User $user, Recipe $recipe, int $versionId): RecipeVersion
     {
         $sourceVersion = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
             ->find($versionId);
 
-        $publishedVersion = $this->recipeVersionPublisher->restore(
-            $user,
-            $recipe,
-            $this->recipeWorkbenchPayloadNormalizer->normalize(
-                $this->recipeWorkbenchDraftPayloadMapper->toSavePayload(
-                    $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId),
-                ),
-                $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
-                true,
-            ),
-        );
+        $productFamily = $recipe->productFamily()->withoutGlobalScopes()->firstOrFail();
+        $versionPayload = $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId);
+        $savePayload = $this->recipeWorkbenchDraftPayloadMapper->toSavePayload($versionPayload);
+        $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($savePayload, $productFamily, true);
+
+        $publishedVersion = $this->recipeVersionPublisher->restore($user, $recipe, $normalizedPayload);
 
         $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $publishedVersion, $user);
 
@@ -290,12 +285,12 @@ class RecipeWorkbenchService
      */
     public function saveCosting(User $user, Recipe $recipe, array $payload): array
     {
-        $draftVersion = RecipeVersion::withoutGlobalScopes()
+        $currentVersion = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', true)
+            ->where('is_current', true)
             ->firstOrFail();
 
-        return $this->recipeVersionCostingSynchronizer->save($draftVersion, $user, $payload);
+        return $this->recipeVersionCostingSynchronizer->save($currentVersion, $user, $payload);
     }
 
     /**

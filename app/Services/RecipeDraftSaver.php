@@ -28,30 +28,30 @@ class RecipeDraftSaver
                 $normalizedPayload['product_type_id'] ?? null,
             );
 
-            $draftVersion = RecipeVersion::withoutGlobalScopes()
+            $currentVersion = RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $recipe->id)
-                ->where('is_draft', true)
+                ->where('is_current', true)
                 ->first();
 
-            if (! $draftVersion instanceof RecipeVersion) {
-                $draftVersion = new RecipeVersion;
-                $draftVersion->recipe()->associate($recipe);
-                $draftVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
-                $draftVersion->is_draft = true;
+            if (! $currentVersion instanceof RecipeVersion) {
+                $currentVersion = new RecipeVersion;
+                $currentVersion->recipe()->associate($recipe);
+                $currentVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
+                $currentVersion->is_current = true;
             }
 
             $this->recipeVersionRecordService->fillVersion(
-                $draftVersion,
+                $currentVersion,
                 $recipe,
                 $user,
                 $normalizedPayload,
                 true,
             );
-            $draftVersion->save();
+            $currentVersion->save();
 
-            $this->recipeVersionStructureSynchronizer->sync($draftVersion, $user, $normalizedPayload);
+            $this->recipeVersionStructureSynchronizer->sync($currentVersion, $user, $normalizedPayload);
 
-            return $draftVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
+            return $currentVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
         });
     }
 }

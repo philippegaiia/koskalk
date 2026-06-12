@@ -39,7 +39,7 @@ class RecipeVersionRecordService
         Recipe $recipe,
         User $user,
         array $normalizedPayload,
-        bool $isDraft,
+        bool $isCurrent,
     ): void {
         if ($recipe->product_type_id !== ($normalizedPayload['product_type_id'] ?? null)) {
             $recipe->product_type_id = $normalizedPayload['product_type_id'] ?? null;
@@ -58,7 +58,7 @@ class RecipeVersionRecordService
         $recipeVersion->owner_id = $user->id;
         $recipeVersion->workspace_id = null;
         $recipeVersion->visibility = Visibility::Private;
-        $recipeVersion->is_draft = $isDraft;
+        $recipeVersion->is_current = $isCurrent;
         $recipeVersion->name = $normalizedPayload['name'];
         $recipeVersion->batch_size = $normalizedPayload['oil_weight'];
         $recipeVersion->batch_unit = $normalizedPayload['oil_unit'];
@@ -75,7 +75,7 @@ class RecipeVersionRecordService
         $recipeVersion->final_plain_ingredient_list_basis_hash = $normalizedPayload['final_plain_ingredient_list_basis_hash'];
         $recipeVersion->water_settings = $normalizedPayload['water_settings'];
         $recipeVersion->calculation_context = $normalizedPayload['calculation_context'];
-        $recipeVersion->saved_at = $isDraft ? null : ($recipeVersion->saved_at ?? now());
+        $recipeVersion->saved_at = $isCurrent ? null : ($recipeVersion->saved_at ?? now());
         $recipeVersion->catalog_reviewed_at = now();
         $recipeVersion->archived_at = null;
     }

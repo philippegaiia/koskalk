@@ -15,17 +15,19 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('renders the current saved recipe page with print actions', function () {
+it('renders the formula sheet with print actions', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('Reference formula')
-        ->assertSee('Read-only reference formula')
+        ->assertSee('Formula sheet')
+        ->assertSee('Use this saved formula for scaling, printing, and export.')
         ->assertDontSee('v'.$publishedVersion->version_number)
-        ->assertSee('Edit in draft')
+        ->assertSee('Open formula')
         ->assertSee('Duplicate')
+        ->assertDontSee('Reference formula')
+        ->assertDontSee('Edit in draft')
         ->assertDontSee('Recovery snapshots')
         ->assertSee('Batch production sheet')
         ->assertSee('Technical recipe sheet')
@@ -37,40 +39,70 @@ it('renders the current saved recipe page with print actions', function () {
         ->assertDontSee('1000.00');
 });
 
-it('renders the editable draft workbench with an reference formula confirmation modal', function () {
+it('renders the formula workbench with one save path and lock controls', function () {
     [$user, $recipe] = createSavedRecipeVersion();
 
     $this->actingAs($user)
         ->get(route('recipes.edit', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('Editable draft')
-        ->assertSee('Save draft')
-        ->assertSee('Save as reference formula')
-        ->assertSee('Update reference formula?')
-        ->assertSee('This will replace the reference formula with your current draft.')
+        ->assertSee('Formula')
+        ->assertSee('Save')
+        ->assertSee('Lock formula')
+        ->assertSeeInOrder(['Save', 'Lock formula', 'More formula actions'])
+        ->assertDontSee('Editable draft')
+        ->assertDontSee('Save draft')
+        ->assertDontSee('Save as reference formula')
+        ->assertDontSee('Update reference formula?')
+        ->assertDontSee('This will replace the reference formula with your current draft.')
         ->assertDontSee('Save recipe');
 });
 
-it('shows recovery snapshots section when there are multiple saved versions', function () {
+it('hides recovery snapshots from the main formula sheet', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
     $ingredient = makeSavedRecipeIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'));
+    $draftVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'));
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
 
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertSee('<details class="sk-card overflow-hidden">', false)
-        ->assertSee('<summary', false)
-        ->assertSee('Recovery snapshots')
+        ->assertDontSee('Recovery snapshots')
+        ->assertDontSee('Load into draft')
+        ->assertDontSee('Restore as reference formula')
         ->assertDontSee('v1')
         ->assertDontSee('v2');
+});
+
+it('locks and unlocks a formula', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+
+    $this->actingAs($user)
+        ->post(route('recipes.lock', $recipe->id))
+        ->assertRedirect(route('recipes.edit', $recipe->id))
+        ->assertSessionHas('status', 'Formula locked.');
+
+    expect($recipe->fresh()->locked_at)->not->toBeNull()
+        ->and($recipe->fresh()->locked_by)->toBe($user->id);
+
+    $this->actingAs($user)
+        ->get(route('recipes.edit', $recipe->id))
+        ->assertSuccessful()
+        ->assertSee('Unlock formula')
+        ->assertSeeInOrder(['Unlock formula', 'More formula actions']);
+
+    $this->actingAs($user)
+        ->post(route('recipes.unlock', $recipe->id))
+        ->assertRedirect(route('recipes.edit', $recipe->id))
+        ->assertSessionHas('status', 'Formula unlocked.');
+
+    expect($recipe->fresh()->locked_at)->toBeNull()
+        ->and($recipe->fresh()->locked_by)->toBeNull();
 });
 
 it('recalculates the saved formula view when a different oil quantity is requested', function () {
@@ -248,7 +280,7 @@ it('keeps the legacy saved-version url working by showing the current saved reci
     $this->actingAs($user)
         ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $publishedVersion->id]))
         ->assertSuccessful()
-        ->assertSee('Reference formula')
+        ->assertSee('Formula sheet')
         ->assertSee('Published Formula');
 });
 
@@ -260,7 +292,7 @@ it('duplicates a recipe into a new draft recipe', function () {
         ->assertRedirect();
 
     expect(Recipe::withoutGlobalScopes()->count())->toBe(2)
-        ->and(RecipeVersion::withoutGlobalScopes()->where('is_draft', true)->count())->toBe(2)
+        ->and(RecipeVersion::withoutGlobalScopes()->where('is_current', true)->count())->toBe(2)
         ->and(Recipe::withoutGlobalScopes()->latest('id')->firstOrFail()->name)->toBe('Copy of Published Formula');
 });
 
@@ -269,11 +301,11 @@ it('can refresh the draft from the current saved formula page', function () {
 
     $draft = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', true)
+        ->where('is_current', true)
         ->firstOrFail();
 
     $this->actingAs($user)
-        ->post(route('recipes.saved.edit-in-draft', ['recipe' => $recipe->id]))
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]))
         ->assertRedirect(route('recipes.edit', $recipe->id));
 
     $draft->refresh();
@@ -284,7 +316,7 @@ it('can refresh the draft from the current saved formula page', function () {
 it('forbids refreshing the draft from the saved formula when signed out', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
-    $this->post(route('recipes.saved.edit-in-draft', ['recipe' => $recipe->id]))
+    $this->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]))
         ->assertForbidden();
 });
 
@@ -293,7 +325,7 @@ it('asks for confirmation before replacing a changed draft with the saved formul
 
     $draft = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', true)
+        ->where('is_current', true)
         ->firstOrFail();
 
     $draft->update([
@@ -301,17 +333,17 @@ it('asks for confirmation before replacing a changed draft with the saved formul
     ]);
 
     $this->actingAs($user)
-        ->post(route('recipes.saved.edit-in-draft', ['recipe' => $recipe->id]))
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]))
         ->assertRedirect(route('recipes.saved', $recipe->id))
-        ->assertSessionHas('draftReplaceConfirmation');
+        ->assertSessionHas('currentReplaceConfirmation');
 
     $draft->refresh();
 
     expect($draft->name)->toBe('Experimental Draft');
 
     $this->actingAs($user)
-        ->post(route('recipes.saved.edit-in-draft', ['recipe' => $recipe->id]), [
-            'confirm_replace_draft' => '1',
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]), [
+            'confirm_replace_current' => '1',
         ])
         ->assertRedirect(route('recipes.edit', $recipe->id));
 
@@ -329,7 +361,7 @@ it('can restore an older saved snapshot as the current saved formula', function 
     $ingredient = makeSavedRecipeIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         soapVersionDraftPayload($ingredient, 'Formula A'),
@@ -337,12 +369,12 @@ it('can restore an older saved snapshot as the current saved formula', function 
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
 
     $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->where('name', 'Formula A')
         ->latest('version_number')
         ->firstOrFail();
@@ -353,7 +385,7 @@ it('can restore an older saved snapshot as the current saved formula', function 
 
     $latestSavedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
@@ -369,7 +401,7 @@ it('forbids restoring a saved snapshot when signed out', function () {
     $ingredient = makeSavedRecipeIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         soapVersionDraftPayload($ingredient, 'Formula A'),
@@ -377,11 +409,11 @@ it('forbids restoring a saved snapshot when signed out', function () {
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
 
     $savedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
@@ -398,7 +430,7 @@ it('preserves the current draft when restoring an older saved snapshot', functio
     $ingredient = makeSavedRecipeIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         soapVersionDraftPayload($ingredient, 'Formula A'),
@@ -406,12 +438,12 @@ it('preserves the current draft when restoring an older saved snapshot', functio
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
 
     $currentDraft = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', true)
+        ->where('is_current', true)
         ->firstOrFail();
 
     $currentDraft->update([
@@ -420,7 +452,7 @@ it('preserves the current draft when restoring an older saved snapshot', functio
 
     $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->where('name', 'Formula A')
         ->latest('version_number')
         ->firstOrFail();
@@ -435,7 +467,7 @@ it('preserves the current draft when restoring an older saved snapshot', functio
 
     $latestSavedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
@@ -451,7 +483,7 @@ it('asks for confirmation before replacing the draft with an older recovery snap
     $ingredient = makeSavedRecipeIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         soapVersionDraftPayload($ingredient, 'Formula A'),
@@ -459,12 +491,12 @@ it('asks for confirmation before replacing the draft with an older recovery snap
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
 
     $currentDraft = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', true)
+        ->where('is_current', true)
         ->firstOrFail();
 
     $currentDraft->update([
@@ -473,23 +505,23 @@ it('asks for confirmation before replacing the draft with an older recovery snap
 
     $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->where('name', 'Formula A')
         ->latest('version_number')
         ->firstOrFail();
 
     $this->actingAs($user)
-        ->post(route('recipes.use-version-as-draft', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]))
+        ->post(route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]))
         ->assertRedirect(route('recipes.saved', $recipe->id))
-        ->assertSessionHas('draftReplaceConfirmation');
+        ->assertSessionHas('currentReplaceConfirmation');
 
     $currentDraft->refresh();
 
     expect($currentDraft->name)->toBe('Experimental Draft');
 
     $this->actingAs($user)
-        ->post(route('recipes.use-version-as-draft', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]), [
-            'confirm_replace_draft' => '1',
+        ->post(route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]), [
+            'confirm_replace_current' => '1',
         ])
         ->assertRedirect(route('recipes.edit', $recipe->id));
 
@@ -507,7 +539,7 @@ it('forbids replacing the draft with a saved version when signed out', function 
     $ingredient = makeSavedRecipeIngredient();
     $service = app(RecipeWorkbenchService::class);
 
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         soapVersionDraftPayload($ingredient, 'Formula A'),
@@ -515,17 +547,17 @@ it('forbids replacing the draft with a saved version when signed out', function 
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
-    $service->saveRecipe($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
 
     $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->where('name', 'Formula A')
         ->latest('version_number')
         ->firstOrFail();
 
-    $this->post(route('recipes.use-version-as-draft', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]))
+    $this->post(route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]))
         ->assertForbidden();
 });
 
@@ -542,7 +574,7 @@ function createSavedRecipeVersion(): array
     $ingredient = makeSavedRecipeIngredient();
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         soapVersionDraftPayload($ingredient, 'Workbench Draft'),
@@ -559,7 +591,7 @@ function createSavedRecipeVersion(): array
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 

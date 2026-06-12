@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'workspace_id',
     'visibility',
     'version_number',
-    'is_draft',
+    'is_current',
     'name',
     'batch_size',
     'batch_unit',
@@ -99,7 +99,7 @@ class RecipeVersion extends Model
         return [
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
-            'is_draft' => 'bool',
+            'is_current' => 'bool',
             'batch_size' => 'decimal:3',
             'water_settings' => 'array',
             'calculation_context' => 'array',

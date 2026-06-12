@@ -142,7 +142,7 @@ it('shows the standard version deleted message when other published versions rem
     [$user, $recipe] = createRecipeWithTwoPublishedVersions();
     $publishedVersions = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->orderBy('version_number')
         ->get();
 
@@ -157,7 +157,7 @@ it('shows the standard version deleted message when other published versions rem
         ->and(
             RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $recipe->id)
-                ->where('is_draft', false)
+                ->where('is_current', false)
                 ->count()
         )->toBe(1);
 });
@@ -232,7 +232,7 @@ function createRecipeWithDraftOnly(): array
         'koh_sap_value' => 0.188,
     ]);
 
-    $draft = app(RecipeWorkbenchService::class)->saveDraft(
+    $draft = app(RecipeWorkbenchService::class)->save(
         $user,
         $soapFamily,
         deletionSoapDraftPayload($ingredient, 'Workbench Draft'),
@@ -259,7 +259,7 @@ function createRecipeWithDraftAndPublishedVersion(?User $user = null): array
 
     $service = app(RecipeWorkbenchService::class);
 
-    $initialDraft = $service->saveDraft(
+    $initialDraft = $service->save(
         $user,
         $soapFamily,
         deletionSoapDraftPayload($ingredient, 'Workbench Draft'),
@@ -276,7 +276,7 @@ function createRecipeWithDraftAndPublishedVersion(?User $user = null): array
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 

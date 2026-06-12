@@ -29,7 +29,7 @@ it('publishes the current draft and opens a fresh draft when saving as a new ver
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Working Draft',
     ]));
 
@@ -42,13 +42,13 @@ it('publishes the current draft and opens a fresh draft when saving as a new ver
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->firstOrFail();
 
     expect($publishedVersion->name)->toBe('Published Formula')
         ->and($publishedVersion->saved_at)->not->toBeNull()
         ->and($publishedVersion->version_number)->toBe(1)
-        ->and($newDraft->is_draft)->toBeTrue()
+        ->and($newDraft->is_current)->toBeTrue()
         ->and($newDraft->saved_at)->toBeNull()
         ->and($newDraft->version_number)->toBe(2)
         ->and($newDraft->name)->toBe('Published Formula')
@@ -70,7 +70,7 @@ it('can still save through a mounted component after the auth session is gone', 
 
     auth()->logout();
 
-    $result = $component->saveDraft(
+    $result = $component->save(
         recipeWorkbenchLifecyclePayload($oil, [
             'name' => 'Fallback Draft',
         ]),
@@ -105,7 +105,7 @@ it('returns a validation response instead of crashing when saving NaOH soap with
     $component = app(RecipeWorkbench::class);
     $component->mount();
 
-    $result = $component->saveDraft(
+    $result = $component->save(
         recipeWorkbenchLifecyclePayload($oil, [
             'name' => 'Invalid NaOH Negative Superfat',
             'lye_type' => 'naoh',
@@ -134,7 +134,7 @@ it('replaces the working draft with the selected saved version using the same wo
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Original Draft',
         'water_value' => 31,
         'superfat' => 4,
@@ -152,20 +152,20 @@ it('replaces the working draft with the selected saved version using the same wo
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
     $expectedPayload = $service->versionPayload($recipe, $publishedVersion->id);
 
-    $service->useVersionAsDraft($user, $recipe, $publishedVersion->id);
+    $service->restoreCurrentVersion($user, $recipe, $publishedVersion->id);
 
-    $actualPayload = $service->draftPayload($recipe->fresh());
+    $actualPayload = $service->currentVersionPayload($recipe->fresh());
 
     expect($actualPayload)->not->toBeNull()
         ->and(recipeWorkbenchComparableDraftPayload($actualPayload))
         ->toEqual(recipeWorkbenchComparableDraftPayload($expectedPayload))
-        ->and($actualPayload['recipe']['is_draft'])->toBeTrue()
+        ->and($actualPayload['recipe']['is_current'])->toBeTrue()
         ->and($actualPayload['recipe']['version_number'])->toBeGreaterThan($publishedVersion->version_number)
         ->and($actualPayload['catalogReview']['needs_review'])->toBeFalse();
 });
@@ -184,32 +184,32 @@ it('publishes after restoring a recovery snapshot without reusing the recovery v
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Formula A',
     ]));
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
-    $service->saveRecipe($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Formula A',
     ]), $recipe);
-    $service->saveRecipe($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Formula B',
     ]), $recipe);
 
     $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->where('name', 'Formula A')
         ->latest('version_number')
         ->firstOrFail();
 
-    $restoredVersion = $service->restoreSavedFormula($user, $recipe, $olderSavedVersion->id);
-    $newDraft = $service->saveRecipe($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+    $restoredVersion = $service->restorePublishedFormula($user, $recipe, $olderSavedVersion->id);
+    $newDraft = $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Published After Restore',
     ]), $recipe);
 
-    expect($newDraft->is_draft)->toBeTrue()
+    expect($newDraft->is_current)->toBeTrue()
         ->and($newDraft->version_number)->toBeGreaterThan($restoredVersion->version_number);
 });
 

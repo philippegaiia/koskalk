@@ -34,8 +34,8 @@
 			<p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $ingredientCount }}</p>
 		</a>
 		<div class="sk-card p-5">
-			<p class="sk-eyebrow">Drafts</p>
-			<p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $draftCount }}</p>
+			<p class="sk-eyebrow">Locked</p>
+			<p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $lockedFormulaCount }}</p>
 		</div>
 	</section>
 </div>

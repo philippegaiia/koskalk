@@ -51,6 +51,33 @@ it('stores ingredient icons as exact 96x96 webp images', function () {
         ->and($image[1] ?? null)->toBe(96);
 });
 
+it('stores shared catalog images as exact 400x400 webp images', function () {
+    Storage::fake('public');
+
+    config([
+        'media.disk' => 'public',
+        'media.visibility' => 'public',
+    ]);
+
+    $file = UploadedFile::fake()->image('catalog.jpg', 1200, 900);
+
+    $path = MediaStorage::storeFittedWebp(
+        $file,
+        'catalog/featured-images',
+        MediaStorage::ingredientImageWidth(),
+        MediaStorage::ingredientImageHeight(),
+        MediaStorage::ingredientImagesQuality(),
+    );
+    $image = getimagesizefromstring(Storage::disk('public')->get($path));
+
+    expect($path)->toEndWith('.webp')
+        ->and(Storage::disk('public')->exists($path))->toBeTrue()
+        ->and($image)->not->toBeFalse()
+        ->and($image['mime'] ?? null)->toBe('image/webp')
+        ->and($image[0] ?? null)->toBe(400)
+        ->and($image[1] ?? null)->toBe(400);
+});
+
 it('returns null for missing public media paths', function () {
     Storage::fake('public');
 

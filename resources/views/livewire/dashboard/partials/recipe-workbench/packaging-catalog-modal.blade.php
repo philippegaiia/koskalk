@@ -1,3 +1,5 @@
+@php($packagingCatalogCurrency = $workbench['defaultCurrency'] ?? 'EUR')
+
 <div
  x-cloak
  x-show="packagingCatalogModalOpen"
@@ -22,7 +24,7 @@
  </label>
 
  <label class="sk-inset p-4">
- <span class="sk-eyebrow">Effective unit price</span>
+ <span class="sk-eyebrow" x-text="'Effective unit price (' + (packagingCatalogForm.currency || costingCurrency || defaultCurrency || @js($packagingCatalogCurrency)) + ')'">Effective unit price ({{ $packagingCatalogCurrency }})</span>
  <input x-model="packagingCatalogForm.unit_cost" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
  </label>
 

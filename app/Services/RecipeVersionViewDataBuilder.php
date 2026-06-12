@@ -327,8 +327,8 @@ class RecipeVersionViewDataBuilder
     {
         $rows = [
             [
-                'label' => 'Reference formula',
-                'value' => $version->saved_at !== null ? 'Current saved recipe' : 'Not saved yet',
+                'label' => 'Saved formula',
+                'value' => $version->saved_at !== null ? 'Current formula' : 'Not saved yet',
             ],
             [
                 'label' => 'Saved at',
@@ -420,7 +420,7 @@ class RecipeVersionViewDataBuilder
      */
     private function recoverySnapshots(Recipe $recipe, RecipeVersion $currentVersion): array
     {
-        return collect($this->recipeWorkbenchService->versionOptions($recipe))
+        return collect($this->recipeWorkbenchService->publishedVersionHistory($recipe))
             ->map(function (array $option) use ($currentVersion): array {
                 return [
                     ...$option,

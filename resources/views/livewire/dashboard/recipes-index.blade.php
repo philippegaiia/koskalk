@@ -67,13 +67,13 @@
  @if (! $currentUser)
  <div class="sk-card p-8 text-center">
  <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">No signed-in formula workspace yet</h4>
- <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Open the recipes workbench from the same account you use in the app or in the admin panel, then your saved drafts will appear here.</p>
+ <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Open the recipes workbench from the same account you use in the app or in the admin panel, then your saved formulas will appear here.</p>
  </div>
  @elseif ($recipes->isEmpty())
  <div class="sk-card p-8 text-center">
  <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $searchTerm !== '' || $selectedProductFamily !== '' || $selectedProductType !== '' ? 'No formulas match these filters' : 'No formulas saved yet' }}</h4>
  <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">
- {{ $searchTerm !== '' || $selectedProductFamily !== '' || $selectedProductType !== '' ? 'Try a recipe name, product family, or product type.' : 'Create the first soap formula, give it a name in the header, and save the draft to make it appear in this list.' }}
+ {{ $searchTerm !== '' || $selectedProductFamily !== '' || $selectedProductType !== '' ? 'Try a recipe name, product family, or product type.' : 'Create the first soap formula, give it a name in the header, and save it to make it appear in this list.' }}
  </p>
  @if ($searchTerm === '' && $selectedProductFamily === '' && $selectedProductType === '')
  <div class="mt-5 flex flex-wrap justify-center gap-2">
@@ -91,6 +91,7 @@
  $productTypeName = $recipe->productType?->name;
  $categoryLabel = $productTypeName ?? $productFamilyName;
  $thumbnailUrl = $recipe->featuredImageUrl() ?? $recipe->productType?->fallbackImageUrl();
+ $isLocked = $recipe->isLocked();
  $fallbackThumbnailClasses = match ($productFamilySlug) {
  'soap' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
  default => 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]',
@@ -138,24 +139,36 @@
  x-transition:leave-end="opacity-0 scale-95"
  class="absolute right-0 top-full z-10 mt-1 w-48 rounded-xl bg-white shadow-lg ring-1 ring-[var(--color-line)]"
  >
- <div class="p-1.5">
- <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
- Open draft
- </a>
- <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
- Edit formula
- </a>
- @if ($recipe->currentSavedVersion)
- <a href="{{ route('recipes.saved', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
- Use recipe
- </a>
- @endif
- <form method="POST" action="{{ route('recipes.duplicate', $recipe->id) }}">
+  <div class="p-1.5">
+  <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+  Open workbench
+  </a>
+   @if ($recipe->latestPublishedVersion)
+  <a href="{{ route('recipes.saved', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+  Formula sheet &amp; production
+  </a>
+  @endif
+  <form method="POST" action="{{ route('recipes.duplicate', $recipe->id) }}">
  @csrf
  <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
  Duplicate
  </button>
  </form>
+ @if ($isLocked)
+ <form method="POST" action="{{ route('recipes.unlock', $recipe->id) }}">
+ @csrf
+ <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+ Unlock formula
+ </button>
+ </form>
+ @else
+ <form method="POST" action="{{ route('recipes.lock', $recipe->id) }}">
+ @csrf
+ <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+ Lock formula
+ </button>
+ </form>
+ @endif
  <hr class="my-1 border-[var(--color-line)]" />
  <button type="button" @click="deleteOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]">
  Delete
@@ -167,6 +180,9 @@
 
  <div class="p-4">
  <span class="sk-badge sk-badge-neutral">{{ $categoryLabel }}</span>
+ @if ($isLocked)
+ <span class="sk-badge sk-badge-neutral mt-2">Locked</span>
+ @endif
  <h4 class="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
  <p class="mt-1.5 text-xs text-[var(--color-ink-soft)]">
  Updated {{ $recipe->updated_at?->diffForHumans() ?? 'just now' }}
@@ -177,11 +193,11 @@
  <div class="sk-card w-full max-w-md p-6" @click.stop>
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete &quot;{{ $recipe->name }}&quot;?</h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">
- This will delete the recipe, its draft, reference formula, and hidden recovery snapshots. This action cannot be undone.
+ This will delete the formula and its saved backups. This action cannot be undone.
  </p>
 
  <button type="button" @click="confirmText = recipeName" class="sk-btn sk-btn-outline mt-4">
- Use recipe name
+ Use formula name
  </button>
 
  <input x-model="confirmText" type="text" placeholder="Paste recipe name to confirm" class="sk-input mt-4" />

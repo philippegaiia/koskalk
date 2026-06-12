@@ -192,7 +192,7 @@ class RecipeWorkbookExporter
         $this->addTitle($writer, 'Costing');
 
         if (! ($exportData['hasCostingData'] ?? false)) {
-            $this->addRows($writer, [['No costing data saved for this reference formula.']]);
+            $this->addRows($writer, [['No costing data saved for this formula.']]);
 
             return;
         }

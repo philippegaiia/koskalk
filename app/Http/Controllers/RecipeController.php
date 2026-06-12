@@ -82,15 +82,15 @@ class RecipeController extends Controller
         RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
     ): View {
         $user = $currentAppUserResolver->resolve();
-        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
-        $viewData = $recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
+        [$recipe, $currentFormula] = $this->accessibleCurrentVersion($recipe, $currentAppUserResolver);
+        $viewData = $recipeVersionViewDataBuilder->build($recipe, $currentFormula, $request->query('oil_weight'), $request->query());
         $canRecordProduction = $user !== null && $user->can('update', $recipe);
 
         return view('recipes.version', [
             ...$viewData,
             'canRecordProduction' => $canRecordProduction,
             'productionPreview' => $user !== null
-                ? $this->productionPreview($recipe, $savedFormula, $user, $viewData, $recipeVersionCostPreviewBuilder)
+                ? $this->productionPreview($recipe, $currentFormula, $user, $viewData, $recipeVersionCostPreviewBuilder)
                 : null,
             'productionBatches' => $canRecordProduction
                 ? $recipe->productionBatches()
@@ -115,10 +115,54 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.edit', $duplicateDraft->recipe_id)
-            ->with('status', 'Formula duplicated into a new draft.');
+            ->with('status', 'Formula duplicated.');
     }
 
-    public function editSavedFormulaInDraft(
+    public function lock(int $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
+    {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+
+        $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
+
+        $this->authorize('update', $recipe);
+
+        if (! $recipe->isLocked()) {
+            $recipe->update([
+                'locked_at' => now(),
+                'locked_by' => $user->id,
+            ]);
+        }
+
+        return redirect()
+            ->route('recipes.edit', $recipe->id)
+            ->with('status', 'Formula locked.');
+    }
+
+    public function unlock(int $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
+    {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+
+        $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
+
+        $this->authorize('update', $recipe);
+
+        if ($recipe->isLocked()) {
+            $recipe->update([
+                'locked_at' => null,
+                'locked_by' => null,
+            ]);
+        }
+
+        return redirect()
+            ->route('recipes.edit', $recipe->id)
+            ->with('status', 'Formula unlocked.');
+    }
+
+    public function editCurrentFormula(
         int $recipe,
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
@@ -127,30 +171,30 @@ class RecipeController extends Controller
         $user = $currentAppUserResolver->resolve();
 
         abort_unless($user !== null, 403);
-        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
 
         if (
-            $recipeWorkbenchService->draftWouldBeReplacedByVersion($recipe, $savedFormula->id)
-            && ! $request->boolean('confirm_replace_draft')
+            $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $savedFormula->id)
+            && ! $request->boolean('confirm_replace_current')
         ) {
             return redirect()
                 ->route('recipes.saved', $recipe->id)
-                ->with('draftReplaceConfirmation', [
-                    'title' => 'Replace the current draft?',
-                    'body' => 'The current draft differs from the reference formula. Confirming will replace the draft with the current reference formula data.',
-                    'action_label' => 'Replace draft with reference formula',
-                    'action_url' => route('recipes.saved.edit-in-draft', $recipe->id),
+                ->with('currentReplaceConfirmation', [
+                    'title' => 'Replace the current formula?',
+                    'body' => 'The current formula differs from this saved snapshot. Confirming will replace the formula with the saved snapshot data.',
+                    'action_label' => 'Replace formula',
+                    'action_url' => route('recipes.saved.edit-current', $recipe->id),
                 ]);
         }
 
-        $recipeWorkbenchService->useVersionAsDraft($user, $recipe, $savedFormula->id);
+        $recipeWorkbenchService->restoreCurrentVersion($user, $recipe, $savedFormula->id);
 
         return redirect()
             ->route('recipes.edit', $recipe->id)
-            ->with('status', 'Draft refreshed from the current reference formula.');
+            ->with('status', 'Formula refreshed from the saved snapshot.');
     }
 
-    public function restoreSavedFormula(
+    public function restorePublishedFormula(
         int $recipe,
         int $version,
         CurrentAppUserResolver $currentAppUserResolver,
@@ -161,11 +205,11 @@ class RecipeController extends Controller
         abort_unless($user !== null, 403);
         [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
 
-        $recipeWorkbenchService->restoreSavedFormula($user, $recipe, $version->id);
+        $recipeWorkbenchService->restorePublishedFormula($user, $recipe, $version->id);
 
         return redirect()
             ->route('recipes.saved', $recipe->id)
-            ->with('status', 'Reference formula restored from the selected recovery snapshot.');
+            ->with('status', 'Formula restored from the selected saved backup.');
     }
 
     public function version(
@@ -196,7 +240,7 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
             ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
@@ -231,7 +275,7 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
             ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
@@ -245,7 +289,7 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
 
         return view('recipes.print', [
             ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
@@ -260,7 +304,7 @@ class RecipeController extends Controller
         RecipeExportDataBuilder $recipeExportDataBuilder,
         RecipeWorkbookExporter $recipeWorkbookExporter,
     ): StreamedResponse {
-        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
         $exportData = $recipeExportDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
         $filename = $this->exportFilename($recipe, 'xlsx');
 
@@ -278,7 +322,7 @@ class RecipeController extends Controller
         RecipeExportDataBuilder $recipeExportDataBuilder,
         RecipeCsvExporter $recipeCsvExporter,
     ): StreamedResponse {
-        [$recipe, $savedFormula] = $this->accessibleCurrentSavedFormula($recipe, $currentAppUserResolver);
+        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
         $exportData = $recipeExportDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
         $filename = $this->exportFilename($recipe, 'csv');
 
@@ -301,7 +345,7 @@ class RecipeController extends Controller
         return $this->printSavedDetails($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
     }
 
-    public function useVersionAsDraft(
+    public function restoreCurrentVersion(
         int $recipe,
         int $version,
         Request $request,
@@ -314,24 +358,24 @@ class RecipeController extends Controller
         [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
 
         if (
-            $recipeWorkbenchService->draftWouldBeReplacedByVersion($recipe, $version->id)
-            && ! $request->boolean('confirm_replace_draft')
+            $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $version->id)
+            && ! $request->boolean('confirm_replace_current')
         ) {
             return redirect()
                 ->route('recipes.saved', $recipe->id)
-                ->with('draftReplaceConfirmation', [
-                    'title' => 'Replace the current draft?',
-                    'body' => 'The current draft differs from this recovery snapshot. Confirming will replace the draft with the selected saved state.',
-                    'action_label' => 'Replace draft',
-                    'action_url' => route('recipes.use-version-as-draft', ['recipe' => $recipe->id, 'version' => $version->id]),
+                ->with('currentReplaceConfirmation', [
+                    'title' => 'Replace the current formula?',
+                    'body' => 'The current formula differs from this saved backup. Confirming will replace the formula with the selected saved state.',
+                    'action_label' => 'Replace formula',
+                    'action_url' => route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $version->id]),
                 ]);
         }
 
-        $recipeWorkbenchService->useVersionAsDraft($user, $recipe, $version->id);
+        $recipeWorkbenchService->restoreCurrentVersion($user, $recipe, $version->id);
 
         return redirect()
             ->route('recipes.edit', $recipe->id)
-            ->with('status', 'Working draft replaced with the selected recovery snapshot.');
+            ->with('status', 'Formula replaced with the selected saved backup.');
     }
 
     public function destroy(
@@ -382,7 +426,7 @@ class RecipeController extends Controller
 
         $this->authorize('delete', $version);
 
-        if (! $version->is_draft) {
+        if (! $version->is_current) {
             abort_unless($request->string('confirm_name')->toString() === $version->name, 403, 'Confirmation name does not match.');
         }
 
@@ -417,7 +461,6 @@ class RecipeController extends Controller
         $recipe = $this->accessibleRecipe($recipeId, $currentAppUserResolver);
         $version = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', false)
             ->whereKey($versionId)
             ->firstOrFail();
 
@@ -427,14 +470,33 @@ class RecipeController extends Controller
     /**
      * @return array{0: Recipe, 1: RecipeVersion}
      */
-    private function accessibleCurrentSavedFormula(
+    private function accessibleLatestPublishedFormula(
         int $recipeId,
         CurrentAppUserResolver $currentAppUserResolver,
     ): array {
         $recipe = $this->accessibleRecipe($recipeId, $currentAppUserResolver);
         $version = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', false)
+            ->where('is_current', false)
+            ->orderByDesc('version_number')
+            ->firstOrFail();
+
+        return [$recipe, $version];
+    }
+
+    /**
+     * The "current formula" is whatever the user is editing right now:
+     * the most recent version, whether it is a current version still being polished
+     * or the latest published snapshot. The 3 older published versions
+     * stay in the database as the recovery history.
+     */
+    private function accessibleCurrentVersion(
+        int $recipeId,
+        CurrentAppUserResolver $currentAppUserResolver,
+    ): array {
+        $recipe = $this->accessibleRecipe($recipeId, $currentAppUserResolver);
+        $version = RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $recipe->id)
             ->orderByDesc('version_number')
             ->firstOrFail();
 
@@ -472,6 +534,13 @@ class RecipeController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
+        $batchBasis = [
+            'batch_basis_label' => $basisLabel,
+            'batch_basis_value' => $basisValue,
+            'batch_basis_unit' => $basisUnit,
+            'units_produced' => $unitsProduced,
+        ];
+
         if ($existingCosting instanceof RecipeVersionCosting) {
             return [
                 ...$recipeVersionCostPreviewBuilder->buildFromCosting(
@@ -481,10 +550,7 @@ class RecipeController extends Controller
                     batchBasisValue: $basisValue,
                     unitsProduced: $unitsProduced,
                 ),
-                'batch_basis_label' => $basisLabel,
-                'batch_basis_value' => $basisValue,
-                'batch_basis_unit' => $basisUnit,
-                'units_produced' => $unitsProduced,
+                ...$batchBasis,
             ];
         }
 
@@ -497,10 +563,7 @@ class RecipeController extends Controller
             'total_cost' => 0.0,
             'cost_per_unit' => null,
             'has_unpriced_rows' => true,
-            'batch_basis_label' => $basisLabel,
-            'batch_basis_value' => $basisValue,
-            'batch_basis_unit' => $basisUnit,
-            'units_produced' => $unitsProduced,
+            ...$batchBasis,
         ];
     }
 

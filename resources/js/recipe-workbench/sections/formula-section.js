@@ -197,7 +197,7 @@ export function createFormulaSection() {
                 label: 'Zero quantity',
                 value: zeroRows.length > 0 ? `${zeroRows.length} at 0` : 'None',
                 detail: zeroRows.length > 0
-                    ? 'Draft keeps these ingredients so quantities can be filled later.'
+                    ? 'Formula keeps these ingredients so quantities can be filled later.'
                     : `${rowCount} ${rowCount === 1 ? 'ingredient has' : 'ingredients have'} a quantity.`,
                 tone: zeroRows.length > 0 ? 'warning' : 'success',
             };
@@ -218,10 +218,10 @@ export function createFormulaSection() {
             const hasSaveError = this.saveStatus === 'error';
 
             return {
-                id: 'draft-state',
+                id: 'formula-state',
                 label: 'Save state',
                 value: this.isSaving ? 'Saving' : (hasSaveError ? "Couldn't save" : (hasUnsavedChanges ? 'Unsaved' : 'Saved')),
-                detail: this.saveMessage || (this.isSaving ? 'Saving current edits.' : (hasUnsavedChanges ? 'Save draft keeps these changes.' : 'Current edits are saved.')),
+                detail: this.saveMessage || (this.isSaving ? 'Saving current edits.' : (hasUnsavedChanges ? 'Save keeps these changes.' : 'Current edits are saved.')),
                 tone: hasSaveError ? 'danger' : (this.isSaving ? 'neutral' : (hasUnsavedChanges ? 'warning' : 'success')),
             };
         },

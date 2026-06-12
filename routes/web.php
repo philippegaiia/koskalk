@@ -19,10 +19,12 @@ Route::controller(RecipeController::class)
         Route::get('/new', 'create')->name('create');
         Route::delete('/{recipe}', 'destroy')->name('destroy');
         Route::get('/{recipe}/saved', 'saved')->name('saved');
-        Route::post('/{recipe}/saved/edit-in-draft', 'editSavedFormulaInDraft')->name('saved.edit-in-draft');
-        Route::post('/{recipe}/saved/{version}/restore', 'restoreSavedFormula')->name('saved.restore');
-        Route::post('/{recipe}/production-batches', [ProductionBatchController::class, 'store'])->name('production-batches.store');
+        Route::post('/{recipe}/saved/edit-current', 'editCurrentFormula')->name('saved.edit-current');
+        Route::post('/{recipe}/saved/{version}/restore', 'restorePublishedFormula')->name('saved.restore');
         Route::post('/{recipe}/duplicate', 'duplicate')->name('duplicate');
+        Route::post('/{recipe}/lock', 'lock')->name('lock');
+        Route::post('/{recipe}/unlock', 'unlock')->name('unlock');
+        Route::post('/{recipe}/production-batches', [ProductionBatchController::class, 'store'])->name('production-batches.store');
         Route::get('/{recipe}/print', 'printSavedRecipe')->name('print.recipe');
         Route::get('/{recipe}/print/production', 'printSavedProductionSheet')->name('print.production');
         Route::get('/{recipe}/print/details', 'printSavedDetails')->name('print.details');
@@ -32,7 +34,7 @@ Route::controller(RecipeController::class)
         Route::get('/{recipe}/export.csv', 'exportSavedFormulaCsv')->name('export.csv');
         Route::get('/{recipe}/versions/{version}', 'version')->name('version');
         Route::delete('/{recipe}/versions/{version}', 'destroyVersion')->name('versions.destroy');
-        Route::post('/{recipe}/versions/{version}/use-as-draft', 'useVersionAsDraft')->name('use-version-as-draft');
+        Route::post('/{recipe}/versions/{version}/use-as-current', 'restoreCurrentVersion')->name('use-version-as-current');
         Route::get('/{recipe}/versions/{version}/print', 'printRecipe')->name('legacy.print.recipe');
         Route::get('/{recipe}/versions/{version}/print/details', 'printDetails')->name('legacy.print.details');
         Route::get('/{recipe}', 'edit')->name('edit');
@@ -45,6 +47,7 @@ Route::controller(ProductionBatchController::class)
         Route::get('/{productionBatch}', 'show')->name('show');
         Route::patch('/{productionBatch}', 'update')->name('update');
         Route::get('/{productionBatch}/print', 'print')->name('print');
+        Route::delete('/{productionBatch}', 'destroy')->name('destroy');
     });
 
 Route::controller(IngredientController::class)

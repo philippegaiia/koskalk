@@ -106,9 +106,10 @@ function createRecipeWorkbenchState(payload) {
         productFamilySlug,
         productTypeId: payload.productType?.id ?? null,
         productTypeName: payload.productType?.name ?? null,
-        draftVersionId: payload.recipe?.draft_version_id ?? null,
+        currentVersionId: payload.recipe?.current_version_id ?? null,
         currentVersionNumber: payload.recipe?.version_number ?? null,
-        currentVersionIsDraft: payload.recipe?.is_draft ?? true,
+        currentVersionIsDraft: payload.recipe?.is_current ?? true,
+        isFormulaLocked: Boolean(payload.recipe?.is_locked ?? false),
         formulaName: isCosmeticFormula ? 'New Cosmetic Formula' : 'New Soap Formula',
         oilUnit: 'g',
         oilWeight: isCosmeticFormula ? 100 : 1000,
@@ -155,7 +156,6 @@ function createRecipeWorkbenchState(payload) {
         saveStatus: null,
         saveMessage: '',
         isSaving: false,
-        isOfficialSaveModalOpen: false,
         costingId: payload.costing?.settings?.id ?? null,
         costingOilWeight: payload.costing?.settings?.oilWeightForCosting ?? null,
         costingOilUnit: payload.costing?.settings?.oilUnitForCosting ?? null,
@@ -173,6 +173,7 @@ function createRecipeWorkbenchState(payload) {
         packagingCostRows: [],
         packagingCatalog: payload.packagingCatalog ?? payload.costing?.packaging_catalog ?? [],
         packagingCatalogSearch: '',
+        packagingCatalogSelectOpen: false,
         packagingCatalogForm: {
             id: null,
             name: '',
@@ -779,21 +780,12 @@ function createPersistenceSection() {
             return buildSerializedRow(this, row);
         },
 
-        async saveDraft() {
-            await this.persist('saveDraft');
+        async save() {
+            await this.persist('save');
         },
 
-        requestOfficialRecipeSave() {
-            if (!this.canSaveRecipe || this.isSaving) {
-                return;
-            }
-
-            this.isOfficialSaveModalOpen = true;
-        },
-
-        async saveRecipe() {
-            this.isOfficialSaveModalOpen = false;
-            await this.persist('saveRecipe');
+        async publish() {
+            await this.persist('publish');
         },
 
         async duplicateFormula() {

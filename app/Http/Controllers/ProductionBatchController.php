@@ -37,7 +37,6 @@ class ProductionBatchController extends Controller
         $version = RecipeVersion::withoutGlobalScopes()
             ->whereKey((int) $validated['recipe_version_id'])
             ->where('recipe_id', $recipe->id)
-            ->where('is_draft', false)
             ->firstOrFail();
 
         $productionBatch = $productionSnapshotService->record($recipe, $version, $user, $validated);
@@ -111,5 +110,21 @@ class ProductionBatchController extends Controller
         return view('production-batches.print', [
             'productionBatch' => $productionBatch,
         ]);
+    }
+
+    public function destroy(ProductionBatch $productionBatch): RedirectResponse
+    {
+        $this->authorize('delete', $productionBatch);
+
+        $recipeId = $productionBatch->recipe_id;
+        $batchLabel = $productionBatch->production_batch_number ?: $productionBatch->recipe_name;
+
+        $productionBatch->delete();
+
+        $redirect = $recipeId !== null
+            ? redirect()->route('recipes.saved', $recipeId)
+            : redirect()->route('recipes.index');
+
+        return $redirect->with('status', "Production batch {$batchLabel} deleted.");
     }
 }

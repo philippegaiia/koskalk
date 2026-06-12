@@ -27,7 +27,7 @@ class ProductionSnapshotService
         $unitsProduced = $this->positiveInt($input['units_produced'] ?? null);
 
         return [
-            ...$this->costPreviewBuilder->build(
+            ...$this->costPreviewBuilder->ensureCostingAndBuild(
                 recipe: $recipe,
                 version: $version,
                 user: $user,

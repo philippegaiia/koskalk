@@ -45,7 +45,7 @@ it('includes active allergen and substance rule counts for each regime', functio
         ->create(['is_active' => true]);
 
     mock(RecipeWorkbenchService::class, function ($mock): void {
-        $mock->shouldReceive('draftPayload')->once()->andReturn(null);
+        $mock->shouldReceive('currentVersionPayload')->once()->andReturn(null);
         $mock->shouldReceive('packagingCatalogPayload')->once()->andReturn([]);
         $mock->shouldReceive('phaseBlueprints')->once()->andReturn([]);
     });
@@ -74,12 +74,12 @@ it('builds the initial workbench payload without eager preview or costing data',
         'name' => 'Soap',
     ]);
 
-    $draftPayload = [
+    $currentVersionPayload = [
         'recipe' => [
             'id' => 42,
-            'draft_version_id' => 84,
+            'current_version_id' => 84,
             'version_number' => 3,
-            'is_draft' => true,
+            'is_current' => true,
         ],
         'formulaName' => 'Deferred Draft',
         'oilUnit' => 'g',
@@ -105,11 +105,11 @@ it('builds the initial workbench payload without eager preview or costing data',
         ],
     ];
 
-    mock(RecipeWorkbenchService::class, function ($mock) use ($draftPayload): void {
-        $mock->shouldReceive('draftPayload')
+    mock(RecipeWorkbenchService::class, function ($mock) use ($currentVersionPayload): void {
+        $mock->shouldReceive('currentVersionPayload')
             ->once()
-            ->andReturn($draftPayload);
-        $mock->shouldReceive('draftSnapshot')->never();
+            ->andReturn($currentVersionPayload);
+        $mock->shouldReceive('currentVersionSnapshot')->never();
         $mock->shouldReceive('costingPayload')->never();
         $mock->shouldReceive('packagingCatalogPayload')
             ->once()
@@ -136,7 +136,7 @@ it('builds the initial workbench payload without eager preview or costing data',
 
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, null);
 
-    expect($payload['savedDraft'])->toBe($draftPayload)
+    expect($payload['savedDraft'])->toBe($currentVersionPayload)
         ->and($payload['costing'])->toBeNull()
         ->and($payload['costingLoaded'])->toBeFalse();
 });
@@ -156,7 +156,7 @@ it('includes the user packaging catalog in the initial workbench payload', funct
     ]);
 
     mock(RecipeWorkbenchService::class, function ($mock) use ($packagingItem): void {
-        $mock->shouldReceive('draftPayload')
+        $mock->shouldReceive('currentVersionPayload')
             ->once()
             ->andReturn(null);
         $mock->shouldReceive('packagingCatalogPayload')

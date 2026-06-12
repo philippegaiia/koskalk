@@ -22,8 +22,8 @@ return [
 
     'ingredient_images' => [
         'max_size_kb' => 2048,
-        'width' => 800,
-        'height' => 800,
+        'width' => 400,
+        'height' => 400,
         'quality' => 85,
     ],
 

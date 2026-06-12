@@ -29,7 +29,7 @@ class ProductionBatchPolicy
 
     public function delete(User $user, ProductionBatch $productionBatch): bool
     {
-        return false;
+        return $productionBatch->user_id === $user->id;
     }
 
     public function restore(User $user, ProductionBatch $productionBatch): bool

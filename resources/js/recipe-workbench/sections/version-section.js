@@ -1,19 +1,19 @@
 export function createVersionSection() {
     return {
-        get hasSavedRecipe() {
+        get hasCurrentFormula() {
             return this.recipeId !== null;
         },
 
-        get hasCurrentSavedFormula() {
+        get hasCurrentPublishedFormula() {
             return Boolean(this.savedRecipeUrl);
         },
 
         get formulaWorkbenchLabel() {
-            if (!this.hasSavedRecipe || this.currentVersionNumber === null) {
-                return 'Editable draft';
+            if (this.isFormulaLocked) {
+                return 'Locked';
             }
 
-            return this.currentVersionIsDraft ? 'Editable draft' : 'Reference formula';
+            return this.hasCurrentFormula ? 'Current formula' : 'New formula';
         },
 
         get needsCatalogReview() {

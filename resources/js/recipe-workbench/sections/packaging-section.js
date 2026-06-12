@@ -32,6 +32,28 @@ export function createPackagingSection() {
             ];
         },
 
+        openPackagingCatalogSelect() {
+            this.packagingCatalogSelectOpen = true;
+        },
+
+        closePackagingCatalogSelect() {
+            this.packagingCatalogSelectOpen = false;
+        },
+
+        selectPackagingCatalogItem(packagingItem) {
+            this.addPackagingPlanRow(packagingItem);
+            this.packagingCatalogSearch = '';
+            this.closePackagingCatalogSelect();
+        },
+
+        selectFirstFilteredPackagingCatalogItem() {
+            const [firstPackagingItem] = this.filteredPackagingCatalog;
+
+            if (firstPackagingItem) {
+                this.selectPackagingCatalogItem(firstPackagingItem);
+            }
+        },
+
         removePackagingPlanRow(rowId) {
             this.packagingPlanRows = this.packagingPlanRows.filter((row) => row.id !== rowId);
         },

@@ -15,7 +15,7 @@
 
  @if (! $workbench['recipe'])
  <div class="sk-inset px-4 py-4 text-sm text-[var(--color-ink-soft)]">
- You can prepare the presentation, manufacturing instructions, and image now. They will be kept when you save the first draft.
+ You can prepare the presentation, manufacturing instructions, and image now. They will be kept when you save the formula.
  </div>
  @endif
 
@@ -28,7 +28,7 @@
  </button>
  @else
  <div class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)]">
- Save the draft above to attach this content to the recipe.
+ Save the formula above to attach this content.
  </div>
  @endif
  </div>

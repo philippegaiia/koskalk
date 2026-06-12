@@ -30,7 +30,7 @@ class RecipeVersionCostPreviewBuilder
      *     has_unpriced_rows: bool
      * }
      */
-    public function build(Recipe $recipe, RecipeVersion $version, User $user, float $batchBasisValue, ?int $unitsProduced): array
+    public function ensureCostingAndBuild(Recipe $recipe, RecipeVersion $version, User $user, float $batchBasisValue, ?int $unitsProduced): array
     {
         $existingCosting = RecipeVersionCosting::query()
             ->with(['items', 'packagingItems'])

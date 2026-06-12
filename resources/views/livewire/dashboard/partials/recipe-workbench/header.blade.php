@@ -1,9 +1,17 @@
+@php
+ $workbench = $workbench ?? [];
+ $recipeId = $workbench['recipe']['id'] ?? null;
+ $hasSavedFormula = (bool) ($workbench['recipe']['has_saved_formula'] ?? false);
+ $savedFormulaUrl = $workbench['recipe']['saved_formula_url'] ?? null;
+ $isFormulaLocked = (bool) ($workbench['recipe']['is_locked'] ?? false);
+@endphp
+
 <section class="sk-card p-5">
  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
  <div class="min-w-0 flex-1">
 	 <div class="flex flex-wrap items-center gap-2">
-	 <p class="sk-eyebrow">Editable draft</p>
-	 <span class="rounded-full bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)] shadow-sm" x-text="formulaWorkbenchLabel"></span>
+	 <p class="sk-eyebrow">Formula</p>
+	 <span :class="isFormulaLocked ? 'border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-1.5 text-xs font-medium shadow-sm" x-text="formulaWorkbenchLabel"></span>
 	 <span x-show="productTypeName" x-cloak class="sk-badge sk-badge-neutral" x-text="productTypeName"></span>
 	 <template x-if="saveMessage">
 	 <span role="status" :class="saveStatus === 'error' ? 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-1.5 text-xs font-medium shadow-sm" x-text="saveMessage"></span>
@@ -12,13 +20,38 @@
 	 <span role="status" class="rounded-full bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] shadow-sm" x-text="calculationPreviewMessage"></span>
 	 </template>
 	 </div>
-	 <input x-model="formulaName" type="text" aria-label="Formula name" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+	 <input x-model="formulaName" type="text" aria-label="Formula name" :disabled="isFormulaLocked" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:bg-[var(--color-panel)] disabled:text-[var(--color-ink-soft)]" />
 	 </div>
 
 	 <div class="flex flex-wrap gap-2 lg:justify-end">
-	 <button type="button" @click="saveDraft()" :disabled="!canSaveDraft || isSaving" :class="!canSaveDraft || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
-	 <span x-text="isSaving ? 'Saving…' : 'Save draft'"></span>
+	 @if ($hasSavedFormula && is_string($savedFormulaUrl))
+	 <a href="{{ $savedFormulaUrl }}" class="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] shadow-sm transition hover:bg-[var(--color-panel)]">
+	 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+	 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M9 8h6M5.25 5.25A2.25 2.25 0 0 1 7.5 3h9A2.25 2.25 0 0 1 18.75 5.25v13.5A2.25 2.25 0 0 1 16.5 21h-9A2.25 2.25 0 0 1 5.25 18.75V5.25Z" />
+	 </svg>
+	 Formula sheet
+	 </a>
+	 @endif
+	 <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
+	 <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving…' : 'Save')"></span>
 	 </button>
+	 @if ($recipeId)
+	 @if ($isFormulaLocked)
+	 <form method="POST" action="{{ route('recipes.unlock', $recipeId) }}">
+	 @csrf
+	 <button type="submit" class="rounded-full bg-[var(--color-warning-soft)] px-4 py-2.5 text-sm font-medium text-[var(--color-warning-strong)] transition hover:bg-[var(--color-panel)]">
+	 Unlock formula
+	 </button>
+	 </form>
+	 @else
+	 <form method="POST" action="{{ route('recipes.lock', $recipeId) }}">
+	 @csrf
+	 <button type="submit" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] shadow-sm transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
+	 Lock formula
+	 </button>
+	 </form>
+	 @endif
+	 @endif
 	 <details x-data="{ open: false }" :open="open" @toggle="open = $el.open" @click.outside="open = false" @keydown.escape.prevent.stop="open = false" class="relative">
 	 <summary class="list-none rounded-full bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] shadow-sm transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)] [&::-webkit-details-marker]:hidden" aria-haspopup="menu" :aria-expanded="open.toString()">
 	 More formula actions
@@ -32,12 +65,11 @@
 	 <p x-text="regulatoryRegimeLabel"></p>
 	 </div>
 	 </div>
-	 <button type="button" @click="requestOfficialRecipeSave()" :disabled="!canSaveRecipe || isSaving" :class="!canSaveRecipe || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-strong)] hover:bg-[var(--color-accent-soft)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
-	 Save as reference formula
-	 </button>
-	 <a x-show="hasCurrentSavedFormula" x-cloak :href="savedRecipeUrl" class="mt-1 flex rounded-md px-3 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
-	 Open reference formula
+	 @if ($hasSavedFormula && is_string($savedFormulaUrl))
+	 <a href="{{ $savedFormulaUrl }}" class="mt-1 flex rounded-md px-3 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
+	 Formula sheet
 	 </a>
+	 @endif
 	 <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-ink-strong)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
 	 Duplicate
 	 </button>
@@ -45,24 +77,6 @@
 	 </details>
 		 </div>
 	 </div>
-
- <div x-show="isOfficialSaveModalOpen" x-cloak role="dialog" aria-modal="true" aria-labelledby="official-save-heading" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @keydown.escape.window="isOfficialSaveModalOpen = false" @click.self="isOfficialSaveModalOpen = false">
- <div @keydown.escape="isOfficialSaveModalOpen = false" class="w-full max-w-lg rounded-lg border border-[var(--color-line)] bg-white p-5 shadow-xl">
- <p class="sk-eyebrow">Reference formula</p>
- <h2 id="official-save-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Update reference formula?</h2>
- <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">
- This will replace the reference formula with your current draft. The reference formula is what you open, print, duplicate, and use as the reference formula.
- </p>
- <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
- <button type="button" @click="isOfficialSaveModalOpen = false" class="rounded-lg border border-[var(--color-line)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
- Cancel
- </button>
- <button type="button" @click="saveRecipe()" :disabled="isSaving" class="rounded-lg bg-[var(--color-accent-strong)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent)] disabled:cursor-not-allowed disabled:bg-[var(--color-line)] disabled:text-[var(--color-ink-soft)]">
- Update reference formula
- </button>
- </div>
- </div>
- </div>
 
 	 <template x-if="needsCatalogReview">
  <div role="status" class="mt-4 rounded-[1.5rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">

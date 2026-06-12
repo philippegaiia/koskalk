@@ -1,6 +1,6 @@
 <div class="pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]">
  <section aria-label="Formula save bar" class="pointer-events-auto mx-auto max-w-[90rem] rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_82%,transparent)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] backdrop-blur-md">
- <span class="sr-only">Zero quantity diagnostics preserve draft ingredients at 0.</span>
+ <span class="sr-only">Zero quantity diagnostics preserve formula ingredients at 0.</span>
  <div id="formula-bottom-diagnostics-details" x-show="isFormulaDiagnosticsOpen" x-cloak class="mb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
  <template x-for="card in formulaDiagnosticCards" :key="`bottom-detail-${card.id}`">
  <article
@@ -49,11 +49,8 @@
  class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-field-muted)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)] focus:outline-2 focus:outline-[var(--color-accent)]">
  <span x-text="isFormulaDiagnosticsOpen ? 'Hide details' : 'Show details'"></span>
  </button>
- <button type="button" @click="saveDraft()" :disabled="!canSaveDraft || isSaving" :class="!canSaveDraft || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="inline-flex min-h-9 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition">
- <span x-text="isSaving ? 'Saving...' : 'Save draft'"></span>
- </button>
- <button type="button" @click="requestOfficialRecipeSave()" :disabled="!canSaveRecipe || isSaving" :class="!canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)] hover:bg-[var(--color-accent-soft)]'" class="inline-flex min-h-9 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition">
- Save as reference
+ <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="inline-flex min-h-9 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition">
+ <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving...' : 'Save')"></span>
  </button>
  </div>
  </div>

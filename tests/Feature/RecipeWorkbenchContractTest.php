@@ -110,7 +110,7 @@ it('returns the saved version through the workbench payload and snapshot contrac
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'Contract Draft',
         'oil_unit' => 'oz',
         'oil_weight' => 16,
@@ -160,7 +160,7 @@ it('returns the saved version through the workbench payload and snapshot contrac
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
+        ->where('is_current', false)
         ->latest('version_number')
         ->firstOrFail();
 
@@ -172,9 +172,9 @@ it('returns the saved version through the workbench payload and snapshot contrac
         ->and($snapshot['draft'])->toEqual($payload)
         ->and($payload['recipe'])->toBe([
             'id' => $recipe->id,
-            'draft_version_id' => $publishedVersion->id,
+            'current_version_id' => $publishedVersion->id,
             'version_number' => $publishedVersion->version_number,
-            'is_draft' => false,
+            'is_current' => false,
         ])
         ->and($payload['formulaName'])->toBe('Published Contract')
         ->and($payload['oilUnit'])->toBe('oz')
@@ -217,7 +217,7 @@ it('persists editable final ingredient lists and reports when their formula basi
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'Custom Ingredient Lists',
         'final_ingredient_list' => 'SODIUM OLIVATE, AQUA, GLYCERIN',
         'final_ingredient_list_basis_hash' => 'old-legal-basis',
@@ -226,8 +226,8 @@ it('persists editable final ingredient lists and reports when their formula basi
     ]));
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
-    $payload = $service->draftPayload($recipe);
-    $snapshot = $service->draftSnapshot($recipe);
+    $payload = $service->currentVersionPayload($recipe);
+    $snapshot = $service->currentVersionSnapshot($recipe);
     $freshVersion = $draftVersion->fresh();
 
     expect($freshVersion->final_ingredient_list)->toBe('SODIUM OLIVATE, AQUA, GLYCERIN')
@@ -256,7 +256,7 @@ it('falls back to the latest saved version when no working draft exists', functi
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'Fallback Draft',
     ]));
 
@@ -268,14 +268,14 @@ it('falls back to the latest saved version when no working draft exists', functi
 
     RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', true)
+        ->where('is_current', true)
         ->delete();
 
-    $snapshot = $service->draftSnapshot($recipe);
+    $snapshot = $service->currentVersionSnapshot($recipe);
 
     expect($snapshot)->not->toBeNull()
         ->and($snapshot['draft']['formulaName'])->toBe('Fallback Published')
-        ->and($snapshot['draft']['recipe']['is_draft'])->toBeFalse()
+        ->and($snapshot['draft']['recipe']['is_current'])->toBeFalse()
         ->and($snapshot['calculation'])->not->toBeNull();
 });
 
@@ -312,9 +312,9 @@ function recipeWorkbenchDraftPayload(Ingredient $oil, array $overrides = []): ar
     $payload = array_merge([
         'recipe' => [
             'id' => null,
-            'draft_version_id' => null,
+            'current_version_id' => null,
             'version_number' => null,
-            'is_draft' => true,
+            'is_current' => true,
         ],
         'formulaName' => 'Workbench Draft',
         'oilUnit' => 'g',

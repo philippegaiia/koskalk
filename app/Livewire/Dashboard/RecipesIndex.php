@@ -39,8 +39,8 @@ class RecipesIndex extends Component
                 ->with([
                     'productFamily',
                     'productType',
-                    'currentDraftVersion',
-                    'currentSavedVersion',
+                    'currentVersion',
+                    'latestPublishedVersion',
                 ])
                 ->whereNull('archived_at');
 

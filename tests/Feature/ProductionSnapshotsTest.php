@@ -37,7 +37,7 @@ it('stores production snapshot headers with frozen ingredient and packaging rows
     $version = RecipeVersion::factory()->create([
         'recipe_id' => $recipe->id,
         'owner_id' => $user->id,
-        'is_draft' => false,
+        'is_current' => false,
         'version_number' => 3,
         'batch_size' => 1000,
         'batch_unit' => 'g',
@@ -106,7 +106,7 @@ it('preserves production snapshots when the source recipe is deleted', function 
     $version = RecipeVersion::factory()->create([
         'recipe_id' => $recipe->id,
         'owner_id' => $user->id,
-        'is_draft' => false,
+        'is_current' => false,
         'version_number' => 3,
     ]);
 
@@ -197,7 +197,7 @@ it('builds numeric production cost preview rows from live costing data', functio
         'quantity' => 1,
     ]);
 
-    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->ensureCostingAndBuild(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -320,7 +320,7 @@ it('costs duplicate planned packaging rows independently', function (): void {
         'quantity' => 2,
     ]);
 
-    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->ensureCostingAndBuild(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -469,7 +469,7 @@ it('records the posted production version instead of a newer saved version', fun
     RecipeVersion::factory()->create([
         'recipe_id' => $recipe->id,
         'owner_id' => $user->id,
-        'is_draft' => false,
+        'is_current' => false,
         'version_number' => 99,
         'batch_size' => 2000,
         'batch_unit' => 'g',
@@ -566,6 +566,46 @@ it('does not allow another user to view a production snapshot', function (): voi
         ->assertForbidden();
 });
 
+it('allows the owner to delete a production snapshot and its rows', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-031',
+        'manufacture_date' => '2026-06-12',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]);
+
+    expect(ProductionBatch::query()->count())->toBe(1)
+        ->and($batch->ingredients()->count())->toBe(1)
+        ->and($batch->packagingItems()->count())->toBe(1);
+
+    $this->actingAs($user)
+        ->delete(route('production-batches.destroy', $batch))
+        ->assertRedirect(route('recipes.saved', $recipe));
+
+    expect(ProductionBatch::query()->count())->toBe(0)
+        ->and(ProductionBatchIngredient::query()->count())->toBe(0)
+        ->and(ProductionBatchPackagingItem::query()->count())->toBe(0);
+});
+
+it('does not allow another user to delete a production snapshot', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-032',
+        'manufacture_date' => '2026-06-12',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]);
+
+    $this->actingAs(User::factory()->create())
+        ->delete(route('production-batches.destroy', $batch))
+        ->assertForbidden();
+
+    expect(ProductionBatch::query()->count())->toBe(1);
+});
+
 it('shows a read-only production snapshot with editable annotations', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
@@ -589,7 +629,28 @@ it('shows a read-only production snapshot with editable annotations', function (
         ->assertSee('Initial notes')
         ->assertSee('Production notes')
         ->assertSee('Save notes')
+        ->assertSee('Delete')
+        ->assertSee('action="'.route('production-batches.destroy', $batch).'"', false)
         ->assertDontSee('Recalculate');
+});
+
+it('hides the production snapshot delete button from other users', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-051',
+        'manufacture_date' => '2026-06-14',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]);
+
+    $otherUser = User::factory()->create();
+    $batch->user_id = $otherUser->id;
+    $batch->save();
+
+    $this->actingAs($user)
+        ->get(route('production-batches.show', $batch))
+        ->assertForbidden();
 });
 
 it('edits production annotations without recalculating frozen totals', function (): void {
@@ -838,7 +899,7 @@ it('marks packaging plan rows without source prices as unpriced in production co
         'price_per_kg' => 8.5,
     ]);
 
-    $preview = app(RecipeVersionCostPreviewBuilder::class)->build(
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->ensureCostingAndBuild(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -885,7 +946,7 @@ it('keeps unpriced packaging rows unpriced across repeated production cost previ
     ]);
 
     $builder = app(RecipeVersionCostPreviewBuilder::class);
-    $builder->build(
+    $builder->ensureCostingAndBuild(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -893,7 +954,7 @@ it('keeps unpriced packaging rows unpriced across repeated production cost previ
         unitsProduced: 10,
     );
 
-    $secondPreview = $builder->build(
+    $secondPreview = $builder->ensureCostingAndBuild(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -945,7 +1006,7 @@ it('preserves deliberately saved zero cost unlinked packaging rows across repeat
     ]);
 
     $builder = app(RecipeVersionCostPreviewBuilder::class);
-    $builder->build(
+    $builder->ensureCostingAndBuild(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -953,7 +1014,7 @@ it('preserves deliberately saved zero cost unlinked packaging rows across repeat
         unitsProduced: 10,
     );
 
-    $secondPreview = $builder->build(
+    $secondPreview = $builder->ensureCostingAndBuild(
         recipe: $recipe,
         version: $version,
         user: $user,
@@ -1071,7 +1132,7 @@ function productionSnapshotSoapRecipe(): array
     $ingredient = productionSnapshotIngredient();
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $soapFamily,
         productionSnapshotDraftPayload($ingredient, 'Snapshot Soap'),
@@ -1087,8 +1148,7 @@ function productionSnapshotSoapRecipe(): array
 
     $version = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
-        ->latest('version_number')
+        ->orderByDesc('version_number')
         ->firstOrFail();
 
     return [$user, $recipe, $version, $ingredient];
@@ -1124,7 +1184,12 @@ function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ing
         'currency' => 'EUR',
     ]);
 
-    $version->packagingItems()->create([
+    $currentVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $version->recipe_id)
+        ->orderByDesc('version_number')
+        ->firstOrFail();
+
+    $currentVersion->packagingItems()->create([
         'user_packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'components_per_unit' => 1,
@@ -1132,7 +1197,7 @@ function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ing
     ]);
 
     $costing = RecipeVersionCosting::query()->create([
-        'recipe_version_id' => $version->id,
+        'recipe_version_id' => $currentVersion->id,
         'user_id' => $user->id,
         'oil_weight_for_costing' => 1000,
         'oil_unit_for_costing' => 'g',
@@ -1180,7 +1245,7 @@ function productionSnapshotCosmeticRecipe(): array
     $ingredient = productionSnapshotIngredient();
 
     $service = app(RecipeWorkbenchService::class);
-    $draftVersion = $service->saveDraft(
+    $draftVersion = $service->save(
         $user,
         $cosmeticFamily,
         productionSnapshotCosmeticDraftPayload($ingredient, $productType, 'Snapshot Lotion'),
@@ -1196,8 +1261,7 @@ function productionSnapshotCosmeticRecipe(): array
 
     $version = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)
-        ->where('is_draft', false)
-        ->latest('version_number')
+        ->orderByDesc('version_number')
         ->firstOrFail();
 
     return [$user, $recipe, $version, $ingredient];

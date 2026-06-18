@@ -46,6 +46,32 @@ class PlanForm
                     ->columns([
                         'md' => 2,
                     ]),
+                Section::make('Billing')
+                    ->description('Map a paid plan to the Paddle product and price IDs. Leave empty for a free/internal plan.')
+                    ->icon(Heroicon::CreditCard)
+                    ->schema([
+                        TextInput::make('paddle_product_id')
+                            ->label('Paddle product ID')
+                            ->placeholder('pro_...')
+                            ->maxLength(255),
+                        TextInput::make('paddle_price_id')
+                            ->label('Paddle price ID')
+                            ->placeholder('pri_...')
+                            ->maxLength(255)
+                            ->unique(ignoreRecord: true),
+                        Select::make('billing_interval')
+                            ->options([
+                                'month' => 'Monthly',
+                                'year' => 'Yearly',
+                            ])
+                            ->native(false),
+                        TextInput::make('price_label')
+                            ->placeholder('EUR 9 / month')
+                            ->maxLength(255),
+                    ])
+                    ->columns([
+                        'md' => 2,
+                    ]),
                 Section::make('Limits')
                     ->description('Leave a value empty for no hard limit. Initial free plan target: 15 saved recipes and 20 private ingredients.')
                     ->icon(Heroicon::AdjustmentsHorizontal)

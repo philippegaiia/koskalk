@@ -146,8 +146,10 @@ it('redirects guests away from dashboard app routes', function () {
         ['GET', route('ingredients.index')],
         ['GET', route('packaging-items.index')],
         ['GET', route('settings')],
+        ['GET', route('billing.checkout', Plan::factory()->billable('pri_guest', 'pro_guest')->create())],
         ['PATCH', route('account.profile.update')],
         ['PATCH', route('account.password.update')],
+        ['POST', route('billing.payment-method.update')],
         ['POST', route('ingredients.duplicate')],
     ];
 

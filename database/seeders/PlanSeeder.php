@@ -16,7 +16,7 @@ class PlanSeeder extends Seeder
             ['slug' => 'free-beta'],
             [
                 'name' => 'Free beta',
-                'description' => 'Free registered launch plan. Billing is deferred, but limits remain admin-editable.',
+                'description' => 'Free registered launch plan. Limits remain admin-editable.',
                 'is_default' => true,
                 'is_active' => true,
                 'display_order' => 10,

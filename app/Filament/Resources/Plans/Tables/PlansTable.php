@@ -28,6 +28,14 @@ class PlansTable
                     ->label('Private ingredients')
                     ->state(fn (Plan $record): string => self::limitValue($record, 'private_ingredients'))
                     ->badge(),
+                TextColumn::make('price_label')
+                    ->label('Price')
+                    ->placeholder('Free')
+                    ->badge(),
+                TextColumn::make('paddle_price_id')
+                    ->label('Paddle price')
+                    ->placeholder('Not mapped')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('is_default')
                     ->label('Default')
                     ->boolean(),

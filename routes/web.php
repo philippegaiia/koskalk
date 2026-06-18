@@ -3,6 +3,7 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
@@ -30,6 +31,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/dashboard/account', [AccountController::class, 'show'])->name('account');
     Route::patch('/dashboard/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
     Route::patch('/dashboard/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
+    Route::get('/dashboard/billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::post('/dashboard/billing/payment-method', [BillingController::class, 'updatePaymentMethod'])->name('billing.payment-method.update');
 
     Route::controller(RecipeController::class)
         ->prefix('/dashboard/recipes')

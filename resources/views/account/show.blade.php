@@ -16,6 +16,7 @@
     $usageLabel = fn (array $line): string => ($line['limit'] ?? null) === null
         ? "{$line['used']} / unlimited"
         : "{$line['used']} / {$line['limit']}";
+    $hasActiveSubscription = $currentSubscription !== null;
 @endphp
 
 @section('content')
@@ -144,18 +145,54 @@
 
         <section aria-labelledby="account-billing-heading" class="sk-card p-6">
             <p class="sk-eyebrow">Billing</p>
-            <h3 id="account-billing-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Free account</h3>
+            <h3 id="account-billing-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $hasActiveSubscription ? 'Paddle subscription' : 'Free account' }}</h3>
+
+            @if (session('billing_status'))
+                <p role="status" class="mt-5 rounded-lg bg-[var(--color-warning-soft)] px-4 py-3 text-sm font-medium text-[var(--color-warning-strong)]">{{ session('billing_status') }}</p>
+            @endif
 
             <dl class="mt-5 grid gap-3 text-sm">
                 <div class="flex items-center justify-between gap-3 rounded-lg bg-[var(--color-field-muted)] px-3 py-2.5">
                     <dt class="text-[var(--color-ink-soft)]">Provider</dt>
-                    <dd class="font-medium text-[var(--color-ink-strong)]">Pending</dd>
+                    <dd class="font-medium text-[var(--color-ink-strong)]">Paddle</dd>
                 </div>
                 <div class="flex items-center justify-between gap-3 rounded-lg bg-[var(--color-field-muted)] px-3 py-2.5">
                     <dt class="text-[var(--color-ink-soft)]">Status</dt>
-                    <dd class="font-medium text-[var(--color-ink-strong)]">No payment method</dd>
+                    <dd class="font-medium text-[var(--color-ink-strong)]">{{ $hasActiveSubscription ? 'Active' : 'No payment method' }}</dd>
                 </div>
             </dl>
+
+            @if ($billingPlans->isNotEmpty())
+                <div class="mt-6 grid gap-3">
+                    @foreach ($billingPlans as $billingPlan)
+                        <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $billingPlan->name }}</p>
+                                    @if ($billingPlan->price_label)
+                                        <p class="numeric mt-1 text-sm text-[var(--color-ink-soft)]">{{ $billingPlan->price_label }}</p>
+                                    @endif
+                                </div>
+                            </div>
+
+                            @if ($billingReady)
+                                <a href="{{ route('billing.checkout', $billingPlan) }}" class="sk-btn sk-btn-primary mt-4 w-full justify-center text-center">Upgrade</a>
+                            @else
+                                <button type="button" class="sk-btn sk-btn-outline mt-4 w-full justify-center" disabled>Checkout disabled</button>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+
+            @if ($hasActiveSubscription)
+                <form method="POST" action="{{ route('billing.payment-method.update') }}" class="mt-4">
+                    @csrf
+                    <button type="submit" class="sk-btn sk-btn-outline w-full justify-center">Update payment method</button>
+                </form>
+            @elseif (! $billingReady)
+                <p class="mt-4 text-sm leading-6 text-[var(--color-ink-soft)]">Connect the Paddle API key and client-side token to enable checkout.</p>
+            @endif
         </section>
     </aside>
 </div>

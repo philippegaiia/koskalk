@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['slug', 'name', 'description', 'is_default', 'is_active', 'display_order'])]
+#[Fillable(['slug', 'name', 'description', 'paddle_product_id', 'paddle_price_id', 'billing_interval', 'price_label', 'is_default', 'is_active', 'display_order'])]
 class Plan extends Model
 {
     /** @use HasFactory<PlanFactory> */
@@ -35,6 +35,11 @@ class Plan extends Model
     public function entitlements(): HasMany
     {
         return $this->hasMany(UserEntitlement::class);
+    }
+
+    public function isBillable(): bool
+    {
+        return filled($this->paddle_price_id);
     }
 
     protected function casts(): array

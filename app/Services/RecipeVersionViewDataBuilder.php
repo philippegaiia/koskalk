@@ -252,7 +252,7 @@ class RecipeVersionViewDataBuilder
 
             return [
                 [
-                    'label' => 'Batch weight',
+                    'label' => 'Total batch quantity',
                     'value' => round($oilWeight, 2),
                     'unit' => $draft['oilUnit'] ?? 'g',
                 ],

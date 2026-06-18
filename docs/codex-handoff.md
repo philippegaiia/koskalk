@@ -93,18 +93,19 @@ All 201 tests passed after the latest recipe index product-type pass, but the br
 - Production will be the operational source of truth for the live catalog after launch. Catalog edits can happen through the Laravel admin/app UI by authorized staff; the repo seed data is a launch/bootstrap snapshot, not the daily catalog authority.
 - User-owned ingredients, user prices, recipes, workspaces, and packaging items must never be included in platform seed data.
 - Ingredient price memory should keep `price_per_kg` as the canonical stored value. Formula weight units can convert to kg for costing. A later UX setting may let US/imperial users enter/display prices per lb, but that should convert at the UI/service boundary rather than storing mixed price units.
-- Laravel owns app login, subscription status, app roles, catalog permissions, recipes, ingredients, workspaces, and feature gates.
+- Laravel owns app login, plan/entitlement status, app roles, catalog permissions, recipes, ingredients, workspaces, and feature gates.
 - WordPress may own public marketing content, articles, SEO pages, and the main `soapkraft.com` site, but not app permissions.
 - App login happens on `app.soapkraft.com`.
-- Prefer Laravel + Stripe/Cashier for subscriptions instead of WordPress/FluentCart subscription sync. WordPress buttons can link users into Laravel registration/checkout.
-- Keep roles separate from subscription tiers:
+- Launch v1 as a free registered beta with no active checkout.
+- Keep the billing architecture provider-ready. Paddle is the preferred future provider because its merchant-of-record model can simplify tax/payment operations; Stripe remains a fallback if direct payment control becomes more important.
+- Plans and limits must be database-backed and editable from the Filament admin panel. Do not hard-code recipe or private ingredient limits into user-facing controllers or Livewire components.
+- Keep roles separate from product plans:
   - Roles answer staff/admin permissions, such as `admin`, `catalog_manager`, and future operator/support roles.
-  - Tiers answer product access, such as Free, Solo, and Studio/Pro.
-- Free users should register in Laravel. Free tier should be useful enough to save formulas and drive traffic; advertising is deferred until later.
-- Initial tier direction:
-  - Free with ads later: generous saved formulas, limited custom ingredients and packaging, basic access.
-  - Solo: no ads, generous fair-use limits, branding/exports with a discreet "made with Soapkraft" mark.
-  - Studio/Pro: higher fair-use limits and future team/company workflows.
+  - Plans answer product access and limits, such as free beta, future Solo, and future Studio.
+- Free users should register in Laravel. The initial free registered plan allows 15 saved recipes and 20 private ingredients/additives.
+- Future paid plan direction:
+  - Solo: higher limits, professional exports/branding, and serious individual-maker workflows.
+  - Studio: higher limits plus future team/company workflows.
 - Existing company/workspace/member architecture can stay in the data model, but team/member UI should remain hidden until the higher tier is ready.
 - Recipe lifecycle model should remain conceptually simple:
   - Draft = editable working copy.
@@ -170,6 +171,6 @@ All 201 tests passed after the latest recipe index product-type pass, but the br
 - Refine recipe lifecycle UI copy and layout: rename saved/draft actions, collapse recovery snapshots, and stop making technical version numbers prominent.
 - Define the v1 IFRA behavior as warning/reference guidance rather than full heavyweight automated compliance enforcement.
 - Review and refine print/export outputs.
-- Implement Laravel subscription/auth/tier gating with Stripe/Cashier.
+- Implement Laravel auth/profile plus admin-editable plans, limits, entitlements, and usage counters. Defer payment integration until paid launch readiness.
 - Build a curated platform catalog export/seed flow from the cleaned database before production launch.
 - Decide how production catalog backup/export should work after launch, since the live database will continue evolving.

@@ -24,7 +24,7 @@ it('renders the public home page', function () {
         ->assertDontSeeText('Create free workspace');
 });
 
-it('renders the public dashboard shell page', function () {
+it('redirects guests from the dashboard shell page', function () {
     $this->get(route('dashboard'))
-        ->assertSuccessful();
+        ->assertRedirect(route('login'));
 });

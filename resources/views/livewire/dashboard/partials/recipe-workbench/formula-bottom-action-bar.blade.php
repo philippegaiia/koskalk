@@ -1,3 +1,5 @@
+@php($isPublicCalculator = $isPublicCalculator ?? false)
+
 <div class="pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]">
  <section aria-label="Formula save bar" class="pointer-events-auto mx-auto max-w-[90rem] rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_82%,transparent)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] backdrop-blur-md">
  <span class="sr-only">Zero quantity diagnostics preserve formula ingredients at 0.</span>
@@ -49,9 +51,15 @@
  class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-field-muted)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)] focus:outline-2 focus:outline-[var(--color-accent)]">
  <span x-text="isFormulaDiagnosticsOpen ? 'Hide details' : 'Show details'"></span>
  </button>
+ @if ($isPublicCalculator)
+ <a href="{{ route('register') }}" class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white no-underline transition hover:bg-[var(--color-accent-hover)]">
+ Save with account
+ </a>
+ @else
  <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="inline-flex min-h-9 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition">
  <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving...' : 'Save')"></span>
  </button>
+ @endif
  </div>
  </div>
  </section>

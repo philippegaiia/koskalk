@@ -22,6 +22,7 @@ class RecipeWorkbenchService
         private readonly RecipeWorkbenchPreviewService $recipeWorkbenchPreviewService,
         private readonly RecipeWorkbenchPhaseBlueprints $recipeWorkbenchPhaseBlueprints,
         private readonly RecipeWorkbenchVersionDataService $recipeWorkbenchVersionDataService,
+        private readonly EntitlementService $entitlementService,
     ) {}
 
     /**
@@ -150,6 +151,10 @@ class RecipeWorkbenchService
 
     public function save(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
+        if (! $recipe instanceof Recipe) {
+            $this->entitlementService->assertCanCreateRecipe($user);
+        }
+
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, false);
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
@@ -159,6 +164,10 @@ class RecipeWorkbenchService
 
     public function publish(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
+        if (! $recipe instanceof Recipe) {
+            $this->entitlementService->assertCanCreateRecipe($user);
+        }
+
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true);
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
@@ -173,6 +182,8 @@ class RecipeWorkbenchService
 
     public function duplicate(User $user, ProductFamily $productFamily, array $payload): RecipeVersion
     {
+        $this->entitlementService->assertCanCreateRecipe($user);
+
         $copyPayload = $payload;
         $copyPayload['name'] = $this->duplicateName((string) ($payload['name'] ?? 'Soap Formula'));
 

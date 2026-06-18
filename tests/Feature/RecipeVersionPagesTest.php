@@ -10,6 +10,7 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
+use App\Models\UserPackagingItem;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -189,6 +190,88 @@ it('passes batch context from the saved page to print sheets', function () {
         ->assertSee('24');
 });
 
+it('prefills production units and priced packaging cost on the saved formula page', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $currentFormula = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->orderByDesc('version_number')
+        ->firstOrFail();
+    $ingredient = Ingredient::query()
+        ->where('display_name', 'Olive Oil')
+        ->firstOrFail();
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Soap box',
+        'unit_cost' => 0.06,
+        'currency' => 'EUR',
+    ]);
+
+    $currentFormula->packagingItems()->create([
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => 'Soap box',
+        'components_per_unit' => 1,
+        'position' => 1,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $currentFormula->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => 'Soap box',
+        'unit_cost' => 0.06,
+        'quantity' => 1,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('value="10"', false)
+        ->assertSee('0.6 EUR')
+        ->assertSee('name="batch_basis" value="1000"', false)
+        ->assertDontSee('inputmode="decimal"', false);
+});
+
+it('labels cosmetic formula sheet quantity as total batch quantity', function () {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'slug' => 'cosmetic',
+        'name' => 'Cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Glycerin',
+        'inci_name' => 'GLYCERIN',
+        'is_active' => true,
+    ]);
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $cosmeticFamily, cosmeticSavedFormulaPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $service->saveAsNewVersion($user, $cosmeticFamily, cosmeticSavedFormulaPayload($ingredient), $recipe);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('Total batch quantity')
+        ->assertDontSee('Oil quantity');
+});
+
 it('downloads the saved formula as a simple csv', function () {
     [$user, $recipe] = createSavedRecipeVersion();
 
@@ -313,11 +396,11 @@ it('can refresh the draft from the current saved formula page', function () {
     expect($draft->name)->toBe('Published Formula');
 });
 
-it('forbids refreshing the draft from the saved formula when signed out', function () {
+it('redirects signed-out users before refreshing the draft from the saved formula', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
     $this->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]))
-        ->assertForbidden();
+        ->assertRedirect(route('login'));
 });
 
 it('asks for confirmation before replacing a changed draft with the saved formula', function () {
@@ -392,7 +475,7 @@ it('can restore an older saved snapshot as the current saved formula', function 
     expect($latestSavedVersion->name)->toBe('Formula A');
 });
 
-it('forbids restoring a saved snapshot when signed out', function () {
+it('redirects signed-out users before restoring a saved snapshot', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -418,7 +501,7 @@ it('forbids restoring a saved snapshot when signed out', function () {
         ->firstOrFail();
 
     $this->post(route('recipes.saved.restore', ['recipe' => $recipe->id, 'version' => $savedVersion->id]))
-        ->assertForbidden();
+        ->assertRedirect(route('login'));
 });
 
 it('preserves the current draft when restoring an older saved snapshot', function () {
@@ -530,7 +613,7 @@ it('asks for confirmation before replacing the draft with an older recovery snap
     expect($currentDraft->name)->toBe('Formula A');
 });
 
-it('forbids replacing the draft with a saved version when signed out', function () {
+it('redirects signed-out users before replacing the draft with a saved version', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -558,7 +641,7 @@ it('forbids replacing the draft with a saved version when signed out', function 
         ->firstOrFail();
 
     $this->post(route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]))
-        ->assertForbidden();
+        ->assertRedirect(route('login'));
 });
 
 /**
@@ -682,6 +765,40 @@ function soapVersionDraftPayload(Ingredient $ingredient, string $name): array
             ],
             'additives' => [],
             'fragrance' => [],
+        ],
+    ];
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function cosmeticSavedFormulaPayload(Ingredient $ingredient): array
+{
+    return [
+        'name' => 'Daily Moisturizer',
+        'product_type_id' => null,
+        'oil_unit' => 'g',
+        'oil_weight' => 500,
+        'manufacturing_mode' => 'blend_only',
+        'exposure_mode' => 'leave_on',
+        'regulatory_regime' => 'eu',
+        'editing_mode' => 'percentage',
+        'ifra_product_category_id' => null,
+        'phases' => [
+            [
+                'key' => 'phase_a',
+                'name' => 'Phase A',
+            ],
+        ],
+        'phase_items' => [
+            'phase_a' => [
+                [
+                    'ingredient_id' => $ingredient->id,
+                    'percentage' => 100,
+                    'weight' => 500,
+                    'note' => null,
+                ],
+            ],
         ],
     ];
 }

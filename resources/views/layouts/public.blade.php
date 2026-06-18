@@ -33,7 +33,7 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <a href="{{ route('recipes.create') }}" class="rounded-md bg-accent px-[18px] py-3 text-sm font-medium text-inverse no-underline transition hover:bg-accent-hover max-[360px]:hidden">Use calculator</a>
+                    <a href="{{ route('calculator') }}" class="rounded-md bg-accent px-[18px] py-3 text-sm font-medium text-inverse no-underline transition hover:bg-accent-hover max-[360px]:hidden">Use calculator</a>
                     <button type="button" data-mobile-menu-toggle aria-controls="mobile-menu" aria-expanded="false" class="grid size-11 shrink-0 place-items-center rounded-lg text-ink-soft md:hidden">
                         <span class="sr-only">Toggle navigation menu</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">

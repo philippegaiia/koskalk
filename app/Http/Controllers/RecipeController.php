@@ -525,7 +525,7 @@ class RecipeController extends Controller
         $basisValue = $this->positiveFloat($batchContext['batch_basis'] ?? null)
             ?? $this->positiveFloat($viewData['selectedOilWeight'] ?? null)
             ?? 0.0;
-        $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null);
+        $requestedUnitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null);
         $basisLabel = $this->productionBatchBasisLabel($recipe);
         $basisUnit = $version->batch_unit ?: 'g';
         $existingCosting = RecipeVersionCosting::query()
@@ -533,6 +533,9 @@ class RecipeController extends Controller
             ->where('recipe_version_id', $version->id)
             ->where('user_id', $user->id)
             ->first();
+
+        $unitsProduced = $requestedUnitsProduced
+            ?? ($existingCosting instanceof RecipeVersionCosting ? $this->positiveInt($existingCosting->units_produced) : null);
 
         $batchBasis = [
             'batch_basis_label' => $basisLabel,

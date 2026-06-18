@@ -103,6 +103,7 @@ function createRecipeWorkbenchState(payload) {
     return {
         activeWorkbenchTab: window.location.hash.replace('#', '') || 'formula',
         recipeId: payload.recipe?.id ?? null,
+        canPersist: Boolean(payload.canPersist ?? false),
         productFamilySlug,
         productTypeId: payload.productType?.id ?? null,
         productTypeName: payload.productType?.name ?? null,
@@ -205,7 +206,9 @@ function createRecipeWorkbenchState(payload) {
             this.initializeCostingState();
             this.resetPackagingCatalogForm();
             this.refreshDirtyBaseline();
-            this.installUnsavedChangesGuard();
+            if (this.canPersist) {
+                this.installUnsavedChangesGuard();
+            }
 
             this.$watch('isFormulaDiagnosticsOpen', (isOpen) => {
                 this.persistFormulaDiagnosticsPreference(isOpen);

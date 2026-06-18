@@ -9,6 +9,7 @@ use App\Filament\Resources\Ingredients\Pages\ListIngredients;
 use App\Filament\Resources\Ingredients\Schemas\IngredientForm;
 use App\Filament\Resources\IngredientSapProfiles\IngredientSapProfileResource;
 use App\Filament\Resources\IngredientSubstanceEntries\IngredientSubstanceEntryResource;
+use App\Filament\Resources\Plans\PlanResource;
 use App\Filament\Resources\RegulatoryRegimeAllergens\RegulatoryRegimeAllergenResource;
 use App\Filament\Resources\RegulatoryRegimes\RegulatoryRegimeResource;
 use App\Filament\Resources\RegulatoryRegimeSubstanceRules\RegulatoryRegimeSubstanceRuleResource;
@@ -22,12 +23,14 @@ use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientSapProfile;
 use App\Models\IngredientSubstanceEntry;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
 use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
 use App\Models\User;
+use Database\Seeders\PlanSeeder;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -134,6 +137,27 @@ it('renders the catalog create forms in the admin panel', function () {
         ->assertSee('Saponification Data')
         ->assertSee('Iodine')
         ->assertSee('INS');
+});
+
+it('renders the plan limits resource in the admin panel', function () {
+    $user = User::factory()->admin()->create();
+    $this->seed(PlanSeeder::class);
+    $plan = Plan::query()->where('slug', 'free-beta')->firstOrFail();
+
+    $this->actingAs($user);
+
+    $this->get(PlanResource::getUrl(panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Free beta')
+        ->assertSee('15')
+        ->assertSee('20');
+
+    $this->get(PlanResource::getUrl('edit', ['record' => $plan], panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Plan')
+        ->assertSee('Limits')
+        ->assertSee('Saved recipes')
+        ->assertSee('Private ingredients');
 });
 
 it('renders the compliance resources in the admin panel', function () {

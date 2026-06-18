@@ -13,7 +13,7 @@
 
  <div class="mt-4 grid gap-3 md:grid-cols-3">
  <div class="sk-inset p-4">
- <p class="sk-eyebrow">Batch weight</p>
+ <p class="sk-eyebrow">Total batch quantity</p>
  <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="`${format(oilWeight, 3)} ${oilUnit}`"></p>
  </div>
  <div class="sk-inset p-4">

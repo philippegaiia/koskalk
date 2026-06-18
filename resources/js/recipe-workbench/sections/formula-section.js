@@ -99,7 +99,7 @@ export function createFormulaSection() {
             const cards = [
                 {
                     id: 'formula-weight',
-                    label: this.isCosmeticFormula ? 'Batch' : 'Base',
+                    label: this.isCosmeticFormula ? 'Total batch quantity' : 'Base',
                     value: `${this.format(this.oilWeight, this.oilUnit === 'g' ? 0 : 2)} ${this.oilUnit}`,
                     tone: 'neutral',
                 },

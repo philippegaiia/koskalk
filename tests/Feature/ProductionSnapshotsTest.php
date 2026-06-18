@@ -551,6 +551,32 @@ it('shows production history only for the production batch owner', function (): 
         ->assertNotFound();
 });
 
+it('keeps newly recorded production batches visible in the saved formula history', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $yesterday = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-yesterday',
+        'manufacture_date' => '2026-06-11',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]);
+    $today = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-today',
+        'manufacture_date' => '2026-06-12',
+        'batch_basis' => 1000,
+        'units_produced' => 12,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee('Production history')
+        ->assertSee('B-2026-yesterday')
+        ->assertSee('B-2026-today')
+        ->assertSee(route('production-batches.show', $yesterday), false)
+        ->assertSee(route('production-batches.show', $today), false);
+});
+
 it('does not allow another user to view a production snapshot', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);

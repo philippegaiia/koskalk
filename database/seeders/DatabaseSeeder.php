@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             SubstanceSeeder::class,
             IngredientFunctionSeeder::class,
             IfraProductCategorySeeder::class,
+            PlanSeeder::class,
             IngredientCatalogSeeder::class,
             CarrierOilSeeder::class,
         ]);

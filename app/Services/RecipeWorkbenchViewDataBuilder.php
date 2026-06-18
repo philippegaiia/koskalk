@@ -49,6 +49,7 @@ class RecipeWorkbenchViewDataBuilder
             'packagingCatalog' => $this->recipeWorkbenchService->packagingCatalogPayload($user),
             'defaultCurrency' => $defaultCurrency,
             'currencies' => $this->currencyOptions(),
+            'canPersist' => $user instanceof User,
         ];
     }
 

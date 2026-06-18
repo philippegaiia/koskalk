@@ -265,10 +265,9 @@ it('keeps the packaging catalog unit price required when editing inline', functi
     expect((float) $packagingItem->refresh()->unit_cost)->toBe(0.12);
 });
 
-it('allows signed-out visitors to open the packaging items page and shows the sign in prompt', function () {
+it('redirects signed-out visitors from the packaging items page', function () {
     $this->get(route('packaging-items.index'))
-        ->assertSuccessful()
-        ->assertSee('Sign in to manage packaging items');
+        ->assertRedirect(route('login'));
 });
 
 it('shows only the signed-in user packaging items on the page', function () {

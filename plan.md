@@ -66,6 +66,16 @@ Unsaved changes must be indicated visibly in the top bar at all times. The app m
   - compliance runs
   - snapshots
 
+### 2.6 Access, plans, and billing
+- v1 launches with a free registered plan and no active checkout.
+- The free registered plan starts with **15 saved recipes** and **20 private ingredients/additives**.
+- Plans and limits must be database-backed and editable from the Filament admin panel. Do not hard-code limits into controllers or Livewire components.
+- Billing is deferred, not rejected. Keep the architecture ready for future paid plans.
+- Paddle is the preferred future payment provider because it can reduce tax/payment operations through a merchant-of-record model. Stripe remains a possible fallback if direct payment control becomes more important later.
+- Roles and plans stay separate:
+  - roles answer operational permissions, such as owner, member, admin, and catalog manager.
+  - plans answer product access and limits, such as free beta, future Solo, and future Studio.
+
 ---
 
 ## 3. Page map
@@ -133,7 +143,7 @@ Two-column desktop layout.
 - Run compliance
 - Duplicate
 - Share
-- Export (premium gated)
+- Export (entitlement gated when paid plans are enabled)
 
 ### Behaviour rules
 - ingredient search is instant — searches pre-loaded ingredient list, no server call
@@ -221,8 +231,8 @@ Dashboard is **not Filament**. It is a standard Blade + Livewire user-facing are
 
 ### Account
 - profile and preferences
-- subscription tier and usage counters
-- upgrade prompts
+- current plan and usage counters
+- plan-limit status for recipes and private ingredients
 
 ---
 
@@ -238,7 +248,7 @@ Filament is for **data stewardship**, not just CRUD.
 - rule sets + jurisdictions
 - restriction rules
 - user management
-- subscriptions / plans / quotas
+- plans / limits / entitlements
 
 ### Required capabilities
 - create and edit ingredient versions
@@ -317,7 +327,9 @@ This is a tool, not a lifestyle brand.
 - `compliance_run_restriction_results`
 - `inci_outputs`
 - `share_links`
-- `subscriptions`
+- `plans`
+- `plan_limits`
+- `user_entitlements`
 - `usage_counters`
 
 ### Core data rules
@@ -346,7 +358,7 @@ Keep Livewire components and controllers thin. Logic lives in services.
 - `CosmeticFormulaService`
 - `RecipeSnapshotService`
 
-**Sprint 6 (premium)**
+**Sprint 6 (professional exports)**
 - `ExportBatchSheetService`
 
 ---
@@ -452,29 +464,29 @@ Frontend:
 
 ---
 
-### Sprint 5 — Dashboard, sharing, subscriptions
+### Sprint 5 — Dashboard, sharing, plans, and entitlements
 
 **Goal:** Usable end-to-end SaaS product.
 
 Migrations:
 - `share_links`
-- `subscriptions`, `usage_counters`
+- `plans`, `plan_limits`, `user_entitlements`, `usage_counters`
 
 Frontend:
 - `/dashboard` — full recipe library, custom ingredients, account
 - workspace member management (activate dormant tables)
-- subscription gating (recipe count limit, export gate)
-- upgrade prompts
+- entitlement gating for recipe count and private ingredient count
+- clear limit messaging for the free registered plan
 
-Admin: user management, subscription plan management, usage monitoring
+Admin: user management, plan and limit management, usage monitoring
 
-**Done when:** A free user hits their recipe limit and sees an upgrade prompt. A premium user can generate a share link and access export.
+**Done when:** The admin can edit the free registered plan limits, a user is limited to 15 recipes and 20 private ingredients by default, and the account page shows current usage clearly.
 
 ---
 
-### Sprint 6 — Premium professional exports
+### Sprint 6 — Professional exports
 
-**Goal:** Features that justify the premium subscription.
+**Goal:** Professional output features that can later become paid-plan entitlements.
 
 Migrations: `export_jobs`, `recipe_cost_snapshots`
 
@@ -485,7 +497,7 @@ Frontend:
 - cost breakdown per batch / per unit
 - basic ingredient cost input
 
-**Done when:** A premium user exports a branded, professional-grade batch sheet PDF.
+**Done when:** An entitled user exports a branded, professional-grade batch sheet PDF.
 
 ---
 
@@ -562,7 +574,7 @@ Do **not** implement:
 - inci_outputs
 - private custom ingredients and their versions
 - share_links
-- subscriptions / usage counters
+- plans, entitlements, and usage counters
 
 ### Core schema rule for tenant-aware tables
 

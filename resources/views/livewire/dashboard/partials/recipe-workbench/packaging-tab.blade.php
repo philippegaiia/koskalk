@@ -10,7 +10,7 @@
 
  <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
  <template x-if="packagingCatalog.length > 0">
- <div class="relative w-full sm:w-80" @click.outside="closePackagingCatalogSelect()">
+ <div class="relative w-full sm:w-72 sm:min-w-72" @click.outside="closePackagingCatalogSelect()">
  <div class="flex items-center rounded-lg bg-[var(--color-field)] outline outline-1 outline-[var(--color-field-outline)] transition focus-within:outline-2 focus-within:outline-[var(--color-accent)]">
  <input
  x-model="packagingCatalogSearch"

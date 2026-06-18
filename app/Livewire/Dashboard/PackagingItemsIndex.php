@@ -128,7 +128,9 @@ class PackagingItemsIndex extends TableComponent
 
     private function tableQuery(): Builder
     {
-        $query = UserPackagingItem::query()->withCount('costingItems');
+        $query = UserPackagingItem::query()
+            ->select(['id', 'user_id', 'name', 'unit_cost', 'notes', 'featured_image_path', 'created_at', 'updated_at'])
+            ->withCount('costingItems');
         $user = $this->currentUser();
 
         if (! $user instanceof User) {

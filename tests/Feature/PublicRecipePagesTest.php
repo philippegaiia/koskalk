@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('renders the public recipes page', function () {
+it('renders the recipes page for signed-in users', function () {
     ProductFamily::factory()->create([
         'name' => 'Soap',
         'slug' => 'soap',
@@ -23,12 +23,13 @@ it('renders the public recipes page', function () {
         'is_potentially_saponifiable' => true,
     ]);
 
-    $this->get(route('recipes.index'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.index'))
         ->assertSuccessful()
         ->assertSee('Create soap formula');
 });
 
-it('renders the public soap workbench with filtered catalog data', function () {
+it('renders the soap workbench with filtered catalog data for signed-in users', function () {
     ProductFamily::factory()->create([
         'name' => 'Soap',
         'slug' => 'soap',
@@ -56,7 +57,8 @@ it('renders the public soap workbench with filtered catalog data', function () {
         'inci_name' => 'Lavandula angustifolia oil',
     ]);
 
-    $this->get(route('recipes.create'))
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.create'))
         ->assertSuccessful()
         ->assertSee('Reaction core')
         ->assertSee('Additives and aromatics')

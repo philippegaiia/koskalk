@@ -213,7 +213,7 @@ Find the last `<section>` (the one with "Open the workspace...") and replace wit
             Start building your portfolio today.
         </h2>
         <p class="mt-4 text-base text-[var(--color-ink-soft)]">
-            20 recipes free. No credit card required.
+            15 recipes and 20 private ingredients included. No credit card required.
         </p>
         <div class="mt-8">
             <a href="{{ route('register') }}" class="inline-flex justify-center rounded-full bg-[var(--color-accent)] px-8 py-3 text-sm font-semibold text-white transition duration-300 hover:bg-[var(--color-accent-hover)] hover:-translate-y-0.5 motion-reduce:hover:translate-y-0">
@@ -239,44 +239,20 @@ Delete the existing `border-y border-[var(--color-line)]` pillars section (lines
 
 Delete the existing workflow section (the one with "A calmer route from raw material...").
 
-- [ ] **Step 3: Verify pricing section exists**
+- [ ] **Step 3: Verify no public pricing section exists**
 
-The existing pricing section at the bottom can stay or be removed per user preference. For now, keep it minimal — just tier names.
+Remove public pricing tiers for v1. Billing is deferred for launch, and paid-plan details should stay out of the homepage until the offer is ready.
 
 ---
 
-## Task 6: Add Minimal Pricing Footer (Optional)
+## Task 6: Pricing Footer
 
 **Files:**
-- Modify: `resources/views/welcome.blade.php` — add at bottom
+- Modify: `resources/views/welcome.blade.php`
 
-- [ ] **Step 1: Add pricing strip at very bottom**
+- [ ] **Step 1: Do not add a pricing strip**
 
-Add after the closing CTA section:
-
-```blade
-<section class="border-t border-[var(--color-line)] bg-[var(--color-surface)] px-6 py-10 lg:px-8">
-    <div class="mx-auto max-w-7xl">
-        <div class="flex flex-col items-center justify-between gap-6 lg:flex-row">
-            <div class="flex items-center gap-8">
-                @foreach ([
-                    ['name' => 'Free', 'limit' => '20 recipes'],
-                    ['name' => 'Light', 'limit' => '100 recipes'],
-                    ['name' => 'Pro', 'limit' => '200 recipes'],
-                ] as $tier)
-                    <div class="text-center">
-                        <p class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ $tier['name'] }}</p>
-                        <p class="text-xs text-[var(--color-ink-soft)]">{{ $tier['limit'] }}</p>
-                    </div>
-                @endforeach
-            </div>
-            <p class="text-sm text-[var(--color-ink-soft)]">
-                All plans include ingredient database and IFRA compliance tools.
-            </p>
-        </div>
-    </div>
-</section>
-```
+No pricing footer should be added for v1. The homepage should focus on free account creation and avoid promising paid tiers before payment is ready.
 
 ---
 

@@ -23,8 +23,8 @@
         <article class="sk-card p-5">
             <div class="flex items-center justify-between gap-3">
                 <div>
-                    <p class="sk-eyebrow">Formula context</p>
-                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Snapshot settings</h3>
+                    <p class="sk-eyebrow">Recipe settings</p>
+                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">How this recipe was calculated</h3>
                 </div>
                 <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">Read-only</span>
             </div>
@@ -42,7 +42,7 @@
         <article class="sk-card p-5">
             <div>
                 <p class="sk-eyebrow">Lye and water</p>
-                <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Batch math</h3>
+                <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Amounts for this batch</h3>
             </div>
 
             @if ($lyeRows !== [])
@@ -62,7 +62,7 @@
                 </div>
             @else
                 <div class="mt-4 rounded-lg border border-dashed border-[var(--color-line)] bg-[var(--color-panel-strong)] px-4 py-5 text-sm text-[var(--color-ink-soft)]">
-                    This formula is not using the soap calculation engine, so no lye or water data is shown.
+                    This recipe does not use soap calculations. Lye and water values are shown only for soap recipes.
                 </div>
             @endif
         </article>
@@ -75,7 +75,7 @@
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p class="sk-eyebrow">{{ $section['label'] }}</p>
-                            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Percentages come from the saved recipe. Only the oil quantity basis changes here.</p>
+                            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Ingredient percentages come from the saved recipe. This sheet shows the actual weights for this batch size.</p>
                         </div>
                         <div class="flex flex-wrap gap-2 text-xs text-[var(--color-ink-soft)]">
                             <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1">{{ $formatNumber($section['total_percentage']) }}% {{ $section['basis_label'] ?? 'oils' }}</span>
@@ -116,7 +116,7 @@
 
     @if ($recipe->description)
         <section class="sk-card p-5">
-            <p class="sk-eyebrow">Presentation</p>
+            <p class="sk-eyebrow">Product description</p>
             <div class="prose prose-stone mt-4 max-w-none text-[var(--color-ink-soft)]">
                 {!! str($recipe->description)->sanitizeHtml() !!}
             </div>
@@ -133,108 +133,31 @@
     @endif
 
     @if ($showDetails)
+        @php($printIngredientListText = $snapshot['labeling']['print_ingredient_list_text'] ?? ($snapshot['labeling']['final_label_text'] ?? ''))
+        @php($printPlainIngredientListText = $snapshot['labeling']['print_plain_ingredient_list_text'] ?? ($snapshot['labeling']['plain_language_list']['final_label_text'] ?? ''))
+
         <section class="sk-card p-5">
-            @php($listVariants = $snapshot['labeling']['list_variants'] ?? [])
-            @php($printIngredientListText = $snapshot['labeling']['print_ingredient_list_text'] ?? ($snapshot['labeling']['final_label_text'] ?? ''))
-            @php($printPlainIngredientListText = $snapshot['labeling']['print_plain_ingredient_list_text'] ?? ($snapshot['labeling']['plain_language_list']['final_label_text'] ?? ''))
-            <div class="flex items-start justify-between gap-4">
-                <div>
-                    <p class="sk-eyebrow">Ingredient list preview</p>
-                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Generated from the current saved recipe with the selected oil quantity basis.</p>
-                </div>
-                <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">EU preview</span>
-            </div>
+            <p class="sk-eyebrow">Selected ingredients</p>
+            <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Final ingredient list</h3>
+            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">As it will appear on the label after processing.</p>
 
-            @if (($snapshot['labeling']['warnings'] ?? []) !== [])
-                <div class="mt-4 space-y-2">
-                    @foreach ($snapshot['labeling']['warnings'] as $warning)
-                        <div class="rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">
-                            {{ $warning }}
-                        </div>
-                    @endforeach
-                </div>
-            @endif
-
-            <div class="mt-4 grid gap-4 xl:grid-cols-2">
-                <div class="sk-inset px-4 py-3">
-                    <p class="sk-eyebrow">Final ingredient list</p>
-                    <p class="mt-2 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                        {{ $printIngredientListText ?: 'No ingredient list yet.' }}
-                    </p>
-                    @if (($snapshot['labeling']['final_ingredient_list']['is_outdated'] ?? false) === true)
-                        <p class="mt-2 text-xs font-medium text-[var(--color-warning-strong)]">Formula changed after this list was saved.</p>
-                    @endif
-                </div>
-
-                <div class="sk-inset px-4 py-3">
-                    <p class="sk-eyebrow">Plain-language list</p>
-                    <p class="mt-2 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                        {{ $printPlainIngredientListText ?: 'No plain-language list yet.' }}
-                    </p>
-                    @if (($snapshot['labeling']['plain_language_list']['is_outdated'] ?? false) === true)
-                        <p class="mt-2 text-xs font-medium text-[var(--color-warning-strong)]">Formula changed after this list was saved.</p>
-                    @endif
-                </div>
-            </div>
-
-            @if ($listVariants !== [])
-                <div class="mt-4 grid gap-4 xl:grid-cols-2">
-                    @foreach ($listVariants as $variant)
-                        <div class="sk-inset px-4 py-3">
-                            <p class="sk-eyebrow">{{ $variant['label'] }}</p>
-                            @if (filled($variant['note'] ?? null))
-                                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $variant['note'] }}</p>
-                            @endif
-                            <p class="mt-2 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                                {{ $variant['final_label_text'] ?: 'No generated ingredient list yet.' }}
-                            </p>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="mt-4 sk-inset px-4 py-3 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                    {{ $snapshot['labeling']['final_label_text'] ?? 'No generated ingredient list yet.' }}
-                </div>
+            <p class="mt-4 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
+                {{ $printIngredientListText ?: 'Save the recipe to generate an ingredient list.' }}
+            </p>
+            @if (($snapshot['labeling']['final_ingredient_list']['is_outdated'] ?? false) === true)
+                <p class="mt-2 text-xs font-medium text-[var(--color-warning-strong)]">Ingredient list is out of date. Regenerate it from the current recipe.</p>
             @endif
         </section>
 
-        <section class="overflow-hidden sk-card">
-            <div class="border-b border-[var(--color-line)] px-5 py-4">
-                <p class="sk-eyebrow">Declaration details</p>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Threshold-based declarations with their current contribution to the selected batch basis.</p>
-            </div>
+        <section class="sk-card p-5">
+            <p class="sk-eyebrow">Selected ingredients</p>
+            <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Plain-language list</h3>
 
-            @if (($snapshot['labeling']['declaration_rows'] ?? []) !== [])
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
-                        <thead class="bg-[var(--color-panel-strong)] text-left text-xs font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] uppercase">
-                            <tr>
-                                <th class="px-5 py-3">Label</th>
-                                <th class="px-5 py-3">Sources</th>
-                                <th class="px-5 py-3">% total formula</th>
-                                <th class="px-5 py-3">Threshold</th>
-                                <th class="px-5 py-3">Status</th>
-                                <th class="px-5 py-3">Notes</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[var(--color-line)] bg-white">
-                            @foreach ($snapshot['labeling']['declaration_rows'] as $row)
-                                <tr>
-                                    <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $row['label'] }}</td>
-                                    <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ implode(', ', $row['source_ingredients']) }}</td>
-                                    <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($row['percent_of_formula'], 4) }}%</td>
-                                    <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $formatNumber($row['threshold_percent'], 3) }}%</td>
-                                    <td class="px-5 py-4 align-top text-[var(--color-ink-strong)]">{{ $row['status_label'] }}</td>
-                                    <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $row['notes'] ?: '—' }}</td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @else
-                <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
-                    No declaration rows are available for this saved recipe yet.
-                </div>
+            <p class="mt-4 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
+                {{ $printPlainIngredientListText ?: 'Save the recipe to generate a plain-language list.' }}
+            </p>
+            @if (($snapshot['labeling']['plain_language_list']['is_outdated'] ?? false) === true)
+                <p class="mt-2 text-xs font-medium text-[var(--color-warning-strong)]">Plain-language list is out of date. Regenerate it from the current recipe.</p>
             @endif
         </section>
     @endif

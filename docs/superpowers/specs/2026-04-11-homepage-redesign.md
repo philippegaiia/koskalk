@@ -36,11 +36,11 @@ Redesign the homepage to drive **trial sign-ups**. The page should show visitors
 ### Section 4: Closing CTA
 - **Headline:** "Start building your portfolio today."
 - **CTA:** "Create free account"
-- **Microcopy:** "20 recipes free. No credit card required."
+- **Microcopy:** "15 recipes and 20 private ingredients included. No credit card required."
 
-### Section 5: Pricing (bottom, minimal)
-- 3 tiers: Free (20 recipes) / Light (100 recipes) / Pro (200 recipes)
-- Keep simple — names and limits only
+### Section 5: Pricing
+- Do not show public pricing tiers for v1.
+- Billing is deferred for launch. Paid plans may be introduced later after product validation.
 
 ---
 
@@ -63,5 +63,6 @@ All images use styled placeholder divs with descriptive labels — easy to swap 
 ## 5. Out of Scope
 
 - Pricing page (separate)
+- Payment checkout
 - Authentication flow
 - Dashboard changes

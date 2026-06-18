@@ -4,6 +4,10 @@ export function createVersionSection() {
             return this.recipeId !== null;
         },
 
+        get hasSavedRecipe() {
+            return this.hasCurrentFormula;
+        },
+
         get hasCurrentPublishedFormula() {
             return Boolean(this.savedRecipeUrl);
         },

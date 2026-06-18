@@ -22,6 +22,7 @@
             $canRecordProduction = (bool) ($canRecordProduction ?? false);
             $productionPreview = $productionPreview ?? null;
             $productionBatches = $productionBatches ?? collect();
+            $isCosmeticFormula = $recipe->productFamily?->calculation_basis === 'total_formula';
             $formatNumber = fn (mixed $value, int $precision = 2): string => rtrim(rtrim(number_format((float) $value, $precision, '.', ''), '0'), '.');
             $formatMoney = fn (mixed $value, string $currency): string => $formatNumber($value, 2).' '.$currency;
 
@@ -30,7 +31,6 @@
                 ?? ($snapshot['labeling']['final_label_text'] ?? '');
             $plainLanguageListText = $snapshot['labeling']['print_plain_ingredient_list_text']
                 ?? data_get($snapshot, 'labeling.plain_language_list.final_label_text', '');
-            $listVariants = $snapshot['labeling']['list_variants'] ?? [];
         @endphp
 
         @if (is_array($draftReplaceConfirmation))
@@ -104,7 +104,7 @@
 
                 <form method="GET" action="{{ route('recipes.saved', ['recipe' => $recipe->id]) }}" class="sk-inset p-4 lg:min-w-[16rem]">
                     <p class="sk-eyebrow">Scale quantity</p>
-                    <label class="mt-2 block text-sm font-medium text-[var(--color-ink-strong)]" for="oil_weight">Oil quantity</label>
+                    <label class="mt-2 block text-sm font-medium text-[var(--color-ink-strong)]" for="oil_weight">{{ $isCosmeticFormula ? 'Total batch quantity' : 'Oil quantity' }}</label>
                     <div class="mt-2 flex items-center gap-2">
                         <input id="oil_weight" name="oil_weight" type="number" min="0.01" step="0.01" value="{{ rtrim(rtrim(number_format($selectedOilWeight, 2, '.', ''), '0'), '.') }}" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                         <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ $snapshot['draft']['oilUnit'] ?? 'g' }}</span>
@@ -128,7 +128,7 @@
                     ? number_format((float) $selectedOilWeight, 0, '.', '')
                     : rtrim(rtrim(number_format((float) $selectedOilWeight, 2, '.', ''), '0'), '.');
                 $summary = [
-                    ['label' => $summaryUnit === 'g' ? 'Batch weight' : 'Batch size', 'value' => $summaryValue, 'unit' => $summaryUnit],
+                    ['label' => $isCosmeticFormula ? 'Total batch quantity' : ($summaryUnit === 'g' ? 'Batch weight' : 'Batch size'), 'value' => $summaryValue, 'unit' => $summaryUnit],
                     ['label' => 'Ingredients', 'value' => count($productionPreview['ingredient_rows'] ?? []), 'unit' => ''],
                     ['label' => 'Packaging items', 'value' => count($packagingPlanRows), 'unit' => ''],
                     ['label' => 'Recorded batches', 'value' => $productionBatches->count(), 'unit' => ''],
@@ -147,6 +147,7 @@
                 <form method="POST" action="{{ route('recipes.production-batches.store', ['recipe' => $recipe->id]) }}" class="sk-card p-5">
                     @csrf
                     <input type="hidden" name="recipe_version_id" value="{{ $version->id }}" />
+                    <input type="hidden" name="batch_basis" value="{{ old('batch_basis', $formatNumber($productionPreview['batch_basis_value'] ?? $batchContext['batch_basis'])) }}" />
 
                     <p class="sk-eyebrow">Production</p>
                     <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Record production</h2>
@@ -179,20 +180,20 @@
                             @enderror
                         </label>
 
-                        <label class="block">
+                        <div class="block">
                             <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ $productionPreview['batch_basis_label'] ?? 'Oil quantity' }}</span>
-                            <div class="mt-2 flex items-center gap-2">
-                                <input name="batch_basis" value="{{ old('batch_basis', $formatNumber($productionPreview['batch_basis_value'] ?? $batchContext['batch_basis'])) }}" type="text" inputmode="decimal" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
-                                <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ $productionPreview['batch_basis_unit'] ?? 'g' }}</span>
-                            </div>
+                            <p class="numeric mt-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel-strong)] px-3 py-2 text-sm font-medium text-[var(--color-ink-strong)]">
+                                {{ old('batch_basis', $formatNumber($productionPreview['batch_basis_value'] ?? $batchContext['batch_basis'])) }}
+                                <span class="text-[var(--color-ink-soft)]">{{ $productionPreview['batch_basis_unit'] ?? 'g' }}</span>
+                            </p>
                             @error('batch_basis')
                                 <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
                             @enderror
-                        </label>
+                        </div>
 
                         <label class="block">
                             <span class="text-sm font-medium text-[var(--color-ink-strong)]">Units produced</span>
-                            <input name="units_produced" value="{{ old('units_produced', $productionPreview['units_proced'] ?? $batchContext['units_produced']) }}" type="text" inputmode="numeric" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                            <input name="units_produced" value="{{ old('units_produced', $productionPreview['units_produced'] ?? $batchContext['units_produced']) }}" type="text" inputmode="numeric" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                             @error('units_produced')
                                 <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
                             @enderror
@@ -237,7 +238,13 @@
                             </div>
                             <div>
                                 <dt class="text-xs text-[var(--color-ink-soft)]">Packaging cost</dt>
-                                <dd class="numeric font-semibold text-[var(--color-ink-strong)]">{{ $formatMoney($productionPreview['packaging_total'] ?? 0, $productionPreview['currency'] ?? 'EUR') }}</dd>
+                                <dd class="numeric font-semibold text-[var(--color-ink-strong)]">
+                                    @if (($productionPreview['units_produced'] ?? null) !== null)
+                                        {{ $formatMoney($productionPreview['packaging_total'] ?? 0, $productionPreview['currency'] ?? 'EUR') }}
+                                    @else
+                                        <span class="text-[var(--color-ink-soft)]">Set units produced</span>
+                                    @endif
+                                </dd>
                             </div>
                             <div>
                                 <dt class="text-xs text-[var(--color-ink-soft)]">Total cost</dt>
@@ -379,28 +386,6 @@
                 </p>
             </article>
         </section>
-
-        @if ($listVariants !== [])
-            <section class="sk-card overflow-hidden">
-                <div class="border-b border-[var(--color-line)] px-5 py-4">
-                    <p class="sk-eyebrow">Selected ingredients</p>
-                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Other ingredient list variants</h2>
-                </div>
-                <div class="grid gap-4 p-5 md:grid-cols-2">
-                    @foreach ($listVariants as $variant)
-                        <div class="sk-inset px-4 py-3">
-                            <p class="sk-eyebrow">{{ $variant['label'] }}</p>
-                            @if (filled($variant['note'] ?? null))
-                                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $variant['note'] }}</p>
-                            @endif
-                            <p class="mt-2 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                                {{ $variant['final_label_text'] ?: 'No generated ingredient list yet.' }}
-                            </p>
-                        </div>
-                    @endforeach
-                </div>
-            </section>
-        @endif
 
         @if (session('status'))
             <div role="status" class="rounded-xl border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-6 py-4 text-sm text-[var(--color-success-strong)]">

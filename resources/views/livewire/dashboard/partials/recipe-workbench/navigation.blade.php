@@ -1,4 +1,6 @@
-<nav class="grid gap-2 xl:grid-cols-5" role="tablist" aria-label="Workbench sections">
+@php($isPublicCalculator = $isPublicCalculator ?? false)
+
+<nav class="grid gap-2 {{ $isPublicCalculator ? 'sm:grid-cols-2' : 'xl:grid-cols-5' }}" role="tablist" aria-label="Workbench sections">
  <button
  id="tab-formula"
  role="tab"
@@ -13,6 +15,7 @@
  Formula
  </button>
 
+ @unless ($isPublicCalculator)
  <button
  id="tab-packaging"
  role="tab"
@@ -40,6 +43,7 @@
  >
  Costing
  </button>
+ @endunless
 
  <button
  id="tab-output"
@@ -55,6 +59,7 @@
  Output
  </button>
 
+ @unless ($isPublicCalculator)
  <button
  id="tab-instructions"
  role="tab"
@@ -68,4 +73,5 @@
  >
  Instructions &amp; Media
  </button>
+ @endunless
 </nav>

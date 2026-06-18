@@ -93,10 +93,10 @@
             </p>
 
             <div class="mt-6 flex flex-col justify-center gap-3 sm:flex-row lg:justify-start">
-                <a href="{{ route('recipes.create') }}" class="sk-card-elevation inline-flex justify-center rounded-lg bg-accent px-6 py-3.5 text-sm font-semibold text-inverse no-underline transition hover:-translate-y-px hover:bg-accent-hover">
+                <a href="{{ route('calculator') }}" class="sk-card-elevation inline-flex justify-center rounded-lg bg-accent px-6 py-3.5 text-sm font-semibold text-inverse no-underline transition hover:-translate-y-px hover:bg-accent-hover">
                     Use the free calculator
                 </a>
-                <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-lg border border-line-strong bg-panel px-6 py-3.5 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent">
+                <a href="{{ route('register') }}" class="inline-flex justify-center rounded-lg border border-line-strong bg-panel px-6 py-3.5 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent">
                     Start saving formulas
                 </a>
             </div>
@@ -300,10 +300,10 @@
         </p>
 
         <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-            <a href="{{ route('recipes.create') }}" class="inline-flex justify-center rounded-lg bg-accent px-6 py-3.5 text-sm font-semibold text-inverse no-underline transition hover:bg-accent-hover hover:-translate-y-px">
+            <a href="{{ route('calculator') }}" class="inline-flex justify-center rounded-lg bg-accent px-6 py-3.5 text-sm font-semibold text-inverse no-underline transition hover:bg-accent-hover hover:-translate-y-px">
                 Use the free calculator
             </a>
-            <a href="{{ route('dashboard') }}" class="inline-flex justify-center rounded-lg border border-line-strong bg-panel px-6 py-3.5 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent">
+            <a href="{{ route('register') }}" class="inline-flex justify-center rounded-lg border border-line-strong bg-panel px-6 py-3.5 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent">
                 Start saving formulas
             </a>
         </div>

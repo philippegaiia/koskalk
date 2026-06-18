@@ -21,7 +21,8 @@
         font-feature-settings: 'tnum';
     }
 
-    [data-app-shell] select:not([multiple]):not([size]) {
+    [data-app-shell] select:not([multiple]):not([size]),
+    [data-workbench-shell] select:not([multiple]):not([size]) {
         -webkit-appearance: none;
         appearance: none;
         background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' fill='none'%3E%3Cpath d='M5 7.5l5 5 5-5' stroke='%233d3830' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");

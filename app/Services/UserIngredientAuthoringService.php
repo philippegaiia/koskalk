@@ -18,6 +18,7 @@ class UserIngredientAuthoringService
 
     public function __construct(
         protected IngredientDataEntryService $ingredientDataEntryService,
+        protected EntitlementService $entitlementService,
     ) {}
 
     /**
@@ -111,6 +112,8 @@ class UserIngredientAuthoringService
 
     public function create(array $state, User $user): Ingredient
     {
+        $this->entitlementService->assertCanCreatePrivateIngredient($user);
+
         $ingredient = new Ingredient([
             'source_file' => 'user',
             'source_key' => $this->ingredientDataEntryService->generateSourceKey('USR', 'user'),
@@ -159,6 +162,8 @@ class UserIngredientAuthoringService
 
     public function duplicate(Ingredient $source, User $user): Ingredient
     {
+        $this->entitlementService->assertCanCreatePrivateIngredient($user);
+
         if ($source->owner_type !== null) {
             throw ValidationException::withMessages([
                 'ingredient' => 'Only platform ingredients can be duplicated.',

@@ -36,7 +36,7 @@
 	 <div>
 	 <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
 	 <div class="sk-inset p-4">
-	 <p id="setting-batch-weight" class="sk-eyebrow">Batch weight</p>
+	 <p id="setting-batch-weight" class="sk-eyebrow">Total batch quantity</p>
 	 <div role="radiogroup" aria-label="Weight unit" class="mt-3 flex gap-2">
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'g'" @click="oilUnit = 'g'" :class="oilUnit === 'g' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">g</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="oilUnit = 'oz'" :class="oilUnit === 'oz' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>

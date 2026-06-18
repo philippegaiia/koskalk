@@ -52,6 +52,11 @@ class User extends Authenticatable implements FilamentUser
         return $this->hasMany(RecipeVersionCosting::class);
     }
 
+    public function entitlements(): HasMany
+    {
+        return $this->hasMany(UserEntitlement::class);
+    }
+
     public function productionBatches(): HasMany
     {
         return $this->hasMany(ProductionBatch::class)

@@ -4,6 +4,7 @@
  $hasSavedFormula = (bool) ($workbench['recipe']['has_saved_formula'] ?? false);
  $savedFormulaUrl = $workbench['recipe']['saved_formula_url'] ?? null;
  $isFormulaLocked = (bool) ($workbench['recipe']['is_locked'] ?? false);
+ $isPublicCalculator = $isPublicCalculator ?? false;
 @endphp
 
 <section class="sk-card p-5">
@@ -24,6 +25,14 @@
 	 </div>
 
 	 <div class="flex flex-wrap gap-2 lg:justify-end">
+	 @if ($isPublicCalculator)
+	 <a href="{{ route('register') }}" class="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-[var(--color-accent-hover)]">
+	 Save with free account
+	 </a>
+	 <a href="{{ route('login') }}" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] no-underline shadow-sm transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
+	 Sign in
+	 </a>
+	 @else
 	 @if ($hasSavedFormula && is_string($savedFormulaUrl))
 	 <a href="{{ $savedFormulaUrl }}" class="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] shadow-sm transition hover:bg-[var(--color-panel)]">
 	 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -75,6 +84,7 @@
 	 </button>
 	 </div>
 	 </details>
+	 @endif
 		 </div>
 	 </div>
 

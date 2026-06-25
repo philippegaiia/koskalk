@@ -120,17 +120,20 @@ class PaddleBillingService
                 'ends_at' => now(),
             ]);
 
-        $user->entitlements()->updateOrCreate(
+        $entitlement = $user->entitlements()->updateOrCreate(
             [
                 'plan_id' => $plan->id,
                 'source' => 'paddle',
             ],
             [
                 'status' => 'active',
-                'starts_at' => now(),
                 'ends_at' => $endsAt,
             ],
         );
+
+        if ($entitlement->wasRecentlyCreated) {
+            $entitlement->update(['starts_at' => now()]);
+        }
 
         return $plan;
     }

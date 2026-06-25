@@ -12,6 +12,7 @@ use Laravel\Paddle\Events\SubscriptionCanceled;
 use Laravel\Paddle\Events\SubscriptionCreated;
 use Laravel\Paddle\Events\SubscriptionPaused;
 use Laravel\Paddle\Events\SubscriptionUpdated;
+use LogicException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -22,6 +23,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        if ($this->app->isProduction() && blank(config('cashier.webhook_secret'))) {
+            throw new LogicException('PADDLE_WEBHOOK_SECRET must be configured in production.');
+        }
+
         Event::listen(Registered::class, CreateDefaultCompany::class);
         Event::listen(SubscriptionCreated::class, SyncPlanEntitlementFromPaddleSubscription::class);
         Event::listen(SubscriptionUpdated::class, SyncPlanEntitlementFromPaddleSubscription::class);

@@ -2,14 +2,25 @@
 
 use App\Models\Plan;
 use App\Models\User;
+use App\Providers\AppServiceProvider;
 use App\Services\EntitlementService;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Laravel\Paddle\Events\SubscriptionCanceled;
 use Laravel\Paddle\Events\SubscriptionCreated;
+use Laravel\Paddle\Events\SubscriptionPaused;
+use Laravel\Paddle\Events\SubscriptionUpdated;
 use Laravel\Paddle\Subscription;
 
 uses(RefreshDatabase::class);
+
+it('refuses to boot in production without a Paddle webhook secret', function () {
+    app()->detectEnvironment(fn (): string => 'production');
+    config(['cashier.webhook_secret' => null]);
+
+    (new AppServiceProvider(app()))->boot();
+})->throws(LogicException::class, 'PADDLE_WEBHOOK_SECRET must be configured in production.');
 
 it('shows billable plans with checkout disabled until Paddle keys are configured', function () {
     config([
@@ -53,6 +64,21 @@ it('does not start Paddle checkout when billing keys are missing', function () {
         ->assertSessionHas('billing_status', 'Paddle is installed, but checkout is disabled until the Paddle API key and client-side token are configured.');
 });
 
+it('does not start a payment method update when billing keys are missing', function () {
+    config([
+        'cashier.api_key' => null,
+        'cashier.client_side_token' => null,
+    ]);
+
+    $user = User::factory()->create();
+    billingSubscriptionFor($user, 'active', 'pri_growth_monthly', 'pro_growth');
+
+    $this->actingAs($user)
+        ->post(route('billing.payment-method.update'))
+        ->assertRedirect(route('account'))
+        ->assertSessionHas('billing_status', 'Paddle is installed, but payment method updates are disabled until the Paddle API key and client-side token are configured.');
+});
+
 it('syncs the app entitlement when Paddle creates a paid subscription', function () {
     $this->seed(PlanSeeder::class);
 
@@ -82,6 +108,35 @@ it('syncs the app entitlement when Paddle creates a paid subscription', function
         ->and($user->entitlements()->where('plan_id', $freePlan->id)->where('status', 'ended')->exists())->toBeTrue();
 });
 
+it('does not restart an entitlement when Paddle replays a subscription creation event', function () {
+    $this->seed(PlanSeeder::class);
+
+    $user = User::factory()->create();
+    $paidPlan = Plan::factory()
+        ->billable('pri_growth_monthly', 'pro_growth')
+        ->create(['slug' => 'growth']);
+    $subscription = billingSubscriptionFor($user, 'active', 'pri_growth_monthly', 'pro_growth');
+
+    $this->travelTo(Carbon::parse('2026-06-19 10:00:00'));
+    event(new SubscriptionCreated($user, $subscription, []));
+    $originalStartsAt = $user->entitlements()
+        ->where('plan_id', $paidPlan->id)
+        ->where('source', 'paddle')
+        ->sole()
+        ->starts_at;
+
+    $this->travelTo(Carbon::parse('2026-06-19 11:00:00'));
+    event(new SubscriptionCreated($user, $subscription, []));
+
+    $paddleEntitlements = $user->entitlements()
+        ->where('plan_id', $paidPlan->id)
+        ->where('source', 'paddle')
+        ->get();
+
+    expect($paddleEntitlements)->toHaveCount(1)
+        ->and($paddleEntitlements->sole()->starts_at->equalTo($originalStartsAt))->toBeTrue();
+});
+
 it('falls back to the default plan when a Paddle subscription no longer grants access', function () {
     $this->seed(PlanSeeder::class);
 
@@ -104,6 +159,32 @@ it('falls back to the default plan when a Paddle subscription no longer grants a
 
     expect(app(EntitlementService::class)->planFor($user->refresh())?->is($freePlan))->toBeTrue()
         ->and($user->entitlements()->where('source', 'paddle')->where('status', 'ended')->exists())->toBeTrue();
+});
+
+it('keeps paid access until a scheduled pause becomes effective', function () {
+    $this->seed(PlanSeeder::class);
+
+    $user = User::factory()->create();
+    $freePlan = Plan::query()->where('slug', 'free-beta')->firstOrFail();
+    $paidPlan = Plan::factory()
+        ->billable('pri_growth_monthly', 'pro_growth')
+        ->create(['slug' => 'growth']);
+    $subscription = billingSubscriptionFor($user, 'active', 'pri_growth_monthly', 'pro_growth');
+
+    $this->travelTo(Carbon::parse('2026-06-19 10:00:00'));
+    $subscription->update(['paused_at' => now()->addDay()]);
+    event(new SubscriptionUpdated($subscription->refresh(), []));
+
+    expect(app(EntitlementService::class)->planFor($user->refresh())?->is($paidPlan))->toBeTrue();
+
+    $this->travelTo(Carbon::parse('2026-06-20 10:01:00'));
+    $subscription->update([
+        'status' => 'paused',
+        'paused_at' => now()->subMinute(),
+    ]);
+    event(new SubscriptionPaused($subscription->refresh(), []));
+
+    expect(app(EntitlementService::class)->planFor($user->refresh())?->is($freePlan))->toBeTrue();
 });
 
 function billingSubscriptionFor(User $user, string $status, string $priceId, string $productId): Subscription

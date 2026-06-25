@@ -28,6 +28,12 @@ class BillingController extends Controller
 
     public function updatePaymentMethod(Request $request, PaddleBillingService $billing): RedirectResponse
     {
+        if (! $billing->isConfigured()) {
+            return redirect()
+                ->route('account')
+                ->with('billing_status', 'Paddle is installed, but payment method updates are disabled until the Paddle API key and client-side token are configured.');
+        }
+
         $subscription = $billing->currentSubscriptionFor($request->user());
 
         if (! $subscription) {

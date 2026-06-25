@@ -1,7 +1,7 @@
 # Stack Future-Proofing — Keep the Bet, Remove Filament From the User-Facing UI
 
 - **Date:** 2026-06-25
-- **Status:** Approved in brainstorming → pending implementation plan
+- **Status:** Approved in brainstorming; first implementation plan ready
 - **Decision owner:** Philippe
 - **Type:** Architecture decision record (ADR) + scoped migration
 
@@ -83,9 +83,9 @@ Build a small set of custom Blade/Alpine components matching the design system, 
 This kit is the asset; the four migrations are its first consumers.
 
 ### Sequencing (priority adjustable)
-1. **Kit + Alpine repeater** — one-time investment, amortizes forever.
-2. **The two indexes** — cheap, high-visibility consistency win.
-3. **`PackagingItemEditor`**, then **`IngredientEditor`** (the big one).
+1. **Packaging catalog vertical slice** - migrate `PackagingItemsIndex` and `PackagingItemEditor` together so one visible flow stops mixing design languages.
+2. **`IngredientsIndex`** - reuse the table pattern after it is proven on packaging.
+3. **`IngredientEditor`** - build the reusable field/repeater kit only when the larger ingredient form actually needs it.
 4. **`RecipeWorkbench`** residual Filament cleanup.
 
 > Priority note: ingredient surfaces are where users spend the most time, so the `IngredientEditor` may be promoted even though it is the largest effort. Sequencing is confirmed during planning.
@@ -141,4 +141,4 @@ After decision 2, Filament touches **admin only**, so a major bump no longer end
 ## 12. Follow-ups
 
 - **`CLAUDE.md` correction** (after this lands): state explicitly that Filament is used **two ways** — admin panel for platform stewardship **and** (transitionally) standalone form/table builders in public Livewire — with the target state being admin-only. Removes the current doc/code contradiction.
-- **Implementation plan:** invoke `superpowers:writing-plans` to turn §5 into a step-by-step plan.
+- **First implementation plan:** `docs/superpowers/plans/2026-06-25-migrate-packaging-catalog-public-ui-off-filament.md`.

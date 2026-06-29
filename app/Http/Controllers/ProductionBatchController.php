@@ -8,6 +8,7 @@ use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Services\CurrentAppUserResolver;
+use App\Services\EntitlementService;
 use App\Services\ProductionSnapshotService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -18,6 +19,7 @@ class ProductionBatchController extends Controller
         int $recipe,
         StoreProductionBatchRequest $request,
         CurrentAppUserResolver $currentAppUserResolver,
+        EntitlementService $entitlementService,
         ProductionSnapshotService $productionSnapshotService,
     ): RedirectResponse {
         $user = $currentAppUserResolver->resolve();
@@ -31,6 +33,7 @@ class ProductionBatchController extends Controller
         abort_unless($recipe->isAccessibleBy($user), 404);
 
         $this->authorize('update', $recipe);
+        $entitlementService->assertCanCreateProductionBatch($user);
 
         $validated = $request->validated();
 

@@ -6,6 +6,7 @@
 @php
     $recipeUsage = $usage['saved_recipes'];
     $ingredientUsage = $usage['private_ingredients'];
+    $productionBatchUsage = $usage['production_batches'];
     $usagePercent = function (array $line): int {
         if (($line['limit'] ?? null) === null || (int) $line['limit'] <= 0) {
             return 0;
@@ -139,6 +140,17 @@
                         <div class="h-full rounded-full bg-[var(--color-accent)]" style="width: {{ $usagePercent($ingredientUsage) }}%"></div>
                     </div>
                     <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $ingredientUsage['remaining'] === null ? 'Unlimited remaining' : $ingredientUsage['remaining'].' remaining' }}</p>
+                </div>
+
+                <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-medium text-[var(--color-ink-strong)]">Production batches</p>
+                        <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $usageLabel($productionBatchUsage) }}</p>
+                    </div>
+                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-field-muted)]">
+                        <div class="h-full rounded-full bg-[var(--color-accent)]" style="width: {{ $usagePercent($productionBatchUsage) }}%"></div>
+                    </div>
+                    <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $productionBatchUsage['remaining'] === null ? 'Unlimited remaining' : $productionBatchUsage['remaining'].' remaining' }}</p>
                 </div>
             </div>
         </section>

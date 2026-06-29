@@ -150,6 +150,12 @@
         color: var(--color-ink-strong);
     }
 
+    input.fi-input:focus-visible,
+    textarea.fi-textarea:focus-visible,
+    select.fi-select-input:focus-visible {
+        outline: none;
+    }
+
     input.fi-input::placeholder,
     textarea.fi-textarea::placeholder {
         color: var(--color-ink-soft);

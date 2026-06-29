@@ -68,7 +68,7 @@ Unsaved changes must be indicated visibly in the top bar at all times. The app m
 
 ### 2.6 Access, plans, and billing
 - v1 launches with a free registered plan and no active checkout.
-- The free registered plan starts with **15 saved recipes** and **20 private ingredients/additives**.
+- The free registered plan starts with **15 saved recipes**, **20 private ingredients/additives**, and **0 saved production batches**.
 - Plans and limits must be database-backed and editable from the Filament admin panel. Do not hard-code limits into controllers or Livewire components.
 - Billing is deferred, not rejected. Keep the architecture ready for future paid plans.
 - Paddle is the preferred future payment provider because it can reduce tax/payment operations through a merchant-of-record model. Stripe remains a possible fallback if direct payment control becomes more important later.
@@ -232,7 +232,7 @@ Dashboard is **not Filament**. It is a standard Blade + Livewire user-facing are
 ### Account
 - profile and preferences
 - current plan and usage counters
-- plan-limit status for recipes and private ingredients
+- plan-limit status for recipes, private ingredients, and saved production batches
 
 ---
 
@@ -475,12 +475,12 @@ Migrations:
 Frontend:
 - `/dashboard` — full recipe library, custom ingredients, account
 - workspace member management (activate dormant tables)
-- entitlement gating for recipe count and private ingredient count
+- entitlement gating for recipe count, private ingredient count, and saved production batch count
 - clear limit messaging for the free registered plan
 
 Admin: user management, plan and limit management, usage monitoring
 
-**Done when:** The admin can edit the free registered plan limits, a user is limited to 15 recipes and 20 private ingredients by default, and the account page shows current usage clearly.
+**Done when:** The admin can edit the free registered plan limits, a user is limited to 15 recipes, 20 private ingredients, and 0 saved production batches by default, and the account page shows current usage clearly.
 
 ---
 

@@ -76,6 +76,13 @@
                     <a href="{{ route('settings') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('settings') ? 'bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent-strong)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Settings</a>
                 </nav>
 
+                <form method="POST" action="{{ route('logout') }}" class="mt-8 border-t border-white/10 pt-5">
+                    @csrf
+                    <button type="submit" data-sidebar-mobile-close class="flex w-full items-center rounded-lg px-4 py-3 text-left text-sm text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">
+                        Sign out
+                    </button>
+                </form>
+
             </aside>
 
             <div class="flex min-h-screen min-w-0 flex-col">
@@ -99,7 +106,13 @@
                             </div>
                         </div>
 
-                        <a href="{{ route('home') }}" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Home</a>
+                        <div class="flex items-center gap-3">
+                            <a href="{{ route('home') }}" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Home</a>
+                            <form method="POST" action="{{ route('logout') }}" class="hidden sm:block">
+                                @csrf
+                                <button type="submit" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Sign out</button>
+                            </form>
+                        </div>
                     </div>
                 </header>
 

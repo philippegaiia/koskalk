@@ -43,6 +43,10 @@ it('logs a registered user in and out', function () {
 
     $this->assertAuthenticatedAs($user);
 
+    $this->get(route('dashboard'))
+        ->assertSuccessful()
+        ->assertSeeText('Sign out');
+
     $this->post(route('logout'))
         ->assertRedirect(route('home'));
 

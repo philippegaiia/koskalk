@@ -26,6 +26,7 @@ class PlanSeeder extends Seeder
         foreach ([
             'saved_recipes' => 15,
             'private_ingredients' => 20,
+            'production_batches' => 0,
         ] as $key => $value) {
             $plan->limits()->firstOrCreate(
                 ['key' => $key],

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\OwnerType;
 use App\WorkspaceMemberRole;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -56,6 +57,18 @@ class User extends Authenticatable implements FilamentUser
     public function entitlements(): HasMany
     {
         return $this->hasMany(UserEntitlement::class);
+    }
+
+    public function recipes(): HasMany
+    {
+        return $this->hasMany(Recipe::class, 'owner_id')
+            ->where('owner_type', OwnerType::User->value);
+    }
+
+    public function privateIngredients(): HasMany
+    {
+        return $this->hasMany(Ingredient::class, 'owner_id')
+            ->where('owner_type', OwnerType::User->value);
     }
 
     public function productionBatches(): HasMany

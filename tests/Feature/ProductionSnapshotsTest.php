@@ -3,6 +3,7 @@
 use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
 use App\Models\ProductionBatchIngredient;
@@ -393,6 +394,85 @@ it('records a soap production snapshot and freezes current prices', function ():
         ->and($recordedBatch->ingredients->first()->line_cost)->toBe('12.7500')
         ->and($recordedBatch->packagingItems->first()->unit_cost)->toBe('0.2500')
         ->and($recordedBatch->packagingItems->first()->line_cost)->toBe('3.0000');
+});
+
+it('blocks recording a production snapshot when the plan production batch limit is reached', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $plan = Plan::factory()
+        ->hasLimit('production_batches', 0)
+        ->create(['is_default' => true]);
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->post(route('recipes.production-batches.store', $recipe), [
+            'recipe_version_id' => $version->id,
+            'production_batch_number' => 'B-2026-010',
+            'manufacture_date' => '2026-06-10',
+            'batch_basis' => 1500,
+            'units_produced' => 12,
+        ])
+        ->assertSessionHasErrors(['plan' => 'Your current plan allows 0 saved production batches.']);
+
+    expect(ProductionBatch::query()->where('user_id', $user->id)->count())->toBe(0);
+});
+
+it('hides production recording controls when the plan production batch limit is reached', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $plan = Plan::factory()
+        ->hasLimit('production_batches', 0)
+        ->create(['is_default' => true]);
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertDontSee('Record production')
+        ->assertDontSee('Production batch number');
+});
+
+it('keeps existing production history visible when the plan production batch limit is reached', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+
+    app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-DOWNGRADE',
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1500,
+        'units_produced' => 12,
+        'production_notes' => null,
+        'ingredient_lot_numbers' => [],
+    ]);
+
+    $plan = Plan::factory()
+        ->hasLimit('production_batches', 0)
+        ->create(['is_default' => true]);
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee('Production history')
+        ->assertSee('B-2026-DOWNGRADE')
+        ->assertSee('View')
+        ->assertSee('Print')
+        ->assertDontSee('Record production');
 });
 
 it('keeps production snapshots frozen after live price propagation', function (): void {

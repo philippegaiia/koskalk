@@ -9,6 +9,7 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
+use App\Services\EntitlementService;
 use App\Services\MediaStorage;
 use App\Services\RecipeCsvExporter;
 use App\Services\RecipeExportDataBuilder;
@@ -78,13 +79,16 @@ class RecipeController extends Controller
         int $recipe,
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
+        EntitlementService $entitlementService,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
         RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
     ): View {
         $user = $currentAppUserResolver->resolve();
         [$recipe, $currentFormula] = $this->accessibleCurrentVersion($recipe, $currentAppUserResolver);
         $viewData = $recipeVersionViewDataBuilder->build($recipe, $currentFormula, $request->query('oil_weight'), $request->query());
-        $canRecordProduction = $user !== null && $user->can('update', $recipe);
+        $canManageProduction = $user !== null && $user->can('update', $recipe);
+        $canRecordProduction = $canManageProduction
+            && $entitlementService->canCreateProductionBatch($user);
 
         return view('recipes.version', [
             ...$viewData,
@@ -92,7 +96,7 @@ class RecipeController extends Controller
             'productionPreview' => $user !== null
                 ? $this->productionPreview($recipe, $currentFormula, $user, $viewData, $recipeVersionCostPreviewBuilder)
                 : null,
-            'productionBatches' => $canRecordProduction
+            'productionBatches' => $canManageProduction
                 ? $recipe->productionBatches()
                     ->where('user_id', $user->id)
                     ->limit(8)
@@ -217,12 +221,13 @@ class RecipeController extends Controller
         int $version,
         Request $request,
         CurrentAppUserResolver $currentAppUserResolver,
+        EntitlementService $entitlementService,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
         RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
     ): View {
         [$recipe] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
 
-        return $this->saved($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder, $recipeVersionCostPreviewBuilder);
+        return $this->saved($recipe->id, $request, $currentAppUserResolver, $entitlementService, $recipeVersionViewDataBuilder, $recipeVersionCostPreviewBuilder);
     }
 
     public function printSavedRecipe(

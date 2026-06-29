@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\Plan;
 use App\Models\ProductFamily;
+use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\User;
 use App\OwnerType;
@@ -178,6 +179,36 @@ it('rejects creating a private ingredient when the ingredient plan limit is reac
     ], $user))->toThrow(ValidationException::class, '20 private ingredients');
 });
 
+it('rejects recording a production batch when the production batch plan limit is reached', function () {
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->hasLimit('production_batches', 1)
+        ->create(['is_default' => true]);
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    ProductionBatch::factory()->create([
+        'user_id' => $user->id,
+    ]);
+
+    $usage = app(EntitlementService::class)->usageFor($user);
+
+    expect($usage['production_batches'])
+        ->toMatchArray([
+            'used' => 1,
+            'limit' => 1,
+            'remaining' => 0,
+            'allowed' => false,
+        ]);
+
+    expect(fn () => app(EntitlementService::class)->assertCanCreateProductionBatch($user))
+        ->toThrow(ValidationException::class, '1 saved production batches');
+});
+
 it('seeds the initial free registered plan limits', function () {
     $this->seed(PlanSeeder::class);
 
@@ -191,6 +222,7 @@ it('seeds the initial free registered plan limits', function () {
         ->toMatchArray([
             'saved_recipes' => 15,
             'private_ingredients' => 20,
+            'production_batches' => 0,
         ]);
 });
 

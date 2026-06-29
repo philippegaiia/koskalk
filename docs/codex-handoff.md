@@ -102,7 +102,7 @@ All 201 tests passed after the latest recipe index product-type pass, but the br
 - Keep roles separate from product plans:
   - Roles answer staff/admin permissions, such as `admin`, `catalog_manager`, and future operator/support roles.
   - Plans answer product access and limits, such as free beta, future Solo, and future Studio.
-- Free users should register in Laravel. The initial free registered plan allows 15 saved recipes and 20 private ingredients/additives.
+- Free users should register in Laravel. The initial free registered plan allows 15 saved recipes, 20 private ingredients/additives, and 0 saved production batches.
 - Future paid plan direction:
   - Solo: higher limits, professional exports/branding, and serious individual-maker workflows.
   - Studio: higher limits plus future team/company workflows.

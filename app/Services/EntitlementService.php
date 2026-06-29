@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Ingredient;
 use App\Models\Plan;
 use App\Models\PlanLimit;
+use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\User;
 use App\OwnerType;
@@ -28,6 +29,10 @@ class EntitlementService
                 used: $this->privateIngredientCount($user),
                 limit: $limits['private_ingredients'] ?? null,
             ),
+            'production_batches' => $this->usageLine(
+                used: $this->productionBatchCount($user),
+                limit: $limits['production_batches'] ?? null,
+            ),
         ];
     }
 
@@ -39,6 +44,11 @@ class EntitlementService
     public function canCreatePrivateIngredient(User $user): bool
     {
         return $this->usageFor($user)['private_ingredients']['allowed'];
+    }
+
+    public function canCreateProductionBatch(User $user): bool
+    {
+        return $this->usageFor($user)['production_batches']['allowed'];
     }
 
     public function planFor(User $user): ?Plan
@@ -94,6 +104,19 @@ class EntitlementService
 
         throw ValidationException::withMessages([
             'plan' => "Your current plan allows {$usage['limit']} private ingredients.",
+        ]);
+    }
+
+    public function assertCanCreateProductionBatch(User $user): void
+    {
+        $usage = $this->usageFor($user)['production_batches'];
+
+        if ($usage['allowed']) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'plan' => "Your current plan allows {$usage['limit']} saved production batches.",
         ]);
     }
 
@@ -171,6 +194,13 @@ class EntitlementService
         return Ingredient::withoutGlobalScopes()
             ->where('owner_type', OwnerType::User->value)
             ->where('owner_id', $user->id)
+            ->count();
+    }
+
+    private function productionBatchCount(User $user): int
+    {
+        return ProductionBatch::query()
+            ->where('user_id', $user->id)
             ->count();
     }
 }

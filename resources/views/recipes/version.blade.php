@@ -268,7 +268,7 @@
                 </form>
             @endif
 
-            @if ($canRecordProduction)
+            @if ($productionBatches->isNotEmpty() || $canRecordProduction)
                 <article class="sk-card flex flex-col">
                     <div class="border-b border-[var(--color-line)] px-5 py-4">
                         <p class="sk-eyebrow">History</p>

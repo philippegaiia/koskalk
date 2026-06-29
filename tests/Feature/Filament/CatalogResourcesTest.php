@@ -14,6 +14,9 @@ use App\Filament\Resources\RegulatoryRegimeAllergens\RegulatoryRegimeAllergenRes
 use App\Filament\Resources\RegulatoryRegimes\RegulatoryRegimeResource;
 use App\Filament\Resources\RegulatoryRegimeSubstanceRules\RegulatoryRegimeSubstanceRuleResource;
 use App\Filament\Resources\Substances\SubstanceResource;
+use App\Filament\Resources\Users\Pages\CreateUser;
+use App\Filament\Resources\Users\Pages\EditUser;
+use App\Filament\Resources\Users\UserResource;
 use App\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\IfraCertificate;
@@ -25,14 +28,20 @@ use App\Models\IngredientSapProfile;
 use App\Models\IngredientSubstanceEntry;
 use App\Models\Plan;
 use App\Models\ProductFamily;
+use App\Models\ProductionBatch;
+use App\Models\Recipe;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
 use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
 use App\Models\User;
+use App\OwnerType;
+use App\Visibility;
 use Database\Seeders\PlanSeeder;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -158,6 +167,185 @@ it('renders the plan limits resource in the admin panel', function () {
         ->assertSee('Limits')
         ->assertSee('Saved recipes')
         ->assertSee('Private ingredients');
+});
+
+it('renders the user management resource with plan subscription and usage context', function () {
+    $admin = User::factory()->admin()->create();
+    $customer = User::factory()->create([
+        'name' => 'Marie Maker',
+        'email' => 'marie@example.com',
+    ]);
+    $plan = Plan::factory()
+        ->billable('pri_growth_monthly', 'pro_growth')
+        ->create([
+            'name' => 'Growth',
+            'slug' => 'growth',
+        ]);
+
+    $customer->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'source' => 'paddle',
+        'starts_at' => now(),
+    ]);
+
+    $subscription = $customer->subscriptions()->create([
+        'type' => 'default',
+        'paddle_id' => 'sub_admin_test',
+        'status' => 'active',
+    ]);
+
+    $subscription->items()->create([
+        'product_id' => 'pro_growth',
+        'price_id' => 'pri_growth_monthly',
+        'status' => 'active',
+        'quantity' => 1,
+    ]);
+
+    Recipe::factory()
+        ->count(2)
+        ->create([
+            'owner_type' => OwnerType::User,
+            'owner_id' => $customer->id,
+            'visibility' => Visibility::Private,
+        ]);
+
+    Ingredient::factory()
+        ->count(3)
+        ->create([
+            'owner_type' => OwnerType::User,
+            'owner_id' => $customer->id,
+            'visibility' => Visibility::Private,
+        ]);
+
+    ProductionBatch::factory()->create([
+        'user_id' => $customer->id,
+    ]);
+
+    $this->actingAs($admin);
+
+    $this->get(UserResource::getUrl(panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('Marie Maker')
+        ->assertSee('marie@example.com')
+        ->assertSee('Growth')
+        ->assertSee('Active')
+        ->assertSee('2')
+        ->assertSee('3')
+        ->assertSee('1');
+
+    $this->get(UserResource::getUrl('edit', ['record' => $customer], panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSee('User')
+        ->assertSee('Marie Maker')
+        ->assertSee('marie@example.com')
+        ->assertSee('Current access')
+        ->assertSee('Growth')
+        ->assertSee('sub_admin_test')
+        ->assertSee('Saved recipes')
+        ->assertSee('Private ingredients')
+        ->assertSee('Production batches');
+});
+
+it('lets admins update user identity and admin access', function () {
+    $admin = User::factory()->admin()->create();
+    $customer = User::factory()->create([
+        'name' => 'Original Maker',
+        'email' => 'original@example.com',
+        'is_admin' => false,
+    ]);
+    $originalPassword = $customer->password;
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditUser::class, ['record' => $customer->id])
+        ->fillForm([
+            'name' => 'Updated Maker',
+            'email' => 'updated@example.com',
+            'email_verified_at' => $customer->email_verified_at,
+            'is_admin' => true,
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($customer->refresh())
+        ->name->toBe('Updated Maker')
+        ->email->toBe('updated@example.com')
+        ->is_admin->toBeTrue()
+        ->password->toBe($originalPassword);
+});
+
+it('lets admins create and delete users', function () {
+    $admin = User::factory()->admin()->create();
+    $freePlan = Plan::factory()->create([
+        'name' => 'Free beta',
+        'slug' => 'free-beta',
+        'is_default' => true,
+    ]);
+    $customer = User::factory()->create([
+        'email' => 'delete-me@example.com',
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(CreateUser::class)
+        ->fillForm([
+            'name' => 'Created Maker',
+            'email' => 'created@example.com',
+            'email_verified_at' => now(),
+            'is_admin' => false,
+            'password' => 'new-secure-password',
+            'password_confirmation' => 'new-secure-password',
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $createdUser = User::query()->where('email', 'created@example.com')->firstOrFail();
+
+    expect($createdUser->name)->toBe('Created Maker')
+        ->and(Hash::check('new-secure-password', $createdUser->password))->toBeTrue()
+        ->and($createdUser->entitlements()->where('plan_id', $freePlan->id)->where('status', 'active')->exists())->toBeTrue();
+
+    $this->post(route('logout'));
+    $this->post(route('login'), [
+        'email' => 'created@example.com',
+        'password' => 'new-secure-password',
+    ])
+        ->assertRedirect(route('dashboard'));
+
+    $this->assertAuthenticatedAs($createdUser);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditUser::class, ['record' => $customer->id])
+        ->callAction(DeleteAction::class);
+
+    expect(User::query()->where('email', 'delete-me@example.com')->exists())->toBeFalse();
+});
+
+it('lets admins reset user passwords from the user form', function () {
+    $admin = User::factory()->admin()->create();
+    $customer = User::factory()->create([
+        'name' => 'Password Reset Target',
+        'email' => 'reset-target@example.com',
+        'password' => 'old-password',
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditUser::class, ['record' => $customer->id])
+        ->fillForm([
+            'name' => $customer->name,
+            'email' => $customer->email,
+            'email_verified_at' => $customer->email_verified_at,
+            'is_admin' => false,
+            'password' => 'fresh-secure-password',
+            'password_confirmation' => 'fresh-secure-password',
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect(Hash::check('fresh-secure-password', $customer->refresh()->password))->toBeTrue();
 });
 
 it('renders the compliance resources in the admin panel', function () {
@@ -372,5 +560,8 @@ it('blocks non-admin users from the admin panel resources', function () {
         ->assertForbidden();
 
     $this->get(RegulatoryRegimeResource::getUrl(panel: 'admin'))
+        ->assertForbidden();
+
+    $this->get(UserResource::getUrl(panel: 'admin'))
         ->assertForbidden();
 });

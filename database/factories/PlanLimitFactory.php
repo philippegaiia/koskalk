@@ -20,7 +20,7 @@ class PlanLimitFactory extends Factory
     {
         return [
             'plan_id' => Plan::factory(),
-            'key' => fake()->unique()->randomElement(['saved_recipes', 'private_ingredients']),
+            'key' => fake()->unique()->randomElement(['saved_recipes', 'private_ingredients', 'production_batches']),
             'value' => fake()->numberBetween(10, 100),
         ];
     }

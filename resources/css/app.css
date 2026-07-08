@@ -129,7 +129,7 @@
 
     .sk-btn-primary {
         background: var(--color-accent);
-        color: white;
+        color: var(--color-on-accent);
     }
 
     .sk-btn-primary:hover {
@@ -211,6 +211,42 @@
 
     .sk-workbench .sk-card {
         border-radius: 0.875rem;
+    }
+
+    .sk-formula-table-y {
+        padding-block: 10px;
+    }
+
+    .sk-formula-table-row {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    .sk-formula-table-cell {
+        background: white;
+    }
+
+    .sk-formula-table-handle-cell {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        background: white;
+    }
+
+    @media (min-width: 64rem) {
+        .sk-formula-table-row {
+            padding: 0;
+        }
+
+        .sk-formula-table-cell {
+            padding-block: 10px;
+        }
+
+        .sk-formula-table-handle-cell {
+            justify-content: center;
+            padding-block: 10px;
+            padding-inline: 0.5rem;
+        }
     }
 
     .sk-section-header {
@@ -317,4 +353,11 @@
     .animate-surface-float {
         animation: surface-float 12s ease-in-out infinite;
     }
+}
+
+.sk-workbench :is(button, input, select, textarea, a, summary):focus {
+    outline-color: color-mix(in oklab, var(--color-active) 38%, transparent) !important;
+    outline-offset: -2px !important;
+    outline-style: solid !important;
+    outline-width: 2px !important;
 }

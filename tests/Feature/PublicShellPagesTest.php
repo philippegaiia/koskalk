@@ -11,7 +11,7 @@ it('renders the public home page', function () {
         ->assertSee('data-hero-veil', false)
         ->assertSee('bg-cream/34', false)
         ->assertSee('data-hero-title', false)
-        ->assertSee('tracking-[0.015em]', false)
+        ->assertSee('font-display', false)
         ->assertSee('images/public/soapkraft-hero-benches.webp', false)
         ->assertDontSee('images/public/soapkraft-hero-benches.png', false)
         ->assertSeeText('Free soap calculator · soap & cosmetic formulation workspace')

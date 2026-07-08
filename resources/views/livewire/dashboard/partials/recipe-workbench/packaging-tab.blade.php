@@ -11,7 +11,7 @@
  <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
  <template x-if="packagingCatalog.length > 0">
  <div class="relative w-full sm:w-72 sm:min-w-72" @click.outside="closePackagingCatalogSelect()">
- <div class="flex items-center rounded-lg bg-[var(--color-field)] outline outline-1 outline-[var(--color-field-outline)] transition focus-within:outline-2 focus-within:outline-[var(--color-accent)]">
+ <div class="flex items-center rounded-lg bg-[var(--color-field)] transition focus-within:outline-2 focus-within:outline-[var(--color-accent)]">
  <input
  x-model="packagingCatalogSearch"
  @focus="openPackagingCatalogSelect()"
@@ -54,7 +54,7 @@
  </div>
  </div>
  </template>
- <button type="button" @click="openPackagingCatalogModal()" class="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
+ <button type="button" @click="openPackagingCatalogModal()" class="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
  New packaging item
  </button>
  </div>
@@ -86,11 +86,11 @@
  </div>
 	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
 	 <span class="sk-eyebrow lg:hidden">Components per unit</span>
- <input :value="row.components_per_unit" @blur="normalizeDecimalBlur($event); updatePackagingPlanComponents(row, $event.target.value)" type="text" inputmode="decimal" :aria-label="'Components per unit for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input :value="row.components_per_unit" @blur="normalizeDecimalBlur($event); updatePackagingPlanComponents(row, $event.target.value)" type="text" inputmode="decimal" :aria-label="'Components per unit for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </div>
 	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
 	 <span class="sk-eyebrow lg:hidden">Notes</span>
- <input x-model="row.notes" type="text" :aria-label="'Notes for ' + row.name" class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="row.notes" type="text" :aria-label="'Notes for ' + row.name" class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </div>
 	 <div class="flex items-center justify-end bg-white lg:px-4 lg:py-3">
 	 <button type="button" @click="removePackagingPlanRow(row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove packaging item">×</button>

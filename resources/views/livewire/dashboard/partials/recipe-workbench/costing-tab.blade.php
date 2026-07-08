@@ -20,17 +20,17 @@
  @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
  type="text"
  inputmode="decimal"
- class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
+ class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition"
  />
  </label>
 
  <div class="sk-inset p-4">
  <span class="sk-eyebrow">Unit</span>
  <div class="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Costing weight unit">
- <button type="button" role="radio" :aria-checked="costingOilUnit === 'g'" @click="costingOilUnit = 'g'; scheduleCostingSave()" :class="costingOilUnit === 'g' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">g</button>
- <button type="button" role="radio" :aria-checked="costingOilUnit === 'kg'" @click="costingOilUnit = 'kg'; scheduleCostingSave()" :class="costingOilUnit === 'kg' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">kg</button>
- <button type="button" role="radio" :aria-checked="costingOilUnit === 'oz'" @click="costingOilUnit = 'oz'; scheduleCostingSave()" :class="costingOilUnit === 'oz' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
- <button type="button" role="radio" :aria-checked="costingOilUnit === 'lb'" @click="costingOilUnit = 'lb'; scheduleCostingSave()" :class="costingOilUnit === 'lb' ? 'bg-[var(--color-accent)] text-white' : 'bg-white text-[var(--color-ink-soft)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">lb</button>
+ <button type="button" role="radio" :aria-checked="costingOilUnit === 'g'" @click="costingOilUnit = 'g'; scheduleCostingSave()" :class="costingOilUnit === 'g' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">g</button>
+ <button type="button" role="radio" :aria-checked="costingOilUnit === 'kg'" @click="costingOilUnit = 'kg'; scheduleCostingSave()" :class="costingOilUnit === 'kg' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">kg</button>
+ <button type="button" role="radio" :aria-checked="costingOilUnit === 'oz'" @click="costingOilUnit = 'oz'; scheduleCostingSave()" :class="costingOilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
+ <button type="button" role="radio" :aria-checked="costingOilUnit === 'lb'" @click="costingOilUnit = 'lb'; scheduleCostingSave()" :class="costingOilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">lb</button>
  </div>
  </div>
 
@@ -41,7 +41,7 @@
  @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
  type="text"
  inputmode="numeric"
- class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
+ class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition"
  placeholder="e.g. 50"
  />
  </label>
@@ -52,7 +52,7 @@
  x-model="costingCurrency"
  @change="scheduleCostingSave()"
  aria-labelledby="costing-currency-label"
- class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] transition"
  >
  @foreach($workbench['currencies'] ?? ['EUR' => 'Euro', 'USD' => 'US Dollar', 'CHF' => 'Swiss Franc'] as $code => $name)
  <option value="{{ $code }}">{{ $code }} — {{ $name }}</option>
@@ -87,13 +87,13 @@
  <div class="divide-y divide-[var(--color-line)] bg-white">
  <template x-for="row in costingFormulaRows" :key="`${row.phaseKey}-${row.rowId}`">
  <div class="grid grid-cols-[8rem_minmax(0,1.8fr)_5rem_7rem_8rem_8rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"></div>
- <div class="bg-white px-4 py-3">
+ <div class="flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"></div>
+ <div class="flex items-center bg-white px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
- <div class="numeric bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></div>
- <div class="numeric bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)}`"></div>
- <div class="bg-white px-3 py-3">
+ <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)}`"></div>
+ <div class="flex items-center bg-white px-3 py-3">
  <input
  :value="costingPriceForRow(row) ?? ''"
  @change="updateCostingPrice(row, $event.target.value)"
@@ -101,20 +101,20 @@
  type="text"
  inputmode="decimal"
  :aria-label="'Price per kilogram for ' + row.name"
- class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
+ class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition"
  />
  </div>
- <div class="numeric bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"></div>
  </div>
  </template>
 
  <div class="grid grid-cols-[8rem_minmax(0,1.8fr)_5rem_7rem_8rem_8rem] gap-px bg-[var(--color-line)] text-sm">
- <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]">Ingredient subtotal</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="numeric bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]">Ingredient subtotal</div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
+ <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
+ <div class="numeric flex items-center bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></div>
  </div>
  </div>
  </div>
@@ -165,7 +165,7 @@
  <span x-text="format(row.quantity, 3)"></span>
  </div>
  <div class="flex items-center bg-white px-3 py-3">
- <input x-model="row.unit_cost" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" :aria-label="'Unit price for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="row.unit_cost" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" :aria-label="'Unit price for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </div>
  <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostPerFinishedUnitForRow(row), 2)}`"></div>
  <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(packagingBatchCostForRow(row), 2)}` : 'Set units produced'"></div>

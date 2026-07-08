@@ -3,12 +3,9 @@
     $isPublicCalculator = request()->routeIs('calculator') && ! (bool) ($workbench['canPersist'] ?? false);
 @endphp
 
-<div x-data="recipeWorkbench(@js($workbench))" x-init="init(); if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" class="sk-workbench mx-auto max-w-[90rem] space-y-6">
+<div x-data="recipeWorkbench(@js($workbench))" x-init="init(); if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" @dragover.window="autoScrollDuringRowDrag($event)" class="sk-workbench mx-auto max-w-[90rem] space-y-6">
  @include('livewire.dashboard.partials.recipe-workbench.header')
  @include('livewire.dashboard.partials.recipe-workbench.navigation')
- @if ($isPublicCalculator)
- @include('livewire.dashboard.partials.recipe-workbench.account-teasers')
- @endif
  <fieldset :disabled="isFormulaLocked" :class="isFormulaLocked ? 'opacity-75' : ''" class="space-y-6 transition">
  @include('livewire.dashboard.partials.recipe-workbench.formula-tab')
  @if ($isPublicCalculator)

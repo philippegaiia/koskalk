@@ -1387,6 +1387,97 @@ JS;
         ->and($payload['additiveRowId'])->toBe('oil-1');
 });
 
+it('auto-scrolls the page near viewport edges while dragging formula rows', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+const scrollCalls = [];
+
+globalThis.document = { documentElement: { clientHeight: 600 } };
+globalThis.window = {
+  innerHeight: 600,
+  location: { hash: '' },
+  scrollBy(options) {
+    scrollCalls.push(options);
+  },
+};
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  ingredients: [],
+});
+
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+
+workbench.beginRowDrag('saponified_oils', 'oil-1', {
+  dataTransfer: {
+    effectAllowed: '',
+    setData() {},
+  },
+});
+
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+workbench.autoScrollDuringRowDrag({ clientY: 10 });
+workbench.autoScrollDuringRowDrag({ clientY: 300 });
+workbench.endRowDrag();
+workbench.autoScrollDuringRowDrag({ clientY: 590 });
+
+console.log(JSON.stringify({
+  calls: scrollCalls,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['calls'])->toHaveCount(2)
+        ->and($payload['calls'][0]['top'])->toBeGreaterThan(0)
+        ->and($payload['calls'][0]['behavior'])->toBe('auto')
+        ->and($payload['calls'][1]['top'])->toBeLessThan(0)
+        ->and($payload['calls'][1]['behavior'])->toBe('auto');
+});
+
 it('still allows reordering rows within the same phase', function () {
     $script = <<<'JS'
 import fs from 'node:fs';

@@ -1,10 +1,13 @@
 <?php
 
-it('starts soap users in the carrier oil catalog while cosmetics stay broad', function () {
+it('starts soap users in the carrier oil catalog and keeps the visible selector synced', function () {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
+    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
 
     expect($componentSource)
-        ->toContain("activeCategory: isCosmeticFormula ? 'all' : 'carrier_oil'");
+        ->toContain("activeCategory: isCosmeticFormula ? 'all' : 'carrier_oil'")
+        ->and($ingredientBrowser)
+        ->toContain(':selected="option.value === activeCategory"');
 });
 
 it('keeps formula-start compliance controls available but collapsed by default', function () {
@@ -32,9 +35,29 @@ it('keeps formula-start compliance controls available but collapsed by default',
 it('keeps workbench navigation and secondary formula actions visually quiet', function () {
     $header = view('livewire.dashboard.partials.recipe-workbench.header')->render();
     $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
+    $publicNavigation = view('livewire.dashboard.partials.recipe-workbench.navigation', [
+        'isPublicCalculator' => true,
+    ])->render();
 
     expect($navigation)
         ->not->toContain('border-t-2')
+        ->toContain('overflow-x-auto')
+        ->toContain('min-w-[9.5rem]')
+        ->toContain('justify-center')
+        ->toContain('text-center')
+        ->toContain('xl:grid-cols-5')
+        ->toContain('bg-[var(--color-panel)]')
+        ->toContain('text-[var(--color-ink-strong)]')
+        ->toContain('shadow-[inset_0_-3px_0_var(--color-active)')
+        ->toContain('shadow-[inset_0_0_0_1px_color-mix')
+        ->not->toContain('ring-1')
+        ->not->toContain('bg-[var(--color-active-soft)]')
+        ->not->toContain('text-[var(--color-active-strong)]')
+        ->not->toContain('bg-[var(--color-control)]')
+        ->not->toContain('bg-[var(--color-accent-soft)]')
+        ->and($publicNavigation)
+        ->toContain('grid gap-2 sm:grid-cols-2')
+        ->not->toContain('overflow-x-auto')
         ->and($header)
         ->toContain('More formula actions')
         ->toContain('<details')
@@ -86,7 +109,8 @@ it('adapts recipe workbench tables for narrow screens before desktop grids', fun
         ->not->toContain('min-w-[58rem]');
 });
 
-it('keeps formula table lines at a balanced fourteen pixel vertical padding', function () {
+it('keeps formula table lines compact with ten pixel vertical padding', function () {
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
     $tablePartials = [
         view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render(),
         view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render(),
@@ -95,10 +119,63 @@ it('keeps formula table lines at a balanced fourteen pixel vertical padding', fu
 
     $combinedFormulaTableMarkup = implode("\n", $tablePartials);
 
-    expect($combinedFormulaTableMarkup)
-        ->toContain('py-3.5')
-        ->toContain('lg:py-3.5')
+    expect($appStylesSource)
+        ->toContain('.sk-formula-table-y')
+        ->toContain('padding-block: 10px')
+        ->toContain('.sk-formula-table-row')
+        ->toContain('font-size: 14px')
+        ->toContain('.sk-formula-table-handle-cell')
+        ->toContain('align-items: center')
+        ->and($combinedFormulaTableMarkup)
+        ->toContain('sk-formula-table-y')
+        ->toContain('sk-formula-table-row')
+        ->toContain('sk-formula-table-cell')
+        ->toContain('sk-formula-table-handle-cell')
+        ->toContain('px-2.5 py-2.5 text-sm sk-formula-table-row')
+        ->toContain('bg-white py-2.5 sk-formula-table-cell')
+        ->toContain('bg-white py-2.5 sk-formula-table-handle-cell')
+        ->not->toContain('This block is derived from the saponified oils, lye type, water mode, and superfat.')
+        ->not->toContain('py-3.5')
+        ->not->toContain('lg:py-3.5')
+        ->not->toContain('lg:py-2.5')
+        ->not->toContain('p-2.5 text-sm transition')
         ->not->toContain('px-4 py-4 text-center');
+});
+
+it('centers costing table row contents beside price inputs', function () {
+    $costingTab = view('livewire.dashboard.partials.recipe-workbench.costing-tab')->render();
+
+    expect($costingTab)
+        ->toContain('flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"')
+        ->toContain('numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"')
+        ->toContain('flex items-center bg-white px-3 py-3')
+        ->toContain('numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"')
+        ->not->toContain('numeric bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"');
+});
+
+it('describes soap post-reaction percentages as oil-basis percentages', function () {
+    $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+    $formulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
+    $workbenchViewSource = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
+    $formulaSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
+    $presentationSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
+
+    expect($postReaction)
+        ->toContain('% of oils')
+        ->toContain('% oils')
+        ->not->toContain('% of base')
+        ->not->toContain('% base')
+        ->and($formulaSettings)
+        ->toContain('% of oils')
+        ->not->toContain('% of base')
+        ->and($formulaSectionSource)
+        ->toContain("'% oils'")
+        ->not->toContain("'% base'")
+        ->and($presentationSectionSource)
+        ->toContain('Additives (% oils)')
+        ->not->toContain('Additives (% base)')
+        ->and($workbenchViewSource)
+        ->toContain('@dragover.window="autoScrollDuringRowDrag($event)"');
 });
 
 it('keeps dashboard select chevrons away from the right edge', function () {
@@ -234,6 +311,55 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
         ->not->toContain('Missing KOH SAP');
 });
 
+it('stacks production figure tables beside soap output and gives cosmetics one descending ingredient table', function () {
+    $outputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab')->render();
+    $cosmeticOutputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
+        'isCosmeticWorkbench' => true,
+    ])->render();
+    $presentationSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
+
+    expect($outputTab)
+        ->toContain('Production tables')
+        ->toContain('lg:grid-cols-[minmax(0,7fr)_minmax(18rem,3fr)]')
+        ->toContain('sm:grid-cols-3 lg:grid-cols-1')
+        ->toContain('Batch ingredients')
+        ->toContain('Cured soap composition')
+        ->toContain('batchIngredientRows')
+        ->toContain('drySoapIngredientRows')
+        ->toContain('Formula %')
+        ->toContain('Dry soap %')
+        ->toContain('Stage')
+        ->toContain('What to weigh into the batch before saponification, including lye and water.')
+        ->not->toContain('Integrated ingredients')
+        ->not->toContain('Mise en oeuvre')
+        ->not->toContain('Ingredient basis')
+        ->not->toContain('incorporatedIngredientRows')
+        ->not->toContain('lg:grid-cols-2')
+        ->and(substr_count($outputTab, 'Cured soap composition'))
+        ->toBe(1)
+        ->and(strpos($outputTab, 'Production tables'))
+        ->toBeLessThan(strpos($outputTab, 'Dry soap output'))
+        ->and(strpos($outputTab, 'Cured soap composition'))
+        ->toBeLessThan(strpos($outputTab, 'Restrictions'))
+        ->and($cosmeticOutputTab)
+        ->toContain('Ingredient output')
+        ->toContain('Ingredients sorted from highest to lowest formula share.')
+        ->toContain('cosmeticOutputIngredientRows')
+        ->toContain('% formula')
+        ->toContain('Full formula')
+        ->toContain('Add ingredients to build the cosmetic output list.')
+        ->not->toContain('Production tables')
+        ->not->toContain('Batch ingredients')
+        ->and($presentationSectionSource)
+        ->toContain('get batchIngredientRows()')
+        ->toContain('get cosmeticOutputIngredientRows()')
+        ->toContain('return right.percentage - left.percentage')
+        ->toContain('get cosmeticOutputIngredientTotalWeight()')
+        ->toContain('get cosmeticOutputIngredientTotalPercent()')
+        ->toContain('this.lyeSummaryCards')
+        ->toContain("stage: 'Lye solution'");
+});
+
 it('animates only the ingredient row that was just added', function () {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
@@ -291,22 +417,35 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
     $presentationSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
     $bottomActionBar = view('livewire.dashboard.partials.recipe-workbench.formula-bottom-action-bar')->render();
     $formulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
+    $costingTab = view('livewire.dashboard.partials.recipe-workbench.costing-tab')->render();
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+    $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
     $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
     $fattyAcidProfile = view('livewire.dashboard.partials.recipe-workbench.fatty-acid-profile')->render();
+    $appShellSource = file_get_contents(resource_path('views/layouts/app-shell.blade.php'));
+
+    $formulaDropTargets = implode("\n", [$reactionCore, $postReaction, $cosmeticFormula]);
 
     expect($themeSource)
-        ->toContain('--color-forest: oklch(27.9% 0.039 150)')
-        ->toContain('--color-accent: oklch(53.0% 0.075 145)')
+        ->toContain('--color-forest: oklch(25.5% 0.030 155)')
+        ->toContain('--color-accent: oklch(55.5% 0.112 55)')
+        ->toContain('--color-on-accent: oklch(98.0% 0.006 85)')
+        ->toContain('--color-active: oklch(43.0% 0.066 146)')
+        ->toContain('--color-active-soft: oklch(93.2% 0.030 145)')
+        ->toContain('--color-active-strong: oklch(31.5% 0.064 146)')
+        ->toContain('--color-on-active: oklch(98.0% 0.007 145)')
+        ->toContain('--color-control: oklch(99.1% 0.004 88)')
         ->toContain('--color-success: oklch(49.0% 0.085 166)')
         ->toContain('--color-chemistry: oklch(55.5% 0.146 49)')
         ->toContain('--color-info: oklch(50.0% 0.075 230)')
         ->toContain('.sk-tone-chemistry')
         ->toContain('.sk-tone-catalog')
+        ->toContain('--sk-tone: var(--color-active)')
         ->toContain('.sk-tone-materials')
         ->toContain('.sk-tone-analysis')
+        ->toContain('--color-sidebar-active')
         ->not->toContain('margin: 0.75rem 0.75rem 0')
         ->not->toContain('border-radius: 0.85rem')
         ->not->toContain('border: 1px solid color-mix(in oklab, var(--sk-tone) 22%, var(--color-line))')
@@ -315,6 +454,11 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->not->toContain(".sk-card {\n        border: 1px solid transparent")
         ->toContain('.sk-inset')
         ->toContain('border: 1px solid color-mix(in oklab, var(--color-line) 88%, var(--color-ink) 4%)')
+        ->toContain('.sk-workbench :is(button, input, select, textarea, a, summary):focus')
+        ->toContain('outline-color: color-mix(in oklab, var(--color-active) 38%, transparent) !important')
+        ->toContain('outline-offset: -2px !important')
+        ->toContain('outline-style: solid !important')
+        ->toContain('outline-width: 2px !important')
         ->and($formulaSectionSource)
         ->toContain("tone: hasResolvedWeights ? 'chemistry' : 'warning'")
         ->toContain("tone: 'info'")
@@ -326,19 +470,40 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->toContain("card.tone === 'info'")
         ->toContain('bg-[var(--color-chemistry-soft)]')
         ->toContain('bg-[var(--color-info-soft)]')
+        ->toContain('text-[var(--color-on-accent)]')
         ->and($formulaSettings)
         ->toContain('sk-tone-chemistry')
         ->toContain('sk-tone-info')
+        ->toContain('bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm')
+        ->toContain('bg-[var(--color-control)] text-[var(--color-ink-soft)]')
+        ->not->toContain('focus:outline-2')
+        ->not->toContain('outline-[var(--color-field-outline)]')
+        ->and($costingTab)
+        ->toContain('bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm')
+        ->toContain('bg-[var(--color-control)] text-[var(--color-ink-soft)]')
+        ->not->toContain('focus:outline-2')
+        ->not->toContain('outline-[var(--color-field-outline)]')
         ->and($ingredientBrowser)
         ->toContain('sk-tone-catalog')
+        ->toContain('text-[var(--color-on-accent)]')
+        ->not->toContain('focus-visible:outline-2')
         ->and($reactionCore)
         ->toContain('sk-tone-chemistry')
         ->and($postReaction)
         ->toContain('sk-tone-materials')
+        ->and($formulaDropTargets)
+        ->toContain('bg-[var(--color-active-soft)]')
+        ->toContain('text-[var(--color-active-strong)]')
+        ->not->toContain("isDropTarget('saponified_oils') ? 'bg-[var(--color-accent-soft)]")
+        ->not->toContain("isDropTarget('additives') ? 'bg-[var(--color-accent-soft)]")
+        ->not->toContain("isDropTarget(phase.key) ? 'bg-[var(--color-accent-soft)]")
         ->and($formulaAnalysis)
         ->toContain('sk-tone-analysis')
         ->and($fattyAcidProfile)
-        ->toContain('sk-tone-analysis');
+        ->toContain('sk-tone-analysis')
+        ->and($appShellSource)
+        ->toContain('bg-[var(--color-sidebar-active)]')
+        ->toContain('ring-[var(--color-sidebar-active-ring)]');
 });
 
 it('collapses formula settings into a setup summary for soap and cosmetic benches', function () {

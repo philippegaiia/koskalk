@@ -23,7 +23,7 @@
 
  <div class="flex justify-end">
  @if ($workbench['recipe'])
- <button type="submit" class="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
+ <button type="submit" class="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
  Save content and media
  </button>
  @else

@@ -320,7 +320,7 @@ export function createPresentationSection() {
             return [
                 {
                     id: 'additives-total',
-                    label: 'Additives (% base)',
+                    label: 'Additives (% oils)',
                     value: `${this.format(this.totalAdditionPercentage(), 1)}%`,
                 },
                 {
@@ -377,6 +377,96 @@ export function createPresentationSection() {
             return this.activeIngredientListVariant?.final_label_text
                 ?? this.backendLabeling?.final_label_text
                 ?? '';
+        },
+
+        get batchIngredientRows() {
+            if (this.isCosmeticFormula) {
+                return [];
+            }
+
+            const formulaWeight = this.number(this.finalBatchWeight());
+            const phaseRows = ['saponified_oils', 'additives', 'fragrance'].flatMap((phaseKey) => (
+                (this.phaseItems[phaseKey] ?? []).map((row) => {
+                    const weight = this.number(this.rowWeight(row));
+
+                    return {
+                        id: `batch-${phaseKey}-${row.id}`,
+                        name: row.name,
+                        stage: this.batchPhaseLabel(phaseKey),
+                        weight,
+                        percent_of_formula: formulaWeight > 0 ? (weight / formulaWeight) * 100 : 0,
+                    };
+                })
+            ));
+            const lyeRows = this.lyeSummaryCards
+                .map((card) => {
+                    const weight = this.number(card?.value ?? 0);
+
+                    return {
+                        id: `batch-${card.id}`,
+                        name: card.label,
+                        stage: 'Lye solution',
+                        weight,
+                        percent_of_formula: formulaWeight > 0 ? (weight / formulaWeight) * 100 : 0,
+                    };
+                });
+
+            return [...phaseRows, ...lyeRows]
+                .filter((row) => row.weight > 0);
+        },
+
+        batchPhaseLabel(phaseKey) {
+            return this.phaseOrder.find((phase) => phase.key === phaseKey)?.name
+                ?? this.humanizeKey(phaseKey);
+        },
+
+        get batchIngredientTotalWeight() {
+            return this.batchIngredientRows.reduce((sum, row) => sum + this.number(row.weight), 0);
+        },
+
+        get batchIngredientTotalPercent() {
+            return this.batchIngredientRows.reduce((sum, row) => sum + this.number(row.percent_of_formula), 0);
+        },
+
+        get cosmeticOutputIngredientRows() {
+            if (!this.isCosmeticFormula) {
+                return [];
+            }
+
+            return this.phaseOrder
+                .flatMap((phase) => (this.phaseItems[phase.key] ?? []).map((row) => {
+                    const percentage = this.number(row.percentage);
+                    const weight = this.number(this.rowWeight(row));
+
+                    return {
+                        id: `cosmetic-output-${phase.key}-${row.id}`,
+                        name: row.name,
+                        inci_name: row.inci_name,
+                        phase: phase.name ?? this.humanizeKey(phase.key),
+                        percentage,
+                        weight,
+                    };
+                }))
+                .filter((row) => row.percentage > 0 || row.weight > 0)
+                .sort((left, right) => {
+                    if (right.percentage !== left.percentage) {
+                        return right.percentage - left.percentage;
+                    }
+
+                    if (right.weight !== left.weight) {
+                        return right.weight - left.weight;
+                    }
+
+                    return String(left.name ?? '').localeCompare(String(right.name ?? ''));
+                });
+        },
+
+        get cosmeticOutputIngredientTotalWeight() {
+            return this.cosmeticOutputIngredientRows.reduce((sum, row) => sum + this.number(row.weight), 0);
+        },
+
+        get cosmeticOutputIngredientTotalPercent() {
+            return this.cosmeticOutputIngredientRows.reduce((sum, row) => sum + this.number(row.percentage), 0);
         },
 
         get ingredientListBasisHash() {

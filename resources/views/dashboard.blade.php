@@ -8,8 +8,8 @@
 	<section class="sk-card p-6">
 		<div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 			<div class="min-w-0">
-				<p class="sk-eyebrow">Workspace</p>
-				<h3 class="mt-3 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">Welcome to your formulation workspace.</h3>
+				<p class="ledger-eyebrow">Workspace</p>
+				<h3 class="font-display mt-3 max-w-4xl text-xl text-[var(--color-ink-strong)] sm:text-2xl">Welcome to your formulation workspace.</h3>
 				<p class="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">Create and manage soap and cosmetic formulas. More modules coming soon.</p>
 			</div>
 

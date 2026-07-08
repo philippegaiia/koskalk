@@ -1,7 +1,7 @@
 @php($isPublicCalculator = $isPublicCalculator ?? false)
 
 <div class="pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]">
- <section aria-label="Formula save bar" class="pointer-events-auto mx-auto max-w-[90rem] rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_82%,transparent)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] backdrop-blur-md">
+ <section id="formula-save-bar" aria-label="Formula save bar" class="pointer-events-auto mx-auto max-w-[90rem] rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_82%,transparent)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] backdrop-blur-md">
  <span class="sr-only">Zero quantity diagnostics preserve formula ingredients at 0.</span>
  <div id="formula-bottom-diagnostics-details" x-show="isFormulaDiagnosticsOpen" x-cloak class="mb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
  <template x-for="card in formulaDiagnosticCards" :key="`bottom-detail-${card.id}`">
@@ -48,15 +48,20 @@
  @click="toggleFormulaDiagnostics()"
  :aria-expanded="isFormulaDiagnosticsOpen.toString()"
  aria-controls="formula-bottom-diagnostics-details"
- class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-field-muted)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)] focus:outline-2 focus:outline-[var(--color-accent)]">
+ class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-field-muted)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">
  <span x-text="isFormulaDiagnosticsOpen ? 'Hide details' : 'Show details'"></span>
  </button>
  @if ($isPublicCalculator)
- <a href="{{ route('register') }}" class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white no-underline transition hover:bg-[var(--color-accent-hover)]">
- Save with account
- </a>
+ <form id="public-calculator-save-form" method="POST" action="{{ route('calculator.draft.store') }}">
+ @csrf
+ <input type="hidden" name="product_family_slug" x-bind:value="productFamilySlug">
+ <input type="hidden" name="draft" x-bind:value="serializeDraftJson()">
+ <button type="submit" class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
+ Save this formula
+ </button>
+ </form>
  @else
- <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="inline-flex min-h-9 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition">
+ <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="inline-flex min-h-9 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition">
  <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving...' : 'Save')"></span>
  </button>
  @endif

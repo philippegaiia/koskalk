@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     overlay.addEventListener('click', closeMobileMenu);
 
-    menu.querySelectorAll('a[href^="#"]').forEach((link) => {
+    menu.querySelectorAll('a').forEach((link) => {
         link.addEventListener('click', closeMobileMenu);
     });
 });

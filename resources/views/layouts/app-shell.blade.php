@@ -22,8 +22,8 @@
             document.documentElement.style.colorScheme = 'light'
         </script>
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+        <link href="https://api.fontshare.com/v2/css?f[]=instrument-sans@400,500,600,700&f[]=instrument-serif@400&display=swap" rel="stylesheet">
 
         @filamentStyles
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -31,6 +31,8 @@
         @stack('head')
     </head>
     <body class="min-h-screen bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
+        @php($appShellUser = auth()->user())
+
         <div
             data-app-shell
             data-sidebar-open="true"
@@ -40,7 +42,7 @@
 
             <aside
                 data-sidebar
-                class="fixed inset-y-0 left-0 z-50 w-72 overflow-hidden bg-[var(--color-sidebar)] px-5 py-6 text-[var(--color-ink-sidebar)] transition-all duration-300 lg:static lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:opacity-100 lg:transition-none"
+                class="sk-sidebar fixed inset-y-0 left-0 z-50 w-72 overflow-hidden bg-[var(--color-sidebar)] px-5 py-6 text-[var(--color-ink-sidebar)] transition-all duration-300 lg:static lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:opacity-100 lg:transition-none"
             >
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
@@ -50,14 +52,14 @@
                         </div>
                     </div>
 
-                    <button type="button" data-sidebar-close class="grid size-10 place-items-center rounded-lg bg-[var(--color-field-muted)] text-[var(--color-ink-sidebar)] transition hover:bg-[var(--color-accent-soft)] lg:hidden">
+                    <button type="button" data-sidebar-close class="grid size-10 place-items-center rounded-lg bg-[var(--color-field-muted)] text-[var(--color-ink-sidebar)] transition hover:bg-[var(--color-sidebar-active)] lg:hidden">
                         <span class="sr-only">Close menu</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M6 18 18 6M6 6l12 12" />
                         </svg>
                     </button>
 
-                    <button type="button" data-sidebar-toggle class="hidden size-10 place-items-center rounded-lg bg-[var(--color-field-muted)] text-[var(--color-ink-sidebar)] transition hover:bg-[var(--color-accent-soft)] lg:grid">
+                    <button type="button" data-sidebar-toggle class="hidden size-10 place-items-center rounded-lg bg-[var(--color-field-muted)] text-[var(--color-ink-sidebar)] transition hover:bg-[var(--color-sidebar-active)] lg:grid">
                         <span class="sr-only">Collapse menu</span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="m15 18-6-6 6-6" />
@@ -66,15 +68,27 @@
                 </div>
 
                 <nav class="mt-8 grid gap-2 text-sm">
-                    <a href="{{ route('dashboard') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('dashboard') ? 'bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent-strong)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Dashboard</a>
-                    <a href="{{ route('recipes.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('recipes.*') ? 'bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent-strong)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Recipes</a>
-                    <a href="{{ route('ingredients.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('ingredients.*') ? 'bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent-strong)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Ingredients</a>
-                    <a href="{{ route('packaging-items.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('packaging-items.*') ? 'bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent-strong)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Packaging Items</a>
+                    <a href="{{ route('dashboard') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('dashboard') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Dashboard</a>
+                    <a href="{{ route('recipes.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('recipes.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Recipes</a>
+                    <a href="{{ route('ingredients.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('ingredients.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Ingredients</a>
+                    <a href="{{ route('packaging-items.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('packaging-items.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Packaging Items</a>
                     <a href="javascript:void(0)" data-sidebar-mobile-close aria-disabled="true" tabindex="-1" title="Coming soon" class="rounded-lg px-4 py-3 text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">Compliance</a>
-                    <a href="{{ route('account') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('account') ? 'bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent-strong)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Account</a>
+                    <a href="{{ route('account') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('account') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Account</a>
                     <a href="/admin" data-sidebar-mobile-close class="rounded-lg px-4 py-3 text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">Admin</a>
-                    <a href="{{ route('settings') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('settings') ? 'bg-[var(--color-accent-soft)] font-medium text-[var(--color-accent-strong)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Settings</a>
+                    <a href="{{ route('settings') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('settings') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">Settings</a>
                 </nav>
+
+                <section aria-label="Signed in user" class="mt-8 border-t border-[var(--color-line)] px-4 pt-5">
+                    <p class="sk-eyebrow text-[var(--color-ink-sidebar-soft)]">Signed in</p>
+                    <p class="mt-2 truncate text-sm font-semibold text-[var(--color-ink-sidebar)]">{{ $appShellUser?->name }}</p>
+                    <p class="mt-0.5 truncate text-xs text-[var(--color-ink-sidebar-soft)]">{{ $appShellUser?->email }}</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span class="rounded-full bg-[var(--color-field-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-sidebar-soft)]">Free account</span>
+                        @if ($appShellUser?->is_admin)
+                            <span class="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-accent-strong)]">Admin</span>
+                        @endif
+                    </div>
+                </section>
 
                 <form method="POST" action="{{ route('logout') }}" class="mt-8 border-t border-white/10 pt-5">
                     @csrf
@@ -93,7 +107,7 @@
                                 type="button"
                                 data-sidebar-toggle
                                 data-sidebar-header-toggle
-                                class="grid size-11 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]"
+                                class="grid size-11 place-items-center rounded-lg bg-[var(--color-forest-deep)] text-[var(--color-inverse)] shadow-sm transition hover:bg-[var(--color-forest-mid)]"
                             >
                                 <span class="sr-only">Show or hide menu</span>
                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -106,12 +120,8 @@
                             </div>
                         </div>
 
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-4 sm:gap-5">
                             <a href="{{ route('home') }}" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Home</a>
-                            <form method="POST" action="{{ route('logout') }}" class="hidden sm:block">
-                                @csrf
-                                <button type="submit" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Sign out</button>
-                            </form>
                         </div>
                     </div>
                 </header>

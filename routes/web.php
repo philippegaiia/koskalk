@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/calculator', [PublicSoapCalculatorController::class, 'show'])->name('calculator');
+Route::post('/calculator/draft', [PublicSoapCalculatorController::class, 'storeDraft'])->name('calculator.draft.store');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');

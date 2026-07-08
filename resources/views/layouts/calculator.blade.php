@@ -22,8 +22,8 @@
             document.documentElement.style.colorScheme = 'light'
         </script>
 
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700&display=swap" rel="stylesheet" />
+        <link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+        <link href="https://api.fontshare.com/v2/css?f[]=instrument-sans@400,500,600,700&f[]=instrument-serif@400&display=swap" rel="stylesheet">
 
         @filamentStyles
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -36,12 +36,16 @@
                     <div class="flex h-[30px] w-[30px] items-center justify-center rounded-[7px] bg-[var(--color-accent-soft)] text-xs font-semibold text-[var(--color-accent-strong)]">SK</div>
                     <span class="text-lg font-semibold text-[var(--color-ink-strong)]">Soapkraft</span>
                 </a>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-3 sm:gap-4">
                     @auth
+                        <span class="hidden max-w-36 truncate text-sm font-semibold text-[var(--color-ink-strong)] md:inline">{{ auth()->user()?->name }}</span>
                         <a href="{{ route('dashboard') }}" class="rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-[var(--color-accent-hover)]">Dashboard</a>
+                        <form method="POST" action="{{ route('logout') }}" class="hidden sm:block">
+                            @csrf
+                            <button type="submit" class="text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Sign out</button>
+                        </form>
                     @else
-                        <a href="{{ route('login') }}" class="hidden text-sm font-medium text-[var(--color-ink-soft)] no-underline transition hover:text-[var(--color-ink-strong)] sm:inline">Sign in</a>
-                        <a href="{{ route('register') }}" class="rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-[var(--color-accent-hover)]">Create account</a>
+                        <a href="{{ route('login') }}" class="text-sm font-medium text-[var(--color-ink-soft)] no-underline transition hover:text-[var(--color-ink-strong)]">Sign in</a>
                     @endauth
                 </div>
             </div>

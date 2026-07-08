@@ -12,8 +12,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('renders the simplified dashboard with creation buttons and stat cards', function () {
-    $user = User::factory()->create();
+it('renders the simplified dashboard with creation buttons, stat cards, and user identity', function () {
+    $user = User::factory()->create([
+        'name' => 'Marie Maker',
+        'email' => 'marie@example.com',
+    ]);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -56,6 +59,11 @@ it('renders the simplified dashboard with creation buttons and stat cards', func
         ->assertSee('Create cosmetic formula')
         ->assertSee('Recipes')
         ->assertSee('Ingredients')
+        ->assertSee('Marie Maker')
+        ->assertSee('marie@example.com')
+        ->assertSee('Free account')
+        ->assertDontSee('mt-3 flex min-w-0 items-start gap-3', false)
+        ->assertDontSee('max-w-44 truncate text-xs text-[var(--color-ink-soft)]', false)
         ->assertSee('Locked');
 });
 

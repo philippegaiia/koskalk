@@ -20,7 +20,7 @@
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div class="min-w-0 flex-1">
  <p class="sk-eyebrow">Phase</p>
- <input x-model="phase.name" type="text" aria-label="Phase name" class="mt-1 w-full rounded-lg bg-[var(--color-field)] px-3 py-2 text-sm font-semibold text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="phase.name" type="text" aria-label="Phase name" class="mt-1 w-full rounded-lg bg-[var(--color-field)] px-3 py-2 text-sm font-semibold text-[var(--color-ink-strong)] transition" />
  </div>
  <div class="flex flex-wrap items-center gap-2">
  <button type="button" @click="moveCosmeticPhase(phase.key, 'up')" :disabled="cosmeticPhaseIsFirst(phase.key)" :class="cosmeticPhaseIsFirst(phase.key) ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)] hover:bg-white'" class="rounded-full border px-3 py-1.5 text-xs font-medium transition">
@@ -38,11 +38,11 @@
  </div>
 
  <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)]">
- <div class="bg-[var(--color-field-muted)] px-3 py-3.5"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]">Ingredient</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]">% formula</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3.5 font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3.5"></div>
+ <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">Ingredient</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">% formula</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y"></div>
  </div>
 
  <div class="divide-y divide-[var(--color-line)] bg-white">
@@ -50,13 +50,13 @@
  <div @dragover="allowPhaseDrop(phase.key, $event, row.id)"
  @drop="dropDraggedRow(phase.key, $event, row.id)"
  :class="{
- 'bg-[var(--color-accent-soft)]': isDropTarget(phase.key, row.id),
+ 'bg-[var(--color-active-soft)]': isDropTarget(phase.key, row.id),
  'opacity-60': isDraggedRow(phase.key, row.id),
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
- class="grid grid-cols-1 gap-3 bg-white p-3 transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
-	 <div class="flex justify-start bg-white lg:grid lg:place-items-center lg:px-2 lg:py-3.5">
+ class="grid grid-cols-1 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+	 <div class="flex items-center justify-start bg-white py-2.5 sk-formula-table-handle-cell lg:justify-center lg:px-2">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag(phase.key, row.id, $event)"
@@ -66,7 +66,7 @@
  <span class="text-sm leading-none">⋮⋮</span>
  </button>
  </div>
-	 <div class="flex items-center bg-white lg:px-4 lg:py-3.5">
+	 <div class="flex items-center bg-white py-2.5 sk-formula-table-cell lg:px-4">
  <div class="flex w-full items-center justify-between gap-3">
  <div class="min-w-0 flex-1">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
@@ -124,25 +124,25 @@
  </div>
  </div>
  </div>
-	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3.5">
+	 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
  <span class="sk-eyebrow lg:hidden">% formula</span>
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="number" inputmode="decimal" min="0" max="100" step="0.1" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="number" inputmode="decimal" min="0" max="100" step="0.1" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'percentage'">
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
-	 <div class="flex flex-col gap-2 bg-white text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3 lg:py-3.5">
+	 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
  <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
- <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updateCosmeticPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.5" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+ <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updateCosmeticPercentagesFromWeights(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.5" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
  </template>
  </div>
-	 <div class="flex items-center justify-end bg-white lg:justify-center lg:px-2 lg:py-3.5">
+	 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
 	 <button type="button" @click="removeIngredient(phase.key, row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove ingredient">×</button>
  </div>
  </div>
@@ -151,8 +151,8 @@
 	 <template x-if="(phaseItems[phase.key] ?? []).length === 0">
 	 <div @dragover="allowPhaseDrop(phase.key, $event)"
 	 @drop="dropDraggedRow(phase.key, $event)"
-	 :class="isDropTarget(phase.key) ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'text-[var(--color-ink-soft)]'"
-		 class="px-4 py-3.5 text-center text-xs font-medium transition">
+	 :class="isDropTarget(phase.key) ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'text-[var(--color-ink-soft)]'"
+		 class="px-4 py-2.5 sk-formula-table-y text-center text-xs font-medium transition">
 	 Drop here
 	 </div>
 	 </template>
@@ -160,7 +160,7 @@
  <template x-if="(phaseItems[phase.key] ?? []).length > 0">
  <div @dragover="allowPhaseDrop(phase.key, $event)"
  @drop="dropDraggedRow(phase.key, $event)"
- :class="isDropTarget(phase.key) ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
+ :class="isDropTarget(phase.key) ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
  class="border-t border-[var(--color-line)] px-4 py-1.5 text-xs font-medium transition">
  Drop here
  </div>
@@ -171,11 +171,11 @@
 
 	 <div class="overflow-hidden sk-inset">
 	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0">
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-3 py-3.5 lg:block"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="px-4 py-3.5 font-medium">Formula total</div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="numeric px-4 py-3.5 font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="numeric px-4 py-3.5 font-medium" x-text="`${format(cosmeticFormulaWeightTotal(), 3)} ${oilUnit}`"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-4 py-3.5 lg:block"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="px-4 py-2.5 sk-formula-table-y font-medium">Formula total</div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="numeric px-4 py-2.5 sk-formula-table-y font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="numeric px-4 py-2.5 sk-formula-table-y font-medium" x-text="`${format(cosmeticFormulaWeightTotal(), 3)} ${oilUnit}`"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>
 	 </div>
 	 </div>
 

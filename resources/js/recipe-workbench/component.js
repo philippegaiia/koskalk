@@ -479,6 +479,34 @@ function createCatalogSection() {
             this.dropTargetRowId = null;
         },
 
+        autoScrollDuringRowDrag(event) {
+            if (!this.draggedRowPhaseKey || !this.draggedRowId || typeof window === 'undefined') {
+                return;
+            }
+
+            const viewportHeight = window.innerHeight
+                || document.documentElement?.clientHeight
+                || 0;
+
+            if (!viewportHeight || typeof event?.clientY !== 'number') {
+                return;
+            }
+
+            const edgeSize = Math.min(120, Math.max(72, viewportHeight * 0.16));
+            const maxStep = 28;
+            let scrollStep = 0;
+
+            if (event.clientY < edgeSize) {
+                scrollStep = -Math.ceil(((edgeSize - event.clientY) / edgeSize) * maxStep);
+            } else if (event.clientY > viewportHeight - edgeSize) {
+                scrollStep = Math.ceil(((event.clientY - (viewportHeight - edgeSize)) / edgeSize) * maxStep);
+            }
+
+            if (scrollStep !== 0 && typeof window.scrollBy === 'function') {
+                window.scrollBy({ top: scrollStep, behavior: 'auto' });
+            }
+        },
+
         isDraggedRow(phaseKey, rowId) {
             return this.draggedRowPhaseKey === phaseKey && this.draggedRowId === rowId;
         },
@@ -542,6 +570,8 @@ function createCatalogSection() {
         },
 
         allowPhaseDrop(phaseKey, event, targetRowId = null) {
+            this.autoScrollDuringRowDrag(event);
+
             if (!this.canDropRowInPhase(phaseKey)) {
                 return;
             }
@@ -724,8 +754,12 @@ function createPersistenceSection() {
             return buildSerializedDraft(this);
         },
 
-        currentDirtySignature() {
+        serializeDraftJson() {
             return JSON.stringify(this.serializeDraft());
+        },
+
+        currentDirtySignature() {
+            return this.serializeDraftJson();
         },
 
         refreshDirtyBaseline() {

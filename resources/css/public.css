@@ -3,4 +3,11 @@
 @import './shared/soapkraft.css';
 
 @source '../views/layouts/public.blade.php';
+@source '../views/auth/*.blade.php';
 @source '../views/welcome.blade.php';
+
+/* The apothecary palette (copper accent, warm ink, parchment cream, forest
+   hero) now lives in shared/soapkraft.css @theme as the global default, so
+   every shell — homepage, calculator, app-shell — recolors together. The
+   display primitives (.font-display, .ledger-eyebrow, .ledger-rule,
+   .forest-ledger, .al-rise) are defined there too. */

@@ -1,19 +1,24 @@
 {
     "agents": [
         "opencode",
-        "gemini",
-        "codex"
+        "codex",
+        "claude_code",
+        "antigravity"
     ],
+    "cloud": false,
     "guidelines": true,
-    "herd_mcp": false,
     "mcp": true,
-    "nightwatch_mcp": false,
+    "nightwatch": false,
     "packages": [
-        "filament/filament"
+        "filament/filament",
+        "laraveldaily/filacheck",
+        "fruitcake/laravel-debugbar"
     ],
     "sail": false,
     "skills": [
+        "laravel-best-practices",
         "pest-testing",
-        "tailwindcss-development"
+        "tailwindcss-development",
+        "debug-using-debugbar"
     ]
 }

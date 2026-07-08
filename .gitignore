@@ -13,6 +13,7 @@
 /.zed
 /.agents
 /.codex
+/.clawpatch
 /.gemini
 /.hermes
 /.superpowers
@@ -26,6 +27,7 @@
 /storage/*.key
 /storage/pail
 /vendor
+dogfood-output/
 Homestead.json
 Homestead.yaml
 Thumbs.db

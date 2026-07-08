@@ -7,7 +7,7 @@
  $isPublicCalculator = $isPublicCalculator ?? false;
 @endphp
 
-<section class="sk-card p-5">
+<section class="{{ $isPublicCalculator ? 'pb-1' : 'sk-card p-5' }}">
  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
  <div class="min-w-0 flex-1">
 	 <div class="flex flex-wrap items-center gap-2">
@@ -21,18 +21,11 @@
 	 <span role="status" class="rounded-full bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] shadow-sm" x-text="calculationPreviewMessage"></span>
 	 </template>
 	 </div>
-	 <input x-model="formulaName" type="text" aria-label="Formula name" :disabled="isFormulaLocked" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:bg-[var(--color-panel)] disabled:text-[var(--color-ink-soft)]" />
+	 <input x-model="formulaName" type="text" aria-label="Formula name" :disabled="isFormulaLocked" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:bg-[var(--color-panel)] disabled:text-[var(--color-ink-soft)]" />
 	 </div>
 
+	 @unless ($isPublicCalculator)
 	 <div class="flex flex-wrap gap-2 lg:justify-end">
-	 @if ($isPublicCalculator)
-	 <a href="{{ route('register') }}" class="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-[var(--color-accent-hover)]">
-	 Save with free account
-	 </a>
-	 <a href="{{ route('login') }}" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] no-underline shadow-sm transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
-	 Sign in
-	 </a>
-	 @else
 	 @if ($hasSavedFormula && is_string($savedFormulaUrl))
 	 <a href="{{ $savedFormulaUrl }}" class="inline-flex items-center gap-2 rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] shadow-sm transition hover:bg-[var(--color-panel)]">
 	 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -41,7 +34,7 @@
 	 Formula sheet
 	 </a>
 	 @endif
-	 <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-hover)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
+	 <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
 	 <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving…' : 'Save')"></span>
 	 </button>
 	 @if ($recipeId)
@@ -84,8 +77,8 @@
 	 </button>
 	 </div>
 	 </details>
-	 @endif
 		 </div>
+	 @endunless
 	 </div>
 
 	 <template x-if="needsCatalogReview">

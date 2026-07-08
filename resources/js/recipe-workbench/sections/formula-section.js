@@ -106,7 +106,7 @@ export function createFormulaSection() {
                 {
                     id: 'formula-entry',
                     label: 'Entry',
-                    value: this.editMode === 'weight' ? 'Weight' : (this.isCosmeticFormula ? '% formula' : '% base'),
+                    value: this.editMode === 'weight' ? 'Weight' : (this.isCosmeticFormula ? '% formula' : '% oils'),
                     tone: 'neutral',
                 },
             ];

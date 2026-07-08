@@ -4,37 +4,54 @@
     --font-numeric: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
         'Liberation Mono', 'Courier New', monospace;
 
-    --color-surface: oklch(96.7% 0.008 91);
+    /* Apothecary display serif (Instrument Serif) — global default */
+    --font-serif: 'Instrument Serif', 'Iowan Old Style', 'Apple Garamond',
+        Georgia, ui-serif, serif;
+    --font-mono: var(--font-numeric);
+
+    /* Paper + ink (warm apothecary defaults — re-skin every shell) */
+    --color-surface: oklch(96.4% 0.016 128);
     --color-sidebar: oklch(95.3% 0.010 87);
-    --color-panel: oklch(99.7% 0.004 91);
-    --color-panel-strong: oklch(93.4% 0.014 93);
+    --color-panel: oklch(98.5% 0.006 85);
+    --color-panel-strong: oklch(93.4% 0.020 84);
     --color-field: oklch(99.4% 0.003 91);
     --color-field-muted: oklch(96.4% 0.010 94);
     --color-field-outline: oklch(86.1% 0.017 88);
 
-    --color-hero: oklch(22.0% .018 65);
-    --color-hero-soft: oklch(27.0% .020 65);
-    --color-surface-strong: oklch(30.0% .022 80);
+    --color-hero: oklch(25.5% 0.030 155);
+    --color-hero-soft: oklch(30.0% 0.034 152);
+    --color-surface-strong: oklch(30.0% 0.022 80);
 
-    --color-line: oklch(91.7% 0.016 86);
-    --color-line-strong: oklch(86.0% 0.021 82);
-    --color-line-hero: oklch(40% .022 65);
+    --color-line: oklch(89.5% 0.018 80);
+    --color-line-strong: oklch(82.0% 0.025 78);
+    --color-line-hero: oklch(40% 0.022 65);
 
-    --color-ink: oklch(33.8% 0.015 85);
-    --color-ink-strong: oklch(24.0% 0.010 89);
-    --color-ink-soft: oklch(50.2% 0.015 82);
+    --color-ink: oklch(30.0% 0.012 75);
+    --color-ink-strong: oklch(20.5% 0.008 70);
+    --color-ink-soft: oklch(46.5% 0.014 75);
 
     --color-ink-sidebar: oklch(25.7% 0.010 89);
     --color-ink-sidebar-soft: oklch(51.2% 0.015 82);
-    --color-inverse: oklch(98% .006 84);
-    --color-inverse-soft: oklch(76% .010 84);
-    --color-inverse-muted: oklch(58% .010 84);
+    --color-inverse: oklch(95.2% 0.018 85);
+    --color-inverse-soft: oklch(78.0% 0.020 110);
+    --color-inverse-muted: oklch(63.0% 0.022 120);
 
-    --color-accent: oklch(53.0% 0.075 145);
-    --color-accent-hover: oklch(42.5% 0.078 145);
-    --color-accent-soft: oklch(94.8% 0.028 145);
-    --color-accent-strong: oklch(34.5% 0.072 145);
+    /* Copper signal — the single warm accent (replaces muted green CTA) */
+    --color-accent: oklch(55.5% 0.112 55);
+    --color-accent-hover: oklch(47.5% 0.115 53);
+    --color-accent-soft: oklch(92.6% 0.035 60);
+    --color-accent-strong: oklch(43.0% 0.110 50);
+    --color-on-accent: oklch(98.0% 0.006 85);
 
+    /* Product active state — selection, current location, and chosen controls */
+    --color-active: oklch(43.0% 0.066 146);
+    --color-active-hover: oklch(35.5% 0.068 146);
+    --color-active-soft: oklch(93.2% 0.030 145);
+    --color-active-strong: oklch(31.5% 0.064 146);
+    --color-on-active: oklch(98.0% 0.007 145);
+    --color-control: oklch(99.1% 0.004 88);
+
+    /* Semantic tones — carry meaning, never retune for branding */
     --color-warning: oklch(55.5% 0.146 49);
     --color-warning-hover: oklch(45.9% 0.119 50);
     --color-warning-soft: oklch(94.2% 0.029 78);
@@ -48,10 +65,10 @@
     --color-info-soft: oklch(95.0% 0.018 230);
     --color-info-strong: oklch(37.0% 0.070 230);
 
-    --color-danger: oklch(55% .200 25);
-    --color-danger-hover: oklch(46% .185 25);
-    --color-danger-soft: oklch(95% .050 25);
-    --color-danger-strong: oklch(45% .180 25);
+    --color-danger: oklch(55% 0.200 25);
+    --color-danger-hover: oklch(46% 0.185 25);
+    --color-danger-soft: oklch(95% 0.050 25);
+    --color-danger-strong: oklch(45% 0.180 25);
 
     --color-success: oklch(49.0% 0.085 166);
     --color-success-soft: oklch(95.8% 0.024 166);
@@ -63,24 +80,24 @@
     --color-quality-high: oklch(48.0% 0.135 38);
     --color-quality-excess: oklch(38.8% 0.129 26);
 
-    /* Homepage palette */
-    --color-forest: oklch(27.9% 0.039 150);
+    /* Botanical greens */
+    --color-forest: oklch(25.5% 0.030 155);
     --color-forest-deep: oklch(20.3% 0.026 149);
     --color-forest-night: oklch(14.5% 0.018 149);
     --color-forest-mid: oklch(31.0% 0.032 151);
-    --color-forest-light: oklch(36.3% 0.040 151);
+    --color-forest-light: oklch(38.5% 0.045 145);
     --color-sage: oklch(66.3% 0.061 148);
     --color-sage-light: oklch(79.5% 0.048 148);
     --color-sage-pale: oklch(90.7% 0.029 149);
-    --color-cream: oklch(95.7% 0.012 80);
-    --color-cream-warm: oklch(92.6% 0.023 87);
-    --color-cream-dark: oklch(82.5% 0.034 88);
-    --color-amber: oklch(67.6% 0.130 72);
-    --color-amber-light: oklch(81.2% 0.111 79);
+    --color-botanical: oklch(38.5% 0.045 145);
+    --color-sage-mist: oklch(83.5% 0.025 130);
 
-    /* Homepage fonts */
-    --font-serif: var(--font-sans);
-    --font-mono: var(--font-numeric);
+    /* Cream paper + amber stat accents */
+    --color-cream: oklch(95.2% 0.018 85);
+    --color-cream-warm: oklch(91.8% 0.030 82);
+    --color-cream-dark: oklch(82.5% 0.034 88);
+    --color-amber: oklch(62.0% 0.118 58);
+    --color-amber-light: oklch(80.0% 0.090 70);
 }
 
 /* Public-safe Soapkraft primitives. Filament overrides live in filament-soapkraft.css. */
@@ -92,9 +109,9 @@
     }
 
     .sk-tone-catalog {
-        --sk-tone: var(--color-accent);
-        --sk-tone-soft: var(--color-accent-soft);
-        --sk-tone-strong: var(--color-accent-strong);
+        --sk-tone: var(--color-active);
+        --sk-tone-soft: var(--color-active-soft);
+        --sk-tone-strong: var(--color-active-strong);
     }
 
     .sk-tone-materials,
@@ -174,4 +191,116 @@ a:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
     border-radius: 0.25rem;
+}
+
+/* =====================================================================
+   APOTHECARY LEDGER — shared display primitives
+   Imported by every CSS entry point (public.css + app.css), so these
+   are available on the homepage, calculator and app-shell alike.
+   ===================================================================== */
+
+/* Display serif (Instrument Serif) */
+.font-display {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    line-height: 1.04;
+    letter-spacing: -0.012em;
+    text-wrap: balance;
+}
+
+/* Mono ledger eyebrow — text-xs (12px) minimum, never smaller */
+.ledger-eyebrow {
+    font-family: var(--font-numeric);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ledger-eyebrow-color, var(--color-accent-strong));
+}
+
+/* Hairline rule, fading at both ends */
+.ledger-rule {
+    height: 1px;
+    border: 0;
+    background: linear-gradient(
+        to right,
+        transparent,
+        color-mix(in oklab, var(--color-ink-strong) 20%, transparent) 6%,
+        color-mix(in oklab, var(--color-ink-strong) 20%, transparent) 94%,
+        transparent
+    );
+}
+
+/* Deep forest band with faint cream ledger rules */
+.forest-ledger {
+    background-color: var(--color-forest);
+    background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 39px,
+        color-mix(in oklab, var(--color-inverse) 8%, transparent) 39px,
+        color-mix(in oklab, var(--color-inverse) 8%, transparent) 40px
+    );
+}
+
+/* Staggered page-load reveal */
+@keyframes al-rise {
+    from {
+        opacity: 0;
+        transform: translateY(18px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.al-rise {
+    animation: al-rise 820ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.al-rise-1 {
+    animation-delay: 90ms;
+}
+
+.al-rise-2 {
+    animation-delay: 200ms;
+}
+
+.al-rise-3 {
+    animation-delay: 310ms;
+}
+
+.al-rise-4 {
+    animation-delay: 420ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .al-rise,
+    .al-rise-1,
+    .al-rise-2,
+    .al-rise-3,
+    .al-rise-4 {
+        animation: none;
+    }
+}
+
+/* =====================================================================
+   APP-SHELL SIDEBAR — dark forest nav rail
+   Scoped token overrides on .sk-sidebar re-skin every existing utility
+   and component class inside the aside (background, text, dividers, hover
+   states, active nav, badges) for a dark surface — WITHOUT touching the
+   global tokens that filament-soapkraft.css also reads (admin panel stays
+   light). Add `sk-sidebar` to the <aside>.
+   ===================================================================== */
+.sk-sidebar {
+    --color-sidebar: var(--color-forest-deep);
+    --color-ink-sidebar: var(--color-inverse);
+    --color-ink-sidebar-soft: var(--color-inverse-soft);
+    --color-field-muted: color-mix(in oklab, var(--color-inverse) 9%, transparent);
+    --color-sidebar-active: color-mix(in oklab, var(--color-inverse) 11%, transparent);
+    --color-sidebar-active-text: var(--color-inverse);
+    --color-sidebar-active-ring: color-mix(in oklab, var(--color-sage-light) 32%, transparent);
+    --color-line: color-mix(in oklab, var(--color-inverse) 14%, transparent);
 }

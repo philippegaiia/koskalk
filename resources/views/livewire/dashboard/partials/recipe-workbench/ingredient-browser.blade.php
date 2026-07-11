@@ -8,9 +8,9 @@
  </div>
 
  <div class="space-y-3 border-b border-[var(--color-line)] px-5 py-4">
- <input x-model="search" type="search" placeholder="Search name or INCI..." aria-label="Search ingredients" class="w-full rounded-[1.15rem] bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition placeholder:text-[var(--color-ink-soft)]" />
+ <input x-model="search" type="search" placeholder="Search name or INCI..." aria-label="Search ingredients" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
 
- <select x-model="activeCategory" aria-label="Filter by category" class="w-full rounded-[1.15rem] bg-[var(--color-field)] px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)] transition">
+ <select x-model="activeCategory" aria-label="Filter by category" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)]">
  <template x-for="option in categoryOptions" :key="option.value">
  <option :value="option.value" :selected="option.value === activeCategory" x-text="`${option.label} (${categoryIngredientCount(option.value)})`"></option>
  </template>
@@ -34,8 +34,8 @@
  </template>
  </div>
  <div class="min-w-0 flex-1">
- <p class="truncate text-sm font-semibold leading-5 text-[var(--color-ink-strong)]" x-text="ingredient.name"></p>
- <p class="mt-0.5 min-w-0 truncate text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
+ <p class="line-clamp-2 text-sm font-semibold leading-5 text-[var(--color-ink-strong)]" :title="ingredient.name" x-text="ingredient.name"></p>
+ <p class="mt-0.5 min-w-0 truncate text-xs leading-4 text-[var(--color-ink-soft)]" :title="ingredient.inci_name || 'INCI not entered yet'" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
  </div>
 
  <div class="flex shrink-0 items-center gap-2">
@@ -77,7 +77,12 @@
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
  class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
- <p class="sk-eyebrow">Material details</p>
+ <p class="sk-eyebrow">Ingredient</p>
+ <div class="mt-2.5 rounded-xl bg-[var(--color-panel)] px-3 py-2">
+ <p class="text-sm font-semibold leading-snug text-[var(--color-ink-strong)]" x-text="ingredient.name"></p>
+ <p class="mt-1 text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
+ </div>
+ <p class="mt-3 sk-eyebrow">Material details</p>
  <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
  <template x-for="row in ingredientInspectorRows(ingredient)" :key="row.label">
  <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">

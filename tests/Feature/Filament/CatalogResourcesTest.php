@@ -5,6 +5,7 @@ use App\Filament\Resources\IfraCertificates\IfraCertificateResource;
 use App\Filament\Resources\IfraProductCategories\IfraProductCategoryResource;
 use App\Filament\Resources\IngredientAllergenEntries\IngredientAllergenEntryResource;
 use App\Filament\Resources\Ingredients\IngredientResource;
+use App\Filament\Resources\Ingredients\Pages\EditIngredient;
 use App\Filament\Resources\Ingredients\Pages\ListIngredients;
 use App\Filament\Resources\Ingredients\Schemas\IngredientForm;
 use App\Filament\Resources\IngredientSapProfiles\IngredientSapProfileResource;
@@ -14,6 +15,8 @@ use App\Filament\Resources\RegulatoryRegimeAllergens\RegulatoryRegimeAllergenRes
 use App\Filament\Resources\RegulatoryRegimes\RegulatoryRegimeResource;
 use App\Filament\Resources\RegulatoryRegimeSubstanceRules\RegulatoryRegimeSubstanceRuleResource;
 use App\Filament\Resources\Substances\SubstanceResource;
+use App\Filament\Resources\SupportedLocales\Pages\CreateSupportedLocale;
+use App\Filament\Resources\SupportedLocales\Pages\EditSupportedLocale;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\UserResource;
@@ -26,6 +29,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientSapProfile;
 use App\Models\IngredientSubstanceEntry;
+use App\Models\IngredientTranslation;
 use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
@@ -34,6 +38,7 @@ use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
 use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\OwnerType;
 use App\Visibility;
@@ -45,6 +50,78 @@ use Illuminate\Support\Facades\Hash;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('creates a language from the Laravel Lang catalogue', function () {
+    $admin = User::factory()->admin()->create();
+    SupportedLocale::factory()->create(['code' => 'en']);
+
+    $this->actingAs($admin);
+
+    Livewire::test(CreateSupportedLocale::class)
+        ->fillForm([
+            'catalog_locale' => 'fr',
+            'sort_order' => 20,
+            'is_active' => false,
+            'is_default' => false,
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $this->assertDatabaseHas(SupportedLocale::class, [
+        'code' => 'fr',
+        'name' => 'French',
+        'native_name' => 'Français',
+        'number_locale' => 'fr_FR',
+        'text_direction' => 'ltr',
+        'is_active' => false,
+    ]);
+});
+
+it('keeps Laravel Lang identity metadata read only when editing a language', function () {
+    $admin = User::factory()->admin()->create();
+    $locale = SupportedLocale::factory()->create([
+        'code' => 'es',
+        'name' => 'Spanish',
+        'native_name' => 'Español',
+        'number_locale' => 'es_ES',
+        'text_direction' => 'ltr',
+        'sort_order' => 30,
+        'is_active' => false,
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditSupportedLocale::class, ['record' => $locale->id])
+        ->fillForm([
+            'code' => 'xx',
+            'name' => 'Changed',
+            'native_name' => 'Changed',
+            'number_locale' => 'xx_XX',
+            'text_direction' => 'rtl',
+            'sort_order' => 40,
+            'is_active' => true,
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($locale->refresh()->only([
+        'code',
+        'name',
+        'native_name',
+        'number_locale',
+        'text_direction',
+        'sort_order',
+        'is_active',
+    ]))->toBe([
+        'code' => 'es',
+        'name' => 'Spanish',
+        'native_name' => 'Español',
+        'number_locale' => 'es_ES',
+        'text_direction' => 'ltr',
+        'sort_order' => 40,
+        'is_active' => true,
+    ]);
+});
 
 it('renders the catalog list resources in the admin panel', function () {
     $user = User::factory()->admin()->create();
@@ -80,6 +157,127 @@ it('renders the catalog list resources in the admin panel', function () {
     $this->get(IngredientSapProfileResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Olive Oil');
+});
+
+it('renders registered platform ingredient translation locales in Filament', function () {
+    $admin = User::factory()->admin()->create();
+    SupportedLocale::factory()->create([
+        'code' => 'en',
+        'name' => 'English',
+        'native_name' => 'English',
+        'is_default' => true,
+        'sort_order' => 10,
+    ]);
+    SupportedLocale::factory()->create([
+        'code' => 'fr',
+        'name' => 'French',
+        'native_name' => 'Français',
+        'is_active' => false,
+        'sort_order' => 20,
+    ]);
+    SupportedLocale::factory()->create([
+        'code' => 'de',
+        'name' => 'German',
+        'native_name' => 'Deutsch',
+        'is_active' => false,
+        'sort_order' => 30,
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'info_markdown' => 'English guidance',
+    ]);
+    IngredientTranslation::factory()
+        ->for($ingredient)
+        ->create([
+            'locale' => 'fr',
+            'display_name' => 'Huile d’olive',
+        ]);
+    IngredientTranslation::factory()
+        ->for($ingredient)
+        ->create([
+            'locale' => 'de',
+            'display_name' => 'Olivenöl',
+        ]);
+
+    $this->actingAs($admin)
+        ->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
+        ->assertSuccessful()
+        ->assertSeeText('Translate the public ingredient name and guidance.')
+        ->assertSeeText('French')
+        ->assertSeeText('German')
+        ->assertSeeText('Olive Oil')
+        ->assertSeeText('English guidance');
+});
+
+it('lets admins save platform ingredient translations in Filament', function () {
+    $admin = User::factory()->admin()->create();
+    SupportedLocale::factory()->create(['code' => 'fr', 'name' => 'French']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->id])
+        ->fillForm([
+            'translations' => [[
+                'locale' => 'fr',
+                'display_name' => 'Huile d’olive',
+                'info_markdown' => 'Conseils en français',
+            ]],
+        ])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect(IngredientTranslation::query()
+        ->whereBelongsTo($ingredient)
+        ->where('locale', 'fr')
+        ->firstOrFail()
+        ->only(['display_name', 'info_markdown']))
+        ->toBe([
+            'display_name' => 'Huile d’olive',
+            'info_markdown' => 'Conseils en français',
+        ]);
+});
+
+it('validates ingredient translations before saving canonical ingredient data', function () {
+    $admin = User::factory()->admin()->create();
+    SupportedLocale::factory()->create(['code' => 'fr', 'name' => 'French']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->id])
+        ->fillForm([
+            'current_version.display_name' => 'Changed English Name',
+            'translations' => [[
+                'locale' => 'fr',
+                'display_name' => ' ',
+                'info_markdown' => null,
+            ]],
+        ])
+        ->call('save')
+        ->assertHasFormErrors();
+
+    expect($ingredient->refresh()->display_name)->toBe('Olive Oil');
+});
+
+it('keeps the platform translation editor away from private ingredients', function () {
+    $admin = User::factory()->admin()->create();
+    $owner = User::factory()->create();
+    SupportedLocale::factory()->create(['code' => 'fr', 'name' => 'French']);
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $owner->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
+        ->assertSuccessful()
+        ->assertDontSeeText('Translate the public ingredient name and guidance.');
 });
 
 it('keeps composite component ingredient options current within the request', function () {

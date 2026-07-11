@@ -4,8 +4,126 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "b348c86d636d3557a148851d4860bc86",
+    "content-hash": "9e743f0f489ae989d8065ff61aef255b",
     "packages": [
+        {
+            "name": "anourvalar/eloquent-serialize",
+            "version": "1.3.10",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/AnourValar/eloquent-serialize.git",
+                "reference": "2be26f176b764a2d6f20118bfa4b125f71fa88f8"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/AnourValar/eloquent-serialize/zipball/2be26f176b764a2d6f20118bfa4b125f71fa88f8",
+                "reference": "2be26f176b764a2d6f20118bfa4b125f71fa88f8",
+                "shasum": ""
+            },
+            "require": {
+                "laravel/framework": "^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.26",
+                "laravel/legacy-factories": "^1.1",
+                "orchestra/testbench": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+                "phpstan/phpstan": "^2.0",
+                "phpunit/phpunit": "^9.5|^10.5|^11.0",
+                "squizlabs/php_codesniffer": "^3.7"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "aliases": {
+                        "EloquentSerialize": "AnourValar\\EloquentSerialize\\Facades\\EloquentSerializeFacade"
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "AnourValar\\EloquentSerialize\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Laravel Query Builder (Eloquent) serialization",
+            "homepage": "https://github.com/AnourValar/eloquent-serialize",
+            "keywords": [
+                "anourvalar",
+                "builder",
+                "copy",
+                "eloquent",
+                "job",
+                "laravel",
+                "query",
+                "querybuilder",
+                "queue",
+                "serializable",
+                "serialization",
+                "serialize"
+            ],
+            "support": {
+                "issues": "https://github.com/AnourValar/eloquent-serialize/issues",
+                "source": "https://github.com/AnourValar/eloquent-serialize/tree/1.3.10"
+            },
+            "time": "2026-06-20T14:30:25+00:00"
+        },
+        {
+            "name": "archtechx/enums",
+            "version": "v1.1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/archtechx/enums.git",
+                "reference": "81375b71c176f680880a95e7448d84258cfb5c72"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/archtechx/enums/zipball/81375b71c176f680880a95e7448d84258cfb5c72",
+                "reference": "81375b71c176f680880a95e7448d84258cfb5c72",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "larastan/larastan": "^2.4",
+                "orchestra/testbench": "^8.0 || ^9.0",
+                "pestphp/pest": "^2.0",
+                "pestphp/pest-plugin-laravel": "^2.0"
+            },
+            "type": "library",
+            "extra": {
+                "phpstan": {
+                    "includes": [
+                        "extension.neon"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "ArchTech\\Enums\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Samuel Štancl",
+                    "email": "samuel@archte.ch"
+                }
+            ],
+            "description": "Helpers for making PHP enums more lovable.",
+            "support": {
+                "issues": "https://github.com/archtechx/enums/issues",
+                "source": "https://github.com/archtechx/enums/tree/v1.1.2"
+            },
+            "time": "2025-06-06T23:15:09+00:00"
+        },
         {
             "name": "blade-ui-kit/blade-heroicons",
             "version": "2.7.0",
@@ -77,16 +195,16 @@
         },
         {
             "name": "blade-ui-kit/blade-icons",
-            "version": "1.10.0",
+            "version": "1.10.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/driesvints/blade-icons.git",
-                "reference": "74189a80bbaa4966aebaee54fec3a3c2ef0a5f3a"
+                "reference": "6e072d021ea6249986c330b93293c33d0c4f0e34"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/driesvints/blade-icons/zipball/74189a80bbaa4966aebaee54fec3a3c2ef0a5f3a",
-                "reference": "74189a80bbaa4966aebaee54fec3a3c2ef0a5f3a",
+                "url": "https://api.github.com/repos/driesvints/blade-icons/zipball/6e072d021ea6249986c330b93293c33d0c4f0e34",
+                "reference": "6e072d021ea6249986c330b93293c33d0c4f0e34",
                 "shasum": ""
             },
             "require": {
@@ -154,7 +272,7 @@
                     "type": "paypal"
                 }
             ],
-            "time": "2026-04-23T19:03:45+00:00"
+            "time": "2026-06-30T09:44:12+00:00"
         },
         {
             "name": "brick/math",
@@ -445,6 +563,298 @@
                 }
             ],
             "time": "2026-03-20T21:10:52+00:00"
+        },
+        {
+            "name": "codezero/browser-locale",
+            "version": "3.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/codezero-be/browser-locale.git",
+                "reference": "dd6c50e5557b06b57960df6db7f52e85ef683e5e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/codezero-be/browser-locale/zipball/dd6c50e5557b06b57960df6db7f52e85ef683e5e",
+                "reference": "dd6c50e5557b06b57960df6db7f52e85ef683e5e",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.0|^8.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "^1.3.3",
+                "phpunit/phpunit": "^6.0|^7.0|^8.0|^9.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "CodeZero\\BrowserLocale\\Laravel\\BrowserLocaleServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "CodeZero\\BrowserLocale\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Ivan Vermeyen",
+                    "email": "ivan@codezero.be"
+                }
+            ],
+            "description": "Get the most preferred locales from your visitor's browser.",
+            "keywords": [
+                "browser",
+                "country",
+                "detect",
+                "language",
+                "locale",
+                "php",
+                "website"
+            ],
+            "support": {
+                "issues": "https://github.com/codezero-be/browser-locale/issues",
+                "source": "https://github.com/codezero-be/browser-locale/tree/3.4.0"
+            },
+            "funding": [
+                {
+                    "url": "https://paypal.me/ivanvermeyen",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://ko-fi.com/ivanvermeyen",
+                    "type": "ko_fi"
+                }
+            ],
+            "time": "2024-03-02T12:51:17+00:00"
+        },
+        {
+            "name": "composer/class-map-generator",
+            "version": "1.7.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/composer/class-map-generator.git",
+                "reference": "86d8208fc3c649a3a999daf1a63c25201be2990f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/composer/class-map-generator/zipball/86d8208fc3c649a3a999daf1a63c25201be2990f",
+                "reference": "86d8208fc3c649a3a999daf1a63c25201be2990f",
+                "shasum": ""
+            },
+            "require": {
+                "composer/pcre": "^2.1 || ^3.1",
+                "php": "^7.2 || ^8.0",
+                "symfony/finder": "^4.4 || ^5.3 || ^6 || ^7 || ^8"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^1.12 || ^2",
+                "phpstan/phpstan-deprecation-rules": "^1 || ^2",
+                "phpstan/phpstan-phpunit": "^1 || ^2",
+                "phpstan/phpstan-strict-rules": "^1.1 || ^2",
+                "phpunit/phpunit": "^8",
+                "symfony/filesystem": "^5.4 || ^6 || ^7 || ^8"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-main": "1.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Composer\\ClassMapGenerator\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jordi Boggiano",
+                    "email": "j.boggiano@seld.be",
+                    "homepage": "https://seld.be"
+                }
+            ],
+            "description": "Utilities to scan PHP code and generate class maps.",
+            "keywords": [
+                "classmap"
+            ],
+            "support": {
+                "issues": "https://github.com/composer/class-map-generator/issues",
+                "source": "https://github.com/composer/class-map-generator/tree/1.7.3"
+            },
+            "funding": [
+                {
+                    "url": "https://packagist.com",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/composer",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-05-05T09:17:07+00:00"
+        },
+        {
+            "name": "composer/pcre",
+            "version": "3.4.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/composer/pcre.git",
+                "reference": "d5a341b3fb61f3001970940afb1d332968a183ed"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/composer/pcre/zipball/d5a341b3fb61f3001970940afb1d332968a183ed",
+                "reference": "d5a341b3fb61f3001970940afb1d332968a183ed",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.4 || ^8.0"
+            },
+            "conflict": {
+                "phpstan/phpstan": "<2.2.2"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^2",
+                "phpstan/phpstan-deprecation-rules": "^2",
+                "phpstan/phpstan-strict-rules": "^2",
+                "phpunit/phpunit": "^9"
+            },
+            "type": "library",
+            "extra": {
+                "phpstan": {
+                    "includes": [
+                        "extension.neon"
+                    ]
+                },
+                "branch-alias": {
+                    "dev-main": "3.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Composer\\Pcre\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jordi Boggiano",
+                    "email": "j.boggiano@seld.be",
+                    "homepage": "http://seld.be"
+                }
+            ],
+            "description": "PCRE wrapping library that offers type-safe preg_* replacements.",
+            "keywords": [
+                "PCRE",
+                "preg",
+                "regex",
+                "regular expression"
+            ],
+            "support": {
+                "issues": "https://github.com/composer/pcre/issues",
+                "source": "https://github.com/composer/pcre/tree/3.4.0"
+            },
+            "funding": [
+                {
+                    "url": "https://packagist.com",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/composer",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-06-07T11:47:49+00:00"
+        },
+        {
+            "name": "composer/semver",
+            "version": "3.4.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/composer/semver.git",
+                "reference": "198166618906cb2de69b95d7d47e5fa8aa1b2b95"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/composer/semver/zipball/198166618906cb2de69b95d7d47e5fa8aa1b2b95",
+                "reference": "198166618906cb2de69b95d7d47e5fa8aa1b2b95",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^5.3.2 || ^7.0 || ^8.0"
+            },
+            "require-dev": {
+                "phpstan/phpstan": "^1.11",
+                "symfony/phpunit-bridge": "^3 || ^7"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-main": "3.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Composer\\Semver\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Adermann",
+                    "email": "naderman@naderman.de",
+                    "homepage": "http://www.naderman.de"
+                },
+                {
+                    "name": "Jordi Boggiano",
+                    "email": "j.boggiano@seld.be",
+                    "homepage": "http://seld.be"
+                },
+                {
+                    "name": "Rob Bast",
+                    "email": "rob.bast@gmail.com",
+                    "homepage": "http://robbast.nl"
+                }
+            ],
+            "description": "Semver library that offers utilities, version constraint parsing and validation.",
+            "keywords": [
+                "semantic",
+                "semver",
+                "validation",
+                "versioning"
+            ],
+            "support": {
+                "irc": "ircs://irc.libera.chat:6697/composer",
+                "issues": "https://github.com/composer/semver/issues",
+                "source": "https://github.com/composer/semver/tree/3.4.4"
+            },
+            "funding": [
+                {
+                    "url": "https://packagist.com",
+                    "type": "custom"
+                },
+                {
+                    "url": "https://github.com/composer",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-08-20T19:15:30+00:00"
         },
         {
             "name": "danharrin/date-format-converter",
@@ -794,6 +1204,233 @@
             "time": "2024-02-05T11:56:58+00:00"
         },
         {
+            "name": "dragon-code/contracts",
+            "version": "2.25.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/TheDragonCode/contracts.git",
+                "reference": "13d1254801026be5ba33cf1309a414953869175f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/TheDragonCode/contracts/zipball/13d1254801026be5ba33cf1309a414953869175f",
+                "reference": "13d1254801026be5ba33cf1309a414953869175f",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.2.5 || ^8.0",
+                "psr/http-message": "^1.0.1 || ^2.0",
+                "symfony/http-kernel": "^4.0 || ^5.0 || ^6.0 || ^7.0 || ^8.0",
+                "symfony/polyfill-php80": "^1.23"
+            },
+            "conflict": {
+                "andrey-helldar/contracts": "*"
+            },
+            "require-dev": {
+                "illuminate/database": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "phpdocumentor/reflection-docblock": "^5.0 || ^6.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DragonCode\\Contracts\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro"
+                }
+            ],
+            "description": "A set of contracts for any project",
+            "keywords": [
+                "contracts",
+                "interfaces"
+            ],
+            "support": {
+                "source": "https://github.com/TheDragonCode/contracts"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-03-17T21:50:20+00:00"
+        },
+        {
+            "name": "dragon-code/pretty-array",
+            "version": "4.2.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/TheDragonCode/pretty-array.git",
+                "reference": "b94034d92172a5d14a578822d68b2a8f8b5388e0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/TheDragonCode/pretty-array/zipball/b94034d92172a5d14a578822d68b2a8f8b5388e0",
+                "reference": "b94034d92172a5d14a578822d68b2a8f8b5388e0",
+                "shasum": ""
+            },
+            "require": {
+                "dragon-code/contracts": "^2.20",
+                "dragon-code/support": "^6.11.2",
+                "ext-dom": "*",
+                "ext-mbstring": "*",
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.6 || ^10.0 || ^11.0 || ^12.0"
+            },
+            "suggest": {
+                "symfony/thanks": "Give thanks (in the form of a GitHub) to your fellow PHP package maintainers"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DragonCode\\PrettyArray\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro"
+                }
+            ],
+            "description": "Simple conversion of an array to a pretty view",
+            "keywords": [
+                "andrey helldar",
+                "array",
+                "dragon",
+                "dragon code",
+                "pretty",
+                "pretty array"
+            ],
+            "support": {
+                "issues": "https://github.com/TheDragonCode/pretty-array/issues",
+                "source": "https://github.com/TheDragonCode/pretty-array"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2025-02-24T15:35:24+00:00"
+        },
+        {
+            "name": "dragon-code/support",
+            "version": "6.17.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/TheDragonCode/support.git",
+                "reference": "82a465953267989883d64b921e9725600a5073b5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/TheDragonCode/support/zipball/82a465953267989883d64b921e9725600a5073b5",
+                "reference": "82a465953267989883d64b921e9725600a5073b5",
+                "shasum": ""
+            },
+            "require": {
+                "dragon-code/contracts": "^2.22.0",
+                "ext-bcmath": "*",
+                "ext-ctype": "*",
+                "ext-dom": "*",
+                "ext-json": "*",
+                "ext-mbstring": "*",
+                "php": "^8.1",
+                "psr/http-message": "^1.0.1 || ^2.0",
+                "voku/portable-ascii": "^1.4.8 || ^2.0.1"
+            },
+            "conflict": {
+                "andrey-helldar/support": "*"
+            },
+            "require-dev": {
+                "illuminate/contracts": "^9.0 || ^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "phpunit/phpunit": "^9.6 || ^11.0 || ^12.0",
+                "symfony/var-dumper": "^6.0 || ^7.0"
+            },
+            "suggest": {
+                "dragon-code/laravel-support": "Various helper files for the Laravel and Lumen frameworks",
+                "symfony/thanks": "Give thanks (in the form of a GitHub) to your fellow PHP package maintainers"
+            },
+            "type": "library",
+            "extra": {
+                "dragon-code": {
+                    "docs-generator": {
+                        "preview": {
+                            "brand": "php",
+                            "vendor": "The Dragon Code"
+                        }
+                    }
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "DragonCode\\Support\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro"
+                }
+            ],
+            "description": "Support package is a collection of helpers and tools for any project.",
+            "keywords": [
+                "dragon",
+                "dragon-code",
+                "framework",
+                "helper",
+                "helpers",
+                "laravel",
+                "php",
+                "support",
+                "symfony",
+                "yii",
+                "yii2"
+            ],
+            "support": {
+                "issues": "https://github.com/TheDragonCode/support/issues",
+                "source": "https://github.com/TheDragonCode/support"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-04-03T15:06:29+00:00"
+        },
+        {
             "name": "dragonmantank/cron-expression",
             "version": "v3.6.0",
             "source": {
@@ -926,19 +1563,20 @@
         },
         {
             "name": "filament/actions",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/actions.git",
-                "reference": "4697f9e6dab1f023b2ea21b0e449c3fd204fb3d9"
+                "reference": "1c479a47ee1612f7c05a7921b2491230aeed392c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/actions/zipball/4697f9e6dab1f023b2ea21b0e449c3fd204fb3d9",
-                "reference": "4697f9e6dab1f023b2ea21b0e449c3fd204fb3d9",
+                "url": "https://api.github.com/repos/filamentphp/actions/zipball/1c479a47ee1612f7c05a7921b2491230aeed392c",
+                "reference": "1c479a47ee1612f7c05a7921b2491230aeed392c",
                 "shasum": ""
             },
             "require": {
+                "anourvalar/eloquent-serialize": "^1.3.6",
                 "filament/forms": "self.version",
                 "filament/infolists": "self.version",
                 "filament/notifications": "self.version",
@@ -970,20 +1608,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:27:06+00:00"
+            "time": "2026-07-02T08:19:13+00:00"
         },
         {
             "name": "filament/filament",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/panels.git",
-                "reference": "2b6bfa9888e0bcba8c2a7dfbdfe913cab72cfe6a"
+                "reference": "c54ec7692245787057c24f82d92d9fee7bc24941"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/panels/zipball/2b6bfa9888e0bcba8c2a7dfbdfe913cab72cfe6a",
-                "reference": "2b6bfa9888e0bcba8c2a7dfbdfe913cab72cfe6a",
+                "url": "https://api.github.com/repos/filamentphp/panels/zipball/c54ec7692245787057c24f82d92d9fee7bc24941",
+                "reference": "c54ec7692245787057c24f82d92d9fee7bc24941",
                 "shasum": ""
             },
             "require": {
@@ -1027,20 +1665,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:24:15+00:00"
+            "time": "2026-07-02T08:17:14+00:00"
         },
         {
             "name": "filament/forms",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/forms.git",
-                "reference": "f7b5e8701982408f84e1b12fcca75eadad47905b"
+                "reference": "7e6e4e52a63f4fc11edb253201bdd8cbc7d956eb"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/forms/zipball/f7b5e8701982408f84e1b12fcca75eadad47905b",
-                "reference": "f7b5e8701982408f84e1b12fcca75eadad47905b",
+                "url": "https://api.github.com/repos/filamentphp/forms/zipball/7e6e4e52a63f4fc11edb253201bdd8cbc7d956eb",
+                "reference": "7e6e4e52a63f4fc11edb253201bdd8cbc7d956eb",
                 "shasum": ""
             },
             "require": {
@@ -1077,20 +1715,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:27:44+00:00"
+            "time": "2026-07-02T08:16:27+00:00"
         },
         {
             "name": "filament/infolists",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/infolists.git",
-                "reference": "0b87686a37160bf7f8bccae1eedc733bbf928dc9"
+                "reference": "01152bfc7d5d2b65a83eb1045a8f3625d4eaeae7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/infolists/zipball/0b87686a37160bf7f8bccae1eedc733bbf928dc9",
-                "reference": "0b87686a37160bf7f8bccae1eedc733bbf928dc9",
+                "url": "https://api.github.com/repos/filamentphp/infolists/zipball/01152bfc7d5d2b65a83eb1045a8f3625d4eaeae7",
+                "reference": "01152bfc7d5d2b65a83eb1045a8f3625d4eaeae7",
                 "shasum": ""
             },
             "require": {
@@ -1122,20 +1760,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:28:23+00:00"
+            "time": "2026-07-02T08:19:40+00:00"
         },
         {
             "name": "filament/notifications",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/notifications.git",
-                "reference": "28ce63bf4e378a4e38efac7b1f0519a5fed4b352"
+                "reference": "a2b4564d9c7fcb5b8e904da40b4f6c2782934071"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/notifications/zipball/28ce63bf4e378a4e38efac7b1f0519a5fed4b352",
-                "reference": "28ce63bf4e378a4e38efac7b1f0519a5fed4b352",
+                "url": "https://api.github.com/repos/filamentphp/notifications/zipball/a2b4564d9c7fcb5b8e904da40b4f6c2782934071",
+                "reference": "a2b4564d9c7fcb5b8e904da40b4f6c2782934071",
                 "shasum": ""
             },
             "require": {
@@ -1169,20 +1807,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:27:42+00:00"
+            "time": "2026-07-02T08:08:59+00:00"
         },
         {
             "name": "filament/query-builder",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/query-builder.git",
-                "reference": "fb4b6cdebe6ab2c233cc78d3688a64f022263c56"
+                "reference": "401d0d61f5ead5d440f184857e1921675138fd5a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/query-builder/zipball/fb4b6cdebe6ab2c233cc78d3688a64f022263c56",
-                "reference": "fb4b6cdebe6ab2c233cc78d3688a64f022263c56",
+                "url": "https://api.github.com/repos/filamentphp/query-builder/zipball/401d0d61f5ead5d440f184857e1921675138fd5a",
+                "reference": "401d0d61f5ead5d440f184857e1921675138fd5a",
                 "shasum": ""
             },
             "require": {
@@ -1215,20 +1853,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-05-27T16:17:11+00:00"
+            "time": "2026-07-02T08:20:10+00:00"
         },
         {
             "name": "filament/schemas",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/schemas.git",
-                "reference": "c3ecdfe73a215927caaf7b28bc5ae2b3891e805b"
+                "reference": "036549f1b6cbf3d908e1b9fa42f5e221d1db3240"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/schemas/zipball/c3ecdfe73a215927caaf7b28bc5ae2b3891e805b",
-                "reference": "c3ecdfe73a215927caaf7b28bc5ae2b3891e805b",
+                "url": "https://api.github.com/repos/filamentphp/schemas/zipball/036549f1b6cbf3d908e1b9fa42f5e221d1db3240",
+                "reference": "036549f1b6cbf3d908e1b9fa42f5e221d1db3240",
                 "shasum": ""
             },
             "require": {
@@ -1260,20 +1898,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:28:03+00:00"
+            "time": "2026-07-02T08:20:18+00:00"
         },
         {
             "name": "filament/support",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/support.git",
-                "reference": "caa2bf186de5b32a789d3c7167bc63db153386a1"
+                "reference": "024caa553010c2617bb90114eb0e78883e33138b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/support/zipball/caa2bf186de5b32a789d3c7167bc63db153386a1",
-                "reference": "caa2bf186de5b32a789d3c7167bc63db153386a1",
+                "url": "https://api.github.com/repos/filamentphp/support/zipball/024caa553010c2617bb90114eb0e78883e33138b",
+                "reference": "024caa553010c2617bb90114eb0e78883e33138b",
                 "shasum": ""
             },
             "require": {
@@ -1318,20 +1956,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:28:36+00:00"
+            "time": "2026-07-02T08:20:15+00:00"
         },
         {
             "name": "filament/tables",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/tables.git",
-                "reference": "bb98022d73347eeb090976ae0730147289135ffb"
+                "reference": "bfe49781b2879e0c1acdfd4065d1c8499ee7ba1a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/tables/zipball/bb98022d73347eeb090976ae0730147289135ffb",
-                "reference": "bb98022d73347eeb090976ae0730147289135ffb",
+                "url": "https://api.github.com/repos/filamentphp/tables/zipball/bfe49781b2879e0c1acdfd4065d1c8499ee7ba1a",
+                "reference": "bfe49781b2879e0c1acdfd4065d1c8499ee7ba1a",
                 "shasum": ""
             },
             "require": {
@@ -1364,20 +2002,20 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:28:26+00:00"
+            "time": "2026-07-02T08:20:10+00:00"
         },
         {
             "name": "filament/widgets",
-            "version": "v5.6.7",
+            "version": "v5.6.8",
             "source": {
                 "type": "git",
                 "url": "https://github.com/filamentphp/widgets.git",
-                "reference": "8c6411e0331aab124ffdf6c49d1161b1ecfbc9bc"
+                "reference": "329c92e8560536fd6dd738b45eaf6ba063cd53ea"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/filamentphp/widgets/zipball/8c6411e0331aab124ffdf6c49d1161b1ecfbc9bc",
-                "reference": "8c6411e0331aab124ffdf6c49d1161b1ecfbc9bc",
+                "url": "https://api.github.com/repos/filamentphp/widgets/zipball/329c92e8560536fd6dd738b45eaf6ba063cd53ea",
+                "reference": "329c92e8560536fd6dd738b45eaf6ba063cd53ea",
                 "shasum": ""
             },
             "require": {
@@ -1408,7 +2046,7 @@
                 "issues": "https://github.com/filamentphp/filament/issues",
                 "source": "https://github.com/filamentphp/filament"
             },
-            "time": "2026-06-08T09:28:17+00:00"
+            "time": "2026-07-02T08:19:55+00:00"
         },
         {
             "name": "fruitcake/php-cors",
@@ -1545,22 +2183,22 @@
         },
         {
             "name": "guzzlehttp/guzzle",
-            "version": "7.13.1",
+            "version": "7.14.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/guzzle.git",
-                "reference": "55901a76dfd2006a0cc012b9e3c5b487f796478d"
+                "reference": "aef242412e13128b5049864867bb49fc37dd39de"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/55901a76dfd2006a0cc012b9e3c5b487f796478d",
-                "reference": "55901a76dfd2006a0cc012b9e3c5b487f796478d",
+                "url": "https://api.github.com/repos/guzzle/guzzle/zipball/aef242412e13128b5049864867bb49fc37dd39de",
+                "reference": "aef242412e13128b5049864867bb49fc37dd39de",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
-                "guzzlehttp/promises": "^2.5",
-                "guzzlehttp/psr7": "^2.12.3",
+                "guzzlehttp/promises": "^2.5.1",
+                "guzzlehttp/psr7": "^2.12.4",
                 "php": "^7.2.5 || ^8.0",
                 "psr/http-client": "^1.0",
                 "symfony/deprecation-contracts": "^2.5 || ^3.0",
@@ -1572,7 +2210,7 @@
             "require-dev": {
                 "bamarni/composer-bin-plugin": "^1.8.2",
                 "ext-curl": "*",
-                "guzzle/client-integration-tests": "3.0.2",
+                "guzzle/client-integration-tests": "3.0.3",
                 "guzzlehttp/test-server": "^0.6",
                 "php-http/message-factory": "^1.1",
                 "phpunit/phpunit": "^8.5.52 || ^9.6.34",
@@ -1653,7 +2291,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/guzzle/issues",
-                "source": "https://github.com/guzzle/guzzle/tree/7.13.1"
+                "source": "https://github.com/guzzle/guzzle/tree/7.14.0"
             },
             "funding": [
                 {
@@ -1669,20 +2307,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-29T20:14:18+00:00"
+            "time": "2026-07-08T22:54:09+00:00"
         },
         {
             "name": "guzzlehttp/promises",
-            "version": "2.5.0",
+            "version": "2.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/promises.git",
-                "reference": "4360e982f87f5f258bf872d094647791db2f4c8e"
+                "reference": "9ad1e4fc607446a055b95870c7f668e93b5cff29"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/promises/zipball/4360e982f87f5f258bf872d094647791db2f4c8e",
-                "reference": "4360e982f87f5f258bf872d094647791db2f4c8e",
+                "url": "https://api.github.com/repos/guzzle/promises/zipball/9ad1e4fc607446a055b95870c7f668e93b5cff29",
+                "reference": "9ad1e4fc607446a055b95870c7f668e93b5cff29",
                 "shasum": ""
             },
             "require": {
@@ -1737,7 +2375,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/promises/issues",
-                "source": "https://github.com/guzzle/promises/tree/2.5.0"
+                "source": "https://github.com/guzzle/promises/tree/2.5.1"
             },
             "funding": [
                 {
@@ -1753,20 +2391,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-02T12:23:43+00:00"
+            "time": "2026-07-08T15:48:39+00:00"
         },
         {
             "name": "guzzlehttp/psr7",
-            "version": "2.12.3",
+            "version": "2.12.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/psr7.git",
-                "reference": "7ec62dc3f44aa218487dbed81a9bf9bc647be55d"
+                "reference": "51e27f9e2b332ab3e72f4520d5ff4f3c68c3577c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/psr7/zipball/7ec62dc3f44aa218487dbed81a9bf9bc647be55d",
-                "reference": "7ec62dc3f44aa218487dbed81a9bf9bc647be55d",
+                "url": "https://api.github.com/repos/guzzle/psr7/zipball/51e27f9e2b332ab3e72f4520d5ff4f3c68c3577c",
+                "reference": "51e27f9e2b332ab3e72f4520d5ff4f3c68c3577c",
                 "shasum": ""
             },
             "require": {
@@ -1856,7 +2494,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/psr7/issues",
-                "source": "https://github.com/guzzle/psr7/tree/2.12.3"
+                "source": "https://github.com/guzzle/psr7/tree/2.12.4"
             },
             "funding": [
                 {
@@ -1872,20 +2510,20 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-23T15:21:08+00:00"
+            "time": "2026-07-08T15:56:20+00:00"
         },
         {
             "name": "guzzlehttp/uri-template",
-            "version": "v1.0.8",
+            "version": "v1.0.9",
             "source": {
                 "type": "git",
                 "url": "https://github.com/guzzle/uri-template.git",
-                "reference": "9c19128923b05a5d7355e5d2318d7808b7e33bbd"
+                "reference": "d7580af6d3f8384325d9cd3e99b21c3ed1848176"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/guzzle/uri-template/zipball/9c19128923b05a5d7355e5d2318d7808b7e33bbd",
-                "reference": "9c19128923b05a5d7355e5d2318d7808b7e33bbd",
+                "url": "https://api.github.com/repos/guzzle/uri-template/zipball/d7580af6d3f8384325d9cd3e99b21c3ed1848176",
+                "reference": "d7580af6d3f8384325d9cd3e99b21c3ed1848176",
                 "shasum": ""
             },
             "require": {
@@ -1942,7 +2580,7 @@
             ],
             "support": {
                 "issues": "https://github.com/guzzle/uri-template/issues",
-                "source": "https://github.com/guzzle/uri-template/tree/v1.0.8"
+                "source": "https://github.com/guzzle/uri-template/tree/v1.0.9"
             },
             "funding": [
                 {
@@ -1958,7 +2596,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-23T13:02:23+00:00"
+            "time": "2026-07-08T16:19:22+00:00"
         },
         {
             "name": "kirschbaum-development/eloquent-power-joins",
@@ -2022,6 +2660,1368 @@
                 "source": "https://github.com/kirschbaum-development/eloquent-power-joins/tree/4.3.2"
             },
             "time": "2026-05-28T20:35:55+00:00"
+        },
+        {
+            "name": "laravel-lang/actions",
+            "version": "1.13.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/actions.git",
+                "reference": "5e9bbd3b8af3fed4b733e424c56810b0d3e81377"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/actions/zipball/5e9bbd3b8af3fed4b733e424c56810b0d3e81377",
+                "reference": "5e9bbd3b8af3fed4b733e424c56810b0d3e81377",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "laravel-lang/publisher": "^14.0 || ^15.0 || ^16.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel-lang/status-generator": "^2.3.1",
+                "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0",
+                "symfony/var-dumper": "^6.3 || ^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\Actions\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\Actions\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro"
+                },
+                {
+                    "name": "Laravel Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "Translation of buttons and other action elements",
+            "keywords": [
+                "actions",
+                "buttons",
+                "lang",
+                "languages",
+                "laravel",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/actions/issues",
+                "source": "https://github.com/Laravel-Lang/actions/tree/1.13.2"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-05-30T12:11:11+00:00"
+        },
+        {
+            "name": "laravel-lang/attributes",
+            "version": "2.16.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/attributes.git",
+                "reference": "4a0de72632bb1862532977fd76ed6be9c1cc65af"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/attributes/zipball/4a0de72632bb1862532977fd76ed6be9c1cc65af",
+                "reference": "4a0de72632bb1862532977fd76ed6be9c1cc65af",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "laravel-lang/publisher": "^14.0 || ^15.0 || ^16.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel-lang/status-generator": "^1.19 || ^2.0",
+                "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0",
+                "symfony/var-dumper": "^6.0 || ^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\Attributes\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\Attributes\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://github.com/Laravel-Lang"
+                }
+            ],
+            "description": "Translation of form element names",
+            "keywords": [
+                "attributes",
+                "fields",
+                "form",
+                "lang",
+                "languages",
+                "laravel",
+                "messages",
+                "translations",
+                "validation"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/attributes/issues",
+                "source": "https://github.com/Laravel-Lang/attributes/tree/2.16.4"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-05-30T12:11:05+00:00"
+        },
+        {
+            "name": "laravel-lang/common",
+            "version": "6.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/common.git",
+                "reference": "f1e3383f94c4f157f0f41324792382bf2dd84d52"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/common/zipball/f1e3383f94c4f157f0f41324792382bf2dd84d52",
+                "reference": "f1e3383f94c4f157f0f41324792382bf2dd84d52",
+                "shasum": ""
+            },
+            "require": {
+                "laravel-lang/actions": "^1.9",
+                "laravel-lang/attributes": "^2.12",
+                "laravel-lang/http-statuses": "^3.8",
+                "laravel-lang/json-fallback": "^2.2",
+                "laravel-lang/lang": "^13.12 || ^14.0 || ^15.5.1",
+                "laravel-lang/locales": "^2.10",
+                "laravel-lang/models": "^1.3",
+                "laravel-lang/moonshine": "^1.2",
+                "laravel-lang/publisher": "^16.5",
+                "laravel-lang/routes": "^1.7",
+                "laravel-lang/starter-kits": "^1.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "dragon-code/support": "^6.13",
+                "orchestra/testbench": "^8.17 || ^9.1.2 || ^10.0 || ^11.0",
+                "phpunit/phpunit": "^10.5.20 || ^11.0 || ^12.0",
+                "symfony/var-dumper": "^6.4 || ^7.1.1 || ^8.0"
+            },
+            "type": "library",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://github.com/Laravel-Lang"
+                },
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro"
+                }
+            ],
+            "description": "Easily connect the necessary language packs to the application",
+            "keywords": [
+                "Laravel-lang",
+                "actions",
+                "attribute",
+                "attributes",
+                "breeze",
+                "buttons",
+                "cashier",
+                "fortify",
+                "framework",
+                "http",
+                "http-status",
+                "http-status-code",
+                "i18n",
+                "jetstream",
+                "lang",
+                "language",
+                "languages",
+                "laravel",
+                "locale",
+                "locales",
+                "localization",
+                "localizations",
+                "moonshine",
+                "nova",
+                "publisher",
+                "spark",
+                "translation",
+                "translations",
+                "ui"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/common/issues",
+                "source": "https://github.com/Laravel-Lang/common"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-03-17T23:15:14+00:00"
+        },
+        {
+            "name": "laravel-lang/config",
+            "version": "1.17.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/config.git",
+                "reference": "77ad089234aa74961ca30c7e6d13db9a62654c87"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/config/zipball/77ad089234aa74961ca30c7e6d13db9a62654c87",
+                "reference": "77ad089234aa74961ca30c7e6d13db9a62654c87",
+                "shasum": ""
+            },
+            "require": {
+                "archtechx/enums": "^1.0",
+                "illuminate/config": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/locale-list": "^1.6",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.23 || ^9.1 || ^10.0 || ^11.0",
+                "pestphp/pest": "^2.34 || ^3.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\Config\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\Config\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "The Laravel-Lang config package",
+            "keywords": [
+                "Laravel-lang",
+                "Settings",
+                "config",
+                "lang",
+                "languages",
+                "laravel",
+                "locale",
+                "locales",
+                "localization",
+                "localizations",
+                "translation",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/config/issues",
+                "source": "https://github.com/Laravel-Lang/config/tree/1.17.0"
+            },
+            "time": "2026-03-17T21:23:36+00:00"
+        },
+        {
+            "name": "laravel-lang/http-statuses",
+            "version": "3.13.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/http-statuses.git",
+                "reference": "2d33c7b4f5b268224c559c27c1220764b5391ae2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/http-statuses/zipball/2d33c7b4f5b268224c559c27c1220764b5391ae2",
+                "reference": "2d33c7b4f5b268224c559c27c1220764b5391ae2",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "laravel-lang/publisher": "^14.1 || ^15.0 || ^16.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel-lang/status-generator": "^1.19 || ^2.0",
+                "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0",
+                "symfony/var-dumper": "^6.0 || ^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\HttpStatuses\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\HttpStatuses\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://github.com/Laravel-Lang"
+                }
+            ],
+            "description": "Translation of HTTP statuses",
+            "keywords": [
+                "http",
+                "lang",
+                "languages",
+                "laravel",
+                "messages",
+                "status",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/http-statuses/issues",
+                "source": "https://github.com/Laravel-Lang/http-statuses/tree/3.13.2"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-05-30T12:11:06+00:00"
+        },
+        {
+            "name": "laravel-lang/json-fallback",
+            "version": "2.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/json-fallback.git",
+                "reference": "1b02c798da837c63e2d01f45b45bb49367d5b6a1"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/json-fallback/zipball/1b02c798da837c63e2d01f45b45bb49367d5b6a1",
+                "reference": "1b02c798da837c63e2d01f45b45bb49367d5b6a1",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/translation": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.0 || ^9.0 || ^10.0 || ^11.0",
+                "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\JsonFallback\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://github.com/andrey-helldar"
+                },
+                {
+                    "name": "Felipe Dsdev",
+                    "homepage": "https://github.com/felipe-dsdev"
+                }
+            ],
+            "description": "Adds support for fallback JSON string translation",
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/json-fallback/issues",
+                "source": "https://github.com/Laravel-Lang/json-fallback/tree/2.3.0"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-03-17T21:18:08+00:00"
+        },
+        {
+            "name": "laravel-lang/lang",
+            "version": "15.32.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/lang.git",
+                "reference": "581112fa9660e61f272c37045e305eec320ab5f0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/lang/zipball/581112fa9660e61f272c37045e305eec320ab5f0",
+                "reference": "581112fa9660e61f272c37045e305eec320ab5f0",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "laravel-lang/publisher": "^16.0",
+                "php": "^8.2"
+            },
+            "conflict": {
+                "laravel/framework": "<11.0.7"
+            },
+            "require-dev": {
+                "dragon-code/codestyler": "^6.0",
+                "laravel-lang/status-generator": "^2.11",
+                "phpunit/phpunit": "^11.0 || ^12.0",
+                "symfony/var-dumper": "^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\Lang\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\Lang\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://github.com/Laravel-Lang"
+                }
+            ],
+            "description": "List of 126 languages for Laravel Framework, Laravel Jetstream, Laravel Fortify, Laravel Breeze, Laravel Cashier, Laravel Nova, Laravel Spark and Laravel UI",
+            "keywords": [
+                "lang",
+                "languages",
+                "laravel",
+                "lpm"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/lang/issues",
+                "source": "https://github.com/Laravel-Lang/lang"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-07-02T07:50:39+00:00"
+        },
+        {
+            "name": "laravel-lang/locale-list",
+            "version": "1.7.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/locale-list.git",
+                "reference": "48e61c7f0a957420d4aaf5d35653889c25c4e2d4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/locale-list/zipball/48e61c7f0a957420d4aaf5d35653889c25c4e2d4",
+                "reference": "48e61c7f0a957420d4aaf5d35653889c25c4e2d4",
+                "shasum": ""
+            },
+            "require": {
+                "archtechx/enums": "^0.3.2 || ^1.0",
+                "php": "^8.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\LocaleList\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "List of localizations available in Laravel Lang projects",
+            "keywords": [
+                "Laravel-lang",
+                "lang",
+                "languages",
+                "laravel",
+                "locale",
+                "locales",
+                "localization",
+                "translation",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/locale-list/issues",
+                "source": "https://github.com/Laravel-Lang/locale-list"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-01-20T08:17:15+00:00"
+        },
+        {
+            "name": "laravel-lang/locales",
+            "version": "2.11.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/locales.git",
+                "reference": "761aa3cfbc5bbe29eb958c9839e7dd3806193bac"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/locales/zipball/761aa3cfbc5bbe29eb958c9839e7dd3806193bac",
+                "reference": "761aa3cfbc5bbe29eb958c9839e7dd3806193bac",
+                "shasum": ""
+            },
+            "require": {
+                "archtechx/enums": "^0.3.2 || ^1.0",
+                "dragon-code/support": "^6.11.3",
+                "ext-json": "*",
+                "illuminate/collections": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/config": "^1.12",
+                "laravel-lang/locale-list": "^1.5",
+                "laravel-lang/native-country-names": "^1.5",
+                "laravel-lang/native-currency-names": "^1.6",
+                "laravel-lang/native-locale-names": "^2.5",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.0 || ^9.0 || ^10.0 || ^11.0",
+                "pestphp/pest": "^2.24.1 || ^3.0 || ^4.0",
+                "symfony/var-dumper": "^6.0 || ^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\Locales\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\Locales\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "Basic functionality for working with localizations",
+            "keywords": [
+                "laravel",
+                "locale",
+                "locales",
+                "localization",
+                "translation",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/locales/issues",
+                "source": "https://github.com/Laravel-Lang/locales"
+            },
+            "time": "2026-03-17T22:40:41+00:00"
+        },
+        {
+            "name": "laravel-lang/models",
+            "version": "1.7.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/models.git",
+                "reference": "a9aa0205ca019f4459ace26b0432b3b6d1886f66"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/models/zipball/a9aa0205ca019f4459ace26b0432b3b6d1886f66",
+                "reference": "a9aa0205ca019f4459ace26b0432b3b6d1886f66",
+                "shasum": ""
+            },
+            "require": {
+                "composer/class-map-generator": "^1.3",
+                "dragon-code/support": "^6.13",
+                "illuminate/database": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/config": "^1.12",
+                "laravel-lang/locales": "^2.10.0",
+                "laravel/prompts": ">=0.1",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.20",
+                "orchestra/testbench": "^8.0 || ^9.0 || ^10.0 || ^11.0",
+                "pestphp/pest": "^2.34 || ^3.0 || ^4.0",
+                "pestphp/pest-plugin-laravel": "^2.4 || ^3.0 || ^4.0",
+                "symfony/var-dumper": "^6.0 || ^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\Models\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\Models\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro",
+                    "role": "Maintainer"
+                },
+                {
+                    "name": "Andrey Sokolov",
+                    "email": "walfireru@gmail.com",
+                    "homepage": "https://github.com/Quiss",
+                    "role": "Usability consultant"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://github.com/Laravel-Lang"
+                }
+            ],
+            "description": "Easy and fast way to localize models",
+            "keywords": [
+                "database",
+                "l18n",
+                "languages",
+                "laravel",
+                "locales",
+                "localization",
+                "models",
+                "translate",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/models/issues",
+                "source": "https://github.com/Laravel-Lang/models"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-03-17T23:00:20+00:00"
+        },
+        {
+            "name": "laravel-lang/moonshine",
+            "version": "1.9.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/moonshine.git",
+                "reference": "3927bcf658d392c9f2eb03c773f52ff650b37f63"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/moonshine/zipball/3927bcf658d392c9f2eb03c773f52ff650b37f63",
+                "reference": "3927bcf658d392c9f2eb03c773f52ff650b37f63",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "laravel-lang/publisher": "^15.0 || ^16.4.1",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "dragon-code/support": "^6.15.2",
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/lang": "^14.8 || ^15.14",
+                "laravel-lang/status-generator": "^2.12",
+                "phpunit/phpunit": "^10.0 || ^11.0 || ^12.0",
+                "symfony/var-dumper": "^6.3 || ^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\MoonShine\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\MoonShine\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "Translation for MoonShine admin panel",
+            "keywords": [
+                "lang",
+                "languages",
+                "laravel",
+                "moonshine",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/moonshine/issues",
+                "source": "https://github.com/Laravel-Lang/moonshine/tree/1.9.2"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-05-30T12:11:41+00:00"
+        },
+        {
+            "name": "laravel-lang/native-country-names",
+            "version": "1.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/native-country-names.git",
+                "reference": "1d293138e34eb9e914bc4568cdebac2cb0a2eb0e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/native-country-names/zipball/1d293138e34eb9e914bc4568cdebac2cb0a2eb0e",
+                "reference": "1d293138e34eb9e914bc4568cdebac2cb0a2eb0e",
+                "shasum": ""
+            },
+            "require": {
+                "dragon-code/support": "^6.11",
+                "ext-json": "*",
+                "illuminate/collections": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/locale-list": "^1.5",
+                "pestphp/pest": "^2.0 || ^3.0 || ^4.0",
+                "punic/punic": "^3.8",
+                "symfony/console": "^6.0 || ^7.0 || ^8.0",
+                "symfony/process": "^6.0 || ^7.0 || ^8.0",
+                "symfony/var-dumper": "^6.0 || ^7.0 || ^8.0",
+                "vlucas/phpdotenv": "^5.6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\NativeCountryNames\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "The project contains native translations of country names",
+            "keywords": [
+                "Laravel-lang",
+                "countries",
+                "country",
+                "lang",
+                "languages",
+                "laravel",
+                "locale",
+                "locales",
+                "localization",
+                "territories",
+                "territory",
+                "translation",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/native-country-names/issues",
+                "source": "https://github.com/Laravel-Lang/native-country-names"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-03-17T22:01:15+00:00"
+        },
+        {
+            "name": "laravel-lang/native-currency-names",
+            "version": "1.10.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/native-currency-names.git",
+                "reference": "7ebe95a9942bebf6afd61986fa18c82dade3d583"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/native-currency-names/zipball/7ebe95a9942bebf6afd61986fa18c82dade3d583",
+                "reference": "7ebe95a9942bebf6afd61986fa18c82dade3d583",
+                "shasum": ""
+            },
+            "require": {
+                "dragon-code/support": "^6.11",
+                "ext-json": "*",
+                "illuminate/collections": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/locale-list": "^1.2",
+                "pestphp/pest": "^2.0 || ^3.0 || ^4.0",
+                "punic/punic": "^3.8",
+                "symfony/console": "^6.0 || ^7.0",
+                "symfony/process": "^6.0 || ^7.0",
+                "symfony/var-dumper": "^6.0 || ^7.0",
+                "vlucas/phpdotenv": "^5.6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\NativeCurrencyNames\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "The project contains native translations of currency names",
+            "keywords": [
+                "Laravel-lang",
+                "currency",
+                "lang",
+                "languages",
+                "laravel",
+                "locale",
+                "locales",
+                "localization",
+                "translation",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/native-currency-names/issues",
+                "source": "https://github.com/Laravel-Lang/native-currency-names"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-06-20T16:50:37+00:00"
+        },
+        {
+            "name": "laravel-lang/native-locale-names",
+            "version": "2.9.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/native-locale-names.git",
+                "reference": "e5925182bad34654203a5d93544357ca00a6d9c0"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/native-locale-names/zipball/e5925182bad34654203a5d93544357ca00a6d9c0",
+                "reference": "e5925182bad34654203a5d93544357ca00a6d9c0",
+                "shasum": ""
+            },
+            "require": {
+                "dragon-code/support": "^6.11",
+                "ext-json": "*",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/locale-list": "^1.2",
+                "pestphp/pest": "^2.24.3 || ^3.0 || ^4.0",
+                "punic/punic": "^3.8",
+                "symfony/console": "^6.0 || ^7.0",
+                "symfony/process": "^6.0 || ^7.0",
+                "symfony/var-dumper": "^6.0 || ^7.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\NativeLocaleNames\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "The project contains native translations of locale names",
+            "keywords": [
+                "Laravel-lang",
+                "lang",
+                "languages",
+                "laravel",
+                "locale",
+                "locales",
+                "localization",
+                "translation",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/native-locale-names/issues",
+                "source": "https://github.com/Laravel-Lang/native-locale-names"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-06-20T16:52:11+00:00"
+        },
+        {
+            "name": "laravel-lang/publisher",
+            "version": "16.8.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/publisher.git",
+                "reference": "e5d3383f5385c2102f8a0d3dbe488ed86cd0250f"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/publisher/zipball/e5d3383f5385c2102f8a0d3dbe488ed86cd0250f",
+                "reference": "e5d3383f5385c2102f8a0d3dbe488ed86cd0250f",
+                "shasum": ""
+            },
+            "require": {
+                "composer/semver": "^3.4",
+                "dragon-code/pretty-array": "^4.1",
+                "dragon-code/support": "^6.11.3",
+                "ext-json": "*",
+                "illuminate/collections": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/console": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/config": "^1.12",
+                "laravel-lang/locales": "^2.10",
+                "league/commonmark": "^2.4.1",
+                "league/config": "^1.2",
+                "php": "^8.1"
+            },
+            "conflict": {
+                "laravel-lang/attributes": "<2.0",
+                "laravel-lang/http-statuses": "<3.0",
+                "laravel-lang/lang": "<11.0"
+            },
+            "require-dev": {
+                "laravel-lang/json-fallback": "^2.2",
+                "orchestra/testbench": "^8.14 || ^9.0 || ^10.0 || ^11.0",
+                "phpunit/phpunit": "^10.4.2 || ^11.0 || ^12.0",
+                "symfony/var-dumper": "^6.3.6 || ^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\Publisher\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\Publisher\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "Localization publisher for your Laravel application",
+            "keywords": [
+                "Laravel-lang",
+                "breeze",
+                "cashier",
+                "fortify",
+                "framework",
+                "i18n",
+                "jetstream",
+                "lang",
+                "languages",
+                "laravel",
+                "locale",
+                "locales",
+                "localization",
+                "localizations",
+                "lpm",
+                "lumen",
+                "nova",
+                "publisher",
+                "spark",
+                "trans",
+                "translation",
+                "translations",
+                "validations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/publisher/issues",
+                "source": "https://github.com/Laravel-Lang/publisher"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-03-17T22:56:20+00:00"
+        },
+        {
+            "name": "laravel-lang/routes",
+            "version": "1.11.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/routes.git",
+                "reference": "29d7f83f2679f51187aa4e761d73bb4e0d133bf4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/routes/zipball/29d7f83f2679f51187aa4e761d73bb4e0d133bf4",
+                "reference": "29d7f83f2679f51187aa4e761d73bb4e0d133bf4",
+                "shasum": ""
+            },
+            "require": {
+                "codezero/browser-locale": "^3.4",
+                "dragon-code/support": "^6.13",
+                "illuminate/config": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/http": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/routing": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "illuminate/support": "^10.0 || ^11.0 || ^12.0 || ^13.0",
+                "laravel-lang/config": "^1.13",
+                "laravel-lang/locales": "^2.10",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.23 || ^9.1 || ^10.0 || ^11.0",
+                "pestphp/pest": "^2.34 || ^3.0 || ^4.0",
+                "pestphp/pest-plugin-laravel": "^2.4 || ^3.0 || ^4.0",
+                "symfony/var-dumper": "^6.0 || ^7.0 || ^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\Routes\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "files": [
+                    "helpers/functions.php"
+                ],
+                "psr-4": {
+                    "LaravelLang\\Routes\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro",
+                    "homepage": "https://dragon-code.pro"
+                },
+                {
+                    "name": "Laravel-Lang Team",
+                    "homepage": "https://github.com/Laravel-Lang"
+                }
+            ],
+            "description": "Easy and fast way to localize routes",
+            "keywords": [
+                "l18n",
+                "languages",
+                "laravel",
+                "localization",
+                "routes",
+                "translate",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/routes/issues",
+                "source": "https://github.com/Laravel-Lang/routes"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-03-17T23:06:16+00:00"
+        },
+        {
+            "name": "laravel-lang/starter-kits",
+            "version": "1.16.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Laravel-Lang/starter-kits.git",
+                "reference": "bbe74a48d7623ccb4561f8225ea13cf82e54c9d9"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Laravel-Lang/starter-kits/zipball/bbe74a48d7623ccb4561f8225ea13cf82e54c9d9",
+                "reference": "bbe74a48d7623ccb4561f8225ea13cf82e54c9d9",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "laravel-lang/publisher": "^16.6",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "laravel-lang/status-generator": "^2.13",
+                "phpunit/phpunit": "^11.0 || ^12.0",
+                "symfony/var-dumper": "^7.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "LaravelLang\\StarterKits\\ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "LaravelLang\\StarterKits\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Andrey Helldar",
+                    "email": "helldar@dragon-code.pro"
+                },
+                {
+                    "name": "Laravel Lang Team",
+                    "homepage": "https://laravel-lang.com"
+                }
+            ],
+            "description": "Translations for Laravel Starter Kits",
+            "keywords": [
+                "i18n",
+                "lang",
+                "languages",
+                "laravel",
+                "starter-kit",
+                "starter-kits",
+                "translations"
+            ],
+            "support": {
+                "issues": "https://github.com/Laravel-Lang/starter-kits/issues",
+                "source": "https://github.com/Laravel-Lang/starter-kits/tree/1.16.0"
+            },
+            "funding": [
+                {
+                    "url": "https://boosty.to/dragon-code",
+                    "type": "boosty"
+                },
+                {
+                    "url": "https://yoomoney.ru/to/410012608840929",
+                    "type": "yoomoney"
+                }
+            ],
+            "time": "2026-06-22T19:59:10+00:00"
         },
         {
             "name": "laravel/cashier-paddle",
@@ -2105,16 +4105,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v13.17.0",
+            "version": "v13.19.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "0802b7a81f3252d78200b8037ac183a686a529f0"
+                "reference": "514502b38e11bd676ecf83b271c9452cc7500f16"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/0802b7a81f3252d78200b8037ac183a686a529f0",
-                "reference": "0802b7a81f3252d78200b8037ac183a686a529f0",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/514502b38e11bd676ecf83b271c9452cc7500f16",
+                "reference": "514502b38e11bd676ecf83b271c9452cc7500f16",
                 "shasum": ""
             },
             "require": {
@@ -2325,7 +4325,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2026-06-23T19:42:45+00:00"
+            "time": "2026-07-07T14:13:33+00:00"
         },
         {
             "name": "laravel/prompts",
@@ -2798,16 +4798,16 @@
         },
         {
             "name": "league/flysystem",
-            "version": "3.35.1",
+            "version": "3.35.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/flysystem.git",
-                "reference": "f23af6c5aafd958a7593029a271d77baf5ed793c"
+                "reference": "b277b5dc3d56650b68904117124e79c851e12376"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/f23af6c5aafd958a7593029a271d77baf5ed793c",
-                "reference": "f23af6c5aafd958a7593029a271d77baf5ed793c",
+                "url": "https://api.github.com/repos/thephpleague/flysystem/zipball/b277b5dc3d56650b68904117124e79c851e12376",
+                "reference": "b277b5dc3d56650b68904117124e79c851e12376",
                 "shasum": ""
             },
             "require": {
@@ -2875,9 +4875,9 @@
             ],
             "support": {
                 "issues": "https://github.com/thephpleague/flysystem/issues",
-                "source": "https://github.com/thephpleague/flysystem/tree/3.35.1"
+                "source": "https://github.com/thephpleague/flysystem/tree/3.35.2"
             },
-            "time": "2026-06-25T06:52:23+00:00"
+            "time": "2026-07-06T14:42:07+00:00"
         },
         {
             "name": "league/flysystem-local",
@@ -2930,16 +4930,16 @@
         },
         {
             "name": "league/mime-type-detection",
-            "version": "1.16.0",
+            "version": "1.17.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/thephpleague/mime-type-detection.git",
-                "reference": "2d6702ff215bf922936ccc1ad31007edc76451b9"
+                "reference": "f5f47eff7c48ed1003069a2ca67f316fb4021c76"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/thephpleague/mime-type-detection/zipball/2d6702ff215bf922936ccc1ad31007edc76451b9",
-                "reference": "2d6702ff215bf922936ccc1ad31007edc76451b9",
+                "url": "https://api.github.com/repos/thephpleague/mime-type-detection/zipball/f5f47eff7c48ed1003069a2ca67f316fb4021c76",
+                "reference": "f5f47eff7c48ed1003069a2ca67f316fb4021c76",
                 "shasum": ""
             },
             "require": {
@@ -2949,7 +4949,7 @@
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^3.2",
                 "phpstan/phpstan": "^0.12.68",
-                "phpunit/phpunit": "^8.5.8 || ^9.3 || ^10.0"
+                "phpunit/phpunit": "^8.5.8 || ^9.3 || ^10.0 || ^11.0 || ^12.0"
             },
             "type": "library",
             "autoload": {
@@ -2970,7 +4970,7 @@
             "description": "Mime-type detection for Flysystem",
             "support": {
                 "issues": "https://github.com/thephpleague/mime-type-detection/issues",
-                "source": "https://github.com/thephpleague/mime-type-detection/tree/1.16.0"
+                "source": "https://github.com/thephpleague/mime-type-detection/tree/1.17.0"
             },
             "funding": [
                 {
@@ -2982,7 +4982,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-09-21T08:32:55+00:00"
+            "time": "2026-07-09T11:49:27+00:00"
         },
         {
             "name": "league/uri",
@@ -3521,16 +5521,16 @@
         },
         {
             "name": "nesbot/carbon",
-            "version": "3.13.0",
+            "version": "3.13.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/CarbonPHP/carbon.git",
-                "reference": "40f6618f052df16b545f626fbf9a878e6497d16a"
+                "reference": "2937ad3d1d2c506fd2bc97d571438a95641f44e2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/40f6618f052df16b545f626fbf9a878e6497d16a",
-                "reference": "40f6618f052df16b545f626fbf9a878e6497d16a",
+                "url": "https://api.github.com/repos/CarbonPHP/carbon/zipball/2937ad3d1d2c506fd2bc97d571438a95641f44e2",
+                "reference": "2937ad3d1d2c506fd2bc97d571438a95641f44e2",
                 "shasum": ""
             },
             "require": {
@@ -3622,7 +5622,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-06-18T13:49:15+00:00"
+            "time": "2026-07-09T18:23:49+00:00"
         },
         {
             "name": "nette/php-generator",
@@ -3858,20 +5858,19 @@
         },
         {
             "name": "nikic/php-parser",
-            "version": "v5.7.0",
+            "version": "v5.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "dca41cd15c2ac9d055ad70dbfd011130757d1f82"
+                "reference": "044a6a392ff8ad0d61f14370a5fbbd0a0107152f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/dca41cd15c2ac9d055ad70dbfd011130757d1f82",
-                "reference": "dca41cd15c2ac9d055ad70dbfd011130757d1f82",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/044a6a392ff8ad0d61f14370a5fbbd0a0107152f",
+                "reference": "044a6a392ff8ad0d61f14370a5fbbd0a0107152f",
                 "shasum": ""
             },
             "require": {
-                "ext-ctype": "*",
                 "ext-json": "*",
                 "ext-tokenizer": "*",
                 "php": ">=7.4"
@@ -3910,9 +5909,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nikic/PHP-Parser/issues",
-                "source": "https://github.com/nikic/PHP-Parser/tree/v5.7.0"
+                "source": "https://github.com/nikic/PHP-Parser/tree/v5.8.0"
             },
-            "time": "2025-12-06T11:56:16+00:00"
+            "time": "2026-07-04T14:30:18+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -5322,6 +7321,78 @@
                 }
             ],
             "time": "2026-05-19T14:06:37+00:00"
+        },
+        {
+            "name": "spatie/laravel-translation-loader",
+            "version": "2.8.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/spatie/laravel-translation-loader.git",
+                "reference": "17fa7d211bca1423a0e424823e7fddd5c2bc4ab6"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/spatie/laravel-translation-loader/zipball/17fa7d211bca1423a0e424823e7fddd5c2bc4ab6",
+                "reference": "17fa7d211bca1423a0e424823e7fddd5c2bc4ab6",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/translation": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+                "php": "^8.0",
+                "spatie/laravel-package-tools": "^1.12"
+            },
+            "require-dev": {
+                "friendsofphp/php-cs-fixer": "^3.59",
+                "orchestra/testbench": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0",
+                "pestphp/pest": "^1.23|^2.0|^3.7|^4.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Spatie\\TranslationLoader\\TranslationServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Spatie\\TranslationLoader\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Freek Van der Herten",
+                    "email": "freek@spatie.be",
+                    "homepage": "https://spatie.be",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Store your language lines in the database, yaml or other sources",
+            "homepage": "https://github.com/spatie/laravel-translation-loader",
+            "keywords": [
+                "database",
+                "db",
+                "i8n",
+                "language",
+                "laravel",
+                "laravel-translation-loader",
+                "spatie",
+                "translate"
+            ],
+            "support": {
+                "source": "https://github.com/spatie/laravel-translation-loader/tree/2.8.3"
+            },
+            "funding": [
+                {
+                    "url": "https://spatie.be/open-source/support-us",
+                    "type": "custom"
+                }
+            ],
+            "time": "2026-02-21T21:44:45+00:00"
         },
         {
             "name": "spatie/macroable",
@@ -8266,16 +10337,16 @@
         },
         {
             "name": "vlucas/phpdotenv",
-            "version": "v5.6.3",
+            "version": "v5.6.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vlucas/phpdotenv.git",
-                "reference": "955e7815d677a3eaa7075231212f2110983adecc"
+                "reference": "416df702837983f8d5ff48c9c3fee4f5f57b980b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/955e7815d677a3eaa7075231212f2110983adecc",
-                "reference": "955e7815d677a3eaa7075231212f2110983adecc",
+                "url": "https://api.github.com/repos/vlucas/phpdotenv/zipball/416df702837983f8d5ff48c9c3fee4f5f57b980b",
+                "reference": "416df702837983f8d5ff48c9c3fee4f5f57b980b",
                 "shasum": ""
             },
             "require": {
@@ -8334,7 +10405,7 @@
             ],
             "support": {
                 "issues": "https://github.com/vlucas/phpdotenv/issues",
-                "source": "https://github.com/vlucas/phpdotenv/tree/v5.6.3"
+                "source": "https://github.com/vlucas/phpdotenv/tree/v5.6.4"
             },
             "funding": [
                 {
@@ -8346,7 +10417,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-12-27T19:49:13+00:00"
+            "time": "2026-07-06T19:11:50+00:00"
         },
         {
             "name": "voku/portable-ascii",
@@ -8516,82 +10587,6 @@
                 }
             ],
             "time": "2026-03-29T15:46:14+00:00"
-        },
-        {
-            "name": "composer/pcre",
-            "version": "3.4.0",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/composer/pcre.git",
-                "reference": "d5a341b3fb61f3001970940afb1d332968a183ed"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/composer/pcre/zipball/d5a341b3fb61f3001970940afb1d332968a183ed",
-                "reference": "d5a341b3fb61f3001970940afb1d332968a183ed",
-                "shasum": ""
-            },
-            "require": {
-                "php": "^7.4 || ^8.0"
-            },
-            "conflict": {
-                "phpstan/phpstan": "<2.2.2"
-            },
-            "require-dev": {
-                "phpstan/phpstan": "^2",
-                "phpstan/phpstan-deprecation-rules": "^2",
-                "phpstan/phpstan-strict-rules": "^2",
-                "phpunit/phpunit": "^9"
-            },
-            "type": "library",
-            "extra": {
-                "phpstan": {
-                    "includes": [
-                        "extension.neon"
-                    ]
-                },
-                "branch-alias": {
-                    "dev-main": "3.x-dev"
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Composer\\Pcre\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Jordi Boggiano",
-                    "email": "j.boggiano@seld.be",
-                    "homepage": "http://seld.be"
-                }
-            ],
-            "description": "PCRE wrapping library that offers type-safe preg_* replacements.",
-            "keywords": [
-                "PCRE",
-                "preg",
-                "regex",
-                "regular expression"
-            ],
-            "support": {
-                "issues": "https://github.com/composer/pcre/issues",
-                "source": "https://github.com/composer/pcre/tree/3.4.0"
-            },
-            "funding": [
-                {
-                    "url": "https://packagist.com",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://github.com/composer",
-                    "type": "github"
-                }
-            ],
-            "time": "2026-06-07T11:47:49+00:00"
         },
         {
             "name": "composer/xdebug-handler",
@@ -8904,16 +10899,16 @@
         },
         {
             "name": "fruitcake/laravel-debugbar",
-            "version": "v4.3.0",
+            "version": "v4.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/fruitcake/laravel-debugbar.git",
-                "reference": "3d76ea8d78b82225b92789de65fc630c1cd8e80c"
+                "reference": "80ef956bda9e1a5824037d6f2cd06e73092e5634"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/fruitcake/laravel-debugbar/zipball/3d76ea8d78b82225b92789de65fc630c1cd8e80c",
-                "reference": "3d76ea8d78b82225b92789de65fc630c1cd8e80c",
+                "url": "https://api.github.com/repos/fruitcake/laravel-debugbar/zipball/80ef956bda9e1a5824037d6f2cd06e73092e5634",
+                "reference": "80ef956bda9e1a5824037d6f2cd06e73092e5634",
                 "shasum": ""
             },
             "require": {
@@ -8921,7 +10916,7 @@
                 "illuminate/session": "^11|^12|^13.0",
                 "illuminate/support": "^11|^12|^13.0",
                 "php": "^8.2",
-                "php-debugbar/php-debugbar": "^3.7.2",
+                "php-debugbar/php-debugbar": "^3.8.0",
                 "php-debugbar/symfony-bridge": "^1.1"
             },
             "replace": {
@@ -8929,6 +10924,7 @@
             },
             "require-dev": {
                 "larastan/larastan": "^3",
+                "laravel/ai": "^0.8",
                 "laravel/octane": "^2",
                 "laravel/pennant": "^1",
                 "laravel/pint": "^1",
@@ -8990,7 +10986,7 @@
             ],
             "support": {
                 "issues": "https://github.com/fruitcake/laravel-debugbar/issues",
-                "source": "https://github.com/fruitcake/laravel-debugbar/tree/v4.3.0"
+                "source": "https://github.com/fruitcake/laravel-debugbar/tree/v4.4.0"
             },
             "funding": [
                 {
@@ -9002,7 +10998,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-04T07:54:01+00:00"
+            "time": "2026-07-04T08:30:57+00:00"
         },
         {
             "name": "hamcrest/hamcrest-php",
@@ -9117,16 +11113,16 @@
         },
         {
             "name": "laravel/boost",
-            "version": "v2.4.10",
+            "version": "v2.4.12",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/boost.git",
-                "reference": "080189f51c8d27c0792a03483a70adc7770f6eeb"
+                "reference": "d43bdf901fee8d216145cb062c9847c892844908"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/boost/zipball/080189f51c8d27c0792a03483a70adc7770f6eeb",
-                "reference": "080189f51c8d27c0792a03483a70adc7770f6eeb",
+                "url": "https://api.github.com/repos/laravel/boost/zipball/d43bdf901fee8d216145cb062c9847c892844908",
+                "reference": "d43bdf901fee8d216145cb062c9847c892844908",
                 "shasum": ""
             },
             "require": {
@@ -9179,7 +11175,7 @@
                 "issues": "https://github.com/laravel/boost/issues",
                 "source": "https://github.com/laravel/boost"
             },
-            "time": "2026-06-09T10:21:08+00:00"
+            "time": "2026-07-08T09:53:34+00:00"
         },
         {
             "name": "laravel/mcp",
@@ -9776,16 +11772,16 @@
         },
         {
             "name": "pestphp/pest",
-            "version": "v4.7.4",
+            "version": "v4.7.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/pestphp/pest.git",
-                "reference": "ee2e97e932d158faceeaa63a4dc17324b15152cb"
+                "reference": "5dc49a71d63602a9b98fed0f2017c4679ef9f8e0"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/pestphp/pest/zipball/ee2e97e932d158faceeaa63a4dc17324b15152cb",
-                "reference": "ee2e97e932d158faceeaa63a4dc17324b15152cb",
+                "url": "https://api.github.com/repos/pestphp/pest/zipball/5dc49a71d63602a9b98fed0f2017c4679ef9f8e0",
+                "reference": "5dc49a71d63602a9b98fed0f2017c4679ef9f8e0",
                 "shasum": ""
             },
             "require": {
@@ -9808,11 +11804,11 @@
                 "webmozart/assert": "<1.11.0"
             },
             "require-dev": {
-                "mrpunyapal/peststan": "^0.2.10",
+                "mrpunyapal/peststan": "^0.2.11",
                 "pestphp/pest-dev-tools": "^4.1.0",
                 "pestphp/pest-plugin-browser": "^4.3.1",
                 "pestphp/pest-plugin-type-coverage": "^4.0.4",
-                "psy/psysh": "^0.12.23"
+                "psy/psysh": "^0.12.24"
             },
             "bin": [
                 "bin/pest"
@@ -9879,7 +11875,7 @@
             ],
             "support": {
                 "issues": "https://github.com/pestphp/pest/issues",
-                "source": "https://github.com/pestphp/pest/tree/v4.7.4"
+                "source": "https://github.com/pestphp/pest/tree/v4.7.5"
             },
             "funding": [
                 {
@@ -9891,7 +11887,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-06-25T19:09:05+00:00"
+            "time": "2026-07-06T17:06:29+00:00"
         },
         {
             "name": "pestphp/pest-plugin",
@@ -10359,16 +12355,16 @@
         },
         {
             "name": "php-debugbar/php-debugbar",
-            "version": "v3.7.6",
+            "version": "v3.8.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-debugbar/php-debugbar.git",
-                "reference": "1690ee1728827f9deb4b60457fa387cf44672c56"
+                "reference": "18ced90d4b882ed449b2278fea8692f8f7d1c13c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-debugbar/php-debugbar/zipball/1690ee1728827f9deb4b60457fa387cf44672c56",
-                "reference": "1690ee1728827f9deb4b60457fa387cf44672c56",
+                "url": "https://api.github.com/repos/php-debugbar/php-debugbar/zipball/18ced90d4b882ed449b2278fea8692f8f7d1c13c",
+                "reference": "18ced90d4b882ed449b2278fea8692f8f7d1c13c",
                 "shasum": ""
             },
             "require": {
@@ -10410,7 +12406,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "3.0-dev"
+                    "dev-master": "3.8-dev"
                 }
             },
             "autoload": {
@@ -10445,7 +12441,7 @@
             ],
             "support": {
                 "issues": "https://github.com/php-debugbar/php-debugbar/issues",
-                "source": "https://github.com/php-debugbar/php-debugbar/tree/v3.7.6"
+                "source": "https://github.com/php-debugbar/php-debugbar/tree/v3.8.0"
             },
             "funding": [
                 {
@@ -10457,7 +12453,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-04-30T07:31:44+00:00"
+            "time": "2026-07-02T12:38:20+00:00"
         },
         {
             "name": "php-debugbar/symfony-bridge",
@@ -10703,16 +12699,16 @@
         },
         {
             "name": "phpstan/phpdoc-parser",
-            "version": "2.3.2",
+            "version": "2.3.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpstan/phpdoc-parser.git",
-                "reference": "a004701b11273a26cd7955a61d67a7f1e525a45a"
+                "reference": "fb19eedd2bb67ff8cf7a5502ad329e701d6398a3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpdoc-parser/zipball/a004701b11273a26cd7955a61d67a7f1e525a45a",
-                "reference": "a004701b11273a26cd7955a61d67a7f1e525a45a",
+                "url": "https://api.github.com/repos/phpstan/phpdoc-parser/zipball/fb19eedd2bb67ff8cf7a5502ad329e701d6398a3",
+                "reference": "fb19eedd2bb67ff8cf7a5502ad329e701d6398a3",
                 "shasum": ""
             },
             "require": {
@@ -10744,9 +12740,9 @@
             "description": "PHPDoc parser with support for nullable, intersection and generic types",
             "support": {
                 "issues": "https://github.com/phpstan/phpdoc-parser/issues",
-                "source": "https://github.com/phpstan/phpdoc-parser/tree/2.3.2"
+                "source": "https://github.com/phpstan/phpdoc-parser/tree/2.3.3"
             },
-            "time": "2026-01-25T14:56:51+00:00"
+            "time": "2026-07-08T07:01:06+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -12402,7 +14398,7 @@
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
-        "php": "^8.3"
+        "php": "^8.5"
     },
     "platform-dev": {},
     "plugin-api-version": "2.9.0"

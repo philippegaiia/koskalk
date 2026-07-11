@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Ingredients\Pages\Concerns;
 
 use App\Models\Ingredient;
 use App\Services\IngredientDataEntryService;
+use App\Services\IngredientTranslationService;
 
 trait InteractsWithIngredientDataEntry
 {
@@ -18,6 +19,10 @@ trait InteractsWithIngredientDataEntry
      */
     protected function extractIngredientDataEntryState(array $data): array
     {
+        $translations = app(IngredientTranslationService::class)->validateRows(
+            $data['translations'] ?? [],
+        );
+
         $this->ingredientDataEntryState = [
             'current_version' => $data['current_version'] ?? [],
             'sap_profile' => $data['sap_profile'] ?? [],
@@ -25,6 +30,7 @@ trait InteractsWithIngredientDataEntry
             'allergen_entries' => $data['allergen_entries'] ?? [],
             'function_ids' => $data['function_ids'] ?? [],
             'components' => $data['components'] ?? [],
+            'translations' => $translations,
         ];
 
         unset(
@@ -34,6 +40,7 @@ trait InteractsWithIngredientDataEntry
             $data['allergen_entries'],
             $data['function_ids'],
             $data['components'],
+            $data['translations'],
         );
 
         return $data;
@@ -42,6 +49,10 @@ trait InteractsWithIngredientDataEntry
     protected function syncIngredientDataEntryState(Ingredient $ingredient): void
     {
         app(IngredientDataEntryService::class)->syncCurrentData($ingredient, $this->ingredientDataEntryState);
+        app(IngredientTranslationService::class)->sync(
+            $ingredient,
+            $this->ingredientDataEntryState['translations'] ?? [],
+        );
         $this->record = $ingredient->fresh();
     }
 }

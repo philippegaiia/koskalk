@@ -17,7 +17,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Paddle\Billable;
 
-#[Fillable(['name', 'email', 'is_admin', 'password'])]
+#[Fillable(['name', 'email', 'is_admin', 'locale', 'number_locale', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {

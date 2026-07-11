@@ -15,6 +15,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
      */
     public function build(?User $user, ?ProductFamily $productFamily = null): array
     {
+        $translationLocales = Ingredient::translationLocaleCandidates();
         $isCosmetic = $productFamily?->slug === 'cosmetic'
             || $productFamily?->calculation_basis === 'total_formula';
         $defaultPricesByIngredient = $user instanceof User
@@ -25,7 +26,11 @@ class RecipeWorkbenchIngredientCatalogBuilder
             : collect();
 
         return Ingredient::query()
-            ->with(['sapProfile', 'fattyAcidEntries.fattyAcid'])
+            ->with([
+                'sapProfile',
+                'fattyAcidEntries.fattyAcid',
+                'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
+            ])
             ->where('is_active', true)
             ->accessibleTo($user)
             ->whereIn('category', [
@@ -52,7 +57,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
                 return [
                     'id' => $ingredient->id,
                     'ingredient_id' => $ingredient->id,
-                    'name' => $ingredient->display_name,
+                    'name' => $ingredient->localizedDisplayName(),
                     'inci_name' => $ingredient->inci_name,
                     'image_url' => $ingredient->pickerImageUrl(),
                     'category' => $category?->value,

@@ -20,8 +20,18 @@
 	 <template x-if="calculationPreviewMessage">
 	 <span role="status" class="rounded-full bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] shadow-sm" x-text="calculationPreviewMessage"></span>
 	 </template>
+	 @if ($isPublicCalculator)
+	 <label class="ml-auto inline-flex items-center gap-2 text-xs font-medium text-[var(--color-ink-soft)]">
+	 <span>{{ __('number_formats.label') }}</span>
+	 <select x-model="numberLocale" @change="persistNumberLocale()" class="max-w-[14rem] rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-2.5 py-1.5 text-xs text-[var(--color-ink-strong)]">
+	 @foreach (($workbench['numberLocaleOptions'] ?? []) as $locale => $label)
+	 <option value="{{ $locale }}">{{ $label }}</option>
+	 @endforeach
+	 </select>
+	 </label>
+	 @endif
 	 </div>
-	 <input x-model="formulaName" type="text" aria-label="Formula name" :disabled="isFormulaLocked" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:bg-[var(--color-panel)] disabled:text-[var(--color-ink-soft)]" />
+	 <input x-model="formulaName" type="text" aria-label="Formula name" :disabled="isFormulaLocked" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="sk-formula-title-control mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:bg-[var(--color-panel)] disabled:text-[var(--color-ink-soft)]" />
 	 </div>
 
 	 @unless ($isPublicCalculator)

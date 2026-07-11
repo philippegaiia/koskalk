@@ -121,6 +121,7 @@
                         </div>
 
                         <div class="flex items-center gap-4 sm:gap-5">
+                            <x-language-selector id="app" class="text-[var(--color-ink-soft)]" />
                             <a href="{{ route('home') }}" class="shrink-0 whitespace-nowrap text-sm text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">Home</a>
                         </div>
                     </div>

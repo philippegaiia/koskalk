@@ -7,6 +7,7 @@ use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\SupportedLocale;
 use App\Services\MediaStorage;
 use App\SoapSap;
 use Closure;
@@ -164,6 +165,48 @@ class IngredientForm
                             ->automaticallyOpenImageEditorForAspectRatio()
                             ->helperText('Optional 96x96 icon for compact selectors and ingredient chips.')
                             ->columnSpan(1),
+                    ])
+                    ->columns([
+                        'md' => 2,
+                    ]),
+                Section::make('Translations')
+                    ->description('Translate the public ingredient name and guidance.')
+                    ->icon(Heroicon::Language)
+                    ->visible(fn (?Ingredient $record): bool => $record === null || $record->owner_type === null)
+                    ->schema([
+                        TextEntry::make('translation_source_name')
+                            ->label('English name')
+                            ->state(fn (Get $get): ?string => $get('current_version.display_name')),
+                        TextEntry::make('translation_source_guidance')
+                            ->label('English guidance')
+                            ->state(fn (Get $get): ?string => $get('info_markdown'))
+                            ->placeholder('No English guidance entered.')
+                            ->columnSpanFull(),
+                        Repeater::make('translations')
+                            ->label('Localized content')
+                            ->schema([
+                                Select::make('locale')
+                                    ->label('Language')
+                                    ->options(fn (): array => static::translationLocaleOptions())
+                                    ->required()
+                                    ->distinct()
+                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
+                                TextInput::make('display_name')
+                                    ->label('Translated display name')
+                                    ->maxLength(255)
+                                    ->helperText('Leave empty to show the English name.'),
+                                MarkdownEditor::make('info_markdown')
+                                    ->label('Translated guidance')
+                                    ->helperText('Leave empty to show the English guidance.')
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns([
+                                'md' => 2,
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable(false)
+                            ->addActionLabel('Add language')
+                            ->columnSpanFull(),
                     ])
                     ->columns([
                         'md' => 2,
@@ -339,6 +382,23 @@ class IngredientForm
 
                 return [$ingredient->id => $label];
             })
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function translationLocaleOptions(): array
+    {
+        return SupportedLocale::query()
+            ->where('code', '!=', 'en')
+            ->ordered()
+            ->get(['code', 'name', 'native_name'])
+            ->mapWithKeys(fn (SupportedLocale $locale): array => [
+                $locale->code => $locale->name === $locale->native_name
+                    ? $locale->name
+                    : sprintf('%s (%s)', $locale->name, $locale->native_name),
+            ])
             ->all();
     }
 

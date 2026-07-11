@@ -25,6 +25,7 @@ import {
     snapshotStateFromSnapshot as buildSnapshotStateFromSnapshot,
 } from './snapshot';
 import { humanizeKey as humanizeText } from './utils';
+import { resolveNumberLocale } from './number-format';
 import { createFormulaSection } from './sections/formula-section';
 import { createPackagingSection } from './sections/packaging-section';
 import { createCostingSection } from './sections/costing-section';
@@ -60,6 +61,36 @@ function phaseItemsForBlueprints(blueprints) {
 }
 
 const FORMULA_DIAGNOSTICS_PREFERENCE_KEY = 'soapkraft.formulaDiagnosticsDetailsOpen';
+const NUMBER_LOCALE_PREFERENCE_KEY = 'soapkraft.numberLocale';
+
+function storedNumberLocale() {
+    try {
+        return window.localStorage.getItem(NUMBER_LOCALE_PREFERENCE_KEY);
+    } catch (error) {
+        void error;
+
+        return null;
+    }
+}
+
+function resolvedNumberLocale(preferredLocale, numberLocaleOptions) {
+    const supportedLocales = Object.keys(numberLocaleOptions);
+
+    if (typeof resolveNumberLocale !== 'function') {
+        return preferredLocale ?? supportedLocales[0] ?? 'en_US';
+    }
+
+    const browserLanguages = typeof navigator === 'undefined'
+        ? []
+        : (navigator.languages ?? [navigator.language]);
+
+    return resolveNumberLocale(
+        preferredLocale,
+        supportedLocales,
+        browserLanguages,
+        storedNumberLocale(),
+    );
+}
 
 function preferredFormulaDiagnosticsOpen() {
     try {
@@ -99,14 +130,19 @@ function createRecipeWorkbenchState(payload) {
     const phaseOrder = Array.isArray(payload.phases) && payload.phases.length > 0
         ? payload.phases
         : defaultPhaseBlueprints(productFamilySlug);
+    const numberLocaleOptions = payload.numberLocaleOptions ?? {};
+    const numberLocale = resolvedNumberLocale(payload.numberLocale, numberLocaleOptions);
 
     return {
         activeWorkbenchTab: window.location.hash.replace('#', '') || 'formula',
         recipeId: payload.recipe?.id ?? null,
         canPersist: Boolean(payload.canPersist ?? false),
+        numberLocale,
+        numberLocaleOptions,
         productFamilySlug,
-        productTypeId: payload.productType?.id ?? null,
-        productTypeName: payload.productType?.name ?? null,
+        productTypes: payload.productTypes ?? [],
+        initialProductType: payload.productType ?? null,
+        productTypeId: payload.productType?.id === null || payload.productType?.id === undefined ? '' : String(payload.productType.id),
         currentVersionId: payload.recipe?.current_version_id ?? null,
         currentVersionNumber: payload.recipe?.version_number ?? null,
         currentVersionIsDraft: payload.recipe?.is_current ?? true,
@@ -271,6 +307,14 @@ function createRecipeWorkbenchState(payload) {
                 void error;
             }
         },
+
+        persistNumberLocale() {
+            try {
+                window.localStorage.setItem(NUMBER_LOCALE_PREFERENCE_KEY, this.numberLocale);
+            } catch (error) {
+                void error;
+            }
+        },
     };
 }
 
@@ -290,6 +334,21 @@ function createCatalogSection() {
 
         get selectedIfraProductCategory() {
             return findSelectedIfraProductCategory(this.ifraProductCategories, this.selectedIfraProductCategoryId);
+        },
+
+        get selectedProductType() {
+            const selectedId = Number(this.productTypeId);
+
+            if (!Number.isFinite(selectedId) || selectedId <= 0) {
+                return null;
+            }
+
+            return this.productTypes.find((productType) => Number(productType.id) === selectedId)
+                ?? (Number(this.initialProductType?.id) === selectedId ? this.initialProductType : null);
+        },
+
+        get productTypeName() {
+            return this.selectedProductType?.name ?? null;
         },
 
         normalizedIfraProductCategoryId() {

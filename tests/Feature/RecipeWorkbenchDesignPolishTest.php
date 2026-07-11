@@ -32,32 +32,48 @@ it('keeps formula-start compliance controls available but collapsed by default',
         ->toBeLessThan(strpos($soapSettings, 'Label &amp; compliance'));
 });
 
-it('keeps workbench navigation and secondary formula actions visually quiet', function () {
+it('keeps workbench navigation distinct from secondary formula actions', function () {
     $header = view('livewire.dashboard.partials.recipe-workbench.header')->render();
     $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
     $publicNavigation = view('livewire.dashboard.partials.recipe-workbench.navigation', [
         'isPublicCalculator' => true,
     ])->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+    $workbenchSource = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
+
+    preg_match(
+        '/\\.sk-workbench \\.sk-workbench-tabs \\{(?<rule>.*?)\\n\\}/s',
+        $appStylesSource,
+        $tabTrackMatches,
+    );
 
     expect($navigation)
         ->not->toContain('border-t-2')
         ->toContain('overflow-x-auto')
         ->toContain('min-w-[9.5rem]')
+        ->toContain('sk-workbench-tabs')
+        ->toContain('sk-workbench-tab')
         ->toContain('justify-center')
         ->toContain('text-center')
         ->toContain('xl:grid-cols-5')
-        ->toContain('bg-[var(--color-panel)]')
-        ->toContain('text-[var(--color-ink-strong)]')
-        ->toContain('shadow-[inset_0_-3px_0_var(--color-active)')
-        ->toContain('shadow-[inset_0_0_0_1px_color-mix')
         ->not->toContain('ring-1')
-        ->not->toContain('bg-[var(--color-active-soft)]')
-        ->not->toContain('text-[var(--color-active-strong)]')
-        ->not->toContain('bg-[var(--color-control)]')
-        ->not->toContain('bg-[var(--color-accent-soft)]')
         ->and($publicNavigation)
         ->toContain('grid gap-2 sm:grid-cols-2')
         ->not->toContain('overflow-x-auto')
+        ->and($appStylesSource)
+        ->toContain('.sk-workbench .sk-workbench-tabs')
+        ->toContain('.sk-workbench .sk-workbench-tab')
+        ->toContain('.sk-workbench .sk-workbench-tab.is-active')
+        ->toContain('.sk-workbench .sk-workbench-tab.is-active::before')
+        ->toContain('background-color: var(--color-panel)')
+        ->toContain('color: var(--color-ink-strong) !important')
+        ->toContain('min-height: 2.875rem')
+        ->not->toContain('background-color: var(--color-active-strong)')
+        ->and($tabTrackMatches['rule'] ?? null)
+        ->toContain('padding: 0.25rem')
+        ->toContain('background-color: color-mix(')
+        ->and($workbenchSource)
+        ->toContain('class="sk-workbench mx-auto max-w-[90rem] space-y-6"')
         ->and($header)
         ->toContain('More formula actions')
         ->toContain('<details')
@@ -88,6 +104,20 @@ it('hardens compact workbench controls for touch and keyboard use', function () 
     expect($header)
         ->toContain('@click.outside="open = false"')
         ->toContain('@keydown.escape.prevent.stop="open = false"');
+});
+
+it('presents batch totals as one compact accented summary grid', function () {
+    $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+
+    expect($postReaction)
+        ->toContain('sk-card sk-tone-analysis overflow-hidden')
+        ->toContain('sk-section-header border-b px-5 py-4')
+        ->toContain('grid gap-px bg-[var(--color-line)] sm:grid-cols-2 xl:grid-cols-4')
+        ->toContain('bg-[var(--color-panel)] px-4 py-3')
+        ->toContain('numeric mt-3 text-2xl')
+        ->not->toContain('A quick read of the current formula outputs')
+        ->not->toContain('sk-inset flex h-full flex-col justify-between p-4')
+        ->not->toContain('numeric pt-6');
 });
 
 it('adapts recipe workbench tables for narrow screens before desktop grids', function () {
@@ -226,6 +256,117 @@ it('keeps the ingredient browser column lean on desktop displays', function () {
         ->toContain('lg:grid-cols-[19rem_minmax(0,1fr)]')
         ->toContain('2xl:grid-cols-[22rem_minmax(0,1fr)]')
         ->not->toContain('class="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]');
+});
+
+it('keeps long ingredient names readable without depending on hover', function () {
+    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+
+    expect($ingredientBrowser)
+        ->toContain('line-clamp-2 text-sm font-semibold leading-5 text-[var(--color-ink-strong)]')
+        ->toContain(':title="ingredient.name"')
+        ->toContain('<p class="sk-eyebrow">Ingredient</p>')
+        ->toContain('rounded-xl bg-[var(--color-panel)] px-3 py-2')
+        ->toContain('text-sm font-semibold leading-snug text-[var(--color-ink-strong)]" x-text="ingredient.name"')
+        ->toContain('text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name ||');
+});
+
+it('keeps ingredient browser filters visible and pill shaped while focused', function () {
+    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+    $genericWorkbenchFocusPosition = strpos($appStylesSource, '.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]), select, textarea, a, summary):focus');
+    $ingredientFilterFocusPosition = strrpos($appStylesSource, '.sk-workbench .sk-ingredient-filter-control:focus');
+
+    expect($ingredientBrowser)
+        ->toContain('sk-ingredient-filter-control w-full px-4 py-3 text-sm')
+        ->and(substr_count($ingredientBrowser, 'sk-ingredient-filter-control'))
+        ->toBe(2)
+        ->and($appStylesSource)
+        ->toContain('.sk-workbench .sk-ingredient-filter-control')
+        ->toContain('border-radius: 1.15rem')
+        ->toContain('box-shadow: inset 0 0 0 1px')
+        ->toContain('.sk-workbench .sk-ingredient-filter-control:focus-visible')
+        ->toContain('outline-style: none !important')
+        ->toContain('outline: none !important')
+        ->toContain('box-shadow: inset 0 0 0 2px')
+        ->and($ingredientFilterFocusPosition)
+        ->toBeGreaterThan($genericWorkbenchFocusPosition);
+});
+
+it('uses a radius respecting inset ring for focused workbench controls except tabs', function () {
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    preg_match(
+        '/\\.sk-workbench :is\\(button:not\\(\\[role="tab"\\]\\), input:not\\(\\[type="range"\\]\\), select, textarea, a, summary\\):focus \\{(?<rule>.*?)\\n\\}/s',
+        $appStylesSource,
+        $matches,
+    );
+
+    expect($matches['rule'] ?? null)
+        ->toContain('box-shadow: inset 0 0 0 2px')
+        ->toContain('outline: none !important;')
+        ->not->toContain('outline-style: solid !important;');
+});
+
+it('keeps field focus rings off range tracks and marks the focused thumb for keyboard users', function () {
+    $formulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    expect(substr_count($formulaSettings, 'type="range"'))
+        ->toBe(2)
+        ->and($appStylesSource)
+        ->toContain('input:not([type="range"])')
+        ->toContain('.sk-workbench input[type="range"]:focus')
+        ->toContain('.sk-workbench input[type="range"]:focus-visible::-webkit-slider-thumb')
+        ->toContain('.sk-workbench input[type="range"]:focus-visible::-moz-range-thumb')
+        ->toContain('0 0 0 5px var(--color-active)')
+        ->not->toContain('button:not([role="tab"]), input, select, textarea');
+});
+
+it('uses a neutral shelf active state and keyboard-only focus treatment for workbench tabs', function () {
+    $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    expect($navigation)
+        ->toContain('sk-workbench-tab')
+        ->toContain(":class=\"{ 'is-active': activeWorkbenchTab === 'formula' }\"")
+        ->not->toContain('bg-[var(--color-active)]')
+        ->and($appStylesSource)
+        ->toContain('.sk-workbench .sk-workbench-tab.is-active')
+        ->toContain('.sk-workbench .sk-workbench-tab.is-active::before')
+        ->toContain('background-color: var(--color-panel)')
+        ->toContain('color: var(--color-ink-strong) !important')
+        ->toContain('background-color: var(--color-active);')
+        ->toContain('box-shadow: 0 1px 2px rgba(60, 50, 30, 0.075)')
+        ->toContain('.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]), select, textarea, a, summary):focus')
+        ->toContain('.sk-workbench [role="tab"]:focus-visible')
+        ->toContain('outline: 2px solid var(--color-active);')
+        ->toContain('outline-offset: 2px;')
+        ->not->toContain('background-color: var(--color-active-strong)')
+        ->not->toContain('.sk-workbench :is(button, input, select, textarea, a, summary):focus {');
+});
+
+it('keeps the packaging catalog search to one rounded focus surface', function () {
+    $packagingTab = view('livewire.dashboard.partials.recipe-workbench.packaging-tab')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    expect($packagingTab)
+        ->toContain('sk-packaging-catalog-control')
+        ->not->toContain('focus-within:outline-2')
+        ->and($appStylesSource)
+        ->toContain('.sk-workbench .sk-packaging-catalog-control:focus-within')
+        ->toContain('.sk-workbench .sk-packaging-catalog-control :is(input, button):focus')
+        ->toContain('box-shadow: none !important;');
+});
+
+it('keeps the formula title field rounded while focused', function () {
+    $formulaHeader = view('livewire.dashboard.partials.recipe-workbench.header')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    expect($formulaHeader)
+        ->toContain('sk-formula-title-control')
+        ->and($appStylesSource)
+        ->toContain('.sk-workbench .sk-formula-title-control:focus-visible')
+        ->toContain('border-radius: 1.25rem !important;');
 });
 
 it('keeps workbench card subheadings at the compact card title size', function () {
@@ -454,11 +595,10 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->not->toContain(".sk-card {\n        border: 1px solid transparent")
         ->toContain('.sk-inset')
         ->toContain('border: 1px solid color-mix(in oklab, var(--color-line) 88%, var(--color-ink) 4%)')
-        ->toContain('.sk-workbench :is(button, input, select, textarea, a, summary):focus')
-        ->toContain('outline-color: color-mix(in oklab, var(--color-active) 38%, transparent) !important')
-        ->toContain('outline-offset: -2px !important')
-        ->toContain('outline-style: solid !important')
-        ->toContain('outline-width: 2px !important')
+        ->toContain('.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]), select, textarea, a, summary):focus')
+        ->toContain('box-shadow: inset 0 0 0 2px')
+        ->toContain('outline: none !important')
+        ->not->toContain('outline-style: solid !important')
         ->and($formulaSectionSource)
         ->toContain("tone: hasResolvedWeights ? 'chemistry' : 'warning'")
         ->toContain("tone: 'info'")

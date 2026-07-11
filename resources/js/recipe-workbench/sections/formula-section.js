@@ -98,6 +98,12 @@ export function createFormulaSection() {
         get formulaSetupSummaryCards() {
             const cards = [
                 {
+                    id: 'formula-product-category',
+                    label: 'Category',
+                    value: this.productTypeName ?? 'Choose later',
+                    tone: 'neutral',
+                },
+                {
                     id: 'formula-weight',
                     label: this.isCosmeticFormula ? 'Total batch quantity' : 'Base',
                     value: `${this.format(this.oilWeight, this.oilUnit === 'g' ? 0 : 2)} ${this.oilUnit}`,
@@ -112,6 +118,7 @@ export function createFormulaSection() {
             ];
 
             if (!this.isCosmeticFormula) {
+                cards.shift();
                 cards.splice(
                     1,
                     0,
@@ -626,33 +633,14 @@ export function createFormulaSection() {
             return coerceNumber(value);
         },
 
-        handleDecimalKeydown(event) {
-            if (event.key === ',') {
-                event.preventDefault();
-                const el = event.target;
-                const start = el.selectionStart;
-                const end = el.selectionEnd;
-
-                if (start === null || end === null || typeof el.setRangeText !== 'function') {
-                    el.value = `${el.value ?? ''}.`;
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-
-                    return;
-                }
-
-                el.setRangeText('.', start, end, 'end');
-                el.dispatchEvent(new Event('input', { bubbles: true }));
-            }
-        },
-
         parseDecimalInput(value) {
             return parseDecimal(value);
         },
 
         confirmNegativeSuperfat(event) {
-            const value = parseFloat(event.target.value);
+            const value = this.parseDecimalInput(event.target.value);
 
-            if (isNaN(value) || value >= 0 || this.superfat < 0) {
+            if (value >= 0 || this.number(this.superfat) < 0) {
                 return;
             }
 
@@ -662,7 +650,7 @@ export function createFormulaSection() {
         },
 
         format(value, decimals = 2) {
-            return formatNumber(value, decimals);
+            return formatNumber(value, decimals, this.numberLocale);
         },
     };
 }

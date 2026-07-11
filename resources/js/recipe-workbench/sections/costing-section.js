@@ -4,6 +4,7 @@ import {
     persistPackagingCatalogItem,
 } from '../bridge';
 import { nonNegativeNumber, number, parseDecimalInput, roundTo } from '../utils';
+import { formatDecimalInput } from '../number-format';
 
 const PHASE_LABELS = {
     saponified_oils: 'Reaction core',
@@ -305,10 +306,20 @@ export function createCostingSection(payload) {
             return this.savePackagingCatalogItem(false);
         },
 
-        normalizeDecimalBlur(event) {
-            const raw = `${event.target.value ?? ''}`.replace(',', '.');
-            const parsed = Number.parseFloat(raw);
-            event.target.value = Number.isFinite(parsed) ? parsed : '';
+        normalizeDecimalBlur(event, allowNegative = false) {
+            const raw = `${event.target.value ?? ''}`.trim();
+
+            if (raw === '') {
+                event.target.value = '';
+
+                return;
+            }
+
+            const parsed = parseDecimalInput(raw);
+            const normalized = allowNegative ? parsed : Math.max(0, parsed);
+
+            event.target.value = formatDecimalInput(normalized, this.numberLocale);
+            event.target.dispatchEvent(new Event('input', { bubbles: true }));
         },
     };
 }

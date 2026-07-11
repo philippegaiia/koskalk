@@ -2,11 +2,16 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceInvitation;
 use App\Models\WorkspaceMember;
+use App\Services\LocalePreferenceResolver;
+use App\Support\NumberLocale;
 use App\WorkspaceMemberRole;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -28,6 +33,10 @@ class SettingsIndex extends Component
     public string $name = '';
 
     public string $email = '';
+
+    public string $numberLocale = 'en_US';
+
+    public string $locale = 'en';
 
     public string $currentPassword = '';
 
@@ -74,6 +83,8 @@ class SettingsIndex extends Component
         $this->userId = $user->id;
         $this->name = $user->name ?? '';
         $this->email = $user->email ?? '';
+        $this->numberLocale = NumberLocale::resolve($user->number_locale);
+        $this->locale = $user->locale ?? app()->getLocale();
 
         $company = $user->company();
 
@@ -89,15 +100,32 @@ class SettingsIndex extends Component
         /** @var User $user */
         $user = auth()->user();
 
-        $this->validate([
+        $localeOptions = $this->localeOptions;
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-        ]);
+            'numberLocale' => ['required', 'string', Rule::in(NumberLocale::codes())],
+        ];
+
+        if ($localeOptions !== []) {
+            $rules['locale'] = [
+                'required',
+                'string',
+                Rule::exists((new SupportedLocale)->getTable(), 'code')->where('is_active', true),
+            ];
+        }
+
+        $this->validate($rules);
 
         $user->fill([
             'name' => $this->name,
             'email' => $this->email,
+            'number_locale' => $this->numberLocale,
         ]);
+
+        if ($localeOptions !== []) {
+            $user->locale = $this->locale;
+        }
 
         if ($this->avatar) {
             $this->validate(['avatar' => ['image', 'max:2048']]);
@@ -107,9 +135,35 @@ class SettingsIndex extends Component
 
         $user->save();
 
+        if ($localeOptions !== []) {
+            session()->put(LocalePreferenceResolver::SessionKey, $this->locale);
+            App::setLocale($this->locale);
+            Cookie::queue(cookie()->forever(LocalePreferenceResolver::CookieName, $this->locale));
+        }
+
         $this->profileStatus = 'success';
         $this->profileMessage = 'Profile updated.';
         $this->avatar = null;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getNumberLocaleOptionsProperty(): array
+    {
+        return NumberLocale::options();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getLocaleOptionsProperty(): array
+    {
+        return SupportedLocale::query()
+            ->where('is_active', true)
+            ->ordered()
+            ->pluck('native_name', 'code')
+            ->all();
     }
 
     public function updatePassword(): void

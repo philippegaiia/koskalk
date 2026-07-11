@@ -76,8 +76,8 @@ it('hides recovery snapshots from the main formula sheet', function () {
         ->assertDontSee('Recovery snapshots')
         ->assertDontSee('Load into draft')
         ->assertDontSee('Restore as reference formula')
-        ->assertDontSee('v1')
-        ->assertDontSee('v2');
+        ->assertDontSeeText('v1')
+        ->assertDontSeeText('v2');
 });
 
 it('locks and unlocks a formula', function () {

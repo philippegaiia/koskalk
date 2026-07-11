@@ -40,18 +40,6 @@ class RecipeController extends Controller
             ->where('slug', $productFamilySlug)
             ->firstOrFail();
 
-        if ($productFamily->slug === 'cosmetic' && $productTypeSlug === '') {
-            return view('recipes.product-type-selector', [
-                'productFamily' => $productFamily,
-                'productTypes' => ProductType::query()
-                    ->whereBelongsTo($productFamily)
-                    ->where('is_active', true)
-                    ->orderBy('sort_order')
-                    ->orderBy('name')
-                    ->get(),
-            ]);
-        }
-
         $productType = $productTypeSlug !== ''
             ? ProductType::query()
                 ->whereBelongsTo($productFamily)

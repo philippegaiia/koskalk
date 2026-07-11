@@ -1,18 +1,16 @@
 @php
     $isPublicCalculator = $isPublicCalculator ?? false;
-    $tabBaseClass = 'inline-flex min-w-[9.5rem] shrink-0 items-center justify-center whitespace-nowrap rounded-lg px-4 py-3 text-center text-sm font-semibold transition xl:min-w-0 xl:px-5 xl:py-3.5 xl:text-base';
-    $tabActiveClass = 'bg-[var(--color-panel)] text-[var(--color-ink-strong)] shadow-[inset_0_-3px_0_var(--color-active),0_1px_2px_rgba(60,50,30,0.05)]';
-    $tabInactiveClass = 'bg-[color-mix(in_oklab,var(--color-panel)_74%,var(--color-surface)_26%)] text-[var(--color-ink-soft)] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--color-line)_70%,transparent)] hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]';
+    $tabBaseClass = 'sk-workbench-tab inline-flex min-w-[9.5rem] shrink-0 items-center justify-center whitespace-nowrap rounded-lg px-4 py-2.5 text-center text-sm font-semibold xl:min-w-0 xl:px-5 xl:py-3 xl:text-base';
 @endphp
 
-<nav class="{{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : '-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible xl:px-0 xl:pb-0' }}" role="tablist" aria-label="Workbench sections">
+<nav class="sk-workbench-tabs {{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : '-mx-1 flex gap-2 overflow-x-auto xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible' }}" role="tablist" aria-label="Workbench sections">
  <button
  id="tab-formula"
  role="tab"
  type="button"
  @click="activeWorkbenchTab = 'formula'"
 	 :aria-selected="activeWorkbenchTab === 'formula'"
-	 :class="activeWorkbenchTab === 'formula' ? @js($tabActiveClass) : @js($tabInactiveClass)"
+	 :class="{ 'is-active': activeWorkbenchTab === 'formula' }"
 	 class="{{ $tabBaseClass }}"
  >
  Formula
@@ -25,8 +23,8 @@
  type="button"
  @click="activeWorkbenchTab = 'packaging'"
 	 :aria-selected="activeWorkbenchTab === 'packaging'"
-	 :class="activeWorkbenchTab === 'packaging' ? @js($tabActiveClass) : @js($tabInactiveClass)"
- class="{{ $tabBaseClass }}"
+	 :class="{ 'is-active': activeWorkbenchTab === 'packaging' }"
+class="{{ $tabBaseClass }}"
  >
  Packaging
  </button>
@@ -37,8 +35,8 @@
  type="button"
  @click="activeWorkbenchTab = 'costing'; ensureCostingLoaded()"
 	 :aria-selected="activeWorkbenchTab === 'costing'"
-	 :class="activeWorkbenchTab === 'costing' ? @js($tabActiveClass) : @js($tabInactiveClass)"
- class="{{ $tabBaseClass }}"
+	 :class="{ 'is-active': activeWorkbenchTab === 'costing' }"
+class="{{ $tabBaseClass }}"
  >
  Costing
  </button>
@@ -50,8 +48,8 @@
  type="button"
  @click="activeWorkbenchTab = 'output'"
 	 :aria-selected="activeWorkbenchTab === 'output'"
-	 :class="activeWorkbenchTab === 'output' ? @js($tabActiveClass) : @js($tabInactiveClass)"
- class="{{ $tabBaseClass }}"
+	 :class="{ 'is-active': activeWorkbenchTab === 'output' }"
+class="{{ $tabBaseClass }}"
  >
  Output
  </button>
@@ -63,8 +61,8 @@
  type="button"
  @click="activeWorkbenchTab = 'instructions'"
 	 :aria-selected="activeWorkbenchTab === 'instructions'"
-	 :class="activeWorkbenchTab === 'instructions' ? @js($tabActiveClass) : @js($tabInactiveClass)"
- class="{{ $tabBaseClass }}"
+	 :class="{ 'is-active': activeWorkbenchTab === 'instructions' }"
+class="{{ $tabBaseClass }}"
  >
  Instructions &amp; Media
  </button>

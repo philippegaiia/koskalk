@@ -72,6 +72,42 @@ class Ingredient extends Model
             ->orderBy('id');
     }
 
+    public function translations(): HasMany
+    {
+        return $this->hasMany(IngredientTranslation::class);
+    }
+
+    public function localizedDisplayName(?string $locale = null): ?string
+    {
+        return $this->localizedPlatformValue('display_name', $locale, $this->display_name);
+    }
+
+    public function localizedInfoMarkdown(?string $locale = null): ?string
+    {
+        return $this->localizedPlatformValue('info_markdown', $locale, $this->info_markdown);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function translationLocaleCandidates(?string $locale = null): array
+    {
+        $locale ??= app()->getLocale();
+        $locale = trim($locale);
+        $normalizedLocale = str_replace('-', '_', $locale);
+        $baseLocale = explode('_', $normalizedLocale)[0];
+
+        if ($baseLocale === 'en') {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter([
+            $locale,
+            $normalizedLocale,
+            $baseLocale,
+        ])));
+    }
+
     public function recipeItems(): HasMany
     {
         return $this->hasMany(RecipeItem::class);
@@ -168,6 +204,34 @@ class Ingredient extends Model
     public function isAvailableForInitialSoapCalculation(): bool
     {
         return $this->canDriveSoapSaponification();
+    }
+
+    private function localizedPlatformValue(string $field, ?string $locale, ?string $fallback): ?string
+    {
+        $locale ??= app()->getLocale();
+        $localeCandidates = self::translationLocaleCandidates($locale);
+
+        if ($this->owner_type !== null || $localeCandidates === []) {
+            return $fallback;
+        }
+
+        $translations = $this->relationLoaded('translations')
+            ? $this->translations
+            : $this->translations()
+                ->whereIn('locale', $localeCandidates)
+                ->get();
+
+        foreach ($localeCandidates as $localeCandidate) {
+            $value = $translations
+                ->firstWhere('locale', $localeCandidate)
+                ?->getAttribute($field);
+
+            if (is_string($value) && filled(trim($value))) {
+                return $value;
+            }
+        }
+
+        return $fallback;
     }
 
     public function canDriveSoapSaponification(): bool

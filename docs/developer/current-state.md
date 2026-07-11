@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-07
+Last updated: 2026-07-11
 
 ## Stack
 
@@ -16,6 +16,7 @@ Last updated: 2026-05-07
 
 - `ingredients`
 - `ingredient_versions`
+- `ingredient_translations`
 - `ingredient_sap_profiles`
 - `fatty_acids`
 - `ingredient_version_fatty_acids`
@@ -48,6 +49,7 @@ The data is intentionally split into three layers:
 - `IngredientSapProfile`: KOH SAP, derived NaOH SAP, legacy fixed fatty-acid fallback values, source notes
 - `FattyAcid`: normalized fatty-acid catalog with core and extended acids
 - `IngredientVersionFattyAcid`: normalized fatty-acid percentages by ingredient version
+- `IngredientTranslation`: non-English platform display names and guidance with canonical English fallback
 
 For aromatic materials, there is now an additional compliance layer:
 
@@ -124,8 +126,36 @@ Filament resources currently exist for:
 - regime substance rules
 - IFRA product categories
 - IFRA certificates
+- supported languages
+- interface translations
+- platform ingredient translations inside the ingredient editor
 
 Admin access is restricted through `User::canAccessPanel()` and an `is_admin` flag on users.
+
+The Filament admin remains English-only.
+
+### Localization foundation
+
+The public interface localization foundation now uses Laravel localization with `spatie/laravel-translation-loader`:
+
+- English interface source text remains in version-controlled language files
+- `language_lines` stores reviewed non-English interface translations
+- `supported_locales` stores locale metadata and activation state
+- English is active and is the fallback locale
+- French, Spanish, German, and Italian are registered but inactive until translated and reviewed
+- `php artisan translations:sync` inserts missing interface keys without overwriting translations
+
+Platform-managed catalog and compliance translations are intentionally not stored in `language_lines`.
+
+The first platform-data translation slice is implemented for ingredients:
+
+- `ingredient_translations` stores one non-English display name and guidance record per platform ingredient and registered locale
+- canonical English remains on `ingredients`
+- the Filament ingredient editor provides the trusted translation workflow
+- workbench, platform search, and ingredient catalog delivery use localized names with English fallback
+- private ingredients remain exactly as authored
+
+Other platform models and official regulatory nomenclature still require their own deliberate translation architecture. See [localization.md](./localization.md).
 
 ### Public UI foundation
 

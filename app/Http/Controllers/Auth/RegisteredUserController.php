@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\RegisterUserRequest;
 use App\Models\ProductFamily;
 use App\Models\User;
 use App\Services\EntitlementService;
+use App\Services\LocalePreferenceResolver;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -27,7 +28,12 @@ class RegisteredUserController extends Controller
         EntitlementService $entitlementService,
         RecipeWorkbenchService $recipeWorkbenchService,
     ): RedirectResponse {
-        $user = User::query()->create($request->validated());
+        $user = User::query()->create([
+            ...$request->validated(),
+            'locale' => app(LocalePreferenceResolver::class)->isActive(
+                (string) $request->session()->get(LocalePreferenceResolver::SessionKey),
+            ) ? $request->session()->get(LocalePreferenceResolver::SessionKey) : null,
+        ]);
 
         $entitlementService->assignDefaultPlan($user);
         Auth::login($user);

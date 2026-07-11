@@ -13,6 +13,8 @@ It answers:
 
 - [current-state.md](./current-state.md)
 - [catalog-and-admin.md](./catalog-and-admin.md)
+- [localization.md](./localization.md)
+- [content-audit.md](./content-audit.md)
 - [allergen-regimes.md](./allergen-regimes.md)
 - [formulation-engine.md](./formulation-engine.md)
 - [public-ui.md](./public-ui.md)

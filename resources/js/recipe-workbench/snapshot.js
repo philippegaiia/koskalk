@@ -33,7 +33,9 @@ export function draftStateFromDraft(draft, currentState) {
         currentVersionId: draft.recipe?.current_version_id ?? currentState.currentVersionId,
         currentVersionNumber: draft.recipe?.version_number ?? currentState.currentVersionNumber,
         currentVersionIsDraft: draft.recipe?.is_current ?? currentState.currentVersionIsDraft,
-        productTypeId: draft.productTypeId ?? currentState.productTypeId,
+        productTypeId: draft.productTypeId === null || draft.productTypeId === undefined
+            ? ''
+            : String(draft.productTypeId),
         formulaName: draft.formulaName ?? currentState.formulaName,
         oilUnit: draft.oilUnit ?? currentState.oilUnit,
         oilWeight: number(draft.oilWeight ?? currentState.oilWeight),

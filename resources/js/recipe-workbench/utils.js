@@ -1,10 +1,9 @@
-export function parseDecimalInput(value) {
-    const normalized = `${value ?? ''}`.replace(',', '.');
+import {
+    formatNumber as formatLocalizedNumber,
+    parseDecimalInput,
+} from './number-format';
 
-    const parsed = Number.parseFloat(normalized);
-
-    return Number.isFinite(parsed) ? parsed : 0;
-}
+export { parseDecimalInput };
 
 export function clone(value) {
     if (value === null || value === undefined) {
@@ -15,9 +14,7 @@ export function clone(value) {
 }
 
 export function number(value) {
-    const parsed = Number.parseFloat(value);
-
-    return Number.isFinite(parsed) ? parsed : 0;
+    return parseDecimalInput(value);
 }
 
 export function nonNegativeNumber(value) {
@@ -34,8 +31,8 @@ export function roundTo(value, decimals = 3) {
     return Math.round(number(value) * factor) / factor;
 }
 
-export function format(value, decimals = 2) {
-    return number(value).toFixed(decimals);
+export function format(value, decimals = 2, locale = 'en_US') {
+    return formatLocalizedNumber(value, decimals, locale);
 }
 
 export function humanizeKey(value) {

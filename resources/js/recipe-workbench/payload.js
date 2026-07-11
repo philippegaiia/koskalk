@@ -1,6 +1,6 @@
 import { normalizedIfraProductCategoryId } from './catalog';
 import { rowWeight } from './calculation';
-import { nonNegativeNumber } from './utils';
+import { nonNegativeNumber, number } from './utils';
 
 export function serializeRow(state, row) {
     return {
@@ -23,18 +23,18 @@ export function serializeDraft(state) {
     return {
         name: state.formulaName,
         oil_unit: state.oilUnit,
-        oil_weight: state.oilWeight,
+        oil_weight: nonNegativeNumber(state.oilWeight),
         manufacturing_mode: state.manufacturingMode,
         exposure_mode: state.exposureMode,
         regulatory_regime: state.regulatoryRegime,
         product_type_id: state.productTypeId,
         editing_mode: state.editMode,
         lye_type: state.lyeType,
-        koh_purity_percentage: state.kohPurity,
-        dual_lye_koh_percentage: state.dualKohPercentage,
+        koh_purity_percentage: nonNegativeNumber(state.kohPurity),
+        dual_lye_koh_percentage: nonNegativeNumber(state.dualKohPercentage),
         water_mode: state.waterMode,
-        water_value: state.waterValue,
-        superfat: state.superfat,
+        water_value: nonNegativeNumber(state.waterValue),
+        superfat: number(state.superfat),
         ifra_product_category_id: normalizedIfraProductCategoryId(state.selectedIfraProductCategoryId),
         final_ingredient_list: state.finalIngredientList ?? null,
         final_ingredient_list_basis_hash: state.finalIngredientListBasisHash ?? null,

@@ -74,6 +74,33 @@
  />
  @error('email') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
+
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">{{ __('public.language.label') }}</span>
+ <select
+ wire:model="locale"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
+ >
+ @foreach($this->localeOptions as $localeCode => $localeName)
+ <option value="{{ $localeCode }}">{{ $localeName }}</option>
+ @endforeach
+ </select>
+ @error('locale') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+ </label>
+
+ <label class="sk-inset p-4">
+ <span class="sk-eyebrow">{{ __('number_formats.label') }}</span>
+ <select
+ wire:model="numberLocale"
+ class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
+ >
+ @foreach($this->numberLocaleOptions as $locale => $label)
+ <option value="{{ $locale }}">{{ $label }}</option>
+ @endforeach
+ </select>
+ @error('numberLocale') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+ <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('number_formats.help') }}</p>
+ </label>
  </div>
 
  <div class="flex justify-end">

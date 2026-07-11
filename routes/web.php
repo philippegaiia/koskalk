@@ -7,6 +7,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
+use App\Http\Controllers\LocalePreferenceController;
 use App\Http\Controllers\PackagingItemController;
 use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\PublicSoapCalculatorController;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/calculator', [PublicSoapCalculatorController::class, 'show'])->name('calculator');
 Route::post('/calculator/draft', [PublicSoapCalculatorController::class, 'storeDraft'])->name('calculator.draft.store');
+Route::post('/language', LocalePreferenceController::class)->name('language.update');
 
 Route::middleware('guest')->group(function (): void {
     Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');

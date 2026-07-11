@@ -184,9 +184,9 @@
 }
 
 button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
+input:not(.fi-input):focus-visible,
+select:not(.sk-language-selector-control):not(.fi-select-input):focus-visible,
+textarea:not(.fi-textarea):focus-visible,
 a:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
@@ -303,4 +303,34 @@ a:focus-visible {
     --color-sidebar-active-text: var(--color-inverse);
     --color-sidebar-active-ring: color-mix(in oklab, var(--color-sage-light) 32%, transparent);
     --color-line: color-mix(in oklab, var(--color-inverse) 14%, transparent);
+}
+@layer components {
+    .sk-language-selector-control {
+        width: 8.5rem;
+        height: 2.5rem;
+        appearance: none;
+        border: 1px solid color-mix(in oklab, currentColor 24%, transparent);
+        border-radius: 0.5rem;
+        background: transparent !important;
+        background-image: none !important;
+        padding: 0 2rem !important;
+        color: currentColor;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1;
+        outline: none;
+        box-shadow: none;
+        transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .sk-language-selector-control:hover {
+        border-color: color-mix(in oklab, currentColor 42%, transparent);
+    }
+
+    .sk-language-selector-control:focus,
+    .sk-language-selector-control:focus-visible {
+        border-color: transparent !important;
+        outline: none !important;
+        box-shadow: inset 0 0 0 2px color-mix(in oklab, currentColor 58%, transparent) !important;
+    }
 }

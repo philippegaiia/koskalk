@@ -131,11 +131,12 @@ All 201 tests passed after the latest recipe index product-type pass, but the br
   - Starter cosmetic product types should cover at least cream/lotion, balm/salve, lip product, deodorant, hair care, mask, oil blend/serum, cleansing products that are not saponified soaps, bath salts/soaks, and other. The platform should be able to add more later.
   - Cosmetic product types are platform-managed only in v1. Users should use the free-text formula/product name for custom nuance rather than creating private product types.
   - Add a small Filament/platform admin management screen for product types rather than requiring code/DB edits. It should cover at least label/name, active/disabled state, sort order, default IFRA category suggestion, and fallback image. Do not expose product type management in the subscriber app UI.
-  - Store cosmetic product type labels English-first with stable slugs for now. Keep the model/columns easy to evolve for translations later rather than building translation admin UI in v1.
+  - Store cosmetic product types under stable slugs. Public labels and descriptions belong to the planned platform-data translation layer, not interface `language_lines`.
   - Product types with related recipes should not be deletable. Prefer disabling/hiding over destructive deletion. Disabled product types should be unavailable for new recipe selection, but still visible and filterable for existing recipes that use them. Product type merging can be a later admin maintenance tool, not a v1 requirement.
   - Product types may suggest a default IFRA category, but IFRA category remains a separate editable choice on the formula.
   - Cosmetic formulas can have a baby/child product context toggle. This should not change formula math or hard validation in v1; it only shows a clear reminder to verify the IFRA category, stricter safety context, lab testing expectations, and review with a qualified assessor/toxicologist.
-  - Multilingual strategy should start with Laravel core localization for UI strings and translation-ready database records for platform-managed product types. Avoid adding a heavy translation plugin until the actual translation workflow demands it.
+  - Interface localization now uses Laravel localization with `spatie/laravel-translation-loader`. English source strings remain in code, reviewed non-English values live in `language_lines`, and the Filament translation editor remains English-only.
+  - Platform-managed catalog and compliance translations require a separate model. Scientific values remain canonical; translated display content and market-specific regulatory nomenclature must not be mixed with interface strings. See `docs/developer/localization.md`.
   - Start cosmetic formulas with one default phase named `Phase A`.
   - Users can add, rename, remove, and reorder phases.
   - Cosmetic batch size is total formula weight, not oil weight and not dry/wet basis.

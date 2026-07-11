@@ -53,7 +53,7 @@
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = clampPercentage($event.target.value)" type="number" inputmode="decimal" min="0" max="100" step="0.1" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-model="row.percentage" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'percentage'">
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -62,7 +62,7 @@
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
- <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.001" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updatePercentageFromWeight(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="text" inputmode="decimal" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
@@ -128,7 +128,7 @@
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden">% oils</span>
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); row.percentage = clampPercentage($event.target.value)" type="number" inputmode="decimal" min="0" max="100" step="0.1" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-model="row.percentage" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="'Percentage for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'percentage'">
  <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
@@ -137,7 +137,7 @@
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
- <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updatePercentageFromWeight(row, $event.target.value)" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="number" inputmode="decimal" step="0.001" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updatePercentageFromWeight(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="text" inputmode="decimal" :aria-label="'Weight for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'weight'">
  <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
@@ -155,21 +155,16 @@
  </div>
  </div>
 
- <div class="sk-card sk-tone-analysis p-5">
- <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
- <div>
+ <div class="sk-card sk-tone-analysis overflow-hidden">
+ <div class="sk-section-header border-b px-5 py-4">
  <p class="sk-eyebrow">Batch totals</p>
- <p class="mt-1 text-sm text-[var(--color-ink-soft)]">A quick read of the current formula outputs without repeating the oil basis already shown above.</p>
- </div>
  </div>
 
- <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+ <div class="grid gap-px bg-[var(--color-line)] sm:grid-cols-2 xl:grid-cols-4">
  <template x-for="card in totalSummaryCards" :key="card.id">
- <div class="sk-inset flex h-full flex-col justify-between p-4">
- <div>
+ <div class="flex min-h-24 flex-col justify-between bg-[var(--color-panel)] px-4 py-3">
  <p class="sk-eyebrow" x-text="card.label"></p>
- </div>
- <p class="numeric pt-6 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
+ <p class="numeric mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
  </div>
  </template>
  </div>

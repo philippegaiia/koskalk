@@ -691,6 +691,7 @@ const source = fs
 
 const normalizedIfraProductCategoryId = (value) => value;
 const rowWeight = () => 0;
+const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
 const nonNegativeNumber = (value) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : 0;
 
 eval(`${source}\nglobalThis.serializeDraft = serializeDraft;`);
@@ -2158,7 +2159,7 @@ it('keeps formula table controls stepped and visually aligned', function () {
 
     expect($reactionCore)
         ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
-        ->toContain('type="number" inputmode="decimal" min="0" max="100" step="1"')
+        ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('format(totalOilPercentage(), 2)')
         ->toContain("oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]'")
@@ -2166,9 +2167,8 @@ it('keeps formula table controls stepped and visually aligned', function () {
         ->not->toContain(':value="format(rowWeight(row), 1)"')
         ->and($postReaction)
         ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
-        ->toContain('type="number" inputmode="decimal" min="0" max="100" step="0.1"')
-        ->toContain('type="number" inputmode="decimal" step="0.001"')
-        ->toContain('row.percentage = clampPercentage($event.target.value)')
+        ->toContain('type="text" inputmode="decimal"')
+        ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('document.activeElement !== $el')
         ->not->toContain(':value="format(rowWeight(row), 3)"');
 });
@@ -2190,6 +2190,7 @@ it('keeps formula visual states distinct and softly selected', function () {
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
     $fattyAcidProfile = view('livewire.dashboard.partials.recipe-workbench.fatty-acid-profile')->render();
     $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
 
     expect($reactionCore)
         ->toContain('class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
@@ -2201,7 +2202,10 @@ it('keeps formula visual states distinct and softly selected', function () {
         ->toContain('flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs')
         ->toContain('min-w-0 flex-1 truncate text-[var(--color-ink-strong)]')
         ->and($navigation)
-        ->toContain('bg-[var(--color-accent-soft)]');
+        ->toContain('sk-workbench-tab')
+        ->and($appStylesSource)
+        ->toContain('.sk-workbench .sk-workbench-tab.is-active::before')
+        ->toContain('background-color: var(--color-panel)');
 });
 
 it('keeps fatty acid chemistry compact with grouped profile first and collapsed details', function () {

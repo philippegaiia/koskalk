@@ -4,6 +4,7 @@
 
 @source '../views/layouts/public.blade.php';
 @source '../views/auth/*.blade.php';
+@source '../views/components/*.blade.php';
 @source '../views/welcome.blade.php';
 
 /* The apothecary palette (copper accent, warm ink, parchment cream, forest

@@ -57,6 +57,7 @@ class IngredientsIndex extends TableComponent
                     ->checkFileExistence(false),
                 TextColumn::make('display_name')
                     ->label('Name')
+                    ->state(fn (Ingredient $record): ?string => $record->localizedDisplayName())
                     ->searchable()
                     ->sortable()
                     ->weight('600'),
@@ -168,6 +169,7 @@ class IngredientsIndex extends TableComponent
     private function tableQuery(): Builder
     {
         $user = $this->currentUser();
+        $translationLocales = Ingredient::translationLocaleCandidates();
 
         if (! $user instanceof User) {
             return Ingredient::query()->whereRaw('1 = 0');
@@ -175,7 +177,10 @@ class IngredientsIndex extends TableComponent
 
         return Ingredient::query()
             ->withCount(['costingItems', 'recipeItems'])
-            ->with(['userPrices' => fn ($q) => $q->where('user_id', $user->id)])
+            ->with([
+                'userPrices' => fn ($q) => $q->where('user_id', $user->id),
+                'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
+            ])
             ->where(function (Builder $q) use ($user) {
                 $q->where(fn (Builder $qq) => $qq->where('owner_type', OwnerType::User->value)->where('owner_id', $user->id))
                     ->orWhere(fn (Builder $qq) => $qq->whereNull('owner_type')->where('is_active', true));

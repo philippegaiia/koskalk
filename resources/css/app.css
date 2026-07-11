@@ -205,6 +205,52 @@
         border-radius: 0.5rem;
     }
 
+    .sk-workbench .sk-ingredient-filter-control {
+        border: 0;
+        border-radius: 1.15rem;
+        background-color: color-mix(
+            in oklab,
+            var(--color-field) 72%,
+            var(--color-panel-strong) 28%
+        );
+        box-shadow: inset 0 0 0 1px
+            color-mix(in oklab, var(--color-line-strong) 72%, transparent);
+        outline-style: none;
+        outline-width: 0;
+        transition:
+            background-color 150ms ease,
+            box-shadow 150ms ease,
+            color 150ms ease;
+    }
+
+    .sk-workbench .sk-ingredient-filter-control:hover {
+        background-color: color-mix(
+            in oklab,
+            var(--color-field) 64%,
+            var(--color-panel-strong) 36%
+        );
+        box-shadow: inset 0 0 0 1px var(--color-line-strong);
+    }
+
+    .sk-workbench .sk-packaging-catalog-control {
+        box-shadow: inset 0 0 0 1px
+            color-mix(in oklab, var(--color-line-strong) 72%, transparent);
+        transition:
+            background-color 150ms ease,
+            box-shadow 150ms ease;
+    }
+
+    .sk-workbench .sk-packaging-catalog-control:focus-within {
+        background-color: var(--color-control);
+        box-shadow: inset 0 0 0 2px
+            color-mix(in oklab, var(--color-active) 62%, var(--color-line));
+    }
+
+    .sk-workbench .sk-packaging-catalog-control :is(input, button):focus {
+        box-shadow: none !important;
+        outline: none !important;
+    }
+
     .sk-workbench .sk-inset {
         border-radius: 0.5rem;
     }
@@ -355,9 +401,111 @@
     }
 }
 
-.sk-workbench :is(button, input, select, textarea, a, summary):focus {
-    outline-color: color-mix(in oklab, var(--color-active) 38%, transparent) !important;
-    outline-offset: -2px !important;
-    outline-style: solid !important;
-    outline-width: 2px !important;
+.sk-workbench .sk-workbench-tabs {
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    background-color: color-mix(
+        in oklab,
+        var(--color-panel-strong) 64%,
+        var(--color-surface)
+    );
+    box-shadow: inset 0 0 0 1px
+        color-mix(in oklab, var(--color-line) 82%, transparent);
+}
+
+.sk-workbench .sk-workbench-tab {
+    min-height: 2.875rem;
+    border-radius: 0.5rem;
+    color: var(--color-ink-soft);
+    background-color: transparent;
+    box-shadow: none;
+    transition:
+        background-color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+        color 150ms cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sk-workbench .sk-workbench-tab:hover {
+    color: var(--color-ink-strong);
+    background-color: color-mix(
+        in oklab,
+        var(--color-panel) 74%,
+        var(--color-panel-strong)
+    );
+}
+
+.sk-workbench .sk-workbench-tab.is-active {
+    color: var(--color-ink-strong) !important;
+    background-color: var(--color-panel);
+    box-shadow: 0 1px 2px rgba(60, 50, 30, 0.075);
+}
+
+.sk-workbench .sk-workbench-tab.is-active::before {
+    width: 0.3125rem;
+    height: 0.3125rem;
+    margin-right: 0.5rem;
+    flex: none;
+    border-radius: 9999px;
+    background-color: var(--color-active);
+    content: "";
+}
+
+.sk-workbench .sk-workbench-tab.is-active:hover {
+    background-color: var(--color-panel);
+}
+
+.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]), select, textarea, a, summary):focus {
+    box-shadow: inset 0 0 0 2px
+        color-mix(in oklab, var(--color-active) 38%, transparent) !important;
+    outline: none !important;
+}
+
+.sk-workbench input[type="range"]:focus {
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.sk-workbench input[type="range"]:focus-visible::-webkit-slider-thumb {
+    box-shadow:
+        0 0 0 3px var(--color-panel),
+        0 0 0 5px var(--color-active);
+}
+
+.sk-workbench input[type="range"]:focus-visible::-moz-range-thumb {
+    box-shadow:
+        0 0 0 3px var(--color-panel),
+        0 0 0 5px var(--color-active);
+}
+
+.sk-workbench [role="tab"]:focus-visible {
+    outline: 2px solid var(--color-active);
+    outline-offset: 2px;
+}
+
+.sk-workbench .sk-ingredient-filter-control:focus,
+.sk-workbench .sk-ingredient-filter-control:focus-visible {
+    border-radius: 1.15rem !important;
+    background-color: var(--color-control);
+    box-shadow: inset 0 0 0 2px
+        color-mix(in oklab, var(--color-active) 62%, var(--color-line)) !important;
+    outline: none !important;
+    outline-color: transparent !important;
+    outline-offset: 0 !important;
+    outline-style: none !important;
+    outline-width: 0 !important;
+}
+
+.sk-workbench .sk-formula-title-control,
+.sk-workbench .sk-formula-title-control:focus,
+.sk-workbench .sk-formula-title-control:focus-visible {
+    border-radius: 1.25rem !important;
+}
+
+.sk-workbench .sk-formula-title-control:focus,
+.sk-workbench .sk-formula-title-control:focus-visible {
+    background-color: var(--color-control);
+    box-shadow: inset 0 0 0 2px
+        color-mix(in oklab, var(--color-active) 62%, var(--color-line)) !important;
+    outline: none !important;
 }

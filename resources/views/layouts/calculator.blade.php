@@ -37,6 +37,7 @@
                     <span class="text-lg font-semibold text-[var(--color-ink-strong)]">Soapkraft</span>
                 </a>
                 <div class="flex items-center gap-3 sm:gap-4">
+                    <x-language-selector id="calculator" class="text-[var(--color-ink-soft)]" />
                     @auth
                         <span class="hidden max-w-36 truncate text-sm font-semibold text-[var(--color-ink-strong)] md:inline">{{ auth()->user()?->name }}</span>
                         <a href="{{ route('dashboard') }}" class="rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-white no-underline transition hover:bg-[var(--color-accent-hover)]">Dashboard</a>

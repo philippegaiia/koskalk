@@ -1,6 +1,6 @@
 # Catalog And Admin
 
-Last updated: 2026-05-07
+Last updated: 2026-07-11
 
 ## Catalog philosophy
 
@@ -122,6 +122,16 @@ Starter catalog import rules currently include:
 - keep CAS / EC values as strings
 - mark imported rows for admin review
 - skip platform fragrance oils from the starter CSV
+
+## Localization boundary
+
+Scientific values and identifiers remain canonical and are not translated. This includes SAP values, fatty-acid profiles, CAS / EC values, calculation constants, and regulatory limits.
+
+Ingredient display names and guidance now use the dedicated `ingredient_translations` table. English stays canonical on the ingredient record, while registered non-English values are edited from the ingredient's Filament `Translations` section. Runtime resolution falls back to English, and private ingredients remain as authored.
+
+Other descriptions, functions, product-type labels, and explanatory compliance content are also platform data, but their translation models have not yet been implemented. None of this content belongs in Spatie interface `language_lines`.
+
+Canonical INCI names are not overwritten by translated display names. Market-specific official names, including local-script nomenclature, need sourced and versioned regulatory-name records tied to their naming system or regulatory regime. See [localization.md](./localization.md) for the full boundary.
 
 ## Follow-up work
 

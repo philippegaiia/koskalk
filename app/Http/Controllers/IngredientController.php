@@ -62,24 +62,33 @@ class IngredientController extends Controller
     public function searchPlatform(Request $request)
     {
         $query = (string) $request->query('q', '');
+        $translationLocales = Ingredient::translationLocaleCandidates();
 
         $results = Ingredient::query()
+            ->with([
+                'translations' => fn ($translationQuery) => $translationQuery
+                    ->whereIn('locale', $translationLocales),
+            ])
             ->whereNull('owner_type')
             ->where('is_active', true)
-            ->when(filled($query), fn ($q) => $q->where(function ($q) use ($query) {
+            ->when(filled($query), fn ($q) => $q->where(function ($q) use ($query, $translationLocales) {
                 $lower = mb_strtolower($query);
                 $q->whereRaw('LOWER(display_name) LIKE ?', ["%{$lower}%"])
-                    ->orWhereRaw('LOWER(inci_name) LIKE ?', ["%{$lower}%"]);
+                    ->orWhereRaw('LOWER(inci_name) LIKE ?', ["%{$lower}%"])
+                    ->orWhereHas('translations', fn ($translationQuery) => $translationQuery
+                        ->whereIn('locale', $translationLocales)
+                        ->whereRaw('LOWER(display_name) LIKE ?', ["%{$lower}%"]));
             }))
-            ->orderBy('display_name')
             ->limit(20)
             ->get()
             ->map(fn (Ingredient $ingredient) => [
                 'id' => $ingredient->id,
-                'name' => $ingredient->display_name,
+                'name' => $ingredient->localizedDisplayName(),
                 'inci_name' => $ingredient->inci_name,
                 'category' => $ingredient->category?->getLabel(),
-            ]);
+            ])
+            ->sortBy('name')
+            ->values();
 
         return response()->json($results);
     }

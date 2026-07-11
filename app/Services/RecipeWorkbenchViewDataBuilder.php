@@ -7,6 +7,7 @@ use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RegulatoryRegime;
 use App\Models\User;
+use App\Support\NumberLocale;
 use Illuminate\Database\Eloquent\Builder;
 
 class RecipeWorkbenchViewDataBuilder
@@ -34,6 +35,7 @@ class RecipeWorkbenchViewDataBuilder
                 'calculation_basis' => $productFamily->calculation_basis,
             ],
             'productType' => $this->productTypeData($productType),
+            'productTypes' => $this->productTypes($productFamily, $productType),
             'recipe' => $this->recipeData($recipe),
             'savedDraft' => $savedDraft,
             'phases' => $this->recipeWorkbenchService->phaseBlueprints($productFamily),
@@ -49,6 +51,8 @@ class RecipeWorkbenchViewDataBuilder
             'packagingCatalog' => $this->recipeWorkbenchService->packagingCatalogPayload($user),
             'defaultCurrency' => $defaultCurrency,
             'currencies' => $this->currencyOptions(),
+            'numberLocale' => $user instanceof User ? NumberLocale::resolve($user->number_locale) : null,
+            'numberLocaleOptions' => NumberLocale::options(),
             'canPersist' => $user instanceof User,
         ];
     }
@@ -165,5 +169,31 @@ class RecipeWorkbenchViewDataBuilder
             'slug' => $productType->slug,
             'default_ifra_product_category_id' => $productType->default_ifra_product_category_id,
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function productTypes(ProductFamily $productFamily, ?ProductType $selectedProductType): array
+    {
+        $productTypes = ProductType::query()
+            ->whereBelongsTo($productFamily)
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug', 'default_ifra_product_category_id']);
+
+        if (
+            $selectedProductType instanceof ProductType
+            && ! $productTypes->contains('id', $selectedProductType->id)
+        ) {
+            $productTypes->push($selectedProductType);
+        }
+
+        return $productTypes
+            ->map(fn (ProductType $productType): array => $this->productTypeData($productType))
+            ->filter()
+            ->values()
+            ->all();
     }
 }

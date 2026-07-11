@@ -34,7 +34,21 @@
 	<div id="formula-settings-panel" x-show="isFormulaSettingsOpen" x-cloak class="mt-4">
 @if ($isCosmeticWorkbench)
 	 <div>
-	 <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+	 <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-5">
+	 <div class="sk-inset p-4">
+	 <p id="setting-product-type" class="sk-eyebrow">Product category</p>
+	 <template x-if="productTypes.length">
+	 <select aria-labelledby="setting-product-type" x-model="productTypeId" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
+	 <option value="">Choose later</option>
+	 <template x-for="productType in productTypes" :key="productType.id">
+	 <option :value="String(productType.id)" x-text="productType.name"></option>
+	 </template>
+	 </select>
+	 </template>
+	 <template x-if="! productTypes.length">
+	 <p class="mt-3 text-xs leading-5 text-[var(--color-ink-soft)]">Categories appear once the cosmetic catalog is populated.</p>
+	 </template>
+	 </div>
 	 <div class="sk-inset p-4">
 	 <p id="setting-batch-weight" class="sk-eyebrow">Total batch quantity</p>
 	 <div role="radiogroup" aria-label="Weight unit" class="mt-3 flex gap-2">
@@ -42,7 +56,7 @@
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="oilUnit = 'oz'" :class="oilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'lb'" @click="oilUnit = 'lb'" :class="oilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">lb</button>
 	 </div>
-	 <input aria-labelledby="setting-batch-weight" x-model="oilWeight" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); oilWeight = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
+	 <input aria-labelledby="setting-batch-weight" x-model="oilWeight" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
 	 </div>
 	 <div class="sk-inset p-4">
 	 <p id="setting-entry-mode" class="sk-eyebrow">Entry mode</p>
@@ -129,7 +143,7 @@
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="oilUnit = 'oz'" :class="oilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'lb'" @click="oilUnit = 'lb'" :class="oilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">lb</button>
 	 </div>
-	 <input aria-labelledby="setting-base-weight" x-model="oilWeight" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); oilWeight = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
+	 <input aria-labelledby="setting-base-weight" x-model="oilWeight" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
 	 <div class="mt-4 border-t border-[var(--color-line)] pt-4">
 	 <p id="setting-entry-mode-soap" class="sk-eyebrow">Entry mode</p>
 	 <div role="radiogroup" aria-label="Entry mode" class="mt-3 flex flex-wrap gap-2">
@@ -145,7 +159,7 @@
 	 <button type="button" role="radio" :aria-checked="waterMode === 'lye_ratio'" @click="waterMode = 'lye_ratio'" :class="waterMode === 'lye_ratio' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-lg px-4 py-2.5 text-left text-xs font-medium transition">Water : lye ratio</button>
 	 <button type="button" role="radio" :aria-checked="waterMode === 'lye_concentration'" @click="waterMode = 'lye_concentration'" :class="waterMode === 'lye_concentration' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-lg px-4 py-2.5 text-left text-xs font-medium transition">Lye concentration</button>
 	 </div>
-	 <input aria-labelledby="setting-water-mode" x-model="waterValue" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event); waterValue = nonNegativeNumber($event.target.value)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
+	 <input aria-labelledby="setting-water-mode" x-model="waterValue" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
 	 </div>
 	 <div class="sk-inset sk-tone-chemistry p-4">
 	 <p id="setting-superfat" class="sk-eyebrow">Superfat</p>
@@ -154,7 +168,7 @@
 	 <span :class="superfat < 0 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]'" class="numeric font-semibold" x-text="`${format(superfat, 1)}%`"></span>
 	 </div>
 	 <input aria-labelledby="setting-superfat" x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-[var(--color-danger)]' : 'accent-[var(--color-active)]'" class="mt-3 w-full" />
-	 <input aria-labelledby="setting-superfat" x-model="superfat" @keydown="handleDecimalKeydown($event)" @blur="normalizeDecimalBlur($event)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="superfat < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
+	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="number(superfat) < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
 	 </div>
 	 <div class="sk-inset sk-tone-info p-4">
 	 <p id="setting-exposure-soap" class="sk-eyebrow">Exposure</p>

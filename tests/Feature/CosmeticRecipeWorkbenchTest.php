@@ -23,7 +23,7 @@ use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
-it('requires a cosmetic product type before entering the shared cosmetic workbench', function () {
+it('opens new cosmetic formulas directly in the workbench with an editable product category', function () {
     $user = User::factory()->create();
     $cosmeticFamily = ProductFamily::factory()->create([
         'name' => 'Cosmetic',
@@ -48,8 +48,13 @@ it('requires a cosmetic product type before entering the shared cosmetic workben
     $this->actingAs($user)
         ->get(route('recipes.create', ['family' => 'cosmetic']))
         ->assertSuccessful()
-        ->assertSee('Choose a cosmetic product type')
-        ->assertSee('Cream / lotion')
+        ->assertSee('Formula')
+        ->assertSee('Costing')
+        ->assertSee('Output')
+        ->assertSee('Instructions &amp; Media', false)
+        ->assertSee('Product category')
+        ->assertSee('Choose later')
+        ->assertSee('Cream')
         ->assertDontSee('Hidden cosmetic type');
 
     $this->actingAs($user)
@@ -179,7 +184,7 @@ it('uses wider cosmetic percentage and weight columns with half-gram weight step
 
     expect($cosmeticFormula)
         ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
-        ->toContain('type="number" inputmode="decimal" step="0.5"');
+        ->toContain('type="text" inputmode="decimal"');
 });
 
 it('allows incomplete cosmetic drafts but requires saved cosmetic formulas to total 100 percent', function () {
@@ -431,7 +436,7 @@ it('lets the shared recipe workbench save incomplete cosmetic drafts', function 
     $this->actingAs($user);
 
     $component = app(RecipeWorkbench::class);
-    $component->mount(null, 'cosmetic', 'cream-lotion');
+    $component->mount(null, 'cosmetic');
     $result = $component->save(
         cosmeticDraftPayload($productType, [
             'phase_a' => [
@@ -497,7 +502,7 @@ it('keeps cosmetic phase editing calm and guarded', function () {
 
     expect($cosmeticFormula)
         ->toContain('border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]')
-        ->toContain('type="number" inputmode="decimal" min="0" max="100" step="0.1"')
+        ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('document.activeElement !== $el')
         ->not->toContain(':value="format(rowWeight(row), 3)"')
@@ -531,13 +536,14 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
         ->toContain('regulatoryRegimeLabel')
         ->not->toContain('mt-4 flex flex-wrap gap-2 border-t')
         ->and($settings)
-        ->toContain('lg:grid-cols-2 xl:grid-cols-4')
+        ->toContain('lg:grid-cols-2 xl:grid-cols-5')
+        ->toContain('Product category')
+        ->toContain('Choose later')
         ->toContain('Total batch quantity')
         ->toContain('Entry mode')
         ->toContain('Exposure')
         ->toContain('Label regime')
         ->toContain('IFRA context')
-        ->not->toContain('Product type')
         ->and($cosmeticFormula)
         ->toContain('Formula total</div>')
         ->toContain('cosmeticFormulaWeightTotal()')

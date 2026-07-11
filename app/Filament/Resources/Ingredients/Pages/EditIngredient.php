@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Ingredients\Pages;
 use App\Filament\Resources\Ingredients\IngredientResource;
 use App\Filament\Resources\Ingredients\Pages\Concerns\InteractsWithIngredientDataEntry;
 use App\Services\IngredientDataEntryService;
+use App\Services\IngredientTranslationService;
 use Filament\Resources\Pages\EditRecord;
 
 class EditIngredient extends EditRecord
@@ -27,6 +28,9 @@ class EditIngredient extends EditRecord
         return array_merge(
             $data,
             app(IngredientDataEntryService::class)->formData($this->record),
+            [
+                'translations' => app(IngredientTranslationService::class)->formData($this->record),
+            ],
         );
     }
 

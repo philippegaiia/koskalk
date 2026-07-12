@@ -183,10 +183,15 @@
     }
 }
 
-button:focus-visible,
-input:not(.fi-input):focus-visible,
+input:not(.sk-field-control):not(.fi-input):focus-visible,
 select:not(.sk-language-selector-control):not(.fi-select-input):focus-visible,
-textarea:not(.fi-textarea):focus-visible,
+textarea:not(.fi-textarea):focus-visible {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 1px var(--color-accent);
+    outline: none;
+}
+
+button:focus-visible,
 a:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;

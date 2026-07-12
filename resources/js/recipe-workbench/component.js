@@ -428,6 +428,7 @@ function createCatalogSection() {
                 id: `${ingredient.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
                 ingredient_id: ingredient.id,
                 name: ingredient.name,
+                is_user_owned: Boolean(ingredient.is_user_owned),
                 inci_name: ingredient.inci_name,
                 category: ingredient.category,
                 soap_inci_naoh_name: ingredient.soap_inci_naoh_name,

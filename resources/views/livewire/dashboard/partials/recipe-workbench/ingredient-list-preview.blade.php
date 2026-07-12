@@ -171,7 +171,11 @@
  <template x-for="row in drySoapDeclarationRows" :key="row.label">
  <tr>
  <td class="px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
- <td class="px-4 py-3" x-text="row.source_ingredients.join(', ')"></td>
+ <td class="px-4 py-3">
+ <template x-for="(source, idx) in row.source_ingredients" :key="idx">
+ <span class="mr-2 inline-flex items-center gap-1"><span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span><span x-text="source"></span></span>
+ </template>
+ </td>
  <td class="numeric px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_dry_basis, 4)}%`"></td>
  <td class="numeric px-4 py-3" x-text="`${format(row.threshold_percent, 3)}%`"></td>
  <td class="px-4 py-3">

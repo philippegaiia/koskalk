@@ -118,6 +118,7 @@ class RecipeWorkbenchVersionPayloadMapper
             'id' => 'saved-'.$item->id,
             'ingredient_id' => $item->ingredient_id,
             'name' => $ingredient?->display_name,
+            'is_user_owned' => $ingredient?->owner_type !== null,
             'inci_name' => $ingredient?->inci_name,
             'category' => $ingredient?->category?->value,
             'soap_inci_naoh_name' => $ingredient?->soap_inci_naoh_name,

@@ -39,6 +39,7 @@ it('duplicates a platform ingredient into a user-owned copy with all data except
         'info_markdown' => 'A popular essential oil.',
         'is_active' => true,
     ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
 
     $source->functions()->sync([$function->id]);
     $source->allergenEntries()->create([
@@ -166,6 +167,64 @@ it('prevents duplicated carrier oil KOH SAP edits outside the trusted range', fu
     ], $user))->toThrow(ValidationException::class);
 });
 
+it('refuses to duplicate a carrier oil without a KOH SAP value', function () {
+    $user = User::factory()->create();
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Incomplete platform oil',
+        'owner_type' => null,
+        'is_potentially_saponifiable' => true,
+    ]);
+
+    expect(fn () => app(UserIngredientAuthoringService::class)->duplicate($source, $user))
+        ->toThrow(ValidationException::class, 'cannot be duplicated until its KOH SAP value is available');
+});
+
+it('validates duplicated carrier oil fatty acids against trusted ranges and total', function () {
+    $user = User::factory()->create();
+    $oleic = FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
+    $trace = FattyAcid::factory()->create(['key' => 'trace', 'name' => 'Trace']);
+    $palmitic = FattyAcid::factory()->create(['key' => 'palmitic', 'name' => 'Palmitic']);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Trusted oil',
+        'owner_type' => null,
+        'is_potentially_saponifiable' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $source->fattyAcidEntries()->createMany([
+        ['fatty_acid_id' => $oleic->id, 'percentage' => 50],
+        ['fatty_acid_id' => $trace->id, 'percentage' => 2],
+        ['fatty_acid_id' => $palmitic->id, 'percentage' => 40],
+    ]);
+
+    $service = app(UserIngredientAuthoringService::class);
+    $copy = $service->duplicate($source, $user);
+    $state = $service->formData($copy);
+    foreach ($state['fatty_acid_entries'] as &$row) {
+        if ($row['fatty_acid_id'] === $oleic->id) {
+            $row['percentage'] = 61;
+        }
+
+        if ($row['fatty_acid_id'] === $palmitic->id) {
+            $row['percentage'] = 35;
+        }
+    }
+    unset($row);
+
+    expect(fn () => $service->update($copy, $state, $user))
+        ->toThrow(ValidationException::class, 'must stay between');
+
+    $state = $service->formData($copy);
+    foreach ($state['fatty_acid_entries'] as &$row) {
+        $row['percentage'] = 20;
+    }
+    unset($row);
+
+    expect(fn () => $service->update($copy, $state, $user))
+        ->toThrow(ValidationException::class, 'must total between 80% and 100%');
+});
+
 it('duplicates a composite ingredient with components', function () {
     $user = User::factory()->create();
 
@@ -182,6 +241,7 @@ it('duplicates a composite ingredient with components', function () {
         'owner_id' => null,
         'is_active' => true,
     ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
 
     $source->components()->create([
         'component_ingredient_id' => $component->id,

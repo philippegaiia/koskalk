@@ -253,7 +253,11 @@ it('keeps private ingredient names authored in localized workbench catalogs', fu
 
     $catalog = app(RecipeWorkbenchIngredientCatalogBuilder::class)->build($user, $productFamily);
 
-    expect(collect($catalog)->firstWhere('id', $ingredient->id)['name'])->toBe('Mon argile');
+    expect(collect($catalog)->firstWhere('id', $ingredient->id))
+        ->toMatchArray([
+            'name' => 'Mon argile',
+            'is_user_owned' => true,
+        ]);
 });
 
 it('eager loads workbench translations in one catalog query', function () {
@@ -339,7 +343,6 @@ it('shows localized platform names and authored private names in the ingredient 
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
         ->assertSee('Huile d’olive')
         ->assertSee('Mon argile');
 });

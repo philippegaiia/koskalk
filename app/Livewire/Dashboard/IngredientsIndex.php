@@ -8,21 +8,22 @@ use App\OwnerType;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientPriceMemory;
-use Filament\Actions\Action;
-use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\ImageColumn;
-use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\TextInputColumn;
-use Filament\Tables\Table;
-use Filament\Tables\TableComponent;
+use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Validator;
 use Livewire\Attributes\Locked;
+use Livewire\Component;
 use Livewire\WithoutUrlPagination;
+use Livewire\WithPagination;
 
-class IngredientsIndex extends TableComponent
+class IngredientsIndex extends Component
 {
     use WithoutUrlPagination;
+    use WithPagination;
+
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
 
     #[Locked]
     public ?int $currentUserId = null;
@@ -30,7 +31,20 @@ class IngredientsIndex extends TableComponent
     #[Locked]
     public ?string $currentCurrency = null;
 
+    #[Locked]
+    public string $currentNumberLocale = 'en_US';
+
     public string $ownershipFilter = 'all';
+
+    public string $search = '';
+
+    public string $sortField = 'display_name';
+
+    public string $sortDirection = 'asc';
+
+    public int $perPage = 25;
+
+    public ?int $pendingDeleteId = null;
 
     public function mount(CurrentAppUserResolver $resolver): void
     {
@@ -38,107 +52,31 @@ class IngredientsIndex extends TableComponent
 
         $this->currentUserId = $user?->id;
         $this->currentCurrency = $user?->defaultCurrency();
+        $this->currentNumberLocale = NumberLocale::resolve($user?->number_locale);
     }
 
-    public function table(Table $table): Table
+    public function updatingSearch(): void
     {
-        return $table
-            ->query(fn (): Builder => $this->tableQuery())
-            ->heading('Ingredient catalog')
-            ->description('Price platform ingredients for costing, or create private ingredients that only you can edit.')
-            ->columns([
-                ImageColumn::make('catalog_image')
-                    ->label('Picture')
-                    ->state(fn (Ingredient $record): ?string => $record->icon_image_path ?: $record->featured_image_path)
-                    ->disk(MediaStorage::publicDisk())
-                    ->visibility(MediaStorage::publicVisibility())
-                    ->square()
-                    ->imageSize(52)
-                    ->checkFileExistence(false),
-                TextColumn::make('display_name')
-                    ->label('Name')
-                    ->state(fn (Ingredient $record): ?string => $record->localizedDisplayName())
-                    ->searchable()
-                    ->sortable()
-                    ->weight('600'),
-                TextColumn::make('inci_name')
-                    ->label('INCI')
-                    ->searchable()
-                    ->wrap(),
-                TextColumn::make('category')
-                    ->label('Category')
-                    ->badge()
-                    ->sortable(),
-                TextColumn::make('catalog_source')
-                    ->label('Source')
-                    ->badge()
-                    ->state(fn (Ingredient $record): string => $record->owner_type === OwnerType::User ? 'Mine' : 'Platform')
-                    ->color(fn (string $state): string => $state === 'Mine' ? 'warning' : 'gray'),
-                TextInputColumn::make('user_price_per_kg')
-                    ->label(fn (): string => $this->priceColumnLabel('Price/kg'))
-                    ->state(fn (Ingredient $record): ?string => self::formatPriceInput($record->user_price_per_kg))
-                    ->type('number')
-                    ->inputMode('decimal')
-                    ->step('0.01')
-                    ->rules(['nullable', 'numeric', 'min:0'])
-                    ->updateStateUsing(function (Ingredient $record, $state) {
-                        $user = $this->currentUser();
+        $this->resetPage();
+    }
 
-                        if (! $user instanceof User) {
-                            return self::formatPriceInput($record->user_price_per_kg);
-                        }
-
-                        app(UserIngredientPriceMemory::class)->remember($user, $record->id, (float) ($state ?? 0));
-                        $record->load(['userPrices' => fn ($q) => $q->where('user_id', $user->id)]);
-
-                        return self::formatPriceInput($state);
-                    }),
-            ])
-            ->striped()
-            ->headerActions([
-                Action::make('create')
-                    ->label('Add ingredient')
-                    ->icon(Heroicon::Plus)
-                    ->url(route('ingredients.create'))
-                    ->visible(fn (): bool => $this->currentUser() instanceof User),
-            ])
-            ->recordActions([
-                Action::make('edit')
-                    ->label('Edit')
-                    ->icon(Heroicon::PencilSquare)
-                    ->iconButton()
-                    ->tooltip('Edit ingredient')
-                    ->url(fn (Ingredient $record): string => route('ingredients.edit', $record))
-                    ->visible(fn (Ingredient $record): bool => $record->owner_type === OwnerType::User),
-                Action::make('delete')
-                    ->label('Delete')
-                    ->icon(Heroicon::Trash)
-                    ->color('danger')
-                    ->iconButton()
-                    ->requiresConfirmation()
-                    ->modalHeading('Delete ingredient')
-                    ->modalDescription('This removes the ingredient from your private catalog.')
-                    ->visible(fn (Ingredient $record): bool => $record->owner_type === OwnerType::User)
-                    ->disabled(fn (Ingredient $record): bool => (int) ($record->costing_items_count ?? 0) > 0 || (int) ($record->recipe_items_count ?? 0) > 0)
-                    ->tooltip(fn (Ingredient $record): ?string => (int) ($record->recipe_items_count ?? 0) > 0
-                        ? 'This ingredient is used in saved formulas.'
-                        : ((int) ($record->costing_items_count ?? 0) > 0
-                            ? 'This ingredient is used in saved costing rows.'
-                            : null))
-                    ->action(fn (Ingredient $record): bool => $this->deleteIngredient($record)),
-            ])
-            ->recordActionsColumnLabel('Actions')
-            ->recordActionsAlignment('end')
-            ->defaultSort('display_name')
-            ->paginated([25, 50, 100])
-            ->emptyStateHeading('No ingredients yet')
-            ->emptyStateDescription('Create your first private ingredient or set a price on a platform ingredient to see it here.');
+    public function updatedPerPage(): void
+    {
+        $this->perPage = $this->normalizedPerPage();
+        $this->resetPage();
     }
 
     public function render(): View
     {
+        $ingredients = $this->ingredients();
+
         return view('livewire.dashboard.ingredients-index', [
             'currentUser' => $this->currentUser(),
+            'ingredients' => $ingredients,
+            'priceLabel' => $this->priceColumnLabel('Price/kg'),
+            'pendingDeleteIngredient' => $this->pendingDeleteId === null
+                ? null
+                : $ingredients->getCollection()->firstWhere('id', $this->pendingDeleteId),
         ]);
     }
 
@@ -163,41 +101,82 @@ class IngredientsIndex extends TableComponent
 
         $this->ownershipFilter = $filter;
         $this->resetPage();
-        $this->flushCachedTableRecords();
     }
 
-    private function tableQuery(): Builder
+    public function sortBy(string $field): void
     {
-        $user = $this->currentUser();
-        $translationLocales = Ingredient::translationLocaleCandidates();
-
-        if (! $user instanceof User) {
-            return Ingredient::query()->whereRaw('1 = 0');
+        if (! in_array($field, ['display_name', 'category'], true)) {
+            return;
         }
 
-        return Ingredient::query()
-            ->withCount(['costingItems', 'recipeItems'])
-            ->with([
-                'userPrices' => fn ($q) => $q->where('user_id', $user->id),
-                'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
-            ])
-            ->where(function (Builder $q) use ($user) {
-                $q->where(fn (Builder $qq) => $qq->where('owner_type', OwnerType::User->value)->where('owner_id', $user->id))
-                    ->orWhere(fn (Builder $qq) => $qq->whereNull('owner_type')->where('is_active', true));
-            })
-            ->when($this->ownershipFilter === 'mine', fn (Builder $query): Builder => $query
-                ->where('owner_type', OwnerType::User->value)
-                ->where('owner_id', $user->id))
-            ->when($this->ownershipFilter === 'platform', fn (Builder $query): Builder => $query
-                ->whereNull('owner_type')
-                ->where('is_active', true))
-            ->when($this->ownershipFilter === 'priced', fn (Builder $query): Builder => $query
-                ->whereNull('owner_type')
-                ->where('is_active', true)
-                ->whereHas('userPrices', fn (Builder $q): Builder => $q->where('user_id', $user->id)));
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+
+            return;
+        }
+
+        $this->sortField = $field;
+        $this->sortDirection = 'asc';
     }
 
-    private function deleteIngredient(Ingredient $ingredient): bool
+    public function updateIngredientPrice(int $id, string $value): void
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $ingredient = $this->accessibleIngredient($id, $user);
+
+        if (! $ingredient instanceof Ingredient) {
+            return;
+        }
+
+        $normalizedValue = NumberLocale::parseDecimalInput($value);
+        $validator = Validator::make(
+            ['price' => $normalizedValue],
+            ['price' => ['required', 'numeric', 'min:0']],
+        );
+
+        if ($validator->fails()) {
+            $this->addError('price_'.$id, $validator->errors()->first('price'));
+
+            return;
+        }
+
+        app(UserIngredientPriceMemory::class)->remember($user, $ingredient->id, $normalizedValue);
+    }
+
+    public function confirmDelete(int $id): void
+    {
+        $this->pendingDeleteId = $id;
+    }
+
+    public function cancelDelete(): void
+    {
+        $this->pendingDeleteId = null;
+    }
+
+    public function deleteIngredient(int $id): void
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $ingredient = $this->ownedIngredient($id, $user);
+
+        if (! $ingredient instanceof Ingredient) {
+            return;
+        }
+
+        $this->deleteIngredientRecord($ingredient);
+        $this->pendingDeleteId = null;
+    }
+
+    public function deleteIngredientRecord(Ingredient $ingredient): bool
     {
         $user = $this->currentUser();
 
@@ -220,6 +199,85 @@ class IngredientsIndex extends TableComponent
         return true;
     }
 
+    public function catalogImageUrl(Ingredient $ingredient): ?string
+    {
+        return MediaStorage::publicUrlWithoutExistenceCheck($ingredient->icon_image_path ?: $ingredient->featured_image_path);
+    }
+
+    public function formattedPrice(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return NumberLocale::formatDecimal($value, 2, $this->currentNumberLocale);
+    }
+
+    private function ingredients(): LengthAwarePaginator
+    {
+        $user = $this->currentUser();
+        $perPage = $this->normalizedPerPage();
+
+        if (! $user instanceof User) {
+            return Ingredient::query()->whereRaw('1 = 0')->paginate($perPage);
+        }
+
+        return $this->ingredientQuery($user)
+            ->orderBy($this->sortField, $this->sortDirection)
+            ->orderBy('id', $this->sortDirection)
+            ->paginate($perPage);
+    }
+
+    private function ingredientQuery(User $user): Builder
+    {
+        $search = mb_strtolower(trim($this->search));
+        $translationLocales = Ingredient::translationLocaleCandidates();
+
+        return Ingredient::query()
+            ->withCount(['costingItems', 'recipeItems'])
+            ->with([
+                'userPrices' => fn ($query) => $query->where('user_id', $user->id),
+                'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
+            ])
+            ->where(function (Builder $query) use ($user): void {
+                $query->where(fn (Builder $ownedQuery): Builder => $ownedQuery
+                    ->where('owner_type', OwnerType::User->value)
+                    ->where('owner_id', $user->id))
+                    ->orWhere(fn (Builder $platformQuery): Builder => $platformQuery
+                        ->whereNull('owner_type')
+                        ->where('is_active', true));
+            })
+            ->when($this->ownershipFilter === 'mine', fn (Builder $query): Builder => $query
+                ->where('owner_type', OwnerType::User->value)
+                ->where('owner_id', $user->id))
+            ->when($this->ownershipFilter === 'platform', fn (Builder $query): Builder => $query
+                ->whereNull('owner_type')
+                ->where('is_active', true))
+            ->when($this->ownershipFilter === 'priced', fn (Builder $query): Builder => $query
+                ->whereNull('owner_type')
+                ->where('is_active', true)
+                ->whereHas('userPrices', fn (Builder $priceQuery): Builder => $priceQuery->where('user_id', $user->id)))
+            ->when($search !== '', fn (Builder $query): Builder => $query
+                ->where(fn (Builder $where): Builder => $where
+                    ->whereRaw('LOWER(display_name) LIKE ?', ['%'.$search.'%'])
+                    ->orWhereRaw('LOWER(inci_name) LIKE ?', ['%'.$search.'%'])
+                    ->orWhere('category', 'like', '%'.$search.'%')));
+    }
+
+    private function accessibleIngredient(int $id, User $user): ?Ingredient
+    {
+        return $this->ingredientQuery($user)->find($id);
+    }
+
+    private function ownedIngredient(int $id, User $user): ?Ingredient
+    {
+        return Ingredient::query()
+            ->withCount(['costingItems', 'recipeItems'])
+            ->where('owner_type', OwnerType::User->value)
+            ->where('owner_id', $user->id)
+            ->find($id);
+    }
+
     private function currentUser(): ?User
     {
         return app(CurrentAppUserResolver::class)->resolve($this->currentUserId);
@@ -230,12 +288,8 @@ class IngredientsIndex extends TableComponent
         return sprintf('%s (%s)', $label, $this->currentCurrency ?? config('currencies.default', 'EUR'));
     }
 
-    private static function formatPriceInput(mixed $value): ?string
+    private function normalizedPerPage(): int
     {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        return number_format((float) $value, 2, '.', '');
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
     }
 }

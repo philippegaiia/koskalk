@@ -58,6 +58,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
                     'id' => $ingredient->id,
                     'ingredient_id' => $ingredient->id,
                     'name' => $ingredient->localizedDisplayName(),
+                    'is_user_owned' => $ingredient->owner_type !== null,
                     'inci_name' => $ingredient->inci_name,
                     'image_url' => $ingredient->pickerImageUrl(),
                     'category' => $category?->value,

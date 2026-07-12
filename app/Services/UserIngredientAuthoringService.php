@@ -8,8 +8,10 @@ use App\Models\Ingredient;
 use App\Models\User;
 use App\OwnerType;
 use App\SoapSap;
+use App\Support\NumberLocale;
 use App\Visibility;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class UserIngredientAuthoringService
@@ -27,6 +29,7 @@ class UserIngredientAuthoringService
     public function blankState(): array
     {
         return [
+            'ingredient_structure' => 'ingredient',
             'name' => null,
             'category' => null,
             'inci_name' => null,
@@ -71,6 +74,7 @@ class UserIngredientAuthoringService
             ->first();
 
         return [
+            'ingredient_structure' => $ingredient->components()->exists() ? 'blend' : 'ingredient',
             'name' => data_get($entryData, 'current_version.display_name'),
             'category' => $ingredient->category?->value,
             'inci_name' => data_get($entryData, 'current_version.inci_name'),
@@ -91,7 +95,17 @@ class UserIngredientAuthoringService
                 'ins_value' => data_get($entryData, 'sap_profile.ins_value'),
                 'source_notes' => data_get($entryData, 'sap_profile.source_notes'),
             ],
-            'fatty_acid_entries' => data_get($entryData, 'fatty_acid_entries', []),
+            'fatty_acid_entries' => collect(data_get($entryData, 'fatty_acid_entries', []))
+                ->map(function (array $entry): array {
+                    $percentage = $entry['percentage'] ?? null;
+
+                    return [
+                        ...$entry,
+                        'percentage' => $percentage === null ? null : round((float) $percentage, 1),
+                        '_original_percentage' => $percentage,
+                    ];
+                })
+                ->all(),
             'ifra' => [
                 'reference_label' => $currentIfra?->certificate_name,
                 'ifra_amendment' => $currentIfra?->ifra_amendment,
@@ -144,10 +158,12 @@ class UserIngredientAuthoringService
         $previousFeaturedImagePath = $ingredient->featured_image_path;
         $previousIconImagePath = $ingredient->icon_image_path;
 
-        $this->fillIngredient($ingredient, $state);
-        $ingredient->save();
+        $ingredient = DB::transaction(function () use ($ingredient, $state): Ingredient {
+            $this->fillIngredient($ingredient, $state);
+            $ingredient->save();
 
-        $ingredient = $this->syncState($ingredient, $state);
+            return $this->syncState($ingredient, $state);
+        });
 
         if ($previousFeaturedImagePath !== $ingredient->featured_image_path) {
             MediaStorage::deletePublicPath($previousFeaturedImagePath);
@@ -167,6 +183,15 @@ class UserIngredientAuthoringService
         if ($source->owner_type !== null) {
             throw ValidationException::withMessages([
                 'ingredient' => 'Only platform ingredients can be duplicated.',
+            ]);
+        }
+
+        if (
+            $source->category === IngredientCategory::CarrierOil
+            && $source->sapProfile?->koh_sap_value === null
+        ) {
+            throw ValidationException::withMessages([
+                'ingredient' => 'This platform carrier oil cannot be duplicated until its KOH SAP value is available. Contact support@soapkraft.com.',
             ]);
         }
 
@@ -293,9 +318,14 @@ class UserIngredientAuthoringService
      */
     private function syncState(Ingredient $ingredient, array $state): Ingredient
     {
+        $state['fatty_acid_entries'] = $this->reconcileFattyAcidPrecision(
+            Arr::get($state, 'fatty_acid_entries', []),
+        );
+
         $this->validateAllergenEntries(Arr::get($state, 'allergen_entries', []));
         $this->validateIfraState(Arr::get($state, 'ifra', []));
         $this->validateTrustedKohSapValue($ingredient, $state);
+        $this->validateTrustedFattyAcidProfile($ingredient, $state);
 
         $ingredient = $this->ingredientDataEntryService->syncCurrentData($ingredient, [
             'current_version' => [
@@ -313,7 +343,10 @@ class UserIngredientAuthoringService
             'sap_profile' => Arr::get($state, 'sap_profile', []),
             'fatty_acid_entries' => Arr::get($state, 'fatty_acid_entries', []),
             'allergen_entries' => Arr::get($state, 'allergen_entries', []),
-            'components' => Arr::get($state, 'components', []),
+            'components' => array_key_exists('ingredient_structure', $state)
+                && Arr::get($state, 'ingredient_structure') !== 'blend'
+                    ? []
+                    : Arr::get($state, 'components', []),
         ]);
 
         if ($ingredient->requiresAromaticCompliance()) {
@@ -331,6 +364,32 @@ class UserIngredientAuthoringService
             'functions',
             'ifraCertificates.limits.ifraProductCategory',
         ]);
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $entries
+     * @return array<int|string, mixed>
+     */
+    private function reconcileFattyAcidPrecision(array $entries): array
+    {
+        return collect($entries)
+            ->map(function (mixed $entry): mixed {
+                if (! is_array($entry) || ! array_key_exists('_original_percentage', $entry)) {
+                    return $entry;
+                }
+
+                $displayed = NumberLocale::parseDecimalInput($entry['percentage'] ?? null);
+                $original = NumberLocale::parseDecimalInput($entry['_original_percentage']);
+
+                if ($displayed !== null && $original !== null && round($displayed, 1) === round($original, 1)) {
+                    $entry['percentage'] = $original;
+                }
+
+                unset($entry['_original_percentage']);
+
+                return $entry;
+            })
+            ->all();
     }
 
     /**
@@ -389,13 +448,23 @@ class UserIngredientAuthoringService
         $sourceData = is_array($source->source_data) ? $source->source_data : [];
         $trustedKohSapValue = $source->sapProfile?->koh_sap_value;
 
-        if ($source->category !== IngredientCategory::CarrierOil || $trustedKohSapValue === null) {
+        if (
+            $source->category !== IngredientCategory::CarrierOil
+            || ! $source->is_potentially_saponifiable
+            || $trustedKohSapValue === null
+        ) {
             return $sourceData === [] ? null : $sourceData;
         }
+
+        $trustedFattyAcidProfile = $source->fattyAcidEntries()
+            ->pluck('percentage', 'fatty_acid_id')
+            ->map(fn (mixed $percentage): float => (float) $percentage)
+            ->all();
 
         return array_replace_recursive($sourceData, [
             'user_authoring' => [
                 'trusted_koh_sap_value' => SoapSap::normalizeKohSapInput((float) $trustedKohSapValue),
+                'trusted_fatty_acid_profile' => $trustedFattyAcidProfile,
             ],
         ]);
     }
@@ -433,6 +502,108 @@ class UserIngredientAuthoringService
                 'sap_profile.koh_sap_value' => 'KOH SAP value must be within ±3% of the duplicated platform value.',
             ]);
         }
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function validateTrustedFattyAcidProfile(Ingredient $ingredient, array $state): void
+    {
+        if (! $this->canRetainUserSoapTrust($ingredient) || $ingredient->category !== IngredientCategory::CarrierOil) {
+            return;
+        }
+
+        $trustedProfile = collect(Arr::get(
+            $ingredient->source_data,
+            'user_authoring.trusted_fatty_acid_profile',
+            [],
+        ))->mapWithKeys(fn (mixed $value, mixed $key): array => [(int) $key => (float) $value]);
+
+        $currentProfile = collect(Arr::get($state, 'fatty_acid_entries', []))
+            ->filter(fn (mixed $row): bool => is_array($row) && filled($row['fatty_acid_id'] ?? null))
+            ->mapWithKeys(fn (array $row): array => [
+                (int) $row['fatty_acid_id'] => (float) ($row['percentage'] ?? 0),
+            ]);
+
+        if ($trustedProfile->isEmpty() && $currentProfile->isEmpty()) {
+            return;
+        }
+
+        $total = $currentProfile->sum();
+
+        if ($total < 80 || $total > 100) {
+            throw ValidationException::withMessages([
+                'fatty_acid_entries' => 'Fatty acid percentages must total between 80% and 100%.',
+            ]);
+        }
+
+        foreach ($trustedProfile->keys()->merge($currentProfile->keys())->unique() as $fattyAcidId) {
+            $trustedValue = (float) $trustedProfile->get($fattyAcidId, 0);
+            $currentValue = (float) $currentProfile->get($fattyAcidId, 0);
+            [$minimum, $maximum] = $this->fattyAcidRange($trustedValue);
+
+            if ($currentValue < $minimum || $currentValue > $maximum) {
+                throw ValidationException::withMessages([
+                    'fatty_acid_entries' => sprintf(
+                        'Fatty acid values must stay between %s%% and %s%% of their allowed range.',
+                        $this->formatRangeValue($minimum),
+                        $this->formatRangeValue($maximum),
+                    ),
+                ]);
+            }
+        }
+    }
+
+    /**
+     * @return array{minimum: float, maximum: float, original: float}|null
+     */
+    public function trustedKohSapRange(Ingredient $ingredient): ?array
+    {
+        if (! $this->canRetainUserSoapTrust($ingredient)) {
+            return null;
+        }
+
+        $original = (float) Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value');
+
+        return [
+            'minimum' => $original * (1 - self::TRUSTED_KOH_SAP_TOLERANCE),
+            'maximum' => $original * (1 + self::TRUSTED_KOH_SAP_TOLERANCE),
+            'original' => $original,
+        ];
+    }
+
+    /**
+     * @return array{minimum: float, maximum: float, original: float}|null
+     */
+    public function trustedFattyAcidRange(Ingredient $ingredient, mixed $fattyAcidId): ?array
+    {
+        if (! $this->canRetainUserSoapTrust($ingredient) || ! is_numeric($fattyAcidId)) {
+            return null;
+        }
+
+        $original = (float) Arr::get(
+            $ingredient->source_data,
+            'user_authoring.trusted_fatty_acid_profile.'.(int) $fattyAcidId,
+            0,
+        );
+        [$minimum, $maximum] = $this->fattyAcidRange($original);
+
+        return compact('minimum', 'maximum', 'original');
+    }
+
+    /** @return array{float, float} */
+    private function fattyAcidRange(float $original): array
+    {
+        if ($original < 5) {
+            return [0.0, 5.0];
+        }
+
+        return [max(0, $original * 0.8), min(100, $original * 1.2)];
+    }
+
+    private function formatRangeValue(float $value): string
+    {
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
     }
 
     private function normalizeCasNumber(mixed $value): ?string

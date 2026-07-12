@@ -196,7 +196,7 @@
                                 <tbody>
                                     @foreach ($section['rows'] as $row)
                                         <tr class="border border-slate-300">
-                                            <td class="px-2 py-1.5 font-medium">{{ $row['name'] }}</td>
+                                            <td class="px-2 py-1.5 font-medium">{{ $row['name'] }}@if ($row['is_user_owned'] ?? false)<span class="ml-1 text-slate-500" aria-label="User-created or user-modified ingredient">•</span>@endif</td>
                                             @if ($isTechnicalMode)
                                                 <td class="px-2 py-1.5 text-slate-700">{{ $row['inci_name'] ?: 'Not recorded' }}</td>
                                             @endif
@@ -210,6 +210,9 @@
                         </div>
                     @endforeach
                 </section>
+                @if (collect($phaseSections)->contains(fn (array $section): bool => collect($section['rows'] ?? [])->contains(fn (array $row): bool => (bool) ($row['is_user_owned'] ?? false))))
+                    <p class="mt-2 text-[9px] leading-3 text-slate-500">• User-created or user-modified ingredient. Data has not been verified by Soapkraft.</p>
+                @endif
 
                 @if ($recipe->manufacturing_instructions)
                     <section class="mt-4 break-inside-avoid">

@@ -127,7 +127,7 @@
                                 @php($lotKey = implode(':', [$ingredient->ingredient_id, $ingredient->phase_key, $ingredient->position]))
                                 <tr>
                                     <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $ingredient->phase_name }}</td>
-                                    <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $ingredient->ingredient_name }}</td>
+                                    <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]"><span class="inline-flex items-center gap-1.5">{{ $ingredient->ingredient_name }} <x-ingredient-source-marker :is-user-owned="$ingredient->ingredient?->owner_type !== null" /></span></td>
                                     <td class="numeric px-5 py-4 align-top text-[var(--color-ink-strong)]">{{ $formatQuantity($ingredient->quantity, $ingredient->unit) }}</td>
                                     <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $formatMoney($ingredient->price_per_kg, $productionBatch->currency) }}</td>
                                     <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatMoney($ingredient->line_cost, $productionBatch->currency) }}</td>
@@ -141,6 +141,9 @@
                             @endforeach
                         </tbody>
                     </table>
+                    <div class="border-t border-[var(--color-line)] px-5 py-2.5">
+                        <x-ingredient-source-legend :show="$productionBatch->ingredients->contains(fn ($row): bool => $row->ingredient?->owner_type !== null)" />
+                    </div>
                 </div>
             </section>
 

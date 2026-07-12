@@ -7,6 +7,7 @@ use App\Models\UserPackagingItem;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use App\Services\UserPackagingItemAuthoringService;
+use App\Support\LocalizedDecimalInput;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\BaseFileUpload;
@@ -107,10 +108,8 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                             ->label('Name')
                             ->required()
                             ->maxLength(255),
-                        TextInput::make('unit_cost')
+                        LocalizedDecimalInput::make('unit_cost')
                             ->label(fn (): string => $this->priceFieldLabel('Effective unit price'))
-                            ->numeric()
-                            ->inputMode('decimal')
                             ->minValue(0)
                             ->required(),
                         FileUpload::make('featured_image_path')

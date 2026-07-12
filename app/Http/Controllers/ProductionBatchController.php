@@ -53,7 +53,7 @@ class ProductionBatchController extends Controller
     {
         $this->authorize('view', $productionBatch);
 
-        $productionBatch->load(['recipe', 'recipeVersion', 'ingredients', 'packagingItems']);
+        $productionBatch->load(['recipe', 'recipeVersion', 'ingredients.ingredient', 'packagingItems']);
 
         return view('production-batches.show', [
             'productionBatch' => $productionBatch,
@@ -108,7 +108,7 @@ class ProductionBatchController extends Controller
     {
         $this->authorize('view', $productionBatch);
 
-        $productionBatch->load(['ingredients', 'packagingItems']);
+        $productionBatch->load(['ingredients.ingredient', 'packagingItems']);
 
         return view('production-batches.print', [
             'productionBatch' => $productionBatch,

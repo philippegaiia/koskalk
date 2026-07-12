@@ -47,7 +47,7 @@
  </button>
  </div>
 		 <div class="flex flex-col justify-center bg-white py-2.5 sk-formula-table-cell lg:px-4">
- <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
@@ -122,7 +122,7 @@
  </button>
  </div>
 		 <div class="flex flex-col justify-center bg-white py-2.5 sk-formula-table-cell lg:px-4">
- <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">

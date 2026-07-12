@@ -34,8 +34,8 @@
  <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold" :class="restrictionStatusStyle(row.status)" x-text="row.status_label"></span>
  </td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">
- <template x-for="source in row.source_ingredients" :key="source">
- <span class="mr-2 inline-flex" x-text="source"></span>
+ <template x-for="(source, idx) in row.source_ingredients" :key="`${source}-${idx}`">
+ <span class="mr-2 inline-flex items-center gap-1"><span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span><span x-text="source"></span></span>
  </template>
  </td>
  </tr>

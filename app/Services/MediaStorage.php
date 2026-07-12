@@ -154,6 +154,15 @@ class MediaStorage
         return Storage::disk(static::publicDisk())->url($path);
     }
 
+    public static function publicUrlWithoutExistenceCheck(?string $path): ?string
+    {
+        if (blank($path)) {
+            return null;
+        }
+
+        return Storage::disk(static::publicDisk())->url($path);
+    }
+
     public static function deletePublicPath(?string $path): void
     {
         if (blank($path)) {

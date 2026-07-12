@@ -60,6 +60,7 @@ class RecipeExportDataBuilder
                 ->map(fn (array $row): array => [
                     'phase' => $section['label'] ?? '',
                     'ingredient' => $row['name'] ?? '',
+                    'source' => ($row['is_user_owned'] ?? false) ? 'User' : 'Platform',
                     'inci_name' => $row['inci_name'] ?? '',
                     'percentage' => $row['percentage'] ?? 0,
                     'weight' => $row['weight'] ?? 0,

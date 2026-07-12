@@ -2069,6 +2069,7 @@ it('exposes workbench phase options for saponifiable oils, additive-only oils, a
         'is_potentially_saponifiable' => true,
         'is_active' => true,
     ]);
+    $trustedCarrierIngredient->sapProfile()->create(['koh_sap_value' => 0.188]);
 
     $customCarrierIngredient = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,

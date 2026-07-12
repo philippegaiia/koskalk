@@ -67,7 +67,7 @@
                     <tbody>
                         @foreach ($productionBatch->ingredients as $ingredient)
                             <tr class="border border-slate-300">
-                                <td class="px-2 py-1.5 font-medium">{{ $ingredient->ingredient_name }}</td>
+                                <td class="px-2 py-1.5 font-medium">{{ $ingredient->ingredient_name }}@if ($ingredient->ingredient?->owner_type !== null)<span class="ml-1 text-slate-500" aria-label="User-created or user-modified ingredient">•</span>@endif</td>
                                 <td class="numeric px-2 py-1.5">{{ $formatQuantity($ingredient->quantity, $ingredient->unit) }}</td>
                                 <td class="px-2 py-1.5">{{ $ingredient->ingredient_lot_number ?: '' }}&nbsp;</td>
                                 <td class="numeric px-2 py-1.5 font-medium">{{ $formatMoney($ingredient->line_cost, $productionBatch->currency) }}</td>
@@ -75,6 +75,9 @@
                         @endforeach
                     </tbody>
                 </table>
+                @if ($productionBatch->ingredients->contains(fn ($row): bool => $row->ingredient?->owner_type !== null))
+                    <p class="mt-2 text-[9px] leading-3 text-slate-500">• User-created or user-modified ingredient. Data has not been verified by Soapkraft.</p>
+                @endif
             </section>
 
             <section class="mt-4">

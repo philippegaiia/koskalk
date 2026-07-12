@@ -69,7 +69,7 @@
 	 <div class="flex items-center bg-white py-2.5 sk-formula-table-cell lg:px-4">
  <div class="flex w-full items-center justify-between gap-3">
  <div class="min-w-0 flex-1">
- <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p>
  </div>
  <div x-data="{

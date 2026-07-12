@@ -13,10 +13,13 @@ use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
 use App\SoapSap;
+use App\Support\LocalizedDecimalInput;
+use App\Support\NumberLocale;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -25,6 +28,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -90,7 +94,16 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 ? $userIngredientAuthoringService->update($currentIngredient, $state, $user)
                 : $userIngredientAuthoringService->create($state, $user);
         } catch (ValidationException $exception) {
-            throw $exception;
+            foreach ($exception->errors() as $key => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError(str_starts_with($key, 'data.') ? $key : 'data.'.$key, $message);
+                }
+            }
+
+            $this->statusType = 'error';
+            $this->statusMessage = 'The ingredient was not saved. Review the highlighted chemistry values.';
+
+            return null;
         }
 
         $this->ingredientId = $ingredient->id;
@@ -130,6 +143,15 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label('Name')
                                             ->required()
                                             ->maxLength(255),
+                                        Select::make('ingredient_structure')
+                                            ->label('Catalog item type')
+                                            ->options([
+                                                'ingredient' => 'Ingredient',
+                                                'blend' => 'Blend / composite',
+                                            ])
+                                            ->required()
+                                            ->live()
+                                            ->helperText('Choose Blend / composite only when this catalog item is made from other ingredients.'),
                                         Select::make('category')
                                             ->options(IngredientCategory::class)
                                             ->required()
@@ -232,7 +254,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ]),
                             ]),
                         Tab::make('Composition')
-                            ->visible(fn (): bool => $this->isEditing())
+                            ->visible(fn (Get $get): bool => $get('ingredient_structure') === 'blend')
                             ->schema([
                                 Section::make('Composition')
                                     ->description('Use this when the raw material is a blend, macerate, soap base, or any other composite ingredient.')
@@ -266,10 +288,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                             ->maxLength(255),
                                                     ])
                                                     ->createOptionUsing(fn (array $data): int => $this->createInlineComponent($data)),
-                                                TextInput::make('percentage_in_parent')
+                                                LocalizedDecimalInput::make('percentage_in_parent')
                                                     ->label('Share in parent')
-                                                    ->numeric()
-                                                    ->inputMode('decimal')
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -283,6 +303,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ])
                                             ->helperText('Each component must be a real ingredient record. Total percentages must equal 100%.')
                                             ->defaultItems(0)
+                                            ->minItems(1)
                                             ->maxItems(20)
                                             ->columnSpanFull(),
                                     ]),
@@ -296,30 +317,50 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         'md' => 2,
                                     ])
                                     ->schema([
-                                        TextInput::make('sap_profile.koh_sap_value')
+                                        LocalizedDecimalInput::make('sap_profile.koh_sap_value')
                                             ->label('KOH SAP')
-                                            ->numeric()
-                                            ->inputMode('decimal')
                                             ->live(onBlur: true)
-                                            ->helperText('Enter professional-style KOH SAP like 245 or decimal-style 0.245. NaOH SAP is derived automatically.'),
-                                        TextEntry::make('sap_profile.naoh_sap_value')
-                                            ->label('Derived NaOH SAP')
-                                            ->state(fn (Get $get): ?string => blank($get('sap_profile.koh_sap_value')) ? null : number_format(SoapSap::deriveNaohFromKoh((float) $get('sap_profile.koh_sap_value')), 6, '.', '')),
-                                        TextInput::make('sap_profile.iodine_value')
-                                            ->label('Iodine value')
-                                            ->numeric()
-                                            ->inputMode('decimal'),
-                                        TextInput::make('sap_profile.ins_value')
-                                            ->label('INS')
-                                            ->numeric()
-                                            ->inputMode('decimal'),
+                                            ->afterStateUpdated(fn (LocalizedDecimalInput $component, mixed $state): mixed => $component->state(
+                                                $this->canonicalKohSapDisplay($state),
+                                            ))
+                                            ->helperText(fn (): string => $this->kohSapHelperText()),
+                                        Group::make([
+                                            TextEntry::make('sap_profile.naoh_sap_value')
+                                                ->label('NaOH SAP')
+                                                ->state(fn (Get $get): string => $this->derivedNaohSapDisplay($get('sap_profile.koh_sap_value')))
+                                                ->size('lg')
+                                                ->weight('semibold')
+                                                ->extraAttributes(['class' => 'numeric'])
+                                                ->belowContent('Calculated automatically from the KOH SAP value.'),
+                                        ])
+                                            ->extraAttributes([
+                                                'class' => 'rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4',
+                                            ]),
+                                        LocalizedDecimalInput::make('sap_profile.iodine_value')
+                                            ->label('Iodine value'),
+                                        LocalizedDecimalInput::make('sap_profile.ins_value')
+                                            ->label('INS'),
                                         Textarea::make('sap_profile.source_notes')
                                             ->label('Soap notes')
                                             ->rows(3)
                                             ->columnSpanFull(),
+                                        Group::make([
+                                            TextEntry::make('fatty_acid_total')
+                                                ->label('Fatty acid total')
+                                                ->state(fn (Get $get): string => $this->fattyAcidTotalDisplay($get('fatty_acid_entries')))
+                                                ->size('lg')
+                                                ->weight('semibold')
+                                                ->extraAttributes(['class' => 'numeric'])
+                                                ->belowContent('Target: 80% to 100%'),
+                                        ])
+                                            ->extraAttributes([
+                                                'class' => 'rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4',
+                                            ])
+                                            ->columnSpanFull(),
                                         Repeater::make('fatty_acid_entries')
                                             ->label('Fatty acid profile')
                                             ->schema([
+                                                Hidden::make('_original_percentage'),
                                                 Select::make('fatty_acid_id')
                                                     ->label('Fatty acid')
                                                     ->options(fn (): array => FattyAcid::query()
@@ -330,12 +371,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->searchable()
                                                     ->preload()
                                                     ->required(),
-                                                TextInput::make('percentage')
-                                                    ->numeric()
-                                                    ->inputMode('decimal')
+                                                LocalizedDecimalInput::make('percentage')
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
+                                                    ->live(onBlur: true)
+                                                    ->helperText(fn (Get $get): ?string => $this->fattyAcidHelperText($get('fatty_acid_id')))
                                                     ->required(),
                                             ])
                                             ->columns([
@@ -364,10 +405,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->searchable()
                                                     ->preload()
                                                     ->required(),
-                                                TextInput::make('concentration_percent')
+                                                LocalizedDecimalInput::make('concentration_percent')
                                                     ->label('Concentration')
-                                                    ->numeric()
-                                                    ->inputMode('decimal')
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -391,10 +430,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         TextInput::make('ifra.ifra_amendment')
                                             ->label('IFRA amendment')
                                             ->maxLength(255),
-                                        TextInput::make('ifra.peroxide_value')
+                                        LocalizedDecimalInput::make('ifra.peroxide_value')
                                             ->label('Peroxide value')
-                                            ->numeric()
-                                            ->inputMode('decimal')
                                             ->minValue(0)
                                             ->suffix('meq O2/kg'),
                                         Textarea::make('ifra.source_notes')
@@ -417,10 +454,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->searchable()
                                                     ->preload()
                                                     ->required(),
-                                                TextInput::make('max_percentage')
+                                                LocalizedDecimalInput::make('max_percentage')
                                                     ->label('Max concentration')
-                                                    ->numeric()
-                                                    ->inputMode('decimal')
                                                     ->minValue(0)
                                                     ->maxValue(100)
                                                     ->required()
@@ -444,6 +479,96 @@ class IngredientEditor extends Component implements HasActions, HasForms
         return view('livewire.dashboard.ingredient-editor', [
             'ingredient' => $this->currentIngredient(),
         ]);
+    }
+
+    private function kohSapHelperText(): string
+    {
+        $ingredient = $this->currentIngredient();
+        $range = $ingredient instanceof Ingredient
+            ? app(UserIngredientAuthoringService::class)->trustedKohSapRange($ingredient)
+            : null;
+
+        if ($range === null) {
+            return 'Enter professional-style KOH SAP like 245 or decimal-style 0.245. NaOH SAP is derived automatically.';
+        }
+
+        return sprintf(
+            'Allowed KOH SAP range: %.6f–%.6f (%.1f–%.1f in professional notation). Platform reference: %.6f.',
+            $range['minimum'],
+            $range['maximum'],
+            $range['minimum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR,
+            $range['maximum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR,
+            $range['original'],
+        );
+    }
+
+    private function fattyAcidHelperText(mixed $fattyAcidId): ?string
+    {
+        $ingredient = $this->currentIngredient();
+        $range = $ingredient instanceof Ingredient
+            ? app(UserIngredientAuthoringService::class)->trustedFattyAcidRange($ingredient, $fattyAcidId)
+            : null;
+
+        if ($range === null) {
+            return null;
+        }
+
+        return sprintf('Allowed: %.1f%%–%.1f%%.', $range['minimum'], $range['maximum']);
+    }
+
+    private function derivedNaohSapDisplay(mixed $kohSapValue): string
+    {
+        $parsedKohSapValue = NumberLocale::parseDecimalInput($kohSapValue);
+
+        if ($parsedKohSapValue === null) {
+            return 'Not available';
+        }
+
+        return number_format(SoapSap::deriveNaohFromKoh($parsedKohSapValue), 6, '.', '');
+    }
+
+    private function canonicalKohSapDisplay(mixed $kohSapValue): ?string
+    {
+        if (blank($kohSapValue)) {
+            return null;
+        }
+
+        $parsedKohSapValue = NumberLocale::parseDecimalInput($kohSapValue);
+
+        if ($parsedKohSapValue === null) {
+            return trim((string) $kohSapValue);
+        }
+
+        $formatted = number_format(SoapSap::normalizeKohSapInput($parsedKohSapValue), 6, '.', '');
+        [$whole, $decimals] = explode('.', $formatted);
+
+        $canonicalValue = $whole.'.'.str_pad(rtrim($decimals, '0'), 3, '0');
+
+        return str_contains(NumberLocale::formatDecimal(0, 1, $this->currentUser()?->number_locale), ',')
+            ? str_replace('.', ',', $canonicalValue)
+            : $canonicalValue;
+    }
+
+    private function fattyAcidTotalDisplay(mixed $entries): string
+    {
+        $total = collect(is_array($entries) ? $entries : [])
+            ->sum(fn (mixed $entry): float => $this->effectiveFattyAcidPercentage($entry));
+
+        return number_format($total, 1, '.', '').'%';
+    }
+
+    private function effectiveFattyAcidPercentage(mixed $entry): float
+    {
+        if (! is_array($entry)) {
+            return 0.0;
+        }
+
+        $displayed = NumberLocale::parseDecimalInput($entry['percentage'] ?? null) ?? 0.0;
+        $original = NumberLocale::parseDecimalInput($entry['_original_percentage'] ?? null);
+
+        return $original !== null && round($displayed, 1) === round($original, 1)
+            ? $original
+            : $displayed;
     }
 
     /**

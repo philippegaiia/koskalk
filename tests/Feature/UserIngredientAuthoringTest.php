@@ -3,6 +3,7 @@
 use App\IngredientCategory;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Models\Allergen;
+use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
@@ -49,6 +50,18 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->and($ingredient->cas_number)->toBe('1332-58-7')
         ->and($ingredient->ec_number)->toBe('310-194-1')
         ->and($ingredient->is_organic)->toBeTrue();
+});
+
+it('shows composition only when the user chooses a blend', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->assertSet('data.ingredient_structure', 'ingredient')
+        ->assertDontSee('Ingredient components')
+        ->set('data.ingredient_structure', 'blend')
+        ->assertSee('Ingredient components');
 });
 
 it('persists an optional ingredient icon separately from the main image', function () {
@@ -114,23 +127,23 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         ->set('data.allergen_entries', [
             [
                 'allergen_id' => $linalool->id,
-                'concentration_percent' => 0.42,
+                'concentration_percent' => '0,42',
                 'source_notes' => null,
             ],
             [
                 'allergen_id' => $limonene->id,
-                'concentration_percent' => 0.08,
+                'concentration_percent' => '0,08',
                 'source_notes' => 'Trace supplier declaration',
             ],
         ])
         ->set('data.ifra.reference_label', 'Current supplier IFRA')
         ->set('data.ifra.ifra_amendment', '51')
-        ->set('data.ifra.peroxide_value', 2.5)
+        ->set('data.ifra.peroxide_value', '2,5')
         ->set('data.ifra.source_notes', 'Indicative only')
         ->set('data.ifra.limits', [
             [
                 'ifra_product_category_id' => $category3->id,
-                'max_percentage' => 0.8,
+                'max_percentage' => '0,8',
                 'restriction_note' => 'Rinse-off reference',
             ],
         ])
@@ -147,6 +160,183 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         ->and((float) $currentIfra?->peroxide_value)->toBe(2.5)
         ->and($currentIfra?->limits)->toHaveCount(1)
         ->and((float) $currentIfra?->limits->first()->max_percentage)->toBe(0.8);
+});
+
+it('accepts comma decimals throughout user soap chemistry fields', function () {
+    $user = User::factory()->create();
+    $fattyAcid = FattyAcid::factory()->create(['is_active' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'User chemistry oil',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_potentially_saponifiable' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->set('data.sap_profile.koh_sap_value', '0,188')
+        ->set('data.sap_profile.iodine_value', '86,4')
+        ->set('data.sap_profile.ins_value', '102,8')
+        ->set('data.fatty_acid_entries', [[
+            'fatty_acid_id' => $fattyAcid->id,
+            'percentage' => '0,2',
+        ]])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $freshIngredient = $ingredient->fresh(['sapProfile', 'fattyAcidEntries']);
+
+    expect((float) $freshIngredient->sapProfile->koh_sap_value)->toBe(0.188)
+        ->and((float) $freshIngredient->sapProfile->iodine_value)->toBe(86.4)
+        ->and((float) $freshIngredient->sapProfile->ins_value)->toBe(102.8)
+        ->and((float) $freshIngredient->fattyAcidEntries->first()->percentage)->toBe(0.2);
+});
+
+it('derives the same NaOH SAP from decimal and professional KOH notation', function () {
+    $user = User::factory()->create(['number_locale' => 'fr_FR']);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_potentially_saponifiable' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->set('data.sap_profile.koh_sap_value', '0,176')
+        ->assertSee('0.125488')
+        ->set('data.sap_profile.koh_sap_value', '0.176')
+        ->assertSee('0.125488')
+        ->set('data.sap_profile.koh_sap_value', '176')
+        ->assertSee('0.125488')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect((float) $ingredient->fresh('sapProfile')->sapProfile->koh_sap_value)->toBe(0.176);
+});
+
+it('returns professional KOH notation to the canonical decimal scale', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_potentially_saponifiable' => true,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->set('data.sap_profile.koh_sap_value', '180')
+        ->assertSet('data.sap_profile.koh_sap_value', '0.180');
+});
+
+it('keeps invalid KOH input visible so validation can explain it', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->set('data.sap_profile.koh_sap_value', 'not-a-number')
+        ->assertSet('data.sap_profile.koh_sap_value', 'not-a-number')
+        ->call('save')
+        ->assertHasErrors(['data.sap_profile.koh_sap_value']);
+});
+
+it('shows one live fatty acid profile total without repeating the total rule on every row', function () {
+    $user = User::factory()->create();
+    $oleic = FattyAcid::factory()->create(['name' => 'Oleic', 'is_active' => true]);
+    $lauric = FattyAcid::factory()->create(['name' => 'Lauric', 'is_active' => true]);
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'owner_type' => null,
+        'is_potentially_saponifiable' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.18]);
+    $source->fattyAcidEntries()->createMany([
+        ['fatty_acid_id' => $oleic->id, 'percentage' => 60],
+        ['fatty_acid_id' => $lauric->id, 'percentage' => 20],
+    ]);
+    $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
+        ->assertSee('Fatty acid total')
+        ->assertSee('80.0%')
+        ->assertSee('Target: 80% to 100%')
+        ->assertSee('Allowed: 48.0%–72.0%.')
+        ->assertDontSee('The complete profile must total 80%–100%.')
+        ->set('data.fatty_acid_entries', [
+            ['fatty_acid_id' => $oleic->id, 'percentage' => '60,5'],
+            ['fatty_acid_id' => $lauric->id, 'percentage' => '24,5'],
+        ])
+        ->assertSee('85.0%');
+});
+
+it('presents fatty acid entries to one decimal without changing untouched stored precision', function () {
+    $user = User::factory()->create();
+    $fattyAcid = FattyAcid::factory()->create(['is_active' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $ingredient->fattyAcidEntries()->create([
+        'fatty_acid_id' => $fattyAcid->id,
+        'percentage' => 0.25,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient]);
+    $row = collect($component->get('data.fatty_acid_entries'))->first();
+
+    expect((float) $row['percentage'])->toBe(0.3)
+        ->and((float) $row['_original_percentage'])->toBe(0.25);
+
+    $component
+        ->set('data.name', 'Renamed oil')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect((float) $ingredient->fresh('fattyAcidEntries')->fattyAcidEntries->first()->percentage)->toBe(0.25);
+});
+
+it('shows trusted KOH validation errors in the customer ingredient form without partially saving', function () {
+    $user = User::factory()->create();
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Platform olive oil',
+        'owner_type' => null,
+        'is_potentially_saponifiable' => true,
+    ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
+        ->set('data.name', 'Should not persist')
+        ->set('data.sap_profile.koh_sap_value', '0.195')
+        ->call('save')
+        ->assertHasErrors(['data.sap_profile.koh_sap_value'])
+        ->assertSee('Allowed KOH SAP range');
+
+    expect($copy->fresh()->display_name)->toBe('Platform olive oil');
 });
 
 it('creates missing composite components as private ingredients before they are referenced', function () {

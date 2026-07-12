@@ -48,6 +48,9 @@ it('shows platform ingredients whether or not the user has priced them', functio
         ->assertSee('Use platform ingredients or maintain your own.')
         ->assertSee('Ingredient catalog')
         ->assertSee('All ingredients')
+        ->assertSeeHtml('aria-label="Ingredient catalog filters"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary justify-center"')
+        ->assertDontSeeHtml('fi-ta')
         ->assertSeeHtml('role="radiogroup"')
         ->assertSeeHtml('aria-checked="true"')
         ->assertSee('Price/kg (EUR)')
@@ -76,11 +79,32 @@ it('shows the ingredient price column in the users current default currency', fu
     actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
-        ->assertTableColumnExists(
-            'user_price_per_kg',
-            fn ($column): bool => $column->getLabel() === 'Price/kg (GBP)',
-        );
+        ->assertSee('Price/kg (GBP)');
+});
+
+it('renders inline ingredient prices with the users saved English number format', function () {
+    $user = User::factory()->create(['number_locale' => 'en_GB']);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Priced oil',
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+
+    UserIngredientPrice::query()->create([
+        'user_id' => $user->id,
+        'ingredient_id' => $ingredient->id,
+        'price_per_kg' => 0.1000,
+        'currency' => 'EUR',
+        'last_used_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSeeHtml('type="text"')
+        ->assertSeeHtml('inputmode="decimal"')
+        ->assertSeeHtml('value="0.10"');
 });
 
 it('does not show inactive platform ingredients in the unified table', function () {
@@ -105,9 +129,8 @@ it('does not show inactive platform ingredients in the unified table', function 
     actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
-        ->assertCanSeeTableRecords([$active])
-        ->assertCanNotSeeTableRecords([$inactive]);
+        ->assertSee($active->display_name)
+        ->assertDontSee($inactive->display_name);
 });
 
 it('can filter the unified ingredient table by platform catalog records', function () {
@@ -132,10 +155,9 @@ it('can filter the unified ingredient table by platform catalog records', functi
     actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
         ->call('setOwnershipFilter', 'platform')
-        ->assertCanSeeTableRecords([$platform])
-        ->assertCanNotSeeTableRecords([$mine]);
+        ->assertSee($platform->display_name)
+        ->assertDontSee($mine->display_name);
 });
 
 it('shows user-owned ingredients in the unified table', function () {
@@ -163,6 +185,8 @@ it('shows user-owned ingredients in the unified table', function () {
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
         ->assertSee('My Lavender')
+        ->assertSeeHtml('aria-label="User-created or user-modified ingredient"')
+        ->assertSee('Data has not been verified by Soapkraft.')
         ->assertDontSee('Other User Oil');
 });
 
@@ -310,8 +334,7 @@ it('uses the users default currency when creating a price from the ingredient ta
     actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
-        ->call('updateTableColumnState', 'user_price_per_kg', (string) $ingredient->getKey(), '7.2500');
+        ->call('updateIngredientPrice', $ingredient->id, '7.2500');
 
     expect(UserIngredientPrice::query()
         ->where('user_id', $user->id)

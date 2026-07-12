@@ -262,8 +262,9 @@ it('keeps long ingredient names readable without depending on hover', function (
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
 
     expect($ingredientBrowser)
-        ->toContain('line-clamp-2 text-sm font-semibold leading-5 text-[var(--color-ink-strong)]')
+        ->toContain('line-clamp-2')
         ->toContain(':title="ingredient.name"')
+        ->toContain('User-created or user-modified ingredient')
         ->toContain('<p class="sk-eyebrow">Ingredient</p>')
         ->toContain('rounded-xl bg-[var(--color-panel)] px-3 py-2')
         ->toContain('text-sm font-semibold leading-snug text-[var(--color-ink-strong)]" x-text="ingredient.name"')

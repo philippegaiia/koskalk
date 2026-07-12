@@ -37,4 +37,41 @@ class NumberLocale
             ])
             ->all();
     }
+
+    public static function formatDecimal(mixed $value, int $decimals = 2, ?string $locale = null): string
+    {
+        $formatted = number_format((float) $value, $decimals, '.', '');
+
+        return self::usesDecimalComma(self::resolve($locale))
+            ? str_replace('.', ',', $formatted)
+            : $formatted;
+    }
+
+    public static function parseDecimalInput(mixed $value): ?float
+    {
+        $normalized = preg_replace('/[\s\x{00a0}\x{202f}]/u', '', trim((string) $value));
+
+        if ($normalized === null || $normalized === '') {
+            return null;
+        }
+
+        $commaPosition = strrpos($normalized, ',');
+        $dotPosition = strrpos($normalized, '.');
+
+        if ($commaPosition !== false && $dotPosition !== false) {
+            $decimalSeparator = $commaPosition > $dotPosition ? ',' : '.';
+            $groupingSeparator = $decimalSeparator === ',' ? '.' : ',';
+            $normalized = str_replace($groupingSeparator, '', $normalized);
+            $normalized = str_replace($decimalSeparator, '.', $normalized);
+        } elseif ($commaPosition !== false) {
+            $normalized = str_replace(',', '.', $normalized);
+        }
+
+        return is_numeric($normalized) ? (float) $normalized : null;
+    }
+
+    private static function usesDecimalComma(string $locale): bool
+    {
+        return in_array($locale, ['fr_FR', 'es_ES', 'de_DE', 'it_IT'], true);
+    }
 }

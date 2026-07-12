@@ -34,7 +34,10 @@
  </template>
  </div>
  <div class="min-w-0 flex-1">
- <p class="line-clamp-2 text-sm font-semibold leading-5 text-[var(--color-ink-strong)]" :title="ingredient.name" x-text="ingredient.name"></p>
+ <p class="flex items-center gap-1.5 text-sm font-semibold leading-5 text-[var(--color-ink-strong)]" :title="ingredient.name">
+ <span class="line-clamp-2" x-text="ingredient.name"></span>
+ <span x-show="ingredient.is_user_owned" class="inline-block size-1.5 shrink-0 rounded-full bg-[var(--color-ink-soft)] opacity-60" role="img" aria-label="User-created or user-modified ingredient" title="User-created or user-modified ingredient"></span>
+ </p>
  <p class="mt-0.5 min-w-0 truncate text-xs leading-4 text-[var(--color-ink-soft)]" :title="ingredient.inci_name || 'INCI not entered yet'" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
  </div>
 
@@ -167,6 +170,12 @@
  </div>
  </template>
  </div>
+ <template x-if="ingredients.some(ingredient => ingredient.is_user_owned)">
+ <div class="border-t border-[var(--color-line)] px-5 py-2.5 text-[0.625rem] leading-4 text-[var(--color-ink-soft)]">
+ <span class="mr-1 inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60"></span>
+ User-created or user-modified ingredient. Data has not been verified by Soapkraft.
+ </div>
+ </template>
  </div>
 
 </aside>

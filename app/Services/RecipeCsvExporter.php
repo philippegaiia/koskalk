@@ -13,12 +13,13 @@ class RecipeCsvExporter
 
         abort_if($stream === false, 500, 'Unable to create CSV export.');
 
-        fputcsv($stream, ['Phase', 'Ingredient', 'INCI name', 'Percentage', 'Weight', 'Note']);
+        fputcsv($stream, ['Phase', 'Ingredient', 'Source', 'INCI name', 'Percentage', 'Weight', 'Note']);
 
         foreach ($exportData['formulaRows'] ?? [] as $row) {
             fputcsv($stream, [
                 $row['phase'] ?? '',
                 $row['ingredient'] ?? '',
+                $row['source'] ?? '',
                 $row['inci_name'] ?? '',
                 $row['percentage'] ?? '',
                 $row['weight'] ?? '',

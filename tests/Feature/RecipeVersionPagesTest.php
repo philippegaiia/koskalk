@@ -281,8 +281,8 @@ it('downloads the saved formula as a simple csv', function () {
         ->assertDownload('published-formula.csv');
 
     expect($response->streamedContent())
-        ->toContain('Phase,Ingredient,"INCI name",Percentage,Weight,Note')
-        ->toContain('"Saponified oils","Olive Oil","OLEA EUROPAEA FRUIT OIL",100,1000,');
+        ->toContain('Phase,Ingredient,Source,"INCI name",Percentage,Weight,Note')
+        ->toContain('"Saponified oils","Olive Oil",Platform,"OLEA EUROPAEA FRUIT OIL",100,1000,');
 });
 
 it('downloads the saved formula as an excel workbook', function () {

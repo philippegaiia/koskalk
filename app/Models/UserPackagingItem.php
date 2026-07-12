@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\MediaStorage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -60,5 +61,10 @@ class UserPackagingItem extends Model
         return [
             'unit_cost' => 'decimal:4',
         ];
+    }
+
+    public function featuredImageUrl(): ?string
+    {
+        return MediaStorage::publicUrlWithoutExistenceCheck($this->featured_image_path);
     }
 }

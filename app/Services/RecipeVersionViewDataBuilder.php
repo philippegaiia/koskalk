@@ -162,6 +162,7 @@ class RecipeVersionViewDataBuilder
 
                         return [
                             'name' => $row['name'] ?? 'Unnamed ingredient',
+                            'is_user_owned' => (bool) ($row['is_user_owned'] ?? false),
                             'inci_name' => $row['inci_name'] ?? null,
                             'percentage' => $percentage,
                             'weight' => $weight,
@@ -211,6 +212,7 @@ class RecipeVersionViewDataBuilder
 
                         return [
                             'name' => $row['name'] ?? 'Unnamed ingredient',
+                            'is_user_owned' => (bool) ($row['is_user_owned'] ?? false),
                             'inci_name' => $row['inci_name'] ?? null,
                             'percentage' => $percentage,
                             'weight' => $weight,

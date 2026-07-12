@@ -99,7 +99,7 @@
                             @foreach ($section['rows'] as $row)
                                 <tr>
                                     <td class="px-5 py-4 align-top">
-                                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $row['name'] }}</p>
+                                        <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]">{{ $row['name'] }} <x-ingredient-source-marker :is-user-owned="$row['is_user_owned'] ?? false" /></p>
                                     </td>
                                     <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $row['inci_name'] ?: '—' }}</td>
                                     <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($row['percentage']) }}%</td>
@@ -113,6 +113,8 @@
             </article>
         @endforeach
     </section>
+
+    <x-ingredient-source-legend :show="collect($phaseSections)->contains(fn (array $section): bool => collect($section['rows'] ?? [])->contains(fn (array $row): bool => (bool) ($row['is_user_owned'] ?? false)))" />
 
     @if ($recipe->description)
         <section class="sk-card p-5">

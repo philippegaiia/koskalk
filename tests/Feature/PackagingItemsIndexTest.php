@@ -12,7 +12,6 @@ use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\UserPackagingItemAuthoringService;
 use App\Visibility;
-use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -37,6 +36,9 @@ it('lets a signed-in user open the packaging items page and see saved items', fu
         ->assertSee('Packaging Items')
         ->assertSee('Manage packaging used in recipe costing.')
         ->assertSee('Packaging catalog')
+        ->assertSeeHtml('aria-label="Packaging catalog filters"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary justify-center"')
+        ->assertDontSeeHtml('fi-ta')
         ->assertSee('Unit price (EUR)')
         ->assertSee('0.12')
         ->assertDontSee('0.1200')
@@ -64,19 +66,44 @@ it('shows packaging prices in the users current default currency', function () {
         ->assertSee('Unit price (GBP)')
         ->assertDontSee('EUR');
 
-    actingAs($user);
+});
 
-    Livewire::test(PackagingItemsIndex::class)
-        ->loadTable()
-        ->assertTableColumnExists(
-            'unit_cost',
-            fn ($column): bool => $column->getLabel() === 'Unit price (GBP)'
-                && $column->getPrefixLabel() === null,
-        )
-        ->assertTableColumnExists(
-            'name',
-            fn ($column): bool => $column->getWidth() === '34rem',
-        );
+it('renders inline packaging prices with the users saved number format', function (string $numberLocale, string $formattedPrice) {
+    $user = User::factory()->create(['number_locale' => $numberLocale]);
+
+    UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Format test box',
+        'unit_cost' => 0.1000,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('packaging-items.index'))
+        ->assertSuccessful()
+        ->assertSeeHtml('type="text"')
+        ->assertSeeHtml('inputmode="decimal"')
+        ->assertSeeHtml('value="'.$formattedPrice.'"');
+})->with([
+    'British English' => ['en_GB', '0.10'],
+    'US English' => ['en_US', '0.10'],
+    'French' => ['fr_FR', '0,10'],
+]);
+
+it('uses one bench-colored focus treatment for catalog search fields', function () {
+    $css = file_get_contents(resource_path('css/shared/soapkraft.css'))
+        .file_get_contents(resource_path('css/app.css'));
+
+    expect($css)
+        ->toContain('input:not(.sk-field-control):not(.fi-input):focus-visible')
+        ->toContain('border-color: var(--color-accent);')
+        ->toContain('box-shadow: 0 0 0 1px var(--color-accent);')
+        ->toContain('outline: none;')
+        ->toContain('.sk-field:focus-within')
+        ->toContain('background: var(--color-field);')
+        ->not->toContain("button:focus-visible,\ninput:not(.sk-field-control):not(.fi-input):focus-visible")
+        ->not->toContain('outline: 1px solid var(--color-field-outline);');
 });
 
 it('renders the packaging item create page for signed in users', function () {
@@ -121,7 +148,7 @@ it('creates a packaging item from the dedicated editor', function () {
 
     Livewire::test(PackagingItemEditor::class)
         ->set('data.name', 'Kraft soap box')
-        ->set('data.unit_cost', '0.4200')
+        ->set('data.unit_cost', '0,4200')
         ->set('data.notes', '100g rectangle')
         ->call('save')
         ->assertHasNoErrors()
@@ -185,18 +212,13 @@ it('only shows the signed-in users packaging items in the packaging table and su
     actingAs($user);
 
     Livewire::test(PackagingItemsIndex::class)
-        ->loadTable()
-        ->assertCanSeeTableRecords(
-            UserPackagingItem::query()->where('user_id', $user->id)->orderBy('name')->orderBy('id')->get(),
-            true,
-        )
-        ->searchTable('Beta')
-        ->assertCanSeeTableRecords(
-            UserPackagingItem::query()->where('user_id', $user->id)->where('name', 'Beta Box')->get(),
-        )
-        ->assertCanNotSeeTableRecords(
-            UserPackagingItem::query()->where('user_id', $user->id)->where('notes', 'First alpha entry')->get(),
-        );
+        ->assertSee('Alpha Box')
+        ->assertSee('Beta Box')
+        ->assertDontSee('Other user entry')
+        ->set('search', 'Beta')
+        ->assertSee('Beta Box')
+        ->assertDontSee('First alpha entry')
+        ->assertDontSee('Second alpha entry');
 });
 
 it('updates a packaging item unit price from the catalog table', function () {
@@ -213,8 +235,7 @@ it('updates a packaging item unit price from the catalog table', function () {
     actingAs($user);
 
     Livewire::test(PackagingItemsIndex::class)
-        ->loadTable()
-        ->call('updateTableColumnState', 'unit_cost', (string) $packagingItem->getKey(), '0.35');
+        ->call('updateUnitCost', $packagingItem->id, '0.35');
 
     expect((float) $packagingItem->refresh()->unit_cost)->toBe(0.35);
 });
@@ -237,8 +258,7 @@ it('updates the packaging item currency to the current default currency when edi
     actingAs($user);
 
     Livewire::test(PackagingItemsIndex::class)
-        ->loadTable()
-        ->call('updateTableColumnState', 'unit_cost', (string) $packagingItem->getKey(), '0.35');
+        ->call('updateUnitCost', $packagingItem->id, '0.35');
 
     expect($packagingItem->refresh()->currency)->toBe('GBP');
 });
@@ -257,10 +277,8 @@ it('keeps the packaging catalog unit price required when editing inline', functi
     actingAs($user);
 
     Livewire::test(PackagingItemsIndex::class)
-        ->loadTable()
-        ->call('updateTableColumnState', 'unit_cost', (string) $packagingItem->getKey(), '')
-        ->assertReturned(fn (array $return): bool => str_contains($return['error'] ?? '', 'unit price')
-            && str_contains($return['error'] ?? '', 'required'));
+        ->call('updateUnitCost', $packagingItem->id, '')
+        ->assertHasErrors(['unit_cost_'.$packagingItem->id]);
 
     expect((float) $packagingItem->refresh()->unit_cost)->toBe(0.12);
 });
@@ -311,8 +329,7 @@ it('allows deleting an unused packaging item from the catalog table', function (
     actingAs($user);
 
     Livewire::test(PackagingItemsIndex::class)
-        ->loadTable()
-        ->callAction(TestAction::make('delete')->table($packagingItem));
+        ->call('deletePackagingItem', $packagingItem->id);
 
     expect(UserPackagingItem::query()->find($packagingItem->id))->toBeNull();
 });
@@ -361,6 +378,8 @@ it('disables deleting a packaging item that is already used in costing', functio
     actingAs($user);
 
     Livewire::test(PackagingItemsIndex::class)
-        ->loadTable()
-        ->assertActionDisabled(TestAction::make('delete')->table($packagingItem));
+        ->assertSeeHtml('data-cannot-delete="'.$packagingItem->id.'"')
+        ->call('deletePackagingItem', $packagingItem->id);
+
+    expect(UserPackagingItem::query()->find($packagingItem->id))->not->toBeNull();
 });

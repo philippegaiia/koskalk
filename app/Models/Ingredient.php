@@ -237,7 +237,8 @@ class Ingredient extends Model
     public function canDriveSoapSaponification(): bool
     {
         return $this->category === IngredientCategory::CarrierOil
-            && $this->is_potentially_saponifiable;
+            && $this->is_potentially_saponifiable
+            && $this->sapProfile?->koh_sap_value !== null;
     }
 
     public function isPublicCatalog(): bool

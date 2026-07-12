@@ -159,7 +159,7 @@
  <td class="px-4 py-3 align-top text-[var(--color-ink-soft)]">
      <template x-for="(source, idx) in row.source_ingredients" :key="idx">
          <span class="inline-flex items-center gap-1">
-             <span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-amber-400" title="Ingredient not curated by the platform"></span>
+             <span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span>
              <span x-text="source"></span>
          </span>
      </template>
@@ -244,7 +244,7 @@
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">
      <template x-for="(source, idx) in row.source_ingredients" :key="idx">
          <span class="inline-flex items-center gap-1">
-             <span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-amber-400" title="Ingredient not curated by the platform"></span>
+             <span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span>
              <span x-text="source"></span>
          </span>
      </template>
@@ -264,9 +264,9 @@
  </section>
 
  <template x-if="drySoapIngredientRows.some(row => row.source_is_user_owned?.some(Boolean)) || drySoapAllergenRows.some(row => row.source_is_user_owned?.some(Boolean))">
-     <p class="rounded-lg bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
-         <span class="inline-block size-1.5 rounded-full bg-amber-400 mr-1"></span>
-         Ingredient not curated by the platform. Compliance data is user-maintained.
+     <p class="px-1 text-[0.625rem] leading-4 text-[var(--color-ink-soft)]">
+         <span class="mr-1 inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60"></span>
+         User-created or user-modified ingredient. Data has not been verified by Soapkraft.
      </p>
  </template>
 @endif

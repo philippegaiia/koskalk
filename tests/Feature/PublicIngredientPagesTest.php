@@ -13,7 +13,6 @@ use App\OwnerType;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
-use Filament\Actions\Testing\TestAction;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -77,11 +76,11 @@ it('lets the signed-in user search their ingredient catalog table', function () 
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
-        ->assertCanSeeTableRecords([$glycerin, $clay])
-        ->searchTable('Glycerin')
-        ->assertCanSeeTableRecords([$glycerin])
-        ->assertCanNotSeeTableRecords([$clay]);
+        ->assertSee($glycerin->display_name)
+        ->assertSee($clay->display_name)
+        ->set('search', 'Glycerin')
+        ->assertSee($glycerin->display_name)
+        ->assertDontSee($clay->display_name);
 });
 
 it('allows deleting an unused personal ingredient from the catalog table', function () {
@@ -112,8 +111,8 @@ it('allows deleting an unused personal ingredient from the catalog table', funct
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
-        ->callAction(TestAction::make('delete')->table($ingredient));
+        ->call('confirmDelete', $ingredient->id)
+        ->call('deleteIngredient', $ingredient->id);
 
     expect(Ingredient::query()->find($ingredient->id))->toBeNull()
         ->and(Storage::disk('public')->exists('ingredients/featured-images/delete-me.webp'))->toBeFalse()
@@ -166,8 +165,9 @@ it('disables deleting a personal ingredient that is already used in costing', fu
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
-        ->assertActionDisabled(TestAction::make('delete')->table($ingredient));
+        ->call('deleteIngredient', $ingredient->id);
+
+    expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
 });
 
 it('disables deleting a personal ingredient that is used in a recipe formula', function () {
@@ -209,8 +209,9 @@ it('disables deleting a personal ingredient that is used in a recipe formula', f
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->loadTable()
-        ->assertActionDisabled(TestAction::make('delete')->table($ingredient));
+        ->call('deleteIngredient', $ingredient->id);
+
+    expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
 });
 
 it('does not allow editing another users private ingredient', function () {
@@ -263,12 +264,8 @@ it('does not delete a platform ingredient if a table action call is forced', fun
 
     $this->actingAs($user);
 
-    $component = Livewire::test(IngredientsIndex::class)
-        ->loadTable();
-
-    $deleteIngredient = new ReflectionMethod($component->instance(), 'deleteIngredient');
-
-    expect($deleteIngredient->invoke($component->instance(), $ingredient))->toBeFalse();
+    Livewire::test(IngredientsIndex::class)
+        ->call('deleteIngredient', $ingredient->id);
 
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
 });

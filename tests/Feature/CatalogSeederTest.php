@@ -129,7 +129,7 @@ it('classifies imported ingredients by code prefix and does not assume soap elig
     expect($oil->category)->toBe(IngredientCategory::CarrierOil)
         ->and($oil->is_potentially_saponifiable)->toBeTrue()
         ->and($oil->requires_admin_review)->toBeTrue()
-        ->and($oil->isAvailableForInitialSoapCalculation())->toBeTrue()
+        ->and($oil->isAvailableForInitialSoapCalculation())->toBeFalse()
         ->and($essentialOil->category)->toBe(IngredientCategory::EssentialOil)
         ->and($essentialOil->is_potentially_saponifiable)->toBeFalse();
 });

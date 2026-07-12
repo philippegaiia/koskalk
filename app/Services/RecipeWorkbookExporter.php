@@ -85,13 +85,14 @@ class RecipeWorkbookExporter
      */
     private function writeFormulaSheet(Writer $writer, array $exportData): void
     {
-        $sheet = $this->prepareSheet($writer->addNewSheetAndMakeItCurrent(), 'Formula', [24, 30, 34, 14, 14, 36]);
+        $sheet = $this->prepareSheet($writer->addNewSheetAndMakeItCurrent(), 'Formula', [24, 30, 14, 34, 14, 14, 36]);
         $this->addTitle($writer, 'Formula');
-        $this->addHeader($writer, ['Phase', 'Ingredient', 'INCI name', 'Percentage', 'Weight', 'Note']);
+        $this->addHeader($writer, ['Phase', 'Ingredient', 'Source', 'INCI name', 'Percentage', 'Weight', 'Note']);
         $rows = collect($exportData['formulaRows'] ?? [])
             ->map(fn (array $row): array => [
                 $row['phase'] ?? '',
                 $row['ingredient'] ?? '',
+                $row['source'] ?? '',
                 $row['inci_name'] ?? '',
                 $row['percentage'] ?? '',
                 $row['weight'] ?? '',
@@ -103,9 +104,10 @@ class RecipeWorkbookExporter
             0 => $this->wrapStyle(),
             1 => $this->wrapStyle(),
             2 => $this->wrapStyle(),
-            3 => $this->numberStyle('0.00'),
+            3 => $this->wrapStyle(),
             4 => $this->numberStyle('0.00'),
-            5 => $this->wrapStyle(),
+            5 => $this->numberStyle('0.00'),
+            6 => $this->wrapStyle(),
         ]);
 
         $blankRow = count($rows) + 4;

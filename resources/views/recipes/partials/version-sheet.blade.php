@@ -4,22 +4,30 @@
         ? number_format((float) $value, 0, '.', '')
         : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
     $showDetails = $showDetails ?? false;
+    $showSummary = $showSummary ?? true;
+    $showIngredientLists = $showIngredientLists ?? $showDetails;
+    $showLyeSection = $recipe->productFamily?->calculation_basis !== 'total_formula';
     $oilUnit = $snapshot['draft']['oilUnit'] ?? 'g';
 @endphp
 
 <div class="space-y-6">
-    <section class="grid gap-4 lg:grid-cols-4">
-        @foreach ($summaryCards as $card)
-            <article class="sk-card p-4">
-                <p class="sk-eyebrow">{{ $card['label'] }}</p>
-                <p class="numeric mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">
-                    {{ $formatSummaryNumber($card['value'], $card['unit']) }}<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">{{ $card['unit'] }}</span>
-                </p>
-            </article>
-        @endforeach
-    </section>
+    @if ($showSummary)
+        <section class="grid gap-4 lg:grid-cols-4">
+            @foreach ($summaryCards as $card)
+                <article class="sk-card p-4">
+                    <p class="sk-eyebrow">{{ $card['label'] }}</p>
+                    <p class="numeric mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">
+                        {{ $formatSummaryNumber($card['value'], $card['unit']) }}<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">{{ $card['unit'] }}</span>
+                    </p>
+                </article>
+            @endforeach
+        </section>
+    @endif
 
-    <section class="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+    <section @class([
+        'grid gap-4',
+        'xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]' => $showLyeSection,
+    ])>
         <article class="sk-card p-5">
             <div class="flex items-center justify-between gap-3">
                 <div>
@@ -39,33 +47,35 @@
             </div>
         </article>
 
-        <article class="sk-card p-5">
-            <div>
-                <p class="sk-eyebrow">Lye and water</p>
-                <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Amounts for this batch</h3>
-            </div>
+        @if ($showLyeSection)
+            <article class="sk-card p-5">
+                <div>
+                    <p class="sk-eyebrow">Lye and water</p>
+                    <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Amounts for this batch</h3>
+                </div>
 
-            @if ($lyeRows !== [])
-                <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                    @foreach ($lyeRows as $row)
-                        <div class="sk-inset px-4 py-3">
-                            <p class="sk-eyebrow">{{ $row['label'] }}</p>
-                            <p class="numeric mt-1 text-sm font-medium text-[var(--color-ink-strong)]">
-                                @if (is_numeric($row['value']))
-                                    {{ $formatNumber($row['value']) }}@if ($row['unit']) <span class="text-[var(--color-ink-soft)]">{{ $row['unit'] }}</span>@endif
-                                @else
-                                    {{ $row['value'] }}
-                                @endif
-                            </p>
-                        </div>
-                    @endforeach
-                </div>
-            @else
-                <div class="mt-4 rounded-lg border border-dashed border-[var(--color-line)] bg-[var(--color-panel-strong)] px-4 py-5 text-sm text-[var(--color-ink-soft)]">
-                    This recipe does not use soap calculations. Lye and water values are shown only for soap recipes.
-                </div>
-            @endif
-        </article>
+                @if ($lyeRows !== [])
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                        @foreach ($lyeRows as $row)
+                            <div class="sk-inset px-4 py-3">
+                                <p class="sk-eyebrow">{{ $row['label'] }}</p>
+                                <p class="numeric mt-1 text-sm font-medium text-[var(--color-ink-strong)]">
+                                    @if (is_numeric($row['value']))
+                                        {{ $formatNumber($row['value']) }}@if ($row['unit']) <span class="text-[var(--color-ink-soft)]">{{ $row['unit'] }}</span>@endif
+                                    @else
+                                        {{ $row['value'] }}
+                                    @endif
+                                </p>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="mt-4 rounded-lg border border-dashed border-[var(--color-line)] bg-[var(--color-panel-strong)] px-4 py-5 text-sm text-[var(--color-ink-soft)]">
+                        Lye and water values are not available for this saved formula.
+                    </div>
+                @endif
+            </article>
+        @endif
     </section>
 
     <section class="space-y-4">
@@ -134,7 +144,7 @@
         </section>
     @endif
 
-    @if ($showDetails)
+    @if ($showIngredientLists)
         @php($printIngredientListText = $snapshot['labeling']['print_ingredient_list_text'] ?? ($snapshot['labeling']['final_label_text'] ?? ''))
         @php($printPlainIngredientListText = $snapshot['labeling']['print_plain_ingredient_list_text'] ?? ($snapshot['labeling']['plain_language_list']['final_label_text'] ?? ''))
 

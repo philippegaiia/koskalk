@@ -24,7 +24,7 @@ uses(RefreshDatabase::class);
 it('renders the formula sheet with print actions', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
         ->assertSee('Formula sheet')
@@ -41,8 +41,20 @@ it('renders the formula sheet with print actions', function () {
         ->assertSee('Export Excel')
         ->assertSee('Export CSV')
         ->assertSee('Published Formula')
+        ->assertSee('How this recipe was calculated')
+        ->assertSee('Lye and water')
+        ->assertSee('Olive Oil')
+        ->assertSee('OLEA EUROPAEA')
+        ->assertSee('% oils')
+        ->assertSee('Weight (g)')
         ->assertSee('1000<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">g</span>', false)
         ->assertDontSee('1000.00');
+
+    expect(substr_count($response->getContent(), '<p class="sk-eyebrow">Oil quantity</p>'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'Wet batch weight'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'Weight after cure'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'Produced glycerine'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'Final ingredient list'))->toBe(1);
 });
 
 it('renders the formula workbench with one save path and lock controls', function () {

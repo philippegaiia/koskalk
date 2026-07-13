@@ -33,11 +33,6 @@
             $formatNumber = fn (mixed $value, int $precision = 2): string => rtrim(rtrim(number_format((float) $value, $precision, '.', ''), '0'), '.');
             $formatMoney = fn (mixed $value, string $currency): string => $formatNumber($value, 2).' '.$currency;
 
-            $finalIngredientListText = $snapshot['labeling']['print_ingredient_list_text']
-                ?? ($snapshot['labeling']['final_ingredient_list']['final_text'] ?? null)
-                ?? ($snapshot['labeling']['final_label_text'] ?? '');
-            $plainLanguageListText = $snapshot['labeling']['print_plain_ingredient_list_text']
-                ?? data_get($snapshot, 'labeling.plain_language_list.final_label_text', '');
         @endphp
 
         @if (is_array($currentReplaceConfirmation))
@@ -170,26 +165,17 @@
             </details>
         @endif
 
-        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            @php
-                $summaryUnit = $snapshot['draft']['oilUnit'] ?? 'g';
-                $summaryValue = $summaryUnit === 'g'
-                    ? number_format((float) $selectedOilWeight, 0, '.', '')
-                    : rtrim(rtrim(number_format((float) $selectedOilWeight, 2, '.', ''), '0'), '.');
-                $summary = [
-                    ['label' => $isCosmeticFormula ? 'Total batch quantity' : ($summaryUnit === 'g' ? 'Batch weight' : 'Batch size'), 'value' => $summaryValue, 'unit' => $summaryUnit],
-                    ['label' => 'Ingredients', 'value' => count($productionPreview['ingredient_rows'] ?? []), 'unit' => ''],
-                    ['label' => 'Packaging items', 'value' => count($packagingPlanRows), 'unit' => ''],
-                    ['label' => 'Recorded batches', 'value' => $productionBatches->count(), 'unit' => ''],
-                ];
-            @endphp
-            @foreach ($summary as $card)
-                <article class="sk-card p-4">
-                    <p class="sk-eyebrow">{{ $card['label'] }}</p>
-                    <p class="numeric mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $card['value'] }}<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">{{ $card['unit'] }}</span></p>
-                </article>
-            @endforeach
-        </section>
+        @include('recipes.partials.version-sheet', [
+            'recipe' => $recipe,
+            'snapshot' => $snapshot,
+            'phaseSections' => $phaseSections,
+            'summaryCards' => $summaryCards,
+            'contextRows' => $contextRows,
+            'lyeRows' => $lyeRows,
+            'showDetails' => true,
+            'showSummary' => true,
+            'showIngredientLists' => true,
+        ])
 
         <section class="grid gap-4 lg:grid-cols-2">
             @if ($canRecordProduction && is_array($productionPreview))
@@ -414,26 +400,6 @@
                     </a>
                 </div>
             @endif
-        </section>
-
-        <section class="grid gap-4 lg:grid-cols-2">
-            <article class="sk-card p-5">
-                <p class="sk-eyebrow">Selected ingredients</p>
-                <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Final ingredient list</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">As it will appear on the label after processing.</p>
-                <p class="mt-4 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                    {{ $finalIngredientListText ?: 'No final ingredient list generated yet.' }}
-                </p>
-            </article>
-
-            <article class="sk-card p-5">
-                <p class="sk-eyebrow">Selected ingredients</p>
-                <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Plain-language list</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Consumer-friendly wording without the INCI chemistry names.</p>
-                <p class="mt-4 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                    {{ $plainLanguageListText ?: 'No plain-language list generated yet.' }}
-                </p>
-            </article>
         </section>
 
         @if (session('status'))

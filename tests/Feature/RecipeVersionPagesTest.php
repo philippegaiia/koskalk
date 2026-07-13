@@ -465,6 +465,114 @@ it('routes active and historical formula sheets to their exact saved versions', 
         ->assertDontSee('action="'.route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $formulaA->id]).'"', false);
 });
 
+it('keeps the displayed historical version in every sheet action', function () {
+    [$user, $recipe, $formulaA] = createRecipeWithTwoDistinctSavedVersions();
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful();
+
+    foreach ([
+        'recipes.print.production',
+        'recipes.print.technical',
+        'recipes.print.costing',
+        'recipes.export.xlsx',
+        'recipes.export.csv',
+    ] as $routeName) {
+        $routePath = parse_url(route($routeName, ['recipe' => $recipe->id]), PHP_URL_PATH);
+
+        expect(html_entity_decode($response->getContent()))
+            ->toMatch('/href="[^\"]*'.preg_quote((string) $routePath, '/').'\?[^\"]*version='.$formulaA->id.'[^\"]*"/');
+    }
+
+    $activeResponse = $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->assertSuccessful();
+
+    $activeResponse->assertDontSee('version='.$formulaA->id, false);
+});
+
+it('renders and exports the exact requested historical formula version', function () {
+    [$user, $recipe, $formulaA] = createRecipeWithTwoDistinctSavedVersions();
+    attachCostingToSavedVersion($user, $formulaA);
+
+    foreach (['recipes.print.production', 'recipes.print.technical', 'recipes.print.costing'] as $routeName) {
+        $this->actingAs($user)
+            ->get(route($routeName, ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+            ->assertSuccessful()
+            ->assertSee('Olive Oil')
+            ->assertDontSee('Coconut Oil');
+    }
+
+    $this->actingAs($user)
+        ->get(route('recipes.legacy.print.recipe', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
+
+    $this->actingAs($user)
+        ->get(route('recipes.legacy.print.details', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
+
+    $csvResponse = $this->actingAs($user)
+        ->get(route('recipes.export.csv', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful();
+
+    expect($csvResponse->streamedContent())
+        ->toContain('Olive Oil')
+        ->not->toContain('Coconut Oil');
+
+    $workbookResponse = $this->actingAs($user)
+        ->get(route('recipes.export.xlsx', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful();
+
+    expect(recipeWorkbookXml($workbookResponse->streamedContent()))
+        ->toContain('Formula A')
+        ->toContain('Olive Oil')
+        ->not->toContain('Coconut Oil');
+});
+
+it('uses the latest saved formula when sheet outputs do not request a version', function () {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('Coconut Oil')
+        ->assertDontSee('Olive Oil');
+
+    $csvResponse = $this->actingAs($user)
+        ->get(route('recipes.export.csv', ['recipe' => $recipe->id]))
+        ->assertSuccessful();
+
+    expect($csvResponse->streamedContent())
+        ->toContain('Coconut Oil')
+        ->not->toContain('Olive Oil');
+});
+
+it('rejects cross-recipe and inaccessible formula versions in sheet outputs', function (string $routeName) {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    [, , $otherAccessibleRecipeVersion] = createRecipeWithTwoDistinctSavedVersions($user);
+    [, , $inaccessibleRecipeVersion] = createRecipeWithTwoDistinctSavedVersions();
+
+    foreach ([$otherAccessibleRecipeVersion, $inaccessibleRecipeVersion] as $otherRecipeVersion) {
+        $this->actingAs($user)
+            ->get(route($routeName, [
+                'recipe' => $recipe->id,
+                'version' => $otherRecipeVersion->id,
+            ]))
+            ->assertNotFound();
+    }
+})->with([
+    'production sheet' => 'recipes.print.production',
+    'technical sheet' => 'recipes.print.technical',
+    'costing sheet' => 'recipes.print.costing',
+    'Excel export' => 'recipes.export.xlsx',
+    'CSV export' => 'recipes.export.csv',
+]);
+
 it('duplicates a recipe into a new draft recipe', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
@@ -784,6 +892,67 @@ function createSavedRecipeVersion(): array
         ->firstOrFail();
 
     return [$user, $recipe, $publishedVersion];
+}
+
+/**
+ * @return array{0: User, 1: Recipe, 2: RecipeVersion}
+ */
+function createRecipeWithTwoDistinctSavedVersions(?User $user = null): array
+{
+    $user ??= User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap-'.fake()->unique()->slug(),
+        'name' => 'Soap',
+    ]);
+    $oliveOil = makeSavedRecipeIngredient();
+    $coconutOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA OIL',
+        'soap_inci_naoh_name' => 'SODIUM COCOATE',
+        'soap_inci_koh_name' => 'POTASSIUM COCOATE',
+        'is_potentially_saponifiable' => true,
+        'is_active' => true,
+    ]);
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $coconutOil->id,
+        'koh_sap_value' => 0.257,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($oliveOil, 'Formula A'));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($oliveOil, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($coconutOil, 'Formula B'), $recipe);
+
+    $formulaA = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->where('name', 'Formula A')
+        ->firstOrFail();
+
+    return [$user, $recipe, $formulaA];
+}
+
+function recipeWorkbookXml(string $content): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'koskalk-version-export-test-');
+    file_put_contents($path, $content);
+
+    $zip = new ZipArchive;
+
+    expect($zip->open($path))->toBeTrue();
+
+    $xml = collect(range(1, 6))
+        ->map(fn (int $index): string => (string) $zip->getFromName("xl/worksheets/sheet{$index}.xml"))
+        ->implode("\n");
+
+    $zip->close();
+    unlink($path);
+
+    return $xml;
 }
 
 function makeSavedRecipeIngredient(): Ingredient

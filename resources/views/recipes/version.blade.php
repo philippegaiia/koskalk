@@ -22,6 +22,9 @@
             $canRecordProduction = (bool) ($canRecordProduction ?? false);
             $canRestoreVersion = (bool) ($canRestoreVersion ?? false);
             $isHistorical = (bool) ($isHistorical ?? false);
+            if ($isHistorical) {
+                $printQuery['version'] = $version->id;
+            }
             $productionPreview = $productionPreview ?? null;
             $productionBatches = $productionBatches ?? collect();
             $otherSavedVersions = collect($recoverySnapshots ?? [])

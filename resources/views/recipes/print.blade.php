@@ -27,11 +27,19 @@
         'oil_weight' => $selectedOilWeight,
     ];
 
+    if ($isVersionSelected ?? false) {
+        $printQuery['version'] = $version->id;
+    }
+
     foreach (['batch_number', 'batch_basis', 'manufacture_date', 'units_produced'] as $batchQueryKey) {
         if (filled($batchContext[$batchQueryKey] ?? null)) {
             $printQuery[$batchQueryKey] = $batchContext[$batchQueryKey];
         }
     }
+
+    $backRoute = ($isVersionSelected ?? false)
+        ? route('recipes.version', $printQuery)
+        : route('recipes.saved', $printQuery);
 @endphp
 
 @section('title', $recipe->name.' · '.$modeTitle.' · '.config('app.name'))
@@ -45,7 +53,7 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('recipes.saved', $printQuery) }}" class="inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">
+                <a href="{{ $backRoute }}" class="inline-flex rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-50">
                     Back
                 </a>
                 <a href="{{ route('recipes.print.production', $printQuery) }}" class="inline-flex rounded-lg border px-4 py-2 text-sm font-medium transition {{ $isProductionMode ? 'border-slate-900 text-slate-950' : 'border-slate-300 text-slate-600 hover:bg-slate-50' }}">

@@ -73,18 +73,43 @@ class RecipeController extends Controller
     ): View {
         $user = $currentAppUserResolver->resolve();
         [$recipe, $currentFormula] = $this->accessibleCurrentVersion($recipe, $currentAppUserResolver);
-        $viewData = $recipeVersionViewDataBuilder->build($recipe, $currentFormula, $request->query('oil_weight'), $request->query());
-        $canManageProduction = $user !== null && $user->can('update', $recipe);
-        $canRecordProduction = $canManageProduction
+
+        return $this->renderSavedVersion(
+            $recipe,
+            $currentFormula,
+            $request,
+            $user,
+            $entitlementService,
+            $recipeVersionViewDataBuilder,
+            $recipeVersionCostPreviewBuilder,
+            false,
+        );
+    }
+
+    private function renderSavedVersion(
+        Recipe $recipe,
+        RecipeVersion $version,
+        Request $request,
+        ?User $user,
+        EntitlementService $entitlementService,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
+        bool $isHistorical,
+    ): View {
+        $viewData = $recipeVersionViewDataBuilder->build($recipe, $version, $request->query('oil_weight'), $request->query());
+        $canUpdateRecipe = $user !== null && $user->can('update', $recipe);
+        $canRecordProduction = $canUpdateRecipe
             && $entitlementService->canCreateProductionBatch($user);
 
         return view('recipes.version', [
             ...$viewData,
+            'isHistorical' => $isHistorical,
+            'canRestoreVersion' => $canUpdateRecipe,
             'canRecordProduction' => $canRecordProduction,
             'productionPreview' => $user !== null
-                ? $this->productionPreview($recipe, $currentFormula, $user, $viewData, $recipeVersionCostPreviewBuilder)
+                ? $this->productionPreview($recipe, $version, $user, $viewData, $recipeVersionCostPreviewBuilder)
                 : null,
-            'productionBatches' => $canManageProduction
+            'productionBatches' => $canUpdateRecipe
                 ? $recipe->productionBatches()
                     ->where('user_id', $user->id)
                     ->limit(8)
@@ -165,6 +190,8 @@ class RecipeController extends Controller
         abort_unless($user !== null, 403);
         [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
 
+        $this->authorize('update', $recipe);
+
         if (
             $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $savedFormula->id)
             && ! $request->boolean('confirm_replace_current')
@@ -195,7 +222,9 @@ class RecipeController extends Controller
         $user = $currentAppUserResolver->resolve();
 
         abort_unless($user !== null, 403);
-        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+        [$recipe, $version] = $this->accessibleBackupVersion($recipe, $version, $currentAppUserResolver);
+
+        $this->authorize('update', $recipe);
 
         $recipeWorkbenchService->restorePublishedFormula($user, $recipe, $version->id);
 
@@ -213,9 +242,19 @@ class RecipeController extends Controller
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
         RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
     ): View {
-        [$recipe] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+        $user = $currentAppUserResolver->resolve();
+        [$recipe, $version] = $this->accessibleBackupVersion($recipe, $version, $currentAppUserResolver);
 
-        return $this->saved($recipe->id, $request, $currentAppUserResolver, $entitlementService, $recipeVersionViewDataBuilder, $recipeVersionCostPreviewBuilder);
+        return $this->renderSavedVersion(
+            $recipe,
+            $version,
+            $request,
+            $user,
+            $entitlementService,
+            $recipeVersionViewDataBuilder,
+            $recipeVersionCostPreviewBuilder,
+            true,
+        );
     }
 
     public function printSavedRecipe(
@@ -233,12 +272,13 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
-
-        return view('recipes.print', [
-            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
-            'printMode' => 'production',
-        ]);
+        return $this->printSheet(
+            $recipe,
+            $request,
+            $currentAppUserResolver,
+            $recipeVersionViewDataBuilder,
+            'production',
+        );
     }
 
     public function printRecipe(
@@ -248,9 +288,14 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
-
-        return $this->printSavedRecipe($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+        return $this->printSheet(
+            $recipe,
+            $request,
+            $currentAppUserResolver,
+            $recipeVersionViewDataBuilder,
+            'production',
+            $version,
+        );
     }
 
     public function printSavedDetails(
@@ -268,12 +313,13 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
-
-        return view('recipes.print', [
-            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
-            'printMode' => 'technical',
-        ]);
+        return $this->printSheet(
+            $recipe,
+            $request,
+            $currentAppUserResolver,
+            $recipeVersionViewDataBuilder,
+            'technical',
+        );
     }
 
     public function printSavedCostingSheet(
@@ -282,12 +328,13 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
-
-        return view('recipes.print', [
-            ...$recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query()),
-            'printMode' => 'costing',
-        ]);
+        return $this->printSheet(
+            $recipe,
+            $request,
+            $currentAppUserResolver,
+            $recipeVersionViewDataBuilder,
+            'costing',
+        );
     }
 
     public function exportSavedWorkbook(
@@ -297,7 +344,7 @@ class RecipeController extends Controller
         RecipeExportDataBuilder $recipeExportDataBuilder,
         RecipeWorkbookExporter $recipeWorkbookExporter,
     ): StreamedResponse {
-        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
+        [$recipe, $savedFormula] = $this->accessibleSheetVersion($recipe, $request, $currentAppUserResolver);
         $exportData = $recipeExportDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
         $filename = $this->exportFilename($recipe, 'xlsx');
 
@@ -315,7 +362,7 @@ class RecipeController extends Controller
         RecipeExportDataBuilder $recipeExportDataBuilder,
         RecipeCsvExporter $recipeCsvExporter,
     ): StreamedResponse {
-        [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
+        [$recipe, $savedFormula] = $this->accessibleSheetVersion($recipe, $request, $currentAppUserResolver);
         $exportData = $recipeExportDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
         $filename = $this->exportFilename($recipe, 'csv');
 
@@ -333,9 +380,14 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): View {
-        [$recipe] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
-
-        return $this->printSavedDetails($recipe->id, $request, $currentAppUserResolver, $recipeVersionViewDataBuilder);
+        return $this->printSheet(
+            $recipe,
+            $request,
+            $currentAppUserResolver,
+            $recipeVersionViewDataBuilder,
+            'technical',
+            $version,
+        );
     }
 
     public function restoreCurrentVersion(
@@ -349,6 +401,8 @@ class RecipeController extends Controller
 
         abort_unless($user !== null, 403);
         [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+
+        $this->authorize('update', $recipe);
 
         if (
             $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $version->id)
@@ -463,6 +517,21 @@ class RecipeController extends Controller
     /**
      * @return array{0: Recipe, 1: RecipeVersion}
      */
+    private function accessibleBackupVersion(
+        int $recipeId,
+        int $versionId,
+        CurrentAppUserResolver $currentAppUserResolver,
+    ): array {
+        [$recipe, $version] = $this->accessibleSavedVersion($recipeId, $versionId, $currentAppUserResolver);
+
+        abort_if($version->is_current, 404);
+
+        return [$recipe, $version];
+    }
+
+    /**
+     * @return array{0: Recipe, 1: RecipeVersion}
+     */
     private function accessibleLatestPublishedFormula(
         int $recipeId,
         CurrentAppUserResolver $currentAppUserResolver,
@@ -475,6 +544,52 @@ class RecipeController extends Controller
             ->firstOrFail();
 
         return [$recipe, $version];
+    }
+
+    /**
+     * @return array{0: Recipe, 1: RecipeVersion}
+     */
+    private function accessibleSheetVersion(
+        int $recipeId,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        ?int $explicitVersionId = null,
+    ): array {
+        if ($explicitVersionId === null && ! $request->has('version')) {
+            return $this->accessibleLatestPublishedFormula($recipeId, $currentAppUserResolver);
+        }
+
+        $requestedVersionId = $explicitVersionId ?? filter_var(
+            $request->query('version'),
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]],
+        );
+
+        abort_if($requestedVersionId === false, 404);
+
+        return $this->accessibleBackupVersion($recipeId, $requestedVersionId, $currentAppUserResolver);
+    }
+
+    private function printSheet(
+        int $recipeId,
+        Request $request,
+        CurrentAppUserResolver $currentAppUserResolver,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
+        string $printMode,
+        ?int $explicitVersionId = null,
+    ): View {
+        [$recipe, $version] = $this->accessibleSheetVersion(
+            $recipeId,
+            $request,
+            $currentAppUserResolver,
+            $explicitVersionId,
+        );
+
+        return view('recipes.print', [
+            ...$recipeVersionViewDataBuilder->build($recipe, $version, $request->query('oil_weight'), $request->query()),
+            'printMode' => $printMode,
+            'isVersionSelected' => $explicitVersionId !== null || $request->has('version'),
+        ]);
     }
 
     /**

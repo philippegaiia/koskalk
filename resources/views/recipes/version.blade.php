@@ -6,8 +6,8 @@
 @section('content')
     <div class="mx-auto max-w-[90rem] space-y-6">
         @php
-            /** @var array<string, string>|null $draftReplaceConfirmation */
-            $draftReplaceConfirmation = session('draftReplaceConfirmation');
+            /** @var array<string, string>|null $currentReplaceConfirmation */
+            $currentReplaceConfirmation = session('currentReplaceConfirmation');
             $printQuery = [
                 'recipe' => $recipe->id,
                 'oil_weight' => $selectedOilWeight,
@@ -20,38 +20,43 @@
             }
 
             $canRecordProduction = (bool) ($canRecordProduction ?? false);
+            $canRestoreVersion = (bool) ($canRestoreVersion ?? false);
+            $isHistorical = (bool) ($isHistorical ?? false);
+            if ($isHistorical) {
+                $printQuery['version'] = $version->id;
+            }
             $productionPreview = $productionPreview ?? null;
             $productionBatches = $productionBatches ?? collect();
+            $otherSavedVersions = collect($recoverySnapshots ?? [])
+                ->reject(fn (array $savedVersion): bool => (bool) ($savedVersion['is_current'] ?? false));
+            $sheetRoute = $isHistorical
+                ? route('recipes.version', ['recipe' => $recipe->id, 'version' => $version->id])
+                : route('recipes.saved', ['recipe' => $recipe->id]);
             $isCosmeticFormula = $recipe->productFamily?->calculation_basis === 'total_formula';
             $formatNumber = fn (mixed $value, int $precision = 2): string => rtrim(rtrim(number_format((float) $value, $precision, '.', ''), '0'), '.');
             $formatMoney = fn (mixed $value, string $currency): string => $formatNumber($value, 2).' '.$currency;
 
-            $finalIngredientListText = $snapshot['labeling']['print_ingredient_list_text']
-                ?? ($snapshot['labeling']['final_ingredient_list']['final_text'] ?? null)
-                ?? ($snapshot['labeling']['final_label_text'] ?? '');
-            $plainLanguageListText = $snapshot['labeling']['print_plain_ingredient_list_text']
-                ?? data_get($snapshot, 'labeling.plain_language_list.final_label_text', '');
         @endphp
 
-        @if (is_array($draftReplaceConfirmation))
+        @if (is_array($currentReplaceConfirmation))
             <section class="rounded-xl border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 p-5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="min-w-0">
                         <p class="sk-eyebrow">Formula confirmation</p>
                         <h2 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">
-                            {{ $draftReplaceConfirmation['title'] ?? 'Replace the current formula?' }}
+                            {{ $currentReplaceConfirmation['title'] ?? 'Replace the current formula?' }}
                         </h2>
                         <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-                            {{ $draftReplaceConfirmation['body'] ?? 'Confirming this action will replace the current formula.' }}
+                            {{ $currentReplaceConfirmation['body'] ?? 'Confirming this action will replace the current formula.' }}
                         </p>
                     </div>
 
                     <div class="flex flex-wrap gap-2">
-                        <form method="POST" action="{{ $draftReplaceConfirmation['action_url'] ?? route('recipes.saved', $recipe->id) }}">
+                        <form method="POST" action="{{ $currentReplaceConfirmation['action_url'] ?? route('recipes.saved', $recipe->id) }}">
                             @csrf
-                            <input type="hidden" name="confirm_replace_draft" value="1" />
+                            <input type="hidden" name="confirm_replace_current" value="1" />
                             <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
-                                {{ $draftReplaceConfirmation['action_label'] ?? 'Replace formula' }}
+                                {{ $currentReplaceConfirmation['action_label'] ?? 'Replace formula' }}
                             </button>
                         </form>
                         <a href="{{ route('recipes.saved', $recipe->id) }}" class="inline-flex rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
@@ -67,14 +72,23 @@
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2">
                         <p class="sk-eyebrow">Formula sheet</p>
-                        <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Saved formula</span>
+                        @if ($isHistorical)
+                            <span class="rounded-full border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-3 py-1 text-xs font-medium text-[var(--color-ink-strong)]">Previous version</span>
+                        @else
+                            <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Saved formula</span>
+                        @endif
                     </div>
-                    <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $version->name }}</h1>
+                    <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h1>
                     <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">
                         Use this saved formula for scaling, printing, and export. Quantity changes here only affect the sheet output.
                     </p>
 
                     <div class="mt-4 flex flex-wrap gap-2">
+                        @if ($isHistorical)
+                            <a href="{{ route('recipes.saved', $recipe->id) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                                Back to active formula
+                            </a>
+                        @endif
                         <a href="{{ route('recipes.edit', $recipe->id) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                             Open formula
                         </a>
@@ -102,7 +116,7 @@
                     </div>
                 </div>
 
-                <form method="GET" action="{{ route('recipes.saved', ['recipe' => $recipe->id]) }}" class="sk-inset p-4 lg:min-w-[16rem]">
+                <form method="GET" action="{{ $sheetRoute }}" class="sk-inset p-4 lg:min-w-[16rem]">
                     <p class="sk-eyebrow">Scale quantity</p>
                     <label class="mt-2 block text-sm font-medium text-[var(--color-ink-strong)]" for="oil_weight">{{ $isCosmeticFormula ? 'Total batch quantity' : 'Oil quantity' }}</label>
                     <div class="mt-2 flex items-center gap-2">
@@ -113,7 +127,7 @@
                         <button type="submit" class="rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
                             Recalculate
                         </button>
-                        <a href="{{ route('recipes.saved', ['recipe' => $recipe->id]) }}" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-white">
+                        <a href="{{ $sheetRoute }}" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-white">
                             Reset
                         </a>
                     </div>
@@ -121,26 +135,50 @@
             </div>
         </section>
 
-        <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            @php
-                $summaryUnit = $snapshot['draft']['oilUnit'] ?? 'g';
-                $summaryValue = $summaryUnit === 'g'
-                    ? number_format((float) $selectedOilWeight, 0, '.', '')
-                    : rtrim(rtrim(number_format((float) $selectedOilWeight, 2, '.', ''), '0'), '.');
-                $summary = [
-                    ['label' => $isCosmeticFormula ? 'Total batch quantity' : ($summaryUnit === 'g' ? 'Batch weight' : 'Batch size'), 'value' => $summaryValue, 'unit' => $summaryUnit],
-                    ['label' => 'Ingredients', 'value' => count($productionPreview['ingredient_rows'] ?? []), 'unit' => ''],
-                    ['label' => 'Packaging items', 'value' => count($packagingPlanRows), 'unit' => ''],
-                    ['label' => 'Recorded batches', 'value' => $productionBatches->count(), 'unit' => ''],
-                ];
-            @endphp
-            @foreach ($summary as $card)
-                <article class="sk-card p-4">
-                    <p class="sk-eyebrow">{{ $card['label'] }}</p>
-                    <p class="numeric mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $card['value'] }}<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">{{ $card['unit'] }}</span></p>
-                </article>
-            @endforeach
-        </section>
+        @if ($otherSavedVersions->isNotEmpty())
+            <details class="sk-card p-5">
+                <summary class="cursor-pointer text-sm font-semibold text-[var(--color-ink-strong)]">Version history</summary>
+
+                <div class="mt-4 space-y-3">
+                    @foreach ($otherSavedVersions as $savedVersion)
+                        <article class="flex flex-col gap-3 rounded-xl border border-[var(--color-line)] p-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="font-medium text-[var(--color-ink-strong)]">Backup</p>
+                                <p class="numeric mt-1 text-xs text-[var(--color-ink-soft)]">
+                                    {{ filled($savedVersion['saved_at'] ?? null) ? \Illuminate\Support\Carbon::parse($savedVersion['saved_at'])->format('Y-m-d H:i') : 'Date not recorded' }}
+                                </p>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{{ route('recipes.version', ['recipe' => $recipe->id, 'version' => $savedVersion['id']]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                    View version
+                                </a>
+                                @if ($canRestoreVersion)
+                                    <form method="POST" action="{{ route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $savedVersion['id']]) }}">
+                                        @csrf
+                                        <button type="submit" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                                            Restore to current formula
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
+            </details>
+        @endif
+
+        @include('recipes.partials.version-sheet', [
+            'recipe' => $recipe,
+            'snapshot' => $snapshot,
+            'phaseSections' => $phaseSections,
+            'summaryCards' => $summaryCards,
+            'contextRows' => $contextRows,
+            'lyeRows' => $lyeRows,
+            'showDetails' => true,
+            'showSummary' => true,
+            'showIngredientLists' => true,
+        ])
 
         <section class="grid gap-4 lg:grid-cols-2">
             @if ($canRecordProduction && is_array($productionPreview))
@@ -365,26 +403,6 @@
                     </a>
                 </div>
             @endif
-        </section>
-
-        <section class="grid gap-4 lg:grid-cols-2">
-            <article class="sk-card p-5">
-                <p class="sk-eyebrow">Selected ingredients</p>
-                <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Final ingredient list</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">As it will appear on the label after processing.</p>
-                <p class="mt-4 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                    {{ $finalIngredientListText ?: 'No final ingredient list generated yet.' }}
-                </p>
-            </article>
-
-            <article class="sk-card p-5">
-                <p class="sk-eyebrow">Selected ingredients</p>
-                <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Plain-language list</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Consumer-friendly wording without the INCI chemistry names.</p>
-                <p class="mt-4 text-[0.98rem] leading-8 font-medium tracking-[0.01em] [font-stretch:88%] text-[var(--color-ink-strong)]">
-                    {{ $plainLanguageListText ?: 'No plain-language list generated yet.' }}
-                </p>
-            </article>
         </section>
 
         @if (session('status'))

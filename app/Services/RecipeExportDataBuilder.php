@@ -27,7 +27,6 @@ class RecipeExportDataBuilder
                 'name' => $recipe->name,
                 'product_family' => $recipe->productFamily?->name,
                 'product_type' => $recipe->productType?->name,
-                'saved_name' => $version->name,
                 'saved_at' => $version->saved_at?->format('Y-m-d H:i'),
                 'batch_basis_label' => $isCosmetic ? 'Total batch quantity' : 'Oil quantity',
                 'batch_basis' => $viewData['selectedOilWeight'],

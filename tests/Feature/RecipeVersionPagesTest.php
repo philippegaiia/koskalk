@@ -11,7 +11,12 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
+use App\OwnerType;
 use App\Services\RecipeWorkbenchService;
+use App\Visibility;
+use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -19,7 +24,7 @@ uses(RefreshDatabase::class);
 it('renders the formula sheet with print actions', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
         ->assertSee('Formula sheet')
@@ -36,8 +41,20 @@ it('renders the formula sheet with print actions', function () {
         ->assertSee('Export Excel')
         ->assertSee('Export CSV')
         ->assertSee('Published Formula')
+        ->assertSee('How this recipe was calculated')
+        ->assertSee('Lye and water')
+        ->assertSee('Olive Oil')
+        ->assertSee('OLEA EUROPAEA')
+        ->assertSee('% oils')
+        ->assertSee('Weight (g)')
         ->assertSee('1000<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">g</span>', false)
         ->assertDontSee('1000.00');
+
+    expect(substr_count($response->getContent(), '<p class="sk-eyebrow">Oil quantity</p>'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'Wet batch weight'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'Weight after cure'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'Produced glycerine'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'Final ingredient list'))->toBe(1);
 });
 
 it('renders the formula workbench with one save path and lock controls', function () {
@@ -58,7 +75,7 @@ it('renders the formula workbench with one save path and lock controls', functio
         ->assertDontSee('Save recipe');
 });
 
-it('hides recovery snapshots from the main formula sheet', function () {
+it('shows older backups in version history', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
     $ingredient = makeSavedRecipeIngredient();
@@ -70,14 +87,128 @@ it('hides recovery snapshots from the main formula sheet', function () {
     $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
     $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
 
+    $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->where('name', 'Formula A')
+        ->firstOrFail();
+
+    $olderSavedVersion->update([
+        'saved_at' => '2026-07-12 09:30:00',
+    ]);
+
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertDontSee('Recovery snapshots')
-        ->assertDontSee('Load into draft')
-        ->assertDontSee('Restore as reference formula')
-        ->assertDontSeeText('v1')
-        ->assertDontSeeText('v2');
+        ->assertSee('Version history')
+        ->assertSee('Backup')
+        ->assertDontSee('Formula A')
+        ->assertSee('2026-07-12 09:30')
+        ->assertSee('View version')
+        ->assertSee('href="'.route('recipes.version', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false)
+        ->assertSee('Restore to current formula')
+        ->assertSee('method="POST" action="'.route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false)
+        ->assertDontSee('action="'.route('recipes.saved.restore', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false);
+
+    $onlyVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Only Formula'));
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $onlyVersion->recipe_id]))
+        ->assertSuccessful()
+        ->assertDontSee('Version history');
+});
+
+it('prevents read-only collaborators from restoring saved formula versions', function () {
+    [$owner, $recipe, $savedVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $viewer = User::factory()->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+
+    $recipe->update([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_private' => false,
+    ]);
+
+    $this->actingAs($viewer)
+        ->post(route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $savedVersion->id]), [
+            'confirm_replace_current' => '1',
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($viewer)
+        ->get(route('recipes.saved', $recipe->id))
+        ->assertSuccessful()
+        ->assertSee('Version history')
+        ->assertSee('View version')
+        ->assertDontSee('Restore to current formula');
+});
+
+it('prevents read-only collaborators from using legacy saved formula restore actions', function () {
+    [$owner, $recipe, $savedVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $viewer = User::factory()->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+
+    $recipe->update([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_private' => false,
+    ]);
+
+    $this->actingAs($viewer)
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]), [
+            'confirm_replace_current' => '1',
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($viewer)
+        ->post(route('recipes.saved.restore', [
+            'recipe' => $recipe->id,
+            'version' => $savedVersion->id,
+        ]))
+        ->assertForbidden();
+});
+
+it('allows workspace editors to use legacy saved formula restore actions', function () {
+    [$owner, $recipe, $savedVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $editor = User::factory()->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($editor)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+
+    $recipe->update([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_private' => false,
+    ]);
+
+    $this->actingAs($editor)
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]), [
+            'confirm_replace_current' => '1',
+        ])
+        ->assertRedirect(route('recipes.edit', $recipe->id));
+
+    $this->actingAs($editor)
+        ->post(route('recipes.saved.restore', [
+            'recipe' => $recipe->id,
+            'version' => $savedVersion->id,
+        ]))
+        ->assertRedirect(route('recipes.saved', $recipe->id));
 });
 
 it('locks and unlocks a formula', function () {
@@ -357,15 +488,253 @@ it('does not expose the saved formula to other users', function () {
         ->assertNotFound();
 });
 
-it('keeps the legacy saved-version url working by showing the current saved recipe', function () {
-    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
+it('routes active and historical formula sheets to their exact saved versions', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeSavedRecipeIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+
+    $formulaA = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->where('name', 'Formula A')
+        ->firstOrFail();
 
     $this->actingAs($user)
-        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $publishedVersion->id]))
+        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('<title>Formula B · Formula Sheet', false)
+        ->assertSee('>Formula B</h1>', false)
+        ->assertSee('Saved formula')
+        ->assertDontSee('Previous version');
+
+    $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
         ->assertSuccessful()
         ->assertSee('Formula sheet')
-        ->assertSee('Published Formula');
+        ->assertSee('<title>Formula B · Formula Sheet', false)
+        ->assertDontSee('<title>Formula A · Formula Sheet', false)
+        ->assertSee('>Formula B</h1>', false)
+        ->assertDontSee('>Formula A</h1>', false)
+        ->assertSee('Previous version')
+        ->assertSee('Back to active formula')
+        ->assertSee('href="'.route('recipes.saved', $recipe->id).'"', false)
+        ->assertDontSee('action="'.route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $formulaA->id]).'"', false);
 });
+
+it('rejects the mutable draft from formula history', function () {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    $draft = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $draft->id]))
+        ->assertNotFound();
+});
+
+it('keeps the displayed historical version in every sheet action', function () {
+    [$user, $recipe, $formulaA] = createRecipeWithTwoDistinctSavedVersions();
+
+    $response = $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful();
+
+    foreach ([
+        'recipes.print.production',
+        'recipes.print.technical',
+        'recipes.print.costing',
+        'recipes.export.xlsx',
+        'recipes.export.csv',
+    ] as $routeName) {
+        $routePath = parse_url(route($routeName, ['recipe' => $recipe->id]), PHP_URL_PATH);
+
+        expect(html_entity_decode($response->getContent()))
+            ->toMatch('/href="[^\"]*'.preg_quote((string) $routePath, '/').'\?[^\"]*version='.$formulaA->id.'[^\"]*"/');
+    }
+
+    $activeResponse = $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->assertSuccessful();
+
+    $activeResponse->assertDontSee('version='.$formulaA->id, false);
+});
+
+it('renders and exports the exact requested historical formula version', function () {
+    [$user, $recipe, $formulaA] = createRecipeWithTwoDistinctSavedVersions();
+    attachCostingToSavedVersion($user, $formulaA);
+
+    foreach (['recipes.print.production', 'recipes.print.technical', 'recipes.print.costing'] as $routeName) {
+        $this->actingAs($user)
+            ->get(route($routeName, ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+            ->assertSuccessful()
+            ->assertSee('Olive Oil')
+            ->assertDontSee('Coconut Oil');
+    }
+
+    $this->actingAs($user)
+        ->get(route('recipes.legacy.print.recipe', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
+
+    $this->actingAs($user)
+        ->get(route('recipes.legacy.print.details', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
+
+    $csvResponse = $this->actingAs($user)
+        ->get(route('recipes.export.csv', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful();
+
+    expect($csvResponse->streamedContent())
+        ->toContain('Olive Oil')
+        ->not->toContain('Coconut Oil');
+
+    $workbookResponse = $this->actingAs($user)
+        ->get(route('recipes.export.xlsx', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful();
+
+    expect(recipeWorkbookXml($workbookResponse->streamedContent()))
+        ->toContain('Olive Oil')
+        ->not->toContain('Coconut Oil');
+});
+
+it('keeps the main recipe identity while rendering selected backup content', function () {
+    [$user, $recipe, $formulaA] = createRecipeWithTwoDistinctSavedVersions();
+    $recipe->update(['name' => 'Main Formula']);
+
+    $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('<title>Main Formula · Formula Sheet', false)
+        ->assertDontSee('<title>Formula A · Formula Sheet', false)
+        ->assertSee('>Main Formula</h1>', false)
+        ->assertDontSee('>Formula A</h1>', false)
+        ->assertSee('Previous version')
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('<title>Main Formula · Batch production sheet', false)
+        ->assertDontSee('<title>Formula A · Batch production sheet', false)
+        ->assertSee('>Main Formula</h1>', false)
+        ->assertDontSee('>Formula A</h1>', false)
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.costing', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('Costs used for this saved formula.')
+        ->assertDontSee('Costs used for the current formula.');
+
+    $workbookResponse = $this->actingAs($user)
+        ->get(route('recipes.export.xlsx', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertDownload('main-formula.xlsx');
+
+    expect(recipeWorkbookXml($workbookResponse->streamedContent()))
+        ->toContain('Main Formula')
+        ->not->toContain('Formula A')
+        ->toContain('Olive Oil')
+        ->not->toContain('Coconut Oil');
+});
+
+it('uses the latest saved formula when sheet outputs do not request a version', function () {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail()
+        ->update(['name' => 'Formula C Draft']);
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('<title>Formula B · Batch production sheet', false)
+        ->assertDontSee('Formula C Draft')
+        ->assertSee('Coconut Oil')
+        ->assertDontSee('Olive Oil');
+
+    $csvResponse = $this->actingAs($user)
+        ->get(route('recipes.export.csv', ['recipe' => $recipe->id]))
+        ->assertSuccessful();
+
+    expect($csvResponse->streamedContent())
+        ->toContain('Coconut Oil')
+        ->not->toContain('Olive Oil');
+});
+
+it('rejects cross-recipe and inaccessible formula versions in sheet outputs', function (string $routeName) {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    [, , $otherAccessibleRecipeVersion] = createRecipeWithTwoDistinctSavedVersions($user);
+    [, , $inaccessibleRecipeVersion] = createRecipeWithTwoDistinctSavedVersions();
+
+    foreach ([$otherAccessibleRecipeVersion, $inaccessibleRecipeVersion] as $otherRecipeVersion) {
+        $this->actingAs($user)
+            ->get(route($routeName, [
+                'recipe' => $recipe->id,
+                'version' => $otherRecipeVersion->id,
+            ]))
+            ->assertNotFound();
+    }
+})->with([
+    'production sheet' => 'recipes.print.production',
+    'technical sheet' => 'recipes.print.technical',
+    'costing sheet' => 'recipes.print.costing',
+    'Excel export' => 'recipes.export.xlsx',
+    'CSV export' => 'recipes.export.csv',
+]);
+
+it('rejects the mutable draft when requested from a saved formula output', function (string $routeName) {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    $draft = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $this->actingAs($user)
+        ->get(route($routeName, [
+            'recipe' => $recipe->id,
+            'version' => $draft->id,
+        ]))
+        ->assertNotFound();
+})->with([
+    'production sheet' => 'recipes.print.production',
+    'technical sheet' => 'recipes.print.technical',
+    'costing sheet' => 'recipes.print.costing',
+    'Excel export' => 'recipes.export.xlsx',
+    'CSV export' => 'recipes.export.csv',
+]);
+
+it('rejects the mutable draft from legacy saved formula output routes', function (string $routeName) {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    $draft = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $this->actingAs($user)
+        ->get(route($routeName, [
+            'recipe' => $recipe->id,
+            'version' => $draft->id,
+        ]))
+        ->assertNotFound();
+})->with([
+    'production sheet' => 'recipes.legacy.print.recipe',
+    'details sheet' => 'recipes.legacy.print.details',
+]);
 
 it('duplicates a recipe into a new draft recipe', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
@@ -504,6 +873,25 @@ it('redirects signed-out users before restoring a saved snapshot', function () {
         ->assertRedirect(route('login'));
 });
 
+it('rejects the current draft before invoking the legacy saved backup restore service', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $draft = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $this->mock(RecipeWorkbenchService::class, function ($mock): void {
+        $mock->shouldNotReceive('restorePublishedFormula');
+    });
+
+    $this->actingAs($user)
+        ->post(route('recipes.saved.restore', [
+            'recipe' => $recipe->id,
+            'version' => $draft->id,
+        ]))
+        ->assertNotFound();
+});
+
 it('preserves the current draft when restoring an older saved snapshot', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -603,6 +991,13 @@ it('asks for confirmation before replacing the draft with an older recovery snap
     expect($currentDraft->name)->toBe('Experimental Draft');
 
     $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe->id))
+        ->assertSuccessful()
+        ->assertSee('Replace the current formula?')
+        ->assertSee('name="confirm_replace_current" value="1"', false)
+        ->assertSee('action="'.route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false);
+
+    $this->actingAs($user)
         ->post(route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]), [
             'confirm_replace_current' => '1',
         ])
@@ -679,6 +1074,67 @@ function createSavedRecipeVersion(): array
         ->firstOrFail();
 
     return [$user, $recipe, $publishedVersion];
+}
+
+/**
+ * @return array{0: User, 1: Recipe, 2: RecipeVersion}
+ */
+function createRecipeWithTwoDistinctSavedVersions(?User $user = null): array
+{
+    $user ??= User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap-'.fake()->unique()->slug(),
+        'name' => 'Soap',
+    ]);
+    $oliveOil = makeSavedRecipeIngredient();
+    $coconutOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA OIL',
+        'soap_inci_naoh_name' => 'SODIUM COCOATE',
+        'soap_inci_koh_name' => 'POTASSIUM COCOATE',
+        'is_potentially_saponifiable' => true,
+        'is_active' => true,
+    ]);
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $coconutOil->id,
+        'koh_sap_value' => 0.257,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($oliveOil, 'Formula A'));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($oliveOil, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($coconutOil, 'Formula B'), $recipe);
+
+    $formulaA = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->where('name', 'Formula A')
+        ->firstOrFail();
+
+    return [$user, $recipe, $formulaA];
+}
+
+function recipeWorkbookXml(string $content): string
+{
+    $path = tempnam(sys_get_temp_dir(), 'koskalk-version-export-test-');
+    file_put_contents($path, $content);
+
+    $zip = new ZipArchive;
+
+    expect($zip->open($path))->toBeTrue();
+
+    $xml = collect(range(1, 6))
+        ->map(fn (int $index): string => (string) $zip->getFromName("xl/worksheets/sheet{$index}.xml"))
+        ->implode("\n");
+
+    $zip->close();
+    unlink($path);
+
+    return $xml;
 }
 
 function makeSavedRecipeIngredient(): Ingredient

@@ -594,11 +594,16 @@ it('shows record production controls on the saved formula page', function (): vo
 });
 
 it('shows record production controls on the legacy saved version page', function (): void {
-    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
-    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    [$user, $recipe, , $ingredient] = productionSnapshotSoapRecipe();
+    $savedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->orderByDesc('version_number')
+        ->firstOrFail();
+    productionSnapshotAttachCosting($user, $savedVersion, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
 
     $this->actingAs($user)
-        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $version->id]))
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $savedVersion->id]))
         ->assertSuccessful()
         ->assertSee('Record production')
         ->assertSee('Production batch number')

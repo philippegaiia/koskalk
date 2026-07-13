@@ -30,19 +30,19 @@
         @livewireStyles
         @stack('head')
     </head>
-    <body class="min-h-screen bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
+    <body class="min-h-dvh bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
         @php($appShellUser = auth()->user())
 
         <div
             data-app-shell
             data-sidebar-open="true"
-            class="relative min-h-screen lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] transition-[grid-template-columns] duration-300 lg:transition-none"
+            class="relative min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-stretch transition-[grid-template-columns] duration-300 lg:transition-none"
         >
             <div data-sidebar-overlay data-sidebar-close class="fixed inset-0 z-40 hidden bg-black/35 lg:hidden"></div>
 
             <aside
                 data-sidebar
-                class="sk-sidebar fixed inset-y-0 left-0 z-50 w-72 overflow-hidden bg-[var(--color-sidebar)] px-5 py-6 text-[var(--color-ink-sidebar)] transition-all duration-300 lg:static lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:opacity-100 lg:transition-none"
+                class="sk-sidebar fixed inset-y-0 left-0 z-50 w-72 overflow-x-hidden overflow-y-auto bg-[var(--color-sidebar)] px-5 py-6 text-[var(--color-ink-sidebar)] transition-all duration-300 lg:sticky lg:top-0 lg:h-dvh lg:self-start lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:opacity-100 lg:transition-none"
             >
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
@@ -99,7 +99,7 @@
 
             </aside>
 
-            <div class="flex min-h-screen min-w-0 flex-col">
+            <div class="flex min-h-dvh min-w-0 flex-col">
                 <header class="bg-[color:oklch(from_var(--color-panel)_l_c_h_/_0.90)] px-6 py-4 backdrop-blur lg:px-8">
                     <div class="flex items-center justify-between gap-4">
                         <div class="flex items-center gap-3">

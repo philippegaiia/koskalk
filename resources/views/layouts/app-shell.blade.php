@@ -42,7 +42,7 @@
 
             <aside
                 data-sidebar
-                class="sk-sidebar fixed inset-y-0 left-0 z-50 w-72 overflow-hidden bg-[var(--color-sidebar)] px-5 py-6 text-[var(--color-ink-sidebar)] transition-all duration-300 lg:sticky lg:top-0 lg:h-dvh lg:self-start lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:opacity-100 lg:transition-none"
+                class="sk-sidebar fixed inset-y-0 left-0 z-50 w-72 overflow-x-hidden overflow-y-auto bg-[var(--color-sidebar)] px-5 py-6 text-[var(--color-ink-sidebar)] transition-all duration-300 lg:sticky lg:top-0 lg:h-dvh lg:self-start lg:z-auto lg:w-[17rem] lg:translate-x-0 lg:opacity-100 lg:transition-none"
             >
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">

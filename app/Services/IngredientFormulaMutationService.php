@@ -15,6 +15,7 @@ use App\OwnerType;
 use App\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -79,8 +80,16 @@ class IngredientFormulaMutationService
     /** @return EloquentCollection<int, Ingredient> */
     public function replacementCandidates(User $user, Ingredient $ingredient): EloquentCollection
     {
+        $translationLocales = Ingredient::translationLocaleCandidates();
+        $relations = ['sapProfile'];
+
+        if ($translationLocales !== []) {
+            $relations['translations'] = fn (Builder|Relation $query): Builder|Relation => $query
+                ->whereIn('locale', $translationLocales);
+        }
+
         $query = Ingredient::query()
-            ->with('sapProfile')
+            ->with($relations)
             ->whereKeyNot($ingredient->id)
             ->where('is_active', true)
             ->accessibleTo($user);

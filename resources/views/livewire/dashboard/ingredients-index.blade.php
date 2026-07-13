@@ -1,4 +1,16 @@
-<div class="mx-auto w-full max-w-7xl space-y-6">
+<div
+    class="mx-auto w-full max-w-7xl space-y-6"
+    x-on:ingredient-removal-closed.window="$nextTick(() => (document.getElementById($event.detail.triggerId) ?? document.getElementById('ingredient-catalog-heading'))?.focus())"
+>
+    @if ($statusMessage)
+        <div
+            role="{{ $statusType === 'error' ? 'alert' : 'status' }}"
+            class="{{ $statusType === 'error' ? 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' }} rounded-xl border px-5 py-3 text-sm"
+        >
+            {{ $statusMessage }}
+        </div>
+    @endif
+
     <section class="sk-card p-5 sm:p-6">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">
@@ -29,7 +41,7 @@
             <div class="flex flex-col gap-4 border-b border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <p class="text-sm font-medium text-[var(--color-ink-strong)]">Ingredient catalog</p>
+                        <p id="ingredient-catalog-heading" tabindex="-1" class="text-sm font-medium text-[var(--color-ink-strong)] focus:outline-none">Ingredient catalog</p>
                         <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Price platform ingredients for costing, or create private ingredients that only you can edit.</p>
                     </div>
 
@@ -108,13 +120,12 @@
                                     $imageUrl = $this->catalogImageUrl($ingredient);
                                     $displayName = $ingredient->localizedDisplayName();
                                     $isMine = $ingredient->owner_type === \App\OwnerType::User && $ingredient->owner_id === $currentUser->id;
-                                    $cannotDelete = $isMine && ((int) $ingredient->costing_items_count > 0 || (int) $ingredient->recipe_items_count > 0);
                                     $formulaUsage = $formulaUsageByIngredient[$ingredient->id] ?? [];
                                     $formulaUsageCount = count($formulaUsage);
                                     $hasFormulaUsage = $isMine && $formulaUsageCount > 0;
                                     $usageDisclosureId = 'ingredient-usage-'.$ingredient->id;
                                 @endphp
-                                <tr wire:key="ingredient-{{ $ingredient->id }}" @if ($cannotDelete) data-cannot-delete="{{ $ingredient->id }}" @endif>
+                                <tr wire:key="ingredient-{{ $ingredient->id }}">
                                     <td>
                                         @if ($imageUrl)
                                             <img src="{{ $imageUrl }}" alt="" class="size-13 rounded-lg object-cover" />
@@ -171,40 +182,54 @@
                                                 </a>
                                                 @if ($hasFormulaUsage)
                                                     <div class="flex flex-col items-end">
-                                                        <button
-                                                            type="button"
-                                                            wire:click="toggleUsage({{ $ingredient->id }})"
-                                                            aria-expanded="{{ $expandedUsageIngredientId === $ingredient->id ? 'true' : 'false' }}"
-                                                            aria-controls="{{ $usageDisclosureId }}"
-                                                            class="inline-flex min-h-9 items-center justify-center rounded-lg px-2.5 text-xs font-medium text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2"
-                                                        >
-                                                            Used in {{ $formulaUsageCount }} {{ \Illuminate\Support\Str::plural('formula', $formulaUsageCount) }}
-                                                        </button>
+                                                        <div class="flex items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                wire:click="toggleUsage({{ $ingredient->id }})"
+                                                                aria-expanded="{{ $expandedUsageIngredientId === $ingredient->id ? 'true' : 'false' }}"
+                                                                aria-controls="{{ $usageDisclosureId }}"
+                                                                class="inline-flex min-h-9 items-center justify-center rounded-lg px-2.5 text-xs font-medium text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                                                            >
+                                                                Used in {{ $formulaUsageCount }} {{ \Illuminate\Support\Str::plural('formula', $formulaUsageCount) }}
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                id="ingredient-delete-trigger-{{ $ingredient->id }}"
+                                                                wire:click="confirmDelete({{ $ingredient->id }})"
+                                                                wire:loading.attr="disabled"
+                                                                wire:target="confirmDelete({{ $ingredient->id }})"
+                                                                class="grid size-9 place-items-center rounded-lg text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50"
+                                                                aria-label="Manage removal of {{ $displayName }}"
+                                                                title="Manage removal"
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                                </svg>
+                                                            </button>
+                                                        </div>
 
-                                                        <div id="{{ $usageDisclosureId }}" @if ($expandedUsageIngredientId !== $ingredient->id) hidden @endif class="mt-2 w-72 rounded-xl border border-[var(--color-line)] bg-white p-3 text-left shadow-sm">
+                                                        <div id="{{ $usageDisclosureId }}" @if ($expandedUsageIngredientId !== $ingredient->id) hidden @endif class="mt-2 w-72 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-3 text-left shadow-sm">
                                                             <ul class="space-y-2">
                                                                 @foreach ($formulaUsage as $usage)
                                                                     <li>
                                                                         <a href="{{ $usage['url'] }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
                                                                             {{ $usage['name'] }}
                                                                         </a>
-                                                                        @if ($usage['version_count'] > 0)
-                                                                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $usage['version_count'] }} saved {{ \Illuminate\Support\Str::plural('backup', $usage['version_count']) }}</p>
-                                                                        @endif
                                                                     </li>
                                                                 @endforeach
                                                             </ul>
-                                                            <p class="mt-3 border-t border-[var(--color-line)] pt-3 text-xs leading-5 text-[var(--color-ink-soft)]">Deletion is protected while recoverable formula records use it.</p>
                                                         </div>
                                                     </div>
                                                 @else
                                                     <button
                                                         type="button"
+                                                        id="ingredient-delete-trigger-{{ $ingredient->id }}"
                                                         wire:click="confirmDelete({{ $ingredient->id }})"
-                                                        @disabled($cannotDelete)
-                                                        class="grid size-9 place-items-center rounded-lg text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="confirmDelete({{ $ingredient->id }})"
+                                                        class="grid size-9 place-items-center rounded-lg text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50"
                                                         aria-label="Delete {{ $displayName }}"
-                                                        title="{{ $cannotDelete ? 'This ingredient is already used.' : 'Delete' }}"
+                                                        title="Delete"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                                             <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
@@ -212,7 +237,7 @@
                                                     </button>
                                                 @endif
                                             @else
-                                                <span class="text-xs text-[var(--color-ink-soft)]">Reference</span>
+                                                <span class="text-sm text-[var(--color-ink-soft)]" aria-label="Not applicable">&mdash;</span>
                                             @endif
                                         </div>
                                     </td>
@@ -240,17 +265,144 @@
             @endif
         </section>
 
-        @if ($pendingDeleteIngredient)
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" x-data @click.self="$wire.cancelDelete()" role="dialog" aria-modal="true" aria-labelledby="ingredient-delete-heading">
-                <div class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-                    <h3 id="ingredient-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete "{{ $pendingDeleteIngredient->localizedDisplayName() }}"?</h3>
-                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">This removes the ingredient from your private catalog.</p>
+        @if ($pendingDeleteIngredient && $pendingDeleteImpact)
+            @php
+                $usedFormulaCount = $pendingDeleteImpact['formula_count'];
+                $hasBlockedFormulas = $pendingDeleteImpact['blocked_recipes']->isNotEmpty() || $pendingDeleteImpact['inaccessible_blocked_count'] > 0;
+                $hasReplacementCandidates = $replacementCandidates->isNotEmpty();
+                $isCarrierOil = $pendingDeleteIngredient->category === \App\IngredientCategory::CarrierOil;
+            @endphp
+            <div
+                class="fixed inset-0 z-50 flex items-center justify-center bg-[color:oklch(20.3%_0.026_149_/_0.46)] p-4"
+                x-data
+                x-init="$nextTick(() => $refs.initialFocus?.focus())"
+                wire:loading.attr="data-mutating"
+                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
+                @click.self="if (! $el.hasAttribute('data-mutating')) $wire.cancelDelete()"
+                @keydown.escape.window="if (! $el.hasAttribute('data-mutating')) $wire.cancelDelete()"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="ingredient-delete-heading"
+                aria-describedby="ingredient-delete-description"
+            >
+                @if ($usedFormulaCount === 0)
+                    <div x-trap.noscroll="true" class="w-full max-w-md rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-6 shadow-xl">
+                        <h3 id="ingredient-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete "{{ $pendingDeleteIngredient->localizedDisplayName() }}"?</h3>
+                        <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">This removes the ingredient from your private catalog.</p>
 
-                    <div class="mt-6 flex justify-end gap-3">
-                        <button type="button" wire:click="cancelDelete" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)]">Cancel</button>
-                        <button type="button" wire:click="deleteIngredient({{ $pendingDeleteIngredient->id }})" class="rounded-full bg-[var(--color-danger-strong)] px-4 py-2 text-sm font-medium text-white">Delete</button>
+                        @error('ingredient')
+                            <p role="alert" class="mt-4 rounded-lg bg-[var(--color-danger-soft)] px-3 py-2 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+                        @enderror
+
+                        <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                            <button x-ref="initialFocus" type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="min-h-11 rounded-lg border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50">Cancel</button>
+                            <button type="button" wire:click="deleteIngredient" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="min-h-11 rounded-lg bg-[var(--color-danger-strong)] px-4 py-2 text-sm font-medium text-[var(--color-cream)] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)] disabled:cursor-wait disabled:opacity-50">Delete</button>
+                        </div>
                     </div>
-                </div>
+                @else
+                    <div x-trap.noscroll="true" class="max-h-[calc(100dvh-2rem)] w-full max-w-2xl overflow-y-auto rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-5 shadow-xl sm:p-6">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="sk-eyebrow">Ingredient removal</p>
+                                <h3 id="ingredient-delete-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Manage {{ $pendingDeleteIngredient->localizedDisplayName() }}</h3>
+                                <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                                    Used in {{ $usedFormulaCount }} {{ \Illuminate\Support\Str::plural('formula', $usedFormulaCount) }}. Choose how those formulas should change before this ingredient is deleted.
+                                </p>
+                            </div>
+                            <button x-ref="initialFocus" type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="grid size-10 shrink-0 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50" aria-label="Close ingredient removal dialog">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        @if ($hasBlockedFormulas)
+                            <div class="mt-5 rounded-xl border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] p-4 text-sm text-[var(--color-warning-strong)]">
+                                <p class="font-semibold">Automatic changes are unavailable.</p>
+                                <p class="mt-1 leading-6">Edit these formulas manually before deleting this ingredient.</p>
+                                @if ($pendingDeleteImpact['blocked_recipes']->isNotEmpty())
+                                    <ul class="mt-3 space-y-1.5">
+                                        @foreach ($pendingDeleteImpact['blocked_recipes'] as $blockedRecipe)
+                                            <li>
+                                                <a href="{{ route('recipes.edit', $blockedRecipe) }}" wire:navigate class="font-medium underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ $blockedRecipe->name }}</a>
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if ($pendingDeleteImpact['inaccessible_blocked_count'] > 0)
+                                    <p class="mt-3">{{ trans_choice(':count additional formula cannot be edited.', $pendingDeleteImpact['inaccessible_blocked_count'], ['count' => $pendingDeleteImpact['inaccessible_blocked_count']]) }}</p>
+                                @endif
+                            </div>
+                        @endif
+
+                        @error('ingredient')
+                            <p role="alert" class="mt-5 rounded-lg bg-[var(--color-danger-soft)] px-3 py-2 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+                        @enderror
+
+                        <div class="mt-6 border-t border-[var(--color-line)] pt-5">
+                            <label for="replacement-ingredient" class="text-sm font-semibold text-[var(--color-ink-strong)]">Replacement ingredient</label>
+                            <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">Percentages, weights, phases, and notes stay unchanged.</p>
+                            <label class="mt-3 block">
+                                <span class="sr-only">Search replacement ingredients</span>
+                                <input
+                                    type="search"
+                                    wire:model.live.debounce.250ms="replacementSearch"
+                                    wire:loading.attr="disabled"
+                                    wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
+                                    class="sk-input"
+                                    placeholder="Search by name, INCI, or category"
+                                    aria-label="Search replacement ingredients"
+                                    @disabled($hasBlockedFormulas)
+                                />
+                            </label>
+                            <select id="replacement-ingredient" wire:model.number="replacementIngredientId" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="sk-select-control mt-3 w-full" @disabled($hasBlockedFormulas || ! $hasReplacementCandidates)>
+                                <option value="">Choose a compatible ingredient</option>
+                                @foreach ($replacementCandidates as $replacementCandidate)
+                                    <option value="{{ $replacementCandidate->id }}">{{ $replacementCandidate->localizedDisplayName() }} ({{ $replacementCandidate->category?->getLabel() }})</option>
+                                @endforeach
+                            </select>
+                            @error('replacementIngredientId')
+                                <p role="alert" class="mt-2 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                            @enderror
+                            @if (! $hasReplacementCandidates)
+                                <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ $replacementSearch === '' ? 'No compatible replacement is currently available.' : 'No compatible replacement matches your search.' }}</p>
+                            @endif
+
+                            <button
+                                type="button"
+                                wire:click="replaceEverywhereAndDelete"
+                                wire:loading.attr="disabled"
+                                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
+                                @disabled($hasBlockedFormulas || ! $hasReplacementCandidates)
+                                class="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--color-cream)] hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                            >
+                                Replace everywhere and delete
+                            </button>
+                        </div>
+
+                        <div class="mt-6 border-t border-[var(--color-line)] pt-5">
+                            <p class="text-sm font-semibold text-[var(--color-ink-strong)]">Remove without replacement</p>
+                            <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">This is permanent. Formula totals may become incomplete and will need manual review.</p>
+                            @if ($isCarrierOil)
+                                <p class="mt-2 rounded-lg bg-[var(--color-warning-soft)] px-3 py-2 text-xs leading-5 text-[var(--color-warning-strong)]">Soap calculations may change or become invalid when a carrier oil is removed.</p>
+                            @endif
+                            <button
+                                type="button"
+                                wire:click="removeEverywhereAndDelete"
+                                wire:loading.attr="disabled"
+                                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
+                                @disabled($hasBlockedFormulas)
+                                class="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--color-danger-strong)] px-4 py-2.5 text-sm font-semibold text-[var(--color-cream)] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
+                            >
+                                Remove everywhere and delete
+                            </button>
+                        </div>
+
+                        <div class="mt-6 flex justify-end border-t border-[var(--color-line)] pt-4">
+                            <button type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="min-h-11 rounded-lg border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50">Cancel</button>
+                        </div>
+                    </div>
+                @endif
             </div>
         @endif
     @endif

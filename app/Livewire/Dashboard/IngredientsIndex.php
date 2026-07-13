@@ -7,14 +7,17 @@ use App\Models\User;
 use App\OwnerType;
 use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
+use App\Services\IngredientFormulaMutationService;
 use App\Services\IngredientFormulaUsageService;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientPriceMemory;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithoutUrlPagination;
@@ -46,7 +49,16 @@ class IngredientsIndex extends Component
 
     public int $perPage = 25;
 
+    #[Locked]
     public ?int $pendingDeleteId = null;
+
+    public ?int $replacementIngredientId = null;
+
+    public string $replacementSearch = '';
+
+    public ?string $statusMessage = null;
+
+    public string $statusType = 'success';
 
     public ?int $expandedUsageIngredientId = null;
 
@@ -79,6 +91,7 @@ class IngredientsIndex extends Component
 
     public function render(
         EntitlementService $entitlementService,
+        IngredientFormulaMutationService $ingredientFormulaMutationService,
         IngredientFormulaUsageService $ingredientFormulaUsageService,
     ): View {
         $currentUser = $this->currentUser();
@@ -94,6 +107,18 @@ class IngredientsIndex extends Component
         $formulaUsageByIngredient = $currentUser instanceof User
             ? $ingredientFormulaUsageService->forIngredients($currentUser, $privateIngredients)
             : [];
+        $pendingDeleteIngredient = $currentUser instanceof User
+            ? $this->pendingOwnedIngredient($currentUser)
+            : null;
+        $pendingDeleteImpact = $pendingDeleteIngredient instanceof Ingredient
+            ? $ingredientFormulaMutationService->impact($currentUser, $pendingDeleteIngredient)
+            : null;
+        $replacementCandidates = $pendingDeleteIngredient instanceof Ingredient
+            && $pendingDeleteImpact['formula_count'] > 0
+            ? $this->filteredReplacementCandidates(
+                $ingredientFormulaMutationService->replacementCandidates($currentUser, $pendingDeleteIngredient),
+            )
+            : collect();
 
         return view('livewire.dashboard.ingredients-index', [
             'currentUser' => $currentUser,
@@ -101,9 +126,9 @@ class IngredientsIndex extends Component
             'privateIngredientUsage' => $privateIngredientUsage,
             'formulaUsageByIngredient' => $formulaUsageByIngredient,
             'priceLabel' => $this->priceColumnLabel('Price/kg'),
-            'pendingDeleteIngredient' => $this->pendingDeleteId === null
-                ? null
-                : $ingredients->getCollection()->firstWhere('id', $this->pendingDeleteId),
+            'pendingDeleteIngredient' => $pendingDeleteIngredient,
+            'pendingDeleteImpact' => $pendingDeleteImpact,
+            'replacementCandidates' => $replacementCandidates,
         ]);
     }
 
@@ -180,12 +205,27 @@ class IngredientsIndex extends Component
 
     public function confirmDelete(int $id): void
     {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User || ! $this->ownedIngredient($id, $user) instanceof Ingredient) {
+            $this->cancelDelete();
+
+            return;
+        }
+
+        $this->resetErrorBag();
+        $this->replacementIngredientId = null;
+        $this->replacementSearch = '';
         $this->pendingDeleteId = $id;
     }
 
     public function cancelDelete(): void
     {
+        $this->restoreFocusToPendingTrigger();
         $this->pendingDeleteId = null;
+        $this->replacementIngredientId = null;
+        $this->replacementSearch = '';
+        $this->resetErrorBag();
     }
 
     public function toggleUsage(int $ingredientId): void
@@ -195,7 +235,7 @@ class IngredientsIndex extends Component
             : $ingredientId;
     }
 
-    public function deleteIngredient(int $id): void
+    public function deleteIngredient(IngredientFormulaMutationService $ingredientFormulaMutationService): void
     {
         $user = $this->currentUser();
 
@@ -203,38 +243,100 @@ class IngredientsIndex extends Component
             return;
         }
 
-        $ingredient = $this->ownedIngredient($id, $user);
+        $ingredient = $this->pendingOwnedIngredient($user);
 
         if (! $ingredient instanceof Ingredient) {
+            $this->closeMissingPendingIngredient();
+
             return;
         }
 
-        $this->deleteIngredientRecord($ingredient);
-        $this->pendingDeleteId = null;
-        $this->expandedUsageIngredientId = null;
+        if ($ingredientFormulaMutationService->impact($user, $ingredient)['formula_count'] > 0) {
+            $this->addError('ingredient', 'Choose how to update the formulas that use this ingredient.');
+
+            return;
+        }
+
+        try {
+            $ingredientName = $ingredient->localizedDisplayName();
+            $ingredientFormulaMutationService->removeEverywhereAndDelete($user, $ingredient);
+        } catch (ValidationException $exception) {
+            $this->surfaceMutationErrors($exception);
+
+            return;
+        }
+
+        $this->finishMutation($ingredientName.' was deleted.');
     }
 
-    public function deleteIngredientRecord(Ingredient $ingredient): bool
+    public function replaceEverywhereAndDelete(IngredientFormulaMutationService $ingredientFormulaMutationService): void
     {
         $user = $this->currentUser();
 
-        if (! $user instanceof User || ! $ingredient->isOwnedBy($user)) {
-            return false;
+        if (! $user instanceof User) {
+            return;
         }
 
-        if ((int) ($ingredient->costing_items_count ?? $ingredient->costingItems()->count()) > 0) {
-            return false;
+        $ingredient = $this->pendingOwnedIngredient($user);
+
+        if (! $ingredient instanceof Ingredient) {
+            $this->closeMissingPendingIngredient();
+
+            return;
         }
 
-        if ((int) ($ingredient->recipe_items_count ?? $ingredient->recipeItems()->count()) > 0) {
-            return false;
+        if ($this->replacementIngredientId === null) {
+            $this->addError('replacementIngredientId', 'Choose a replacement ingredient.');
+
+            return;
         }
 
-        MediaStorage::deletePublicPath($ingredient->featured_image_path);
-        MediaStorage::deletePublicPath($ingredient->icon_image_path);
-        $ingredient->delete();
+        $replacement = Ingredient::query()->find($this->replacementIngredientId);
 
-        return true;
+        if (! $replacement instanceof Ingredient) {
+            $this->addError('replacementIngredientId', 'The selected replacement ingredient is no longer available.');
+
+            return;
+        }
+
+        try {
+            $ingredientName = $ingredient->localizedDisplayName();
+            $ingredientFormulaMutationService->replaceEverywhereAndDelete($user, $ingredient, $replacement);
+        } catch (ValidationException $exception) {
+            $this->surfaceMutationErrors($exception);
+
+            return;
+        }
+
+        $this->finishMutation($ingredientName.' was replaced everywhere and deleted.');
+    }
+
+    public function removeEverywhereAndDelete(IngredientFormulaMutationService $ingredientFormulaMutationService): void
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $ingredient = $this->pendingOwnedIngredient($user);
+
+        if (! $ingredient instanceof Ingredient) {
+            $this->closeMissingPendingIngredient();
+
+            return;
+        }
+
+        try {
+            $ingredientName = $ingredient->localizedDisplayName();
+            $ingredientFormulaMutationService->removeEverywhereAndDelete($user, $ingredient);
+        } catch (ValidationException $exception) {
+            $this->surfaceMutationErrors($exception);
+
+            return;
+        }
+
+        $this->finishMutation($ingredientName.' was removed everywhere and deleted.');
     }
 
     public function catalogImageUrl(Ingredient $ingredient): ?string
@@ -313,6 +415,97 @@ class IngredientsIndex extends Component
             ->where('owner_type', OwnerType::User->value)
             ->where('owner_id', $user->id)
             ->find($id);
+    }
+
+    private function pendingOwnedIngredient(User $user): ?Ingredient
+    {
+        if ($this->pendingDeleteId === null) {
+            return null;
+        }
+
+        return $this->ownedIngredient($this->pendingDeleteId, $user);
+    }
+
+    private function finishMutation(string $statusMessage): void
+    {
+        $this->restoreFocusToPendingTrigger();
+        $this->statusMessage = $statusMessage;
+        $this->statusType = 'success';
+        $this->pendingDeleteId = null;
+        $this->replacementIngredientId = null;
+        $this->replacementSearch = '';
+        $this->expandedUsageIngredientId = null;
+        $this->resetErrorBag();
+        $this->resetPage();
+    }
+
+    private function closeMissingPendingIngredient(): void
+    {
+        $this->restoreFocusToPendingTrigger();
+        $this->statusMessage = 'The ingredient is no longer available in your private catalog.';
+        $this->statusType = 'error';
+        $this->pendingDeleteId = null;
+        $this->replacementIngredientId = null;
+        $this->replacementSearch = '';
+        $this->expandedUsageIngredientId = null;
+        $this->resetErrorBag();
+    }
+
+    private function restoreFocusToPendingTrigger(): void
+    {
+        if ($this->pendingDeleteId === null) {
+            return;
+        }
+
+        $this->dispatch(
+            'ingredient-removal-closed',
+            triggerId: 'ingredient-delete-trigger-'.$this->pendingDeleteId,
+        );
+    }
+
+    /**
+     * @param  EloquentCollection<int, Ingredient>  $candidates
+     * @return EloquentCollection<int, Ingredient>
+     */
+    private function filteredReplacementCandidates(EloquentCollection $candidates): EloquentCollection
+    {
+        $search = mb_strtolower(trim($this->replacementSearch));
+        $filteredCandidates = $search === ''
+            ? $candidates
+            : $candidates
+                ->filter(function (Ingredient $candidate) use ($search): bool {
+                    $searchableText = implode(' ', [
+                        $candidate->localizedDisplayName(),
+                        $candidate->inci_name,
+                        (string) $candidate->category?->getLabel(),
+                    ]);
+
+                    return str_contains(mb_strtolower($searchableText), $search);
+                })
+                ->values();
+
+        if ($this->replacementIngredientId === null) {
+            return $filteredCandidates;
+        }
+
+        $selectedCandidate = $candidates->firstWhere('id', $this->replacementIngredientId);
+
+        if ($selectedCandidate instanceof Ingredient && ! $filteredCandidates->contains('id', $selectedCandidate->id)) {
+            $filteredCandidates->push($selectedCandidate);
+        }
+
+        return $filteredCandidates;
+    }
+
+    private function surfaceMutationErrors(ValidationException $exception): void
+    {
+        $this->resetErrorBag();
+
+        foreach ($exception->errors() as $field => $messages) {
+            foreach ($messages as $message) {
+                $this->addError($field, $message);
+            }
+        }
     }
 
     private function currentUser(): ?User

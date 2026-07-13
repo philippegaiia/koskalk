@@ -3,12 +3,14 @@
 use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\IngredientTranslation;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\UserIngredientPrice;
 use App\Models\Workspace;
@@ -169,6 +171,45 @@ it('allows replacements across the aromatic category family', function (): void 
 
     expect($candidateIds)->toContain($essentialOil->id, $fragranceOil->id, $co2Extract->id)
         ->not->toContain($source->id, $clay->id);
+});
+
+it('loads localized replacement names without candidate-count query growth', function (): void {
+    app()->setLocale('fr');
+    SupportedLocale::factory()->create(['code' => 'fr']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::EssentialOil, 'Original Lavender');
+    $translatedNames = collect(range(1, 5))->map(function (int $number): string {
+        $ingredient = Ingredient::factory()->create([
+            'category' => IngredientCategory::FragranceOil,
+            'display_name' => 'Fragrance '.$number,
+        ]);
+        $translatedName = 'Parfum '.$number;
+
+        IngredientTranslation::factory()
+            ->for($ingredient)
+            ->create([
+                'locale' => 'fr',
+                'display_name' => $translatedName,
+            ]);
+
+        return $translatedName;
+    });
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $candidates = app(IngredientFormulaMutationService::class)->replacementCandidates($user, $source);
+    $queriesAfterCandidateFetch = count(DB::getQueryLog());
+    $localizedNames = $candidates->map->localizedDisplayName();
+    $queriesAfterRenderingNames = count(DB::getQueryLog());
+
+    DB::disableQueryLog();
+
+    expect($candidates)->toHaveCount(5)
+        ->and($candidates->every(fn (Ingredient $candidate): bool => $candidate->relationLoaded('translations')))->toBeTrue()
+        ->and($localizedNames->all())->toEqualCanonicalizing($translatedNames->all())
+        ->and($queriesAfterRenderingNames)->toBe($queriesAfterCandidateFetch);
 });
 
 it('restricts ordinary replacements to the same category', function (): void {

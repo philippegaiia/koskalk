@@ -56,7 +56,7 @@
                             @if ($privateIngredientUsage['limit'] === null)
                                 {{ $privateIngredientUsage['used'] }} private {{ \Illuminate\Support\Str::plural('ingredient', $privateIngredientUsage['used']) }}
                             @else
-                                {{ $privateIngredientUsage['used'] }} of {{ $privateIngredientUsage['limit'] }} private ingredients
+                                {{ $privateIngredientUsage['used'] }} of {{ $privateIngredientUsage['limit'] }} private {{ \Illuminate\Support\Str::plural('ingredient', $privateIngredientUsage['limit']) }}
                             @endif
                         </p>
                     </div>
@@ -181,23 +181,21 @@
                                                             Used in {{ $formulaUsageCount }} {{ \Illuminate\Support\Str::plural('formula', $formulaUsageCount) }}
                                                         </button>
 
-                                                        @if ($expandedUsageIngredientId === $ingredient->id)
-                                                            <div id="{{ $usageDisclosureId }}" class="mt-2 w-72 rounded-xl border border-[var(--color-line)] bg-white p-3 text-left shadow-sm">
-                                                                <ul class="space-y-2">
-                                                                    @foreach ($formulaUsage as $usage)
-                                                                        <li>
-                                                                            <a href="{{ route('recipes.edit', $usage['recipe_id']) }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
-                                                                                {{ $usage['name'] }}
-                                                                            </a>
-                                                                            @if ($usage['version_count'] > 1)
-                                                                                <p class="text-xs text-[var(--color-ink-soft)]">{{ $usage['version_count'] }} saved versions</p>
-                                                                            @endif
-                                                                        </li>
-                                                                    @endforeach
-                                                                </ul>
-                                                                <p class="mt-3 border-t border-[var(--color-line)] pt-3 text-xs leading-5 text-[var(--color-ink-soft)]">Deletion is protected while recoverable formula records use it.</p>
-                                                            </div>
-                                                        @endif
+                                                        <div id="{{ $usageDisclosureId }}" @if ($expandedUsageIngredientId !== $ingredient->id) hidden @endif class="mt-2 w-72 rounded-xl border border-[var(--color-line)] bg-white p-3 text-left shadow-sm">
+                                                            <ul class="space-y-2">
+                                                                @foreach ($formulaUsage as $usage)
+                                                                    <li>
+                                                                        <a href="{{ $usage['url'] }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
+                                                                            {{ $usage['name'] }}
+                                                                        </a>
+                                                                        @if ($usage['version_count'] > 1)
+                                                                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $usage['version_count'] }} saved versions</p>
+                                                                        @endif
+                                                                    </li>
+                                                                @endforeach
+                                                            </ul>
+                                                            <p class="mt-3 border-t border-[var(--color-line)] pt-3 text-xs leading-5 text-[var(--color-ink-soft)]">Deletion is protected while recoverable formula records use it.</p>
+                                                        </div>
                                                     </div>
                                                 @else
                                                     <button

@@ -61,13 +61,20 @@ class IngredientsIndex extends Component
 
     public function updatingSearch(): void
     {
+        $this->expandedUsageIngredientId = null;
         $this->resetPage();
     }
 
     public function updatedPerPage(): void
     {
+        $this->expandedUsageIngredientId = null;
         $this->perPage = $this->normalizedPerPage();
         $this->resetPage();
+    }
+
+    public function updatingPaginators(mixed $page, string $pageName): void
+    {
+        $this->expandedUsageIngredientId = null;
     }
 
     public function render(
@@ -77,10 +84,15 @@ class IngredientsIndex extends Component
         $currentUser = $this->currentUser();
         $ingredients = $this->ingredients($currentUser);
         $privateIngredientUsage = $currentUser instanceof User
-            ? $entitlementService->usageFor($currentUser)['private_ingredients']
-            : ['used' => 0, 'limit' => null, 'remaining' => null, 'allowed' => true];
+            ? $entitlementService->privateIngredientUsageFor($currentUser)
+            : ['used' => 0, 'limit' => null, 'remaining' => null, 'allowed' => false];
+        $privateIngredients = $currentUser instanceof User
+            ? $ingredients->getCollection()
+                ->filter(fn (Ingredient $ingredient): bool => $ingredient->isOwnedBy($currentUser))
+                ->values()
+            : collect();
         $formulaUsageByIngredient = $currentUser instanceof User
-            ? $ingredientFormulaUsageService->forIngredients($currentUser, $ingredients->getCollection())
+            ? $ingredientFormulaUsageService->forIngredients($currentUser, $privateIngredients)
             : [];
 
         return view('livewire.dashboard.ingredients-index', [
@@ -114,6 +126,7 @@ class IngredientsIndex extends Component
             return;
         }
 
+        $this->expandedUsageIngredientId = null;
         $this->ownershipFilter = $filter;
         $this->resetPage();
     }
@@ -123,6 +136,8 @@ class IngredientsIndex extends Component
         if (! in_array($field, ['display_name', 'category'], true)) {
             return;
         }
+
+        $this->expandedUsageIngredientId = null;
 
         if ($this->sortField === $field) {
             $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
@@ -196,6 +211,7 @@ class IngredientsIndex extends Component
 
         $this->deleteIngredientRecord($ingredient);
         $this->pendingDeleteId = null;
+        $this->expandedUsageIngredientId = null;
     }
 
     public function deleteIngredientRecord(Ingredient $ingredient): bool

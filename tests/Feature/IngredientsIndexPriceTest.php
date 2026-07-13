@@ -8,10 +8,13 @@ use App\Models\User;
 use App\Models\UserIngredientPrice;
 use App\Models\Workspace;
 use App\OwnerType;
+use App\Services\IngredientFormulaUsageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Livewire\Livewire;
 
 use function Pest\Laravel\actingAs;
+use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 
@@ -215,6 +218,57 @@ it('shows private ingredient usage in the mine filter and plan allowance', funct
     Livewire::test(IngredientsIndex::class)
         ->assertSee('Mine (1)')
         ->assertSee('1 of 20 private ingredients');
+});
+
+it('singularizes the finite private ingredient allowance from the plan limit', function () {
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->hasLimit('private_ingredients', 1)
+        ->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'is_active' => true,
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertSee('1 of 1 private ingredient')
+        ->assertDontSee('1 of 1 private ingredients');
+});
+
+it('looks up formula usage for only private ingredients on the current page', function () {
+    $user = User::factory()->create();
+    $ownedIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'is_active' => true,
+    ]);
+    Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+
+    mock(IngredientFormulaUsageService::class, function ($mock) use ($user, $ownedIngredient): void {
+        $mock->shouldReceive('forIngredients')
+            ->once()
+            ->withArgs(fn (User $resolvedUser, Collection $ingredients): bool => $resolvedUser->is($user)
+                && $ingredients->modelKeys() === [$ownedIngredient->id])
+            ->andReturn([]);
+    });
+
+    actingAs($user);
+
+    Livewire::test(IngredientsIndex::class);
 });
 
 it('updates a user ingredient price via the price endpoint', function () {

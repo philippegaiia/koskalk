@@ -252,24 +252,87 @@ it('explains which formula versions protect a private ingredient from deletion',
 
     $this->actingAs($user);
 
-    Livewire::test(IngredientsIndex::class)
+    $component = Livewire::test(IngredientsIndex::class)
         ->assertSee('Used in 1 formula')
         ->assertSeeHtml('aria-expanded="false"')
-        ->assertSeeHtml('aria-controls="ingredient-usage-'.$ingredient->id.'"')
-        ->assertDontSeeHtml('disabled')
-        ->assertDontSee($recipe->name)
-        ->call('toggleUsage', $ingredient->id)
+        ->assertSeeHtml('aria-controls="ingredient-usage-'.$ingredient->id.'"');
+
+    $collapsedControl = ingredientUsageControlState($component->html());
+
+    expect($collapsedControl)
+        ->toMatchArray([
+            'controlled_id' => 'ingredient-usage-'.$ingredient->id,
+            'controlled_element_exists' => true,
+            'controlled_element_hidden' => true,
+            'control_disabled' => false,
+        ]);
+
+    $component->call('toggleUsage', $ingredient->id)
         ->assertSet('expandedUsageIngredientId', $ingredient->id)
         ->assertSeeHtml('aria-expanded="true"')
         ->assertSee($recipe->name)
         ->assertSeeHtml('href="'.route('recipes.edit', $recipe->id).'"')
         ->assertSee('2 saved versions')
-        ->assertSee('Deletion is protected while recoverable formula records use it.')
-        ->call('toggleUsage', $ingredient->id)
+        ->assertSee('Deletion is protected while recoverable formula records use it.');
+
+    $expandedControl = ingredientUsageControlState($component->html());
+
+    expect($expandedControl)
+        ->toMatchArray([
+            'controlled_id' => 'ingredient-usage-'.$ingredient->id,
+            'controlled_element_exists' => true,
+            'controlled_element_hidden' => false,
+            'control_disabled' => false,
+        ]);
+
+    $component->call('toggleUsage', $ingredient->id)
         ->assertSet('expandedUsageIngredientId', null)
         ->call('deleteIngredient', $ingredient->id);
 
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
+});
+
+it('clears an expanded ingredient usage disclosure when the catalog context changes', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientsIndex::class)
+        ->call('toggleUsage', $ingredient->id)
+        ->set('search', 'changed')
+        ->assertSet('expandedUsageIngredientId', null)
+        ->call('toggleUsage', $ingredient->id)
+        ->call('setOwnershipFilter', 'mine')
+        ->assertSet('expandedUsageIngredientId', null)
+        ->call('toggleUsage', $ingredient->id)
+        ->call('sortBy', 'category')
+        ->assertSet('expandedUsageIngredientId', null)
+        ->call('toggleUsage', $ingredient->id)
+        ->set('perPage', 50)
+        ->assertSet('expandedUsageIngredientId', null)
+        ->call('toggleUsage', $ingredient->id)
+        ->call('setPage', 2)
+        ->assertSet('expandedUsageIngredientId', null)
+        ->call('toggleUsage', $ingredient->id)
+        ->call('deleteIngredient', $ingredient->id)
+        ->assertSet('expandedUsageIngredientId', null);
+
+    expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeFalse();
+});
+
+it('uses a non-allowing private ingredient fallback for guests', function () {
+    Livewire::test(IngredientsIndex::class)
+        ->assertViewHas(
+            'privateIngredientUsage',
+            fn (array $usage): bool => $usage['used'] === 0
+                && $usage['limit'] === null
+                && $usage['allowed'] === false,
+        );
 });
 
 it('shows private ingredient allowance without a null limit', function () {
@@ -378,6 +441,32 @@ it('does not delete a platform ingredient if a table action call is forced', fun
 
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
 });
+
+/**
+ * @return array{controlled_id: string, controlled_element_exists: bool, controlled_element_hidden: bool, control_disabled: bool}
+ */
+function ingredientUsageControlState(string $html): array
+{
+    $previousLibxmlSetting = libxml_use_internal_errors(true);
+    $document = new DOMDocument;
+    $document->loadHTML($html);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previousLibxmlSetting);
+
+    $control = (new DOMXPath($document))->query('//button[@aria-controls]')->item(0);
+
+    expect($control)->toBeInstanceOf(DOMElement::class);
+
+    $controlledId = $control->getAttribute('aria-controls');
+    $controlledElement = $document->getElementById($controlledId);
+
+    return [
+        'controlled_id' => $controlledId,
+        'controlled_element_exists' => $controlledElement instanceof DOMElement,
+        'controlled_element_hidden' => $controlledElement?->hasAttribute('hidden') ?? false,
+        'control_disabled' => $control->hasAttribute('disabled'),
+    ];
+}
 
 it('renders the public ingredient create page for signed in users', function () {
     $user = User::factory()->create();

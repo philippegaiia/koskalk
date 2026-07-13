@@ -25,15 +25,20 @@ class EntitlementService
                 used: $this->savedRecipeCount($user),
                 limit: $limits['saved_recipes'] ?? null,
             ),
-            'private_ingredients' => $this->usageLine(
-                used: $this->privateIngredientCount($user),
-                limit: $limits['private_ingredients'] ?? null,
-            ),
+            'private_ingredients' => $this->privateIngredientUsage($user, $limits),
             'production_batches' => $this->usageLine(
                 used: $this->productionBatchCount($user),
                 limit: $limits['production_batches'] ?? null,
             ),
         ];
+    }
+
+    /**
+     * @return array{used: int, limit: int|null, remaining: int|null, allowed: bool}
+     */
+    public function privateIngredientUsageFor(User $user): array
+    {
+        return $this->privateIngredientUsage($user, $this->limitsFor($user));
     }
 
     public function canCreateRecipe(User $user): bool
@@ -178,6 +183,18 @@ class EntitlementService
             'remaining' => max(0, $limit - $used),
             'allowed' => $used < $limit,
         ];
+    }
+
+    /**
+     * @param  array<string, int|null>  $limits
+     * @return array{used: int, limit: int|null, remaining: int|null, allowed: bool}
+     */
+    private function privateIngredientUsage(User $user, array $limits): array
+    {
+        return $this->usageLine(
+            used: $this->privateIngredientCount($user),
+            limit: $limits['private_ingredients'] ?? null,
+        );
     }
 
     private function savedRecipeCount(User $user): int

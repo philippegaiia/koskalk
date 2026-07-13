@@ -85,6 +85,32 @@ it('uses the editable plan limit for private ingredient creation', function () {
         ]);
 });
 
+it('returns the same private ingredient usage from the focused method', function () {
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->hasLimit('private_ingredients', 20)
+        ->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()
+        ->count(2)
+        ->create([
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+        ]);
+
+    $entitlements = app(EntitlementService::class);
+
+    expect($entitlements->privateIngredientUsageFor($user))
+        ->toBe($entitlements->usageFor($user)['private_ingredients']);
+});
+
 it('rejects saving a new recipe when the recipe plan limit is reached', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

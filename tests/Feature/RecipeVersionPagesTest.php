@@ -75,7 +75,7 @@ it('renders the formula workbench with one save path and lock controls', functio
         ->assertDontSee('Save recipe');
 });
 
-it('shows older saved formulas in version history', function () {
+it('shows older backups in version history', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
     $ingredient = makeSavedRecipeIngredient();
@@ -101,7 +101,8 @@ it('shows older saved formulas in version history', function () {
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
         ->assertSee('Version history')
-        ->assertSee('Formula A')
+        ->assertSee('Backup')
+        ->assertDontSee('Formula A')
         ->assertSee('2026-07-12 09:30')
         ->assertSee('View version')
         ->assertSee('href="'.route('recipes.version', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false)
@@ -455,10 +456,10 @@ it('routes active and historical formula sheets to their exact saved versions', 
         ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
         ->assertSuccessful()
         ->assertSee('Formula sheet')
-        ->assertSee('<title>Formula A · Formula Sheet', false)
-        ->assertDontSee('<title>Formula B · Formula Sheet', false)
-        ->assertSee('>Formula A</h1>', false)
-        ->assertDontSee('>Formula B</h1>', false)
+        ->assertSee('<title>Formula B · Formula Sheet', false)
+        ->assertDontSee('<title>Formula A · Formula Sheet', false)
+        ->assertSee('>Formula B</h1>', false)
+        ->assertDontSee('>Formula A</h1>', false)
         ->assertSee('Previous version')
         ->assertSee('Back to active formula')
         ->assertSee('href="'.route('recipes.saved', $recipe->id).'"', false)
@@ -529,27 +530,51 @@ it('renders and exports the exact requested historical formula version', functio
         ->assertSuccessful();
 
     expect(recipeWorkbookXml($workbookResponse->streamedContent()))
-        ->toContain('Formula A')
         ->toContain('Olive Oil')
         ->not->toContain('Coconut Oil');
 });
 
-it('identifies the selected saved version in print output', function () {
+it('keeps the main recipe identity while rendering selected backup content', function () {
     [$user, $recipe, $formulaA] = createRecipeWithTwoDistinctSavedVersions();
+    $recipe->update(['name' => 'Main Formula']);
+
+    $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('<title>Main Formula · Formula Sheet', false)
+        ->assertDontSee('<title>Formula A · Formula Sheet', false)
+        ->assertSee('>Main Formula</h1>', false)
+        ->assertDontSee('>Formula A</h1>', false)
+        ->assertSee('Previous version')
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
 
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
         ->assertSuccessful()
-        ->assertSee('<title>Formula A · Batch production sheet', false)
-        ->assertDontSee('<title>Formula B · Batch production sheet', false)
-        ->assertSee('>Formula A</h1>', false)
-        ->assertDontSee('>Formula B</h1>', false);
+        ->assertSee('<title>Main Formula · Batch production sheet', false)
+        ->assertDontSee('<title>Formula A · Batch production sheet', false)
+        ->assertSee('>Main Formula</h1>', false)
+        ->assertDontSee('>Formula A</h1>', false)
+        ->assertSee('Olive Oil')
+        ->assertDontSee('Coconut Oil');
 
     $this->actingAs($user)
         ->get(route('recipes.print.costing', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
         ->assertSuccessful()
         ->assertSee('Costs used for this saved formula.')
         ->assertDontSee('Costs used for the current formula.');
+
+    $workbookResponse = $this->actingAs($user)
+        ->get(route('recipes.export.xlsx', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertDownload('main-formula.xlsx');
+
+    expect(recipeWorkbookXml($workbookResponse->streamedContent()))
+        ->toContain('Main Formula')
+        ->not->toContain('Formula A')
+        ->toContain('Olive Oil')
+        ->not->toContain('Coconut Oil');
 });
 
 it('uses the latest saved formula when sheet outputs do not request a version', function () {

@@ -64,7 +64,7 @@ class RecipeWorkbookExporter
         $this->addTitle($writer, 'Recipe summary');
         $this->addRows($writer, [
             ['Recipe', $recipe['name'] ?? ''],
-            ['Saved recipe', $recipe['saved_name'] ?? ''],
+            ['Backup', 'Selected backup'],
             ['Product family', $recipe['product_family'] ?? ''],
             ['Product type', $recipe['product_type'] ?? ''],
             ['Saved at', $recipe['saved_at'] ?? ''],

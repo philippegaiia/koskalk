@@ -1,6 +1,6 @@
 @extends('layouts.app-shell')
 
-@section('title', $version->name.' · Formula Sheet · '.config('app.name'))
+@section('title', $recipe->name.' · Formula Sheet · '.config('app.name'))
 @section('page_heading', 'Formula Sheet')
 
 @section('content')
@@ -78,7 +78,7 @@
                             <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Saved formula</span>
                         @endif
                     </div>
-                    <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $version->name }}</h1>
+                    <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h1>
                     <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">
                         Use this saved formula for scaling, printing, and export. Quantity changes here only affect the sheet output.
                     </p>
@@ -143,7 +143,7 @@
                     @foreach ($otherSavedVersions as $savedVersion)
                         <article class="flex flex-col gap-3 rounded-xl border border-[var(--color-line)] p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p class="font-medium text-[var(--color-ink-strong)]">{{ $savedVersion['name'] }}</p>
+                                <p class="font-medium text-[var(--color-ink-strong)]">Backup</p>
                                 <p class="numeric mt-1 text-xs text-[var(--color-ink-soft)]">
                                     {{ filled($savedVersion['saved_at'] ?? null) ? \Illuminate\Support\Carbon::parse($savedVersion['saved_at'])->format('Y-m-d H:i') : 'Date not recorded' }}
                                 </p>

@@ -42,7 +42,7 @@
         : route('recipes.saved', $printQuery);
 @endphp
 
-@section('title', $version->name.' · '.$modeTitle.' · '.config('app.name'))
+@section('title', $recipe->name.' · '.$modeTitle.' · '.config('app.name'))
 
 @section('content')
     <div class="space-y-4 text-[13px] leading-5 text-slate-950">
@@ -76,7 +76,7 @@
                 <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_16rem]">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ $modeTitle }}</p>
-                        <h1 class="mt-1 text-2xl font-semibold tracking-[-0.02em] text-slate-950">{{ $version->name }}</h1>
+                        <h1 class="mt-1 text-2xl font-semibold tracking-[-0.02em] text-slate-950">{{ $recipe->name }}</h1>
                         <p class="mt-1 text-xs text-slate-600">Saved formula</p>
                     </div>
                     <dl class="grid grid-cols-[7rem_minmax(0,1fr)] gap-x-2 gap-y-1 text-xs text-slate-700 sm:text-right">

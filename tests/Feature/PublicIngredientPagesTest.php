@@ -297,6 +297,32 @@ it('shows private ingredient allowance without a null limit', function () {
         ->assertDontSee('of null');
 });
 
+it('pluralizes an unlimited private ingredient allowance', function () {
+    $user = User::factory()->create();
+    $plan = Plan::factory()->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()
+        ->count(2)
+        ->create([
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+        ]);
+
+    $this->actingAs($user)
+        ->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSee('2 private ingredients')
+        ->assertDontSee('2 of')
+        ->assertDontSee('of null');
+});
+
 it('does not allow editing another users private ingredient', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();

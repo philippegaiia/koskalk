@@ -20,6 +20,7 @@
             }
 
             $canRecordProduction = (bool) ($canRecordProduction ?? false);
+            $canRestoreVersion = (bool) ($canRestoreVersion ?? false);
             $isHistorical = (bool) ($isHistorical ?? false);
             $productionPreview = $productionPreview ?? null;
             $productionBatches = $productionBatches ?? collect();
@@ -154,12 +155,14 @@
                                 <a href="{{ route('recipes.version', ['recipe' => $recipe->id, 'version' => $savedVersion['id']]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
                                     View version
                                 </a>
-                                <form method="POST" action="{{ route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $savedVersion['id']]) }}">
-                                    @csrf
-                                    <button type="submit" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                                        Restore to current formula
-                                    </button>
-                                </form>
+                                @if ($canRestoreVersion)
+                                    <form method="POST" action="{{ route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $savedVersion['id']]) }}">
+                                        @csrf
+                                        <button type="submit" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                                            Restore to current formula
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </article>
                     @endforeach

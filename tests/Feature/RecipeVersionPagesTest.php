@@ -11,7 +11,12 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
+use App\OwnerType;
 use App\Services\RecipeWorkbenchService;
+use App\Visibility;
+use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -98,6 +103,37 @@ it('shows older saved formulas in version history', function () {
         ->get(route('recipes.saved', ['recipe' => $onlyVersion->recipe_id]))
         ->assertSuccessful()
         ->assertDontSee('Version history');
+});
+
+it('prevents read-only collaborators from restoring saved formula versions', function () {
+    [$owner, $recipe, $savedVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $viewer = User::factory()->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+
+    $recipe->update([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_private' => false,
+    ]);
+
+    $this->actingAs($viewer)
+        ->post(route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $savedVersion->id]), [
+            'confirm_replace_current' => '1',
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($viewer)
+        ->get(route('recipes.saved', $recipe->id))
+        ->assertSuccessful()
+        ->assertSee('Version history')
+        ->assertSee('View version')
+        ->assertDontSee('Restore to current formula');
 });
 
 it('locks and unlocks a formula', function () {

@@ -97,18 +97,19 @@ class RecipeController extends Controller
         bool $isHistorical,
     ): View {
         $viewData = $recipeVersionViewDataBuilder->build($recipe, $version, $request->query('oil_weight'), $request->query());
-        $canManageProduction = $user !== null && $user->can('update', $recipe);
-        $canRecordProduction = $canManageProduction
+        $canUpdateRecipe = $user !== null && $user->can('update', $recipe);
+        $canRecordProduction = $canUpdateRecipe
             && $entitlementService->canCreateProductionBatch($user);
 
         return view('recipes.version', [
             ...$viewData,
             'isHistorical' => $isHistorical,
+            'canRestoreVersion' => $canUpdateRecipe,
             'canRecordProduction' => $canRecordProduction,
             'productionPreview' => $user !== null
                 ? $this->productionPreview($recipe, $version, $user, $viewData, $recipeVersionCostPreviewBuilder)
                 : null,
-            'productionBatches' => $canManageProduction
+            'productionBatches' => $canUpdateRecipe
                 ? $recipe->productionBatches()
                     ->where('user_id', $user->id)
                     ->limit(8)
@@ -383,6 +384,8 @@ class RecipeController extends Controller
 
         abort_unless($user !== null, 403);
         [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+
+        $this->authorize('update', $recipe);
 
         if (
             $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $version->id)

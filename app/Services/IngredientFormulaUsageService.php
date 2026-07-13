@@ -29,19 +29,26 @@ class IngredientFormulaUsageService
             return [];
         }
 
-        $recipeConstraint = fn (Builder $query): Builder => $query
-            ->withoutGlobalScopes()
-            ->where('owner_type', OwnerType::User->value)
-            ->where('owner_id', $user->id);
+        $accessibleWorkspaceIds = $user->accessibleWorkspaceIds();
+        $recipeAccessConstraint = function (Builder|Relation $query) use ($accessibleWorkspaceIds, $user): Builder|Relation {
+            return $query
+                ->withoutGlobalScopes()
+                ->where(function (Builder $accessibleQuery) use ($accessibleWorkspaceIds, $user): void {
+                    $accessibleQuery->where(function (Builder $ownedQuery) use ($user): void {
+                        $ownedQuery
+                            ->where('owner_type', OwnerType::User->value)
+                            ->where('owner_id', $user->id);
+                    });
 
-        $recipeEagerConstraint = fn (Relation $query): Relation => $query
-            ->withoutGlobalScopes()
-            ->where('owner_type', OwnerType::User->value)
-            ->where('owner_id', $user->id);
+                    if ($accessibleWorkspaceIds !== []) {
+                        $accessibleQuery->orWhereIn('workspace_id', $accessibleWorkspaceIds);
+                    }
+                });
+        };
 
         $recipeVersionConstraint = fn (Builder $query): Builder => $query
             ->withoutGlobalScopes()
-            ->whereHas('recipe', $recipeConstraint);
+            ->whereHas('recipe', $recipeAccessConstraint);
 
         $recipeItems = RecipeItem::withoutGlobalScopes()
             ->whereIn('ingredient_id', $ingredientIds)
@@ -49,7 +56,7 @@ class IngredientFormulaUsageService
             ->with([
                 'recipeVersion' => fn (Relation $query): Relation => $query
                     ->withoutGlobalScopes()
-                    ->with(['recipe' => $recipeEagerConstraint]),
+                    ->with(['recipe' => $recipeAccessConstraint]),
             ])
             ->get();
 
@@ -63,7 +70,7 @@ class IngredientFormulaUsageService
                 'costing' => fn (Relation $query): Relation => $query->with([
                     'recipeVersion' => fn (Relation $query): Relation => $query
                         ->withoutGlobalScopes()
-                        ->with(['recipe' => $recipeEagerConstraint]),
+                        ->with(['recipe' => $recipeAccessConstraint]),
                 ]),
             ])
             ->get();
@@ -77,6 +84,7 @@ class IngredientFormulaUsageService
                     'recipe_id' => $recipe->id,
                     'recipe_name' => $recipe->name,
                     'version_id' => $recipeItem->recipe_version_id,
+                    'version_is_current' => $recipeItem->recipeVersion->is_current,
                 ];
             })
             ->concat($costingItems->map(function (RecipeVersionCostingItem $costingItem): array {
@@ -88,6 +96,7 @@ class IngredientFormulaUsageService
                     'recipe_id' => $recipe->id,
                     'recipe_name' => $recipe->name,
                     'version_id' => $recipeVersion->id,
+                    'version_is_current' => $recipeVersion->is_current,
                 ];
             }));
 
@@ -101,7 +110,11 @@ class IngredientFormulaUsageService
                     return [
                         'recipe_id' => $firstRow['recipe_id'],
                         'name' => $firstRow['recipe_name'],
-                        'version_count' => $recipeRows->pluck('version_id')->unique()->count(),
+                        'version_count' => $recipeRows
+                            ->reject(fn (array $row): bool => $row['version_is_current'])
+                            ->pluck('version_id')
+                            ->unique()
+                            ->count(),
                         'url' => route('recipes.edit', $firstRow['recipe_id']),
                     ];
                 })

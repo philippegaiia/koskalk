@@ -190,6 +190,8 @@ class RecipeController extends Controller
         abort_unless($user !== null, 403);
         [$recipe, $savedFormula] = $this->accessibleLatestPublishedFormula($recipe, $currentAppUserResolver);
 
+        $this->authorize('update', $recipe);
+
         if (
             $recipeWorkbenchService->currentVersionWouldBeReplacedByVersion($recipe, $savedFormula->id)
             && ! $request->boolean('confirm_replace_current')
@@ -220,7 +222,9 @@ class RecipeController extends Controller
         $user = $currentAppUserResolver->resolve();
 
         abort_unless($user !== null, 403);
-        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+        [$recipe, $version] = $this->accessibleBackupVersion($recipe, $version, $currentAppUserResolver);
+
+        $this->authorize('update', $recipe);
 
         $recipeWorkbenchService->restorePublishedFormula($user, $recipe, $version->id);
 

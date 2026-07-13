@@ -7,13 +7,17 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
 use App\OwnerType;
 use App\Services\IngredientFormulaUsageService;
+use App\Visibility;
+use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('groups direct usage by recipe and counts unique saved versions', function () {
+it('groups direct usage by recipe and counts unique saved backups', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
         'owner_type' => OwnerType::User,
@@ -24,22 +28,21 @@ it('groups direct usage by recipe and counts unique saved versions', function ()
         'owner_id' => $user->id,
         'name' => 'Lavender Soap',
     ]);
-    $firstVersion = RecipeVersion::factory()->create([
+    $versions = collect([1, 2, 3])->map(fn (int $versionNumber): RecipeVersion => RecipeVersion::factory()->create([
         'recipe_id' => $recipe->id,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
-        'version_number' => 1,
+        'version_number' => $versionNumber,
         'is_current' => false,
-    ]);
-    $secondVersion = RecipeVersion::factory()->create([
+    ]))->push(RecipeVersion::factory()->create([
         'recipe_id' => $recipe->id,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
-        'version_number' => 2,
-        'is_current' => false,
-    ]);
+        'version_number' => 4,
+        'is_current' => true,
+    ]));
 
-    foreach ([$firstVersion, $secondVersion] as $version) {
+    foreach ($versions as $version) {
         RecipeItem::factory()->create([
             'recipe_version_id' => $version->id,
             'recipe_phase_id' => null,
@@ -58,9 +61,116 @@ it('groups direct usage by recipe and counts unique saved versions', function ()
         ->and($usage[$ingredient->id][0])->toMatchArray([
             'recipe_id' => $recipe->id,
             'name' => $recipe->name,
-            'version_count' => 2,
+            'version_count' => 3,
             'url' => route('recipes.edit', $recipe->id),
         ]);
+});
+
+it('keeps draft-only usage while reporting zero saved backups', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+    ]);
+    $draft = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'is_current' => true,
+    ]);
+
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $draft->id,
+        'recipe_phase_id' => null,
+        'ingredient_id' => $ingredient->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+    ]);
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
+
+    expect($usage[$ingredient->id])->toHaveCount(1)
+        ->and($usage[$ingredient->id][0]['version_count'])->toBe(0);
+});
+
+it('includes usage from an accessible workspace formula', function () {
+    $user = User::factory()->create();
+    $workspaceOwner = User::factory()->create();
+    $workspace = Workspace::factory()->for($workspaceOwner, 'owner')->create();
+    $ingredient = Ingredient::factory()->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($user)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'name' => 'Shared Formula',
+    ]);
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_current' => false,
+    ]);
+
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $version->id,
+        'recipe_phase_id' => null,
+        'ingredient_id' => $ingredient->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
+
+    expect($usage[$ingredient->id][0])->toMatchArray([
+        'recipe_id' => $recipe->id,
+        'name' => 'Shared Formula',
+        'version_count' => 1,
+    ]);
+});
+
+it('omits usage from an inaccessible workspace formula', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_current' => false,
+    ]);
+
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $version->id,
+        'recipe_phase_id' => null,
+        'ingredient_id' => $ingredient->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
+
+    expect($usage)->not->toHaveKey($ingredient->id);
 });
 
 it('resolves costing-only usage to its recipe', function () {

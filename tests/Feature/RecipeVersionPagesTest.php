@@ -149,6 +149,68 @@ it('prevents read-only collaborators from restoring saved formula versions', fun
         ->assertDontSee('Restore to current formula');
 });
 
+it('prevents read-only collaborators from using legacy saved formula restore actions', function () {
+    [$owner, $recipe, $savedVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $viewer = User::factory()->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+
+    $recipe->update([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_private' => false,
+    ]);
+
+    $this->actingAs($viewer)
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]), [
+            'confirm_replace_current' => '1',
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($viewer)
+        ->post(route('recipes.saved.restore', [
+            'recipe' => $recipe->id,
+            'version' => $savedVersion->id,
+        ]))
+        ->assertForbidden();
+});
+
+it('allows workspace editors to use legacy saved formula restore actions', function () {
+    [$owner, $recipe, $savedVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $editor = User::factory()->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($editor)->create([
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+
+    $recipe->update([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+        'is_private' => false,
+    ]);
+
+    $this->actingAs($editor)
+        ->post(route('recipes.saved.edit-current', ['recipe' => $recipe->id]), [
+            'confirm_replace_current' => '1',
+        ])
+        ->assertRedirect(route('recipes.edit', $recipe->id));
+
+    $this->actingAs($editor)
+        ->post(route('recipes.saved.restore', [
+            'recipe' => $recipe->id,
+            'version' => $savedVersion->id,
+        ]))
+        ->assertRedirect(route('recipes.saved', $recipe->id));
+});
+
 it('locks and unlocks a formula', function () {
     [$user, $recipe] = createSavedRecipeVersion();
 
@@ -809,6 +871,25 @@ it('redirects signed-out users before restoring a saved snapshot', function () {
 
     $this->post(route('recipes.saved.restore', ['recipe' => $recipe->id, 'version' => $savedVersion->id]))
         ->assertRedirect(route('login'));
+});
+
+it('rejects the current draft before invoking the legacy saved backup restore service', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $draft = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $this->mock(RecipeWorkbenchService::class, function ($mock): void {
+        $mock->shouldNotReceive('restorePublishedFormula');
+    });
+
+    $this->actingAs($user)
+        ->post(route('recipes.saved.restore', [
+            'recipe' => $recipe->id,
+            'version' => $draft->id,
+        ]))
+        ->assertNotFound();
 });
 
 it('preserves the current draft when restoring an older saved snapshot', function () {

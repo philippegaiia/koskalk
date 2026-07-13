@@ -292,6 +292,51 @@ it('explains which formula versions protect a private ingredient from deletion',
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
 });
 
+it('protects draft-only formula usage without labeling the draft as a saved backup', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Draft Preservative',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $recipe = Recipe::factory()->create([
+        'name' => 'Unpublished Recovery Cream',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $draft = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_current' => true,
+    ]);
+
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $draft->id,
+        'recipe_phase_id' => null,
+        'ingredient_id' => $ingredient->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertSee('Used in 1 formula')
+        ->call('toggleUsage', $ingredient->id)
+        ->assertSee($recipe->name)
+        ->assertDontSee('0 saved versions')
+        ->assertDontSee('1 saved version')
+        ->assertSee('Deletion is protected while recoverable formula records use it.')
+        ->call('deleteIngredient', $ingredient->id);
+
+    expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
+});
+
 it('clears an expanded ingredient usage disclosure when the catalog context changes', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([

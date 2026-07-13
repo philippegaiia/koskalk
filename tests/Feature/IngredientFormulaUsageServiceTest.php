@@ -139,6 +139,50 @@ it('includes usage from an accessible workspace formula', function () {
     ]);
 });
 
+it('includes usage from an accessible workspace-owned formula without a workspace id', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+
+    WorkspaceMember::factory()->for($workspace)->for($user)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Workspace,
+        'name' => 'Owner-only Shared Formula',
+    ]);
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Workspace,
+        'is_current' => false,
+    ]);
+
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $version->id,
+        'recipe_phase_id' => null,
+        'ingredient_id' => $ingredient->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Workspace,
+    ]);
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
+
+    expect($usage[$ingredient->id][0])->toMatchArray([
+        'recipe_id' => $recipe->id,
+        'name' => 'Owner-only Shared Formula',
+        'version_count' => 1,
+    ]);
+});
+
 it('omits usage from an inaccessible workspace formula', function () {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create();
@@ -165,6 +209,40 @@ it('omits usage from an inaccessible workspace formula', function () {
         'owner_type' => OwnerType::Workspace,
         'owner_id' => $workspace->id,
         'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
+
+    expect($usage)->not->toHaveKey($ingredient->id);
+});
+
+it('omits usage from an inaccessible workspace-owned formula without a workspace id', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Workspace,
+    ]);
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => null,
+        'visibility' => Visibility::Workspace,
+        'is_current' => false,
+    ]);
+
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $version->id,
+        'recipe_phase_id' => null,
+        'ingredient_id' => $ingredient->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => null,
         'visibility' => Visibility::Workspace,
     ]);
 

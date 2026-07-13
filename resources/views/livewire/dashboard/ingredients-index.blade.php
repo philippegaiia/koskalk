@@ -188,8 +188,8 @@
                                                                         <a href="{{ $usage['url'] }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
                                                                             {{ $usage['name'] }}
                                                                         </a>
-                                                                        @if ($usage['version_count'] > 1)
-                                                                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $usage['version_count'] }} saved versions</p>
+                                                                        @if ($usage['version_count'] > 0)
+                                                                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $usage['version_count'] }} saved {{ \Illuminate\Support\Str::plural('backup', $usage['version_count']) }}</p>
                                                                         @endif
                                                                     </li>
                                                                 @endforeach

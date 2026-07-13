@@ -272,7 +272,7 @@ it('explains which formula versions protect a private ingredient from deletion',
         ->assertSeeHtml('aria-expanded="true"')
         ->assertSee($recipe->name)
         ->assertSeeHtml('href="'.route('recipes.edit', $recipe->id).'"')
-        ->assertSee('2 saved versions')
+        ->assertSee('2 saved backups')
         ->assertSee('Deletion is protected while recoverable formula records use it.');
 
     $expandedControl = ingredientUsageControlState($component->html());
@@ -290,6 +290,46 @@ it('explains which formula versions protect a private ingredient from deletion',
         ->call('deleteIngredient', $ingredient->id);
 
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
+});
+
+it('uses singular saved backup wording for one protected formula backup', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Single Backup Preservative',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $recipe = Recipe::factory()->create([
+        'name' => 'Single Backup Cream',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $backup = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_current' => false,
+    ]);
+
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $backup->id,
+        'recipe_phase_id' => null,
+        'ingredient_id' => $ingredient->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->call('toggleUsage', $ingredient->id)
+        ->assertSee($recipe->name)
+        ->assertSee('1 saved backup')
+        ->assertDontSee('1 saved backups');
 });
 
 it('protects draft-only formula usage without labeling the draft as a saved backup', function () {
@@ -329,8 +369,7 @@ it('protects draft-only formula usage without labeling the draft as a saved back
         ->assertSee('Used in 1 formula')
         ->call('toggleUsage', $ingredient->id)
         ->assertSee($recipe->name)
-        ->assertDontSee('0 saved versions')
-        ->assertDontSee('1 saved version')
+        ->assertDontSee('saved backup')
         ->assertSee('Deletion is protected while recoverable formula records use it.')
         ->call('deleteIngredient', $ingredient->id);
 

@@ -41,7 +41,13 @@ class IngredientFormulaUsageService
                     });
 
                     if ($accessibleWorkspaceIds !== []) {
-                        $accessibleQuery->orWhereIn('workspace_id', $accessibleWorkspaceIds);
+                        $accessibleQuery
+                            ->orWhere(function (Builder $workspaceOwnedQuery) use ($accessibleWorkspaceIds): void {
+                                $workspaceOwnedQuery
+                                    ->where('owner_type', OwnerType::Workspace->value)
+                                    ->whereIn('owner_id', $accessibleWorkspaceIds);
+                            })
+                            ->orWhereIn('workspace_id', $accessibleWorkspaceIds);
                     }
                 });
         };

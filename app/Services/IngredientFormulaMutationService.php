@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 use Throwable;
 
 class IngredientFormulaMutationService
@@ -117,13 +118,10 @@ class IngredientFormulaMutationService
                 ->get()
                 ->keyBy('id');
 
-            $lockedIngredient = $lockedIngredients->get($ingredient->getKey());
-
-            if (! $lockedIngredient instanceof Ingredient || ! $this->isPrivateIngredientOwnedBy($lockedIngredient, $user)) {
-                throw ValidationException::withMessages([
-                    'ingredient' => 'Only your own private ingredients can be replaced and deleted.',
-                ]);
-            }
+            $lockedIngredient = $this->validatedOwnedIngredient(
+                $lockedIngredients->get($ingredient->getKey()),
+                $user,
+            );
 
             $lockedReplacement = $lockedIngredients->get($replacement->getKey());
 
@@ -134,15 +132,7 @@ class IngredientFormulaMutationService
             }
 
             $impact = $this->impact($user, $lockedIngredient);
-
-            if ($impact['blocked_recipes']->isNotEmpty() || $impact['inaccessible_blocked_count'] > 0) {
-                throw ValidationException::withMessages([
-                    'ingredient' => $this->blockedFormulaMessage(
-                        $impact['blocked_recipes'],
-                        $impact['inaccessible_blocked_count'],
-                    ),
-                ]);
-            }
+            $this->assertEveryAffectedFormulaIsEditable($impact);
 
             if (! $this->isValidReplacement($user, $lockedIngredient, $lockedReplacement, $impact['requires_soap_carrier'])) {
                 throw ValidationException::withMessages([
@@ -153,11 +143,7 @@ class IngredientFormulaMutationService
             $affectedVersionIds = $this->affectedVersionIds($lockedIngredient);
 
             if ($affectedVersionIds->isNotEmpty()) {
-                RecipeVersion::withoutGlobalScopes()
-                    ->whereKey($affectedVersionIds->all())
-                    ->orderBy('id')
-                    ->lockForUpdate()
-                    ->get(['id']);
+                $this->lockAffectedVersions($affectedVersionIds);
 
                 RecipeItem::withoutGlobalScopes()
                     ->whereIn('recipe_version_id', $affectedVersionIds)
@@ -170,29 +156,39 @@ class IngredientFormulaMutationService
                     $lockedReplacement,
                 );
 
-                RecipeVersion::withoutGlobalScopes()
-                    ->whereKey($affectedVersionIds->all())
-                    ->update([
-                        'final_ingredient_list' => null,
-                        'final_ingredient_list_basis_hash' => null,
-                        'final_plain_ingredient_list' => null,
-                        'final_plain_ingredient_list_basis_hash' => null,
-                    ]);
+                $this->invalidateGeneratedIngredientLists($affectedVersionIds);
             }
 
-            $featuredImagePath = $lockedIngredient->featured_image_path;
-            $iconImagePath = $lockedIngredient->icon_image_path;
+            $this->scheduleMediaDeletionAfterCommit($lockedIngredient);
+            $this->deleteIngredient($lockedIngredient);
+        });
+    }
 
-            DB::afterCommit(function () use ($featuredImagePath, $iconImagePath): void {
-                try {
-                    MediaStorage::deletePublicPath($featuredImagePath);
-                    MediaStorage::deletePublicPath($iconImagePath);
-                } catch (Throwable $exception) {
-                    report($exception);
-                }
-            });
+    public function removeEverywhereAndDelete(User $user, Ingredient $ingredient): void
+    {
+        DB::transaction(function () use ($user, $ingredient): void {
+            $lockedIngredient = $this->validatedOwnedIngredient(
+                Ingredient::query()
+                    ->whereKey($ingredient->getKey())
+                    ->lockForUpdate()
+                    ->first(),
+                $user,
+            );
 
-            $lockedIngredient->delete();
+            $impact = $this->impact($user, $lockedIngredient);
+            $this->assertEveryAffectedFormulaIsEditable($impact);
+
+            $affectedVersionIds = $this->affectedVersionIds($lockedIngredient);
+
+            if ($affectedVersionIds->isNotEmpty()) {
+                $this->lockAffectedVersions($affectedVersionIds);
+                $this->deleteCostingItems($affectedVersionIds, $lockedIngredient);
+                $this->deleteRecipeItems($affectedVersionIds, $lockedIngredient);
+                $this->invalidateGeneratedIngredientLists($affectedVersionIds);
+            }
+
+            $this->scheduleMediaDeletionAfterCommit($lockedIngredient);
+            $this->deleteIngredient($lockedIngredient);
         });
     }
 
@@ -253,6 +249,117 @@ class IngredientFormulaMutationService
         return $ingredient->tenantOwnerType() === OwnerType::User
             && $ingredient->tenantOwnerId() === $user->id
             && $ingredient->visibility === Visibility::Private;
+    }
+
+    private function validatedOwnedIngredient(?Ingredient $ingredient, User $user): Ingredient
+    {
+        if (! $ingredient instanceof Ingredient || ! $this->isPrivateIngredientOwnedBy($ingredient, $user)) {
+            throw ValidationException::withMessages([
+                'ingredient' => 'Only your own private ingredients can be replaced or removed and deleted.',
+            ]);
+        }
+
+        return $ingredient;
+    }
+
+    /**
+     * @param  array{
+     *     blocked_recipes: EloquentCollection<int, Recipe>,
+     *     inaccessible_blocked_count: int
+     * }  $impact
+     */
+    private function assertEveryAffectedFormulaIsEditable(array $impact): void
+    {
+        if ($impact['blocked_recipes']->isEmpty() && $impact['inaccessible_blocked_count'] === 0) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'ingredient' => $this->blockedFormulaMessage(
+                $impact['blocked_recipes'],
+                $impact['inaccessible_blocked_count'],
+            ),
+        ]);
+    }
+
+    /** @param Collection<int, int> $affectedVersionIds */
+    private function lockAffectedVersions(Collection $affectedVersionIds): void
+    {
+        RecipeVersion::withoutGlobalScopes()
+            ->whereKey($affectedVersionIds->all())
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get(['id']);
+    }
+
+    /** @param Collection<int, int> $affectedVersionIds */
+    private function deleteCostingItems(Collection $affectedVersionIds, Ingredient $ingredient): void
+    {
+        $costingItemIds = RecipeVersionCostingItem::query()
+            ->whereBelongsTo($ingredient)
+            ->whereHas('costing', fn (Builder $costingQuery): Builder => $costingQuery
+                ->whereIn('recipe_version_id', $affectedVersionIds))
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->pluck('id');
+
+        if ($costingItemIds->isNotEmpty()) {
+            RecipeVersionCostingItem::query()
+                ->whereKey($costingItemIds->all())
+                ->delete();
+        }
+    }
+
+    /** @param Collection<int, int> $affectedVersionIds */
+    private function deleteRecipeItems(Collection $affectedVersionIds, Ingredient $ingredient): void
+    {
+        $recipeItemIds = RecipeItem::withoutGlobalScopes()
+            ->whereIn('recipe_version_id', $affectedVersionIds)
+            ->whereBelongsTo($ingredient)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->pluck('id');
+
+        if ($recipeItemIds->isNotEmpty()) {
+            RecipeItem::withoutGlobalScopes()
+                ->whereKey($recipeItemIds->all())
+                ->delete();
+        }
+    }
+
+    /** @param Collection<int, int> $affectedVersionIds */
+    private function invalidateGeneratedIngredientLists(Collection $affectedVersionIds): void
+    {
+        RecipeVersion::withoutGlobalScopes()
+            ->whereKey($affectedVersionIds->all())
+            ->update([
+                'final_ingredient_list' => null,
+                'final_ingredient_list_basis_hash' => null,
+                'final_plain_ingredient_list' => null,
+                'final_plain_ingredient_list_basis_hash' => null,
+            ]);
+    }
+
+    private function scheduleMediaDeletionAfterCommit(Ingredient $ingredient): void
+    {
+        $featuredImagePath = $ingredient->featured_image_path;
+        $iconImagePath = $ingredient->icon_image_path;
+
+        DB::afterCommit(function () use ($featuredImagePath, $iconImagePath): void {
+            try {
+                MediaStorage::deletePublicPath($featuredImagePath);
+                MediaStorage::deletePublicPath($iconImagePath);
+            } catch (Throwable $exception) {
+                report($exception);
+            }
+        });
+    }
+
+    private function deleteIngredient(Ingredient $ingredient): void
+    {
+        if ($ingredient->delete() !== true) {
+            throw new RuntimeException('The ingredient could not be deleted.');
+        }
     }
 
     /**

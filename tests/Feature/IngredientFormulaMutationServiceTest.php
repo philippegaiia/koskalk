@@ -557,6 +557,277 @@ it('deletes ingredient media after a successful replacement', function (): void 
         ->and(Storage::disk('public')->exists('ingredients/icons/old.webp'))->toBeFalse();
 });
 
+it('removes an ingredient from current backup archived and costing-only versions while preserving formulas and unrelated rows', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Additive');
+    $unrelatedIngredient = privateMutationIngredient($user, IngredientCategory::Additive, 'Kept Additive');
+
+    $recipe = privateMutationRecipe($user, 'Current Formula');
+    $currentVersion = privateMutationVersion($user, $recipe, isCurrent: true, versionNumber: 3);
+    $currentVersion->update(generatedIngredientListState());
+    $currentSourceItem = privateMutationItem($user, $source, $currentVersion);
+    $currentUnrelatedItem = privateMutationItem($user, $unrelatedIngredient, $currentVersion);
+    $currentSourceCostingItem = privateMutationCostingItem($user, $source, $currentVersion);
+    $currentUnrelatedCostingItem = RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $currentSourceCostingItem->recipe_version_costing_id,
+        'ingredient_id' => $unrelatedIngredient->id,
+        'phase_key' => 'main',
+        'position' => 2,
+    ]);
+
+    $backupVersion = privateMutationVersion($user, $recipe, isCurrent: false, versionNumber: 2);
+    $backupVersion->update(generatedIngredientListState());
+    $backupSourceItem = privateMutationItem($user, $source, $backupVersion);
+
+    $archivedRecipe = privateMutationRecipe($user, 'Archived Formula', archived: true);
+    $archivedVersion = privateMutationVersion($user, $archivedRecipe, isCurrent: false);
+    $archivedVersion->update(generatedIngredientListState());
+    $archivedSourceCostingItem = privateMutationCostingItem($user, $source, $archivedVersion);
+
+    app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source);
+
+    expect($source->fresh())->toBeNull()
+        ->and($recipe->fresh())->not->toBeNull()
+        ->and($archivedRecipe->fresh())->not->toBeNull()
+        ->and($currentVersion->fresh())->not->toBeNull()
+        ->and($backupVersion->fresh())->not->toBeNull()
+        ->and($archivedVersion->fresh())->not->toBeNull()
+        ->and($currentSourceItem->fresh())->toBeNull()
+        ->and($backupSourceItem->fresh())->toBeNull()
+        ->and($currentSourceCostingItem->fresh())->toBeNull()
+        ->and($archivedSourceCostingItem->fresh())->toBeNull()
+        ->and($currentUnrelatedItem->fresh()?->ingredient_id)->toBe($unrelatedIngredient->id)
+        ->and($currentUnrelatedCostingItem->fresh()?->ingredient_id)->toBe($unrelatedIngredient->id);
+
+    foreach ([$currentVersion, $backupVersion, $archivedVersion] as $version) {
+        expect($version->fresh()->only(array_keys(generatedIngredientListState())))->toBe([
+            'final_ingredient_list' => null,
+            'final_ingredient_list_basis_hash' => null,
+            'final_plain_ingredient_list' => null,
+            'final_plain_ingredient_list_basis_hash' => null,
+        ]);
+    }
+});
+
+it('keeps a formula and version when the removed ingredient was their only row', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Only Additive');
+    $recipe = privateMutationRecipe($user, 'Single Row Formula');
+    $version = privateMutationVersion($user, $recipe);
+    privateMutationItem($user, $source, $version);
+
+    app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source);
+
+    expect($recipe->fresh())->not->toBeNull()
+        ->and($version->fresh())->not->toBeNull()
+        ->and(RecipeItem::withoutGlobalScopes()->whereBelongsTo($version, 'recipeVersion')->exists())->toBeFalse();
+});
+
+it('refuses removal when a visible workspace formula is blocked and reports its name', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $source->update([
+        'featured_image_path' => 'ingredients/featured-images/blocked-removal.webp',
+        'icon_image_path' => 'ingredients/icons/blocked-removal.webp',
+    ]);
+    Storage::disk('public')->put($source->featured_image_path, 'featured');
+    Storage::disk('public')->put($source->icon_image_path, 'icon');
+    $workspace = Workspace::factory()->create();
+    WorkspaceMember::factory()->for($workspace)->for($user)->create(['role' => WorkspaceMemberRole::Viewer]);
+    $blockedRecipe = workspaceMutationRecipeWithItem($workspace, $source, 'Blocked Removal Formula');
+    $blockedVersion = RecipeVersion::withoutGlobalScopes()
+        ->whereBelongsTo($blockedRecipe)
+        ->firstOrFail();
+    $blockedVersion->update(generatedIngredientListState());
+    $costingItem = privateMutationCostingItem($user, $source, $blockedVersion);
+
+    $exception = captureMutationValidationException(fn () => app(IngredientFormulaMutationService::class)
+        ->removeEverywhereAndDelete($user, $source));
+
+    expect($exception->errors()['ingredient'][0])->toContain($blockedRecipe->name)
+        ->and($source->fresh())->not->toBeNull()
+        ->and(RecipeItem::withoutGlobalScopes()->where('ingredient_id', $source->id)->exists())->toBeTrue()
+        ->and($costingItem->fresh())->not->toBeNull()
+        ->and($blockedVersion->fresh()->only(array_keys(generatedIngredientListState())))->toBe(generatedIngredientListState())
+        ->and(Storage::disk('public')->exists($source->featured_image_path))->toBeTrue()
+        ->and(Storage::disk('public')->exists($source->icon_image_path))->toBeTrue();
+});
+
+it('refuses removal for an inaccessible formula without leaking its name', function (): void {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $secretRecipe = privateMutationRecipe($otherUser, 'Secret Removal Formula');
+    privateMutationItem($otherUser, $source, privateMutationVersion($otherUser, $secretRecipe));
+
+    $exception = captureMutationValidationException(fn () => app(IngredientFormulaMutationService::class)
+        ->removeEverywhereAndDelete($user, $source));
+    $messages = implode(' ', $exception->errors()['ingredient']);
+
+    expect($messages)->not->toContain($secretRecipe->name)
+        ->and($messages)->toContain('1')
+        ->and($source->fresh())->not->toBeNull();
+});
+
+it('allows a workspace editor to remove an owned ingredient from an editable workspace formula', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $workspace = Workspace::factory()->create();
+    WorkspaceMember::factory()->for($workspace)->for($user)->create(['role' => WorkspaceMemberRole::Editor]);
+    $recipe = workspaceMutationRecipeWithItem($workspace, $source, 'Editable Removal Formula');
+
+    app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source);
+
+    expect($source->fresh())->toBeNull()
+        ->and($recipe->fresh())->not->toBeNull()
+        ->and(RecipeItem::withoutGlobalScopes()->where('ingredient_id', $source->id)->exists())->toBeFalse();
+});
+
+it('refuses removing a platform ingredient another users ingredient or a stale ingredient', function (string $ownership): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $source = match ($ownership) {
+        'platform' => Ingredient::factory()->create(['category' => IngredientCategory::Additive]),
+        'other user' => privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Other User Ingredient'),
+        'stale' => tap(privateMutationIngredient($user, IngredientCategory::Additive, 'Deleted Ingredient'))->delete(),
+    };
+    $item = null;
+    $costingItem = null;
+    $version = null;
+
+    if ($ownership !== 'stale') {
+        $source->update([
+            'featured_image_path' => "ingredients/featured-images/{$ownership}-protected.webp",
+            'icon_image_path' => "ingredients/icons/{$ownership}-protected.webp",
+        ]);
+        Storage::disk('public')->put($source->featured_image_path, 'featured');
+        Storage::disk('public')->put($source->icon_image_path, 'icon');
+        $version = privateMutationVersion($user, privateMutationRecipe($user, 'Ownership Protected Formula'));
+        $version->update(generatedIngredientListState());
+        $item = privateMutationItem($user, $source, $version);
+        $costingItem = privateMutationCostingItem($user, $source, $version);
+    }
+
+    expect(fn () => app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source))
+        ->toThrow(ValidationException::class);
+
+    if ($ownership !== 'stale') {
+        expect($source->fresh())->not->toBeNull()
+            ->and($item?->fresh())->not->toBeNull()
+            ->and($costingItem?->fresh())->not->toBeNull()
+            ->and($version?->fresh()->only(array_keys(generatedIngredientListState())))->toBe(generatedIngredientListState())
+            ->and(Storage::disk('public')->exists($source->featured_image_path))->toBeTrue()
+            ->and(Storage::disk('public')->exists($source->icon_image_path))->toBeTrue();
+    }
+})->with(['platform', 'other user', 'stale']);
+
+it('deletes ingredient media after a successful remove everywhere operation', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Additive');
+    $source->update([
+        'featured_image_path' => 'ingredients/featured-images/remove-old.webp',
+        'icon_image_path' => 'ingredients/icons/remove-old.webp',
+    ]);
+    Storage::disk('public')->put($source->featured_image_path, 'featured');
+    Storage::disk('public')->put($source->icon_image_path, 'icon');
+
+    app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source);
+
+    expect($source->fresh())->toBeNull()
+        ->and(Storage::disk('public')->exists('ingredients/featured-images/remove-old.webp'))->toBeFalse()
+        ->and(Storage::disk('public')->exists('ingredients/icons/remove-old.webp'))->toBeFalse();
+});
+
+it('waits for the outer transaction to commit before deleting ingredient media', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Nested Transaction Additive');
+    $source->update([
+        'featured_image_path' => 'ingredients/featured-images/nested-transaction.webp',
+        'icon_image_path' => 'ingredients/icons/nested-transaction.webp',
+    ]);
+    Storage::disk('public')->put($source->featured_image_path, 'featured');
+    Storage::disk('public')->put($source->icon_image_path, 'icon');
+
+    DB::transaction(function () use ($user, $source): void {
+        app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source);
+
+        expect($source->fresh())->toBeNull()
+            ->and(Storage::disk('public')->exists($source->featured_image_path))->toBeTrue()
+            ->and(Storage::disk('public')->exists($source->icon_image_path))->toBeTrue();
+    });
+
+    expect(Storage::disk('public')->exists($source->featured_image_path))->toBeFalse()
+        ->and(Storage::disk('public')->exists($source->icon_image_path))->toBeFalse();
+});
+
+it('rolls back remove everywhere changes and retains media when ingredient deletion fails', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Undeletable Additive');
+    $source->update([
+        'featured_image_path' => 'ingredients/featured-images/remove-undeletable.webp',
+        'icon_image_path' => 'ingredients/icons/remove-undeletable.webp',
+    ]);
+    Storage::disk('public')->put($source->featured_image_path, 'featured');
+    Storage::disk('public')->put($source->icon_image_path, 'icon');
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Protected Removal Formula'));
+    $version->update(generatedIngredientListState());
+    $item = privateMutationItem($user, $source, $version);
+    $costingItem = privateMutationCostingItem($user, $source, $version);
+
+    Ingredient::deleting(function (Ingredient $deletingIngredient) use ($source): void {
+        if ($deletingIngredient->is($source)) {
+            throw new RuntimeException('Forced remove ingredient deletion failure.');
+        }
+    });
+
+    expect(fn () => app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source))
+        ->toThrow(RuntimeException::class, 'Forced remove ingredient deletion failure.');
+
+    expect($source->fresh())->not->toBeNull()
+        ->and($item->fresh())->not->toBeNull()
+        ->and($costingItem->fresh())->not->toBeNull()
+        ->and($version->fresh()->final_ingredient_list)->toBe('Generated INCI')
+        ->and(Storage::disk('public')->exists($source->featured_image_path))->toBeTrue()
+        ->and(Storage::disk('public')->exists($source->icon_image_path))->toBeTrue();
+});
+
+it('retains ingredient data and media when an outer transaction rolls back the removal', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Outer Rollback Additive');
+    $source->update(['featured_image_path' => 'ingredients/featured-images/outer-rollback.webp']);
+    Storage::disk('public')->put($source->featured_image_path, 'featured');
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Outer Rollback Formula'));
+    $item = privateMutationItem($user, $source, $version);
+
+    expect(fn () => DB::transaction(function () use ($user, $source): void {
+        app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source);
+
+        throw new RuntimeException('Force outer rollback.');
+    }))->toThrow(RuntimeException::class, 'Force outer rollback.');
+
+    expect($source->fresh())->not->toBeNull()
+        ->and($item->fresh())->not->toBeNull()
+        ->and(Storage::disk('public')->exists($source->featured_image_path))->toBeTrue();
+});
+
 /** @return array<string, string> */
 function generatedIngredientListState(): array
 {

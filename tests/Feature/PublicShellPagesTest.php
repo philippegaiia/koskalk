@@ -91,3 +91,14 @@ it('redirects guests from the dashboard shell page', function () {
     $this->get(route('dashboard'))
         ->assertRedirect(route('login'));
 });
+
+it('keeps the authenticated shell viewport bound while content can grow', function () {
+    $response = $this->actingAs(User::factory()->create())
+        ->get(route('dashboard'))
+        ->assertSuccessful()
+        ->assertSee('lg:items-stretch', false)
+        ->assertSee('lg:sticky lg:top-0 lg:h-dvh lg:self-start', false)
+        ->assertDontSee('min-h-screen', false);
+
+    expect(substr_count($response->getContent(), 'min-h-dvh'))->toBe(3);
+});

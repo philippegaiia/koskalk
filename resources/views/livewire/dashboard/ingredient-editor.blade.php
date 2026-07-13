@@ -26,7 +26,7 @@
  </div>
  </section>
 
- <form wire:submit="save" class="space-y-4">
+ <form wire:submit="save" class="space-y-4 pb-2">
  @if ($statusMessage)
  <div class="{{ $statusType === 'success' ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' }} rounded-[1.5rem] border px-4 py-3 text-sm">
  {{ $statusMessage }}
@@ -35,8 +35,16 @@
 
  {{ $this->form }}
 
- <div class="flex justify-end">
- <button type="submit" class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
+ <div
+ data-ingredient-save-bar
+ class="sticky bottom-0 z-30 -mx-2 flex justify-end border-t border-[var(--color-line)] bg-[var(--color-surface)] px-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:-mx-4 sm:px-4"
+ >
+ <button
+ type="submit"
+ wire:loading.attr="disabled"
+ wire:target="save"
+ class="w-full rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-65 sm:w-auto"
+ >
  {{ $ingredient ? 'Save ingredient' : 'Create ingredient' }}
  </button>
  </div>

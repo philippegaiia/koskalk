@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Ingredient;
+use App\Models\IngredientComponent;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
@@ -64,6 +65,49 @@ it('groups direct usage by recipe and counts unique saved backups', function () 
             'version_count' => 3,
             'url' => route('recipes.edit', $recipe->id),
         ]);
+});
+
+it('reports formulas reached through nested composite ancestors once', function () {
+    $user = User::factory()->create();
+    $source = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $directParent = Ingredient::factory()->create();
+    $nestedParent = Ingredient::factory()->create();
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $directParent->id,
+        'component_ingredient_id' => $source->id,
+    ]);
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $nestedParent->id,
+        'component_ingredient_id' => $directParent->id,
+    ]);
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'name' => 'Nested Blend Formula',
+    ]);
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+    ]);
+    foreach ([$directParent, $nestedParent] as $parent) {
+        RecipeItem::factory()->create([
+            'recipe_version_id' => $version->id,
+            'recipe_phase_id' => null,
+            'ingredient_id' => $parent->id,
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+        ]);
+    }
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$source]));
+
+    expect($usage[$source->id])->toHaveCount(1)
+        ->and($usage[$source->id][0]['recipe_id'])->toBe($recipe->id);
 });
 
 it('keeps draft-only usage while reporting zero saved backups', function () {

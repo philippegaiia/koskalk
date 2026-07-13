@@ -58,7 +58,7 @@ it('renders the formula workbench with one save path and lock controls', functio
         ->assertDontSee('Save recipe');
 });
 
-it('hides recovery snapshots from the main formula sheet', function () {
+it('shows older saved formulas in version history', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
     $ingredient = makeSavedRecipeIngredient();
@@ -70,14 +70,34 @@ it('hides recovery snapshots from the main formula sheet', function () {
     $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
     $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
 
+    $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->where('name', 'Formula A')
+        ->firstOrFail();
+
+    $olderSavedVersion->update([
+        'saved_at' => '2026-07-12 09:30:00',
+    ]);
+
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe->id]))
         ->assertSuccessful()
-        ->assertDontSee('Recovery snapshots')
-        ->assertDontSee('Load into draft')
-        ->assertDontSee('Restore as reference formula')
-        ->assertDontSeeText('v1')
-        ->assertDontSeeText('v2');
+        ->assertSee('Version history')
+        ->assertSee('Formula A')
+        ->assertSee('2026-07-12 09:30')
+        ->assertSee('View version')
+        ->assertSee('href="'.route('recipes.version', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false)
+        ->assertSee('Restore to current formula')
+        ->assertSee('method="POST" action="'.route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false)
+        ->assertDontSee('action="'.route('recipes.saved.restore', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false);
+
+    $onlyVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Only Formula'));
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $onlyVersion->recipe_id]))
+        ->assertSuccessful()
+        ->assertDontSee('Version history');
 });
 
 it('locks and unlocks a formula', function () {
@@ -357,14 +377,44 @@ it('does not expose the saved formula to other users', function () {
         ->assertNotFound();
 });
 
-it('keeps the legacy saved-version url working by showing the current saved recipe', function () {
-    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
+it('routes active and historical formula sheets to their exact saved versions', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeSavedRecipeIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+
+    $formulaA = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->where('name', 'Formula A')
+        ->firstOrFail();
 
     $this->actingAs($user)
-        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $publishedVersion->id]))
+        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->assertSuccessful()
+        ->assertSee('<title>Formula B · Formula Sheet', false)
+        ->assertSee('>Formula B</h1>', false)
+        ->assertSee('Saved formula')
+        ->assertDontSee('Previous version');
+
+    $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
         ->assertSuccessful()
         ->assertSee('Formula sheet')
-        ->assertSee('Published Formula');
+        ->assertSee('<title>Formula A · Formula Sheet', false)
+        ->assertDontSee('<title>Formula B · Formula Sheet', false)
+        ->assertSee('>Formula A</h1>', false)
+        ->assertDontSee('>Formula B</h1>', false)
+        ->assertSee('Previous version')
+        ->assertSee('Back to active formula')
+        ->assertSee('href="'.route('recipes.saved', $recipe->id).'"', false)
+        ->assertDontSee('action="'.route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $formulaA->id]).'"', false);
 });
 
 it('duplicates a recipe into a new draft recipe', function () {
@@ -601,6 +651,13 @@ it('asks for confirmation before replacing the draft with an older recovery snap
     $currentDraft->refresh();
 
     expect($currentDraft->name)->toBe('Experimental Draft');
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe->id))
+        ->assertSuccessful()
+        ->assertSee('Replace the current formula?')
+        ->assertSee('name="confirm_replace_current" value="1"', false)
+        ->assertSee('action="'.route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]).'"', false);
 
     $this->actingAs($user)
         ->post(route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $olderSavedVersion->id]), [

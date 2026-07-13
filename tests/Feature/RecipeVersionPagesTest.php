@@ -466,6 +466,18 @@ it('routes active and historical formula sheets to their exact saved versions', 
         ->assertDontSee('action="'.route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $formulaA->id]).'"', false);
 });
 
+it('rejects the mutable draft from formula history', function () {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    $draft = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $draft->id]))
+        ->assertNotFound();
+});
+
 it('keeps the displayed historical version in every sheet action', function () {
     [$user, $recipe, $formulaA] = createRecipeWithTwoDistinctSavedVersions();
 

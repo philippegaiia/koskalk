@@ -239,7 +239,7 @@ class RecipeController extends Controller
         RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
     ): View {
         $user = $currentAppUserResolver->resolve();
-        [$recipe, $version] = $this->accessibleSavedVersion($recipe, $version, $currentAppUserResolver);
+        [$recipe, $version] = $this->accessibleBackupVersion($recipe, $version, $currentAppUserResolver);
 
         return $this->renderSavedVersion(
             $recipe,
@@ -513,6 +513,21 @@ class RecipeController extends Controller
     /**
      * @return array{0: Recipe, 1: RecipeVersion}
      */
+    private function accessibleBackupVersion(
+        int $recipeId,
+        int $versionId,
+        CurrentAppUserResolver $currentAppUserResolver,
+    ): array {
+        [$recipe, $version] = $this->accessibleSavedVersion($recipeId, $versionId, $currentAppUserResolver);
+
+        abort_if($version->is_current, 404);
+
+        return [$recipe, $version];
+    }
+
+    /**
+     * @return array{0: Recipe, 1: RecipeVersion}
+     */
     private function accessibleLatestPublishedFormula(
         int $recipeId,
         CurrentAppUserResolver $currentAppUserResolver,
@@ -548,11 +563,7 @@ class RecipeController extends Controller
 
         abort_if($requestedVersionId === false, 404);
 
-        [$recipe, $version] = $this->accessibleSavedVersion($recipeId, $requestedVersionId, $currentAppUserResolver);
-
-        abort_if($version->is_current, 404);
-
-        return [$recipe, $version];
+        return $this->accessibleBackupVersion($recipeId, $requestedVersionId, $currentAppUserResolver);
     }
 
     private function printSheet(

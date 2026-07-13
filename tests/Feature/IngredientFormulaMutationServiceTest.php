@@ -10,14 +10,18 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
+use App\Models\UserIngredientPrice;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
 use App\Services\IngredientFormulaMutationService;
 use App\Visibility;
 use App\WorkspaceMemberRole;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -252,6 +256,329 @@ it('returns only active accessible replacement candidates', function (): void {
     expect($candidateIds)->toContain($ownedCandidate->id, $platformCandidate->id)
         ->not->toContain($source->id, $inactiveCandidate->id, $inaccessibleCandidate->id);
 });
+
+it('replaces an ingredient across current backup archived and costing-only versions without changing formula rows', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::EssentialOil, 'Lavender');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Co2Extract, 'Lavender CO2');
+    UserIngredientPrice::query()->create([
+        'user_id' => $user->id,
+        'ingredient_id' => $replacement->id,
+        'price_per_kg' => 84.75,
+        'currency' => 'EUR',
+        'last_used_at' => now(),
+    ]);
+
+    $recipe = privateMutationRecipe($user, 'Lavender Soap');
+    $currentVersion = privateMutationVersion($user, $recipe, isCurrent: true, versionNumber: 3);
+    $currentVersion->update(generatedIngredientListState());
+    $currentItem = privateMutationItem($user, $source, $currentVersion, phaseSlug: 'additives');
+    $currentItem->update([
+        'percentage' => 3.125,
+        'weight' => 31.25,
+        'position' => 4,
+        'note' => 'Add below 40 C',
+    ]);
+    $currentCostingItem = privateMutationCostingItem($user, $source, $currentVersion);
+    $currentCostingItem->update(['price_per_kg' => 12.34]);
+
+    $backupVersion = privateMutationVersion($user, $recipe, isCurrent: false, versionNumber: 2);
+    $backupVersion->update(generatedIngredientListState());
+    $backupSourceItem = privateMutationItem($user, $source, $backupVersion);
+    $backupSourceItem->update(['percentage' => 2.5, 'weight' => 25, 'position' => 2, 'note' => 'Backup note']);
+    $existingReplacementItem = privateMutationItem($user, $replacement, $backupVersion);
+    $existingReplacementItem->update(['percentage' => 1.5, 'weight' => 15, 'position' => 3]);
+
+    $archivedRecipe = privateMutationRecipe($user, 'Archived Lavender Soap', archived: true);
+    $archivedVersion = privateMutationVersion($user, $archivedRecipe, isCurrent: false);
+    $archivedVersion->update(generatedIngredientListState());
+    $archivedCostingItem = privateMutationCostingItem($user, $source, $archivedVersion);
+    $archivedCostingItem->update(['price_per_kg' => 9.99]);
+
+    app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement);
+
+    expect($source->fresh())->toBeNull()
+        ->and($replacement->fresh())->not->toBeNull()
+        ->and($currentItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and((float) $currentItem->fresh()->percentage)->toBe(3.125)
+        ->and((float) $currentItem->fresh()->weight)->toBe(31.25)
+        ->and($currentItem->fresh()->recipe_phase_id)->not->toBeNull()
+        ->and($currentItem->fresh()->position)->toBe(4)
+        ->and($currentItem->fresh()->note)->toBe('Add below 40 C')
+        ->and($backupSourceItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and((float) $backupSourceItem->fresh()->percentage)->toBe(2.5)
+        ->and((float) $backupSourceItem->fresh()->weight)->toBe(25.0)
+        ->and($backupSourceItem->fresh()->position)->toBe(2)
+        ->and($backupSourceItem->fresh()->note)->toBe('Backup note')
+        ->and($existingReplacementItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and(RecipeItem::withoutGlobalScopes()->where('recipe_version_id', $backupVersion->id)->where('ingredient_id', $replacement->id)->count())->toBe(2)
+        ->and($currentCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and((float) $currentCostingItem->fresh()->price_per_kg)->toBe(84.75)
+        ->and($archivedCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and((float) $archivedCostingItem->fresh()->price_per_kg)->toBe(84.75);
+
+    foreach ([$currentVersion, $backupVersion, $archivedVersion] as $version) {
+        expect($version->fresh()->only(array_keys(generatedIngredientListState())))->toBe([
+            'final_ingredient_list' => null,
+            'final_ingredient_list_basis_hash' => null,
+            'final_plain_ingredient_list' => null,
+            'final_plain_ingredient_list_basis_hash' => null,
+        ]);
+    }
+});
+
+it('clears costing prices when the user has no remembered replacement price', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Additive');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'New Additive');
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Costed Formula'));
+    $costingItem = privateMutationCostingItem($user, $source, $version);
+    $costingItem->update(['price_per_kg' => 22.50]);
+
+    app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement);
+
+    expect($costingItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and($costingItem->fresh()->price_per_kg)->toBeNull();
+});
+
+it('uses each costing owners private remembered replacement price', function (): void {
+    $formulaOwner = User::factory()->create();
+    $otherCostingOwner = User::factory()->create();
+    $source = privateMutationIngredient($formulaOwner, IngredientCategory::Additive, 'Old Additive');
+    $replacement = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Platform Replacement',
+    ]);
+    $version = privateMutationVersion($formulaOwner, privateMutationRecipe($formulaOwner, 'Shared Costed Formula'));
+    $formulaOwnerCostingItem = privateMutationCostingItem($formulaOwner, $source, $version);
+    $otherOwnerCostingItem = privateMutationCostingItem($otherCostingOwner, $source, $version);
+    UserIngredientPrice::query()->create([
+        'user_id' => $formulaOwner->id,
+        'ingredient_id' => $replacement->id,
+        'price_per_kg' => 11.25,
+        'currency' => 'EUR',
+        'last_used_at' => now(),
+    ]);
+    UserIngredientPrice::query()->create([
+        'user_id' => $otherCostingOwner->id,
+        'ingredient_id' => $replacement->id,
+        'price_per_kg' => 37.80,
+        'currency' => 'EUR',
+        'last_used_at' => now(),
+    ]);
+
+    app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($formulaOwner, $source, $replacement);
+
+    expect($formulaOwnerCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and((float) $formulaOwnerCostingItem->fresh()->price_per_kg)->toBe(11.25)
+        ->and($otherOwnerCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
+        ->and((float) $otherOwnerCostingItem->fresh()->price_per_kg)->toBe(37.8);
+});
+
+it('rolls back every change and keeps media when the replacement is incompatible', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Clay, 'Rose Clay');
+    $source->update([
+        'featured_image_path' => 'ingredients/featured-images/rose-clay.webp',
+        'icon_image_path' => 'ingredients/icons/rose-clay.webp',
+    ]);
+    Storage::disk('public')->put($source->featured_image_path, 'featured');
+    Storage::disk('public')->put($source->icon_image_path, 'icon');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Clay Soap'));
+    $version->update(generatedIngredientListState());
+    $item = privateMutationItem($user, $source, $version);
+    $costingItem = privateMutationCostingItem($user, $source, $version);
+    $costingItem->update(['price_per_kg' => 18.5]);
+
+    expect(fn () => app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement))
+        ->toThrow(ValidationException::class);
+
+    expect($source->fresh())->not->toBeNull()
+        ->and($item->fresh()->ingredient_id)->toBe($source->id)
+        ->and($costingItem->fresh()->ingredient_id)->toBe($source->id)
+        ->and((float) $costingItem->fresh()->price_per_kg)->toBe(18.5)
+        ->and($version->fresh()->final_ingredient_list)->toBe('Generated INCI')
+        ->and(Storage::disk('public')->exists($source->featured_image_path))->toBeTrue()
+        ->and(Storage::disk('public')->exists($source->icon_image_path))->toBeTrue();
+});
+
+it('keeps database state and media when ingredient deletion fails before commit', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Undeletable Additive');
+    $source->update([
+        'featured_image_path' => 'ingredients/featured-images/undeletable.webp',
+        'icon_image_path' => 'ingredients/icons/undeletable.webp',
+    ]);
+    Storage::disk('public')->put($source->featured_image_path, 'featured');
+    Storage::disk('public')->put($source->icon_image_path, 'icon');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement Additive');
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Protected Formula'));
+    $version->update(generatedIngredientListState());
+    $item = privateMutationItem($user, $source, $version);
+    $costingItem = privateMutationCostingItem($user, $source, $version);
+
+    Ingredient::deleting(function (Ingredient $deletingIngredient) use ($source): void {
+        if ($deletingIngredient->is($source)) {
+            throw new RuntimeException('Forced ingredient deletion failure.');
+        }
+    });
+
+    expect(fn () => app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement))
+        ->toThrow(RuntimeException::class, 'Forced ingredient deletion failure.');
+
+    expect($source->fresh())->not->toBeNull()
+        ->and($item->fresh()->ingredient_id)->toBe($source->id)
+        ->and($costingItem->fresh()->ingredient_id)->toBe($source->id)
+        ->and($version->fresh()->final_ingredient_list)->toBe('Generated INCI')
+        ->and(Storage::disk('public')->exists($source->featured_image_path))->toBeTrue()
+        ->and(Storage::disk('public')->exists($source->icon_image_path))->toBeTrue();
+});
+
+it('refuses replacement when a visible workspace formula is blocked and reports its name', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Tussah Silk');
+    $workspace = Workspace::factory()->create();
+    WorkspaceMember::factory()->for($workspace)->for($user)->create(['role' => WorkspaceMemberRole::Viewer]);
+    $blockedRecipe = workspaceMutationRecipeWithItem($workspace, $source, 'Blocked Workspace Formula');
+
+    $exception = captureMutationValidationException(fn () => app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement));
+
+    expect($exception->errors()['ingredient'][0])->toContain($blockedRecipe->name)
+        ->and($source->fresh())->not->toBeNull()
+        ->and(RecipeItem::withoutGlobalScopes()->where('ingredient_id', $source->id)->exists())->toBeTrue();
+});
+
+it('refuses replacement for an inaccessible formula without leaking its name', function (): void {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Tussah Silk');
+    $secretRecipe = privateMutationRecipe($otherUser, 'Secret Competitor Formula');
+    privateMutationItem($otherUser, $source, privateMutationVersion($otherUser, $secretRecipe));
+
+    $exception = captureMutationValidationException(fn () => app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement));
+    $messages = implode(' ', $exception->errors()['ingredient']);
+
+    expect($messages)->not->toContain($secretRecipe->name)
+        ->and($messages)->toContain('1')
+        ->and($source->fresh())->not->toBeNull();
+});
+
+it('allows a workspace editor to replace an owned ingredient in an editable workspace formula', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Tussah Silk');
+    $workspace = Workspace::factory()->create();
+    WorkspaceMember::factory()->for($workspace)->for($user)->create(['role' => WorkspaceMemberRole::Editor]);
+    $recipe = workspaceMutationRecipeWithItem($workspace, $source, 'Editable Workspace Formula');
+
+    app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement);
+
+    expect($source->fresh())->toBeNull()
+        ->and(RecipeItem::withoutGlobalScopes()
+            ->whereHas('recipeVersion', fn (Builder $query): Builder => $query->withoutGlobalScopes()->whereBelongsTo($recipe))
+            ->where('ingredient_id', $replacement->id)
+            ->exists())->toBeTrue();
+});
+
+it('refuses replacing a platform ingredient or an ingredient owned by another user', function (string $ownership): void {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $source = $ownership === 'platform'
+        ? Ingredient::factory()->create(['category' => IngredientCategory::Additive])
+        : privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Other User Ingredient');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement');
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Formula'));
+    $item = privateMutationItem($user, $source, $version);
+
+    expect(fn () => app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement))
+        ->toThrow(ValidationException::class);
+
+    expect($source->fresh())->not->toBeNull()
+        ->and($item->fresh()->ingredient_id)->toBe($source->id);
+})->with(['platform', 'other user']);
+
+it('revalidates replacement activity accessibility and identity inside the transaction', function (string $invalidReplacement): void {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Source');
+    $replacement = match ($invalidReplacement) {
+        'inactive' => privateMutationIngredient($user, IngredientCategory::Additive, 'Inactive', false),
+        'inaccessible' => privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Inaccessible'),
+        'source' => $source,
+    };
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Formula'));
+    $item = privateMutationItem($user, $source, $version);
+
+    $exception = captureMutationValidationException(fn () => app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement));
+
+    expect($exception->errors())->toHaveKey('replacementIngredientId')
+        ->and($source->fresh())->not->toBeNull()
+        ->and($item->fresh()->ingredient_id)->toBe($source->id);
+})->with(['inactive', 'inaccessible', 'source']);
+
+it('deletes ingredient media after a successful replacement', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Additive');
+    $source->update([
+        'featured_image_path' => 'ingredients/featured-images/old.webp',
+        'icon_image_path' => 'ingredients/icons/old.webp',
+    ]);
+    Storage::disk('public')->put($source->featured_image_path, 'featured');
+    Storage::disk('public')->put($source->icon_image_path, 'icon');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'New Additive');
+
+    app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement);
+
+    expect($source->fresh())->toBeNull()
+        ->and(Storage::disk('public')->exists('ingredients/featured-images/old.webp'))->toBeFalse()
+        ->and(Storage::disk('public')->exists('ingredients/icons/old.webp'))->toBeFalse();
+});
+
+/** @return array<string, string> */
+function generatedIngredientListState(): array
+{
+    return [
+        'final_ingredient_list' => 'Generated INCI',
+        'final_ingredient_list_basis_hash' => 'inci-hash',
+        'final_plain_ingredient_list' => 'Generated plain list',
+        'final_plain_ingredient_list_basis_hash' => 'plain-hash',
+    ];
+}
+
+/** @param  Closure(): void  $callback */
+function captureMutationValidationException(Closure $callback): ValidationException
+{
+    try {
+        $callback();
+    } catch (ValidationException $exception) {
+        return $exception;
+    }
+
+    throw new RuntimeException('Expected a validation exception.');
+}
 
 function privateMutationIngredient(
     User $user,

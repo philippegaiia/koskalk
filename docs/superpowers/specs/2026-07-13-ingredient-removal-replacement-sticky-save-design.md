@@ -78,7 +78,7 @@ Formulas are not deleted automatically when they become empty or no longer total
 
 - Permission, candidate compatibility, or stale-data failures abort the complete transaction.
 - The dialog stays open and presents concise guidance.
-- Non-editable formulas are listed with links so the user understands why automatic replacement or removal is unavailable.
+- Visible non-editable formulas are listed with links so the user understands why automatic replacement or removal is unavailable. Formulas the user can no longer view contribute only to a generic blocked count; their names are never disclosed.
 - Server-side authorization and compatibility checks are authoritative; the modal state is never trusted by itself.
 - Concurrent deletion or replacement of either ingredient produces a safe error rather than a partial update.
 

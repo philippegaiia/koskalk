@@ -536,15 +536,11 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         ?int $explicitVersionId = null,
     ): array {
-        if ($explicitVersionId !== null) {
-            return $this->accessibleSavedVersion($recipeId, $explicitVersionId, $currentAppUserResolver);
-        }
-
-        if (! $request->has('version')) {
+        if ($explicitVersionId === null && ! $request->has('version')) {
             return $this->accessibleLatestPublishedFormula($recipeId, $currentAppUserResolver);
         }
 
-        $requestedVersionId = filter_var(
+        $requestedVersionId = $explicitVersionId ?? filter_var(
             $request->query('version'),
             FILTER_VALIDATE_INT,
             ['options' => ['min_range' => 1]],
@@ -552,7 +548,11 @@ class RecipeController extends Controller
 
         abort_if($requestedVersionId === false, 404);
 
-        return $this->accessibleSavedVersion($recipeId, $requestedVersionId, $currentAppUserResolver);
+        [$recipe, $version] = $this->accessibleSavedVersion($recipeId, $requestedVersionId, $currentAppUserResolver);
+
+        abort_if($version->is_current, 404);
+
+        return [$recipe, $version];
     }
 
     private function printSheet(

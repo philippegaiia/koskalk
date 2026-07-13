@@ -534,12 +534,37 @@ it('renders and exports the exact requested historical formula version', functio
         ->not->toContain('Coconut Oil');
 });
 
+it('identifies the selected saved version in print output', function () {
+    [$user, $recipe, $formulaA] = createRecipeWithTwoDistinctSavedVersions();
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('<title>Formula A · Batch production sheet', false)
+        ->assertDontSee('<title>Formula B · Batch production sheet', false)
+        ->assertSee('>Formula A</h1>', false)
+        ->assertDontSee('>Formula B</h1>', false);
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.costing', ['recipe' => $recipe->id, 'version' => $formulaA->id]))
+        ->assertSuccessful()
+        ->assertSee('Costs used for this saved formula.')
+        ->assertDontSee('Costs used for the current formula.');
+});
+
 it('uses the latest saved formula when sheet outputs do not request a version', function () {
     [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail()
+        ->update(['name' => 'Formula C Draft']);
 
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe->id]))
         ->assertSuccessful()
+        ->assertSee('<title>Formula B · Batch production sheet', false)
+        ->assertDontSee('Formula C Draft')
         ->assertSee('Coconut Oil')
         ->assertDontSee('Olive Oil');
 
@@ -571,6 +596,45 @@ it('rejects cross-recipe and inaccessible formula versions in sheet outputs', fu
     'costing sheet' => 'recipes.print.costing',
     'Excel export' => 'recipes.export.xlsx',
     'CSV export' => 'recipes.export.csv',
+]);
+
+it('rejects the mutable draft when requested from a saved formula output', function (string $routeName) {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    $draft = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $this->actingAs($user)
+        ->get(route($routeName, [
+            'recipe' => $recipe->id,
+            'version' => $draft->id,
+        ]))
+        ->assertNotFound();
+})->with([
+    'production sheet' => 'recipes.print.production',
+    'technical sheet' => 'recipes.print.technical',
+    'costing sheet' => 'recipes.print.costing',
+    'Excel export' => 'recipes.export.xlsx',
+    'CSV export' => 'recipes.export.csv',
+]);
+
+it('rejects the mutable draft from legacy saved formula output routes', function (string $routeName) {
+    [$user, $recipe] = createRecipeWithTwoDistinctSavedVersions();
+    $draft = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $this->actingAs($user)
+        ->get(route($routeName, [
+            'recipe' => $recipe->id,
+            'version' => $draft->id,
+        ]))
+        ->assertNotFound();
+})->with([
+    'production sheet' => 'recipes.legacy.print.recipe',
+    'details sheet' => 'recipes.legacy.print.details',
 ]);
 
 it('duplicates a recipe into a new draft recipe', function () {

@@ -3,6 +3,7 @@
 use App\IngredientCategory;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Ingredient;
+use App\Models\Plan;
 use App\Models\User;
 use App\Models\UserIngredientPrice;
 use App\Models\Workspace;
@@ -188,6 +189,32 @@ it('shows user-owned ingredients in the unified table', function () {
         ->assertSeeHtml('aria-label="User-created or user-modified ingredient"')
         ->assertSee('Data has not been verified by Soapkraft.')
         ->assertDontSee('Other User Oil');
+});
+
+it('shows private ingredient usage in the mine filter and plan allowance', function () {
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->hasLimit('private_ingredients', 20)
+        ->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()->create([
+        'display_name' => 'My Limited Ingredient',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'is_active' => true,
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertSee('Mine (1)')
+        ->assertSee('1 of 20 private ingredients');
 });
 
 it('updates a user ingredient price via the price endpoint', function () {

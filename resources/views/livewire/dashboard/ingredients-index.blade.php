@@ -37,18 +37,28 @@
                 </div>
 
                 <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between" aria-label="Ingredient catalog filters">
-                    <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Ingredient catalog filter">
-                        @foreach ($this->ownershipFilterOptions() as $filterValue => $filterLabel)
-                            <button
-                                type="button"
-                                role="radio"
-                                aria-checked="{{ $ownershipFilter === $filterValue ? 'true' : 'false' }}"
-                                wire:click="setOwnershipFilter('{{ $filterValue }}')"
-                                class="{{ $ownershipFilter === $filterValue ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-4 py-2 text-sm font-medium transition"
-                            >
-                                {{ $filterLabel }}
-                            </button>
-                        @endforeach
+                    <div class="flex flex-col gap-2">
+                        <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Ingredient catalog filter">
+                            @foreach ($this->ownershipFilterOptions() as $filterValue => $filterLabel)
+                                <button
+                                    type="button"
+                                    role="radio"
+                                    aria-checked="{{ $ownershipFilter === $filterValue ? 'true' : 'false' }}"
+                                    wire:click="setOwnershipFilter('{{ $filterValue }}')"
+                                    class="{{ $ownershipFilter === $filterValue ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-4 py-2 text-sm font-medium transition"
+                                >
+                                    {{ $filterValue === 'mine' ? $filterLabel.' ('.$privateIngredientUsage['used'].')' : $filterLabel }}
+                                </button>
+                            @endforeach
+                        </div>
+
+                        <p class="text-xs text-[var(--color-ink-soft)]">
+                            @if ($privateIngredientUsage['limit'] === null)
+                                {{ $privateIngredientUsage['used'] }} private {{ \Illuminate\Support\Str::plural('ingredient', $privateIngredientUsage['used']) }}
+                            @else
+                                {{ $privateIngredientUsage['used'] }} of {{ $privateIngredientUsage['limit'] }} private ingredients
+                            @endif
+                        </p>
                     </div>
 
                     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -99,6 +109,10 @@
                                     $displayName = $ingredient->localizedDisplayName();
                                     $isMine = $ingredient->owner_type === \App\OwnerType::User && $ingredient->owner_id === $currentUser->id;
                                     $cannotDelete = $isMine && ((int) $ingredient->costing_items_count > 0 || (int) $ingredient->recipe_items_count > 0);
+                                    $formulaUsage = $formulaUsageByIngredient[$ingredient->id] ?? [];
+                                    $formulaUsageCount = count($formulaUsage);
+                                    $hasFormulaUsage = $isMine && $formulaUsageCount > 0;
+                                    $usageDisclosureId = 'ingredient-usage-'.$ingredient->id;
                                 @endphp
                                 <tr wire:key="ingredient-{{ $ingredient->id }}" @if ($cannotDelete) data-cannot-delete="{{ $ingredient->id }}" @endif>
                                     <td>
@@ -155,18 +169,50 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
                                                     </svg>
                                                 </a>
-                                                <button
-                                                    type="button"
-                                                    wire:click="confirmDelete({{ $ingredient->id }})"
-                                                    @disabled($cannotDelete)
-                                                    class="grid size-9 place-items-center rounded-lg text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] disabled:cursor-not-allowed disabled:opacity-40"
-                                                    aria-label="Delete {{ $displayName }}"
-                                                    title="{{ $cannotDelete ? 'This ingredient is already used.' : 'Delete' }}"
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                                                    </svg>
-                                                </button>
+                                                @if ($hasFormulaUsage)
+                                                    <div class="flex flex-col items-end">
+                                                        <button
+                                                            type="button"
+                                                            wire:click="toggleUsage({{ $ingredient->id }})"
+                                                            aria-expanded="{{ $expandedUsageIngredientId === $ingredient->id ? 'true' : 'false' }}"
+                                                            aria-controls="{{ $usageDisclosureId }}"
+                                                            class="inline-flex min-h-9 items-center justify-center rounded-lg px-2.5 text-xs font-medium text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2"
+                                                        >
+                                                            Used in {{ $formulaUsageCount }} {{ \Illuminate\Support\Str::plural('formula', $formulaUsageCount) }}
+                                                        </button>
+
+                                                        @if ($expandedUsageIngredientId === $ingredient->id)
+                                                            <div id="{{ $usageDisclosureId }}" class="mt-2 w-72 rounded-xl border border-[var(--color-line)] bg-white p-3 text-left shadow-sm">
+                                                                <ul class="space-y-2">
+                                                                    @foreach ($formulaUsage as $usage)
+                                                                        <li>
+                                                                            <a href="{{ route('recipes.edit', $usage['recipe_id']) }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
+                                                                                {{ $usage['name'] }}
+                                                                            </a>
+                                                                            @if ($usage['version_count'] > 1)
+                                                                                <p class="text-xs text-[var(--color-ink-soft)]">{{ $usage['version_count'] }} saved versions</p>
+                                                                            @endif
+                                                                        </li>
+                                                                    @endforeach
+                                                                </ul>
+                                                                <p class="mt-3 border-t border-[var(--color-line)] pt-3 text-xs leading-5 text-[var(--color-ink-soft)]">Deletion is protected while recoverable formula records use it.</p>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @else
+                                                    <button
+                                                        type="button"
+                                                        wire:click="confirmDelete({{ $ingredient->id }})"
+                                                        @disabled($cannotDelete)
+                                                        class="grid size-9 place-items-center rounded-lg text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+                                                        aria-label="Delete {{ $displayName }}"
+                                                        title="{{ $cannotDelete ? 'This ingredient is already used.' : 'Delete' }}"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                                                        </svg>
+                                                    </button>
+                                                @endif
                                             @else
                                                 <span class="text-xs text-[var(--color-ink-soft)]">Reference</span>
                                             @endif

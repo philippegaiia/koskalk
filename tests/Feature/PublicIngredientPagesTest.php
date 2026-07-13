@@ -3,6 +3,7 @@
 use App\IngredientCategory;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Ingredient;
+use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
@@ -212,6 +213,88 @@ it('disables deleting a personal ingredient that is used in a recipe formula', f
         ->call('deleteIngredient', $ingredient->id);
 
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
+});
+
+it('explains which formula versions protect a private ingredient from deletion', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Protected Preservative',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $recipe = Recipe::factory()->create([
+        'name' => 'Recovery Cream',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $versions = collect([1, 2])->map(fn (int $versionNumber): RecipeVersion => RecipeVersion::factory()
+        ->create([
+            'recipe_id' => $recipe->id,
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+            'version_number' => $versionNumber,
+            'is_current' => false,
+        ]));
+
+    foreach ($versions as $version) {
+        RecipeItem::factory()->create([
+            'recipe_version_id' => $version->id,
+            'recipe_phase_id' => null,
+            'ingredient_id' => $ingredient->id,
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+        ]);
+    }
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertSee('Used in 1 formula')
+        ->assertSeeHtml('aria-expanded="false"')
+        ->assertSeeHtml('aria-controls="ingredient-usage-'.$ingredient->id.'"')
+        ->assertDontSeeHtml('disabled')
+        ->assertDontSee($recipe->name)
+        ->call('toggleUsage', $ingredient->id)
+        ->assertSet('expandedUsageIngredientId', $ingredient->id)
+        ->assertSeeHtml('aria-expanded="true"')
+        ->assertSee($recipe->name)
+        ->assertSeeHtml('href="'.route('recipes.edit', $recipe->id).'"')
+        ->assertSee('2 saved versions')
+        ->assertSee('Deletion is protected while recoverable formula records use it.')
+        ->call('toggleUsage', $ingredient->id)
+        ->assertSet('expandedUsageIngredientId', null)
+        ->call('deleteIngredient', $ingredient->id);
+
+    expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
+});
+
+it('shows private ingredient allowance without a null limit', function () {
+    $user = User::factory()->create();
+    $plan = Plan::factory()->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSee('1 private ingredient')
+        ->assertDontSee('1 of')
+        ->assertDontSee('1 /')
+        ->assertDontSee('of null');
 });
 
 it('does not allow editing another users private ingredient', function () {

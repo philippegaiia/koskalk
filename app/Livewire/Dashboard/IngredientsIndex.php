@@ -6,6 +6,8 @@ use App\Models\Ingredient;
 use App\Models\User;
 use App\OwnerType;
 use App\Services\CurrentAppUserResolver;
+use App\Services\EntitlementService;
+use App\Services\IngredientFormulaUsageService;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientPriceMemory;
 use App\Support\NumberLocale;
@@ -46,6 +48,8 @@ class IngredientsIndex extends Component
 
     public ?int $pendingDeleteId = null;
 
+    public ?int $expandedUsageIngredientId = null;
+
     public function mount(CurrentAppUserResolver $resolver): void
     {
         $user = $resolver->resolve();
@@ -66,13 +70,24 @@ class IngredientsIndex extends Component
         $this->resetPage();
     }
 
-    public function render(): View
-    {
-        $ingredients = $this->ingredients();
+    public function render(
+        EntitlementService $entitlementService,
+        IngredientFormulaUsageService $ingredientFormulaUsageService,
+    ): View {
+        $currentUser = $this->currentUser();
+        $ingredients = $this->ingredients($currentUser);
+        $privateIngredientUsage = $currentUser instanceof User
+            ? $entitlementService->usageFor($currentUser)['private_ingredients']
+            : ['used' => 0, 'limit' => null, 'remaining' => null, 'allowed' => true];
+        $formulaUsageByIngredient = $currentUser instanceof User
+            ? $ingredientFormulaUsageService->forIngredients($currentUser, $ingredients->getCollection())
+            : [];
 
         return view('livewire.dashboard.ingredients-index', [
-            'currentUser' => $this->currentUser(),
+            'currentUser' => $currentUser,
             'ingredients' => $ingredients,
+            'privateIngredientUsage' => $privateIngredientUsage,
+            'formulaUsageByIngredient' => $formulaUsageByIngredient,
             'priceLabel' => $this->priceColumnLabel('Price/kg'),
             'pendingDeleteIngredient' => $this->pendingDeleteId === null
                 ? null
@@ -158,6 +173,13 @@ class IngredientsIndex extends Component
         $this->pendingDeleteId = null;
     }
 
+    public function toggleUsage(int $ingredientId): void
+    {
+        $this->expandedUsageIngredientId = $this->expandedUsageIngredientId === $ingredientId
+            ? null
+            : $ingredientId;
+    }
+
     public function deleteIngredient(int $id): void
     {
         $user = $this->currentUser();
@@ -213,9 +235,8 @@ class IngredientsIndex extends Component
         return NumberLocale::formatDecimal($value, 2, $this->currentNumberLocale);
     }
 
-    private function ingredients(): LengthAwarePaginator
+    private function ingredients(?User $user): LengthAwarePaginator
     {
-        $user = $this->currentUser();
         $perPage = $this->normalizedPerPage();
 
         if (! $user instanceof User) {

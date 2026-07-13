@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\IngredientCategory;
 use App\Models\Ingredient;
+use App\Models\IngredientComponent;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
@@ -24,6 +25,11 @@ use Throwable;
 
 class IngredientFormulaMutationService
 {
+    public function __construct(
+        private readonly IngredientCompositeDependencyService $compositeDependencyService,
+        private readonly RetriableDatabaseTransaction $transaction,
+    ) {}
+
     /**
      * @return array{
      *     formula_count: int,
@@ -31,17 +37,49 @@ class IngredientFormulaMutationService
      *     editable_recipes: EloquentCollection<int, Recipe>,
      *     blocked_recipes: EloquentCollection<int, Recipe>,
      *     inaccessible_blocked_count: int,
+     *     composite_count: int,
+     *     editable_composites: EloquentCollection<int, Ingredient>,
+     *     blocked_composites: EloquentCollection<int, Ingredient>,
+     *     inaccessible_blocked_composite_count: int,
      *     requires_soap_carrier: bool
      * }
      */
     public function impact(User $user, Ingredient $ingredient): array
     {
-        $affectedRecipes = $this->affectedRecipes($ingredient);
+        $dependencyGraph = $this->compositeDependencyService->forSource($ingredient->id);
+        $affectedRecipes = $this->affectedRecipes($dependencyGraph['ingredient_ids']);
         $editableRecipes = new EloquentCollection;
         $blockedRecipes = new EloquentCollection;
         $inaccessibleBlockedCount = 0;
         $updateDecisions = [];
         $viewDecisions = [];
+        $translationLocales = Ingredient::translationLocaleCandidates();
+        $ancestorRelations = [];
+
+        if ($translationLocales !== []) {
+            $ancestorRelations['translations'] = fn (Builder|Relation $query): Builder|Relation => $query
+                ->whereIn('locale', $translationLocales);
+        }
+
+        $ancestorComposites = Ingredient::query()
+            ->with($ancestorRelations)
+            ->whereKey($dependencyGraph['ancestor_ids']->all())
+            ->orderBy('display_name')
+            ->orderBy('id')
+            ->get();
+        $editableComposites = new EloquentCollection;
+        $blockedComposites = new EloquentCollection;
+        $inaccessibleBlockedCompositeCount = 0;
+
+        foreach ($ancestorComposites as $ancestorComposite) {
+            if ($this->isPrivateIngredientOwnedBy($ancestorComposite, $user)) {
+                $editableComposites->add($ancestorComposite);
+            } elseif ($ancestorComposite->isAccessibleBy($user)) {
+                $blockedComposites->add($ancestorComposite);
+            } else {
+                $inaccessibleBlockedCompositeCount++;
+            }
+        }
 
         foreach ($affectedRecipes as $recipe) {
             $updateContextKey = $this->updateAuthorizationContextKey($recipe);
@@ -73,7 +111,11 @@ class IngredientFormulaMutationService
             'editable_recipes' => $editableRecipes,
             'blocked_recipes' => $blockedRecipes,
             'inaccessible_blocked_count' => $inaccessibleBlockedCount,
-            'requires_soap_carrier' => $this->requiresSoapCarrier($ingredient),
+            'composite_count' => $ancestorComposites->count(),
+            'editable_composites' => $editableComposites,
+            'blocked_composites' => $blockedComposites,
+            'inaccessible_blocked_composite_count' => $inaccessibleBlockedCompositeCount,
+            'requires_soap_carrier' => $this->requiresSoapCarrier($ingredient, $dependencyGraph['ingredient_ids']),
         ];
     }
 
@@ -94,6 +136,13 @@ class IngredientFormulaMutationService
             ->where('is_active', true)
             ->accessibleTo($user);
 
+        $dependencyGraph = $this->compositeDependencyService->forSource($ingredient->id);
+        $ancestorIds = $dependencyGraph['ancestor_ids'];
+
+        if ($ancestorIds->isNotEmpty()) {
+            $query->whereNotIn($ingredient->getQualifiedKeyName(), $ancestorIds);
+        }
+
         if ($ingredient->category !== null && in_array($ingredient->category, IngredientCategory::aromaticCases(), true)) {
             $query->whereIn('category', IngredientCategory::aromaticValues());
         } else {
@@ -105,7 +154,10 @@ class IngredientFormulaMutationService
             ->orderBy('id')
             ->get();
 
-        if ($ingredient->category !== IngredientCategory::CarrierOil || ! $this->requiresSoapCarrier($ingredient)) {
+        if (
+            $ingredient->category !== IngredientCategory::CarrierOil
+            || ! $this->requiresSoapCarrier($ingredient, $dependencyGraph['ingredient_ids'])
+        ) {
             return $candidates;
         }
 
@@ -119,7 +171,7 @@ class IngredientFormulaMutationService
         Ingredient $ingredient,
         Ingredient $replacement,
     ): void {
-        DB::transaction(function () use ($user, $ingredient, $replacement): void {
+        $this->transaction->run(function () use ($user, $ingredient, $replacement): void {
             $lockedIngredients = Ingredient::query()
                 ->whereKey([$ingredient->getKey(), $replacement->getKey()])
                 ->orderBy('id')
@@ -140,8 +192,10 @@ class IngredientFormulaMutationService
                 ]);
             }
 
+            $dependencyGraph = $this->lockAndValidateCompositeGraph($lockedIngredient, $user);
             $impact = $this->impact($user, $lockedIngredient);
             $this->assertEveryAffectedFormulaIsEditable($impact);
+            $this->assertEveryAffectedCompositeIsEditable($impact);
 
             if (! $this->isValidReplacement($user, $lockedIngredient, $lockedReplacement, $impact['requires_soap_carrier'])) {
                 throw ValidationException::withMessages([
@@ -149,7 +203,17 @@ class IngredientFormulaMutationService
                 ]);
             }
 
-            $affectedVersionIds = $this->affectedVersionIds($lockedIngredient);
+            if ($dependencyGraph['ancestor_ids']->contains($lockedReplacement->id)) {
+                throw ValidationException::withMessages([
+                    'replacementIngredientId' => 'Select a replacement that does not create a composite ingredient cycle.',
+                ]);
+            }
+
+            $affectedVersionIds = $this->affectedVersionIds($dependencyGraph['ingredient_ids']);
+
+            IngredientComponent::query()
+                ->where('component_ingredient_id', $lockedIngredient->id)
+                ->update(['component_ingredient_id' => $lockedReplacement->id]);
 
             if ($affectedVersionIds->isNotEmpty()) {
                 $this->lockAffectedVersions($affectedVersionIds);
@@ -175,7 +239,7 @@ class IngredientFormulaMutationService
 
     public function removeEverywhereAndDelete(User $user, Ingredient $ingredient): void
     {
-        DB::transaction(function () use ($user, $ingredient): void {
+        $this->transaction->run(function () use ($user, $ingredient): void {
             $lockedIngredient = $this->validatedOwnedIngredient(
                 Ingredient::query()
                     ->whereKey($ingredient->getKey())
@@ -184,10 +248,12 @@ class IngredientFormulaMutationService
                 $user,
             );
 
+            $dependencyGraph = $this->lockAndValidateCompositeGraph($lockedIngredient, $user);
             $impact = $this->impact($user, $lockedIngredient);
             $this->assertEveryAffectedFormulaIsEditable($impact);
+            $this->assertEveryAffectedCompositeIsEditable($impact);
 
-            $affectedVersionIds = $this->affectedVersionIds($lockedIngredient);
+            $affectedVersionIds = $this->affectedVersionIds($dependencyGraph['ingredient_ids']);
 
             if ($affectedVersionIds->isNotEmpty()) {
                 $this->lockAffectedVersions($affectedVersionIds);
@@ -196,25 +262,32 @@ class IngredientFormulaMutationService
                 $this->invalidateGeneratedIngredientLists($affectedVersionIds);
             }
 
+            IngredientComponent::query()
+                ->where('component_ingredient_id', $lockedIngredient->id)
+                ->delete();
+
             $this->scheduleMediaDeletionAfterCommit($lockedIngredient);
             $this->deleteIngredient($lockedIngredient);
         });
     }
 
-    /** @return EloquentCollection<int, Recipe> */
-    private function affectedRecipes(Ingredient $ingredient): EloquentCollection
+    /**
+     * @param  Collection<int, int>  $ingredientIds
+     * @return EloquentCollection<int, Recipe>
+     */
+    private function affectedRecipes(Collection $ingredientIds): EloquentCollection
     {
         return Recipe::withoutGlobalScopes()
-            ->whereHas('versions', function (Builder $versionQuery) use ($ingredient): void {
+            ->whereHas('versions', function (Builder $versionQuery) use ($ingredientIds): void {
                 $versionQuery
                     ->withoutGlobalScopes()
-                    ->where(function (Builder $usageQuery) use ($ingredient): void {
+                    ->where(function (Builder $usageQuery) use ($ingredientIds): void {
                         $usageQuery
                             ->whereHas('items', fn (Builder $itemQuery): Builder => $itemQuery
                                 ->withoutGlobalScopes()
-                                ->whereBelongsTo($ingredient))
+                                ->whereIn('ingredient_id', $ingredientIds))
                             ->orWhereHas('costings.items', fn (Builder $costingItemQuery): Builder => $costingItemQuery
-                                ->whereBelongsTo($ingredient));
+                                ->whereIn('ingredient_id', $ingredientIds));
                     });
             })
             ->orderBy('name')
@@ -222,27 +295,31 @@ class IngredientFormulaMutationService
             ->get();
     }
 
-    private function requiresSoapCarrier(Ingredient $ingredient): bool
+    /** @param Collection<int, int> $ingredientIds */
+    private function requiresSoapCarrier(Ingredient $ingredient, Collection $ingredientIds): bool
     {
         return $ingredient->category === IngredientCategory::CarrierOil
             && RecipeItem::withoutGlobalScopes()
-                ->whereBelongsTo($ingredient)
+                ->whereIn('ingredient_id', $ingredientIds)
                 ->whereHas('recipePhase', fn (Builder $phaseQuery): Builder => $phaseQuery
                     ->withoutGlobalScopes()
                     ->where('slug', 'saponified_oils'))
                 ->exists();
     }
 
-    /** @return Collection<int, int> */
-    private function affectedVersionIds(Ingredient $ingredient): Collection
+    /**
+     * @param  Collection<int, int>  $ingredientIds
+     * @return Collection<int, int>
+     */
+    private function affectedVersionIds(Collection $ingredientIds): Collection
     {
         $directVersionIds = RecipeItem::withoutGlobalScopes()
-            ->whereBelongsTo($ingredient)
+            ->whereIn('ingredient_id', $ingredientIds)
             ->pluck('recipe_version_id');
 
         $costingVersionIds = RecipeVersionCosting::query()
             ->whereHas('items', fn (Builder $itemQuery): Builder => $itemQuery
-                ->whereBelongsTo($ingredient))
+                ->whereIn('ingredient_id', $ingredientIds))
             ->pluck('recipe_version_id');
 
         return $directVersionIds
@@ -289,6 +366,72 @@ class IngredientFormulaMutationService
                 $impact['inaccessible_blocked_count'],
             ),
         ]);
+    }
+
+    /**
+     * @param  array{
+     *     blocked_composites: EloquentCollection<int, Ingredient>,
+     *     inaccessible_blocked_composite_count: int
+     * }  $impact
+     */
+    private function assertEveryAffectedCompositeIsEditable(array $impact): void
+    {
+        if ($impact['blocked_composites']->isEmpty() && $impact['inaccessible_blocked_composite_count'] === 0) {
+            return;
+        }
+
+        $messages = ['Edit the affected composite ingredients manually before deleting this ingredient.'];
+
+        if ($impact['blocked_composites']->isNotEmpty()) {
+            $messages[] = 'You cannot edit: '.$impact['blocked_composites']->pluck('display_name')->implode(', ').'.';
+        }
+
+        if ($impact['inaccessible_blocked_composite_count'] > 0) {
+            $messages[] = trans_choice(
+                ':count additional composite ingredient cannot be edited.',
+                $impact['inaccessible_blocked_composite_count'],
+                ['count' => $impact['inaccessible_blocked_composite_count']],
+            );
+        }
+
+        throw ValidationException::withMessages(['ingredient' => implode(' ', $messages)]);
+    }
+
+    /**
+     * @return array{ingredient_ids: Collection<int, int>, ancestor_ids: Collection<int, int>}
+     */
+    private function lockAndValidateCompositeGraph(Ingredient $ingredient, User $user): array
+    {
+        $lockedAncestorIds = collect();
+
+        do {
+            $dependencyGraph = $this->compositeDependencyService->forSource($ingredient->id, lockForUpdate: true);
+            $ancestorIdsToLock = $dependencyGraph['ancestor_ids']->diff($lockedAncestorIds)->values();
+
+            if ($ancestorIdsToLock->isEmpty()) {
+                return $dependencyGraph;
+            }
+
+            $ancestorComposites = Ingredient::query()
+                ->whereKey($ancestorIdsToLock->all())
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if (
+                $ancestorComposites->count() !== $ancestorIdsToLock->count()
+                || $ancestorComposites->contains(fn (Ingredient $ancestor): bool => ! $this->isPrivateIngredientOwnedBy($ancestor, $user))
+            ) {
+                throw ValidationException::withMessages([
+                    'ingredient' => 'Edit the affected composite ingredients manually before deleting this ingredient.',
+                ]);
+            }
+
+            $lockedAncestorIds = $lockedAncestorIds
+                ->concat($ancestorComposites->modelKeys())
+                ->unique()
+                ->values();
+        } while (true);
     }
 
     /** @param Collection<int, int> $affectedVersionIds */

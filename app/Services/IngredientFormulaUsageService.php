@@ -13,6 +13,10 @@ use Illuminate\Support\Collection;
 
 class IngredientFormulaUsageService
 {
+    public function __construct(
+        private readonly IngredientCompositeDependencyService $compositeDependencyService,
+    ) {}
+
     /**
      * @param  Collection<int, Ingredient>  $ingredients
      * @return array<int, array<int, array{recipe_id: int, name: string, version_count: int, url: string}>>
@@ -28,6 +32,17 @@ class IngredientFormulaUsageService
         if ($ingredientIds->isEmpty()) {
             return [];
         }
+
+        $usageIngredientIdsBySource = $this->compositeDependencyService->ingredientIdsBySource($ingredientIds);
+        $sourceIngredientIdsByUsageIngredientId = collect($usageIngredientIdsBySource)
+            ->flatMap(fn (Collection $usageIngredientIds, int $sourceIngredientId): Collection => $usageIngredientIds
+                ->map(fn (int $usageIngredientId): array => [
+                    'usage_ingredient_id' => $usageIngredientId,
+                    'source_ingredient_id' => $sourceIngredientId,
+                ]))
+            ->groupBy('usage_ingredient_id')
+            ->map(fn (Collection $rows): Collection => $rows->pluck('source_ingredient_id'));
+        $allUsageIngredientIds = $sourceIngredientIdsByUsageIngredientId->keys();
 
         $accessibleWorkspaceIds = $user->accessibleWorkspaceIds();
         $recipeAccessConstraint = function (Builder|Relation $query) use ($accessibleWorkspaceIds, $user): Builder|Relation {
@@ -57,7 +72,7 @@ class IngredientFormulaUsageService
             ->whereHas('recipe', $recipeAccessConstraint);
 
         $recipeItems = RecipeItem::withoutGlobalScopes()
-            ->whereIn('ingredient_id', $ingredientIds)
+            ->whereIn('ingredient_id', $allUsageIngredientIds)
             ->whereHas('recipeVersion', $recipeVersionConstraint)
             ->with([
                 'recipeVersion' => fn (Relation $query): Relation => $query
@@ -67,7 +82,7 @@ class IngredientFormulaUsageService
             ->get();
 
         $costingItems = RecipeVersionCostingItem::query()
-            ->whereIn('ingredient_id', $ingredientIds)
+            ->whereIn('ingredient_id', $allUsageIngredientIds)
             ->whereHas(
                 'costing',
                 fn (Builder $query): Builder => $query->whereHas('recipeVersion', $recipeVersionConstraint),
@@ -82,28 +97,32 @@ class IngredientFormulaUsageService
             ->get();
 
         $usageRows = $recipeItems
-            ->map(function (RecipeItem $recipeItem): array {
+            ->flatMap(function (RecipeItem $recipeItem) use ($sourceIngredientIdsByUsageIngredientId): Collection {
                 $recipe = $recipeItem->recipeVersion->recipe;
 
-                return [
-                    'ingredient_id' => $recipeItem->ingredient_id,
-                    'recipe_id' => $recipe->id,
-                    'recipe_name' => $recipe->name,
-                    'version_id' => $recipeItem->recipe_version_id,
-                    'version_is_current' => $recipeItem->recipeVersion->is_current,
-                ];
+                return $sourceIngredientIdsByUsageIngredientId
+                    ->get($recipeItem->ingredient_id, collect())
+                    ->map(fn (int $sourceIngredientId): array => [
+                        'ingredient_id' => $sourceIngredientId,
+                        'recipe_id' => $recipe->id,
+                        'recipe_name' => $recipe->name,
+                        'version_id' => $recipeItem->recipe_version_id,
+                        'version_is_current' => $recipeItem->recipeVersion->is_current,
+                    ]);
             })
-            ->concat($costingItems->map(function (RecipeVersionCostingItem $costingItem): array {
+            ->concat($costingItems->flatMap(function (RecipeVersionCostingItem $costingItem) use ($sourceIngredientIdsByUsageIngredientId): Collection {
                 $recipeVersion = $costingItem->costing->recipeVersion;
                 $recipe = $recipeVersion->recipe;
 
-                return [
-                    'ingredient_id' => $costingItem->ingredient_id,
-                    'recipe_id' => $recipe->id,
-                    'recipe_name' => $recipe->name,
-                    'version_id' => $recipeVersion->id,
-                    'version_is_current' => $recipeVersion->is_current,
-                ];
+                return $sourceIngredientIdsByUsageIngredientId
+                    ->get($costingItem->ingredient_id, collect())
+                    ->map(fn (int $sourceIngredientId): array => [
+                        'ingredient_id' => $sourceIngredientId,
+                        'recipe_id' => $recipe->id,
+                        'recipe_name' => $recipe->name,
+                        'version_id' => $recipeVersion->id,
+                        'version_is_current' => $recipeVersion->is_current,
+                    ]);
             }));
 
         return $usageRows

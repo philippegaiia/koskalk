@@ -2,6 +2,7 @@
 
 use App\IngredientCategory;
 use App\Models\Ingredient;
+use App\Models\IngredientComponent;
 use App\Models\IngredientSapProfile;
 use App\Models\IngredientTranslation;
 use App\Models\Recipe;
@@ -16,16 +17,91 @@ use App\Models\UserIngredientPrice;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
+use App\Services\IngredientCompositeDependencyService;
 use App\Services\IngredientFormulaMutationService;
+use App\Services\RetriableDatabaseTransaction;
 use App\Visibility;
 use App\WorkspaceMemberRole;
+use Illuminate\Database\DatabaseManager;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+it('indexes reverse composite dependency lookups', function (): void {
+    $componentIngredientIndex = collect(Schema::getIndexes('ingredient_components'))
+        ->first(fn (array $index): bool => $index['columns'] === ['component_ingredient_id']);
+
+    expect($componentIngredientIndex)->not->toBeNull();
+});
+
+it('uses bounded deadlock retries for both ingredient mutation transactions', function (): void {
+    $user = User::factory()->create();
+    $replacementSource = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement Source');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement');
+    $removalSource = privateMutationIngredient($user, IngredientCategory::Additive, 'Removal Source');
+
+    $database = Mockery::mock(DatabaseManager::class);
+    $database
+        ->shouldReceive('transaction')
+        ->twice()
+        ->with(Mockery::type(Closure::class), 3)
+        ->andReturnNull();
+
+    $service = new IngredientFormulaMutationService(
+        app(IngredientCompositeDependencyService::class),
+        new RetriableDatabaseTransaction($database),
+    );
+    $service->replaceEverywhereAndDelete($user, $replacementSource, $replacement);
+    $service->removeEverywhereAndDelete($user, $removalSource);
+
+    expect($replacementSource->fresh())->not->toBeNull()
+        ->and($removalSource->fresh())->not->toBeNull();
+});
+
+it('eager loads localized names for visible blocked composite ingredients', function (): void {
+    app()->setLocale('fr');
+    SupportedLocale::factory()->create(['code' => 'fr']);
+
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Source');
+    $translatedNames = collect(range(1, 3))->map(function (int $number) use ($source): string {
+        $parent = Ingredient::factory()->create([
+            'category' => IngredientCategory::Additive,
+            'display_name' => 'Platform Composite '.$number,
+        ]);
+        IngredientComponent::factory()->create([
+            'ingredient_id' => $parent->id,
+            'component_ingredient_id' => $source->id,
+        ]);
+        $translatedName = 'Mélange plateforme '.$number;
+        IngredientTranslation::factory()->for($parent)->create([
+            'locale' => 'fr',
+            'display_name' => $translatedName,
+        ]);
+
+        return $translatedName;
+    });
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $impact = app(IngredientFormulaMutationService::class)->impact($user, $source);
+    $queriesAfterImpact = count(DB::getQueryLog());
+    $localizedNames = $impact['blocked_composites']->map->localizedDisplayName();
+    $queriesAfterNames = count(DB::getQueryLog());
+
+    DB::disableQueryLog();
+
+    expect($impact['blocked_composites'])->toHaveCount(3)
+        ->and($impact['blocked_composites']->every(fn (Ingredient $composite): bool => $composite->relationLoaded('translations')))->toBeTrue()
+        ->and($localizedNames->all())->toEqualCanonicalizing($translatedNames->all())
+        ->and($queriesAfterNames)->toBe($queriesAfterImpact);
+});
 
 it('counts distinct formulas across current backup and archived versions', function (): void {
     $user = User::factory()->create();
@@ -296,6 +372,186 @@ it('returns only active accessible replacement candidates', function (): void {
 
     expect($candidateIds)->toContain($ownedCandidate->id, $platformCandidate->id)
         ->not->toContain($source->id, $inactiveCandidate->id, $inaccessibleCandidate->id);
+});
+
+it('replaces direct composite components while preserving metadata and invalidating nested formula versions', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Extract');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'New Extract');
+    $directParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Direct Blend');
+    $nestedParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Nested Blend');
+    $component = IngredientComponent::factory()->create([
+        'ingredient_id' => $directParent->id,
+        'component_ingredient_id' => $source->id,
+        'percentage_in_parent' => 37.125,
+        'sort_order' => 4,
+        'source_notes' => 'Supplier declaration',
+        'source_data' => ['document' => 'spec-42'],
+    ]);
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $nestedParent->id,
+        'component_ingredient_id' => $directParent->id,
+    ]);
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Nested Composite Formula'));
+    $version->update(generatedIngredientListState());
+    $parentFormulaItem = privateMutationItem($user, $nestedParent, $version);
+    $parentCostingItem = privateMutationCostingItem($user, $nestedParent, $version);
+
+    $impact = app(IngredientFormulaMutationService::class)->impact($user, $source);
+
+    expect($impact['formula_count'])->toBe(1)
+        ->and($impact['composite_count'])->toBe(2)
+        ->and($impact['editable_composites']->modelKeys())->toEqualCanonicalizing([$directParent->id, $nestedParent->id]);
+
+    app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $replacement);
+
+    $component->refresh();
+
+    expect($source->fresh())->toBeNull()
+        ->and($component->ingredient_id)->toBe($directParent->id)
+        ->and($component->component_ingredient_id)->toBe($replacement->id)
+        ->and((float) $component->percentage_in_parent)->toBe(37.125)
+        ->and($component->sort_order)->toBe(4)
+        ->and($component->source_notes)->toBe('Supplier declaration')
+        ->and($component->source_data)->toBe(['document' => 'spec-42'])
+        ->and($parentFormulaItem->fresh()->ingredient_id)->toBe($nestedParent->id)
+        ->and($parentCostingItem->fresh()->ingredient_id)->toBe($nestedParent->id)
+        ->and($version->fresh()->final_ingredient_list)->toBeNull();
+});
+
+it('requires a soap eligible carrier when an ancestor composite is used in saponified oils', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Old Carrier');
+    $parent = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Carrier Blend');
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $parent->id,
+        'component_ingredient_id' => $source->id,
+    ]);
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Composite Soap'));
+    privateMutationItem($user, $parent, $version, phaseSlug: 'saponified_oils');
+    $carrierWithoutSap = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Wax Carrier');
+    $carrierWithSap = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Soap Carrier');
+    $carrierWithSap->update(['is_potentially_saponifiable' => true]);
+    IngredientSapProfile::factory()->for($carrierWithSap)->create(['koh_sap_value' => 0.19]);
+
+    $service = app(IngredientFormulaMutationService::class);
+    $impact = $service->impact($user, $source);
+    $candidateIds = $service->replacementCandidates($user, $source)->modelKeys();
+
+    expect($impact['requires_soap_carrier'])->toBeTrue()
+        ->and($candidateIds)->toContain($carrierWithSap->id)
+        ->not->toContain($carrierWithoutSap->id, $parent->id);
+});
+
+it('removes direct composite rows while retaining ancestor ingredients and unrelated components', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Obsolete Extract');
+    $other = privateMutationIngredient($user, IngredientCategory::Additive, 'Stable Extract');
+    $directParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Direct Blend');
+    $nestedParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Nested Blend');
+    $removedComponent = IngredientComponent::factory()->create([
+        'ingredient_id' => $directParent->id,
+        'component_ingredient_id' => $source->id,
+    ]);
+    $retainedComponent = IngredientComponent::factory()->create([
+        'ingredient_id' => $directParent->id,
+        'component_ingredient_id' => $other->id,
+    ]);
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $nestedParent->id,
+        'component_ingredient_id' => $directParent->id,
+    ]);
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Nested Composite Formula'));
+    $version->update(generatedIngredientListState());
+    $parentFormulaItem = privateMutationItem($user, $nestedParent, $version);
+
+    app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source);
+
+    expect($source->fresh())->toBeNull()
+        ->and($removedComponent->fresh())->toBeNull()
+        ->and($retainedComponent->fresh())->not->toBeNull()
+        ->and($directParent->fresh())->not->toBeNull()
+        ->and($nestedParent->fresh())->not->toBeNull()
+        ->and($parentFormulaItem->fresh()->ingredient_id)->toBe($nestedParent->id)
+        ->and($version->fresh()->final_ingredient_list)->toBeNull();
+});
+
+it('rejects an ancestor composite as replacement and rolls back all state', function (): void {
+    $user = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Source');
+    $directParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Direct Blend');
+    $nestedParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Nested Blend');
+    $component = IngredientComponent::factory()->create([
+        'ingredient_id' => $directParent->id,
+        'component_ingredient_id' => $source->id,
+    ]);
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $nestedParent->id,
+        'component_ingredient_id' => $directParent->id,
+    ]);
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Protected Formula'));
+    $version->update(generatedIngredientListState());
+    $formulaItem = privateMutationItem($user, $nestedParent, $version);
+
+    $candidateIds = app(IngredientFormulaMutationService::class)
+        ->replacementCandidates($user, $source)
+        ->modelKeys();
+
+    expect($candidateIds)->not->toContain($directParent->id, $nestedParent->id);
+
+    expect(fn () => app(IngredientFormulaMutationService::class)
+        ->replaceEverywhereAndDelete($user, $source, $nestedParent))
+        ->toThrow(ValidationException::class);
+
+    expect($source->fresh())->not->toBeNull()
+        ->and($component->fresh()->component_ingredient_id)->toBe($source->id)
+        ->and($formulaItem->fresh()->ingredient_id)->toBe($nestedParent->id)
+        ->and($version->fresh()->final_ingredient_list)->toBe('Generated INCI');
+});
+
+it('blocks inaccessible composite dependencies without leaking names or mutating related data', function (): void {
+    Storage::fake('public');
+    config(['media.disk' => 'public']);
+
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Private Source');
+    $source->update(['featured_image_path' => 'ingredients/private-source.webp']);
+    Storage::disk('public')->put($source->featured_image_path, 'image');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement');
+    $secretParent = privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Secret Composite Name');
+    $component = IngredientComponent::factory()->create([
+        'ingredient_id' => $secretParent->id,
+        'component_ingredient_id' => $source->id,
+    ]);
+    $version = privateMutationVersion($user, privateMutationRecipe($user, 'Affected Formula'));
+    $version->update(generatedIngredientListState());
+    $formulaItem = privateMutationItem($user, $secretParent, $version);
+    $costingItem = privateMutationCostingItem($user, $source, $version);
+
+    $impact = app(IngredientFormulaMutationService::class)->impact($user, $source);
+
+    expect($impact['composite_count'])->toBe(1)
+        ->and($impact['editable_composites'])->toBeEmpty()
+        ->and($impact['blocked_composites'])->toBeEmpty()
+        ->and($impact['inaccessible_blocked_composite_count'])->toBe(1);
+
+    foreach (['replace', 'remove'] as $operation) {
+        $exception = captureMutationValidationException(fn () => $operation === 'replace'
+            ? app(IngredientFormulaMutationService::class)->replaceEverywhereAndDelete($user, $source, $replacement)
+            : app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source));
+
+        expect(implode(' ', $exception->errors()['ingredient']))
+            ->not->toContain($secretParent->display_name);
+    }
+
+    expect($source->fresh())->not->toBeNull()
+        ->and($component->fresh()->component_ingredient_id)->toBe($source->id)
+        ->and($formulaItem->fresh()->ingredient_id)->toBe($secretParent->id)
+        ->and($costingItem->fresh()->ingredient_id)->toBe($source->id)
+        ->and($version->fresh()->final_ingredient_list)->toBe('Generated INCI')
+        ->and(Storage::disk('public')->exists($source->featured_image_path))->toBeTrue();
 });
 
 it('replaces an ingredient across current backup archived and costing-only versions without changing formula rows', function (): void {

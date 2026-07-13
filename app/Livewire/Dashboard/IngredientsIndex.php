@@ -114,7 +114,7 @@ class IngredientsIndex extends Component
             ? $ingredientFormulaMutationService->impact($currentUser, $pendingDeleteIngredient)
             : null;
         $replacementCandidates = $pendingDeleteIngredient instanceof Ingredient
-            && $pendingDeleteImpact['formula_count'] > 0
+            && ($pendingDeleteImpact['formula_count'] > 0 || $pendingDeleteImpact['composite_count'] > 0)
             ? $this->filteredReplacementCandidates(
                 $ingredientFormulaMutationService->replacementCandidates($currentUser, $pendingDeleteIngredient),
             )
@@ -251,8 +251,10 @@ class IngredientsIndex extends Component
             return;
         }
 
-        if ($ingredientFormulaMutationService->impact($user, $ingredient)['formula_count'] > 0) {
-            $this->addError('ingredient', 'Choose how to update the formulas that use this ingredient.');
+        $impact = $ingredientFormulaMutationService->impact($user, $ingredient);
+
+        if ($impact['formula_count'] > 0 || $impact['composite_count'] > 0) {
+            $this->addError('ingredient', 'Choose how to update the formulas or composite ingredients that use this ingredient.');
 
             return;
         }

@@ -3,6 +3,7 @@
 use App\IngredientCategory;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Ingredient;
+use App\Models\IngredientComponent;
 use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
@@ -142,6 +143,100 @@ it('allows deleting an unused personal ingredient from the catalog table', funct
     expect(Ingredient::query()->find($ingredient->id))->toBeNull()
         ->and(Storage::disk('public')->exists('ingredients/featured-images/delete-me.webp'))->toBeFalse()
         ->and(Storage::disk('public')->exists('ingredients/icons/delete-me.webp'))->toBeFalse();
+});
+
+it('uses the complex removal dialog for a composite only dependency', function () {
+    $user = User::factory()->create();
+    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Nested Extract');
+    $replacement = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Replacement Extract');
+    $parent = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Private Blend');
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $parent->id,
+        'component_ingredient_id' => $source->id,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertDontSee('Used in 1 formula')
+        ->call('confirmDelete', $source->id)
+        ->assertSee('Used in 1 composite ingredient.')
+        ->assertDontSee('Also used in 1 composite ingredient.')
+        ->assertSee('Replace everywhere and delete')
+        ->assertDontSee('This removes the ingredient from your private catalog.')
+        ->set('replacementIngredientId', $replacement->id)
+        ->call('replaceEverywhereAndDelete')
+        ->assertHasNoErrors();
+
+    expect($source->fresh())->toBeNull()
+        ->and(IngredientComponent::query()
+            ->whereBelongsTo($parent)
+            ->where('component_ingredient_id', $replacement->id)
+            ->exists())->toBeTrue();
+});
+
+it('shows and blocks a visible composite dependency that cannot be edited', function () {
+    $user = User::factory()->create();
+    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Protected Extract');
+    $replacement = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Replacement Extract');
+    $platformParent = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Platform Protected Blend',
+        'owner_type' => null,
+        'owner_id' => null,
+        'visibility' => Visibility::Public,
+    ]);
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $platformParent->id,
+        'component_ingredient_id' => $source->id,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientsIndex::class)
+        ->call('confirmDelete', $source->id)
+        ->assertSee('Platform Protected Blend')
+        ->assertSee('Edit the affected composite ingredients manually')
+        ->assertDontSee('This removes the ingredient from your private catalog.');
+
+    expect(ingredientButtonIsDisabled($component->html(), null, 'replaceEverywhereAndDelete'))->toBeTrue()
+        ->and(ingredientButtonIsDisabled($component->html(), null, 'removeEverywhereAndDelete'))->toBeTrue();
+
+    $component
+        ->set('replacementIngredientId', $replacement->id)
+        ->call('replaceEverywhereAndDelete')
+        ->assertHasErrors(['ingredient'])
+        ->call('removeEverywhereAndDelete')
+        ->assertHasErrors(['ingredient']);
+
+    expect($source->fresh())->not->toBeNull();
+});
+
+it('discloses formula usage reached through nested composite ingredients', function () {
+    $user = User::factory()->create();
+    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Nested Source');
+    $directParent = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Direct Parent');
+    $nestedParent = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Nested Parent');
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $directParent->id,
+        'component_ingredient_id' => $source->id,
+    ]);
+    IngredientComponent::factory()->create([
+        'ingredient_id' => $nestedParent->id,
+        'component_ingredient_id' => $directParent->id,
+    ]);
+    [$recipe] = catalogFormulaUsage($user, $nestedParent, 'Nested Composite Formula');
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertSee('Used in 1 formula')
+        ->call('toggleUsage', $source->id)
+        ->assertSee($recipe->name)
+        ->call('confirmDelete', $source->id)
+        ->assertSee('Used in 1 formula')
+        ->assertSee('Also used in 2 composite ingredients.')
+        ->assertSee('Replace everywhere and delete');
 });
 
 it('returns to the first catalog page after deleting the only item on page two', function () {

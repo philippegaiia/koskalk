@@ -268,7 +268,10 @@
         @if ($pendingDeleteIngredient && $pendingDeleteImpact)
             @php
                 $usedFormulaCount = $pendingDeleteImpact['formula_count'];
+                $usedCompositeCount = $pendingDeleteImpact['composite_count'];
                 $hasBlockedFormulas = $pendingDeleteImpact['blocked_recipes']->isNotEmpty() || $pendingDeleteImpact['inaccessible_blocked_count'] > 0;
+                $hasBlockedComposites = $pendingDeleteImpact['blocked_composites']->isNotEmpty() || $pendingDeleteImpact['inaccessible_blocked_composite_count'] > 0;
+                $hasBlockedDependencies = $hasBlockedFormulas || $hasBlockedComposites;
                 $hasReplacementCandidates = $replacementCandidates->isNotEmpty();
                 $isCarrierOil = $pendingDeleteIngredient->category === \App\IngredientCategory::CarrierOil;
             @endphp
@@ -285,7 +288,7 @@
                 aria-labelledby="ingredient-delete-heading"
                 aria-describedby="ingredient-delete-description"
             >
-                @if ($usedFormulaCount === 0)
+                @if ($usedFormulaCount === 0 && $usedCompositeCount === 0)
                     <div x-trap.noscroll="true" class="w-full max-w-md rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-6 shadow-xl">
                         <h3 id="ingredient-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete "{{ $pendingDeleteIngredient->localizedDisplayName() }}"?</h3>
                         <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">This removes the ingredient from your private catalog.</p>
@@ -306,7 +309,13 @@
                                 <p class="sk-eyebrow">Ingredient removal</p>
                                 <h3 id="ingredient-delete-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Manage {{ $pendingDeleteIngredient->localizedDisplayName() }}</h3>
                                 <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                                    Used in {{ $usedFormulaCount }} {{ \Illuminate\Support\Str::plural('formula', $usedFormulaCount) }}. Choose how those formulas should change before this ingredient is deleted.
+                                    @if ($usedFormulaCount > 0)
+                                        Used in {{ $usedFormulaCount }} {{ \Illuminate\Support\Str::plural('formula', $usedFormulaCount) }}.
+                                    @endif
+                                    @if ($usedCompositeCount > 0)
+                                        {{ $usedFormulaCount > 0 ? 'Also used' : 'Used' }} in {{ $usedCompositeCount }} composite {{ \Illuminate\Support\Str::plural('ingredient', $usedCompositeCount) }}.
+                                    @endif
+                                    Choose how those uses should change before this ingredient is deleted.
                                 </p>
                             </div>
                             <button x-ref="initialFocus" type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="grid size-10 shrink-0 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50" aria-label="Close ingredient removal dialog">
@@ -335,6 +344,23 @@
                             </div>
                         @endif
 
+                        @if ($hasBlockedComposites)
+                            <div class="mt-5 rounded-xl border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] p-4 text-sm text-[var(--color-warning-strong)]">
+                                <p class="font-semibold">Automatic changes are unavailable.</p>
+                                <p class="mt-1 leading-6">Edit the affected composite ingredients manually before deleting this ingredient.</p>
+                                @if ($pendingDeleteImpact['blocked_composites']->isNotEmpty())
+                                    <ul class="mt-3 space-y-1.5">
+                                        @foreach ($pendingDeleteImpact['blocked_composites'] as $blockedComposite)
+                                            <li class="font-medium">{{ $blockedComposite->localizedDisplayName() }}</li>
+                                        @endforeach
+                                    </ul>
+                                @endif
+                                @if ($pendingDeleteImpact['inaccessible_blocked_composite_count'] > 0)
+                                    <p class="mt-3">{{ trans_choice(':count additional composite ingredient cannot be edited.', $pendingDeleteImpact['inaccessible_blocked_composite_count'], ['count' => $pendingDeleteImpact['inaccessible_blocked_composite_count']]) }}</p>
+                                @endif
+                            </div>
+                        @endif
+
                         @error('ingredient')
                             <p role="alert" class="mt-5 rounded-lg bg-[var(--color-danger-soft)] px-3 py-2 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
                         @enderror
@@ -352,10 +378,10 @@
                                     class="sk-input"
                                     placeholder="Search by name, INCI, or category"
                                     aria-label="Search replacement ingredients"
-                                    @disabled($hasBlockedFormulas)
+                                    @disabled($hasBlockedDependencies)
                                 />
                             </label>
-                            <select id="replacement-ingredient" wire:model.number="replacementIngredientId" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="sk-select-control mt-3 w-full" @disabled($hasBlockedFormulas || ! $hasReplacementCandidates)>
+                            <select id="replacement-ingredient" wire:model.number="replacementIngredientId" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="sk-select-control mt-3 w-full" @disabled($hasBlockedDependencies || ! $hasReplacementCandidates)>
                                 <option value="">Choose a compatible ingredient</option>
                                 @foreach ($replacementCandidates as $replacementCandidate)
                                     <option value="{{ $replacementCandidate->id }}">{{ $replacementCandidate->localizedDisplayName() }} ({{ $replacementCandidate->category?->getLabel() }})</option>
@@ -373,7 +399,7 @@
                                 wire:click="replaceEverywhereAndDelete"
                                 wire:loading.attr="disabled"
                                 wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
-                                @disabled($hasBlockedFormulas || ! $hasReplacementCandidates)
+                                @disabled($hasBlockedDependencies || ! $hasReplacementCandidates)
                                 class="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--color-cream)] hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                             >
                                 Replace everywhere and delete
@@ -382,7 +408,7 @@
 
                         <div class="mt-6 border-t border-[var(--color-line)] pt-5">
                             <p class="text-sm font-semibold text-[var(--color-ink-strong)]">Remove without replacement</p>
-                            <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">This is permanent. Formula totals may become incomplete and will need manual review.</p>
+                            <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">This is permanent. Formula totals and composite percentages may become incomplete and will need manual review.</p>
                             @if ($isCarrierOil)
                                 <p class="mt-2 rounded-lg bg-[var(--color-warning-soft)] px-3 py-2 text-xs leading-5 text-[var(--color-warning-strong)]">Soap calculations may change or become invalid when a carrier oil is removed.</p>
                             @endif
@@ -391,7 +417,7 @@
                                 wire:click="removeEverywhereAndDelete"
                                 wire:loading.attr="disabled"
                                 wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
-                                @disabled($hasBlockedFormulas)
+                                @disabled($hasBlockedDependencies)
                                 class="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--color-danger-strong)] px-4 py-2.5 text-sm font-semibold text-[var(--color-cream)] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                             >
                                 Remove everywhere and delete

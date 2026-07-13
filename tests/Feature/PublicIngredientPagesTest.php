@@ -925,3 +925,67 @@ it('renders the public ingredient create page for signed in users', function () 
         ->assertDontSee('Allergens')
         ->assertDontSee('IFRA guidance');
 });
+
+it('keeps one responsive create action visible at the bottom of the ingredient editor', function () {
+    $user = User::factory()->create();
+
+    $response = $this->actingAs($user)
+        ->get(route('ingredients.create'))
+        ->assertSuccessful();
+
+    $saveAction = ingredientSaveActionState($response->getContent());
+
+    expect($saveAction['submit_count'])->toBe(1)
+        ->and($saveAction['label'])->toBe('Create ingredient')
+        ->and($saveAction['bar_classes'])->toContain('sticky', 'bottom-0')
+        ->and($saveAction['button_classes'])->toContain('w-full', 'sm:w-auto');
+});
+
+it('keeps one responsive save action visible at the bottom of the ingredient editor', function () {
+    $user = User::factory()->create();
+    $ingredient = catalogPrivateIngredient($user, IngredientCategory::Additive, 'My Glycerin');
+
+    $response = $this->actingAs($user)
+        ->get(route('ingredients.edit', $ingredient->id))
+        ->assertSuccessful();
+
+    $saveAction = ingredientSaveActionState($response->getContent());
+
+    expect($saveAction['submit_count'])->toBe(1)
+        ->and($saveAction['label'])->toBe('Save ingredient')
+        ->and($saveAction['bar_classes'])->toContain('sticky', 'bottom-0')
+        ->and($saveAction['button_classes'])->toContain('w-full', 'sm:w-auto');
+});
+
+/**
+ * @return array{submit_count: int, label: string, bar_classes: list<string>, button_classes: list<string>}
+ */
+function ingredientSaveActionState(string $html): array
+{
+    $previousLibxmlSetting = libxml_use_internal_errors(true);
+    $document = new DOMDocument;
+    $document->loadHTML($html);
+    libxml_clear_errors();
+    libxml_use_internal_errors($previousLibxmlSetting);
+
+    $xpath = new DOMXPath($document);
+    $saveBar = $xpath->query('//*[@data-ingredient-save-bar]')->item(0);
+
+    expect($saveBar)->toBeInstanceOf(DOMElement::class);
+
+    $ingredientForm = $xpath->query('ancestor::form[1]', $saveBar)->item(0);
+
+    expect($ingredientForm)->toBeInstanceOf(DOMElement::class);
+
+    $submitButtons = $xpath->query('.//button[@type="submit"]', $ingredientForm);
+    $saveButton = $xpath->query('.//button[@type="submit"]', $saveBar)->item(0);
+
+    expect($saveButton)->toBeInstanceOf(DOMElement::class);
+
+    return [
+        'submit_count' => $submitButtons->length,
+        'label' => trim($saveButton->textContent),
+        'bar_classes' => preg_split('/\s+/', trim($saveBar->getAttribute('class'))) ?: [],
+        'button_classes' => preg_split('/\s+/', trim($saveButton->getAttribute('class'))) ?: [],
+    ];
+}

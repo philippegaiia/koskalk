@@ -54,13 +54,11 @@
                         @enderror
                     </label>
 
-                    <label class="grid gap-2">
+                    <div class="grid gap-2">
                         <span class="text-sm font-medium text-[var(--color-ink-strong)]">Email</span>
-                        <input type="email" name="email" value="{{ old('email', $user->email) }}" required autocomplete="email" aria-label="Email" aria-invalid="@error('email') true @else false @enderror" @error('email') aria-describedby="account-email-error" @enderror class="sk-input">
-                        @error('email')
-                            <span id="account-email-error" role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</span>
-                        @enderror
-                    </label>
+                        <p class="sk-input cursor-not-allowed bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]" aria-label="Email">{{ $user->email }}</p>
+                        <p class="text-xs text-[var(--color-ink-soft)]">Contact the administrator to change the provisioned email address.</p>
+                    </div>
                 </div>
 
                 <div>

@@ -53,8 +53,8 @@
 
             <div class="mt-6 flex flex-col justify-center gap-2 sm:flex-row sm:gap-3 lg:mt-8 lg:justify-start">
                 @guest
-                    <a href="{{ route('register') }}" class="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-inverse no-underline shadow-sm transition hover:-translate-y-px hover:bg-accent-hover">
-                        {{ __('homepage.actions.create_account') }}
+                    <a href="{{ route('login') }}" class="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-inverse no-underline shadow-sm transition hover:-translate-y-px hover:bg-accent-hover">
+                        {{ __('public.navigation.sign_in') }}
                     </a>
                 @else
                     <a href="{{ route('dashboard') }}" class="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-inverse no-underline shadow-sm transition hover:-translate-y-px hover:bg-accent-hover">
@@ -62,15 +62,11 @@
                     </a>
                 @endguest
 
-                <a href="{{ route('calculator') }}" class="inline-flex min-h-12 items-center justify-center rounded-lg border border-line-strong bg-panel px-6 py-3 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent-strong">
-                    {{ __('homepage.actions.free_calculator') }}
-                </a>
             </div>
 
             <div class="mt-3 text-xs leading-5 text-ink-soft lg:mt-5 lg:leading-6">
-                <p>{{ __('homepage.hero.calculator_note') }}</p>
                 @guest
-                    <p>{{ __('homepage.hero.already_registered') }} <a href="{{ route('login') }}" class="font-semibold text-ink-strong underline decoration-line-strong underline-offset-4">{{ __('public.navigation.sign_in') }}</a></p>
+                    <p>{{ __('homepage.hero.invitation_note') }}</p>
                 @endguest
             </div>
 
@@ -180,17 +176,14 @@
 
         <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             @guest
-                <a href="{{ route('register') }}" class="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-inverse no-underline transition hover:-translate-y-px hover:bg-accent-hover">
-                    {{ __('homepage.actions.create_account') }}
+                <a href="{{ route('login') }}" class="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-inverse no-underline transition hover:-translate-y-px hover:bg-accent-hover">
+                    {{ __('public.navigation.sign_in') }}
                 </a>
             @else
                 <a href="{{ route('dashboard') }}" class="inline-flex min-h-12 items-center justify-center rounded-lg bg-accent px-6 py-3 text-sm font-semibold text-inverse no-underline transition hover:-translate-y-px hover:bg-accent-hover">
                     {{ __('homepage.actions.open_workspace') }}
                 </a>
             @endguest
-            <a href="{{ route('calculator') }}" class="inline-flex min-h-12 items-center justify-center rounded-lg border border-line-strong bg-panel px-6 py-3 text-sm font-semibold text-ink-strong no-underline transition hover:border-accent hover:text-accent-strong">
-                {{ __('homepage.actions.free_calculator') }}
-            </a>
         </div>
     </div>
 </section>

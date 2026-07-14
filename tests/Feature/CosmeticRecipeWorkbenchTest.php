@@ -452,7 +452,7 @@ it('lets the shared recipe workbench save incomplete cosmetic drafts', function 
         ->firstOrFail();
 
     expect($result['ok'])->toBeTrue()
-        ->and($result['redirect'])->toBe(route('recipes.edit', $recipe->id))
+        ->and($result['redirect'])->toBe(route('recipes.edit', $recipe))
         ->and($recipe->product_type_id)->toBe($productType->id)
         ->and(RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
@@ -721,7 +721,7 @@ it('redirects new cosmetic drafts to the recipe URL after first save', function 
         ->firstOrFail();
 
     expect($result['ok'])->toBeTrue()
-        ->and($result['redirect'])->toBe(route('recipes.edit', $recipe->id));
+        ->and($result['redirect'])->toBe(route('recipes.edit', $recipe));
 });
 
 it('renders saved cosmetic formula sheet with selected ingredients only', function () {
@@ -752,7 +752,7 @@ it('renders saved cosmetic formula sheet with selected ingredients only', functi
     );
 
     $this->actingAs($user)
-        ->get(route('recipes.saved', $savedVersion->recipe_id))
+        ->get(route('recipes.saved', Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id)))
         ->assertSuccessful()
         ->assertSee('How this recipe was calculated')
         ->assertSee('Phase A')

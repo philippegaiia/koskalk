@@ -81,9 +81,9 @@ test('a guest can switch to an active language from the current page', function 
     supportedLocale('en', default: true);
     supportedLocale('fr');
 
-    $this->from(route('calculator'))
+    $this->from(route('home'))
         ->post(route('language.update'), ['locale' => 'fr'])
-        ->assertRedirect(route('calculator'))
+        ->assertRedirect(route('home'))
         ->assertSessionHas(LocalePreferenceResolver::SessionKey, 'fr')
         ->assertCookie(LocalePreferenceResolver::CookieName, 'fr');
 });
@@ -131,9 +131,7 @@ test('a registered user can change interface language in settings without changi
 test('the language selector is visible in every user-facing shell', function () {
     supportedLocale('en', default: true);
 
-    $this->get(route('home'))->assertSuccessful()->assertSee('language-selector-public', false);
-    $calculatorLayout = file_get_contents(resource_path('views/layouts/calculator.blade.php'));
-    expect($calculatorLayout)->toContain('<x-language-selector id="calculator"');
+    $this->get(route('login'))->assertSuccessful()->assertSee('language-selector-public', false);
 
     $user = User::factory()->create(['locale' => 'en']);
 

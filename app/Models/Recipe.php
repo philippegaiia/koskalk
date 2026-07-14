@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
 use App\OwnerType;
@@ -26,7 +27,6 @@ use Illuminate\Support\Collection;
     'owner_id',
     'workspace_id',
     'brand_id',
-    'is_private',
     'created_by',
     'visibility',
     'name',
@@ -43,6 +43,7 @@ class Recipe extends Model implements HasRichContent
     /** @use HasFactory<RecipeFactory> */
     use HasFactory;
 
+    use HasPublicId;
     use HasTenantOwnership;
     use InteractsWithRichContent;
 
@@ -78,6 +79,12 @@ class Recipe extends Model implements HasRichContent
 
     public function ownerUser(): ?User
     {
+        if ($this->workspace_id !== null) {
+            return $this->workspace()
+                ->withoutGlobalScopes()
+                ->first()?->owner;
+        }
+
         if ($this->tenantOwnerType() !== OwnerType::User || $this->owner_id === null) {
             return null;
         }
@@ -129,7 +136,7 @@ class Recipe extends Model implements HasRichContent
 
     public function featuredImageUrl(): ?string
     {
-        return MediaStorage::publicUrl($this->featured_image_path);
+        return MediaStorage::recipeUrl($this, $this->featured_image_path);
     }
 
     /**
@@ -214,13 +221,13 @@ class Recipe extends Model implements HasRichContent
     protected function setUpRichContent(): void
     {
         $this->registerRichContent('description')
-            ->fileAttachmentsDisk(MediaStorage::publicDisk())
-            ->fileAttachmentsVisibility(MediaStorage::publicVisibility())
+            ->fileAttachmentsDisk(MediaStorage::recipeDisk())
+            ->fileAttachmentsVisibility(MediaStorage::recipeVisibility())
             ->fileAttachmentProvider(app(RecipeRichContentAttachmentProvider::class));
 
         $this->registerRichContent('manufacturing_instructions')
-            ->fileAttachmentsDisk(MediaStorage::publicDisk())
-            ->fileAttachmentsVisibility(MediaStorage::publicVisibility())
+            ->fileAttachmentsDisk(MediaStorage::recipeDisk())
+            ->fileAttachmentsVisibility(MediaStorage::recipeVisibility())
             ->fileAttachmentProvider(app(RecipeRichContentAttachmentProvider::class));
     }
 
@@ -229,7 +236,6 @@ class Recipe extends Model implements HasRichContent
         return [
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
-            'is_private' => 'bool',
             'archived_at' => 'datetime',
             'locked_at' => 'datetime',
         ];
@@ -245,13 +251,13 @@ class Recipe extends Model implements HasRichContent
         }
 
         preg_match_all('/data-id="([^"]+)"/', $content, $dataIdMatches);
-        preg_match_all('/(?:src|href)="([^"]*recipes\/rich-content\/[^"]+)"/', $content, $sourceMatches);
+        preg_match_all('/(?:src|href)="([^"]*recipes\/(?:[^\/]+\/)?rich-content\/[^"]+)"/', $content, $sourceMatches);
 
         $sourcePaths = collect($sourceMatches[1] ?? [])
             ->map(function (string $path): string {
                 $normalizedPath = parse_url($path, PHP_URL_PATH);
 
-                if (is_string($normalizedPath) && preg_match('~recipes/rich-content/.*$~', $normalizedPath, $matches) === 1) {
+                if (is_string($normalizedPath) && preg_match('~recipes/(?:[^/]+/)?rich-content/.*$~', $normalizedPath, $matches) === 1) {
                     return $matches[0];
                 }
 
@@ -260,7 +266,7 @@ class Recipe extends Model implements HasRichContent
 
         return collect($dataIdMatches[1] ?? [])
             ->merge($sourcePaths)
-            ->filter(fn (mixed $value): bool => is_string($value) && str_contains($value, 'recipes/rich-content/'))
+            ->filter(fn (mixed $value): bool => is_string($value) && str_contains($value, '/rich-content/'))
             ->unique()
             ->values();
     }

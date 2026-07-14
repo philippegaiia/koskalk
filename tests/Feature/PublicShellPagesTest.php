@@ -7,9 +7,8 @@ use Illuminate\Support\Facades\App;
 
 uses(RefreshDatabase::class);
 
-it('renders the public home page', function () {
-    $this->get(route('home'))
-        ->assertSuccessful()
+it('keeps the public home page available as a WordPress reference', function () {
+    $this->view('welcome')
         ->assertSee('data-public-nav-inner', false)
         ->assertSee('data-public-footer-inner', false)
         ->assertSee('data-hero-background', false)
@@ -32,10 +31,12 @@ it('renders the public home page', function () {
         ->assertSeeText('Your formula, your ingredients, your bench.')
         ->assertSeeText('All in one place.')
         ->assertSeeText('Build your formula portfolio')
-        ->assertSeeText('Create a free account')
-        ->assertSeeText('Use the free soap calculator')
+        ->assertSeeText('Access is currently by invitation')
         ->assertSeeText('Sign in')
-        ->assertSeeText('Soap only. No account required.')
+        ->assertDontSeeText('Create a free account')
+        ->assertDontSeeText('Use the free soap calculator')
+        ->assertDontSee('/register', false)
+        ->assertDontSee('/calculator', false)
         ->assertDontSeeText('Start saving formulas')
         ->assertDontSeeText('Why use Soapkraft?')
         ->assertDontSeeText('From quick calculation to source of truth')
@@ -43,16 +44,17 @@ it('renders the public home page', function () {
         ->assertDontSeeText('Track costing and batch details');
 });
 
-it('links authenticated homepage visitors to their workspace', function () {
-    $user = User::factory()->make(['id' => 1]);
+it('redirects guests from the application root to login', function () {
+    $this->get(route('home'))
+        ->assertRedirect(route('login'));
+});
+
+it('redirects authenticated homepage visitors to the formula workbench', function () {
+    $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('home'))
-        ->assertSuccessful()
-        ->assertSeeText('Open workspace')
-        ->assertSee(route('dashboard'), false)
-        ->assertDontSeeText('Create a free account')
-        ->assertDontSee(route('register'), false);
+        ->assertRedirect(route('recipes.create'));
 });
 
 it('renders public interface database translations with an English fallback', function () {
@@ -70,8 +72,7 @@ it('renders public interface database translations with an English fallback', fu
 
     App::setLocale('fr');
 
-    $this->get(route('home'))
-        ->assertSuccessful()
+    $this->view('welcome')
         ->assertSee('<html lang="fr"', false)
         ->assertSeeText('Construisez la formule. Conservez tout son dossier.')
         ->assertSeeText('Produit')
@@ -79,8 +80,7 @@ it('renders public interface database translations with an English fallback', fu
 
     App::setLocale('de');
 
-    $this->get(route('home'))
-        ->assertSuccessful()
+    $this->view('welcome')
         ->assertSee('<html lang="de"', false)
         ->assertSeeText('Make the formula. Keep the whole record.')
         ->assertSeeText('Product')

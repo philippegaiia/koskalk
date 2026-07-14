@@ -13,9 +13,9 @@ class RecipeWorkbenchContextResolver
         private readonly CurrentAppUserResolver $currentAppUserResolver,
     ) {}
 
-    public function currentUser(?int $actorUserId): ?User
+    public function currentUser(): ?User
     {
-        return $this->currentAppUserResolver->resolve($actorUserId);
+        return $this->currentAppUserResolver->resolve();
     }
 
     public function soapFamily(): ProductFamily
@@ -52,7 +52,7 @@ class RecipeWorkbenchContextResolver
             ->whereKey($recipeId)
             ->first();
 
-        if (! $recipe instanceof Recipe || ! $recipe->isAccessibleBy($user)) {
+        if (! $recipe instanceof Recipe || ! $user->can('view', $recipe)) {
             return null;
         }
 

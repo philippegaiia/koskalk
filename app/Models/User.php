@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\OwnerType;
 use App\WorkspaceMemberRole;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +19,7 @@ use Laravel\Paddle\Billable;
 
 #[Fillable(['name', 'email', 'is_admin', 'locale', 'number_locale', 'password'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements FilamentUser
+class User extends Authenticatable implements FilamentUser, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use Billable, HasFactory, Notifiable;
@@ -28,6 +28,11 @@ class User extends Authenticatable implements FilamentUser
      * @var array<int, int>|null
      */
     private ?array $cachedAccessibleWorkspaceIds = null;
+
+    /**
+     * @var array<int, int>|null
+     */
+    private ?array $cachedOwnedWorkspaceIds = null;
 
     public function ownedWorkspaces(): HasMany
     {
@@ -95,10 +100,7 @@ class User extends Authenticatable implements FilamentUser
         }
 
         $this->cachedAccessibleWorkspaceIds = array_values(array_unique(array_merge(
-            Workspace::withoutGlobalScopes()
-                ->where('owner_user_id', $this->id)
-                ->pluck('id')
-                ->all(),
+            $this->ownedWorkspaceIds(),
             WorkspaceMember::withoutGlobalScopes()
                 ->where('user_id', $this->id)
                 ->pluck('workspace_id')
@@ -106,6 +108,27 @@ class User extends Authenticatable implements FilamentUser
         )));
 
         return $this->cachedAccessibleWorkspaceIds;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    public function ownedWorkspaceIds(): array
+    {
+        if ($this->cachedOwnedWorkspaceIds === null) {
+            $this->cachedOwnedWorkspaceIds = Workspace::withoutGlobalScopes()
+                ->where('owner_user_id', $this->id)
+                ->pluck('id')
+                ->all();
+        }
+
+        return $this->cachedOwnedWorkspaceIds;
+    }
+
+    public function forgetAccessibleWorkspaceIds(): void
+    {
+        $this->cachedAccessibleWorkspaceIds = null;
+        $this->cachedOwnedWorkspaceIds = null;
     }
 
     public function workspaceRoleFor(int $workspaceId): ?WorkspaceMemberRole

@@ -7,6 +7,7 @@ use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileA
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use RuntimeException;
 
 class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
 {
@@ -21,14 +22,24 @@ class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
 
     public function getFileAttachmentUrl(mixed $file): ?string
     {
-        return is_string($file) ? MediaStorage::publicUrl($file) : null;
+        $recipe = $this->recipe();
+
+        return is_string($file) && $recipe instanceof Recipe
+            ? MediaStorage::recipeUrl($recipe, $file)
+            : null;
     }
 
     public function saveUploadedFileAttachment(UploadedFile $file): mixed
     {
-        return MediaStorage::storeResizedWebp(
+        $recipe = $this->recipe();
+
+        if (! $recipe instanceof Recipe) {
+            throw new RuntimeException('Save the formula before adding recipe attachments.');
+        }
+
+        return MediaStorage::storeRecipeResizedWebp(
             $file,
-            'recipes/rich-content',
+            MediaStorage::recipeDirectory($recipe, 'rich-content'),
             MediaStorage::recipeRichContentImagesWidth(),
             MediaStorage::recipeRichContentImagesHeight(),
             MediaStorage::recipeRichContentImagesQuality(),
@@ -37,12 +48,12 @@ class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
 
     public function getDefaultFileAttachmentVisibility(): ?string
     {
-        return MediaStorage::publicVisibility();
+        return MediaStorage::recipeVisibility();
     }
 
     public function isExistingRecordRequiredToSaveNewFileAttachments(): bool
     {
-        return false;
+        return true;
     }
 
     public function cleanUpFileAttachments(array $exceptIds): void
@@ -66,7 +77,7 @@ class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
         $currentAttachmentIds
             ->diff($preservedAttachmentIds)
             ->each(function (string $path): void {
-                MediaStorage::deletePublicPath($path);
+                MediaStorage::deleteRecipePath($path);
             });
     }
 

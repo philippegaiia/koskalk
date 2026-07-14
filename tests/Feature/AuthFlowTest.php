@@ -8,28 +8,18 @@ use Illuminate\Support\Facades\Hash;
 
 uses(RefreshDatabase::class);
 
-it('registers a free user and attaches the default free plan', function () {
-    $this->seed(PlanSeeder::class);
-
-    $this->post(route('register'), [
+it('does not expose public registration', function () {
+    $this->get('/register')->assertNotFound();
+    $this->post('/register', [
         'name' => 'Marie Maker',
         'email' => 'marie@example.com',
         'password' => 'secret-password',
         'password_confirmation' => 'secret-password',
-    ])
-        ->assertRedirect(route('dashboard'));
+    ])->assertNotFound();
 
-    $this->assertAuthenticated();
-    $this->assertDatabaseHas(User::class, [
-        'name' => 'Marie Maker',
+    $this->assertDatabaseMissing(User::class, [
         'email' => 'marie@example.com',
     ]);
-
-    $user = User::query()
-        ->where('email', 'marie@example.com')
-        ->firstOrFail();
-
-    expect($user->entitlements()->with('plan')->first()?->plan?->slug)->toBe('free-beta');
 });
 
 it('logs a registered user in and out', function () {
@@ -48,7 +38,7 @@ it('logs a registered user in and out', function () {
         ->assertSeeText('Sign out');
 
     $this->post(route('logout'))
-        ->assertRedirect(route('home'));
+        ->assertRedirect(route('login'));
 
     $this->assertGuest();
 });
@@ -81,25 +71,23 @@ it('updates account profile details', function () {
     $this->actingAs($user)
         ->patch(route('account.profile.update'), [
             'name' => 'New Name',
-            'email' => 'new@example.com',
         ])
         ->assertRedirect(route('account'))
         ->assertSessionHas('profile_status', 'Profile updated.');
 
     expect($user->refresh())
         ->name->toBe('New Name')
-        ->email->toBe('new@example.com');
+        ->email->toBe('old@example.com');
 });
 
-it('rejects duplicate account email updates', function () {
-    User::factory()->create(['email' => 'taken@example.com']);
+it('rejects account email changes during the invite-only MVP', function () {
     $user = User::factory()->create(['email' => 'owner@example.com']);
 
     $this->actingAs($user)
         ->from(route('account'))
         ->patch(route('account.profile.update'), [
             'name' => 'Owner',
-            'email' => 'taken@example.com',
+            'email' => 'changed@example.com',
         ])
         ->assertRedirect(route('account'))
         ->assertSessionHasErrors('email');
@@ -163,6 +151,19 @@ it('redirects guests away from dashboard app routes', function () {
     }
 });
 
+it('redirects unverified users away from private application routes', function () {
+    $user = User::factory()->unverified()->create();
+
+    $this->actingAs($user)
+        ->get(route('dashboard'))
+        ->assertRedirect(route('verification.notice'));
+
+    $this->actingAs($user)
+        ->get(route('verification.notice'))
+        ->assertSuccessful()
+        ->assertSeeText('This account is not verified.');
+});
+
 it('throttles repeated failed login attempts', function () {
     $server = ['REMOTE_ADDR' => '10.50.0.10'];
 
@@ -183,24 +184,9 @@ it('throttles repeated failed login attempts', function () {
         ->assertTooManyRequests();
 });
 
-it('throttles repeated registration attempts', function () {
-    $server = ['REMOTE_ADDR' => '10.50.0.11'];
-
-    for ($attempt = 0; $attempt < 5; $attempt++) {
-        $this->withServerVariables($server)
-            ->post(route('register'), [
-                'name' => '',
-                'email' => 'not-an-email',
-                'password' => 'short',
-            ])
-            ->assertRedirect();
-    }
-
-    $this->withServerVariables($server)
-        ->post(route('register'), [
-            'name' => '',
-            'email' => 'not-an-email',
-            'password' => 'short',
-        ])
-        ->assertTooManyRequests();
+it('describes access as restricted on the login page', function () {
+    $this->get(route('login'))
+        ->assertSuccessful()
+        ->assertSeeText('Access is provisioned by invitation.')
+        ->assertDontSeeText('Create an account');
 });

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use Database\Factories\ProductionBatchFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,6 +34,8 @@ class ProductionBatch extends Model
 {
     /** @use HasFactory<ProductionBatchFactory> */
     use HasFactory;
+
+    use HasPublicId;
 
     public function user(): BelongsTo
     {

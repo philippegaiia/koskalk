@@ -128,7 +128,7 @@ it('counts distinct formulas across current backup and archived versions', funct
         ->toEqualCanonicalizing([$recipe->id, $archivedRecipe->id]);
 });
 
-it('separates editable visible blocked and inaccessible formulas without leaking inaccessible records', function (): void {
+it('separates editable and inaccessible formulas without leaking inaccessible records', function (): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
@@ -172,9 +172,9 @@ it('separates editable visible blocked and inaccessible formulas without leaking
 
     expect($impact['formula_count'])->toBe(3)
         ->and($impact['editable_recipes']->pluck('id')->all())->toBe([$editableRecipe->id])
-        ->and($impact['blocked_recipes']->pluck('id')->all())->toBe([$visibleBlockedRecipe->id])
-        ->and($impact['blocked_recipes']->pluck('name')->all())->toBe(['Visible Blocked Formula'])
-        ->and($impact['inaccessible_blocked_count'])->toBe(1)
+        ->and($impact['blocked_recipes'])->toBeEmpty()
+        ->and($impact['inaccessible_blocked_count'])->toBe(2)
+        ->and($impact['editable_recipes']->contains('id', $visibleBlockedRecipe->id))->toBeFalse()
         ->and($impact['editable_recipes']->contains('id', $inaccessibleRecipe->id))->toBeFalse()
         ->and($impact['blocked_recipes']->contains('id', $inaccessibleRecipe->id))->toBeFalse();
 });
@@ -218,7 +218,8 @@ it('reuses policy decisions for formulas with the same authorization context', f
     expect($singleImpact['formula_count'])->toBe(1)
         ->and($repeatedImpact['formula_count'])->toBe(3)
         ->and($repeatedImpact['editable_recipes'])->toBeEmpty()
-        ->and($repeatedImpact['blocked_recipes'])->toHaveCount(3)
+        ->and($repeatedImpact['blocked_recipes'])->toBeEmpty()
+        ->and($repeatedImpact['inaccessible_blocked_count'])->toBe(3)
         ->and($singleContextQueryCount)->toBeGreaterThan(0)
         ->and($repeatedContextQueryCount)->toBeLessThanOrEqual($singleContextQueryCount);
 });
@@ -743,7 +744,7 @@ it('keeps database state and media when ingredient deletion fails before commit'
         ->and(Storage::disk('public')->exists($source->icon_image_path))->toBeTrue();
 });
 
-it('refuses replacement when a visible workspace formula is blocked and reports its name', function (): void {
+it('refuses replacement for a non-owner workspace formula without reporting its name', function (): void {
     $user = User::factory()->create();
     $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
     $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Tussah Silk');
@@ -754,7 +755,8 @@ it('refuses replacement when a visible workspace formula is blocked and reports 
     $exception = captureMutationValidationException(fn () => app(IngredientFormulaMutationService::class)
         ->replaceEverywhereAndDelete($user, $source, $replacement));
 
-    expect($exception->errors()['ingredient'][0])->toContain($blockedRecipe->name)
+    expect($exception->errors()['ingredient'][0])->not->toContain($blockedRecipe->name)
+        ->and($exception->errors()['ingredient'][0])->toContain('1 additional formula')
         ->and($source->fresh())->not->toBeNull()
         ->and(RecipeItem::withoutGlobalScopes()->where('ingredient_id', $source->id)->exists())->toBeTrue();
 });
@@ -776,12 +778,11 @@ it('refuses replacement for an inaccessible formula without leaking its name', f
         ->and($source->fresh())->not->toBeNull();
 });
 
-it('allows a workspace editor to replace an owned ingredient in an editable workspace formula', function (): void {
+it('allows a workspace owner to replace an owned ingredient in their formula', function (): void {
     $user = User::factory()->create();
     $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
     $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Tussah Silk');
-    $workspace = Workspace::factory()->create();
-    WorkspaceMember::factory()->for($workspace)->for($user)->create(['role' => WorkspaceMemberRole::Editor]);
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
     $recipe = workspaceMutationRecipeWithItem($workspace, $source, 'Editable Workspace Formula');
 
     app(IngredientFormulaMutationService::class)
@@ -920,7 +921,7 @@ it('keeps a formula and version when the removed ingredient was their only row',
         ->and(RecipeItem::withoutGlobalScopes()->whereBelongsTo($version, 'recipeVersion')->exists())->toBeFalse();
 });
 
-it('refuses removal when a visible workspace formula is blocked and reports its name', function (): void {
+it('refuses removal for a non-owner workspace formula without reporting its name', function (): void {
     Storage::fake('public');
     config(['media.disk' => 'public']);
 
@@ -944,7 +945,8 @@ it('refuses removal when a visible workspace formula is blocked and reports its 
     $exception = captureMutationValidationException(fn () => app(IngredientFormulaMutationService::class)
         ->removeEverywhereAndDelete($user, $source));
 
-    expect($exception->errors()['ingredient'][0])->toContain($blockedRecipe->name)
+    expect($exception->errors()['ingredient'][0])->not->toContain($blockedRecipe->name)
+        ->and($exception->errors()['ingredient'][0])->toContain('1 additional formula')
         ->and($source->fresh())->not->toBeNull()
         ->and(RecipeItem::withoutGlobalScopes()->where('ingredient_id', $source->id)->exists())->toBeTrue()
         ->and($costingItem->fresh())->not->toBeNull()
@@ -969,11 +971,10 @@ it('refuses removal for an inaccessible formula without leaking its name', funct
         ->and($source->fresh())->not->toBeNull();
 });
 
-it('allows a workspace editor to remove an owned ingredient from an editable workspace formula', function (): void {
+it('allows a workspace owner to remove an owned ingredient from their formula', function (): void {
     $user = User::factory()->create();
     $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
-    $workspace = Workspace::factory()->create();
-    WorkspaceMember::factory()->for($workspace)->for($user)->create(['role' => WorkspaceMemberRole::Editor]);
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
     $recipe = workspaceMutationRecipeWithItem($workspace, $source, 'Editable Removal Formula');
 
     app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($user, $source);

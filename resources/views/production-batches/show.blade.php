@@ -34,7 +34,7 @@
 
                 <div class="flex flex-wrap gap-2">
                     @if ($productionBatch->recipe_id !== null)
-                        <a href="{{ route('recipes.saved', $productionBatch->recipe_id) }}" class="inline-flex rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                        <a href="{{ route('recipes.saved', $productionBatch->recipe) }}" class="inline-flex rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                             Back to formula
                         </a>
                     @endif

@@ -89,6 +89,7 @@ class RecipeWorkbenchVersionDataService
             ->get()
             ->map(fn (RecipeVersion $version): array => [
                 'id' => $version->id,
+                'public_id' => $version->public_id,
                 'version_number' => $version->version_number,
                 'name' => $version->name,
                 'saved_at' => $version->saved_at?->toIso8601String(),

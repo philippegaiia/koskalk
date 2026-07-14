@@ -181,7 +181,7 @@ it('shows packaging and batch use controls on the reference formula page', funct
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draft->recipe_id);
     $service->publish($user, $soapFamily, $payload, $recipe);
 
-    $this->get(route('recipes.saved', ['recipe' => $recipe->id]))
+    $this->get(route('recipes.saved', ['recipe' => $recipe]))
         ->assertSuccessful()
         ->assertSee('Packaging plan')
         ->assertSee('Soap box')

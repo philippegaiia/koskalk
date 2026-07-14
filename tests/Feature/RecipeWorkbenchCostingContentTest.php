@@ -23,7 +23,7 @@ it('renders packaging below ingredient costing with simplified wording', functio
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $this->actingAs($user)
-        ->get(route('recipes.edit', $recipe->id))
+        ->get(route('recipes.edit', $recipe))
         ->assertSuccessful()
         ->assertSeeInOrder([
             'Ingredient costing',
@@ -60,7 +60,7 @@ it('shows units-produced fallback on batch-dependent costing summary outputs', f
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $this->actingAs($user)
-        ->get(route('recipes.edit', $recipe->id))
+        ->get(route('recipes.edit', $recipe))
         ->assertSuccessful()
         ->assertSee('Set units produced')
         ->assertDontSee('Unavailable');

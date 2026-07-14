@@ -23,12 +23,12 @@
         : rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.').' '.$currency;
     $oilUnit = $snapshot['draft']['oilUnit'] ?? 'g';
     $printQuery = [
-        'recipe' => $recipe->id,
+        'recipe' => $recipe->public_id,
         'oil_weight' => $selectedOilWeight,
     ];
 
     if ($isVersionSelected ?? false) {
-        $printQuery['version'] = $version->id;
+        $printQuery['version'] = $version->public_id;
     }
 
     foreach (['batch_number', 'batch_basis', 'manufacture_date', 'units_produced'] as $batchQueryKey) {

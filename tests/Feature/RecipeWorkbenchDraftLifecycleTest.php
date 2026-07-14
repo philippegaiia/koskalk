@@ -55,7 +55,7 @@ it('publishes the current draft and opens a fresh draft when saving as a new ver
         ->and($recipe->fresh()->name)->toBe('Published Formula');
 });
 
-it('can still save through a mounted component after the auth session is gone', function () {
+it('does not save through a mounted component after the auth session is gone', function () {
     $user = User::factory()->create();
     ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -78,13 +78,9 @@ it('can still save through a mounted component after the auth session is gone', 
         app(RecipeContentUpdater::class),
     );
 
-    expect($result['ok'])->toBeTrue()
-        ->and($result['snapshot']['draft']['recipe']['id'])->not->toBeNull();
-
-    $recipe = Recipe::withoutGlobalScopes()->findOrFail($result['snapshot']['draft']['recipe']['id']);
-
-    expect($recipe->owner_id)->toBe($user->id)
-        ->and($recipe->name)->toBe('Fallback Draft');
+    expect($result['ok'])->toBeFalse()
+        ->and($result['message'])->toContain('signed in')
+        ->and(Recipe::withoutGlobalScopes()->where('name', 'Fallback Draft')->exists())->toBeFalse();
 });
 
 it('returns a validation response instead of crashing when saving NaOH soap with negative superfat', function () {

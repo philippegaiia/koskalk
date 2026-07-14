@@ -44,25 +44,28 @@ class IngredientFormulaUsageService
             ->map(fn (Collection $rows): Collection => $rows->pluck('source_ingredient_id'));
         $allUsageIngredientIds = $sourceIngredientIdsByUsageIngredientId->keys();
 
-        $accessibleWorkspaceIds = $user->accessibleWorkspaceIds();
-        $recipeAccessConstraint = function (Builder|Relation $query) use ($accessibleWorkspaceIds, $user): Builder|Relation {
+        $ownedWorkspaceIds = $user->ownedWorkspaces()
+            ->withoutGlobalScopes()
+            ->pluck('workspaces.id')
+            ->all();
+        $recipeAccessConstraint = function (Builder|Relation $query) use ($ownedWorkspaceIds, $user): Builder|Relation {
             return $query
                 ->withoutGlobalScopes()
-                ->where(function (Builder $accessibleQuery) use ($accessibleWorkspaceIds, $user): void {
+                ->where(function (Builder $accessibleQuery) use ($ownedWorkspaceIds, $user): void {
                     $accessibleQuery->where(function (Builder $ownedQuery) use ($user): void {
                         $ownedQuery
                             ->where('owner_type', OwnerType::User->value)
                             ->where('owner_id', $user->id);
                     });
 
-                    if ($accessibleWorkspaceIds !== []) {
+                    if ($ownedWorkspaceIds !== []) {
                         $accessibleQuery
-                            ->orWhere(function (Builder $workspaceOwnedQuery) use ($accessibleWorkspaceIds): void {
+                            ->orWhere(function (Builder $workspaceOwnedQuery) use ($ownedWorkspaceIds): void {
                                 $workspaceOwnedQuery
                                     ->where('owner_type', OwnerType::Workspace->value)
-                                    ->whereIn('owner_id', $accessibleWorkspaceIds);
+                                    ->whereIn('owner_id', $ownedWorkspaceIds);
                             })
-                            ->orWhereIn('workspace_id', $accessibleWorkspaceIds);
+                            ->orWhereIn('workspace_id', $ownedWorkspaceIds);
                     }
                 });
         };
@@ -105,6 +108,7 @@ class IngredientFormulaUsageService
                     ->map(fn (int $sourceIngredientId): array => [
                         'ingredient_id' => $sourceIngredientId,
                         'recipe_id' => $recipe->id,
+                        'recipe_public_id' => $recipe->public_id,
                         'recipe_name' => $recipe->name,
                         'version_id' => $recipeItem->recipe_version_id,
                         'version_is_current' => $recipeItem->recipeVersion->is_current,
@@ -119,6 +123,7 @@ class IngredientFormulaUsageService
                     ->map(fn (int $sourceIngredientId): array => [
                         'ingredient_id' => $sourceIngredientId,
                         'recipe_id' => $recipe->id,
+                        'recipe_public_id' => $recipe->public_id,
                         'recipe_name' => $recipe->name,
                         'version_id' => $recipeVersion->id,
                         'version_is_current' => $recipeVersion->is_current,
@@ -140,7 +145,7 @@ class IngredientFormulaUsageService
                             ->pluck('version_id')
                             ->unique()
                             ->count(),
-                        'url' => route('recipes.edit', $firstRow['recipe_id']),
+                        'url' => route('recipes.edit', $firstRow['recipe_public_id']),
                     ];
                 })
                 ->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)

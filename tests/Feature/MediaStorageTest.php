@@ -90,21 +90,22 @@ it('returns null for missing public media paths', function () {
 });
 
 it('stores rich content images as bounded webp attachments', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
-    config([
-        'media.disk' => 'public',
-        'media.visibility' => 'public',
-    ]);
+    config(['media.recipe_disk' => 'local']);
 
     $file = UploadedFile::fake()->image('inline.jpg', 2800, 2200);
+    $recipe = Recipe::factory()->create();
 
-    $path = app(RecipeRichContentAttachmentProvider::class)->saveUploadedFileAttachment($file);
-    $image = getimagesizefromstring(Storage::disk('public')->get($path));
+    $path = app(RecipeRichContentAttachmentProvider::class)
+        ->attribute($recipe->getRichContentAttribute('description'))
+        ->saveUploadedFileAttachment($file);
+    $image = getimagesizefromstring(Storage::disk('local')->get($path));
 
-    expect($path)->toStartWith('recipes/rich-content/')
+    expect($path)->toStartWith('recipes/'.$recipe->public_id.'/rich-content/')
         ->and($path)->toEndWith('.webp')
-        ->and(Storage::disk('public')->exists($path))->toBeTrue()
+        ->and(Storage::disk('local')->exists($path))->toBeTrue()
+        ->and(MediaStorage::recipeVisibility())->toBe('private')
         ->and($image)->not->toBeFalse()
         ->and($image['mime'] ?? null)->toBe('image/webp')
         ->and($image[0] ?? null)->toBeLessThanOrEqual(1600)
@@ -112,52 +113,46 @@ it('stores rich content images as bounded webp attachments', function () {
 });
 
 it('cleans up recipe rich content attachments that are no longer referenced', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
-    config([
-        'media.disk' => 'public',
-        'media.visibility' => 'public',
-    ]);
+    config(['media.recipe_disk' => 'local']);
 
     $recipe = Recipe::factory()->create([
         'description' => '<p><img data-id="recipes/rich-content/keep.webp" src="/storage/recipes/rich-content/keep.webp"><img data-id="recipes/rich-content/remove.webp" src="/storage/recipes/rich-content/remove.webp"></p>',
     ]);
 
-    Storage::disk('public')->put('recipes/rich-content/keep.webp', 'keep');
-    Storage::disk('public')->put('recipes/rich-content/remove.webp', 'remove');
+    Storage::disk('local')->put('recipes/rich-content/keep.webp', 'keep');
+    Storage::disk('local')->put('recipes/rich-content/remove.webp', 'remove');
 
     app(RecipeRichContentAttachmentProvider::class)
         ->attribute($recipe->getRichContentAttribute('description'))
         ->cleanUpFileAttachments(['recipes/rich-content/keep.webp']);
 
-    expect(Storage::disk('public')->exists('recipes/rich-content/keep.webp'))->toBeTrue()
-        ->and(Storage::disk('public')->exists('recipes/rich-content/remove.webp'))->toBeFalse();
+    expect(Storage::disk('local')->exists('recipes/rich-content/keep.webp'))->toBeTrue()
+        ->and(Storage::disk('local')->exists('recipes/rich-content/remove.webp'))->toBeFalse();
 });
 
 it('preserves shared rich content attachments that are still referenced by the other recipe editor', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
-    config([
-        'media.disk' => 'public',
-        'media.visibility' => 'public',
-    ]);
+    config(['media.recipe_disk' => 'local']);
 
     $recipe = Recipe::factory()->create([
         'description' => '<p><img data-id="recipes/rich-content/keep.webp" src="/storage/recipes/rich-content/keep.webp"><img data-id="recipes/rich-content/shared.webp" src="/storage/recipes/rich-content/shared.webp"><img data-id="recipes/rich-content/remove.webp" src="/storage/recipes/rich-content/remove.webp"></p>',
         'manufacturing_instructions' => '<p><img data-id="recipes/rich-content/shared.webp" src="/storage/recipes/rich-content/shared.webp"></p>',
     ]);
 
-    Storage::disk('public')->put('recipes/rich-content/keep.webp', 'keep');
-    Storage::disk('public')->put('recipes/rich-content/shared.webp', 'shared');
-    Storage::disk('public')->put('recipes/rich-content/remove.webp', 'remove');
+    Storage::disk('local')->put('recipes/rich-content/keep.webp', 'keep');
+    Storage::disk('local')->put('recipes/rich-content/shared.webp', 'shared');
+    Storage::disk('local')->put('recipes/rich-content/remove.webp', 'remove');
 
     app(RecipeRichContentAttachmentProvider::class)
         ->attribute($recipe->getRichContentAttribute('description'))
         ->cleanUpFileAttachments(['recipes/rich-content/keep.webp']);
 
-    expect(Storage::disk('public')->exists('recipes/rich-content/keep.webp'))->toBeTrue()
-        ->and(Storage::disk('public')->exists('recipes/rich-content/shared.webp'))->toBeTrue()
-        ->and(Storage::disk('public')->exists('recipes/rich-content/remove.webp'))->toBeFalse();
+    expect(Storage::disk('local')->exists('recipes/rich-content/keep.webp'))->toBeTrue()
+        ->and(Storage::disk('local')->exists('recipes/rich-content/shared.webp'))->toBeTrue()
+        ->and(Storage::disk('local')->exists('recipes/rich-content/remove.webp'))->toBeFalse();
 });
 
 it('auto orients jpeg uploads before converting them to webp', function () {

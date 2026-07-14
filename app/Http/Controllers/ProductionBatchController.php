@@ -16,7 +16,7 @@ use Illuminate\Http\RedirectResponse;
 class ProductionBatchController extends Controller
 {
     public function store(
-        int $recipe,
+        string $recipe,
         StoreProductionBatchRequest $request,
         CurrentAppUserResolver $currentAppUserResolver,
         EntitlementService $entitlementService,
@@ -28,7 +28,8 @@ class ProductionBatchController extends Controller
 
         $recipe = Recipe::withoutGlobalScopes()
             ->with('productFamily')
-            ->findOrFail($recipe);
+            ->where('public_id', $recipe)
+            ->firstOrFail();
 
         abort_unless($recipe->isAccessibleBy($user), 404);
 
@@ -119,13 +120,13 @@ class ProductionBatchController extends Controller
     {
         $this->authorize('delete', $productionBatch);
 
-        $recipeId = $productionBatch->recipe_id;
+        $recipe = $productionBatch->recipe;
         $batchLabel = $productionBatch->production_batch_number ?: $productionBatch->recipe_name;
 
         $productionBatch->delete();
 
-        $redirect = $recipeId !== null
-            ? redirect()->route('recipes.saved', $recipeId)
+        $redirect = $recipe instanceof Recipe
+            ? redirect()->route('recipes.saved', $recipe)
             : redirect()->route('recipes.index');
 
         return $redirect->with('status', "Production batch {$batchLabel} deleted.");

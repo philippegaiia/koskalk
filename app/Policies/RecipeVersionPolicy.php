@@ -2,14 +2,12 @@
 
 namespace App\Policies;
 
+use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Policies\Concerns\HandlesWorkspaceAuthorization;
 
 class RecipeVersionPolicy
 {
-    use HandlesWorkspaceAuthorization;
-
     public function viewAny(User $user): bool
     {
         return true;
@@ -17,7 +15,7 @@ class RecipeVersionPolicy
 
     public function view(User $user, RecipeVersion $recipeVersion): bool
     {
-        return $recipeVersion->isAccessibleBy($user);
+        return $this->can($user, 'view', $recipeVersion);
     }
 
     public function create(User $user): bool
@@ -27,22 +25,12 @@ class RecipeVersionPolicy
 
     public function update(User $user, RecipeVersion $recipeVersion): bool
     {
-        if ($recipeVersion->isOwnedBy($user)) {
-            return true;
-        }
-
-        return $recipeVersion->tenantWorkspaceId() !== null
-            && $this->canEditWorkspaceRecords($user, $recipeVersion->tenantWorkspaceId());
+        return $this->can($user, 'update', $recipeVersion);
     }
 
     public function delete(User $user, RecipeVersion $recipeVersion): bool
     {
-        if ($recipeVersion->isOwnedBy($user)) {
-            return true;
-        }
-
-        return $recipeVersion->tenantWorkspaceId() !== null
-            && $this->canDeleteWorkspaceRecords($user, $recipeVersion->tenantWorkspaceId());
+        return $this->can($user, 'delete', $recipeVersion);
     }
 
     public function restore(User $user, RecipeVersion $recipeVersion): bool
@@ -53,5 +41,14 @@ class RecipeVersionPolicy
     public function forceDelete(User $user, RecipeVersion $recipeVersion): bool
     {
         return false;
+    }
+
+    private function can(User $user, string $ability, RecipeVersion $recipeVersion): bool
+    {
+        $recipe = $recipeVersion->recipe()
+            ->withoutGlobalScopes()
+            ->first();
+
+        return $recipe instanceof Recipe && $user->can($ability, $recipe);
     }
 }

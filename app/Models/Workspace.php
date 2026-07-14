@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
 use App\WorkspaceMemberRole;
 use Database\Factories\WorkspaceFactory;
@@ -17,6 +18,8 @@ class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
     use HasFactory;
+
+    use HasPublicId;
 
     protected static function booted(): void
     {
@@ -48,11 +51,6 @@ class Workspace extends Model
     public function brands(): HasMany
     {
         return $this->hasMany(Brand::class);
-    }
-
-    public function invitations(): HasMany
-    {
-        return $this->hasMany(WorkspaceInvitation::class);
     }
 
     public function hasMember(User $user): bool

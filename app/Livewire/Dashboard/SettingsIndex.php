@@ -5,14 +5,13 @@ namespace App\Livewire\Dashboard;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Models\WorkspaceInvitation;
-use App\Models\WorkspaceMember;
 use App\Services\LocalePreferenceResolver;
 use App\Support\NumberLocale;
 use App\WorkspaceMemberRole;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -54,11 +53,6 @@ class SettingsIndex extends Component
 
     public string $companyCurrency = 'EUR';
 
-    // Member invitation fields
-    public string $inviteEmail = '';
-
-    public string $inviteRole = 'editor';
-
     public string $profileStatus = '';
 
     public string $profileMessage = '';
@@ -66,10 +60,6 @@ class SettingsIndex extends Component
     public string $companyStatus = '';
 
     public string $companyMessage = '';
-
-    public string $memberStatus = '';
-
-    public string $memberMessage = '';
 
     public function mount(): void
     {
@@ -103,7 +93,6 @@ class SettingsIndex extends Component
         $localeOptions = $this->localeOptions;
         $rules = [
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'numberLocale' => ['required', 'string', Rule::in(NumberLocale::codes())],
         ];
 
@@ -119,7 +108,6 @@ class SettingsIndex extends Component
 
         $user->fill([
             'name' => $this->name,
-            'email' => $this->email,
             'number_locale' => $this->numberLocale,
         ]);
 
@@ -170,11 +158,20 @@ class SettingsIndex extends Component
     {
         $this->validate([
             'currentPassword' => ['required', 'string'],
-            'newPassword' => ['required', 'string', 'min:8', 'confirmed:newPasswordConfirmation'],
+            'newPassword' => ['required', 'string', 'min:12', 'confirmed:newPasswordConfirmation'],
         ]);
 
         /** @var User $user */
         $user = auth()->user();
+        $rateLimitKey = 'settings-password:'.$user->id;
+
+        if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
+            throw ValidationException::withMessages([
+                'currentPassword' => 'Too many password attempts. Try again in '.RateLimiter::availableIn($rateLimitKey).' seconds.',
+            ]);
+        }
+
+        RateLimiter::hit($rateLimitKey, 60);
 
         if (! Hash::check($this->currentPassword, $user->password)) {
             throw ValidationException::withMessages([
@@ -182,6 +179,7 @@ class SettingsIndex extends Component
             ]);
         }
 
+        RateLimiter::clear($rateLimitKey);
         $user->update(['password' => Hash::make($this->newPassword)]);
 
         $this->currentPassword = '';
@@ -232,115 +230,6 @@ class SettingsIndex extends Component
 
         $this->companyStatus = 'success';
         $this->companyMessage = 'Company settings saved.';
-    }
-
-    public function inviteMember(): void
-    {
-        $this->validate([
-            'inviteEmail' => ['required', 'email', 'max:255'],
-            'inviteRole' => ['required', 'string', Rule::in(['admin', 'editor', 'viewer'])],
-        ]);
-
-        /** @var User $user */
-        $user = auth()->user();
-        $company = $this->resolveCompanyForManagement($user);
-
-        $existingMember = WorkspaceMember::withoutGlobalScopes()
-            ->where('workspace_id', $company->id)
-            ->whereHas('user', fn ($q) => $q->where('email', $this->inviteEmail))
-            ->exists();
-
-        if ($existingMember) {
-            throw ValidationException::withMessages([
-                'inviteEmail' => 'This person is already a member.',
-            ]);
-        }
-
-        $existingInvitation = WorkspaceInvitation::query()
-            ->where('workspace_id', $company->id)
-            ->where('email', $this->inviteEmail)
-            ->whereNull('accepted_at')
-            ->exists();
-
-        if ($existingInvitation) {
-            throw ValidationException::withMessages([
-                'inviteEmail' => 'An invitation has already been sent to this email.',
-            ]);
-        }
-
-        WorkspaceInvitation::query()->create([
-            'workspace_id' => $company->id,
-            'invited_by' => $user->id,
-            'email' => $this->inviteEmail,
-            'role' => $this->inviteRole,
-        ]);
-
-        $this->inviteEmail = '';
-        $this->inviteRole = 'editor';
-
-        $this->memberStatus = 'success';
-        $this->memberMessage = 'Invitation sent.';
-    }
-
-    public function removeMember(int $memberId): void
-    {
-        /** @var User $user */
-        $user = auth()->user();
-        $company = $this->resolveCompanyForManagement($user);
-
-        $member = WorkspaceMember::withoutGlobalScopes()
-            ->where('workspace_id', $company->id)
-            ->whereKey($memberId)
-            ->first();
-
-        if (! $member instanceof WorkspaceMember) {
-            return;
-        }
-
-        if ($member->user_id === $user->id) {
-            return;
-        }
-
-        $member->delete();
-
-        $this->memberStatus = 'success';
-        $this->memberMessage = 'Member removed.';
-    }
-
-    public function getMembersProperty()
-    {
-        if (! $this->companyId) {
-            return collect();
-        }
-
-        return WorkspaceMember::withoutGlobalScopes()
-            ->with('user')
-            ->where('workspace_id', $this->companyId)
-            ->get();
-    }
-
-    public function getPendingInvitationsProperty()
-    {
-        if (! $this->companyId) {
-            return collect();
-        }
-
-        return WorkspaceInvitation::query()
-            ->where('workspace_id', $this->companyId)
-            ->whereNull('accepted_at')
-            ->orderByDesc('created_at')
-            ->get();
-    }
-
-    private function resolveCompanyForManagement(User $user): Workspace
-    {
-        $company = Workspace::withoutGlobalScopes()->find($this->companyId);
-
-        if (! $company instanceof Workspace || $company->owner_user_id !== $user->id) {
-            abort(403, 'Only the company owner can manage members.');
-        }
-
-        return $company;
     }
 
     public function render()

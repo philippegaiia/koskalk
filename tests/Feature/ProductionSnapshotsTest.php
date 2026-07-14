@@ -575,7 +575,7 @@ it('shows record production controls on the saved formula page', function (): vo
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
 
     $this->actingAs($user)
-        ->get(route('recipes.saved', ['recipe' => $recipe->id]))
+        ->get(route('recipes.saved', ['recipe' => $recipe]))
         ->assertSuccessful()
         ->assertSee('Record production')
         ->assertSee('Production batch number')
@@ -603,7 +603,7 @@ it('shows record production controls on the legacy saved version page', function
     productionSnapshotAttachCosting($user, $savedVersion, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
 
     $this->actingAs($user)
-        ->get(route('recipes.version', ['recipe' => $recipe->id, 'version' => $savedVersion->id]))
+        ->get(route('recipes.version', ['recipe' => $recipe, 'version' => $savedVersion]))
         ->assertSuccessful()
         ->assertSee('Record production')
         ->assertSee('Production batch number')
@@ -843,7 +843,7 @@ it('updates production lot numbers without clearing omitted annotations', functi
         ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-35');
 });
 
-it('allows workspace editors authorized to update the recipe to store production snapshots', function (): void {
+it('does not allow future workspace members to store production snapshots during the owner-only MVP', function (): void {
     [$owner, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     $editor = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
@@ -857,7 +857,6 @@ it('allows workspace editors authorized to update the recipe to store production
         'owner_id' => $workspace->id,
         'workspace_id' => $workspace->id,
         'visibility' => Visibility::Workspace,
-        'is_private' => false,
         'created_by' => $owner->id,
     ]);
 
@@ -871,9 +870,9 @@ it('allows workspace editors authorized to update the recipe to store production
             'batch_basis' => 1000,
             'units_produced' => 10,
         ])
-        ->assertRedirect();
+        ->assertForbidden();
 
-    expect(ProductionBatch::query()->where('user_id', $editor->id)->count())->toBe(1);
+    expect(ProductionBatch::query()->where('user_id', $editor->id)->count())->toBe(0);
 });
 
 it('validates required production recording fields', function (): void {

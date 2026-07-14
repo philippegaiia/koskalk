@@ -1,6 +1,6 @@
 @php
  $workbench = $workbench ?? [];
- $recipeId = $workbench['recipe']['id'] ?? null;
+ $recipePublicId = $workbench['recipe']['public_id'] ?? null;
  $hasSavedFormula = (bool) ($workbench['recipe']['has_saved_formula'] ?? false);
  $savedFormulaUrl = $workbench['recipe']['saved_formula_url'] ?? null;
  $isFormulaLocked = (bool) ($workbench['recipe']['is_locked'] ?? false);
@@ -47,16 +47,16 @@
 	 <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
 	 <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving…' : 'Save')"></span>
 	 </button>
-	 @if ($recipeId)
+ @if ($recipePublicId)
 	 @if ($isFormulaLocked)
-	 <form method="POST" action="{{ route('recipes.unlock', $recipeId) }}">
+ <form method="POST" action="{{ route('recipes.unlock', $recipePublicId) }}">
 	 @csrf
 	 <button type="submit" class="rounded-full bg-[var(--color-warning-soft)] px-4 py-2.5 text-sm font-medium text-[var(--color-warning-strong)] transition hover:bg-[var(--color-panel)]">
 	 Unlock formula
 	 </button>
 	 </form>
 	 @else
-	 <form method="POST" action="{{ route('recipes.lock', $recipeId) }}">
+ <form method="POST" action="{{ route('recipes.lock', $recipePublicId) }}">
 	 @csrf
 	 <button type="submit" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] shadow-sm transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
 	 Lock formula

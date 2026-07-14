@@ -140,29 +140,29 @@
  class="absolute right-0 top-full z-10 mt-1 w-48 rounded-xl bg-white shadow-lg ring-1 ring-[var(--color-line)]"
  >
   <div class="p-1.5">
-  <a href="{{ route('recipes.edit', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+  <a href="{{ route('recipes.edit', $recipe) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
   Open workbench
   </a>
    @if ($recipe->latestPublishedVersion)
-  <a href="{{ route('recipes.saved', $recipe->id) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+  <a href="{{ route('recipes.saved', $recipe) }}" wire:navigate @click="menuOpen = false" class="block rounded-lg px-3 py-3 text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
   Formula sheet &amp; production
   </a>
   @endif
-  <form method="POST" action="{{ route('recipes.duplicate', $recipe->id) }}">
+  <form method="POST" action="{{ route('recipes.duplicate', $recipe) }}">
  @csrf
  <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
  Duplicate
  </button>
  </form>
  @if ($isLocked)
- <form method="POST" action="{{ route('recipes.unlock', $recipe->id) }}">
+ <form method="POST" action="{{ route('recipes.unlock', $recipe) }}">
  @csrf
  <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
  Unlock formula
  </button>
  </form>
  @else
- <form method="POST" action="{{ route('recipes.lock', $recipe->id) }}">
+ <form method="POST" action="{{ route('recipes.lock', $recipe) }}">
  @csrf
  <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
  Lock formula
@@ -202,7 +202,7 @@
 
  <input x-model="confirmText" type="text" placeholder="Paste recipe name to confirm" class="sk-input mt-4" />
 
- <form method="POST" action="{{ route('recipes.destroy', $recipe->id) }}" class="mt-4">
+ <form method="POST" action="{{ route('recipes.destroy', $recipe) }}" class="mt-4">
  @method('DELETE')
  @csrf
  <input type="hidden" name="confirm_name" :value="confirmText">

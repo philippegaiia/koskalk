@@ -30,7 +30,7 @@ it('allows an owner to delete a recipe via the delete route', function (): void 
         ->pluck('id');
 
     actingAs($user)
-        ->delete(route('recipes.destroy', $recipe->id), [
+        ->delete(route('recipes.destroy', $recipe), [
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -47,7 +47,7 @@ it('rejects recipe deletion with the wrong confirmation name', function (): void
     [$user, $recipe] = createRecipeWithDraftAndPublishedVersion();
 
     actingAs($user)
-        ->delete(route('recipes.destroy', $recipe->id), [
+        ->delete(route('recipes.destroy', $recipe), [
             'confirm_name' => 'Wrong Name',
         ])
         ->assertForbidden();
@@ -60,7 +60,7 @@ it('rejects recipe deletion by an unauthorized user', function (): void {
     $otherUser = User::factory()->create();
 
     actingAs($otherUser)
-        ->delete(route('recipes.destroy', $recipe->id), [
+        ->delete(route('recipes.destroy', $recipe), [
             'confirm_name' => $recipe->name,
         ])
         ->assertForbidden();
@@ -69,11 +69,11 @@ it('rejects recipe deletion by an unauthorized user', function (): void {
 });
 
 it('deletes recipe media files when a recipe is permanently deleted', function (): void {
-    Storage::fake('public');
+    Storage::fake('local');
 
     config([
-        'media.disk' => 'public',
-        'media.visibility' => 'public',
+        'media.recipe_disk' => 'local',
+        'media.recipe_visibility' => 'private',
     ]);
 
     [$user, $recipe] = createRecipeWithDraftAndPublishedVersion();
@@ -84,19 +84,19 @@ it('deletes recipe media files when a recipe is permanently deleted', function (
         'manufacturing_instructions' => '<p><img data-id="recipes/rich-content/instructions.webp" src="/storage/recipes/rich-content/instructions.webp"></p>',
     ])->save();
 
-    Storage::disk('public')->put('recipes/featured-images/featured.webp', 'featured');
-    Storage::disk('public')->put('recipes/rich-content/presentation.webp', 'presentation');
-    Storage::disk('public')->put('recipes/rich-content/instructions.webp', 'instructions');
+    Storage::disk('local')->put('recipes/featured-images/featured.webp', 'featured');
+    Storage::disk('local')->put('recipes/rich-content/presentation.webp', 'presentation');
+    Storage::disk('local')->put('recipes/rich-content/instructions.webp', 'instructions');
 
     actingAs($user)
-        ->delete(route('recipes.destroy', $recipe->id), [
+        ->delete(route('recipes.destroy', $recipe), [
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'));
 
-    expect(Storage::disk('public')->exists('recipes/featured-images/featured.webp'))->toBeFalse()
-        ->and(Storage::disk('public')->exists('recipes/rich-content/presentation.webp'))->toBeFalse()
-        ->and(Storage::disk('public')->exists('recipes/rich-content/instructions.webp'))->toBeFalse();
+    expect(Storage::disk('local')->exists('recipes/featured-images/featured.webp'))->toBeFalse()
+        ->and(Storage::disk('local')->exists('recipes/rich-content/presentation.webp'))->toBeFalse()
+        ->and(Storage::disk('local')->exists('recipes/rich-content/instructions.webp'))->toBeFalse();
 });
 
 it('allows an owner to delete a published version via the delete route', function (): void {
@@ -111,7 +111,7 @@ it('allows an owner to delete a published version via the delete route', functio
         ->pluck('id');
 
     actingAs($user)
-        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe->id, 'version' => $publishedVersion->id]), [
+        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $publishedVersion]), [
             'confirm_name' => $publishedVersion->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -130,7 +130,7 @@ it('rejects published version deletion when the recipe name is provided instead 
     $recipe->update(['name' => 'Recipe Shell']);
 
     actingAs($user)
-        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe->id, 'version' => $publishedVersion->id]), [
+        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $publishedVersion]), [
             'confirm_name' => $recipe->name,
         ])
         ->assertForbidden();
@@ -147,7 +147,7 @@ it('shows the standard version deleted message when other published versions rem
         ->get();
 
     actingAs($user)
-        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe->id, 'version' => $publishedVersions->first()->id]), [
+        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $publishedVersions->first()]), [
             'confirm_name' => $publishedVersions->first()->name,
         ])
         ->assertRedirect(route('recipes.index'))
@@ -167,7 +167,7 @@ it('rejects version deletion when the version belongs to a different recipe', fu
     [, $otherRecipe, , $otherPublishedVersion] = createRecipeWithDraftAndPublishedVersion($user);
 
     actingAs($user)
-        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe->id, 'version' => $otherPublishedVersion->id]), [
+        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $otherPublishedVersion]), [
             'confirm_name' => $otherPublishedVersion->name,
         ])
         ->assertNotFound();

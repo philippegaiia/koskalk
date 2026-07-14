@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
 use App\OwnerType;
@@ -45,6 +46,7 @@ class RecipeVersion extends Model
     /** @use HasFactory<RecipeVersionFactory> */
     use HasFactory;
 
+    use HasPublicId;
     use HasTenantOwnership;
 
     protected static function booted(): void

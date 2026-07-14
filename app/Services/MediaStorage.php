@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Recipe;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -23,6 +24,33 @@ class MediaStorage
     public static function publicVisibility(): string
     {
         return (string) config('media.visibility', 'public');
+    }
+
+    public static function recipeDisk(): string
+    {
+        return (string) config('media.recipe_disk', 'local');
+    }
+
+    public static function recipeVisibility(): string
+    {
+        return 'private';
+    }
+
+    public static function recipeDirectory(Recipe $recipe, string $directory): string
+    {
+        return 'recipes/'.$recipe->public_id.'/'.trim($directory, '/');
+    }
+
+    public static function isRecipePath(Recipe $recipe, ?string $path): bool
+    {
+        if (blank($path)) {
+            return false;
+        }
+
+        $normalizedPath = ltrim((string) $path, '/');
+
+        return ! str_contains($normalizedPath, '..')
+            && str_starts_with($normalizedPath, 'recipes/'.$recipe->public_id.'/');
     }
 
     public static function recipeFeaturedImagesMaxSize(): int
@@ -123,6 +151,24 @@ class MediaStorage
         return $path;
     }
 
+    public static function storeRecipeResizedWebp(
+        UploadedFile $file,
+        string $directory,
+        int $maxWidth,
+        int $maxHeight,
+        int $quality = 85,
+    ): string {
+        $path = trim($directory.'/'.Str::ulid().'.webp', '/');
+        $binary = static::encodeWebp($file, $maxWidth, $maxHeight, $quality, false);
+
+        Storage::disk(static::recipeDisk())->put($path, $binary, [
+            'visibility' => static::recipeVisibility(),
+            'ContentType' => 'image/webp',
+        ]);
+
+        return $path;
+    }
+
     public static function storeFittedWebp(
         UploadedFile $file,
         string $directory,
@@ -170,6 +216,24 @@ class MediaStorage
         }
 
         Storage::disk(static::publicDisk())->delete($path);
+    }
+
+    public static function recipeUrl(Recipe $recipe, ?string $path): ?string
+    {
+        if (! static::isRecipePath($recipe, $path) || ! Storage::disk(static::recipeDisk())->exists($path)) {
+            return null;
+        }
+
+        return route('recipes.media', ['recipe' => $recipe, 'path' => $path]);
+    }
+
+    public static function deleteRecipePath(?string $path): void
+    {
+        if (blank($path)) {
+            return;
+        }
+
+        Storage::disk(static::recipeDisk())->delete($path);
     }
 
     private static function encodeWebp(

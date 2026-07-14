@@ -15,14 +15,9 @@ class RecipePolicy
         return true;
     }
 
-    /**
-     * Private recipes are visible to all company members but only
-     * editable/deletable by the author. is_private controls write
-     * access, not read access.
-     */
     public function view(User $user, Recipe $recipe): bool
     {
-        return $recipe->isAccessibleBy($user);
+        return $this->isWorkspaceOwner($user, $recipe);
     }
 
     public function create(User $user): bool
@@ -32,30 +27,12 @@ class RecipePolicy
 
     public function update(User $user, Recipe $recipe): bool
     {
-        if ($recipe->is_private && $recipe->created_by !== $user->id) {
-            return false;
-        }
-
-        if ($recipe->isOwnedBy($user)) {
-            return true;
-        }
-
-        return $recipe->tenantWorkspaceId() !== null
-            && $this->canEditWorkspaceRecords($user, $recipe->tenantWorkspaceId());
+        return $this->isWorkspaceOwner($user, $recipe);
     }
 
     public function delete(User $user, Recipe $recipe): bool
     {
-        if ($recipe->is_private && $recipe->created_by !== $user->id) {
-            return false;
-        }
-
-        if ($recipe->isOwnedBy($user)) {
-            return true;
-        }
-
-        return $recipe->tenantWorkspaceId() !== null
-            && $this->canDeleteWorkspaceRecords($user, $recipe->tenantWorkspaceId());
+        return $this->isWorkspaceOwner($user, $recipe);
     }
 
     public function restore(User $user, Recipe $recipe): bool
@@ -66,5 +43,17 @@ class RecipePolicy
     public function forceDelete(User $user, Recipe $recipe): bool
     {
         return false;
+    }
+
+    private function isWorkspaceOwner(User $user, Recipe $recipe): bool
+    {
+        if ($recipe->workspace_id !== null) {
+            return $recipe->workspace()
+                ->withoutGlobalScopes()
+                ->where('owner_user_id', $user->id)
+                ->exists();
+        }
+
+        return $recipe->isOwnedBy($user);
     }
 }

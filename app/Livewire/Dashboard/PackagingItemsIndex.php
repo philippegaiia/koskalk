@@ -23,9 +23,6 @@ class PackagingItemsIndex extends Component
     private const array ALLOWED_PER_PAGE = [25, 50, 100];
 
     #[Locked]
-    public ?int $currentUserId = null;
-
-    #[Locked]
     public ?string $currentCurrency = null;
 
     #[Locked]
@@ -47,7 +44,6 @@ class PackagingItemsIndex extends Component
     {
         $user = $resolver->resolve();
 
-        $this->currentUserId = $user?->id;
         $this->currentCurrency = $user?->defaultCurrency();
         $this->currentNumberLocale = NumberLocale::resolve($user?->number_locale);
     }
@@ -256,6 +252,6 @@ class PackagingItemsIndex extends Component
 
     private function currentUser(): ?User
     {
-        return app(CurrentAppUserResolver::class)->resolve($this->currentUserId);
+        return app(CurrentAppUserResolver::class)->resolve();
     }
 }

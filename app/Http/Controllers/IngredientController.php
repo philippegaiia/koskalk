@@ -30,7 +30,12 @@ class IngredientController extends Controller
         $user = $currentAppUserResolver->resolve();
         $ingredient = Ingredient::query()->findOrFail($ingredient);
 
-        abort_unless($user !== null && $ingredient->isOwnedBy($user), 404);
+        $isAccessiblePlatformIngredient = $ingredient->owner_type === null && $ingredient->is_active;
+
+        abort_unless(
+            $user !== null && ($ingredient->isOwnedBy($user) || $isAccessiblePlatformIngredient),
+            404,
+        );
 
         return view('ingredients.editor', [
             'ingredient' => $ingredient,

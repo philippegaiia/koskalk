@@ -51,20 +51,9 @@
  class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-field-muted)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">
  <span x-text="isFormulaDiagnosticsOpen ? 'Hide details' : 'Show details'"></span>
  </button>
- @if ($isPublicCalculator)
- <form id="public-calculator-save-form" method="POST" action="{{ route('calculator.draft.store') }}">
- @csrf
- <input type="hidden" name="product_family_slug" x-bind:value="productFamilySlug">
- <input type="hidden" name="draft" x-bind:value="serializeDraftJson()">
- <button type="submit" class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
- Save this formula
- </button>
- </form>
- @else
  <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="inline-flex min-h-9 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition">
  <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving...' : 'Save')"></span>
  </button>
- @endif
  </div>
  </div>
  </section>

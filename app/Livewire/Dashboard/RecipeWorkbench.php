@@ -33,8 +33,6 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     use InteractsWithForms;
 
     #[Locked]
-    public ?int $actorUserId = null;
-
     public ?int $recipeId = null;
 
     public string $productFamilySlug = 'soap';
@@ -58,17 +56,12 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     private ?ProductType $resolvedProductType = null;
 
-    private bool $hasResolvedCurrentUser = false;
-
-    private ?User $resolvedCurrentUser = null;
-
     private bool $hasResolvedCurrentRecipe = false;
 
     private ?Recipe $resolvedCurrentRecipe = null;
 
     public function mount(?Recipe $recipe = null, string $productFamilySlug = 'soap', ?string $productTypeSlug = null): void
     {
-        $this->actorUserId = $this->currentUser()?->id;
         $this->recipeId = $recipe?->id;
         $this->productFamilySlug = $recipe?->productFamily?->slug ?? $productFamilySlug;
         $this->productTypeSlug = $recipe?->productType?->slug ?? $productTypeSlug;
@@ -90,6 +83,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 'message' => 'You need to be signed in before a formula can be saved.',
             ];
         }
+
+        $this->authorizeRecipeMutationOrCreation();
 
         if ($this->currentRecipe()?->isLocked()) {
             return [
@@ -127,7 +122,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             'message' => $wasUnsavedRecipe && $this->hasPendingRecipeContent()
                 ? 'Formula saved. Content and media were kept too.'
                 : 'Formula saved.',
-            'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
+            'redirect' => route('recipes.edit', Recipe::withoutGlobalScopes()->findOrFail($recipeVersion->recipe_id)),
             'snapshot' => $snapshot,
         ];
     }
@@ -146,6 +141,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 'message' => 'You need to be signed in before a formula can be saved.',
             ];
         }
+
+        $this->authorizeRecipeMutationOrCreation();
 
         if ($this->currentRecipe()?->isLocked()) {
             return [
@@ -183,7 +180,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             'message' => $wasUnsavedRecipe && $this->hasPendingRecipeContent()
                 ? 'Formula saved. Content and media were kept too.'
                 : 'Formula saved.',
-            'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
+            'redirect' => route('recipes.edit', Recipe::withoutGlobalScopes()->findOrFail($recipeVersion->recipe_id)),
             'snapshot' => $snapshot,
         ];
     }
@@ -212,6 +209,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ];
         }
 
+        $recipe = $this->currentRecipe();
+
+        if ($recipe instanceof Recipe) {
+            $this->authorize('view', $recipe);
+        }
+
+        $this->authorize('create', Recipe::class);
+
         try {
             $recipeVersion = $recipeWorkbenchService->duplicate(
                 $user,
@@ -225,7 +230,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         return [
             'ok' => true,
             'message' => 'Formula duplicated.',
-            'redirect' => route('recipes.edit', $recipeVersion->recipe_id),
+            'redirect' => route('recipes.edit', Recipe::withoutGlobalScopes()->findOrFail($recipeVersion->recipe_id)),
         ];
     }
 
@@ -296,6 +301,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ];
         }
 
+        $this->authorize('update', $recipe);
+
         return [
             'ok' => true,
             'message' => 'Costing saved.',
@@ -318,6 +325,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 'message' => 'Save the formula before pricing can be loaded.',
             ];
         }
+
+        $this->authorize('view', $recipe);
 
         return [
             'ok' => true,
@@ -360,6 +369,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ];
         }
 
+        $this->authorize('view', $recipe);
+
         $snapshot = $recipeWorkbenchService->versionSnapshot($recipe, $versionId);
 
         if ($snapshot === null) {
@@ -386,6 +397,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 'message' => 'No saved recipe is available to load.',
             ];
         }
+
+        $this->authorize('view', $recipe);
 
         $snapshot = $recipeWorkbenchService->versionSnapshot($recipe, $versionId);
 
@@ -442,6 +455,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ->where('recipe_id', $this->recipeId)
             ->findOrFail($versionId);
 
+        $this->authorize('delete', $recipe);
         $this->authorize('delete', $version);
 
         if (! $version->is_current) {
@@ -553,6 +567,23 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         return $this->resolvedCurrentRecipe;
+    }
+
+    private function authorizeRecipeMutationOrCreation(): void
+    {
+        $recipe = $this->currentRecipe();
+
+        if ($this->recipeId !== null && ! $recipe instanceof Recipe) {
+            abort(404);
+        }
+
+        if ($recipe instanceof Recipe) {
+            $this->authorize('update', $recipe);
+
+            return;
+        }
+
+        $this->authorize('create', Recipe::class);
     }
 
     /**
@@ -681,20 +712,13 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     private function currentUser(): ?User
     {
-        if (! $this->hasResolvedCurrentUser) {
-            $this->resolvedCurrentUser = app(RecipeWorkbenchContextResolver::class)->currentUser($this->actorUserId);
-            $this->hasResolvedCurrentUser = true;
-        }
-
-        return $this->resolvedCurrentUser;
+        return app(RecipeWorkbenchContextResolver::class)->currentUser();
     }
 
     private function flushResolvedContext(): void
     {
         $this->hasResolvedCurrentRecipe = false;
         $this->resolvedCurrentRecipe = null;
-        $this->hasResolvedCurrentUser = false;
-        $this->resolvedCurrentUser = null;
         $this->hasResolvedProductFamily = false;
         $this->resolvedProductFamily = null;
         $this->hasResolvedProductType = false;

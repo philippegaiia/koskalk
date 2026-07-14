@@ -5,7 +5,10 @@ use App\Models\User;
 use App\Providers\AppServiceProvider;
 use App\Services\EntitlementService;
 use Database\Seeders\PlanSeeder;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Carbon;
 use Laravel\Paddle\Events\SubscriptionCanceled;
 use Laravel\Paddle\Events\SubscriptionCreated;
@@ -14,6 +17,52 @@ use Laravel\Paddle\Events\SubscriptionUpdated;
 use Laravel\Paddle\Subscription;
 
 uses(RefreshDatabase::class);
+
+it('accepts Paddle webhook requests without a browser CSRF token', function () {
+    $originalEnvironment = app()->environment();
+    app()->detectEnvironment(fn (): string => 'production');
+
+    try {
+        $request = Request::create('/paddle/webhook', 'POST');
+        $request->setLaravelSession(app('session')->driver());
+
+        $response = app(PreventRequestForgery::class)->handle(
+            $request,
+            fn (): Response => response('accepted'),
+        );
+
+        expect($response->getContent())->toBe('accepted');
+    } finally {
+        app()->detectEnvironment(fn (): string => $originalEnvironment);
+    }
+});
+
+it('rejects Paddle webhook requests without a valid Paddle signature', function () {
+    config(['cashier.webhook_secret' => 'pdl_ntfset_test_secret']);
+
+    $this->postJson(route('cashier.webhook'))
+        ->assertForbidden();
+});
+
+it('accepts Paddle webhook requests with a valid Paddle signature', function () {
+    $secret = 'pdl_ntfset_test_secret';
+    $timestamp = time();
+    $payload = json_encode(['event_type' => 'test.event'], JSON_THROW_ON_ERROR);
+    $signature = hash_hmac('sha256', "{$timestamp}:{$payload}", $secret);
+
+    config(['cashier.webhook_secret' => $secret]);
+
+    $this->call(
+        'POST',
+        route('cashier.webhook'),
+        server: [
+            'CONTENT_TYPE' => 'application/json',
+            'HTTP_PADDLE_SIGNATURE' => "ts={$timestamp};h1={$signature}",
+        ],
+        content: $payload,
+    )
+        ->assertSuccessful();
+});
 
 it('refuses to boot in production without a Paddle webhook secret', function () {
     app()->detectEnvironment(fn (): string => 'production');

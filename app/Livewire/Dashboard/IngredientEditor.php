@@ -50,8 +50,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
     use InteractsWithForms;
 
     #[Locked]
-    public ?int $actorUserId = null;
-
     public ?int $ingredientId = null;
 
     /**
@@ -69,7 +67,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public function mount(?Ingredient $ingredient, UserIngredientAuthoringService $userIngredientAuthoringService): void
     {
-        $this->actorUserId = $this->currentUser()?->id;
         $this->ingredientId = $ingredient?->id;
 
         $this->form->fill(
@@ -90,6 +87,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
             return null;
         }
+
+        abort_if($this->isReadOnly(), 403);
 
         /** @var array<string, mixed> $state */
         $state = $this->mergeCustomCompositionState($this->form->getState());
@@ -532,13 +531,17 @@ class IngredientEditor extends Component implements HasActions, HasForms
                     ]),
             ])
             ->statePath('data')
+            ->disabled($this->isReadOnly())
             ->model($this->currentIngredient() ?? Ingredient::class);
     }
 
     public function render(): View
     {
+        $ingredient = $this->currentIngredient();
+        $ingredient?->loadMissing('allergenEntries.allergen');
+
         return view('livewire.dashboard.ingredient-editor', [
-            'ingredient' => $this->currentIngredient(),
+            'ingredient' => $ingredient,
         ]);
     }
 
@@ -722,18 +725,32 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         return Ingredient::query()
-            ->ownedByUser($user)
+            ->where(function ($query) use ($user): void {
+                $query->ownedByUser($user)
+                    ->orWhere(function ($platformQuery): void {
+                        $platformQuery
+                            ->whereNull('owner_type')
+                            ->where('is_active', true);
+                    });
+            })
             ->find($this->ingredientId);
     }
 
     private function currentUser(): ?User
     {
-        return app(CurrentAppUserResolver::class)->resolve($this->actorUserId);
+        return app(CurrentAppUserResolver::class)->resolve();
     }
 
     private function isEditing(): bool
     {
         return $this->ingredientId !== null;
+    }
+
+    private function isReadOnly(): bool
+    {
+        $ingredient = $this->currentIngredient();
+
+        return $ingredient instanceof Ingredient && $ingredient->owner_type === null;
     }
 
     private static function isPublicAromaticCategory(mixed $state): bool

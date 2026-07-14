@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
@@ -10,30 +9,31 @@ use App\Http\Controllers\IngredientController;
 use App\Http\Controllers\LocalePreferenceController;
 use App\Http\Controllers\PackagingItemController;
 use App\Http\Controllers\ProductionBatchController;
-use App\Http\Controllers\PublicSoapCalculatorController;
 use App\Http\Controllers\RecipeController;
+use App\Http\Controllers\RecipeMediaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
-Route::get('/calculator', [PublicSoapCalculatorController::class, 'show'])->name('calculator');
-Route::post('/calculator/draft', [PublicSoapCalculatorController::class, 'storeDraft'])->name('calculator.draft.store');
 Route::post('/language', LocalePreferenceController::class)->name('language.update');
 
 Route::middleware('guest')->group(function (): void {
-    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
-    Route::post('/register', [RegisteredUserController::class, 'store'])
-        ->middleware('throttle:5,1');
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:5,1');
 });
 
 Route::middleware('auth')->group(function (): void {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    Route::view('/email/verify', 'auth.verify-email')->name('verification.notice');
+});
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/account', [AccountController::class, 'show'])->name('account');
     Route::patch('/dashboard/account/profile', [AccountController::class, 'updateProfile'])->name('account.profile.update');
-    Route::patch('/dashboard/account/password', [AccountController::class, 'updatePassword'])->name('account.password.update');
+    Route::patch('/dashboard/account/password', [AccountController::class, 'updatePassword'])
+        ->middleware('throttle:5,1')
+        ->name('account.password.update');
     Route::get('/dashboard/billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
     Route::post('/dashboard/billing/payment-method', [BillingController::class, 'updatePaymentMethod'])->name('billing.payment-method.update');
 
@@ -50,14 +50,20 @@ Route::middleware('auth')->group(function (): void {
             Route::post('/{recipe}/duplicate', 'duplicate')->name('duplicate');
             Route::post('/{recipe}/lock', 'lock')->name('lock');
             Route::post('/{recipe}/unlock', 'unlock')->name('unlock');
-            Route::post('/{recipe}/production-batches', [ProductionBatchController::class, 'store'])->name('production-batches.store');
+            Route::post('/{recipe}/production-batches', [ProductionBatchController::class, 'store'])
+                ->middleware('throttle:30,1')
+                ->name('production-batches.store');
             Route::get('/{recipe}/print', 'printSavedRecipe')->name('print.recipe');
             Route::get('/{recipe}/print/production', 'printSavedProductionSheet')->name('print.production');
             Route::get('/{recipe}/print/details', 'printSavedDetails')->name('print.details');
             Route::get('/{recipe}/print/technical', 'printSavedTechnicalSheet')->name('print.technical');
             Route::get('/{recipe}/print/costing', 'printSavedCostingSheet')->name('print.costing');
-            Route::get('/{recipe}/export.xlsx', 'exportSavedWorkbook')->name('export.xlsx');
-            Route::get('/{recipe}/export.csv', 'exportSavedFormulaCsv')->name('export.csv');
+            Route::get('/{recipe}/export.xlsx', 'exportSavedWorkbook')->middleware('throttle:10,1')->name('export.xlsx');
+            Route::get('/{recipe}/export.csv', 'exportSavedFormulaCsv')->middleware('throttle:10,1')->name('export.csv');
+            Route::get('/{recipe}/media/{path}', [RecipeMediaController::class, 'show'])
+                ->where('path', '.*')
+                ->middleware('throttle:120,1')
+                ->name('media');
             Route::get('/{recipe}/versions/{version}', 'version')->name('version');
             Route::delete('/{recipe}/versions/{version}', 'destroyVersion')->name('versions.destroy');
             Route::post('/{recipe}/versions/{version}/use-as-current', 'restoreCurrentVersion')->name('use-version-as-current');

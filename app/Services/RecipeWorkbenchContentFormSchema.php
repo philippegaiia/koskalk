@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Recipe;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
@@ -29,9 +30,11 @@ class RecipeWorkbenchContentFormSchema
                                 ['h2', 'h3', 'blockquote', 'bulletList', 'orderedList'],
                                 ['attachFiles', 'undo', 'redo'],
                             ])
-                            ->fileAttachmentsDisk(MediaStorage::publicDisk())
-                            ->fileAttachmentsDirectory('recipes/rich-content')
-                            ->fileAttachmentsVisibility(MediaStorage::publicVisibility())
+                            ->fileAttachmentsDisk(MediaStorage::recipeDisk())
+                            ->fileAttachmentsDirectory(fn (?Recipe $record): string => $record instanceof Recipe
+                                ? MediaStorage::recipeDirectory($record, 'rich-content')
+                                : 'recipes/pending/rich-content')
+                            ->fileAttachmentsVisibility(MediaStorage::recipeVisibility())
                             ->fileAttachmentsAcceptedFileTypes([
                                 'image/jpeg',
                                 'image/webp',
@@ -52,9 +55,11 @@ class RecipeWorkbenchContentFormSchema
                                 ['h2', 'h3', 'blockquote', 'bulletList', 'orderedList'],
                                 ['attachFiles', 'undo', 'redo'],
                             ])
-                            ->fileAttachmentsDisk(MediaStorage::publicDisk())
-                            ->fileAttachmentsDirectory('recipes/rich-content')
-                            ->fileAttachmentsVisibility(MediaStorage::publicVisibility())
+                            ->fileAttachmentsDisk(MediaStorage::recipeDisk())
+                            ->fileAttachmentsDirectory(fn (?Recipe $record): string => $record instanceof Recipe
+                                ? MediaStorage::recipeDirectory($record, 'rich-content')
+                                : 'recipes/pending/rich-content')
+                            ->fileAttachmentsVisibility(MediaStorage::recipeVisibility())
                             ->fileAttachmentsAcceptedFileTypes([
                                 'image/jpeg',
                                 'image/webp',
@@ -70,11 +75,17 @@ class RecipeWorkbenchContentFormSchema
                         FileUpload::make('featured_image_path')
                             ->label('Finished product image')
                             ->image()
-                            ->disk(MediaStorage::publicDisk())
-                            ->directory('recipes/featured-images')
-                            ->visibility(MediaStorage::publicVisibility())
+                            ->disk(MediaStorage::recipeDisk())
+                            ->directory(fn (?Recipe $record): string => $record instanceof Recipe
+                                ? MediaStorage::recipeDirectory($record, 'featured-images')
+                                : 'recipes/pending/featured-images')
+                            ->visibility(MediaStorage::recipeVisibility())
+                            ->preventFilePathTampering(
+                                allowFilePathUsing: fn (string $file, ?Recipe $record): bool => $record instanceof Recipe
+                                    && MediaStorage::isRecipePath($record, $file),
+                            )
                             ->deleteUploadedFileUsing(function (string $file): void {
-                                MediaStorage::deletePublicPath($file);
+                                MediaStorage::deleteRecipePath($file);
                             })
                             ->imagePreviewHeight('20rem')
                             ->panelLayout('integrated')
@@ -84,13 +95,19 @@ class RecipeWorkbenchContentFormSchema
                                 'image/webp',
                             ])
                             ->maxSize(MediaStorage::recipeFeaturedImagesMaxSize())
-                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeResizedWebp(
-                                $file,
-                                (string) $component->getDirectory(),
-                                (int) config('media.recipe_featured_images.max_width', 800),
-                                (int) config('media.recipe_featured_images.max_height', 600),
-                                MediaStorage::recipeFeaturedImagesQuality(),
-                            ))
+                            ->saveUploadedFileUsing(function (BaseFileUpload $component, TemporaryUploadedFile $file, ?Recipe $record): string {
+                                if (! $record instanceof Recipe) {
+                                    throw new \RuntimeException('Save the formula before adding a featured image.');
+                                }
+
+                                return MediaStorage::storeRecipeResizedWebp(
+                                    $file,
+                                    (string) $component->getDirectory(),
+                                    (int) config('media.recipe_featured_images.max_width', 800),
+                                    (int) config('media.recipe_featured_images.max_height', 600),
+                                    MediaStorage::recipeFeaturedImagesQuality(),
+                                );
+                            })
                             ->imageEditor()
                             ->imageAspectRatio('4:3')
                             ->imageEditorAspectRatioOptions(['4:3'])

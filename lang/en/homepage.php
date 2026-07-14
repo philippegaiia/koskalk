@@ -7,14 +7,11 @@ return [
     'hero' => [
         'title' => 'Make the formula. Keep the whole record.',
         'description' => 'Create, save, cost, and prepare soap and cosmetic formulas for compliance review and production. Keep ingredients, phases, instructions, pictures, packaging, and history together.',
-        'calculator_note' => 'Soap only. No account required.',
-        'already_registered' => 'Already registered?',
+        'invitation_note' => 'Access is currently by invitation.',
         'image_alt' => 'Soap formula and multiphase cosmetic formula screens in Soapkraft',
     ],
     'actions' => [
-        'create_account' => 'Create a free account',
         'open_workspace' => 'Open workspace',
-        'free_calculator' => 'Use the free soap calculator',
     ],
     'preview' => [
         'aria_label' => 'Example soap calculation',
@@ -74,7 +71,7 @@ return [
     ],
     'cta' => [
         'heading' => 'Build your formula portfolio',
-        'guest_description' => 'Create a free account to save soap and cosmetic formulas and manage private ingredients. Need only a soap calculation? The calculator remains available without an account.',
-        'authenticated_description' => 'Open your workspace to continue a soap or cosmetic formula, or use the standalone soap calculator for a quick calculation.',
+        'guest_description' => 'Access is currently by invitation while the professional ingredient catalog is prepared for launch.',
+        'authenticated_description' => 'Open your workspace to continue a soap or cosmetic formula.',
     ],
 ];

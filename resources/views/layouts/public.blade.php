@@ -26,7 +26,6 @@
 
                 <div class="hidden items-center gap-7 md:flex">
                     <a href="{{ route('home') }}#workspace" class="text-sm text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.product') }}</a>
-                    <a href="{{ route('calculator') }}" class="text-sm text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.free_calculator') }}</a>
                     @guest
                         <a href="{{ route('login') }}" class="text-sm text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.sign_in') }}</a>
                     @endguest
@@ -35,7 +34,7 @@
                 <div class="flex items-center gap-2">
                     <x-language-selector id="public" class="text-ink-soft" />
                     @guest
-                        <a href="{{ route('register') }}" class="hidden rounded-md bg-accent px-[18px] py-3 text-sm font-medium text-inverse no-underline transition hover:bg-accent-hover sm:inline-flex">{{ __('public.navigation.create_account') }}</a>
+                        <a href="{{ route('login') }}" class="hidden rounded-md bg-accent px-[18px] py-3 text-sm font-medium text-inverse no-underline transition hover:bg-accent-hover sm:inline-flex">{{ __('public.navigation.sign_in') }}</a>
                     @else
                         <a href="{{ route('dashboard') }}" class="hidden rounded-md bg-accent px-[18px] py-3 text-sm font-medium text-inverse no-underline transition hover:bg-accent-hover sm:inline-flex">{{ __('public.navigation.open_workspace') }}</a>
                     @endguest
@@ -54,10 +53,8 @@
         <div id="mobile-menu" data-mobile-menu class="sk-shell-line-b fixed top-[58px] left-0 right-0 z-40 hidden bg-cream px-5 py-4 md:hidden">
             <div class="flex flex-col gap-1">
                 <a href="{{ route('home') }}#workspace" class="rounded-lg px-4 py-3 text-sm text-ink-soft no-underline transition hover:bg-panel hover:text-ink-strong">{{ __('public.navigation.product') }}</a>
-                <a href="{{ route('calculator') }}" class="rounded-lg px-4 py-3 text-sm text-ink-soft no-underline transition hover:bg-panel hover:text-ink-strong">{{ __('public.navigation.free_calculator') }}</a>
                 @guest
                     <a href="{{ route('login') }}" class="rounded-lg px-4 py-3 text-sm text-ink-soft no-underline transition hover:bg-panel hover:text-ink-strong">{{ __('public.navigation.sign_in') }}</a>
-                    <a href="{{ route('register') }}" class="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-inverse no-underline transition hover:bg-accent-hover sm:hidden">{{ __('public.navigation.create_account') }}</a>
                 @else
                     <a href="{{ route('dashboard') }}" class="rounded-lg bg-accent px-4 py-3 text-sm font-medium text-inverse no-underline transition hover:bg-accent-hover sm:hidden">{{ __('public.navigation.open_workspace') }}</a>
                 @endguest
@@ -74,7 +71,6 @@
                 <p class="max-w-[28rem] text-sm text-ink-soft">{{ __('public.footer.description') }}</p>
                 <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 min-[390px]:gap-x-7">
                     <a href="{{ route('home') }}#workspace" class="inline-flex min-h-11 items-center rounded px-1 py-2 text-sm font-medium text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.product') }}</a>
-                    <a href="{{ route('calculator') }}" class="inline-flex min-h-11 items-center rounded px-1 py-2 text-sm font-medium text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.free_calculator') }}</a>
                     @guest
                         <a href="{{ route('login') }}" class="inline-flex min-h-11 items-center rounded px-1 py-2 text-sm font-medium text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.sign_in') }}</a>
                     @else

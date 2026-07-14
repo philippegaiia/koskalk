@@ -116,7 +116,7 @@ it('only shows recipes that belong to the current user', function () {
         ->assertDontSee('Hidden Formula');
 });
 
-it('only resolves accessible workspace ids once while rendering the recipes index', function () {
+it('only resolves owned workspace ids once while rendering the recipes index', function () {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->create([
         'owner_user_id' => $user->id,
@@ -179,7 +179,7 @@ it('only resolves accessible workspace ids once while rendering the recipes inde
         ->get(route('recipes.index'))
         ->assertSuccessful();
 
-    expect($workspaceQueries)->toHaveCount(2);
+    expect($workspaceQueries)->toHaveCount(1);
 });
 
 it('can search recipes by product type name', function () {

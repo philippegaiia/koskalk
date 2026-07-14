@@ -388,7 +388,7 @@ class IngredientFormulaMutationService
 
         if ($impact['inaccessible_blocked_composite_count'] > 0) {
             $messages[] = trans_choice(
-                ':count additional composite ingredient cannot be edited.',
+                ':count additional composite ingredient cannot be edited.|:count additional composite ingredients cannot be edited.',
                 $impact['inaccessible_blocked_composite_count'],
                 ['count' => $impact['inaccessible_blocked_composite_count']],
             );
@@ -602,7 +602,7 @@ class IngredientFormulaMutationService
 
         if ($inaccessibleBlockedCount > 0) {
             $messages[] = trans_choice(
-                ':count additional formula cannot be edited.',
+                ':count additional formula cannot be edited.|:count additional formulas cannot be edited.',
                 $inaccessibleBlockedCount,
                 ['count' => $inaccessibleBlockedCount],
             );
@@ -617,7 +617,6 @@ class IngredientFormulaMutationService
             'owner_type' => $recipe->tenantOwnerType()?->value,
             'owner_id' => $recipe->tenantOwnerId(),
             'workspace_id' => $recipe->tenantWorkspaceId(),
-            'is_private' => $recipe->is_private,
             'created_by' => $recipe->created_by,
         ], JSON_THROW_ON_ERROR);
     }

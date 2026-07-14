@@ -9,7 +9,6 @@ use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\OwnerType;
-use App\Visibility;
 
 class RecipeVersionStructureSynchronizer
 {
@@ -28,10 +27,9 @@ class RecipeVersionStructureSynchronizer
 
         foreach ($normalizedPayload['phases'] as $phaseIndex => $phasePayload) {
             $phase = new RecipePhase([
-                'owner_type' => OwnerType::User,
-                'owner_id' => $user->id,
-                'workspace_id' => null,
-                'visibility' => Visibility::Private,
+                'owner_type' => OwnerType::Workspace,
+                'owner_id' => $recipeVersion->workspace_id,
+                'workspace_id' => $recipeVersion->workspace_id,
                 'name' => $phasePayload['name'],
                 'slug' => $phasePayload['key'],
                 'phase_type' => $phasePayload['phase_type'],
@@ -45,10 +43,9 @@ class RecipeVersionStructureSynchronizer
             foreach ($phasePayload['items'] as $itemIndex => $itemPayload) {
                 $recipeItem = new RecipeItem([
                     'ingredient_id' => $itemPayload['ingredient_id'],
-                    'owner_type' => OwnerType::User,
-                    'owner_id' => $user->id,
-                    'workspace_id' => null,
-                    'visibility' => Visibility::Private,
+                    'owner_type' => OwnerType::Workspace,
+                    'owner_id' => $recipeVersion->workspace_id,
+                    'workspace_id' => $recipeVersion->workspace_id,
                     'position' => $itemIndex + 1,
                     'percentage' => $itemPayload['percentage'],
                     'weight' => $itemPayload['weight'],

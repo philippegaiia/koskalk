@@ -9,7 +9,7 @@
             /** @var array<string, string>|null $currentReplaceConfirmation */
             $currentReplaceConfirmation = session('currentReplaceConfirmation');
             $printQuery = [
-                'recipe' => $recipe->id,
+                'recipe' => $recipe->public_id,
                 'oil_weight' => $selectedOilWeight,
             ];
 
@@ -23,15 +23,15 @@
             $canRestoreVersion = (bool) ($canRestoreVersion ?? false);
             $isHistorical = (bool) ($isHistorical ?? false);
             if ($isHistorical) {
-                $printQuery['version'] = $version->id;
+                $printQuery['version'] = $version->public_id;
             }
             $productionPreview = $productionPreview ?? null;
             $productionBatches = $productionBatches ?? collect();
             $otherSavedVersions = collect($recoverySnapshots ?? [])
                 ->reject(fn (array $savedVersion): bool => (bool) ($savedVersion['is_current'] ?? false));
             $sheetRoute = $isHistorical
-                ? route('recipes.version', ['recipe' => $recipe->id, 'version' => $version->id])
-                : route('recipes.saved', ['recipe' => $recipe->id]);
+                ? route('recipes.version', ['recipe' => $recipe, 'version' => $version])
+                : route('recipes.saved', ['recipe' => $recipe]);
             $isCosmeticFormula = $recipe->productFamily?->calculation_basis === 'total_formula';
             $formatNumber = fn (mixed $value, int $precision = 2): string => rtrim(rtrim(number_format((float) $value, $precision, '.', ''), '0'), '.');
             $formatMoney = fn (mixed $value, string $currency): string => $formatNumber($value, 2).' '.$currency;
@@ -52,14 +52,14 @@
                     </div>
 
                     <div class="flex flex-wrap gap-2">
-                        <form method="POST" action="{{ $currentReplaceConfirmation['action_url'] ?? route('recipes.saved', $recipe->id) }}">
+                        <form method="POST" action="{{ $currentReplaceConfirmation['action_url'] ?? route('recipes.saved', $recipe) }}">
                             @csrf
                             <input type="hidden" name="confirm_replace_current" value="1" />
                             <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
                                 {{ $currentReplaceConfirmation['action_label'] ?? 'Replace formula' }}
                             </button>
                         </form>
-                        <a href="{{ route('recipes.saved', $recipe->id) }}" class="inline-flex rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                        <a href="{{ route('recipes.saved', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                             Keep current formula
                         </a>
                     </div>
@@ -85,14 +85,14 @@
 
                     <div class="mt-4 flex flex-wrap gap-2">
                         @if ($isHistorical)
-                            <a href="{{ route('recipes.saved', $recipe->id) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                            <a href="{{ route('recipes.saved', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                                 Back to active formula
                             </a>
                         @endif
-                        <a href="{{ route('recipes.edit', $recipe->id) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
+                        <a href="{{ route('recipes.edit', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                             Open formula
                         </a>
-                        <form method="POST" action="{{ route('recipes.duplicate', $recipe->id) }}">
+                        <form method="POST" action="{{ route('recipes.duplicate', $recipe) }}">
                             @csrf
                             <button type="submit" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
                                 Duplicate
@@ -150,11 +150,11 @@
                             </div>
 
                             <div class="flex flex-wrap gap-2">
-                                <a href="{{ route('recipes.version', ['recipe' => $recipe->id, 'version' => $savedVersion['id']]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                                <a href="{{ route('recipes.version', ['recipe' => $recipe, 'version' => $savedVersion['public_id']]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
                                     View version
                                 </a>
                                 @if ($canRestoreVersion)
-                                    <form method="POST" action="{{ route('recipes.use-version-as-current', ['recipe' => $recipe->id, 'version' => $savedVersion['id']]) }}">
+                                    <form method="POST" action="{{ route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $savedVersion['public_id']]) }}">
                                         @csrf
                                         <button type="submit" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
                                             Restore to current formula
@@ -182,7 +182,7 @@
 
         <section class="grid gap-4 lg:grid-cols-2">
             @if ($canRecordProduction && is_array($productionPreview))
-                <form method="POST" action="{{ route('recipes.production-batches.store', ['recipe' => $recipe->id]) }}" class="sk-card p-5">
+                <form method="POST" action="{{ route('recipes.production-batches.store', ['recipe' => $recipe]) }}" class="sk-card p-5">
                     @csrf
                     <input type="hidden" name="recipe_version_id" value="{{ $version->id }}" />
                     <input type="hidden" name="batch_basis" value="{{ old('batch_basis', $formatNumber($productionPreview['batch_basis_value'] ?? $batchContext['batch_basis'])) }}" />
@@ -398,7 +398,7 @@
             @else
                 <div class="px-5 py-8 text-center">
                     <p class="text-sm text-[var(--color-ink-soft)]">No packaging items in this formula's plan yet.</p>
-                    <a href="{{ route('recipes.edit', $recipe->id) }}" class="mt-3 inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                    <a href="{{ route('recipes.edit', $recipe) }}" class="mt-3 inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
                         Add packaging on the workbench
                     </a>
                 </div>

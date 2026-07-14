@@ -24,17 +24,6 @@
  'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]' => $activeTab !== 'company',
  ])
  >Company</button>
- @if($companyId)
- <button
- type="button"
- wire:click="$set('activeTab', 'members')"
- @class([
- 'rounded-t-lg px-4 py-2.5 text-sm font-medium transition -mb-px border-b-2',
- 'border-[var(--color-ink-strong)] text-[var(--color-ink-strong)]' => $activeTab === 'members',
- 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]' => $activeTab !== 'members',
- ])
- >Members</button>
- @endif
  </div>
 
  @if($activeTab === 'profile')
@@ -70,9 +59,11 @@
  <input
  wire:model="email"
  type="email"
+ readonly
+ disabled
  class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
- @error('email') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+ <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">Login email changes are disabled during the invite-only MVP.</p>
  </label>
 
  <label class="sk-inset p-4">
@@ -215,97 +206,6 @@
  type="button"
  class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
  >Save company settings</button>
- </div>
- </section>
- @endif
-
- @if($activeTab === 'members' && $companyId)
- <section class="sk-card p-5 space-y-5">
- <div>
- <p class="sk-eyebrow">Invite member</p>
- <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Invite someone to join your company by email. They will be able to access shared ingredients and recipes based on their role.</p>
- </div>
-
- @if($memberStatus && $memberMessage)
- <div @class([
- 'rounded-lg px-4 py-3 text-sm',
- 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' => $memberStatus === 'success',
- 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' => $memberStatus === 'error',
- ])>
- {{ $memberMessage }}
- </div>
- @endif
-
- <div class="grid gap-3 md:grid-cols-3">
- <label class="sk-inset p-4 md:col-span-2">
- <span class="sk-eyebrow">Email address</span>
- <input
- wire:model="inviteEmail"
- type="email"
- placeholder="colleague@example.com"
- class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
- />
- @error('inviteEmail') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
- </label>
-
- <label class="sk-inset p-4">
- <span class="sk-eyebrow">Role</span>
- <select
- wire:model="inviteRole"
- class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
- >
- <option value="admin">Admin</option>
- <option value="editor">Editor</option>
- <option value="viewer">Viewer</option>
- </select>
- </label>
- </div>
-
- <div class="flex justify-end">
- <button
- wire:click="inviteMember"
- wire:loading.attr="disabled"
- type="button"
- class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
- >Send invitation</button>
- </div>
- </section>
-
- <section class="overflow-hidden sk-card">
- <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="sk-eyebrow">Members</p>
- </div>
-
- <div class="divide-y divide-[var(--color-line)]">
- @foreach($this->members as $member)
- <div class="flex items-center justify-between px-5 py-3 text-sm">
- <div>
- <p class="font-medium text-[var(--color-ink-strong)]">{{ $member->user?->name ?? 'Unknown' }}</p>
- <p class="text-[var(--color-ink-soft)]">{{ $member->user?->email }}</p>
- </div>
- <div class="flex items-center gap-3">
- <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ ucfirst($member->role->value ?? $member->role) }}</span>
- @if($member->user_id !== $userId)
- <button
- wire:click="removeMember({{ $member->id }})"
- wire:confirm="Remove {{ $member->user?->name }} from the company?"
- type="button"
- class="rounded-full border border-[var(--color-line)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)] hover:border-[var(--color-danger-soft)]"
- >Remove</button>
- @endif
- </div>
- </div>
- @endforeach
-
- @foreach($this->pendingInvitations as $invitation)
- <div class="flex items-center justify-between px-5 py-3 text-sm bg-[var(--color-panel)]">
- <div>
- <p class="font-medium text-[var(--color-ink-soft)]">{{ $invitation->email }}</p>
- <p class="text-xs text-[var(--color-ink-soft)]">Pending invitation</p>
- </div>
- <span class="rounded-full border border-dashed border-[var(--color-line)] bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]">{{ ucfirst($invitation->role) }}</span>
- </div>
- @endforeach
  </div>
  </section>
  @endif

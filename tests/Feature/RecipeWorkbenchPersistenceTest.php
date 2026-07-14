@@ -53,8 +53,15 @@ it('syncs the parent recipe name when a saved draft is renamed', function () {
     );
 
     $recipe = $recipe->fresh();
+    $workspace = $user->company();
 
     expect($recipe->name)->toBe('Recipe B')
+        ->and($workspace)->not->toBeNull()
+        ->and($workspace->owner_user_id)->toBe($user->id)
+        ->and($recipe->workspace_id)->toBe($workspace->id)
+        ->and($recipe->owner_type)->toBe(OwnerType::Workspace)
+        ->and($recipe->owner_id)->toBe($workspace->id)
+        ->and($recipe->created_by)->toBe($user->id)
         ->and(RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $draftVersion->recipe_id)
             ->where('is_current', true)
@@ -85,7 +92,7 @@ it('returns a structured error instead of throwing when oil weight is invalid', 
         ->and($result['errors']['oil_weight'][0])->toContain('oil weight');
 });
 
-it('can still save a draft from a mounted component after the auth session is gone', function () {
+it('does not save a draft from a mounted component after the auth session is gone', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -106,17 +113,13 @@ it('can still save a draft from a mounted component after the auth session is go
         app(RecipeContentUpdater::class),
     );
 
-    expect($result['ok'])->toBeTrue()
-        ->and($result['snapshot']['draft']['recipe']['id'])->not->toBeNull();
-
-    $recipe = Recipe::withoutGlobalScopes()->findOrFail($result['snapshot']['draft']['recipe']['id']);
-
-    expect($recipe->owner_id)->toBe($user->id)
-        ->and($recipe->name)->toBe('Fallback Draft')
-        ->and($soapFamily->id)->toBe($recipe->product_family_id);
+    expect($result['ok'])->toBeFalse()
+        ->and($result['message'])->toContain('signed in')
+        ->and(Recipe::withoutGlobalScopes()->where('name', 'Fallback Draft')->exists())->toBeFalse()
+        ->and($soapFamily->exists)->toBeTrue();
 });
 
-it('keeps instructions and media entered before the first draft is saved', function () {
+it('keeps instructions entered before the first draft is saved', function () {
     $user = User::factory()->create();
     ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -130,7 +133,6 @@ it('keeps instructions and media entered before the first draft is saved', funct
     $component->mount();
     $component->data['description'] = '<p>Presentation ready before the first save.</p>';
     $component->data['manufacturing_instructions'] = '<p>Step 1: Prepare the mould.</p>';
-    $component->data['featured_image_path'] = ['recipes/featured-images/first-draft.webp'];
 
     $result = $component->save(
         workbenchSoapDraftPayload($ingredient, name: 'Draft With Content'),
@@ -144,7 +146,7 @@ it('keeps instructions and media entered before the first draft is saved', funct
 
     expect($recipe->description)->toContain('Presentation ready before the first save')
         ->and($recipe->manufacturing_instructions)->toContain('Prepare the mould')
-        ->and($recipe->featured_image_path)->toBe('recipes/featured-images/first-draft.webp');
+        ->and($recipe->featured_image_path)->toBeNull();
 });
 
 it('returns backend soap calculation preview data for the workbench', function () {
@@ -632,18 +634,19 @@ it('saves recipe content through the standalone filament form', function () {
     ]);
 
     $this->actingAs($user);
+    $featuredImagePath = 'recipes/'.$recipe->public_id.'/featured-images/soap.jpg';
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
         ->set('data.description', '<p>A calming creamy bar for daily cleansing.</p>')
         ->set('data.manufacturing_instructions', '<p>Blend the base gently, then pour into the mould.</p>')
-        ->set('data.featured_image_path', ['recipes/featured-images/soap.jpg'])
+        ->set('data.featured_image_path', [$featuredImagePath])
         ->call('saveRecipeContent')
         ->assertSet('recipeContentStatus', 'success');
 
     expect($recipe->fresh())
         ->description->toContain('calming creamy bar')
         ->manufacturing_instructions->toContain('Blend the base gently')
-        ->featured_image_path->toBe('recipes/featured-images/soap.jpg');
+        ->featured_image_path->toBe($featuredImagePath);
 });
 
 it('returns the saved packaging item payload when saving a packaging catalog item', function () {
@@ -1852,11 +1855,11 @@ JS;
 });
 
 it('deletes the previous recipe featured image from storage when the image is cleared', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     config([
-        'media.disk' => 'public',
-        'media.visibility' => 'public',
+        'media.recipe_disk' => 'local',
+        'media.recipe_visibility' => 'private',
     ]);
 
     $user = User::factory()->create();
@@ -1870,7 +1873,7 @@ it('deletes the previous recipe featured image from storage when the image is cl
         'featured_image_path' => 'recipes/featured-images/original.webp',
     ]);
 
-    Storage::disk('public')->put('recipes/featured-images/original.webp', 'old-image');
+    Storage::disk('local')->put('recipes/featured-images/original.webp', 'old-image');
 
     $this->actingAs($user);
 
@@ -1881,16 +1884,16 @@ it('deletes the previous recipe featured image from storage when the image is cl
         ->call('saveRecipeContent')
         ->assertSet('recipeContentStatus', 'success');
 
-    expect(Storage::disk('public')->exists('recipes/featured-images/original.webp'))->toBeFalse()
+    expect(Storage::disk('local')->exists('recipes/featured-images/original.webp'))->toBeFalse()
         ->and($recipe->fresh()->featured_image_path)->toBeNull();
 });
 
 it('keeps a shared rich content attachment when it is moved between recipe editors in one save', function () {
-    Storage::fake('public');
+    Storage::fake('local');
 
     config([
-        'media.disk' => 'public',
-        'media.visibility' => 'public',
+        'media.recipe_disk' => 'local',
+        'media.recipe_visibility' => 'private',
     ]);
 
     $user = User::factory()->create();
@@ -1908,7 +1911,7 @@ it('keeps a shared rich content attachment when it is moved between recipe edito
         'manufacturing_instructions' => $sharedHtml,
     ]);
 
-    Storage::disk('public')->put($sharedAttachment, 'shared-image');
+    Storage::disk('local')->put($sharedAttachment, 'shared-image');
 
     $this->actingAs($user);
 
@@ -1918,7 +1921,7 @@ it('keeps a shared rich content attachment when it is moved between recipe edito
         ->call('saveRecipeContent')
         ->assertSet('recipeContentStatus', 'success');
 
-    expect(Storage::disk('public')->exists($sharedAttachment))->toBeTrue()
+    expect(Storage::disk('local')->exists($sharedAttachment))->toBeTrue()
         ->and($recipe->fresh()->description)->toContain($sharedAttachment)
         ->and($recipe->fresh()->manufacturing_instructions)->not->toContain($sharedAttachment);
 });

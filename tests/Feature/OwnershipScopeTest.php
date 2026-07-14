@@ -89,8 +89,8 @@ it('enforces workspace and recipe policies from ownership and membership', funct
     expect($owner->can('update', $workspace))->toBeTrue()
         ->and($editor->can('view', $workspace))->toBeTrue()
         ->and($viewer->can('update', $workspace))->toBeFalse()
-        ->and($editor->can('update', $recipe))->toBeTrue()
-        ->and($viewer->can('view', $recipe))->toBeTrue()
+        ->and($editor->can('update', $recipe))->toBeFalse()
+        ->and($viewer->can('view', $recipe))->toBeFalse()
         ->and($viewer->can('update', $recipe))->toBeFalse()
         ->and($outsider->can('view', $recipe))->toBeFalse();
 });

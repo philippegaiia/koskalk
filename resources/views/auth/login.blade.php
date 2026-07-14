@@ -53,8 +53,7 @@
             </form>
 
             <p class="mt-6 text-center text-sm text-ink-soft">
-                New to Soapkraft?
-                <a href="{{ route('register') }}" class="font-medium text-accent-strong no-underline hover:underline">Create an account</a>
+                Access is provisioned by invitation.
             </p>
         </div>
     </div>

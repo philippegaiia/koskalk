@@ -140,6 +140,7 @@ class RecipeWorkbenchViewDataBuilder
 
         return [
             'id' => $recipe->id,
+            'public_id' => $recipe->public_id,
             'name' => $recipe->name,
             'description' => $recipe->description,
             'manufacturing_instructions' => $recipe->manufacturing_instructions,
@@ -149,7 +150,7 @@ class RecipeWorkbenchViewDataBuilder
             'locked_by' => $recipe->locked_by,
             'has_saved_formula' => $hasSavedFormula,
             'saved_formula_url' => $hasSavedFormula
-                ? route('recipes.saved', $recipe->id)
+                ? route('recipes.saved', $recipe)
                 : null,
         ];
     }

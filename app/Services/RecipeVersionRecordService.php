@@ -13,17 +13,20 @@ use Illuminate\Support\Str;
 
 class RecipeVersionRecordService
 {
+    public function __construct(private readonly WorkspaceProvisioner $workspaceProvisioner) {}
+
     public function createRecipe(User $user, ProductFamily $productFamily, string $name, ?int $productTypeId = null): Recipe
     {
+        $workspace = $this->workspaceProvisioner->ensureOwnerWorkspace($user);
         $recipe = new Recipe([
             'product_family_id' => $productFamily->id,
             'product_type_id' => $productTypeId,
             'name' => $name,
             'slug' => $this->uniqueRecipeSlug($name),
-            'owner_type' => OwnerType::User,
-            'owner_id' => $user->id,
-            'workspace_id' => null,
-            'visibility' => Visibility::Private,
+            'owner_type' => OwnerType::Workspace,
+            'owner_id' => $workspace->id,
+            'workspace_id' => $workspace->id,
+            'created_by' => $user->id,
         ]);
 
         $recipe->save();
@@ -41,6 +44,15 @@ class RecipeVersionRecordService
         array $normalizedPayload,
         bool $isCurrent,
     ): void {
+        if ($recipe->workspace_id === null) {
+            $workspace = $this->workspaceProvisioner->ensureOwnerWorkspace($user);
+            $recipe->owner_type = OwnerType::Workspace;
+            $recipe->owner_id = $workspace->id;
+            $recipe->workspace_id = $workspace->id;
+            $recipe->visibility = Visibility::Workspace;
+            $recipe->created_by ??= $user->id;
+        }
+
         if ($recipe->product_type_id !== ($normalizedPayload['product_type_id'] ?? null)) {
             $recipe->product_type_id = $normalizedPayload['product_type_id'] ?? null;
         }
@@ -54,10 +66,9 @@ class RecipeVersionRecordService
         }
 
         $recipeVersion->recipe()->associate($recipe);
-        $recipeVersion->owner_type = OwnerType::User;
-        $recipeVersion->owner_id = $user->id;
-        $recipeVersion->workspace_id = null;
-        $recipeVersion->visibility = Visibility::Private;
+        $recipeVersion->owner_type = OwnerType::Workspace;
+        $recipeVersion->owner_id = $recipe->workspace_id;
+        $recipeVersion->workspace_id = $recipe->workspace_id;
         $recipeVersion->is_current = $isCurrent;
         $recipeVersion->name = $normalizedPayload['name'];
         $recipeVersion->batch_size = $normalizedPayload['oil_weight'];

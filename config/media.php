@@ -6,6 +6,10 @@ return [
 
     'visibility' => env('MEDIA_VISIBILITY', 'public'),
 
+    'recipe_disk' => env('RECIPE_MEDIA_DISK', 'local'),
+
+    'recipe_visibility' => 'private',
+
     'recipe_featured_images' => [
         'max_size_kb' => 1024,
         'max_width' => 800,

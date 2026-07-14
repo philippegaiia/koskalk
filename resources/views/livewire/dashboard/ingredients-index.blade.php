@@ -237,7 +237,12 @@
                                                     </button>
                                                 @endif
                                             @else
-                                                <span class="text-sm text-[var(--color-ink-soft)]" aria-label="Not applicable">&mdash;</span>
+                                                <a href="{{ route('ingredients.edit', $ingredient) }}" wire:navigate class="grid size-9 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)]" aria-label="View {{ $displayName }}" title="View reference">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-6.75 9.75-6.75S21.75 12 21.75 12 18 18.75 12 18.75 2.25 12 2.25 12Z" />
+                                                        <circle cx="12" cy="12" r="2.25" />
+                                                    </svg>
+                                                </a>
                                             @endif
                                         </div>
                                     </td>
@@ -339,7 +344,7 @@
                                     </ul>
                                 @endif
                                 @if ($pendingDeleteImpact['inaccessible_blocked_count'] > 0)
-                                    <p class="mt-3">{{ trans_choice(':count additional formula cannot be edited.', $pendingDeleteImpact['inaccessible_blocked_count'], ['count' => $pendingDeleteImpact['inaccessible_blocked_count']]) }}</p>
+                                    <p class="mt-3">{{ trans_choice(':count additional formula cannot be edited.|:count additional formulas cannot be edited.', $pendingDeleteImpact['inaccessible_blocked_count'], ['count' => $pendingDeleteImpact['inaccessible_blocked_count']]) }}</p>
                                 @endif
                             </div>
                         @endif
@@ -356,7 +361,7 @@
                                     </ul>
                                 @endif
                                 @if ($pendingDeleteImpact['inaccessible_blocked_composite_count'] > 0)
-                                    <p class="mt-3">{{ trans_choice(':count additional composite ingredient cannot be edited.', $pendingDeleteImpact['inaccessible_blocked_composite_count'], ['count' => $pendingDeleteImpact['inaccessible_blocked_composite_count']]) }}</p>
+                                    <p class="mt-3">{{ trans_choice(':count additional composite ingredient cannot be edited.|:count additional composite ingredients cannot be edited.', $pendingDeleteImpact['inaccessible_blocked_composite_count'], ['count' => $pendingDeleteImpact['inaccessible_blocked_composite_count']]) }}</p>
                                 @endif
                             </div>
                         @endif

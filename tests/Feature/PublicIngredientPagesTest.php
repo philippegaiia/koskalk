@@ -1,8 +1,11 @@
 <?php
 
 use App\IngredientCategory;
+use App\Livewire\Dashboard\IngredientEditor;
 use App\Livewire\Dashboard\IngredientsIndex;
+use App\Models\Allergen;
 use App\Models\Ingredient;
+use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientComponent;
 use App\Models\Plan;
 use App\Models\Recipe;
@@ -14,6 +17,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
+use App\Services\IngredientFormulaMutationService;
 use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,7 +93,7 @@ it('lets the signed-in user search their ingredient catalog table', function () 
         ->assertDontSee($clay->display_name);
 });
 
-it('renders an accessible not applicable action for platform ingredients', function () {
+it('renders an accessible read-only action for platform ingredients', function () {
     $user = User::factory()->create();
 
     Ingredient::factory()->create([
@@ -101,8 +105,8 @@ it('renders an accessible not applicable action for platform ingredients', funct
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->assertSeeHtml('aria-label="Not applicable"')
-        ->assertDontSee('Reference');
+        ->assertSeeHtml('aria-label="View Platform Glycerin"')
+        ->assertSeeHtml('title="View reference"');
 });
 
 it('allows deleting an unused personal ingredient from the catalog table', function () {
@@ -460,11 +464,17 @@ it('blocks automatic removal when affected formulas cannot all be edited without
 
     $this->actingAs($user);
 
+    $impact = app(IngredientFormulaMutationService::class)->impact($user, $source);
+
+    expect($user->can('view', $visibleBlockedRecipe))->toBeFalse()
+        ->and($user->can('update', $visibleBlockedRecipe))->toBeFalse()
+        ->and($impact['blocked_recipes'])->toBeEmpty()
+        ->and($impact['inaccessible_blocked_count'])->toBe(2);
+
     $component = Livewire::test(IngredientsIndex::class)
         ->call('confirmDelete', $source->id)
-        ->assertSee('Visible Shared Formula')
-        ->assertSeeHtml('href="'.route('recipes.edit', $visibleBlockedRecipe).'"')
-        ->assertSee('1 additional formula cannot be edited')
+        ->assertDontSee('Visible Shared Formula')
+        ->assertSee('2 additional formulas cannot be edited')
         ->assertDontSee('Secret Formula Name');
 
     expect(ingredientButtonIsDisabled($component->html(), null, 'replaceEverywhereAndDelete'))->toBeTrue()
@@ -662,7 +672,7 @@ it('explains which formula versions protect a private ingredient from deletion',
         ->assertSet('expandedUsageIngredientId', $ingredient->id)
         ->assertSeeHtml('aria-expanded="true"')
         ->assertSee($recipe->name)
-        ->assertSeeHtml('href="'.route('recipes.edit', $recipe->id).'"')
+        ->assertSeeHtml('href="'.route('recipes.edit', $recipe).'"')
         ->assertDontSee('saved backup')
         ->assertDontSee('recoverable formula records');
 
@@ -882,21 +892,58 @@ it('does not allow editing another users private ingredient', function () {
         ->assertNotFound();
 });
 
-it('does not allow editing a platform ingredient from the public ingredient editor route', function () {
+it('shows authenticated users the platform ingredient record in read-only form', function () {
     $user = User::factory()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Platform Lavender Oil',
+        'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+        'cas_number' => '8000-28-0',
+        'ec_number' => '289-995-2',
+        'owner_type' => null,
+        'owner_id' => null,
+        'source_file' => 'platform',
+        'source_key' => 'PLATFORM-LAVENDER',
+        'is_active' => true,
+    ]);
+    $allergen = Allergen::factory()->create(['inci_name' => 'LINALOOL']);
+    IngredientAllergenEntry::factory()->for($ingredient)->for($allergen)->create([
+        'concentration_percent' => 12.5,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('ingredients.edit', $ingredient->id))
+        ->assertSuccessful()
+        ->assertSeeText('Platform ingredient')
+        ->assertSeeText('Read-only reference')
+        ->assertSeeText('Platform Lavender Oil')
+        ->assertSee('LAVANDULA ANGUSTIFOLIA OIL')
+        ->assertSee('8000-28-0')
+        ->assertSee('289-995-2')
+        ->assertSeeText('LINALOOL')
+        ->assertDontSeeText('Save ingredient');
+});
+
+it('rejects a forced Livewire save of a platform ingredient', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
         'display_name' => 'Platform Glycerin',
         'owner_type' => null,
         'owner_id' => null,
         'source_file' => 'platform',
         'source_key' => 'PLATFORM-GLYCERIN',
+        'is_active' => true,
     ]);
 
-    $this->actingAs($user)
-        ->get(route('ingredients.edit', $ingredient->id))
-        ->assertNotFound();
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+        ->set('data.name', 'Tampered Glycerin')
+        ->call('save')
+        ->assertForbidden();
+
+    expect($ingredient->refresh()->display_name)->toBe('Platform Glycerin');
 });
 
 it('does not delete a platform ingredient if a table action call is forced', function () {

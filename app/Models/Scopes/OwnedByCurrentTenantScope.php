@@ -27,42 +27,34 @@ class OwnedByCurrentTenantScope implements Scope
         }
 
         if ($model instanceof Workspace) {
-            $builder->where(function (Builder $query) use ($user): void {
-                $query
-                    ->where('owner_user_id', $user->id)
-                    ->orWhereIn('id', $user->accessibleWorkspaceIds());
-            });
+            $builder->where('owner_user_id', $user->id);
 
             return;
         }
 
         if ($model instanceof WorkspaceMember) {
-            $builder->where(function (Builder $query) use ($user): void {
-                $query
-                    ->where('user_id', $user->id)
-                    ->orWhereIn('workspace_id', $user->accessibleWorkspaceIds());
-            });
+            $builder->whereIn('workspace_id', $user->ownedWorkspaceIds());
 
             return;
         }
 
-        $accessibleWorkspaceIds = $user->accessibleWorkspaceIds();
+        $ownedWorkspaceIds = $user->ownedWorkspaceIds();
 
-        $builder->where(function (Builder $query) use ($accessibleWorkspaceIds, $user): void {
+        $builder->where(function (Builder $query) use ($ownedWorkspaceIds, $user): void {
             $query->where(function (Builder $ownedByUserQuery) use ($user): void {
                 $ownedByUserQuery
                     ->where('owner_type', OwnerType::User->value)
                     ->where('owner_id', $user->id);
             });
 
-            if ($accessibleWorkspaceIds !== []) {
+            if ($ownedWorkspaceIds !== []) {
                 $query
-                    ->orWhere(function (Builder $ownedByWorkspaceQuery) use ($accessibleWorkspaceIds): void {
+                    ->orWhere(function (Builder $ownedByWorkspaceQuery) use ($ownedWorkspaceIds): void {
                         $ownedByWorkspaceQuery
                             ->where('owner_type', OwnerType::Workspace->value)
-                            ->whereIn('owner_id', $accessibleWorkspaceIds);
+                            ->whereIn('owner_id', $ownedWorkspaceIds);
                     })
-                    ->orWhereIn('workspace_id', $accessibleWorkspaceIds);
+                    ->orWhereIn('workspace_id', $ownedWorkspaceIds);
             }
         });
     }

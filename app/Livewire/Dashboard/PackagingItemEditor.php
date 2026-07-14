@@ -20,7 +20,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
-use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
@@ -28,9 +27,6 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
     use InteractsWithForms;
-
-    #[Locked]
-    public ?int $actorUserId = null;
 
     public ?int $packagingItemId = null;
 
@@ -45,7 +41,6 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
 
     public function mount(?UserPackagingItem $packagingItem, UserPackagingItemAuthoringService $authoringService): void
     {
-        $this->actorUserId = $this->currentUser()?->id;
         $this->packagingItemId = $packagingItem?->id;
 
         $this->form->fill(
@@ -171,7 +166,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
 
     private function currentUser(): ?User
     {
-        return app(CurrentAppUserResolver::class)->resolve($this->actorUserId);
+        return app(CurrentAppUserResolver::class)->resolve();
     }
 
     private function isEditing(): bool

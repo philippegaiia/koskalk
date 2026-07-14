@@ -7,6 +7,7 @@ use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -151,7 +152,9 @@ class RecipeWorkbenchService
 
     public function save(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
-        if (! $recipe instanceof Recipe) {
+        if ($recipe instanceof Recipe) {
+            Gate::forUser($user)->authorize('update', $recipe);
+        } else {
             $this->entitlementService->assertCanCreateRecipe($user);
         }
 
@@ -164,7 +167,9 @@ class RecipeWorkbenchService
 
     public function publish(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
     {
-        if (! $recipe instanceof Recipe) {
+        if ($recipe instanceof Recipe) {
+            Gate::forUser($user)->authorize('update', $recipe);
+        } else {
             $this->entitlementService->assertCanCreateRecipe($user);
         }
 
@@ -192,6 +197,8 @@ class RecipeWorkbenchService
 
     public function duplicateRecipe(User $user, Recipe $recipe): RecipeVersion
     {
+        Gate::forUser($user)->authorize('view', $recipe);
+
         $workbenchPayload = $this->recipeWorkbenchVersionDataService->currentVersionPayload($recipe);
         $sourceVersion = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
@@ -254,6 +261,8 @@ class RecipeWorkbenchService
 
     public function restorePublishedFormula(User $user, Recipe $recipe, int $versionId): RecipeVersion
     {
+        Gate::forUser($user)->authorize('update', $recipe);
+
         $sourceVersion = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
             ->find($versionId);
@@ -296,6 +305,8 @@ class RecipeWorkbenchService
      */
     public function saveCosting(User $user, Recipe $recipe, array $payload): array
     {
+        Gate::forUser($user)->authorize('update', $recipe);
+
         $currentVersion = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
             ->where('is_current', true)

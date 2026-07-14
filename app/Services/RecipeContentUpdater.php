@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Recipe;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class RecipeContentUpdater
 {
@@ -13,6 +14,7 @@ class RecipeContentUpdater
      */
     public function update(Recipe $recipe, array $state): Recipe
     {
+        $this->validateMediaPaths($recipe, $state);
         $pathsToDelete = collect();
 
         $updatedRecipe = DB::transaction(function () use ($recipe, $state, &$pathsToDelete): Recipe {
@@ -37,10 +39,29 @@ class RecipeContentUpdater
         });
 
         $pathsToDelete->each(function (string $path): void {
-            MediaStorage::deletePublicPath($path);
+            MediaStorage::deleteRecipePath($path);
         });
 
         return $updatedRecipe;
+    }
+
+    /**
+     * @param  array{description:?string, manufacturing_instructions:?string, featured_image_path:?string}  $state
+     */
+    private function validateMediaPaths(Recipe $recipe, array $state): void
+    {
+        $submittedRecipe = clone $recipe;
+        $submittedRecipe->fill($state);
+        $existingPaths = $recipe->mediaPaths();
+        $invalidPath = $submittedRecipe->mediaPaths()
+            ->first(fn (string $path): bool => ! $existingPaths->contains($path)
+                && ! MediaStorage::isRecipePath($recipe, $path));
+
+        if (is_string($invalidPath)) {
+            throw ValidationException::withMessages([
+                'featured_image_path' => 'The selected recipe media does not belong to this formula.',
+            ]);
+        }
     }
 
     /**

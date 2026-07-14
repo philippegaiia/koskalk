@@ -9,6 +9,7 @@ use App\Models\IngredientComponent;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientFunction;
 use App\Models\IngredientSapProfile;
+use App\Support\NumberLocale;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -151,6 +152,10 @@ class IngredientDataEntryService
             $sapProfile->save();
         }
 
+        $existingFattyAcidSources = IngredientFattyAcid::query()
+            ->where('ingredient_id', $ingredient->id)
+            ->pluck('source_notes', 'fatty_acid_id');
+
         IngredientFattyAcid::query()
             ->where('ingredient_id', $ingredient->id)
             ->delete();
@@ -158,12 +163,17 @@ class IngredientDataEntryService
         collect($fattyAcidEntriesState)
             ->filter(fn (mixed $row): bool => is_array($row))
             ->filter(fn (array $row): bool => filled($row['fatty_acid_id'] ?? null))
-            ->each(function (array $row) use ($ingredient): void {
+            ->each(function (array $row) use ($ingredient, $existingFattyAcidSources): void {
+                $fattyAcidId = (int) $row['fatty_acid_id'];
+
                 IngredientFattyAcid::query()->create([
                     'ingredient_id' => $ingredient->id,
-                    'fatty_acid_id' => (int) $row['fatty_acid_id'],
+                    'fatty_acid_id' => $fattyAcidId,
                     'percentage' => $row['percentage'] ?? 0,
-                    'source_notes' => $row['source_notes'] ?? null,
+                    'source_notes' => $this->sourceNotesForResync(
+                        $row,
+                        $existingFattyAcidSources[$fattyAcidId] ?? null,
+                    ),
                 ]);
             });
     }
@@ -180,6 +190,10 @@ class IngredientDataEntryService
             return;
         }
 
+        $existingAllergenSources = IngredientAllergenEntry::query()
+            ->where('ingredient_id', $ingredient->id)
+            ->pluck('source_notes', 'allergen_id');
+
         IngredientAllergenEntry::query()
             ->where('ingredient_id', $ingredient->id)
             ->delete();
@@ -188,12 +202,17 @@ class IngredientDataEntryService
             ->filter(fn (mixed $row): bool => is_array($row))
             ->filter(fn (array $row): bool => filled($row['allergen_id'] ?? null))
             ->unique(fn (array $row): int => (int) $row['allergen_id'])
-            ->each(function (array $row) use ($ingredient): void {
+            ->each(function (array $row) use ($ingredient, $existingAllergenSources): void {
+                $allergenId = (int) $row['allergen_id'];
+
                 IngredientAllergenEntry::query()->create([
                     'ingredient_id' => $ingredient->id,
-                    'allergen_id' => (int) $row['allergen_id'],
+                    'allergen_id' => $allergenId,
                     'concentration_percent' => $row['concentration_percent'] ?? 0,
-                    'source_notes' => $row['source_notes'] ?? null,
+                    'source_notes' => $this->sourceNotesForResync(
+                        $row,
+                        $existingAllergenSources[$allergenId] ?? null,
+                    ),
                 ]);
             });
     }
@@ -295,13 +314,24 @@ class IngredientDataEntryService
         $components = $rawComponents
             ->filter(fn (array $row): bool => filled($row['component_ingredient_id'] ?? null))
             ->map(function (array $row): array {
-                return [
+                $component = [
                     'component_ingredient_id' => (int) $row['component_ingredient_id'],
-                    'percentage_in_parent' => isset($row['percentage_in_parent']) ? (float) $row['percentage_in_parent'] : null,
-                    'source_notes' => filled($row['source_notes'] ?? null) ? trim((string) $row['source_notes']) : null,
+                    'percentage_in_parent' => NumberLocale::parseDecimalInput($row['percentage_in_parent'] ?? null),
                 ];
+
+                if (array_key_exists('source_notes', $row)) {
+                    $component['source_notes'] = filled($row['source_notes'])
+                        ? trim((string) $row['source_notes'])
+                        : null;
+                }
+
+                return $component;
             })
             ->values();
+
+        $existingComponentSources = IngredientComponent::query()
+            ->where('ingredient_id', $ingredient->id)
+            ->pluck('source_notes', 'component_ingredient_id');
 
         IngredientComponent::query()
             ->where('ingredient_id', $ingredient->id)
@@ -309,6 +339,26 @@ class IngredientDataEntryService
 
         if ($components->isEmpty()) {
             return;
+        }
+
+        if ($components->count() > 20) {
+            throw ValidationException::withMessages([
+                'components' => 'A blend can contain at most 20 components.',
+            ]);
+        }
+
+        if ($components->pluck('component_ingredient_id')->duplicates()->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'components' => 'Each blend component may only be selected once.',
+            ]);
+        }
+
+        if ($components->contains(fn (array $row): bool => $row['percentage_in_parent'] === null
+            || $row['percentage_in_parent'] < 0
+            || $row['percentage_in_parent'] > 100)) {
+            throw ValidationException::withMessages([
+                'components' => 'Each component share must be a number between 0% and 100%.',
+            ]);
         }
 
         $totalPercentage = $components->sum(fn (array $row): float => (float) ($row['percentage_in_parent'] ?? 0));
@@ -339,15 +389,34 @@ class IngredientDataEntryService
             }
         }
 
-        $components->each(function (array $row, int $index) use ($ingredient): void {
+        $components->each(function (array $row, int $index) use ($ingredient, $existingComponentSources): void {
+            $componentIngredientId = $row['component_ingredient_id'];
+
             IngredientComponent::query()->create([
                 'ingredient_id' => $ingredient->id,
-                'component_ingredient_id' => $row['component_ingredient_id'],
+                'component_ingredient_id' => $componentIngredientId,
                 'percentage_in_parent' => $row['percentage_in_parent'] ?? 0,
                 'sort_order' => $index + 1,
-                'source_notes' => $row['source_notes'],
+                'source_notes' => $this->sourceNotesForResync(
+                    $row,
+                    $existingComponentSources[$componentIngredientId] ?? null,
+                ),
             ]);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function sourceNotesForResync(array $row, mixed $existingSourceNotes): ?string
+    {
+        if (! array_key_exists('source_notes', $row)) {
+            return filled($existingSourceNotes) ? (string) $existingSourceNotes : null;
+        }
+
+        return filled($row['source_notes'])
+            ? trim((string) $row['source_notes'])
+            : null;
     }
 
     /**

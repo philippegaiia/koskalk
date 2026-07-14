@@ -1,3 +1,12 @@
+@php
+    $packagingCatalogOptions = collect($workbench['packagingCatalog'] ?? [])->map(fn (array $item): array => [
+        'id' => $item['id'],
+        'label' => $item['name'],
+        'description' => $item['notes'] ?? null,
+        'searchText' => implode(' ', array_filter([$item['name'], $item['notes'] ?? null])),
+    ])->values()->all();
+@endphp
+
 <div x-show="activeWorkbenchTab === 'packaging'" role="tabpanel" aria-labelledby="tab-packaging" id="panel-packaging" class="space-y-6">
  <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
@@ -10,49 +19,18 @@
 
  <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
  <template x-if="packagingCatalog.length > 0">
- <div class="relative w-full sm:w-72 sm:min-w-72" @click.outside="closePackagingCatalogSelect()">
- <div class="sk-packaging-catalog-control flex items-center rounded-lg bg-[var(--color-field)] transition">
- <input
- x-model="packagingCatalogSearch"
- @focus="openPackagingCatalogSelect()"
- @input="openPackagingCatalogSelect()"
- @keydown.enter.prevent="selectFirstFilteredPackagingCatalogItem()"
- @keydown.escape.prevent="closePackagingCatalogSelect()"
- @keydown.arrow-down.prevent="openPackagingCatalogSelect()"
- type="search"
- role="combobox"
- aria-label="Search and add packaging item"
- aria-controls="packaging-catalog-select-options"
- :aria-expanded="packagingCatalogSelectOpen.toString()"
+ <x-search-combobox
+ id="packaging-catalog-search"
+ label="Search and add packaging item"
+ :options="$packagingCatalogOptions"
  placeholder="Search or choose packaging item"
- class="min-w-0 flex-1 rounded-lg bg-transparent px-4 py-2.5 text-sm text-[var(--color-ink-strong)] outline-none placeholder:text-[var(--color-ink-soft)]"
+ action-label="Add"
+ empty-message="No matching packaging items"
+ :retain-selection="false"
+ class="w-full sm:w-72 sm:min-w-72"
+ x-effect="replaceOptions(packagingCatalog.map((item) => ({ id: item.id, label: item.name, description: item.notes || '', searchText: `${item.name} ${item.notes || ''}` })))"
+ x-on:search-combobox-selected="selectPackagingCatalogItem(packagingCatalog.find((item) => String(item.id) === String($event.detail.id)))"
  />
- <button type="button" @click="packagingCatalogSelectOpen ? closePackagingCatalogSelect() : openPackagingCatalogSelect()" class="grid size-10 shrink-0 place-items-center rounded-md text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)]" aria-label="Toggle packaging catalog options">
- <span aria-hidden="true" class="text-xs">⌄</span>
- </button>
- </div>
- <div
- x-cloak
- x-show="packagingCatalogSelectOpen"
- x-transition.opacity
- id="packaging-catalog-select-options"
- role="listbox"
- class="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-20 max-h-72 overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-[0_10px_30px_color-mix(in_oklch,var(--color-ink-strong)_14%,transparent)]"
- >
- <template x-if="filteredPackagingCatalog.length === 0">
- <p class="px-3 py-2.5 text-sm text-[var(--color-ink-soft)]">No matching packaging items</p>
- </template>
- <template x-for="item in filteredPackagingCatalog" :key="item.id">
- <button type="button" role="option" @click="selectPackagingCatalogItem(item)" class="flex w-full items-start justify-between gap-3 rounded-md px-3 py-2.5 text-left text-sm transition hover:bg-[var(--color-field-muted)] focus:bg-[var(--color-field-muted)] focus:outline-none">
- <span>
- <span class="block font-medium text-[var(--color-ink-strong)]" x-text="item.name"></span>
- <span x-show="item.notes" class="mt-0.5 block line-clamp-1 text-xs text-[var(--color-ink-soft)]" x-text="item.notes"></span>
- </span>
- <span class="shrink-0 text-xs font-medium text-[var(--color-accent-strong)]">Add</span>
- </button>
- </template>
- </div>
- </div>
  </template>
  <button type="button" @click="openPackagingCatalogModal()" class="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
  New packaging item

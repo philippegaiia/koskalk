@@ -14,7 +14,6 @@ use App\Services\UserIngredientPriceMemory;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -53,8 +52,6 @@ class IngredientsIndex extends Component
     public ?int $pendingDeleteId = null;
 
     public ?int $replacementIngredientId = null;
-
-    public string $replacementSearch = '';
 
     public ?string $statusMessage = null;
 
@@ -115,9 +112,7 @@ class IngredientsIndex extends Component
             : null;
         $replacementCandidates = $pendingDeleteIngredient instanceof Ingredient
             && ($pendingDeleteImpact['formula_count'] > 0 || $pendingDeleteImpact['composite_count'] > 0)
-            ? $this->filteredReplacementCandidates(
-                $ingredientFormulaMutationService->replacementCandidates($currentUser, $pendingDeleteIngredient),
-            )
+            ? $ingredientFormulaMutationService->replacementCandidates($currentUser, $pendingDeleteIngredient)
             : collect();
 
         return view('livewire.dashboard.ingredients-index', [
@@ -215,7 +210,6 @@ class IngredientsIndex extends Component
 
         $this->resetErrorBag();
         $this->replacementIngredientId = null;
-        $this->replacementSearch = '';
         $this->pendingDeleteId = $id;
     }
 
@@ -224,7 +218,6 @@ class IngredientsIndex extends Component
         $this->restoreFocusToPendingTrigger();
         $this->pendingDeleteId = null;
         $this->replacementIngredientId = null;
-        $this->replacementSearch = '';
         $this->resetErrorBag();
     }
 
@@ -233,6 +226,34 @@ class IngredientsIndex extends Component
         $this->expandedUsageIngredientId = $this->expandedUsageIngredientId === $ingredientId
             ? null
             : $ingredientId;
+    }
+
+    public function selectReplacementIngredient(
+        int $ingredientId,
+        IngredientFormulaMutationService $ingredientFormulaMutationService,
+    ): void {
+        $user = $this->currentUser();
+        $ingredient = $user instanceof User ? $this->pendingOwnedIngredient($user) : null;
+        $replacementIsAvailable = $ingredient instanceof Ingredient
+            && $ingredientFormulaMutationService
+                ->replacementCandidates($user, $ingredient)
+                ->contains('id', $ingredientId);
+
+        if (! $replacementIsAvailable) {
+            $this->replacementIngredientId = null;
+            $this->addError('replacementIngredientId', 'Choose an available compatible replacement ingredient.');
+
+            return;
+        }
+
+        $this->replacementIngredientId = $ingredientId;
+        $this->resetErrorBag('replacementIngredientId');
+    }
+
+    public function clearReplacementIngredient(): void
+    {
+        $this->replacementIngredientId = null;
+        $this->resetErrorBag('replacementIngredientId');
     }
 
     public function deleteIngredient(IngredientFormulaMutationService $ingredientFormulaMutationService): void
@@ -435,7 +456,6 @@ class IngredientsIndex extends Component
         $this->statusType = 'success';
         $this->pendingDeleteId = null;
         $this->replacementIngredientId = null;
-        $this->replacementSearch = '';
         $this->expandedUsageIngredientId = null;
         $this->resetErrorBag();
         $this->resetPage();
@@ -448,7 +468,6 @@ class IngredientsIndex extends Component
         $this->statusType = 'error';
         $this->pendingDeleteId = null;
         $this->replacementIngredientId = null;
-        $this->replacementSearch = '';
         $this->expandedUsageIngredientId = null;
         $this->resetErrorBag();
     }
@@ -463,40 +482,6 @@ class IngredientsIndex extends Component
             'ingredient-removal-closed',
             triggerId: 'ingredient-delete-trigger-'.$this->pendingDeleteId,
         );
-    }
-
-    /**
-     * @param  EloquentCollection<int, Ingredient>  $candidates
-     * @return EloquentCollection<int, Ingredient>
-     */
-    private function filteredReplacementCandidates(EloquentCollection $candidates): EloquentCollection
-    {
-        $search = mb_strtolower(trim($this->replacementSearch));
-        $filteredCandidates = $search === ''
-            ? $candidates
-            : $candidates
-                ->filter(function (Ingredient $candidate) use ($search): bool {
-                    $searchableText = implode(' ', [
-                        $candidate->localizedDisplayName(),
-                        $candidate->inci_name,
-                        (string) $candidate->category?->getLabel(),
-                    ]);
-
-                    return str_contains(mb_strtolower($searchableText), $search);
-                })
-                ->values();
-
-        if ($this->replacementIngredientId === null) {
-            return $filteredCandidates;
-        }
-
-        $selectedCandidate = $candidates->firstWhere('id', $this->replacementIngredientId);
-
-        if ($selectedCandidate instanceof Ingredient && ! $filteredCandidates->contains('id', $selectedCandidate->id)) {
-            $filteredCandidates->push($selectedCandidate);
-        }
-
-        return $filteredCandidates;
     }
 
     private function surfaceMutationErrors(ValidationException $exception): void

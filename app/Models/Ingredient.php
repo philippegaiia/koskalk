@@ -43,6 +43,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'is_manufactured',
     'source_data',
     'info_markdown',
+    'composition_source_notes',
+    'allergen_source_notes',
     'featured_image_path',
     'icon_image_path',
 ])]

@@ -75,6 +75,21 @@
         box-shadow: 0 0 0 1px var(--color-accent);
     }
 
+    .sk-combobox-control:focus-within {
+        box-shadow: inset 0 0 0 2px var(--color-accent);
+    }
+
+    .sk-combobox-control input:focus,
+    .sk-combobox-control input:focus-visible {
+        box-shadow: none;
+        outline: none;
+    }
+
+    .sk-combobox-button:focus-visible {
+        outline: 2px solid var(--color-accent);
+        outline-offset: 2px;
+    }
+
     .sk-field-control {
         min-width: 0;
         flex: 1 1 auto;
@@ -286,25 +301,6 @@
             var(--color-panel-strong) 36%
         );
         box-shadow: inset 0 0 0 1px var(--color-line-strong);
-    }
-
-    .sk-workbench .sk-packaging-catalog-control {
-        box-shadow: inset 0 0 0 1px
-            color-mix(in oklab, var(--color-line-strong) 72%, transparent);
-        transition:
-            background-color 150ms ease,
-            box-shadow 150ms ease;
-    }
-
-    .sk-workbench .sk-packaging-catalog-control:focus-within {
-        background-color: var(--color-control);
-        box-shadow: inset 0 0 0 2px
-            color-mix(in oklab, var(--color-active) 62%, var(--color-line));
-    }
-
-    .sk-workbench .sk-packaging-catalog-control :is(input, button):focus {
-        box-shadow: none !important;
-        outline: none !important;
     }
 
     .sk-workbench .sk-inset {

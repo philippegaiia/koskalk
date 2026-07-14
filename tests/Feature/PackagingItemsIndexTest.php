@@ -6,6 +6,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingPackagingItem;
+use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
@@ -334,7 +335,7 @@ it('allows deleting an unused packaging item from the catalog table', function (
     expect(UserPackagingItem::query()->find($packagingItem->id))->toBeNull();
 });
 
-it('disables deleting a packaging item that is already used in costing', function () {
+it('prevents direct deletion of a packaging item that is already used in costing', function () {
     $user = User::factory()->create();
 
     $packagingItem = UserPackagingItem::query()->create([
@@ -378,8 +379,115 @@ it('disables deleting a packaging item that is already used in costing', functio
     actingAs($user);
 
     Livewire::test(PackagingItemsIndex::class)
-        ->assertSeeHtml('data-cannot-delete="'.$packagingItem->id.'"')
-        ->call('deletePackagingItem', $packagingItem->id);
+        ->call('confirmDelete', $packagingItem->id)
+        ->assertSee('Used in 1 formula')
+        ->call('deletePackagingItem', $packagingItem->id)
+        ->assertHasErrors(['packaging_item']);
 
     expect(UserPackagingItem::query()->find($packagingItem->id))->not->toBeNull();
+});
+
+it('warns before deleting packaging used by a formula', function () {
+    $user = User::factory()->create();
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Formula box',
+        'unit_cost' => 0.55,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Boxed soap',
+    ]);
+    $recipeVersion = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    RecipeVersionPackagingItem::query()->create([
+        'recipe_version_id' => $recipeVersion->id,
+        'user_packaging_item_id' => $packagingItem->id,
+        'name' => $packagingItem->name,
+        'components_per_unit' => 1,
+        'position' => 1,
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->call('confirmDelete', $packagingItem->id)
+        ->assertSee('Used in 1 formula')
+        ->assertSee('Remove everywhere and delete')
+        ->call('deletePackagingItem', $packagingItem->id)
+        ->assertHasErrors(['packaging_item']);
+
+    expect($packagingItem->fresh())->not->toBeNull()
+        ->and(RecipeVersionPackagingItem::query()->whereBelongsTo($packagingItem, 'packagingItem')->exists())->toBeTrue();
+});
+
+it('removes packaging from every saved formula version and costing before deleting it', function () {
+    $user = User::factory()->create();
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Retired box',
+        'unit_cost' => 0.55,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $recipeVersions = collect([1, 2])->map(fn (int $versionNumber): RecipeVersion => RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'version_number' => $versionNumber,
+        'is_current' => $versionNumber === 2,
+    ]));
+
+    foreach ($recipeVersions as $recipeVersion) {
+        RecipeVersionPackagingItem::query()->create([
+            'recipe_version_id' => $recipeVersion->id,
+            'user_packaging_item_id' => $packagingItem->id,
+            'name' => $packagingItem->name,
+            'components_per_unit' => 1,
+            'position' => 1,
+        ]);
+
+        $costing = RecipeVersionCosting::query()->create([
+            'recipe_version_id' => $recipeVersion->id,
+            'user_id' => $user->id,
+            'oil_weight_for_costing' => 1000,
+            'oil_unit_for_costing' => 'g',
+            'units_produced' => 10,
+            'currency' => 'EUR',
+        ]);
+
+        RecipeVersionCostingPackagingItem::query()->create([
+            'recipe_version_costing_id' => $costing->id,
+            'user_packaging_item_id' => $packagingItem->id,
+            'name' => $packagingItem->name,
+            'unit_cost' => $packagingItem->unit_cost,
+            'quantity' => 1,
+        ]);
+    }
+
+    actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->call('confirmDelete', $packagingItem->id)
+        ->call('removeEverywhereAndDelete')
+        ->assertHasNoErrors()
+        ->assertSee('was removed from every formula and deleted');
+
+    expect(UserPackagingItem::query()->find($packagingItem->id))->toBeNull()
+        ->and(RecipeVersionPackagingItem::query()->where('user_packaging_item_id', $packagingItem->id)->exists())->toBeFalse()
+        ->and(RecipeVersionCostingPackagingItem::query()->where('user_packaging_item_id', $packagingItem->id)->exists())->toBeFalse();
 });

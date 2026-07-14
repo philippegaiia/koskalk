@@ -47,17 +47,18 @@
  </label>
 
  <div class="sk-inset p-4">
- <span class="sk-eyebrow" id="costing-currency-label">Currency</span>
- <select
- x-model="costingCurrency"
- @change="scheduleCostingSave()"
- aria-labelledby="costing-currency-label"
- class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] transition"
- >
- @foreach($workbench['currencies'] ?? ['EUR' => 'Euro', 'USD' => 'US Dollar', 'CHF' => 'Swiss Franc'] as $code => $name)
- <option value="{{ $code }}">{{ $code }} — {{ $name }}</option>
- @endforeach
- </select>
+ <span class="sk-eyebrow">Currency</span>
+ <x-search-combobox
+ id="costing-currency-search"
+ label="Costing currency"
+ :options="collect($workbench['currencies'] ?? ['EUR' => 'Euro', 'USD' => 'US Dollar', 'CHF' => 'Swiss Franc'])->map(fn (string $name, string $code): array => ['id' => $code, 'label' => $code.' — '.$name, 'searchText' => $code.' '.$name])->values()->all()"
+ :selected-id="$workbench['defaultCurrency'] ?? 'EUR'"
+ placeholder="Search currencies"
+ :allow-empty="false"
+ class="mt-3"
+ x-effect="syncSelection(costingCurrency)"
+ x-on:search-combobox-selected="costingCurrency = String($event.detail.id); scheduleCostingSave()"
+ />
  <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">Ingredient prices are stored per kilogram and reused here as your default.</p>
  </div>
  </div>

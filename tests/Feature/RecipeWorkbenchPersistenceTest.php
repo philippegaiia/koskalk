@@ -1033,31 +1033,29 @@ JS;
         ]);
 });
 
-it('filters the packaging catalog by a case-insensitive search term', function () {
+it('filters reusable combobox options by labels and descriptions', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
 
-const state = {
-  packagingCatalogSearch: 'jar',
-  packagingCatalog: [
-    { id: 1, name: 'Amber Jar', notes: 'Glass' },
-    { id: 2, name: 'Wrap Label', notes: 'Paper band' },
-    { id: 3, name: 'Lid', notes: 'Jar closure' },
-  ],
-};
-
 const source = fs
-  .readFileSync('resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
-  .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace('export function createPackagingSection', 'function createPackagingSection');
+  .readFileSync('resources/js/search-combobox.js', 'utf8')
+  .replace('export function createSearchCombobox', 'function createSearchCombobox');
 
-globalThis.createPackagingSection = undefined;
-eval(`${source}\nglobalThis.createPackagingSection = createPackagingSection;`);
+globalThis.createSearchCombobox = undefined;
+eval(`${source}\nglobalThis.createSearchCombobox = createSearchCombobox;`);
 
-Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPackagingSection()));
+const state = createSearchCombobox({
+  id: 'packaging',
+  options: [
+    { id: 1, label: 'Amber Jar', description: 'Glass' },
+    { id: 2, label: 'Wrap Label', description: 'Paper band' },
+    { id: 3, label: 'Lid', description: 'Jar closure' },
+  ],
+});
+state.query = 'jar';
 
 console.log(JSON.stringify({
-  filteredIds: state.filteredPackagingCatalog.map((item) => item.id),
+  filteredIds: state.filteredOptions.map((item) => item.id),
 }));
 JS;
 

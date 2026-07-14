@@ -209,8 +209,6 @@ function createRecipeWorkbenchState(payload) {
         })),
         packagingCostRows: [],
         packagingCatalog: payload.packagingCatalog ?? payload.costing?.packaging_catalog ?? [],
-        packagingCatalogSearch: '',
-        packagingCatalogSelectOpen: false,
         packagingCatalogForm: {
             id: null,
             name: '',

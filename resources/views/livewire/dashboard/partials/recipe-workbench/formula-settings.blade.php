@@ -1,4 +1,13 @@
-@php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
+@php
+    $isCosmeticWorkbench = $isCosmeticWorkbench ?? false;
+    $ifraSearchOptions = collect($workbench['ifraProductCategories'] ?? [])->map(fn (array $category): array => [
+        'id' => $category['id'],
+        'label' => filled($category['short_name'] ?? null)
+            ? "Cat {$category['code']} — {$category['short_name']}"
+            : "Cat {$category['code']}",
+        'searchText' => implode(' ', array_filter([$category['code'], $category['short_name'] ?? null])),
+    ])->values()->all();
+@endphp
 
 <section class="sk-card px-5 py-4" aria-labelledby="formula-setup-heading">
 	<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -92,12 +101,7 @@
 	 <div>
 	 <p id="setting-ifra" class="sk-eyebrow">IFRA context</p>
 	 <template x-if="$data.ifraProductCategories?.length">
-	 <select aria-labelledby="setting-ifra" :value="`${selectedIfraProductCategoryId ?? ''}`" @change="selectedIfraProductCategoryId = $event.target.value" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
-	 <option value="">No IFRA context</option>
-	 <template x-for="category in $data.ifraProductCategories" :key="category.id">
-	 <option :value="String(category.id)" x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></option>
-	 </template>
-	 </select>
+	 <x-search-combobox id="cosmetic-ifra-context-search" label="IFRA context" :options="$ifraSearchOptions" placeholder="No IFRA context" class="mt-3" x-effect="syncSelection(selectedIfraProductCategoryId)" x-on:search-combobox-selected="selectedIfraProductCategoryId = String($event.detail.id)" x-on:search-combobox-cleared="selectedIfraProductCategoryId = ''" />
 	 </template>
 	 <template x-if="! $data.ifraProductCategories?.length">
 	 <p class="mt-3 text-xs text-[var(--color-ink-soft)]">IFRA categories appear once the compliance catalog is populated.</p>
@@ -196,12 +200,7 @@
 	 <div>
 	 <p id="setting-ifra-soap" class="sk-eyebrow">IFRA context</p>
 	 <template x-if="$data.ifraProductCategories?.length">
-	 <select aria-labelledby="setting-ifra-soap" :value="`${selectedIfraProductCategoryId ?? ''}`" @change="selectedIfraProductCategoryId = $event.target.value" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
-	 <option value="">No IFRA context</option>
-	 <template x-for="category in $data.ifraProductCategories" :key="category.id">
-	 <option :value="String(category.id)" x-text="category.short_name ? `Cat ${category.code} - ${category.short_name}` : `Cat ${category.code}`"></option>
-	 </template>
-	 </select>
+	 <x-search-combobox id="soap-ifra-context-search" label="IFRA context" :options="$ifraSearchOptions" placeholder="No IFRA context" class="mt-3" x-effect="syncSelection(selectedIfraProductCategoryId)" x-on:search-combobox-selected="selectedIfraProductCategoryId = String($event.detail.id)" x-on:search-combobox-cleared="selectedIfraProductCategoryId = ''" />
 	 </template>
 	 <template x-if="! $data.ifraProductCategories?.length">
 	 <p class="mt-3 text-xs text-[var(--color-ink-soft)]">IFRA categories appear once the compliance catalog is populated.</p>

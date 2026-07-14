@@ -5,6 +5,7 @@ namespace App\Livewire\Dashboard;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Services\CurrentAppUserResolver;
+use App\Services\PackagingItemFormulaMutationService;
 use App\Services\UserPackagingItemAuthoringService;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
@@ -39,6 +40,8 @@ class PackagingItemsIndex extends Component
     public int $perPage = 25;
 
     public ?int $pendingDeleteId = null;
+
+    public ?string $statusMessage = null;
 
     public function mount(CurrentAppUserResolver $resolver): void
     {
@@ -103,16 +106,28 @@ class PackagingItemsIndex extends Component
 
     public function confirmDelete(int $id): void
     {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User || ! $this->ownedPackagingItem($id, $user) instanceof UserPackagingItem) {
+            $this->cancelDelete();
+
+            return;
+        }
+
+        $this->resetErrorBag();
         $this->pendingDeleteId = $id;
     }
 
     public function cancelDelete(): void
     {
         $this->pendingDeleteId = null;
+        $this->resetErrorBag();
     }
 
-    public function deletePackagingItem(int $id): void
-    {
+    public function deletePackagingItem(
+        int $id,
+        PackagingItemFormulaMutationService $packagingItemFormulaMutationService,
+    ): void {
         $user = $this->currentUser();
 
         if (! $user instanceof User) {
@@ -125,22 +140,72 @@ class PackagingItemsIndex extends Component
             return;
         }
 
-        app(UserPackagingItemAuthoringService::class)->delete($packagingItem, $user);
+        if ($packagingItemFormulaMutationService->impact($user, $packagingItem)['formula_count'] > 0) {
+            $this->addError('packaging_item', 'Remove this packaging item from every formula before deleting it.');
 
-        $this->pendingDeleteId = null;
+            return;
+        }
+
+        if (! app(UserPackagingItemAuthoringService::class)->delete($packagingItem, $user)) {
+            $this->addError('packaging_item', 'This packaging item is still in use and cannot be deleted.');
+
+            return;
+        }
+
+        $this->finishDeletion($packagingItem->name.' was deleted.');
     }
 
-    public function render(): View
+    public function removeEverywhereAndDelete(
+        PackagingItemFormulaMutationService $packagingItemFormulaMutationService,
+    ): void {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User || $this->pendingDeleteId === null) {
+            return;
+        }
+
+        $packagingItem = $this->ownedPackagingItem($this->pendingDeleteId, $user);
+
+        if (! $packagingItem instanceof UserPackagingItem) {
+            $this->pendingDeleteId = null;
+
+            return;
+        }
+
+        try {
+            $packagingItemName = $packagingItem->name;
+            $packagingItemFormulaMutationService->removeEverywhereAndDelete($user, $packagingItem);
+        } catch (ValidationException $exception) {
+            $this->resetErrorBag();
+
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->finishDeletion($packagingItemName.' was removed from every formula and deleted.');
+    }
+
+    public function render(PackagingItemFormulaMutationService $packagingItemFormulaMutationService): View
     {
         $items = $this->items();
+        $currentUser = $this->currentUser();
+        $pendingDeleteItem = $currentUser instanceof User && $this->pendingDeleteId !== null
+            ? $this->ownedPackagingItem($this->pendingDeleteId, $currentUser)
+            : null;
 
         return view('livewire.dashboard.packaging-items-index', [
-            'currentUser' => $this->currentUser(),
+            'currentUser' => $currentUser,
             'items' => $items,
             'unitPriceLabel' => sprintf('Unit price (%s)', $this->currentCurrency ?? config('currencies.default', 'EUR')),
-            'pendingDeleteItem' => $this->pendingDeleteId === null
-                ? null
-                : $items->getCollection()->firstWhere('id', $this->pendingDeleteId),
+            'pendingDeleteItem' => $pendingDeleteItem,
+            'pendingDeleteImpact' => $pendingDeleteItem instanceof UserPackagingItem && $currentUser instanceof User
+                ? $packagingItemFormulaMutationService->impact($currentUser, $pendingDeleteItem)
+                : null,
         ]);
     }
 
@@ -179,6 +244,14 @@ class PackagingItemsIndex extends Component
     private function ownedPackagingItem(int $id, User $user): ?UserPackagingItem
     {
         return UserPackagingItem::query()->where('user_id', $user->id)->find($id);
+    }
+
+    private function finishDeletion(string $message): void
+    {
+        $this->statusMessage = $message;
+        $this->pendingDeleteId = null;
+        $this->resetErrorBag();
+        $this->resetPage();
     }
 
     private function currentUser(): ?User

@@ -7,12 +7,14 @@ use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\Plan;
 use App\Models\User;
 use App\OwnerType;
 use App\Services\UserIngredientAuthoringService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -49,7 +51,8 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->and($ingredient->inci_name)->toBe('ILLITE')
         ->and($ingredient->cas_number)->toBe('1332-58-7')
         ->and($ingredient->ec_number)->toBe('310-194-1')
-        ->and($ingredient->is_organic)->toBeTrue();
+        ->and($ingredient->is_organic)->toBeTrue()
+        ->and($ingredient->is_active)->toBeTrue();
 });
 
 it('shows composition only when the user chooses a blend', function () {
@@ -59,9 +62,252 @@ it('shows composition only when the user chooses a blend', function () {
 
     Livewire::test(IngredientEditor::class)
         ->assertSet('data.ingredient_structure', 'ingredient')
-        ->assertDontSee('Ingredient components')
+        ->assertDontSee('Search ingredient by name or INCI')
         ->set('data.ingredient_structure', 'blend')
-        ->assertSee('Ingredient components');
+        ->assertSee('Search ingredient by name or INCI')
+        ->assertSeeHtml('data-search-combobox="composition-ingredient-search"')
+        ->assertSee('sk-combobox-control', false)
+        ->assertSee('aria-autocomplete="list"', false)
+        ->assertSee(':aria-activedescendant=', false)
+        ->assertSee('Create ingredient')
+        ->assertSee('quickComponentName', false)
+        ->assertSee('quickComponentCategory', false)
+        ->assertSee('Create and add');
+});
+
+it('shows category-specific tabs while creating an ingredient', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.category', IngredientCategory::CarrierOil->value)
+        ->assertSee('Soap Chemistry')
+        ->assertDontSee('Compliance')
+        ->set('data.category', IngredientCategory::EssentialOil->value)
+        ->assertSee('Compliance')
+        ->assertDontSee('Soap Chemistry');
+});
+
+it('saves a blend composition and its source from the custom editor rows', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $componentIngredient = Ingredient::factory()->create([
+        'display_name' => 'Base Oil',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.name', 'My Blend')
+        ->set('data.category', IngredientCategory::CarrierOil->value)
+        ->set('data.ingredient_structure', 'blend')
+        ->call('addComponent', $componentIngredient->id)
+        ->set('data.components.0.percentage_in_parent', '100,0')
+        ->set('data.composition_source_notes', 'Supplier blend spec')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $blend = Ingredient::query()
+        ->where('owner_type', OwnerType::User)
+        ->where('owner_id', $user->id)
+        ->where('display_name', 'My Blend')
+        ->first();
+
+    expect($blend)->not->toBeNull()
+        ->and($blend->components)->toHaveCount(1)
+        ->and($blend->components->first()->component_ingredient_id)->toBe($componentIngredient->id)
+        ->and((float) $blend->components->first()->percentage_in_parent)->toBe(100.0)
+        ->and($blend->composition_source_notes)->toBe('Supplier blend spec');
+});
+
+it('shows an immediate error when a component share is outside the allowed range', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $componentIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->call('addComponent', $componentIngredient->id)
+        ->set('data.components.0.percentage_in_parent', '100,1')
+        ->assertHasErrors(['data.components.0.percentage_in_parent'])
+        ->set('data.components.0.percentage_in_parent', '100')
+        ->assertHasNoErrors(['data.components.0.percentage_in_parent']);
+});
+
+it('calculates composition totals with the server locale parser', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.components', [
+            ['percentage_in_parent' => '4 0,5'],
+            ['percentage_in_parent' => '59,5'],
+        ]);
+
+    expect($component->instance()->componentPercentageTotal())->toBe(100.0);
+});
+
+it('quick creates an active private ingredient and immediately adds it to the composition', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->set('quickComponentName', 'Calendula Flowers')
+        ->set('quickComponentCategory', IngredientCategory::BotanicalExtract->value)
+        ->call('createAndAddComponent')
+        ->assertHasNoErrors()
+        ->assertSet('quickComponentName', '')
+        ->assertSet('quickComponentCategory', null)
+        ->assertSet('data.components.0.percentage_in_parent', null);
+
+    $component = Ingredient::query()
+        ->where('display_name', 'Calendula Flowers')
+        ->sole();
+
+    expect($component->owner_id)->toBe($user->id)
+        ->and($component->visibility)->toBe(Visibility::Private)
+        ->and($component->is_active)->toBeTrue();
+});
+
+it('keeps quick create values when required data is missing', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('quickComponentName', 'Calendula Flowers')
+        ->call('createAndAddComponent')
+        ->assertHasErrors(['quickComponentCategory' => 'required'])
+        ->assertSet('quickComponentName', 'Calendula Flowers');
+
+    expect(Ingredient::query()->where('display_name', 'Calendula Flowers')->exists())->toBeFalse();
+});
+
+it('shows the plan limit when quick ingredient creation is rejected', function () {
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->hasLimit('private_ingredients', 20)
+        ->create(['is_default' => true]);
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()
+        ->count(20)
+        ->create([
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+        ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.ingredient_structure', 'blend')
+        ->set('quickComponentName', 'Calendula Flowers')
+        ->set('quickComponentCategory', IngredientCategory::BotanicalExtract->value)
+        ->call('createAndAddComponent')
+        ->assertHasErrors(['plan'])
+        ->assertSee('Your current plan allows 20 private ingredients.');
+
+    expect(Ingredient::query()->where('display_name', 'Calendula Flowers')->exists())->toBeFalse();
+});
+
+it('does not quick create an ingredient when the composition is full', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->set('data.components', array_fill(0, 20, [
+            'component_ingredient_id' => 1,
+            'percentage_in_parent' => 5,
+        ]))
+        ->set('quickComponentName', 'Overflow Ingredient')
+        ->set('quickComponentCategory', IngredientCategory::Additive->value)
+        ->call('createAndAddComponent')
+        ->assertHasErrors(['data.components']);
+
+    expect(Ingredient::query()->where('display_name', 'Overflow Ingredient')->exists())->toBeFalse();
+});
+
+it('rejects an empty blend and components inaccessible to the author', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $privateIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $service = app(UserIngredientAuthoringService::class);
+
+    expect(fn () => $service->create([
+        'name' => 'Empty Blend',
+        'category' => IngredientCategory::Additive->value,
+        'ingredient_structure' => 'blend',
+        'components' => [],
+    ], $user))->toThrow(ValidationException::class, 'Add at least one component');
+
+    expect(fn () => $service->create([
+        'name' => 'Tampered Blend',
+        'category' => IngredientCategory::Additive->value,
+        'ingredient_structure' => 'blend',
+        'components' => [[
+            'component_ingredient_id' => $privateIngredient->id,
+            'percentage_in_parent' => 100,
+        ]],
+    ], $user))->toThrow(ValidationException::class, 'not available to you');
+});
+
+it('rejects inactive blend components during server-side persistence validation', function () {
+    $user = User::factory()->create();
+    $inactiveIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => false,
+    ]);
+
+    expect(fn () => app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Inactive Component Blend',
+        'category' => IngredientCategory::Additive->value,
+        'ingredient_structure' => 'blend',
+        'components' => [[
+            'component_ingredient_id' => $inactiveIngredient->id,
+            'percentage_in_parent' => 100,
+        ]],
+    ], $user))->toThrow(ValidationException::class, 'not available to you');
+});
+
+it('persists the parent allergen declaration source for aromatic user ingredients', function () {
+    $user = User::factory()->create();
+    $allergen = Allergen::factory()->create(['inci_name' => 'LINALOOL']);
+
+    $ingredient = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Lavender EO',
+        'category' => IngredientCategory::EssentialOil->value,
+        'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+        'allergen_source_notes' => 'IFRA allergen statement',
+        'allergen_entries' => [
+            ['allergen_id' => $allergen->id, 'concentration_percent' => 1.0],
+        ],
+        'ifra' => ['limits' => []],
+    ], $user);
+
+    expect($ingredient->allergen_source_notes)->toBe('IFRA allergen statement')
+        ->and($ingredient->allergenEntries)->toHaveCount(1);
 });
 
 it('persists an optional ingredient icon separately from the main image', function () {
@@ -367,6 +613,7 @@ it('creates missing composite components as private ingredients before they are 
     expect($component->owner_type)->toBe(OwnerType::User)
         ->and($component->owner_id)->toBe($user->id)
         ->and($component->visibility)->toBe(Visibility::Private)
+        ->and($component->is_active)->toBeTrue()
         ->and($macerate->components)->toHaveCount(1)
         ->and($macerate->components->first()->component_ingredient_id)->toBe($component->id);
 });

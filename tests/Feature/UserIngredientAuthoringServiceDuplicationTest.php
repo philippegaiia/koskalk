@@ -273,3 +273,27 @@ it('refuses to duplicate a user-owned ingredient', function () {
     expect(fn () => $service->duplicate($source, $otherUser))
         ->toThrow(ValidationException::class);
 });
+
+it('duplicates parent-level source notes for composition and allergens', function () {
+    $user = User::factory()->create();
+    $allergen = Allergen::factory()->create();
+
+    $source = Ingredient::factory()->create([
+        'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Aromatic blend',
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+        'composition_source_notes' => 'Composition COA',
+        'allergen_source_notes' => 'Allergen SDS',
+    ]);
+    $source->allergenEntries()->create([
+        'allergen_id' => $allergen->id,
+        'concentration_percent' => 1.0,
+    ]);
+
+    $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    expect($copy->composition_source_notes)->toBe('Composition COA')
+        ->and($copy->allergen_source_notes)->toBe('Allergen SDS');
+});

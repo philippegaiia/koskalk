@@ -235,6 +235,7 @@ class IngredientForm
                             ->inputMode('decimal'),
                         Textarea::make('sap_profile.source_notes')
                             ->label('Soap notes')
+                            ->helperText('One source for the SAP values, iodine, INS, and the fatty-acid profile, e.g. lab analysis or supplier COA.')
                             ->rows(3)
                             ->columnSpanFull(),
                         Repeater::make('fatty_acid_entries')
@@ -257,9 +258,6 @@ class IngredientForm
                                     ->minValue(0)
                                     ->maxValue(100)
                                     ->required(),
-                                Textarea::make('source_notes')
-                                    ->rows(2)
-                                    ->columnSpanFull(),
                             ])
                             ->columns([
                                 'md' => 2,
@@ -295,14 +293,16 @@ class IngredientForm
                                     ->suffix('%')
                                     ->minValue(0)
                                     ->required(),
-                                Textarea::make('source_notes')
-                                    ->rows(3)
-                                    ->columnSpanFull(),
                             ])
                             ->columns([
                                 'md' => 2,
                             ])
                             ->defaultItems(0)
+                            ->columnSpanFull(),
+                        Textarea::make('allergen_source_notes')
+                            ->label('Allergen declaration source')
+                            ->helperText('One source for the whole allergen declaration, e.g. IFRA or SDS allergen statement.')
+                            ->rows(2)
                             ->columnSpanFull(),
                     ]),
                 Section::make('Composite Components')
@@ -327,9 +327,6 @@ class IngredientForm
                                     ->minValue(0)
                                     ->maxValue(100)
                                     ->required(),
-                                Textarea::make('source_notes')
-                                    ->rows(2)
-                                    ->columnSpanFull(),
                             ])
                             ->columns([
                                 'md' => 2,
@@ -357,6 +354,11 @@ class IngredientForm
                                 };
                             })
                             ->defaultItems(0)
+                            ->columnSpanFull(),
+                        Textarea::make('composition_source_notes')
+                            ->label('Composition source')
+                            ->helperText('One source for the whole blend composition, e.g. supplier spec or lab report.')
+                            ->rows(2)
                             ->columnSpanFull(),
                     ]),
             ]);

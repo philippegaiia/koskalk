@@ -385,3 +385,175 @@ it('clears stale dependent data when an ingredient is reclassified', function ()
         ->and($savedIngredient->fattyAcidEntries)->toHaveCount(0)
         ->and($savedIngredient->allergenEntries)->toHaveCount(0);
 });
+
+it('preserves existing per-row source notes when resynced without them', function () {
+    $blend = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'source_key' => 'BLN1',
+        'source_file' => 'admin',
+        'is_active' => true,
+    ]);
+    $component = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+        'source_key' => 'CMP1',
+        'source_file' => 'admin',
+        'is_active' => true,
+    ]);
+
+    $service = app(IngredientDataEntryService::class);
+
+    $service->syncCurrentData($blend, [
+        'current_version' => [
+            'display_name' => 'Blend',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [],
+        'components' => [
+            [
+                'component_ingredient_id' => $component->id,
+                'percentage_in_parent' => 100,
+                'source_notes' => 'Legacy lab report',
+            ],
+        ],
+    ]);
+
+    expect($blend->fresh()->components->first()->source_notes)->toBe('Legacy lab report');
+
+    // The new UI no longer collects per-row source notes, so a resync omits them.
+    // Existing evidence must be retained rather than silently wiped.
+    $service->syncCurrentData($blend, [
+        'current_version' => [
+            'display_name' => 'Blend',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [],
+        'components' => [
+            [
+                'component_ingredient_id' => $component->id,
+                'percentage_in_parent' => 100,
+            ],
+        ],
+    ]);
+
+    expect($blend->fresh()->components->first()->source_notes)->toBe('Legacy lab report');
+});
+
+it('clears explicitly blank per-row source notes', function () {
+    $fattyAcid = FattyAcid::factory()->create();
+    $allergen = Allergen::factory()->create();
+    $component = Ingredient::factory()->create();
+    $carrierOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::CarrierOil,
+    ]);
+    $essentialOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::EssentialOil,
+    ]);
+    $blend = Ingredient::factory()->create();
+    $service = app(IngredientDataEntryService::class);
+
+    $service->syncCurrentData($carrierOil, [
+        'current_version' => [
+            'display_name' => 'Carrier Oil',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [[
+            'fatty_acid_id' => $fattyAcid->id,
+            'percentage' => 100,
+            'source_notes' => 'Legacy fatty-acid source',
+        ]],
+        'allergen_entries' => [],
+        'components' => [],
+    ]);
+
+    $service->syncCurrentData($essentialOil, [
+        'current_version' => [
+            'display_name' => 'Essential Oil',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [[
+            'allergen_id' => $allergen->id,
+            'concentration_percent' => 1,
+            'source_notes' => 'Legacy allergen source',
+        ]],
+        'components' => [],
+    ]);
+
+    $service->syncCurrentData($blend, [
+        'current_version' => [
+            'display_name' => 'Blend',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [],
+        'components' => [[
+            'component_ingredient_id' => $component->id,
+            'percentage_in_parent' => 100,
+            'source_notes' => 'Legacy component source',
+        ]],
+    ]);
+
+    $service->syncCurrentData($carrierOil->fresh(), [
+        'current_version' => [
+            'display_name' => 'Carrier Oil',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [[
+            'fatty_acid_id' => $fattyAcid->id,
+            'percentage' => 100,
+            'source_notes' => '',
+        ]],
+        'allergen_entries' => [],
+        'components' => [],
+    ]);
+
+    $service->syncCurrentData($essentialOil->fresh(), [
+        'current_version' => [
+            'display_name' => 'Essential Oil',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [[
+            'allergen_id' => $allergen->id,
+            'concentration_percent' => 1,
+            'source_notes' => '',
+        ]],
+        'components' => [],
+    ]);
+
+    $service->syncCurrentData($blend->fresh(), [
+        'current_version' => [
+            'display_name' => 'Blend',
+            'is_active' => true,
+            'is_manufactured' => false,
+        ],
+        'sap_profile' => [],
+        'fatty_acid_entries' => [],
+        'allergen_entries' => [],
+        'components' => [[
+            'component_ingredient_id' => $component->id,
+            'percentage_in_parent' => 100,
+            'source_notes' => '',
+        ]],
+    ]);
+
+    expect($carrierOil->fresh()->fattyAcidEntries->first()->source_notes)->toBeNull()
+        ->and($essentialOil->fresh()->allergenEntries->first()->source_notes)->toBeNull()
+        ->and($blend->fresh()->components->first()->source_notes)->toBeNull();
+});

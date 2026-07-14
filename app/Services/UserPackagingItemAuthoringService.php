@@ -122,7 +122,11 @@ class UserPackagingItemAuthoringService
 
     public function delete(UserPackagingItem $packagingItem, User $user): bool
     {
-        if ($packagingItem->user_id !== $user->id || $packagingItem->costingItems()->exists()) {
+        if (
+            $packagingItem->user_id !== $user->id
+            || $packagingItem->costingItems()->exists()
+            || $packagingItem->recipeVersionPackagingItems()->exists()
+        ) {
             return false;
         }
 

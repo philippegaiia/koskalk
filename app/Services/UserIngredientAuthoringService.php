@@ -41,6 +41,8 @@ class UserIngredientAuthoringService
             'featured_image_path' => null,
             'icon_image_path' => null,
             'info_markdown' => null,
+            'composition_source_notes' => null,
+            'allergen_source_notes' => null,
             'function_ids' => [],
             'allergen_entries' => [],
             'components' => [],
@@ -86,6 +88,8 @@ class UserIngredientAuthoringService
             'featured_image_path' => $ingredient->featured_image_path,
             'icon_image_path' => $ingredient->icon_image_path,
             'info_markdown' => $ingredient->info_markdown,
+            'composition_source_notes' => $ingredient->composition_source_notes,
+            'allergen_source_notes' => $ingredient->allergen_source_notes,
             'function_ids' => $entryData['function_ids'] ?? [],
             'allergen_entries' => $entryData['allergen_entries'] ?? [],
             'components' => $entryData['components'] ?? [],
@@ -128,23 +132,25 @@ class UserIngredientAuthoringService
     {
         $this->entitlementService->assertCanCreatePrivateIngredient($user);
 
-        $ingredient = new Ingredient([
-            'source_file' => 'user',
-            'source_key' => $this->ingredientDataEntryService->generateSourceKey('USR', 'user'),
-            'source_code_prefix' => 'USR',
-            'owner_type' => OwnerType::User,
-            'owner_id' => $user->id,
-            'workspace_id' => null,
-            'visibility' => Visibility::Private,
-            'requires_admin_review' => true,
-            'is_active' => true,
-            'is_potentially_saponifiable' => false,
-        ]);
+        return DB::transaction(function () use ($state, $user): Ingredient {
+            $ingredient = new Ingredient([
+                'source_file' => 'user',
+                'source_key' => $this->ingredientDataEntryService->generateSourceKey('USR', 'user'),
+                'source_code_prefix' => 'USR',
+                'owner_type' => OwnerType::User,
+                'owner_id' => $user->id,
+                'workspace_id' => null,
+                'visibility' => Visibility::Private,
+                'requires_admin_review' => true,
+                'is_active' => true,
+                'is_potentially_saponifiable' => false,
+            ]);
 
-        $this->fillIngredient($ingredient, $state);
-        $ingredient->save();
+            $this->fillIngredient($ingredient, $state);
+            $ingredient->save();
 
-        return $this->syncState($ingredient, $state);
+            return $this->syncState($ingredient, $state, $user);
+        });
     }
 
     public function update(Ingredient $ingredient, array $state, User $user): Ingredient
@@ -158,11 +164,11 @@ class UserIngredientAuthoringService
         $previousFeaturedImagePath = $ingredient->featured_image_path;
         $previousIconImagePath = $ingredient->icon_image_path;
 
-        $ingredient = DB::transaction(function () use ($ingredient, $state): Ingredient {
+        $ingredient = DB::transaction(function () use ($ingredient, $state, $user): Ingredient {
             $this->fillIngredient($ingredient, $state);
             $ingredient->save();
 
-            return $this->syncState($ingredient, $state);
+            return $this->syncState($ingredient, $state, $user);
         });
 
         if ($previousFeaturedImagePath !== $ingredient->featured_image_path) {
@@ -308,6 +314,12 @@ class UserIngredientAuthoringService
         $ingredient->featured_image_path = Arr::get($state, 'featured_image_path');
         $ingredient->icon_image_path = Arr::get($state, 'icon_image_path');
         $ingredient->info_markdown = Arr::get($state, 'info_markdown');
+        $ingredient->composition_source_notes = Arr::get($state, 'ingredient_structure') === 'blend'
+            ? Arr::get($state, 'composition_source_notes')
+            : null;
+        $ingredient->allergen_source_notes = $ingredient->requiresAromaticCompliance()
+            ? Arr::get($state, 'allergen_source_notes')
+            : null;
         $ingredient->is_potentially_saponifiable = $ingredient->category === IngredientCategory::CarrierOil
             && $this->canRetainUserSoapTrust($ingredient);
         $ingredient->is_active = true;
@@ -316,7 +328,7 @@ class UserIngredientAuthoringService
     /**
      * @param  array<string, mixed>  $state
      */
-    private function syncState(Ingredient $ingredient, array $state): Ingredient
+    private function syncState(Ingredient $ingredient, array $state, User $user): Ingredient
     {
         $state['fatty_acid_entries'] = $this->reconcileFattyAcidPrecision(
             Arr::get($state, 'fatty_acid_entries', []),
@@ -326,6 +338,7 @@ class UserIngredientAuthoringService
         $this->validateIfraState(Arr::get($state, 'ifra', []));
         $this->validateTrustedKohSapValue($ingredient, $state);
         $this->validateTrustedFattyAcidProfile($ingredient, $state);
+        $this->validateBlendComponents($ingredient, $state, $user);
 
         $ingredient = $this->ingredientDataEntryService->syncCurrentData($ingredient, [
             'current_version' => [
@@ -364,6 +377,39 @@ class UserIngredientAuthoringService
             'functions',
             'ifraCertificates.limits.ifraProductCategory',
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function validateBlendComponents(Ingredient $ingredient, array $state, User $user): void
+    {
+        if (Arr::get($state, 'ingredient_structure') !== 'blend') {
+            return;
+        }
+
+        $componentIds = collect(Arr::get($state, 'components', []))
+            ->filter(fn (mixed $row): bool => is_array($row) && filled($row['component_ingredient_id'] ?? null))
+            ->pluck('component_ingredient_id')
+            ->map(fn (mixed $id): int => (int) $id);
+
+        if ($componentIds->isEmpty()) {
+            throw ValidationException::withMessages([
+                'components' => 'Add at least one component to save a blend.',
+            ]);
+        }
+
+        $accessibleCount = Ingredient::query()
+            ->accessibleTo($user)
+            ->where('is_active', true)
+            ->whereKey($componentIds->unique()->all())
+            ->count();
+
+        if ($accessibleCount !== $componentIds->unique()->count()) {
+            throw ValidationException::withMessages([
+                'components' => 'One or more selected components are not available to you.',
+            ]);
+        }
     }
 
     /**

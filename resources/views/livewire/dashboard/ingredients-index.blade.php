@@ -366,32 +366,51 @@
                         @enderror
 
                         <div class="mt-6 border-t border-[var(--color-line)] pt-5">
-                            <label for="replacement-ingredient" class="text-sm font-semibold text-[var(--color-ink-strong)]">Replacement ingredient</label>
+                            @php
+                                $replacementOptions = $replacementCandidates
+                                    ->map(fn ($candidate): array => [
+                                        'id' => $candidate->id,
+                                        'label' => $candidate->localizedDisplayName().' ('.$candidate->category?->getLabel().')',
+                                        'description' => $candidate->inci_name,
+                                        'searchText' => implode(' ', [
+                                            $candidate->localizedDisplayName(),
+                                            $candidate->inci_name,
+                                            $candidate->category?->getLabel(),
+                                        ]),
+                                    ])
+                                    ->values()
+                                    ->all();
+                                $selectedReplacement = $replacementCandidates->firstWhere('id', $replacementIngredientId);
+                                $selectedReplacementLabel = $selectedReplacement
+                                    ? $selectedReplacement->localizedDisplayName().' ('.$selectedReplacement->category?->getLabel().')'
+                                    : null;
+                            @endphp
+
+                            <p class="text-sm font-semibold text-[var(--color-ink-strong)]">Replacement ingredient</p>
                             <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">Percentages, weights, phases, and notes stay unchanged.</p>
-                            <label class="mt-3 block">
-                                <span class="sr-only">Search replacement ingredients</span>
-                                <input
-                                    type="search"
-                                    wire:model.live.debounce.250ms="replacementSearch"
-                                    wire:loading.attr="disabled"
-                                    wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
-                                    class="sk-input"
+                            <div
+                                class="mt-3"
+                                wire:key="replacement-combobox-{{ $pendingDeleteIngredient->id }}"
+                                x-on:search-combobox-selected="$wire.selectReplacementIngredient($event.detail.id)"
+                                x-on:search-combobox-cleared="$wire.clearReplacementIngredient()"
+                            >
+                                <x-search-combobox
+                                    id="replacement-ingredient"
+                                    label="Search replacement ingredients"
+                                    :options="$replacementOptions"
                                     placeholder="Search by name, INCI, or category"
-                                    aria-label="Search replacement ingredients"
-                                    @disabled($hasBlockedDependencies)
+                                    action-label="Select"
+                                    empty-message="No compatible replacement matches your search."
+                                    :selected-id="$replacementIngredientId"
+                                    :selected-label="$selectedReplacementLabel"
+                                    :disabled="$hasBlockedDependencies || ! $hasReplacementCandidates"
                                 />
-                            </label>
-                            <select id="replacement-ingredient" wire:model.number="replacementIngredientId" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="sk-select-control mt-3 w-full" @disabled($hasBlockedDependencies || ! $hasReplacementCandidates)>
-                                <option value="">Choose a compatible ingredient</option>
-                                @foreach ($replacementCandidates as $replacementCandidate)
-                                    <option value="{{ $replacementCandidate->id }}">{{ $replacementCandidate->localizedDisplayName() }} ({{ $replacementCandidate->category?->getLabel() }})</option>
-                                @endforeach
-                            </select>
+                            </div>
                             @error('replacementIngredientId')
                                 <p role="alert" class="mt-2 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                             @enderror
                             @if (! $hasReplacementCandidates)
-                                <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ $replacementSearch === '' ? 'No compatible replacement is currently available.' : 'No compatible replacement matches your search.' }}</p>
+                                <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">No compatible replacement is currently available.</p>
                             @endif
 
                             <button
@@ -399,7 +418,7 @@
                                 wire:click="replaceEverywhereAndDelete"
                                 wire:loading.attr="disabled"
                                 wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
-                                @disabled($hasBlockedDependencies || ! $hasReplacementCandidates)
+                                @disabled($hasBlockedDependencies || ! $hasReplacementCandidates || $replacementIngredientId === null)
                                 class="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--color-cream)] hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                             >
                                 Replace everywhere and delete

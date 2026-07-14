@@ -309,7 +309,7 @@ it('opens a used ingredient decision dialog with compatible replacements', funct
         ->assertSet('replacementIngredientId', null);
 });
 
-it('searches authorized replacement candidates while preserving a selected replacement', function () {
+it('shows authorized replacement candidates in one reusable searchable combobox', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $source = catalogPrivateIngredient($user, IngredientCategory::EssentialOil, 'Original Lavender');
@@ -333,22 +333,31 @@ it('searches authorized replacement candidates while preserving a selected repla
     $component = Livewire::test(IngredientsIndex::class)
         ->call('confirmDelete', $source->id)
         ->assertSeeHtml('aria-label="Search replacement ingredients"')
+        ->assertSeeHtml('data-search-combobox="replacement-ingredient"')
+        ->assertSeeHtml('aria-autocomplete="list"')
+        ->assertSeeHtml('role="listbox"')
+        ->assertSee('Select')
+        ->assertDontSeeHtml('<select id="replacement-ingredient"')
         ->assertViewHas(
             'replacementCandidates',
             fn ($candidates): bool => collect($candidates->modelKeys())->sort()->values()->all()
                 === collect([$lavender->id, $bergamot->id])->sort()->values()->all(),
-        )
-        ->set('replacementSearch', 'lavender')
-        ->assertViewHas('replacementCandidates', fn ($candidates): bool => $candidates->modelKeys() === [$lavender->id])
-        ->set('replacementIngredientId', $lavender->id)
-        ->set('replacementSearch', 'no matching candidate')
-        ->assertViewHas('replacementCandidates', fn ($candidates): bool => $candidates->modelKeys() === [$lavender->id]);
+        );
 
-    expect($component->get('replacementSearch'))->toBe('no matching candidate');
+    expect(ingredientButtonIsDisabled($component->html(), null, 'replaceEverywhereAndDelete'))->toBeTrue();
+
+    $component
+        ->call('selectReplacementIngredient', $inaccessible->id)
+        ->assertSet('replacementIngredientId', null)
+        ->assertHasErrors(['replacementIngredientId'])
+        ->call('selectReplacementIngredient', $lavender->id)
+        ->assertSet('replacementIngredientId', $lavender->id)
+        ->assertHasNoErrors(['replacementIngredientId']);
+
+    expect(ingredientButtonIsDisabled($component->html(), null, 'replaceEverywhereAndDelete'))->toBeFalse();
 
     $component
         ->call('cancelDelete')
-        ->assertSet('replacementSearch', '')
         ->assertDispatched('ingredient-removal-closed');
 });
 
@@ -368,7 +377,6 @@ it('closes a stale ingredient dialog and shows a persistent page error', functio
         ->call('deleteIngredient')
         ->assertSet('pendingDeleteId', null)
         ->assertSet('replacementIngredientId', null)
-        ->assertSet('replacementSearch', '')
         ->assertSee('The ingredient is no longer available in your private catalog.')
         ->assertDontSee('Vanishing Additive')
         ->assertDispatched('ingredient-removal-closed');

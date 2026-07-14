@@ -33,10 +33,12 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -60,6 +62,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public ?string $statusMessage = null;
 
     public string $statusType = 'idle';
+
+    public string $quickComponentName = '';
+
+    public ?string $quickComponentCategory = null;
 
     public function mount(?Ingredient $ingredient, UserIngredientAuthoringService $userIngredientAuthoringService): void
     {
@@ -86,7 +92,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         /** @var array<string, mixed> $state */
-        $state = $this->form->getState();
+        $state = $this->mergeCustomCompositionState($this->form->getState());
         $currentIngredient = $this->currentIngredient();
 
         try {
@@ -119,6 +125,105 @@ class IngredientEditor extends Component implements HasActions, HasForms
         }
 
         return null;
+    }
+
+    public function addComponent(int $ingredientId): void
+    {
+        $user = $this->currentUser();
+
+        $componentIsAccessible = $user instanceof User
+            && Ingredient::query()
+                ->accessibleTo($user)
+                ->where('is_active', true)
+                ->whereKey($ingredientId)
+                ->exists();
+
+        if (! $componentIsAccessible) {
+            $this->addError('data.components', 'This ingredient is no longer available to add.');
+
+            return;
+        }
+
+        if (count($this->data['components'] ?? []) >= 20) {
+            $this->addError('data.components', 'A blend can contain at most 20 components.');
+
+            return;
+        }
+
+        if (collect($this->data['components'] ?? [])
+            ->contains(fn (mixed $row): bool => (int) ($row['component_ingredient_id'] ?? 0) === $ingredientId)) {
+            $this->addError('data.components', 'That ingredient is already part of this blend.');
+
+            return;
+        }
+
+        $this->data['components'][] = [
+            'component_ingredient_id' => $ingredientId,
+            'percentage_in_parent' => null,
+        ];
+    }
+
+    public function createAndAddComponent(UserIngredientAuthoringService $userIngredientAuthoringService): void
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            $this->addError('quickComponentName', 'Sign in before creating an ingredient.');
+
+            return;
+        }
+
+        if (count($this->data['components'] ?? []) >= 20) {
+            $this->addError('data.components', 'A blend can contain at most 20 components.');
+
+            return;
+        }
+
+        $validated = $this->validate([
+            'quickComponentName' => ['required', 'string', 'max:255'],
+            'quickComponentCategory' => ['required', Rule::enum(IngredientCategory::class)],
+        ]);
+
+        $ingredient = $userIngredientAuthoringService->createInlineComponent([
+            'name' => $validated['quickComponentName'],
+            'category' => $validated['quickComponentCategory'],
+        ], $user);
+
+        $this->addComponent($ingredient->id);
+        $this->quickComponentName = '';
+        $this->quickComponentCategory = null;
+        $this->dispatch(
+            'component-created',
+            ingredientId: $ingredient->id,
+            ingredientLabel: $ingredient->display_name,
+        );
+    }
+
+    public function removeComponentRow(int $index): void
+    {
+        unset($this->data['components'][$index]);
+
+        $this->data['components'] = array_values($this->data['components']);
+    }
+
+    public function updatedData(mixed $value, ?string $key): void
+    {
+        if (! is_string($key) || ! preg_match('/^components\.\d+\.percentage_in_parent$/', $key)) {
+            return;
+        }
+
+        $field = 'data.'.$key;
+        $this->resetErrorBag($field);
+
+        if (blank($value)) {
+            return;
+        }
+
+        $percentage = NumberLocale::parseDecimalInput($value);
+
+        if ($percentage === null || $percentage < 0 || $percentage > 100) {
+            $this->addError($field, 'Each component share must be between 0% and 100%.');
+        }
     }
 
     public function form(Schema $schema): Schema
@@ -256,60 +361,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
                         Tab::make('Composition')
                             ->visible(fn (Get $get): bool => $get('ingredient_structure') === 'blend')
                             ->schema([
-                                Section::make('Composition')
-                                    ->description('Use this when the raw material is a blend, macerate, soap base, or any other composite ingredient.')
-                                    ->schema([
-                                        Repeater::make('components')
-                                            ->label('Ingredient components')
-                                            ->schema([
-                                                Select::make('component_ingredient_id')
-                                                    ->label('Component ingredient')
-                                                    ->options(fn (): array => $this->componentIngredientOptions())
-                                                    ->searchable()
-                                                    ->preload()
-                                                    ->required()
-                                                    ->helperText(fn (Get $get): Htmlable|string => $this->componentIngredientHelperText($get('component_ingredient_id')))
-                                                    ->createOptionForm([
-                                                        TextInput::make('name')
-                                                            ->label('Name')
-                                                            ->required()
-                                                            ->maxLength(255),
-                                                        Select::make('category')
-                                                            ->options(IngredientCategory::class)
-                                                            ->required(),
-                                                        TextInput::make('inci_name')
-                                                            ->label('INCI')
-                                                            ->maxLength(255),
-                                                        TextInput::make('supplier_name')
-                                                            ->label('Supplier')
-                                                            ->maxLength(255),
-                                                        TextInput::make('supplier_reference')
-                                                            ->label('Supplier reference')
-                                                            ->maxLength(255),
-                                                    ])
-                                                    ->createOptionUsing(fn (array $data): int => $this->createInlineComponent($data)),
-                                                LocalizedDecimalInput::make('percentage_in_parent')
-                                                    ->label('Share in parent')
-                                                    ->suffix('%')
-                                                    ->minValue(0)
-                                                    ->maxValue(100)
-                                                    ->required(),
-                                                Textarea::make('source_notes')
-                                                    ->rows(2)
-                                                    ->columnSpanFull(),
-                                            ])
-                                            ->columns([
-                                                'md' => 2,
-                                            ])
-                                            ->helperText('Each component must be a real ingredient record. Total percentages must equal 100%.')
-                                            ->defaultItems(0)
-                                            ->minItems(1)
-                                            ->maxItems(20)
-                                            ->columnSpanFull(),
-                                    ]),
+                                SchemaView::make('livewire.dashboard.partials.ingredient-composition-rows')
+                                    ->columnSpanFull(),
                             ]),
                         Tab::make('Soap Chemistry')
-                            ->visible(fn (Get $get): bool => $this->isEditing() && static::isCarrierOilCategory($get('category')))
+                            ->visible(fn (Get $get): bool => static::isCarrierOilCategory($get('category')))
                             ->schema([
                                 Section::make('SAP profile')
                                     ->description('Keep the KOH SAP value, optional iodine and INS references, and fatty-acid profile for soap calculation.')
@@ -388,7 +444,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ]),
                             ]),
                         Tab::make('Compliance')
-                            ->visible(fn (Get $get): bool => $this->isEditing() && static::isPublicAromaticCategory($get('category')))
+                            ->visible(fn (Get $get): bool => static::isPublicAromaticCategory($get('category')))
                             ->schema([
                                 Section::make('Allergens')
                                     ->description('Optional allergen declaration for aromatic ingredients.')
@@ -416,6 +472,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 'md' => 2,
                                             ])
                                             ->defaultItems(0)
+                                            ->columnSpanFull(),
+                                        Textarea::make('allergen_source_notes')
+                                            ->label('Allergen declaration source')
+                                            ->helperText('One source for the whole allergen declaration, e.g. IFRA or SDS allergen statement.')
+                                            ->rows(2)
                                             ->columnSpanFull(),
                                     ]),
                                 Section::make('IFRA guidance')
@@ -572,27 +633,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     */
-    private function createInlineComponent(array $data): int
-    {
-        $user = $this->currentUser();
-
-        if (! $user instanceof User) {
-            throw ValidationException::withMessages([
-                'components' => 'You need to be signed in before new component ingredients can be created.',
-            ]);
-        }
-
-        $ingredient = app(UserIngredientAuthoringService::class)->createInlineComponent($data, $user);
-
-        return $ingredient->id;
-    }
-
-    /**
      * @return array<int, string>
      */
-    private function componentIngredientOptions(): array
+    public function componentIngredientOptions(): array
     {
         $currentIngredient = $this->currentIngredient();
 
@@ -615,7 +658,27 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->all();
     }
 
-    private function componentIngredientHelperText(mixed $ingredientId): Htmlable|string
+    public function componentPercentageTotal(): float
+    {
+        return collect($this->data['components'] ?? [])
+            ->sum(fn (mixed $row): float => is_array($row)
+                ? NumberLocale::parseDecimalInput($row['percentage_in_parent'] ?? null) ?? 0.0
+                : 0.0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    private function mergeCustomCompositionState(array $state): array
+    {
+        $state['components'] = $this->data['components'] ?? [];
+        $state['composition_source_notes'] = $this->data['composition_source_notes'] ?? null;
+
+        return $state;
+    }
+
+    public function componentIngredientHelperText(mixed $ingredientId): Htmlable|string
     {
         if (! filled($ingredientId)) {
             return 'Select an existing ingredient, or create the missing one from this picker.';

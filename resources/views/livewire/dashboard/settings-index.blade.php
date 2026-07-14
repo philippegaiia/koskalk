@@ -191,19 +191,21 @@
  @error('companyName') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  </label>
 
- <label class="sk-inset p-4">
+ <div class="sk-inset p-4">
  <span class="sk-eyebrow">Default currency</span>
- <select
- wire:model="companyCurrency"
- class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
- >
- @foreach(config('currencies', []) as $code => $data)
- <option value="{{ $code }}">{{ $code }} — {{ __('currencies.' . $code) }}</option>
- @endforeach
- </select>
+ <x-search-combobox
+ id="company-currency-search"
+ label="Default currency"
+ :options="collect(config('currencies', []))->map(fn (array $data, string $code): array => ['id' => $code, 'label' => $code.' — '.__('currencies.'.$code), 'searchText' => $code.' '.__('currencies.'.$code)])->values()->all()"
+ :selected-id="$companyCurrency"
+ placeholder="Search currencies"
+ :allow-empty="false"
+ class="mt-3"
+ x-on:search-combobox-selected="$wire.set('companyCurrency', String($event.detail.id))"
+ />
  @error('companyCurrency') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
  <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">Used as the default currency for costing and pricing across all company recipes.</p>
- </label>
+ </div>
  </div>
 
  <div class="flex justify-end">

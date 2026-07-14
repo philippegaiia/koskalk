@@ -2,23 +2,6 @@ import { nonNegativeNumber, parseDecimalInput, roundTo } from '../utils';
 
 export function createPackagingSection() {
     return {
-        get filteredPackagingCatalog() {
-            const search = `${this.packagingCatalogSearch ?? ''}`.trim().toLowerCase();
-
-            if (search === '') {
-                return this.packagingCatalog;
-            }
-
-            return this.packagingCatalog.filter((item) => {
-                const haystack = [
-                    item?.name ?? '',
-                    item?.notes ?? '',
-                ].join(' ').toLowerCase();
-
-                return haystack.includes(search);
-            });
-        },
-
         addPackagingPlanRow(packagingItem = null) {
             this.packagingPlanRows = [
                 ...this.packagingPlanRows,
@@ -32,26 +15,12 @@ export function createPackagingSection() {
             ];
         },
 
-        openPackagingCatalogSelect() {
-            this.packagingCatalogSelectOpen = true;
-        },
-
-        closePackagingCatalogSelect() {
-            this.packagingCatalogSelectOpen = false;
-        },
-
         selectPackagingCatalogItem(packagingItem) {
-            this.addPackagingPlanRow(packagingItem);
-            this.packagingCatalogSearch = '';
-            this.closePackagingCatalogSelect();
-        },
-
-        selectFirstFilteredPackagingCatalogItem() {
-            const [firstPackagingItem] = this.filteredPackagingCatalog;
-
-            if (firstPackagingItem) {
-                this.selectPackagingCatalogItem(firstPackagingItem);
+            if (!packagingItem) {
+                return;
             }
+
+            this.addPackagingPlanRow(packagingItem);
         },
 
         removePackagingPlanRow(rowId) {

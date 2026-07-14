@@ -346,17 +346,17 @@ it('uses a neutral shelf active state and keyboard-only focus treatment for work
         ->not->toContain('.sk-workbench :is(button, input, select, textarea, a, summary):focus {');
 });
 
-it('keeps the packaging catalog search to one rounded focus surface', function () {
+it('uses the shared rounded focus surface for packaging catalog search', function () {
     $packagingTab = view('livewire.dashboard.partials.recipe-workbench.packaging-tab')->render();
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
 
     expect($packagingTab)
-        ->toContain('sk-packaging-catalog-control')
+        ->toContain('sk-combobox-control')
         ->not->toContain('focus-within:outline-2')
         ->and($appStylesSource)
-        ->toContain('.sk-workbench .sk-packaging-catalog-control:focus-within')
-        ->toContain('.sk-workbench .sk-packaging-catalog-control :is(input, button):focus')
-        ->toContain('box-shadow: none !important;');
+        ->toContain('.sk-combobox-control:focus-within')
+        ->toContain('.sk-combobox-control input:focus-visible')
+        ->toContain('box-shadow: none;');
 });
 
 it('keeps the formula title field rounded while focused', function () {

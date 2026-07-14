@@ -1,7 +1,9 @@
 import './bootstrap';
 import { createRecipeWorkbench } from './recipe-workbench/component';
+import { createSearchCombobox } from './search-combobox';
 
 window.recipeWorkbench = createRecipeWorkbench;
+window.searchCombobox = createSearchCombobox;
 
 const SIDEBAR_STORAGE_KEY = 'koskalk:sidebar-open';
 const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';

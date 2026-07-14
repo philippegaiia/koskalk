@@ -17,9 +17,12 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
@@ -27,8 +30,13 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
     use InteractsWithForms;
+    use RestrictsFileUploadsToSchemaComponents;
 
+    #[Locked]
     public ?int $packagingItemId = null;
+
+    #[Locked]
+    public string $mediaPublicId;
 
     /**
      * @var array<string, mixed>
@@ -42,6 +50,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     public function mount(?UserPackagingItem $packagingItem, UserPackagingItemAuthoringService $authoringService): void
     {
         $this->packagingItemId = $packagingItem?->id;
+        $this->mediaPublicId = (string) ($packagingItem?->public_id ?? Str::uuid());
 
         $this->form->fill(
             $packagingItem instanceof UserPackagingItem
@@ -64,6 +73,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
 
         /** @var array<string, mixed> $state */
         $state = $this->form->getState();
+        $state['public_id'] = $this->mediaPublicId;
         $currentPackagingItem = $this->currentPackagingItem();
 
         try {
@@ -83,7 +93,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         $this->form->fill($authoringService->formData($packagingItem));
 
         if (! $wasEditing) {
-            return redirect()->route('packaging-items.edit', $packagingItem->id);
+            return redirect()->route('packaging-items.edit', $packagingItem);
         }
 
         return null;
@@ -115,13 +125,13 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                                 'image/jpeg',
                                 'image/webp',
                             ])
-                            ->disk(MediaStorage::publicDisk())
-                            ->directory('packaging/featured-images')
-                            ->visibility(MediaStorage::publicVisibility())
+                            ->disk(MediaStorage::userDisk())
+                            ->directory(fn (): string => MediaStorage::packagingItemDirectoryForPublicId($this->mediaPublicId, 'featured-images'))
+                            ->visibility(MediaStorage::userVisibility())
                             ->deleteUploadedFileUsing(function (string $file): void {
-                                MediaStorage::deletePublicPath($file);
+                                MediaStorage::deleteUserPath($file);
                             })
-                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeFittedWebp(
+                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeUserFittedWebp(
                                 $file,
                                 (string) $component->getDirectory(),
                                 MediaStorage::ingredientImageWidth(),

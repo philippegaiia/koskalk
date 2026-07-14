@@ -134,6 +134,7 @@ class UserIngredientAuthoringService
 
         return DB::transaction(function () use ($state, $user): Ingredient {
             $ingredient = new Ingredient([
+                'public_id' => Arr::get($state, 'public_id'),
                 'source_file' => 'user',
                 'source_key' => $this->ingredientDataEntryService->generateSourceKey('USR', 'user'),
                 'source_code_prefix' => 'USR',
@@ -172,11 +173,11 @@ class UserIngredientAuthoringService
         });
 
         if ($previousFeaturedImagePath !== $ingredient->featured_image_path) {
-            MediaStorage::deletePublicPath($previousFeaturedImagePath);
+            MediaStorage::deleteIngredientPath($ingredient, $previousFeaturedImagePath);
         }
 
         if ($previousIconImagePath !== $ingredient->icon_image_path) {
-            MediaStorage::deletePublicPath($previousIconImagePath);
+            MediaStorage::deleteIngredientPath($ingredient, $previousIconImagePath);
         }
 
         return $ingredient;
@@ -202,6 +203,7 @@ class UserIngredientAuthoringService
         }
 
         $copy = $source->replicate([
+            'public_id',
             'featured_image_path',
             'icon_image_path',
         ]);

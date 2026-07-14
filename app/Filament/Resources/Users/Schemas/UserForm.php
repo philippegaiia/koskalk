@@ -11,6 +11,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Validation\Rules\Password;
 use Laravel\Paddle\Subscription;
 
 class UserForm
@@ -44,6 +45,7 @@ class UserForm
                             ->saved(fn (?string $state): bool => filled($state))
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->maxLength(255)
+                            ->rule(Password::defaults())
                             ->helperText('Required for new users. Fill on edit only when you want to reset the password.')
                             ->columnSpanFull(),
                         TextInput::make('password_confirmation')

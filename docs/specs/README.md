@@ -9,3 +9,4 @@ It should stay current as feature decisions evolve.
 - [catalog-and-ingredient-data.md](./catalog-and-ingredient-data.md)
 - [formulation-workbench.md](./formulation-workbench.md)
 - [public-dashboard.md](./public-dashboard.md)
+- [future-public-community-and-collaboration.md](./future-public-community-and-collaboration.md) — deferred beyond the MVP

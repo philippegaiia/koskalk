@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class UserPackagingItemAuthoringService
@@ -42,6 +43,7 @@ class UserPackagingItemAuthoringService
     public function create(array $state, User $user): UserPackagingItem
     {
         $packagingItem = new UserPackagingItem([
+            'public_id' => Arr::get($state, 'public_id'),
             'user_id' => $user->id,
             'currency' => $user->defaultCurrency(),
         ]);
@@ -71,7 +73,7 @@ class UserPackagingItemAuthoringService
         $packagingItem = $this->persist($packagingItem, $state);
 
         if ($previousFeaturedImagePath !== $packagingItem->featured_image_path) {
-            MediaStorage::deletePublicPath($previousFeaturedImagePath);
+            MediaStorage::deletePackagingItemPath($packagingItem, $previousFeaturedImagePath);
         }
 
         $this->liveCostingPricePropagationService->packagingUnitCostChanged(
@@ -130,8 +132,16 @@ class UserPackagingItemAuthoringService
             return false;
         }
 
-        MediaStorage::deletePublicPath($packagingItem->featured_image_path);
-        $packagingItem->delete();
+        $featuredImagePath = $packagingItem->featured_image_path;
+
+        DB::transaction(function () use ($packagingItem, $featuredImagePath): void {
+            $packagingItem->delete();
+
+            DB::afterCommit(function () use ($packagingItem, $featuredImagePath): void {
+                MediaStorage::deletePackagingItemPath($packagingItem, $featuredImagePath);
+                MediaStorage::deletePackagingItemDirectory($packagingItem);
+            });
+        });
 
         return true;
     }

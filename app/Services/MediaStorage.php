@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Models\Ingredient;
 use App\Models\Recipe;
+use App\Models\UserPackagingItem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -36,9 +38,39 @@ class MediaStorage
         return 'private';
     }
 
+    public static function userDisk(): string
+    {
+        return (string) config('media.user_disk', static::recipeDisk());
+    }
+
+    public static function userVisibility(): string
+    {
+        return 'private';
+    }
+
     public static function recipeDirectory(Recipe $recipe, string $directory): string
     {
         return 'recipes/'.$recipe->public_id.'/'.trim($directory, '/');
+    }
+
+    public static function ingredientDirectory(Ingredient $ingredient, string $directory): string
+    {
+        return static::ingredientDirectoryForPublicId((string) $ingredient->public_id, $directory);
+    }
+
+    public static function ingredientDirectoryForPublicId(string $publicId, string $directory): string
+    {
+        return 'ingredients/'.$publicId.'/'.trim($directory, '/');
+    }
+
+    public static function packagingItemDirectory(UserPackagingItem $packagingItem, string $directory): string
+    {
+        return static::packagingItemDirectoryForPublicId((string) $packagingItem->public_id, $directory);
+    }
+
+    public static function packagingItemDirectoryForPublicId(string $publicId, string $directory): string
+    {
+        return 'packaging-items/'.$publicId.'/'.trim($directory, '/');
     }
 
     public static function isRecipePath(Recipe $recipe, ?string $path): bool
@@ -51,6 +83,16 @@ class MediaStorage
 
         return ! str_contains($normalizedPath, '..')
             && str_starts_with($normalizedPath, 'recipes/'.$recipe->public_id.'/');
+    }
+
+    public static function isIngredientPath(Ingredient $ingredient, ?string $path): bool
+    {
+        return static::isNamespacedPath('ingredients/'.(string) $ingredient->public_id.'/', $path);
+    }
+
+    public static function isPackagingItemPath(UserPackagingItem $packagingItem, ?string $path): bool
+    {
+        return static::isNamespacedPath('packaging-items/'.(string) $packagingItem->public_id.'/', $path);
     }
 
     public static function recipeFeaturedImagesMaxSize(): int
@@ -143,10 +185,8 @@ class MediaStorage
         $path = trim($directory.'/'.Str::ulid().'.webp', '/');
         $binary = static::encodeWebp($file, $maxWidth, $maxHeight, $quality, false);
 
-        Storage::disk(static::publicDisk())->put($path, $binary, [
-            'visibility' => static::publicVisibility(),
-            'ContentType' => 'image/webp',
-        ]);
+        $disk = static::publicDisk();
+        Storage::disk($disk)->put($path, $binary, static::writeOptions($disk, static::publicVisibility(), 'image/webp'));
 
         return $path;
     }
@@ -161,10 +201,8 @@ class MediaStorage
         $path = trim($directory.'/'.Str::ulid().'.webp', '/');
         $binary = static::encodeWebp($file, $maxWidth, $maxHeight, $quality, false);
 
-        Storage::disk(static::recipeDisk())->put($path, $binary, [
-            'visibility' => static::recipeVisibility(),
-            'ContentType' => 'image/webp',
-        ]);
+        $disk = static::recipeDisk();
+        Storage::disk($disk)->put($path, $binary, static::writeOptions($disk, static::recipeVisibility(), 'image/webp'));
 
         return $path;
     }
@@ -179,10 +217,24 @@ class MediaStorage
         $path = trim($directory.'/'.Str::ulid().'.webp', '/');
         $binary = static::encodeWebp($file, $width, $height, $quality, true);
 
-        Storage::disk(static::publicDisk())->put($path, $binary, [
-            'visibility' => static::publicVisibility(),
-            'ContentType' => 'image/webp',
-        ]);
+        $disk = static::publicDisk();
+        Storage::disk($disk)->put($path, $binary, static::writeOptions($disk, static::publicVisibility(), 'image/webp'));
+
+        return $path;
+    }
+
+    public static function storeUserFittedWebp(
+        UploadedFile $file,
+        string $directory,
+        int $width,
+        int $height,
+        int $quality = 85,
+    ): string {
+        $path = trim($directory.'/'.Str::ulid().'.webp', '/');
+        $binary = static::encodeWebp($file, $width, $height, $quality, true);
+
+        $disk = static::userDisk();
+        Storage::disk($disk)->put($path, $binary, static::writeOptions($disk, static::userVisibility(), 'image/webp'));
 
         return $path;
     }
@@ -234,6 +286,102 @@ class MediaStorage
         }
 
         Storage::disk(static::recipeDisk())->delete($path);
+    }
+
+    public static function deleteRecipeDirectory(Recipe $recipe): void
+    {
+        Storage::disk(static::recipeDisk())->deleteDirectory('recipes/'.(string) $recipe->public_id);
+    }
+
+    public static function ingredientUrl(Ingredient $ingredient, ?string $path): ?string
+    {
+        if (! static::isIngredientPath($ingredient, $path)) {
+            return null;
+        }
+
+        return route('ingredients.media', ['ingredient' => $ingredient, 'path' => $path]);
+    }
+
+    public static function packagingItemUrl(UserPackagingItem $packagingItem, ?string $path): ?string
+    {
+        if (! static::isPackagingItemPath($packagingItem, $path)) {
+            return null;
+        }
+
+        return route('packaging-items.media', ['packagingItem' => $packagingItem, 'path' => $path]);
+    }
+
+    public static function deleteUserPath(?string $path): void
+    {
+        if (blank($path)) {
+            return;
+        }
+
+        Storage::disk(static::userDisk())->delete($path);
+    }
+
+    public static function deleteIngredientPath(Ingredient $ingredient, ?string $path): void
+    {
+        if ($ingredient->owner_type === null || ! static::isIngredientPath($ingredient, $path)) {
+            static::deletePublicPath($path);
+
+            return;
+        }
+
+        static::deleteUserPath($path);
+    }
+
+    public static function deletePackagingItemPath(UserPackagingItem $packagingItem, ?string $path): void
+    {
+        if (! static::isPackagingItemPath($packagingItem, $path)) {
+            static::deletePublicPath($path);
+
+            return;
+        }
+
+        static::deleteUserPath($path);
+    }
+
+    public static function deleteIngredientDirectory(Ingredient $ingredient): void
+    {
+        if ($ingredient->owner_type !== null) {
+            Storage::disk(static::userDisk())->deleteDirectory('ingredients/'.(string) $ingredient->public_id);
+        }
+    }
+
+    public static function deletePackagingItemDirectory(UserPackagingItem $packagingItem): void
+    {
+        Storage::disk(static::userDisk())->deleteDirectory('packaging-items/'.(string) $packagingItem->public_id);
+    }
+
+    private static function isNamespacedPath(string $prefix, ?string $path): bool
+    {
+        if (blank($path)) {
+            return false;
+        }
+
+        $normalizedPath = ltrim((string) $path, '/');
+
+        return ! str_contains($normalizedPath, '..')
+            && str_starts_with($normalizedPath, $prefix);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function writeOptions(string $disk, string $visibility, ?string $contentType = null): array
+    {
+        $options = [];
+
+        if ((bool) config("filesystems.disks.{$disk}.supports_visibility", true)) {
+            $options['visibility'] = $visibility;
+        }
+
+        if ($contentType !== null) {
+            $options['ContentType'] = $contentType;
+        }
+
+        return $options;
     }
 
     private static function encodeWebp(

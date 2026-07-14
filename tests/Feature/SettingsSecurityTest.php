@@ -70,11 +70,11 @@ it('requires a strong password and rate limits current-password attempts', funct
         ->set('newPassword', 'too-short')
         ->set('newPasswordConfirmation', 'too-short')
         ->call('updatePassword')
-        ->assertHasErrors(['newPassword' => 'min']);
+        ->assertHasErrors(['newPassword']);
 
     $component = Livewire::test(SettingsIndex::class)
-        ->set('newPassword', 'a-secure-password')
-        ->set('newPasswordConfirmation', 'a-secure-password');
+        ->set('newPassword', 'SecureSettings1!')
+        ->set('newPasswordConfirmation', 'SecureSettings1!');
 
     foreach (range(1, 5) as $attempt) {
         $component
@@ -89,3 +89,20 @@ it('requires a strong password and rate limits current-password attempts', funct
         ->assertHasErrors(['currentPassword'])
         ->assertSee('Too many password attempts');
 });
+
+it('rejects settings passwords missing a required character class', function (string $password) {
+    $user = User::factory()->create(['password' => 'correct-password']);
+    $this->actingAs($user);
+
+    Livewire::test(SettingsIndex::class)
+        ->set('currentPassword', 'correct-password')
+        ->set('newPassword', $password)
+        ->set('newPasswordConfirmation', $password)
+        ->call('updatePassword')
+        ->assertHasErrors(['newPassword']);
+})->with([
+    'missing uppercase' => 'securelaunch1!',
+    'missing lowercase' => 'SECURELAUNCH1!',
+    'missing number' => 'SecureLaunch!!',
+    'missing symbol' => 'SecureLaunch12',
+]);

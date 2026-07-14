@@ -77,16 +77,18 @@ it('deletes recipe media files when a recipe is permanently deleted', function (
     ]);
 
     [$user, $recipe] = createRecipeWithDraftAndPublishedVersion();
+    $directory = 'recipes/'.$recipe->public_id;
 
     $recipe->forceFill([
-        'featured_image_path' => 'recipes/featured-images/featured.webp',
-        'description' => '<p><img data-id="recipes/rich-content/presentation.webp" src="/storage/recipes/rich-content/presentation.webp"></p>',
-        'manufacturing_instructions' => '<p><img data-id="recipes/rich-content/instructions.webp" src="/storage/recipes/rich-content/instructions.webp"></p>',
+        'featured_image_path' => $directory.'/featured-images/featured.webp',
+        'description' => '<p><img data-id="'.$directory.'/rich-content/presentation.webp"></p>',
+        'manufacturing_instructions' => '<p><img data-id="'.$directory.'/rich-content/instructions.webp"></p>',
     ])->save();
 
-    Storage::disk('local')->put('recipes/featured-images/featured.webp', 'featured');
-    Storage::disk('local')->put('recipes/rich-content/presentation.webp', 'presentation');
-    Storage::disk('local')->put('recipes/rich-content/instructions.webp', 'instructions');
+    Storage::disk('local')->put($directory.'/featured-images/featured.webp', 'featured');
+    Storage::disk('local')->put($directory.'/rich-content/presentation.webp', 'presentation');
+    Storage::disk('local')->put($directory.'/rich-content/instructions.webp', 'instructions');
+    Storage::disk('local')->put($directory.'/rich-content/orphan.webp', 'orphan');
 
     actingAs($user)
         ->delete(route('recipes.destroy', $recipe), [
@@ -94,9 +96,7 @@ it('deletes recipe media files when a recipe is permanently deleted', function (
         ])
         ->assertRedirect(route('recipes.index'));
 
-    expect(Storage::disk('local')->exists('recipes/featured-images/featured.webp'))->toBeFalse()
-        ->and(Storage::disk('local')->exists('recipes/rich-content/presentation.webp'))->toBeFalse()
-        ->and(Storage::disk('local')->exists('recipes/rich-content/instructions.webp'))->toBeFalse();
+    expect(Storage::disk('local')->allFiles($directory))->toBe([]);
 });
 
 it('allows an owner to delete a published version via the delete route', function (): void {

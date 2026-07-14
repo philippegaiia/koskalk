@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\IngredientCategory;
+use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\OwnerType;
 use App\Services\MediaStorage;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
+    'public_id',
     'source_file',
     'source_key',
     'source_code_prefix',
@@ -53,6 +55,7 @@ class Ingredient extends Model
     /** @use HasFactory<IngredientFactory> */
     use HasFactory;
 
+    use HasPublicId;
     use HasTenantOwnership {
         isAccessibleBy as tenantIsAccessibleBy;
     }
@@ -163,12 +166,16 @@ class Ingredient extends Model
 
     public function featuredImageUrl(): ?string
     {
-        return MediaStorage::publicUrl($this->featured_image_path);
+        return $this->owner_type === null
+            ? MediaStorage::publicUrl($this->featured_image_path)
+            : MediaStorage::ingredientUrl($this, $this->featured_image_path);
     }
 
     public function iconImageUrl(): ?string
     {
-        return MediaStorage::publicUrl($this->icon_image_path);
+        return $this->owner_type === null
+            ? MediaStorage::publicUrl($this->icon_image_path)
+            : MediaStorage::ingredientUrl($this, $this->icon_image_path);
     }
 
     public function pickerImageUrl(): ?string

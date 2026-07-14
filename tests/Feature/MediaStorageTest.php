@@ -89,6 +89,20 @@ it('returns null for missing public media paths', function () {
     expect(MediaStorage::publicUrl('ingredients/icons/missing.webp'))->toBeNull();
 });
 
+it('omits unsupported object ACL options for R2 disks', function () {
+    config([
+        'filesystems.disks.r2_public.supports_visibility' => false,
+        'filesystems.disks.r2_private.supports_visibility' => false,
+    ]);
+
+    expect(MediaStorage::writeOptions('r2_public', 'public', 'image/webp'))
+        ->toBe(['ContentType' => 'image/webp'])
+        ->and(MediaStorage::writeOptions('r2_private', 'private'))
+        ->toBe([])
+        ->and(MediaStorage::writeOptions('local', 'private'))
+        ->toBe(['visibility' => 'private']);
+});
+
 it('stores rich content images as bounded webp attachments', function () {
     Storage::fake('local');
 

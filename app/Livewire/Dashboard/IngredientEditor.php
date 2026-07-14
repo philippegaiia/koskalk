@@ -34,10 +34,12 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View as SchemaView;
+use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -48,9 +50,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
     use InteractsWithForms;
+    use RestrictsFileUploadsToSchemaComponents;
 
     #[Locked]
     public ?int $ingredientId = null;
+
+    #[Locked]
+    public string $mediaPublicId;
 
     /**
      * @var array<string, mixed>
@@ -68,6 +74,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public function mount(?Ingredient $ingredient, UserIngredientAuthoringService $userIngredientAuthoringService): void
     {
         $this->ingredientId = $ingredient?->id;
+        $this->mediaPublicId = (string) ($ingredient?->public_id ?? Str::uuid());
 
         $this->form->fill(
             $ingredient instanceof Ingredient
@@ -92,6 +99,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         /** @var array<string, mixed> $state */
         $state = $this->mergeCustomCompositionState($this->form->getState());
+        $state['public_id'] = $this->mediaPublicId;
         $currentIngredient = $this->currentIngredient();
 
         try {
@@ -120,7 +128,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->form->fill($userIngredientAuthoringService->formData($ingredient));
 
         if (! $wasEditing) {
-            return redirect()->route('ingredients.edit', $ingredient->id);
+            return redirect()->route('ingredients.edit', $ingredient);
         }
 
         return null;
@@ -290,13 +298,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 'image/jpeg',
                                                 'image/webp',
                                             ])
-                                            ->disk(MediaStorage::publicDisk())
-                                            ->directory('ingredients/featured-images')
-                                            ->visibility(MediaStorage::publicVisibility())
+                                            ->disk(MediaStorage::userDisk())
+                                            ->directory(fn (): string => MediaStorage::ingredientDirectoryForPublicId($this->mediaPublicId, 'featured-images'))
+                                            ->visibility(MediaStorage::userVisibility())
                                             ->deleteUploadedFileUsing(function (string $file): void {
-                                                MediaStorage::deletePublicPath($file);
+                                                MediaStorage::deleteUserPath($file);
                                             })
-                                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeFittedWebp(
+                                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeUserFittedWebp(
                                                 $file,
                                                 (string) $component->getDirectory(),
                                                 MediaStorage::ingredientImageWidth(),
@@ -317,13 +325,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 'image/jpeg',
                                                 'image/webp',
                                             ])
-                                            ->disk(MediaStorage::publicDisk())
-                                            ->directory('ingredients/icons')
-                                            ->visibility(MediaStorage::publicVisibility())
+                                            ->disk(MediaStorage::userDisk())
+                                            ->directory(fn (): string => MediaStorage::ingredientDirectoryForPublicId($this->mediaPublicId, 'icons'))
+                                            ->visibility(MediaStorage::userVisibility())
                                             ->deleteUploadedFileUsing(function (string $file): void {
-                                                MediaStorage::deletePublicPath($file);
+                                                MediaStorage::deleteUserPath($file);
                                             })
-                                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeFittedWebp(
+                                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeUserFittedWebp(
                                                 $file,
                                                 (string) $component->getDirectory(),
                                                 MediaStorage::ingredientIconsWidth(),
@@ -705,7 +713,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         if ($this->currentUser() instanceof User && $ingredient->isOwnedBy($this->currentUser())) {
             $parts[] = sprintf(
                 '<a href="%s" class="font-medium text-[var(--color-accent-strong)] underline">Open ingredient</a>',
-                route('ingredients.edit', $ingredient->id),
+                route('ingredients.edit', $ingredient),
             );
         }
 

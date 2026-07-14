@@ -20,10 +20,10 @@ class PackagingItemController extends Controller
         return view('packaging.editor');
     }
 
-    public function edit(int $packagingItem, CurrentAppUserResolver $currentAppUserResolver): View
+    public function edit(string $packagingItem, CurrentAppUserResolver $currentAppUserResolver): View
     {
         $user = $currentAppUserResolver->resolve();
-        $packagingItem = UserPackagingItem::query()->findOrFail($packagingItem);
+        $packagingItem = UserPackagingItem::query()->where('public_id', $packagingItem)->firstOrFail();
 
         abort_unless($user !== null && $packagingItem->user_id === $user->id, 404);
 

@@ -8,6 +8,8 @@ return [
 
     'recipe_disk' => env('RECIPE_MEDIA_DISK', 'local'),
 
+    'user_disk' => env('USER_MEDIA_DISK', env('RECIPE_MEDIA_DISK', 'local')),
+
     'recipe_visibility' => 'private',
 
     'recipe_featured_images' => [

@@ -134,7 +134,7 @@ it('does not allow editing another users packaging item', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('packaging-items.edit', $packagingItem->id))
+        ->get(route('packaging-items.edit', $packagingItem))
         ->assertNotFound();
 });
 
@@ -147,13 +147,16 @@ it('creates a packaging item from the dedicated editor', function () {
 
     actingAs($user);
 
-    Livewire::test(PackagingItemEditor::class)
+    $component = Livewire::test(PackagingItemEditor::class);
+    $mediaPublicId = $component->get('mediaPublicId');
+
+    $component
         ->set('data.name', 'Kraft soap box')
         ->set('data.unit_cost', '0,4200')
         ->set('data.notes', '100g rectangle')
         ->call('save')
         ->assertHasNoErrors()
-        ->assertRedirect(route('packaging-items.edit', 1));
+        ->assertRedirect(route('packaging-items.edit', $mediaPublicId));
 
     expect(UserPackagingItem::query()->where('user_id', $user->id)->first())
         ->not->toBeNull()

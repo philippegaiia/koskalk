@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasPublicId;
 use App\Services\MediaStorage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,11 +12,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 #[Fillable([
+    'public_id',
     'user_id',
     'name',
     'unit_cost',
     'currency',
     'notes',
+    'featured_image_path',
 ])]
 /**
  * Stores reusable packaging items that can be pulled into a formula costing.
@@ -38,6 +41,8 @@ use Illuminate\Support\Carbon;
  */
 class UserPackagingItem extends Model
 {
+    use HasPublicId;
+
     /** The user who owns this packaging catalog item. */
     public function user(): BelongsTo
     {
@@ -65,6 +70,6 @@ class UserPackagingItem extends Model
 
     public function featuredImageUrl(): ?string
     {
-        return MediaStorage::publicUrlWithoutExistenceCheck($this->featured_image_path);
+        return MediaStorage::packagingItemUrl($this, $this->featured_image_path);
     }
 }

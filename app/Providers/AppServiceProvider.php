@@ -8,6 +8,7 @@ use Filament\Auth\Events\Registered;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 use Laravel\Paddle\Events\SubscriptionCanceled;
 use Laravel\Paddle\Events\SubscriptionCreated;
 use Laravel\Paddle\Events\SubscriptionPaused;
@@ -23,6 +24,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Password::defaults(fn (): Password => Password::min(12)
+            ->mixedCase()
+            ->numbers()
+            ->symbols());
+
         if ($this->app->isProduction() && blank(config('cashier.webhook_secret'))) {
             throw new LogicException('PADDLE_WEBHOOK_SECRET must be configured in production.');
         }

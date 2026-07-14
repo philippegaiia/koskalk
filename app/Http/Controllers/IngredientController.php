@@ -25,10 +25,10 @@ class IngredientController extends Controller
         return view('ingredients.editor');
     }
 
-    public function edit(int $ingredient, CurrentAppUserResolver $currentAppUserResolver): View
+    public function edit(string $ingredient, CurrentAppUserResolver $currentAppUserResolver): View
     {
         $user = $currentAppUserResolver->resolve();
-        $ingredient = Ingredient::query()->findOrFail($ingredient);
+        $ingredient = Ingredient::query()->where('public_id', $ingredient)->firstOrFail();
 
         $isAccessiblePlatformIngredient = $ingredient->owner_type === null && $ingredient->is_active;
 
@@ -117,7 +117,7 @@ class IngredientController extends Controller
         return response()->json([
             'ok' => true,
             'ingredient_id' => $copy->id,
-            'redirect' => route('ingredients.edit', $copy->id),
+            'redirect' => route('ingredients.edit', $copy),
         ]);
     }
 

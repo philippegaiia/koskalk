@@ -80,7 +80,11 @@ class MigrateRecipeMediaToPrivate extends Command
                     throw new RuntimeException("Private recipe media target contains different data: {$mapping['target']}.");
                 }
             } else {
-                $privateDisk->put($mapping['target'], $contents, ['visibility' => 'private']);
+                $privateDisk->put(
+                    $mapping['target'],
+                    $contents,
+                    MediaStorage::writeOptions(MediaStorage::recipeDisk(), MediaStorage::recipeVisibility()),
+                );
             }
 
             if (! $privateDisk->exists($mapping['target'])

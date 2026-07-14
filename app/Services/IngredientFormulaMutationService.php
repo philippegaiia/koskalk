@@ -497,10 +497,11 @@ class IngredientFormulaMutationService
         $featuredImagePath = $ingredient->featured_image_path;
         $iconImagePath = $ingredient->icon_image_path;
 
-        DB::afterCommit(function () use ($featuredImagePath, $iconImagePath): void {
+        DB::afterCommit(function () use ($ingredient, $featuredImagePath, $iconImagePath): void {
             try {
-                MediaStorage::deletePublicPath($featuredImagePath);
-                MediaStorage::deletePublicPath($iconImagePath);
+                MediaStorage::deleteIngredientPath($ingredient, $featuredImagePath);
+                MediaStorage::deleteIngredientPath($ingredient, $iconImagePath);
+                MediaStorage::deleteIngredientDirectory($ingredient);
             } catch (Throwable $exception) {
                 report($exception);
             }

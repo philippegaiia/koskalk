@@ -218,7 +218,7 @@ it('lets admins save platform ingredient translations in Filament', function () 
 
     $this->actingAs($admin);
 
-    Livewire::test(EditIngredient::class, ['record' => $ingredient->id])
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
         ->fillForm([
             'translations' => [[
                 'locale' => 'fr',
@@ -249,7 +249,7 @@ it('validates ingredient translations before saving canonical ingredient data', 
 
     $this->actingAs($admin);
 
-    Livewire::test(EditIngredient::class, ['record' => $ingredient->id])
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
         ->fillForm([
             'current_version.display_name' => 'Changed English Name',
             'translations' => [[
@@ -492,8 +492,8 @@ it('lets admins create and delete users', function () {
             'email' => 'created@example.com',
             'email_verified_at' => now(),
             'is_admin' => false,
-            'password' => 'new-secure-password',
-            'password_confirmation' => 'new-secure-password',
+            'password' => 'NewSecurePass1!',
+            'password_confirmation' => 'NewSecurePass1!',
         ])
         ->call('create')
         ->assertHasNoFormErrors();
@@ -501,13 +501,13 @@ it('lets admins create and delete users', function () {
     $createdUser = User::query()->where('email', 'created@example.com')->firstOrFail();
 
     expect($createdUser->name)->toBe('Created Maker')
-        ->and(Hash::check('new-secure-password', $createdUser->password))->toBeTrue()
+        ->and(Hash::check('NewSecurePass1!', $createdUser->password))->toBeTrue()
         ->and($createdUser->entitlements()->where('plan_id', $freePlan->id)->where('status', 'active')->exists())->toBeTrue();
 
     $this->post(route('logout'));
     $this->post(route('login'), [
         'email' => 'created@example.com',
-        'password' => 'new-secure-password',
+        'password' => 'NewSecurePass1!',
     ])
         ->assertRedirect(route('dashboard'));
 
@@ -537,13 +537,13 @@ it('lets admins reset user passwords from the user form', function () {
             'email' => $customer->email,
             'email_verified_at' => $customer->email_verified_at,
             'is_admin' => false,
-            'password' => 'fresh-secure-password',
-            'password_confirmation' => 'fresh-secure-password',
+            'password' => 'FreshSecurePass1!',
+            'password_confirmation' => 'FreshSecurePass1!',
         ])
         ->call('save')
         ->assertHasNoFormErrors();
 
-    expect(Hash::check('fresh-secure-password', $customer->refresh()->password))->toBeTrue();
+    expect(Hash::check('FreshSecurePass1!', $customer->refresh()->password))->toBeTrue();
 });
 
 it('renders the compliance resources in the admin panel', function () {

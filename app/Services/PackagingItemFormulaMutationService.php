@@ -143,9 +143,10 @@ class PackagingItemFormulaMutationService
 
             $featuredImagePath = $lockedPackagingItem->featured_image_path;
 
-            DB::afterCommit(function () use ($featuredImagePath): void {
+            DB::afterCommit(function () use ($featuredImagePath, $lockedPackagingItem): void {
                 try {
-                    MediaStorage::deletePublicPath($featuredImagePath);
+                    MediaStorage::deletePackagingItemPath($lockedPackagingItem, $featuredImagePath);
+                    MediaStorage::deletePackagingItemDirectory($lockedPackagingItem);
                 } catch (Throwable $exception) {
                     report($exception);
                 }

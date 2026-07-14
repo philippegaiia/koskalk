@@ -220,7 +220,7 @@ class PackagingItemsIndex extends Component
         }
 
         return UserPackagingItem::query()
-            ->select(['id', 'user_id', 'name', 'unit_cost', 'currency', 'notes', 'featured_image_path', 'created_at', 'updated_at'])
+            ->select(['id', 'public_id', 'user_id', 'name', 'unit_cost', 'currency', 'notes', 'featured_image_path', 'created_at', 'updated_at'])
             ->where('user_id', $user->id)
             ->withCount('costingItems')
             ->when($this->search !== '', fn (Builder $query): Builder => $query

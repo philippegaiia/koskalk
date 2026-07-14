@@ -19,7 +19,8 @@ use Throwable;
 #[Signature('app:provision-workspace-owner
             {email : The owner email address}
             {--name= : The owner name}
-            {--workspace= : The workspace name}')]
+            {--workspace= : The workspace name}
+            {--admin : Grant platform administrator access}')]
 #[Description('Provision the verified owner of an invite-only workspace')]
 class ProvisionWorkspaceOwner extends Command
 {
@@ -29,9 +30,16 @@ class ProvisionWorkspaceOwner extends Command
     public function handle(EntitlementService $entitlementService): int
     {
         $email = Str::lower(trim((string) $this->argument('email')));
+        $isAdmin = (bool) $this->option('admin');
 
         if (User::query()->whereRaw('LOWER(email) = ?', [$email])->exists()) {
             $this->error('A user with this email address already exists.');
+
+            return self::FAILURE;
+        }
+
+        if ($isAdmin && User::query()->where('is_admin', true)->exists()) {
+            $this->error('A platform administrator already exists.');
 
             return self::FAILURE;
         }
@@ -51,7 +59,7 @@ class ProvisionWorkspaceOwner extends Command
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'name' => ['required', 'string', 'max:255'],
             'workspace' => ['required', 'string', 'max:255'],
-            'password' => ['required', 'confirmed', Password::min(12)],
+            'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
         if ($validator->fails()) {
@@ -63,10 +71,11 @@ class ProvisionWorkspaceOwner extends Command
         }
 
         try {
-            DB::transaction(function () use ($email, $entitlementService, $name, $password, $workspaceName): void {
+            DB::transaction(function () use ($email, $entitlementService, $isAdmin, $name, $password, $workspaceName): void {
                 $user = User::query()->create([
                     'name' => $name,
                     'email' => $email,
+                    'is_admin' => $isAdmin,
                     'password' => $password,
                 ]);
                 $user->forceFill(['email_verified_at' => now()])->save();

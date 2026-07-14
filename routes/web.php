@@ -11,6 +11,7 @@ use App\Http\Controllers\PackagingItemController;
 use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeMediaController;
+use App\Http\Controllers\UserMediaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -91,6 +92,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('/update-price', 'updatePrice')->name('update-price');
             Route::get('/search-platform', 'searchPlatform')->name('search-platform');
             Route::post('/duplicate', 'duplicate')->name('duplicate');
+            Route::get('/{ingredient}/media/{path}', [UserMediaController::class, 'ingredient'])
+                ->where('path', '.*')
+                ->middleware('throttle:120,1')
+                ->name('media');
             Route::get('/{ingredient}', 'edit')->name('edit');
         });
 
@@ -100,6 +105,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->group(function (): void {
             Route::get('/', 'index')->name('index');
             Route::get('/new', 'create')->name('create');
+            Route::get('/{packagingItem}/media/{path}', [UserMediaController::class, 'packagingItem'])
+                ->where('path', '.*')
+                ->middleware('throttle:120,1')
+                ->name('media');
             Route::get('/{packagingItem}', 'edit')->name('edit');
         });
 

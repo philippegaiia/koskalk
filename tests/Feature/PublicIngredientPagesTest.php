@@ -888,7 +888,7 @@ it('does not allow editing another users private ingredient', function () {
     ]);
 
     $this->actingAs($user)
-        ->get(route('ingredients.edit', $ingredient->id))
+        ->get(route('ingredients.edit', $ingredient))
         ->assertNotFound();
 });
 
@@ -913,7 +913,7 @@ it('shows authenticated users the platform ingredient record in read-only form',
     ]);
 
     $this->actingAs($user)
-        ->get(route('ingredients.edit', $ingredient->id))
+        ->get(route('ingredients.edit', $ingredient))
         ->assertSuccessful()
         ->assertSeeText('Platform ingredient')
         ->assertSeeText('Read-only reference')
@@ -1096,7 +1096,7 @@ it('keeps one responsive save action visible at the bottom of the ingredient edi
     $ingredient = catalogPrivateIngredient($user, IngredientCategory::Additive, 'My Glycerin');
 
     $response = $this->actingAs($user)
-        ->get(route('ingredients.edit', $ingredient->id))
+        ->get(route('ingredients.edit', $ingredient))
         ->assertSuccessful();
 
     $saveAction = ingredientSaveActionState($response->getContent());

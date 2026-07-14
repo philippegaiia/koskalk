@@ -450,6 +450,7 @@ class RecipeController extends Controller
         $mediaPaths->each(function (string $path): void {
             MediaStorage::deleteRecipePath($path);
         });
+        MediaStorage::deleteRecipeDirectory($recipe);
 
         return redirect()
             ->route('recipes.index')

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -158,7 +159,7 @@ class SettingsIndex extends Component
     {
         $this->validate([
             'currentPassword' => ['required', 'string'],
-            'newPassword' => ['required', 'string', 'min:12', 'confirmed:newPasswordConfirmation'],
+            'newPassword' => ['required', 'string', 'confirmed:newPasswordConfirmation', Password::defaults()],
         ]);
 
         /** @var User $user */

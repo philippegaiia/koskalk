@@ -360,6 +360,10 @@ class IngredientsIndex extends Component
 
     public function catalogImageUrl(Ingredient $ingredient): ?string
     {
+        if ($ingredient->owner_type !== null) {
+            return $ingredient->pickerImageUrl();
+        }
+
         return MediaStorage::publicUrlWithoutExistenceCheck($ingredient->icon_image_path ?: $ingredient->featured_image_path);
     }
 

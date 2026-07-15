@@ -93,6 +93,28 @@ it('lets the signed-in user search their ingredient catalog table', function () 
         ->assertDontSee($clay->display_name);
 });
 
+it('renders user-owned ingredient pictures through the authenticated media route', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Additive,
+        'display_name' => 'Sodium Citrate',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'icon_image_path' => null,
+    ]);
+    $path = 'ingredients/'.$ingredient->public_id.'/icons/sodium-citrate.webp';
+    $ingredient->update(['icon_image_path' => $path]);
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertSeeHtml('src="'.route('ingredients.media', [
+            'ingredient' => $ingredient,
+            'path' => $path,
+        ]).'"');
+});
+
 it('renders an accessible read-only action for platform ingredients', function () {
     $user = User::factory()->create();
 

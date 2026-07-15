@@ -18,3 +18,4 @@ It answers:
 - [allergen-regimes.md](./allergen-regimes.md)
 - [formulation-engine.md](./formulation-engine.md)
 - [public-ui.md](./public-ui.md)
+- [storage-and-backups.md](./storage-and-backups.md)

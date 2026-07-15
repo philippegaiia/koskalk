@@ -35,15 +35,16 @@ SESSION_HTTP_ONLY=true
 SESSION_SAME_SITE=lax
 
 FILESYSTEM_DISK=local
-MEDIA_DISK=public
+MEDIA_DISK=r2_public
 MEDIA_VISIBILITY=public
-RECIPE_MEDIA_DISK=local
+RECIPE_MEDIA_DISK=r2_private
+USER_MEDIA_DISK=r2_private
 
 QUEUE_CONNECTION=database
 DB_SSLMODE=prefer
 ```
 
-Local private recipe storage is acceptable for the trial deployment. Before storing real customer media, prefer a dedicated private Cloudflare R2 bucket through a separately configured disk, keep public access disabled, and retain the authenticated recipe-media controller as the authorization boundary.
+Platform catalog media is stored in the public R2 bucket. Recipe and user-owned media are stored in the private R2 bucket and served only through authenticated application controllers. Database dumps use a third private R2 bucket with separate credentials. See [developer/storage-and-backups.md](./developer/storage-and-backups.md) for the current flow, environment keys, retention, and restore procedure.
 
 Use `DB_SSLMODE=require` when PostgreSQL is on the second server. Generate a unique `APP_KEY`; never copy development secrets. Store database, mail, Paddle, Cloudflare, Forge, and backup credentials only in the deployment secret store. Rotate any credential that has appeared in a repository, terminal transcript, ticket, or chat.
 
@@ -61,7 +62,7 @@ Use `DB_SSLMODE=require` when PostgreSQL is on the second server. Generate a uni
 ## Backups and recovery
 
 - Take automated PostgreSQL backups at least daily, retain multiple generations, encrypt them, and copy them off the VPS/provider account.
-- Back up `storage/app/private` because it contains confidential formula media. Database-only backups are incomplete.
+- Final confidential media is stored in private R2 rather than `storage/app/private`; Livewire temporary uploads still use local storage and are cleaned up automatically. Database-only backups remain incomplete because they do not copy the private media bucket.
 - Do not treat same-server snapshots as the only backup. Keep an offsite copy with separate credentials.
 - Test a restore into an isolated server before launch and on a recurring schedule. Record recovery time, required secrets, and the exact restore procedure.
 - Take a verified backup immediately before every production migration. Keep rollback-safe application releases available in Forge.

@@ -29,7 +29,9 @@ class AppServiceProvider extends ServiceProvider
             ->numbers()
             ->symbols());
 
-        if ($this->app->isProduction() && blank(config('cashier.webhook_secret'))) {
+        if ($this->app->isProduction()
+            && ! $this->app->runningInConsole()
+            && blank(config('cashier.webhook_secret'))) {
             throw new LogicException('PADDLE_WEBHOOK_SECRET must be configured in production.');
         }
 

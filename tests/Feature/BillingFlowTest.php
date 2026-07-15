@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Providers\AppServiceProvider;
 use App\Services\EntitlementService;
 use Database\Seeders\PlanSeeder;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -64,12 +65,31 @@ it('accepts Paddle webhook requests with a valid Paddle signature', function () 
         ->assertSuccessful();
 });
 
-it('refuses to boot in production without a Paddle webhook secret', function () {
+it('refuses to boot for production HTTP requests without a Paddle webhook secret', function () {
+    $application = Mockery::mock(Application::class);
+    $application->shouldReceive('isProduction')->andReturnTrue();
+    $application->shouldReceive('runningInConsole')->andReturnFalse();
+    config(['cashier.webhook_secret' => null]);
+
+    (new AppServiceProvider($application))->boot();
+})->throws(LogicException::class, 'PADDLE_WEBHOOK_SECRET must be configured in production.');
+
+it('allows production console commands to boot before Paddle is configured', function () {
+    $originalEnvironment = app()->environment();
+    $originalWebhookSecret = config('cashier.webhook_secret');
+
     app()->detectEnvironment(fn (): string => 'production');
     config(['cashier.webhook_secret' => null]);
 
-    (new AppServiceProvider(app()))->boot();
-})->throws(LogicException::class, 'PADDLE_WEBHOOK_SECRET must be configured in production.');
+    try {
+        expect(app()->runningInConsole())->toBeTrue();
+
+        (new AppServiceProvider(app()))->boot();
+    } finally {
+        app()->detectEnvironment(fn (): string => $originalEnvironment);
+        config(['cashier.webhook_secret' => $originalWebhookSecret]);
+    }
+});
 
 it('shows billable plans with checkout disabled until Paddle keys are configured', function () {
     config([

@@ -34,6 +34,7 @@ use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
 use App\Models\Recipe;
+use App\Models\RecipeItem;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
 use App\Models\RegulatoryRegimeSubstanceRule;
@@ -262,6 +263,59 @@ it('validates ingredient translations before saving canonical ingredient data', 
         ->assertHasFormErrors();
 
     expect($ingredient->refresh()->display_name)->toBe('Olive Oil');
+});
+
+it('lets admins delete an unused platform ingredient from its edit page', function () {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->assertActionVisible('delete')
+        ->callAction('delete')
+        ->assertNotified('Ingredient deleted');
+
+    $this->assertModelMissing($ingredient);
+});
+
+it('blocks deletion of a used platform ingredient and recommends deactivation', function () {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $recipeItem = RecipeItem::factory()->create([
+        'ingredient_id' => $ingredient->id,
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->callAction('delete')
+        ->assertActionHalted('delete')
+        ->assertNotified('Ingredient was not deleted');
+
+    $this->assertModelExists($ingredient);
+    $this->assertModelExists($recipeItem);
+});
+
+it('does not offer the platform deletion action for private user ingredients', function () {
+    $admin = User::factory()->admin()->create();
+    $owner = User::factory()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $owner->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->assertActionHidden('delete');
 });
 
 it('keeps the platform translation editor away from private ingredients', function () {

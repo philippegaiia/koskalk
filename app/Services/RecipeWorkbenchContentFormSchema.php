@@ -80,6 +80,25 @@ class RecipeWorkbenchContentFormSchema
                                 ? MediaStorage::recipeDirectory($record, 'featured-images')
                                 : 'recipes/pending/featured-images')
                             ->visibility(MediaStorage::recipeVisibility())
+                            ->getUploadedFileUsing(function (BaseFileUpload $component, string $file, string|array|null $storedFileNames, ?Recipe $record): ?array {
+                                $url = $record instanceof Recipe
+                                    ? MediaStorage::recipeUrl($record, $file)
+                                    : null;
+
+                                if ($url === null) {
+                                    return null;
+                                }
+
+                                $metadata = $component->getUploadedFile($file, $storedFileNames);
+
+                                if ($metadata === null) {
+                                    return null;
+                                }
+
+                                $metadata['url'] = $url;
+
+                                return $metadata;
+                            })
                             ->preventFilePathTampering(
                                 allowFilePathUsing: fn (string $file, ?Recipe $record): bool => $record instanceof Recipe
                                     && MediaStorage::isRecipePath($record, $file),

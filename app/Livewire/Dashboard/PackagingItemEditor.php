@@ -128,6 +128,26 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                             ->disk(MediaStorage::userDisk())
                             ->directory(fn (): string => MediaStorage::packagingItemDirectoryForPublicId($this->mediaPublicId, 'featured-images'))
                             ->visibility(MediaStorage::userVisibility())
+                            ->getUploadedFileUsing(function (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array {
+                                $packagingItem = $this->currentPackagingItem();
+                                $url = $packagingItem instanceof UserPackagingItem
+                                    ? MediaStorage::packagingItemUrl($packagingItem, $file)
+                                    : null;
+
+                                if ($url === null) {
+                                    return null;
+                                }
+
+                                $metadata = $component->getUploadedFile($file, $storedFileNames);
+
+                                if ($metadata === null) {
+                                    return null;
+                                }
+
+                                $metadata['url'] = $url;
+
+                                return $metadata;
+                            })
                             ->deleteUploadedFileUsing(function (string $file): void {
                                 MediaStorage::deleteUserPath($file);
                             })

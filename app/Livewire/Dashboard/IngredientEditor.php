@@ -301,6 +301,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->disk(MediaStorage::userDisk())
                                             ->directory(fn (): string => MediaStorage::ingredientDirectoryForPublicId($this->mediaPublicId, 'featured-images'))
                                             ->visibility(MediaStorage::userVisibility())
+                                            ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => $this->privateIngredientUploadMetadata(
+                                                $component,
+                                                $file,
+                                                $storedFileNames,
+                                            ))
                                             ->deleteUploadedFileUsing(function (string $file): void {
                                                 MediaStorage::deleteUserPath($file);
                                             })
@@ -328,6 +333,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->disk(MediaStorage::userDisk())
                                             ->directory(fn (): string => MediaStorage::ingredientDirectoryForPublicId($this->mediaPublicId, 'icons'))
                                             ->visibility(MediaStorage::userVisibility())
+                                            ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => $this->privateIngredientUploadMetadata(
+                                                $component,
+                                                $file,
+                                                $storedFileNames,
+                                            ))
                                             ->deleteUploadedFileUsing(function (string $file): void {
                                                 MediaStorage::deleteUserPath($file);
                                             })
@@ -747,6 +757,35 @@ class IngredientEditor extends Component implements HasActions, HasForms
     private function currentUser(): ?User
     {
         return app(CurrentAppUserResolver::class)->resolve();
+    }
+
+    /**
+     * @param  string|array<string, string>|null  $storedFileNames
+     * @return array{name: string, size: int, type: ?string, url: ?string}|null
+     */
+    private function privateIngredientUploadMetadata(
+        BaseFileUpload $component,
+        string $file,
+        string|array|null $storedFileNames,
+    ): ?array {
+        $ingredient = $this->currentIngredient();
+        $url = $ingredient instanceof Ingredient
+            ? MediaStorage::ingredientUrl($ingredient, $file)
+            : null;
+
+        if ($url === null) {
+            return null;
+        }
+
+        $metadata = $component->getUploadedFile($file, $storedFileNames);
+
+        if ($metadata === null) {
+            return null;
+        }
+
+        $metadata['url'] = $url;
+
+        return $metadata;
     }
 
     private function isEditing(): bool

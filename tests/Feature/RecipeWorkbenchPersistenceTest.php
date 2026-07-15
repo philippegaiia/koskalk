@@ -197,6 +197,43 @@ it('returns backend soap calculation preview data for the workbench', function (
         ->and($result['calculation']['properties']['warnings'])->toContain('high_koh_context_process_dependent');
 });
 
+it('reuses one preview bundle when calculation and labeling refresh together', function () {
+    $draft = ['name' => 'Shared preview draft'];
+    $calculation = ['lye' => ['total' => 142.0]];
+    $labeling = ['inci' => ['OLEA EUROPAEA FRUIT OIL']];
+    $restrictions = ['warnings' => []];
+
+    $service = mock(RecipeWorkbenchService::class);
+    $service->shouldReceive('previewSoapCalculation')
+        ->once()
+        ->with($draft)
+        ->andReturn($calculation);
+    $service->shouldReceive('previewInci')
+        ->once()
+        ->with($draft, $calculation)
+        ->andReturn($labeling);
+    $service->shouldReceive('previewRestrictions')
+        ->once()
+        ->with($draft, $calculation)
+        ->andReturn($restrictions);
+
+    $component = app(RecipeWorkbench::class);
+
+    $calculationResponse = $component->previewCalculation($draft, $service);
+    $labelingResponse = $component->previewLabeling($draft, $service);
+
+    expect($calculationResponse)->toMatchArray([
+        'ok' => true,
+        'calculation' => $calculation,
+        'labeling' => $labeling,
+        'restrictions' => $restrictions,
+    ])->and($labelingResponse)->toMatchArray([
+        'ok' => true,
+        'labeling' => $labeling,
+        'restrictions' => $restrictions,
+    ]);
+});
+
 it('returns a visible validation response for NaOH negative superfat previews', function () {
     ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -569,6 +606,35 @@ it('flags a saved formula for review when linked ingredient data changes', funct
 
     expect($updatedDraft['catalogReview']['needs_review'])->toBeTrue()
         ->and($updatedDraft['catalogReview']['message'])->toContain('Recheck INCI and compliance');
+});
+
+it('flags the catalog-backed initial payload when linked chemistry changes', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $sapProfile = IngredientSapProfile::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'koh_sap_value' => 0.188,
+    ]);
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    expect($service->currentVersionPayloadUsingCatalog($recipe, [])['catalogReview']['needs_review'])
+        ->toBeFalse();
+
+    $this->travel(1)->seconds();
+    $sapProfile->update(['koh_sap_value' => 0.19]);
+
+    expect($service->currentVersionPayloadUsingCatalog($recipe, [])['catalogReview']['needs_review'])
+        ->toBeTrue();
 });
 
 it('loads a saved version for comparison', function () {
@@ -1655,7 +1721,7 @@ JS;
         ->and($payload['labelingSchedules'])->toBe(1);
 });
 
-it('still schedules the soap calculation preview when reaction-core rows change', function () {
+it('uses the calculation response for labeling when reaction-core rows change', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
 
@@ -1740,7 +1806,7 @@ JS;
     $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
 
     expect($payload['calculationSchedules'])->toBe(1)
-        ->and($payload['labelingSchedules'])->toBe(1);
+        ->and($payload['labelingSchedules'])->toBe(0);
 });
 
 it('keeps the save-only packaging success message visible after closing the modal', function () {

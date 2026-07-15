@@ -15,6 +15,7 @@ use App\Services\RecipeWorkbenchService;
 use App\Services\UserIngredientPriceMemory;
 use App\Services\UserPackagingItemAuthoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -78,6 +79,98 @@ it('derives costing packaging rows from the packaging plan', function () {
         ->and($costing['packaging_items'][0]['name'])->toBe('Label')
         ->and($costing['packaging_items'][0]['components_per_unit'])->toBe(2.0)
         ->and($costing['packaging_items'][0]['unit_cost'])->toBe(0.08);
+});
+
+it('loads an existing costing without rebuilding its rows', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Label',
+        'unit_cost' => 0.08,
+        'currency' => 'EUR',
+    ]);
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient) + [
+        'packaging_items' => [
+            [
+                'user_packaging_item_id' => $packagingItem->id,
+                'name' => 'Label',
+                'components_per_unit' => 2,
+                'notes' => null,
+            ],
+        ],
+    ]);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->costingPayload($recipe, $user);
+
+    $costing = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $draftVersion->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+    $itemIds = $costing->items()->pluck('id')->all();
+    $packagingItemIds = $costing->packagingItems()->pluck('id')->all();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $service->costingPayload($recipe, $user);
+
+    $costingMutations = collect(DB::getQueryLog())
+        ->pluck('query')
+        ->filter(fn (string $query): bool => preg_match(
+            '/^(insert into|update|delete from) ["`]?recipe_version_costing/',
+            strtolower($query),
+        ) === 1)
+        ->values()
+        ->all();
+
+    DB::disableQueryLog();
+
+    expect($costing->items()->pluck('id')->all())->toBe($itemIds)
+        ->and($costing->packagingItems()->pluck('id')->all())->toBe($packagingItemIds)
+        ->and($costingMutations)->toBe([]);
+});
+
+it('does not create costing while saving a formula that has never been costed', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+
+    app(RecipeWorkbenchService::class)->save($user, $soapFamily, soapDraftPayload($ingredient));
+
+    expect(RecipeVersionCosting::query()->count())->toBe(0);
+});
+
+it('reconciles an existing costing when the formula is saved', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $firstIngredient = makeSharedCarrierOilIngredient();
+    $secondIngredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($firstIngredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $service->costingPayload($recipe, $user);
+
+    $service->save($user, $soapFamily, soapDraftPayload($secondIngredient), $recipe);
+
+    $costing = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $draftVersion->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect($costing->items()->pluck('ingredient_id')->all())->toBe([$secondIngredient->id]);
 });
 
 it('saves formula costing separately while updating the user price memory', function () {

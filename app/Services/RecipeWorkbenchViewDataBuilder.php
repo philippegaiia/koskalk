@@ -23,7 +23,8 @@ class RecipeWorkbenchViewDataBuilder
      */
     public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user, ?ProductType $productType = null): array
     {
-        $savedDraft = $this->recipeWorkbenchService->currentVersionPayload($recipe);
+        $ingredients = $this->recipeWorkbenchIngredientCatalogBuilder->build($user, $productFamily);
+        $savedDraft = $this->recipeWorkbenchService->currentVersionPayloadUsingCatalog($recipe, $ingredients);
         $defaultCurrency = $user?->defaultCurrency() ?? 'EUR';
         $productType ??= $recipe?->productType;
 
@@ -39,7 +40,7 @@ class RecipeWorkbenchViewDataBuilder
             'recipe' => $this->recipeData($recipe),
             'savedDraft' => $savedDraft,
             'phases' => $this->recipeWorkbenchService->phaseBlueprints($productFamily),
-            'ingredients' => $this->recipeWorkbenchIngredientCatalogBuilder->build($user, $productFamily),
+            'ingredients' => $ingredients,
             'ifraProductCategories' => $this->recipeWorkbenchIfraOptionsBuilder->categories($productFamily),
             'regulatoryRegimes' => $this->regulatoryRegimes(),
             'defaultIfraProductCategoryId' => $productFamily->slug === 'cosmetic'
@@ -134,9 +135,11 @@ class RecipeWorkbenchViewDataBuilder
             return null;
         }
 
-        $hasSavedFormula = $recipe->relationLoaded('latestPublishedVersion')
-            ? $recipe->latestPublishedVersion !== null
-            : $recipe->latestPublishedVersion()->exists();
+        $hasSavedFormula = array_key_exists('has_saved_formula', $recipe->getAttributes())
+            ? (bool) $recipe->getAttribute('has_saved_formula')
+            : ($recipe->relationLoaded('latestPublishedVersion')
+                ? $recipe->latestPublishedVersion !== null
+                : $recipe->latestPublishedVersion()->exists());
 
         return [
             'id' => $recipe->id,

@@ -62,12 +62,28 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
     private ?Recipe $resolvedCurrentRecipe = null;
 
+    /**
+     * @var array<string, array{ok: bool, message?: string, calculation: array<string, mixed>|null, labeling: array<string, mixed>|null, restrictions: array<string, mixed>|null}>
+     */
+    private array $previewResponses = [];
+
     public function mount(?Recipe $recipe = null, string $productFamilySlug = 'soap', ?string $productTypeSlug = null): void
     {
         $this->recipeId = $recipe?->id;
         $this->productFamilySlug = $recipe?->productFamily?->slug ?? $productFamilySlug;
         $this->productTypeSlug = $recipe?->productType?->slug ?? $productTypeSlug;
-        $this->flushResolvedContext();
+
+        if ($recipe instanceof Recipe) {
+            $this->resolvedCurrentRecipe = $recipe;
+            $this->hasResolvedCurrentRecipe = true;
+            $this->resolvedProductFamily = $recipe->productFamily;
+            $this->hasResolvedProductFamily = true;
+            $this->resolvedProductType = $recipe->productType;
+            $this->hasResolvedProductType = true;
+        } else {
+            $this->flushResolvedContext();
+        }
+
         $this->form->fill($this->recipeContentFormState($recipe));
     }
 
@@ -243,24 +259,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     #[Renderless]
     public function previewCalculation(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
     {
-        try {
-            $calculation = $recipeWorkbenchService->previewSoapCalculation($draft);
-
-            return [
-                'ok' => true,
-                'calculation' => $calculation,
-                'labeling' => $recipeWorkbenchService->previewInci($draft, $calculation),
-                'restrictions' => $recipeWorkbenchService->previewRestrictions($draft, $calculation),
-            ];
-        } catch (InvalidArgumentException $exception) {
-            return [
-                'ok' => false,
-                'message' => $exception->getMessage(),
-                'calculation' => null,
-                'labeling' => null,
-                'restrictions' => null,
-            ];
-        }
+        return $this->previewResponse($draft, $recipeWorkbenchService);
     }
 
     /**
@@ -270,20 +269,22 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     #[Renderless]
     public function previewLabeling(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
     {
-        try {
-            return [
-                'ok' => true,
-                'labeling' => $recipeWorkbenchService->previewInci($draft),
-                'restrictions' => $recipeWorkbenchService->previewRestrictions($draft),
-            ];
-        } catch (InvalidArgumentException $exception) {
+        $response = $this->previewResponse($draft, $recipeWorkbenchService);
+
+        if (! $response['ok']) {
             return [
                 'ok' => false,
-                'message' => $exception->getMessage(),
+                'message' => $response['message'],
                 'labeling' => null,
                 'restrictions' => null,
             ];
         }
+
+        return [
+            'ok' => true,
+            'labeling' => $response['labeling'],
+            'restrictions' => $response['restrictions'],
+        ];
     }
 
     /**
@@ -517,6 +518,38 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 $this->productType(),
             ),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{ok: bool, message?: string, calculation: array<string, mixed>|null, labeling: array<string, mixed>|null, restrictions: array<string, mixed>|null}
+     */
+    private function previewResponse(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
+    {
+        $draftHash = hash('sha256', serialize($draft));
+
+        if (array_key_exists($draftHash, $this->previewResponses)) {
+            return $this->previewResponses[$draftHash];
+        }
+
+        try {
+            $calculation = $recipeWorkbenchService->previewSoapCalculation($draft);
+
+            return $this->previewResponses[$draftHash] = [
+                'ok' => true,
+                'calculation' => $calculation,
+                'labeling' => $recipeWorkbenchService->previewInci($draft, $calculation),
+                'restrictions' => $recipeWorkbenchService->previewRestrictions($draft, $calculation),
+            ];
+        } catch (InvalidArgumentException $exception) {
+            return $this->previewResponses[$draftHash] = [
+                'ok' => false,
+                'message' => $exception->getMessage(),
+                'calculation' => null,
+                'labeling' => null,
+                'restrictions' => null,
+            ];
+        }
     }
 
     private function productFamily(): ProductFamily

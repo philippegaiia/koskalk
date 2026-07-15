@@ -67,7 +67,15 @@ class RecipeVersionCostingSynchronizer
             ];
         }
 
-        $costing = $this->ensureCosting($currentVersion, $user);
+        $costing = RecipeVersionCosting::query()
+            ->with(['items', 'packagingItems'])
+            ->where('recipe_version_id', $currentVersion->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $costing instanceof RecipeVersionCosting) {
+            $costing = $this->ensureCosting($currentVersion, $user);
+        }
 
         return [
             'settings' => [
@@ -322,6 +330,26 @@ class RecipeVersionCostingSynchronizer
             $this->syncPackagingItems($costing);
 
             return $costing->fresh(['items', 'packagingItems']) ?? $costing->load(['items', 'packagingItems']);
+        });
+    }
+
+    /**
+     * Reconcile formula and packaging rows only when this version already has costing.
+     */
+    public function reconcileExistingCosting(RecipeVersion $recipeVersion, User $user): void
+    {
+        $costing = RecipeVersionCosting::query()
+            ->where('recipe_version_id', $recipeVersion->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $costing instanceof RecipeVersionCosting) {
+            return;
+        }
+
+        DB::transaction(function () use ($costing): void {
+            $this->syncFormulaItems($costing);
+            $this->syncPackagingItems($costing);
         });
     }
 

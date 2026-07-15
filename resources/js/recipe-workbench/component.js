@@ -726,11 +726,14 @@ function createPersistenceSection() {
             const shouldRefreshCalculation = nextCalculationSignature !== this.lastCalculationPhaseSignature;
 
             this.lastCalculationPhaseSignature = nextCalculationSignature;
-            this.scheduleLabelingPreview();
 
             if (shouldRefreshCalculation) {
                 this.scheduleCalculationPreview();
+
+                return;
             }
+
+            this.scheduleLabelingPreview();
         },
 
         applySnapshot(snapshot, options = {}) {

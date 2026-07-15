@@ -493,7 +493,10 @@ class RecipeController extends Controller
     private function accessibleRecipe(string $recipePublicId, CurrentAppUserResolver $currentAppUserResolver): Recipe
     {
         $user = $currentAppUserResolver->resolve();
-        $recipe = Recipe::withoutGlobalScopes()->where('public_id', $recipePublicId)->firstOrFail();
+        $recipe = Recipe::withoutGlobalScopes()
+            ->withExists('publishedVersions as has_saved_formula')
+            ->where('public_id', $recipePublicId)
+            ->firstOrFail();
 
         abort_unless($user !== null && $user->can('view', $recipe), 404);
 

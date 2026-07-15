@@ -18,6 +18,7 @@ use App\Services\RecipeWorkbenchService;
 use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
@@ -73,6 +74,36 @@ it('renders the formula workbench with one save path and lock controls', functio
         ->assertDontSee('Update reference formula?')
         ->assertDontSee('This will replace the reference formula with your current draft.')
         ->assertDontSee('Save recipe');
+});
+
+it('renders an existing formula workbench within its initial query budget', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    $this->actingAs($user)
+        ->get(route('recipes.edit', ['recipe' => $recipe]))
+        ->assertSuccessful();
+
+    $queryCount = count(DB::getQueryLog());
+
+    DB::disableQueryLog();
+
+    expect($queryCount)->toBeLessThanOrEqual(25);
+});
+
+it('keeps an inactive saved ingredient available in the formula workbench', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+
+    Ingredient::query()
+        ->where('display_name', 'Olive Oil')
+        ->update(['is_active' => false]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.edit', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->assertSee('Olive Oil');
 });
 
 it('shows older backups in version history', function () {

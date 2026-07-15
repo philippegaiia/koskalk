@@ -34,6 +34,10 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      */
     private ?array $cachedOwnedWorkspaceIds = null;
 
+    private bool $hasResolvedCompany = false;
+
+    private ?Workspace $cachedCompany = null;
+
     public function ownedWorkspaces(): HasMany
     {
         return $this->hasMany(Workspace::class, 'owner_user_id');
@@ -99,13 +103,18 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             return $this->cachedAccessibleWorkspaceIds;
         }
 
-        $this->cachedAccessibleWorkspaceIds = array_values(array_unique(array_merge(
-            $this->ownedWorkspaceIds(),
-            WorkspaceMember::withoutGlobalScopes()
-                ->where('user_id', $this->id)
-                ->pluck('workspace_id')
-                ->all(),
-        )));
+        $ownedWorkspaces = Workspace::withoutGlobalScopes()
+            ->selectRaw('id as workspace_id')
+            ->where('owner_user_id', $this->id);
+
+        $this->cachedAccessibleWorkspaceIds = WorkspaceMember::withoutGlobalScopes()
+            ->select('workspace_id')
+            ->where('user_id', $this->id)
+            ->union($ownedWorkspaces)
+            ->pluck('workspace_id')
+            ->unique()
+            ->values()
+            ->all();
 
         return $this->cachedAccessibleWorkspaceIds;
     }
@@ -129,6 +138,8 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     {
         $this->cachedAccessibleWorkspaceIds = null;
         $this->cachedOwnedWorkspaceIds = null;
+        $this->hasResolvedCompany = false;
+        $this->cachedCompany = null;
     }
 
     public function workspaceRoleFor(int $workspaceId): ?WorkspaceMemberRole
@@ -153,12 +164,19 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      */
     public function company(): ?Workspace
     {
-        return Workspace::withoutGlobalScopes()
+        if ($this->hasResolvedCompany) {
+            return $this->cachedCompany;
+        }
+
+        $this->cachedCompany = Workspace::withoutGlobalScopes()
             ->where('owner_user_id', $this->id)
             ->first()
             ?? Workspace::withoutGlobalScopes()
                 ->whereHas('members', fn ($q) => $q->where('user_id', $this->id))
                 ->first();
+        $this->hasResolvedCompany = true;
+
+        return $this->cachedCompany;
     }
 
     /**

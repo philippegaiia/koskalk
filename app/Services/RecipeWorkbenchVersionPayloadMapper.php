@@ -13,10 +13,15 @@ class RecipeWorkbenchVersionPayloadMapper
     /**
      * @param  array<int, array<string, mixed>>  $phaseBlueprints
      * @param  array<string, mixed>  $catalogReview
+     * @param  array<int, array<string, mixed>>  $ingredientCatalogById
      * @return array<string, mixed>
      */
-    public function toWorkbenchPayload(RecipeVersion $version, array $phaseBlueprints, array $catalogReview): array
-    {
+    public function toWorkbenchPayload(
+        RecipeVersion $version,
+        array $phaseBlueprints,
+        array $catalogReview,
+        array $ingredientCatalogById = [],
+    ): array {
         $phaseRows = collect($phaseBlueprints)
             ->keyBy('key')
             ->map(fn (array $phase): array => [$phase['key'] => []])
@@ -32,10 +37,13 @@ class RecipeWorkbenchVersionPayloadMapper
 
         $version->phases
             ->sortBy('sort_order')
-            ->each(function (RecipePhase $phase) use (&$phaseRows, &$phases): void {
+            ->each(function (RecipePhase $phase) use (&$phaseRows, &$phases, $ingredientCatalogById): void {
                 $phaseRows[$phase->slug] = $phase->items
                     ->sortBy('position')
-                    ->map(fn (RecipeItem $item): array => $this->mapItemToWorkbenchRow($item))
+                    ->map(fn (RecipeItem $item): array => $this->mapItemToWorkbenchRow(
+                        $item,
+                        $ingredientCatalogById[$item->ingredient_id] ?? null,
+                    ))
                     ->filter(fn (array $row): bool => $row['ingredient_id'] !== null)
                     ->values()
                     ->all();
@@ -109,23 +117,26 @@ class RecipeWorkbenchVersionPayloadMapper
     /**
      * @return array<string, mixed>
      */
-    private function mapItemToWorkbenchRow(RecipeItem $item): array
+    private function mapItemToWorkbenchRow(RecipeItem $item, ?array $catalogIngredient = null): array
     {
-        $ingredient = $item->ingredient;
+        $ingredient = $catalogIngredient === null ? $item->ingredient : null;
         $sapProfile = $ingredient?->sapProfile;
 
         return [
             'id' => 'saved-'.$item->id,
             'ingredient_id' => $item->ingredient_id,
-            'name' => $ingredient?->display_name,
-            'is_user_owned' => $ingredient?->owner_type !== null,
-            'inci_name' => $ingredient?->inci_name,
-            'category' => $ingredient?->category?->value,
-            'soap_inci_naoh_name' => $ingredient?->soap_inci_naoh_name,
-            'soap_inci_koh_name' => $ingredient?->soap_inci_koh_name,
-            'koh_sap_value' => $sapProfile?->koh_sap_value === null ? null : (float) $sapProfile->koh_sap_value,
-            'naoh_sap_value' => $sapProfile?->naoh_sap_value,
-            'fatty_acid_profile' => $ingredient?->normalizedFattyAcidProfile() ?? [],
+            'name' => $catalogIngredient['name'] ?? $ingredient?->display_name,
+            'is_user_owned' => $catalogIngredient['is_user_owned'] ?? $ingredient?->owner_type !== null,
+            'inci_name' => $catalogIngredient['inci_name'] ?? $ingredient?->inci_name,
+            'category' => $catalogIngredient['category'] ?? $ingredient?->category?->value,
+            'soap_inci_naoh_name' => $catalogIngredient['soap_inci_naoh_name'] ?? $ingredient?->soap_inci_naoh_name,
+            'soap_inci_koh_name' => $catalogIngredient['soap_inci_koh_name'] ?? $ingredient?->soap_inci_koh_name,
+            'koh_sap_value' => $catalogIngredient['koh_sap_value']
+                ?? ($sapProfile?->koh_sap_value === null ? null : (float) $sapProfile->koh_sap_value),
+            'naoh_sap_value' => $catalogIngredient['naoh_sap_value'] ?? $sapProfile?->naoh_sap_value,
+            'fatty_acid_profile' => $catalogIngredient['fatty_acid_profile']
+                ?? $ingredient?->normalizedFattyAcidProfile()
+                ?? [],
             'percentage' => (float) $item->percentage,
             'weight' => (float) $item->weight,
             'note' => $item->note,

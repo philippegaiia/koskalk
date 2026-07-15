@@ -45,7 +45,10 @@ it('includes active allergen and substance rule counts for each regime', functio
         ->create(['is_active' => true]);
 
     mock(RecipeWorkbenchService::class, function ($mock): void {
-        $mock->shouldReceive('currentVersionPayload')->once()->andReturn(null);
+        $mock->shouldReceive('currentVersionPayloadUsingCatalog')
+            ->once()
+            ->with(null, [])
+            ->andReturn(null);
         $mock->shouldReceive('packagingCatalogPayload')->once()->andReturn([]);
         $mock->shouldReceive('phaseBlueprints')->once()->andReturn([]);
     });
@@ -106,8 +109,9 @@ it('builds the initial workbench payload without eager preview or costing data',
     ];
 
     mock(RecipeWorkbenchService::class, function ($mock) use ($currentVersionPayload): void {
-        $mock->shouldReceive('currentVersionPayload')
+        $mock->shouldReceive('currentVersionPayloadUsingCatalog')
             ->once()
+            ->with(null, [])
             ->andReturn($currentVersionPayload);
         $mock->shouldReceive('currentVersionSnapshot')->never();
         $mock->shouldReceive('costingPayload')->never();
@@ -156,8 +160,9 @@ it('includes the user packaging catalog in the initial workbench payload', funct
     ]);
 
     mock(RecipeWorkbenchService::class, function ($mock) use ($packagingItem): void {
-        $mock->shouldReceive('currentVersionPayload')
+        $mock->shouldReceive('currentVersionPayloadUsingCatalog')
             ->once()
+            ->with(null, [])
             ->andReturn(null);
         $mock->shouldReceive('packagingCatalogPayload')
             ->once()

@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\SupportedLocale;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema;
 
 class LocalePreferenceResolver
 {
@@ -13,16 +12,19 @@ class LocalePreferenceResolver
 
     public const SessionKey = 'locale';
 
+    /** @var Collection<int, SupportedLocale>|null */
+    private ?Collection $activeLocales = null;
+
     /**
      * @return Collection<int, SupportedLocale>
      */
     public function activeLocales(): Collection
     {
-        if (! Schema::hasTable((new SupportedLocale)->getTable())) {
-            return collect();
+        if ($this->activeLocales instanceof Collection) {
+            return $this->activeLocales;
         }
 
-        return SupportedLocale::query()
+        return $this->activeLocales = SupportedLocale::query()
             ->where('is_active', true)
             ->ordered()
             ->get();

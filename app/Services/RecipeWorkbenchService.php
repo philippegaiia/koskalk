@@ -52,6 +52,15 @@ class RecipeWorkbenchService
     }
 
     /**
+     * @param  array<int, array<string, mixed>>  $ingredientCatalog
+     * @return array<string, mixed>|null
+     */
+    public function currentVersionPayloadUsingCatalog(?Recipe $recipe, array $ingredientCatalog): ?array
+    {
+        return $this->recipeWorkbenchVersionDataService->currentVersionPayloadUsingCatalog($recipe, $ingredientCatalog);
+    }
+
+    /**
      * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null}|null
      */
     public function currentVersionSnapshot(?Recipe $recipe): ?array
@@ -162,7 +171,11 @@ class RecipeWorkbenchService
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
-        return $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
+        $currentVersion = $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
+
+        $this->recipeVersionCostingSynchronizer->reconcileExistingCosting($currentVersion, $user);
+
+        return $currentVersion;
     }
 
     public function publish(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion

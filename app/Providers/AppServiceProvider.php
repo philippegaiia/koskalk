@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Listeners\CreateDefaultCompany;
 use App\Listeners\SyncPlanEntitlementFromPaddleSubscription;
+use App\Services\LocalePreferenceResolver;
 use Filament\Auth\Events\Registered;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
@@ -19,7 +20,7 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->scoped(LocalePreferenceResolver::class);
     }
 
     public function boot(): void

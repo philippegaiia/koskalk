@@ -393,6 +393,72 @@ it('omits formula usage belonging to another user', function () {
     expect($usage)->not->toHaveKey($otherUsersIngredient->id);
 });
 
+it('omits costing-only formula usage belonging to another user', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+    ]);
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+    ]);
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $otherUser->id,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'main',
+        'position' => 1,
+    ]);
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
+
+    expect($usage)->not->toHaveKey($ingredient->id);
+});
+
+it('omits costing-only formula usage from an inaccessible workspace', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Workspace,
+    ]);
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $workspace->owner_user_id,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'main',
+        'position' => 1,
+    ]);
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
+
+    expect($usage)->not->toHaveKey($ingredient->id);
+});
+
 it('returns an empty array for an empty ingredient collection', function () {
     $user = User::factory()->create();
 

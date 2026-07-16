@@ -8,7 +8,6 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
 use App\OwnerType;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Collection;
 
 class IngredientFormulaUsageService
@@ -48,87 +47,37 @@ class IngredientFormulaUsageService
             ->withoutGlobalScopes()
             ->pluck('workspaces.id')
             ->all();
-        $recipeAccessConstraint = function (Builder|Relation $query) use ($ownedWorkspaceIds, $user): Builder|Relation {
-            return $query
-                ->withoutGlobalScopes()
-                ->where(function (Builder $accessibleQuery) use ($ownedWorkspaceIds, $user): void {
-                    $accessibleQuery->where(function (Builder $ownedQuery) use ($user): void {
-                        $ownedQuery
-                            ->where('owner_type', OwnerType::User->value)
-                            ->where('owner_id', $user->id);
-                    });
-
-                    if ($ownedWorkspaceIds !== []) {
-                        $accessibleQuery
-                            ->orWhere(function (Builder $workspaceOwnedQuery) use ($ownedWorkspaceIds): void {
-                                $workspaceOwnedQuery
-                                    ->where('owner_type', OwnerType::Workspace->value)
-                                    ->whereIn('owner_id', $ownedWorkspaceIds);
-                            })
-                            ->orWhereIn('workspace_id', $ownedWorkspaceIds);
-                    }
-                });
-        };
-
-        $recipeVersionConstraint = fn (Builder $query): Builder => $query
-            ->withoutGlobalScopes()
-            ->whereHas('recipe', $recipeAccessConstraint);
-
         $recipeItems = RecipeItem::withoutGlobalScopes()
-            ->whereIn('ingredient_id', $allUsageIngredientIds)
-            ->whereHas('recipeVersion', $recipeVersionConstraint)
-            ->with([
-                'recipeVersion' => fn (Relation $query): Relation => $query
-                    ->withoutGlobalScopes()
-                    ->with(['recipe' => $recipeAccessConstraint]),
-            ])
-            ->get();
+            ->join('recipe_versions', 'recipe_items.recipe_version_id', '=', 'recipe_versions.id')
+            ->join('recipes', 'recipe_versions.recipe_id', '=', 'recipes.id')
+            ->whereIn('recipe_items.ingredient_id', $allUsageIngredientIds)
+            ->where(fn (Builder $query): Builder => $this->whereAccessibleRecipe($query, $user, $ownedWorkspaceIds))
+            ->get([
+                'recipe_items.ingredient_id',
+                'recipe_items.recipe_version_id as version_id',
+                'recipe_versions.is_current as version_is_current',
+                'recipes.id as recipe_id',
+                'recipes.public_id as recipe_public_id',
+                'recipes.name as recipe_name',
+            ]);
 
         $costingItems = RecipeVersionCostingItem::query()
-            ->whereIn('ingredient_id', $allUsageIngredientIds)
-            ->whereHas(
-                'costing',
-                fn (Builder $query): Builder => $query->whereHas('recipeVersion', $recipeVersionConstraint),
-            )
-            ->with([
-                'costing' => fn (Relation $query): Relation => $query->with([
-                    'recipeVersion' => fn (Relation $query): Relation => $query
-                        ->withoutGlobalScopes()
-                        ->with(['recipe' => $recipeAccessConstraint]),
-                ]),
-            ])
-            ->get();
+            ->join('recipe_version_costings', 'recipe_version_costing_items.recipe_version_costing_id', '=', 'recipe_version_costings.id')
+            ->join('recipe_versions', 'recipe_version_costings.recipe_version_id', '=', 'recipe_versions.id')
+            ->join('recipes', 'recipe_versions.recipe_id', '=', 'recipes.id')
+            ->whereIn('recipe_version_costing_items.ingredient_id', $allUsageIngredientIds)
+            ->where(fn (Builder $query): Builder => $this->whereAccessibleRecipe($query, $user, $ownedWorkspaceIds))
+            ->get([
+                'recipe_version_costing_items.ingredient_id',
+                'recipe_versions.id as version_id',
+                'recipe_versions.is_current as version_is_current',
+                'recipes.id as recipe_id',
+                'recipes.public_id as recipe_public_id',
+                'recipes.name as recipe_name',
+            ]);
 
-        $usageRows = $recipeItems
-            ->flatMap(function (RecipeItem $recipeItem) use ($sourceIngredientIdsByUsageIngredientId): Collection {
-                $recipe = $recipeItem->recipeVersion->recipe;
-
-                return $sourceIngredientIdsByUsageIngredientId
-                    ->get($recipeItem->ingredient_id, collect())
-                    ->map(fn (int $sourceIngredientId): array => [
-                        'ingredient_id' => $sourceIngredientId,
-                        'recipe_id' => $recipe->id,
-                        'recipe_public_id' => $recipe->public_id,
-                        'recipe_name' => $recipe->name,
-                        'version_id' => $recipeItem->recipe_version_id,
-                        'version_is_current' => $recipeItem->recipeVersion->is_current,
-                    ]);
-            })
-            ->concat($costingItems->flatMap(function (RecipeVersionCostingItem $costingItem) use ($sourceIngredientIdsByUsageIngredientId): Collection {
-                $recipeVersion = $costingItem->costing->recipeVersion;
-                $recipe = $recipeVersion->recipe;
-
-                return $sourceIngredientIdsByUsageIngredientId
-                    ->get($costingItem->ingredient_id, collect())
-                    ->map(fn (int $sourceIngredientId): array => [
-                        'ingredient_id' => $sourceIngredientId,
-                        'recipe_id' => $recipe->id,
-                        'recipe_public_id' => $recipe->public_id,
-                        'recipe_name' => $recipe->name,
-                        'version_id' => $recipeVersion->id,
-                        'version_is_current' => $recipeVersion->is_current,
-                    ]);
-            }));
+        $usageRows = $this->usageRows($recipeItems, $sourceIngredientIdsByUsageIngredientId)
+            ->concat($this->usageRows($costingItems, $sourceIngredientIdsByUsageIngredientId));
 
         return $usageRows
             ->groupBy('ingredient_id')
@@ -152,5 +101,48 @@ class IngredientFormulaUsageService
                 ->values()
                 ->all())
             ->all();
+    }
+
+    /**
+     * @param  array<int>  $ownedWorkspaceIds
+     */
+    private function whereAccessibleRecipe(Builder $query, User $user, array $ownedWorkspaceIds): Builder
+    {
+        return $query->where(function (Builder $accessibleQuery) use ($ownedWorkspaceIds, $user): void {
+            $accessibleQuery->where(function (Builder $ownedQuery) use ($user): void {
+                $ownedQuery
+                    ->where('recipes.owner_type', OwnerType::User->value)
+                    ->where('recipes.owner_id', $user->id);
+            });
+
+            if ($ownedWorkspaceIds !== []) {
+                $accessibleQuery
+                    ->orWhere(function (Builder $workspaceOwnedQuery) use ($ownedWorkspaceIds): void {
+                        $workspaceOwnedQuery
+                            ->where('recipes.owner_type', OwnerType::Workspace->value)
+                            ->whereIn('recipes.owner_id', $ownedWorkspaceIds);
+                    })
+                    ->orWhereIn('recipes.workspace_id', $ownedWorkspaceIds);
+            }
+        });
+    }
+
+    /**
+     * @param  Collection<int, RecipeItem|RecipeVersionCostingItem>  $usageItems
+     * @param  Collection<int, Collection<int, int>>  $sourceIngredientIdsByUsageIngredientId
+     * @return Collection<int, array{ingredient_id: int, recipe_id: int, recipe_public_id: string, recipe_name: string, version_id: int, version_is_current: bool}>
+     */
+    private function usageRows(Collection $usageItems, Collection $sourceIngredientIdsByUsageIngredientId): Collection
+    {
+        return $usageItems->flatMap(fn (RecipeItem|RecipeVersionCostingItem $usageItem): Collection => $sourceIngredientIdsByUsageIngredientId
+            ->get($usageItem->ingredient_id, collect())
+            ->map(fn (int $sourceIngredientId): array => [
+                'ingredient_id' => $sourceIngredientId,
+                'recipe_id' => $usageItem->recipe_id,
+                'recipe_public_id' => $usageItem->recipe_public_id,
+                'recipe_name' => $usageItem->recipe_name,
+                'version_id' => $usageItem->version_id,
+                'version_is_current' => (bool) $usageItem->version_is_current,
+            ]));
     }
 }

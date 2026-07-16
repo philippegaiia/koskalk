@@ -2,7 +2,7 @@
 
 it('allows the hamburger to open the sidebar below the desktop breakpoint', function () {
     $source = file_get_contents(resource_path('js/app.js'));
-    $appShell = view('layouts.app-shell')->render();
+    $appShell = file_get_contents(resource_path('views/layouts/app-shell.blade.php'));
 
     expect($source)
         ->toContain('const nextOpen = open;')

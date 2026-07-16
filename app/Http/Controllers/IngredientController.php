@@ -33,7 +33,7 @@ class IngredientController extends Controller
         $isAccessiblePlatformIngredient = $ingredient->owner_type === null && $ingredient->is_active;
 
         abort_unless(
-            $user !== null && ($ingredient->isOwnedBy($user) || $isAccessiblePlatformIngredient),
+            $user !== null && ($ingredient->isAccessibleBy($user) || $isAccessiblePlatformIngredient),
             404,
         );
 

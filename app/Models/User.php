@@ -11,6 +11,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -41,6 +42,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     public function ownedWorkspaces(): HasMany
     {
         return $this->hasMany(Workspace::class, 'owner_user_id');
+    }
+
+    public function activeWorkspace(): BelongsTo
+    {
+        return $this->belongsTo(Workspace::class, 'active_workspace_id');
     }
 
     public function workspaceMemberships(): HasMany
@@ -160,7 +166,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
     }
 
     /**
-     * Get the user's primary company (first owned workspace, or first membership).
+     * Get the workspace in which the user is currently working.
      */
     public function company(): ?Workspace
     {
@@ -168,11 +174,24 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
             return $this->cachedCompany;
         }
 
+        $activeWorkspace = $this->active_workspace_id === null
+            ? null
+            : Workspace::withoutGlobalScopes()->find($this->active_workspace_id);
+
+        if ($activeWorkspace instanceof Workspace && $activeWorkspace->hasMember($this)) {
+            $this->cachedCompany = $activeWorkspace;
+            $this->hasResolvedCompany = true;
+
+            return $this->cachedCompany;
+        }
+
         $this->cachedCompany = Workspace::withoutGlobalScopes()
             ->where('owner_user_id', $this->id)
             ->first()
             ?? Workspace::withoutGlobalScopes()
-                ->whereHas('members', fn ($q) => $q->where('user_id', $this->id))
+                ->whereIn('id', WorkspaceMember::withoutGlobalScopes()
+                    ->where('user_id', $this->id)
+                    ->select('workspace_id'))
                 ->first();
         $this->hasResolvedCompany = true;
 

@@ -119,10 +119,11 @@
                                 @php
                                     $imageUrl = $this->catalogImageUrl($ingredient);
                                     $displayName = $ingredient->localizedDisplayName();
-                                    $isMine = $ingredient->owner_type === \App\OwnerType::User && $ingredient->owner_id === $currentUser->id;
+                                    $isMine = $ingredient->owner_type !== null;
+                                    $canEdit = $ingredient->isEditableBy($currentUser);
                                     $formulaUsage = $formulaUsageByIngredient[$ingredient->id] ?? [];
                                     $formulaUsageCount = count($formulaUsage);
-                                    $hasFormulaUsage = $isMine && $formulaUsageCount > 0;
+                                    $hasFormulaUsage = $canEdit && $formulaUsageCount > 0;
                                     $usageDisclosureId = 'ingredient-usage-'.$ingredient->id;
                                 @endphp
                                 <tr wire:key="ingredient-{{ $ingredient->id }}">
@@ -174,7 +175,7 @@
                                     </td>
                                     <td>
                                         <div class="flex items-center justify-end gap-1">
-                                            @if ($isMine)
+                                            @if ($canEdit)
                                                 <a href="{{ route('ingredients.edit', $ingredient) }}" wire:navigate class="grid size-9 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)]" aria-label="Edit {{ $displayName }}" title="Edit">
                                                     <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                                         <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
@@ -253,7 +254,7 @@
                 </div>
 
                 <div class="border-t border-[var(--color-line)] px-5 py-2.5">
-                    <x-ingredient-source-legend :show="$ingredients->contains(fn ($ingredient): bool => $ingredient->owner_type === \App\OwnerType::User && $ingredient->owner_id === $currentUser->id)" />
+                    <x-ingredient-source-legend :show="$ingredients->contains(fn ($ingredient): bool => $ingredient->owner_type !== null)" />
                 </div>
 
                 <div class="flex flex-col gap-3 border-t border-[var(--color-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">

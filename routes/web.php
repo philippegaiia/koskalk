@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\BetaInviteAcceptanceController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
@@ -18,6 +19,13 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/language', LocalePreferenceController::class)->name('language.update');
 
 Route::middleware('guest')->group(function (): void {
+    Route::get('/invite/{token}', [BetaInviteAcceptanceController::class, 'show'])
+        ->middleware('throttle:20,1')
+        ->name('beta-invites.show');
+    Route::post('/invite/{token}', [BetaInviteAcceptanceController::class, 'accept'])
+        ->middleware('throttle:beta-invite-accept')
+        ->name('beta-invites.accept');
+
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])
         ->middleware('throttle:5,1');

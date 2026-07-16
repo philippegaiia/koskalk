@@ -15,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-it('duplicates a platform ingredient into a user-owned copy with all data except images', function () {
+it('duplicates a platform ingredient into a workspace-owned copy with all data except images', function () {
     $user = User::factory()->create();
     $function = IngredientFunction::factory()->create(['is_active' => true]);
     $allergen = Allergen::factory()->create();
@@ -62,8 +62,11 @@ it('duplicates a platform ingredient into a user-owned copy with all data except
     $service = app(UserIngredientAuthoringService::class);
     $copy = $service->duplicate($source, $user);
 
-    expect($copy->owner_type)->toBe(OwnerType::User);
-    expect($copy->owner_id)->toBe($user->id);
+    $workspace = $user->fresh()->company();
+
+    expect($copy->owner_type)->toBe(OwnerType::Workspace);
+    expect($copy->owner_id)->toBe($workspace->id);
+    expect($copy->workspace_id)->toBe($workspace->id);
     expect($copy->visibility)->toBe(Visibility::Private);
     expect($copy->display_name)->toBe('Lavender 40/42');
     expect($copy->inci_name)->toBe('LAVANDULA ANGUSTIFOLIA OIL');

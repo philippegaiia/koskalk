@@ -17,7 +17,7 @@ class RecipeVersionRecordService
 
     public function createRecipe(User $user, ProductFamily $productFamily, string $name, ?int $productTypeId = null): Recipe
     {
-        $workspace = $this->workspaceProvisioner->ensureOwnerWorkspace($user);
+        $workspace = $this->workspaceProvisioner->ensureCompanyWorkspace($user);
         $recipe = new Recipe([
             'product_family_id' => $productFamily->id,
             'product_type_id' => $productTypeId,
@@ -45,7 +45,7 @@ class RecipeVersionRecordService
         bool $isCurrent,
     ): void {
         if ($recipe->workspace_id === null) {
-            $workspace = $this->workspaceProvisioner->ensureOwnerWorkspace($user);
+            $workspace = $this->workspaceProvisioner->ensureCompanyWorkspace($user);
             $recipe->owner_type = OwnerType::Workspace;
             $recipe->owner_id = $workspace->id;
             $recipe->workspace_id = $workspace->id;

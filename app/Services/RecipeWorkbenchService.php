@@ -7,6 +7,7 @@ use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -163,15 +164,21 @@ class RecipeWorkbenchService
     {
         if ($recipe instanceof Recipe) {
             Gate::forUser($user)->authorize('update', $recipe);
-        } else {
-            $this->entitlementService->assertCanCreateRecipe($user);
         }
 
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, false);
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
-        $currentVersion = $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
+        $save = fn (): RecipeVersion => $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
+
+        $currentVersion = $recipe instanceof Recipe
+            ? $save()
+            : $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($save): RecipeVersion {
+                $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
+
+                return $save();
+            });
 
         $this->recipeVersionCostingSynchronizer->reconcileExistingCosting($currentVersion, $user);
 
@@ -182,15 +189,23 @@ class RecipeWorkbenchService
     {
         if ($recipe instanceof Recipe) {
             Gate::forUser($user)->authorize('update', $recipe);
-        } else {
-            $this->entitlementService->assertCanCreateRecipe($user);
         }
 
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true);
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
-        return $this->recipeVersionPublisher->publish($user, $productFamily, $normalizedPayload, $recipe);
+        $publish = fn (): RecipeVersion => $this->recipeVersionPublisher->publish($user, $productFamily, $normalizedPayload, $recipe);
+
+        if ($recipe instanceof Recipe) {
+            return $publish();
+        }
+
+        return $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($publish): RecipeVersion {
+            $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
+
+            return $publish();
+        });
     }
 
     public function saveAsNewVersion(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
@@ -200,8 +215,6 @@ class RecipeWorkbenchService
 
     public function duplicate(User $user, ProductFamily $productFamily, array $payload): RecipeVersion
     {
-        $this->entitlementService->assertCanCreateRecipe($user);
-
         $copyPayload = $payload;
         $copyPayload['name'] = $this->duplicateName((string) ($payload['name'] ?? 'Soap Formula'));
 

@@ -8,6 +8,7 @@ use App\Models\Concerns\HasTenantOwnership;
 use App\OwnerType;
 use App\Services\MediaStorage;
 use App\Visibility;
+use App\WorkspaceMemberRole;
 use Database\Factories\IngredientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -298,6 +299,25 @@ class Ingredient extends Model
     public function isAccessibleBy(User $user): bool
     {
         return $this->isPublicCatalog() || $this->tenantIsAccessibleBy($user);
+    }
+
+    public function isEditableBy(User $user): bool
+    {
+        if ($this->isOwnedBy($user)) {
+            return true;
+        }
+
+        $workspaceId = $this->tenantWorkspaceId();
+
+        if ($workspaceId === null) {
+            return false;
+        }
+
+        return in_array($user->workspaceRoleFor($workspaceId), [
+            WorkspaceMemberRole::Owner,
+            WorkspaceMemberRole::Admin,
+            WorkspaceMemberRole::Editor,
+        ], true);
     }
 
     public function scopeAccessibleTo(Builder $query, ?User $user): Builder

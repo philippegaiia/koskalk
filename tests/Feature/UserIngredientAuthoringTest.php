@@ -39,9 +39,10 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->set('data.is_organic', true)
         ->call('save');
 
+    $workspace = $user->refresh()->company();
     $ingredient = Ingredient::query()
-        ->where('owner_type', OwnerType::User)
-        ->where('owner_id', $user->id)
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace?->id)
         ->first();
 
     expect($ingredient)->not->toBeNull()
@@ -110,9 +111,10 @@ it('saves a blend composition and its source from the custom editor rows', funct
         ->call('save')
         ->assertHasNoErrors();
 
+    $workspace = $user->refresh()->company();
     $blend = Ingredient::query()
-        ->where('owner_type', OwnerType::User)
-        ->where('owner_id', $user->id)
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace?->id)
         ->where('display_name', 'My Blend')
         ->first();
 
@@ -610,8 +612,10 @@ it('creates missing composite components as private ingredients before they are 
         ],
     ], $user);
 
-    expect($component->owner_type)->toBe(OwnerType::User)
-        ->and($component->owner_id)->toBe($user->id)
+    $workspace = $user->refresh()->company();
+
+    expect($component->owner_type)->toBe(OwnerType::Workspace)
+        ->and($component->owner_id)->toBe($workspace?->id)
         ->and($component->visibility)->toBe(Visibility::Private)
         ->and($component->is_active)->toBeTrue()
         ->and($macerate->components)->toHaveCount(1)

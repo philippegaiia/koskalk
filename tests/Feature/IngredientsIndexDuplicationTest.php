@@ -5,6 +5,7 @@ use App\Models\Ingredient;
 use App\Models\User;
 use App\OwnerType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
@@ -40,7 +41,7 @@ it('searches platform ingredients for duplication', function () {
 
     actingAs($user);
 
-    $response = $this->getJson(route('ingredients.search-platform') . '?q=lavender');
+    $response = $this->getJson(route('ingredients.search-platform').'?q=lavender');
 
     $response->assertSuccessful();
     $results = $response->json();
@@ -48,7 +49,7 @@ it('searches platform ingredients for duplication', function () {
     expect($results[0]['name'])->toBe('Lavender 40/42');
 });
 
-it('creates a user-owned copy when duplicating a platform ingredient', function () {
+it('creates a workspace-owned copy when duplicating a platform ingredient', function () {
     $user = User::factory()->create();
 
     $source = Ingredient::factory()->create([
@@ -69,14 +70,17 @@ it('creates a user-owned copy when duplicating a platform ingredient', function 
     $response->assertSuccessful();
     expect($response->json('ok'))->toBeTrue();
 
+    $workspace = $user->fresh()->company();
+
     $copy = Ingredient::query()
-        ->where('owner_type', OwnerType::User)
-        ->where('owner_id', $user->id)
+        ->where('owner_type', OwnerType::Workspace)
+        ->where('owner_id', $workspace->id)
         ->first();
 
     expect($copy)->not->toBeNull();
     expect($copy->display_name)->toBe('Rosemary Oil');
-    expect($copy->owner_type)->toBe(OwnerType::User);
-    expect($copy->owner_id)->toBe($user->id);
+    expect($copy->owner_type)->toBe(OwnerType::Workspace);
+    expect($copy->owner_id)->toBe($workspace->id);
+    expect($copy->workspace_id)->toBe($workspace->id);
     expect($copy->featured_image_path)->toBeNull();
 });

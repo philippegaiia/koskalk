@@ -94,7 +94,7 @@ class IngredientsIndex extends Component
             : ['used' => 0, 'limit' => null, 'remaining' => null, 'allowed' => false];
         $privateIngredients = $currentUser instanceof User
             ? $ingredients->getCollection()
-                ->filter(fn (Ingredient $ingredient): bool => $ingredient->isOwnedBy($currentUser))
+                ->filter(fn (Ingredient $ingredient): bool => $ingredient->isEditableBy($currentUser))
                 ->values()
             : collect();
         $formulaUsageByIngredient = $currentUser instanceof User
@@ -402,16 +402,13 @@ class IngredientsIndex extends Component
                 'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
             ])
             ->where(function (Builder $query) use ($user): void {
-                $query->where(fn (Builder $ownedQuery): Builder => $ownedQuery
-                    ->where('owner_type', OwnerType::User->value)
-                    ->where('owner_id', $user->id))
+                $query->where(fn (Builder $ownedQuery): Builder => $this->applyCompanyIngredientScope($ownedQuery, $user))
                     ->orWhere(fn (Builder $platformQuery): Builder => $platformQuery
                         ->whereNull('owner_type')
                         ->where('is_active', true));
             })
             ->when($this->ownershipFilter === 'mine', fn (Builder $query): Builder => $query
-                ->where('owner_type', OwnerType::User->value)
-                ->where('owner_id', $user->id))
+                ->where(fn (Builder $ownedQuery): Builder => $this->applyCompanyIngredientScope($ownedQuery, $user)))
             ->when($this->ownershipFilter === 'platform', fn (Builder $query): Builder => $query
                 ->whereNull('owner_type')
                 ->where('is_active', true))
@@ -433,11 +430,35 @@ class IngredientsIndex extends Component
 
     private function ownedIngredient(int $id, User $user): ?Ingredient
     {
-        return Ingredient::query()
+        $ingredient = Ingredient::query()
             ->withCount(['costingItems', 'recipeItems'])
-            ->where('owner_type', OwnerType::User->value)
-            ->where('owner_id', $user->id)
+            ->where(fn (Builder $query): Builder => $this->applyCompanyIngredientScope($query, $user))
             ->find($id);
+
+        return $ingredient instanceof Ingredient && $ingredient->isEditableBy($user)
+            ? $ingredient
+            : null;
+    }
+
+    private function applyCompanyIngredientScope(Builder $query, User $user): Builder
+    {
+        $workspaceId = $user->company()?->id;
+
+        $query->where(function (Builder $ownershipQuery) use ($user, $workspaceId): void {
+            $ownershipQuery
+                ->where('owner_type', OwnerType::User->value)
+                ->where('owner_id', $user->id);
+
+            if ($workspaceId !== null) {
+                $ownershipQuery->orWhere(function (Builder $workspaceQuery) use ($workspaceId): void {
+                    $workspaceQuery
+                        ->where('owner_type', OwnerType::Workspace->value)
+                        ->where('owner_id', $workspaceId);
+                });
+            }
+        });
+
+        return $query;
     }
 
     private function pendingOwnedIngredient(User $user): ?Ingredient

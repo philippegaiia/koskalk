@@ -9,17 +9,253 @@ use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
 use App\OwnerType;
 use App\Services\EntitlementService;
+use App\Services\RecipeVersionRecordService;
 use App\Services\RecipeWorkbenchService;
 use App\Services\UserIngredientAuthoringService;
+use App\Services\WorkspaceProvisioner;
 use App\Visibility;
+use App\WorkspaceMemberRole;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('counts formulas against the subscriber workspace allowance for every workspace member', function () {
+    $subscriber = User::factory()->create();
+    $member = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
+
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $member->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    Workspace::factory()->create(['owner_user_id' => $member->id]);
+    app(WorkspaceProvisioner::class)->activateWorkspace($member, $workspace);
+
+    $plan = Plan::factory()
+        ->hasLimit('saved_recipes', 3)
+        ->create(['is_default' => true]);
+
+    $subscriber->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Recipe::factory()
+        ->count(2)
+        ->create([
+            'owner_type' => OwnerType::Workspace,
+            'owner_id' => $workspace->id,
+            'workspace_id' => $workspace->id,
+            'visibility' => Visibility::Workspace,
+        ]);
+
+    $entitlements = app(EntitlementService::class);
+
+    expect($entitlements->usageFor($subscriber)['saved_recipes'])
+        ->toMatchArray([
+            'used' => 2,
+            'limit' => 3,
+            'remaining' => 1,
+            'allowed' => true,
+        ])
+        ->and($entitlements->usageFor($member)['saved_recipes'])
+        ->toMatchArray([
+            'used' => 2,
+            'limit' => 3,
+            'remaining' => 1,
+            'allowed' => true,
+        ]);
+});
+
+it('shows the company formula total on the subscriber account page', function () {
+    $subscriber = User::factory()->create(['email_verified_at' => now()]);
+    $workspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
+    $plan = Plan::factory()
+        ->hasLimit('saved_recipes', 3)
+        ->create(['is_default' => true]);
+
+    $subscriber->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Recipe::factory()
+        ->count(2)
+        ->create([
+            'owner_type' => OwnerType::Workspace,
+            'owner_id' => $workspace->id,
+            'workspace_id' => $workspace->id,
+            'visibility' => Visibility::Workspace,
+        ]);
+
+    $this->withoutVite()
+        ->actingAs($subscriber)
+        ->get(route('account'))
+        ->assertOk()
+        ->assertSee('2 / 3');
+});
+
+it('counts private ingredients against the subscriber workspace allowance for every workspace member', function () {
+    $subscriber = User::factory()->create();
+    $member = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
+
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $member->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    Workspace::factory()->create(['owner_user_id' => $member->id]);
+    app(WorkspaceProvisioner::class)->activateWorkspace($member, $workspace);
+
+    $plan = Plan::factory()
+        ->hasLimit('private_ingredients', 3)
+        ->create(['is_default' => true]);
+
+    $subscriber->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()
+        ->count(2)
+        ->create([
+            'owner_type' => OwnerType::Workspace,
+            'owner_id' => $workspace->id,
+            'workspace_id' => $workspace->id,
+            'visibility' => Visibility::Private,
+        ]);
+
+    $entitlements = app(EntitlementService::class);
+
+    expect($entitlements->usageFor($subscriber)['private_ingredients'])
+        ->toMatchArray([
+            'used' => 2,
+            'limit' => 3,
+            'remaining' => 1,
+            'allowed' => true,
+        ])
+        ->and($entitlements->usageFor($member)['private_ingredients'])
+        ->toMatchArray([
+            'used' => 2,
+            'limit' => 3,
+            'remaining' => 1,
+            'allowed' => true,
+        ]);
+});
+
+it('stores a new private ingredient in the active company workspace', function () {
+    $subscriber = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
+
+    $ingredient = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Company Sodium Citrate',
+        'category' => IngredientCategory::Additive->value,
+        'inci_name' => 'SODIUM CITRATE',
+    ], $subscriber);
+
+    expect($ingredient->owner_type)->toBe(OwnerType::Workspace)
+        ->and($ingredient->owner_id)->toBe($workspace->id)
+        ->and($ingredient->workspace_id)->toBe($workspace->id);
+});
+
+it('stores a member private ingredient in their active subscriber workspace', function () {
+    $subscriber = User::factory()->create();
+    $member = User::factory()->create();
+    $subscriberWorkspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
+    $personalWorkspace = Workspace::factory()->create(['owner_user_id' => $member->id]);
+
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $subscriberWorkspace->id,
+        'user_id' => $member->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    app(WorkspaceProvisioner::class)->activateWorkspace($member, $subscriberWorkspace);
+
+    $ingredient = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Subscriber Workspace Ingredient',
+        'category' => IngredientCategory::Additive->value,
+        'inci_name' => 'SUBSCRIBER WORKSPACE INGREDIENT',
+    ], $member);
+
+    expect($member->refresh()->active_workspace_id)->toBe($subscriberWorkspace->id)
+        ->and($ingredient->workspace_id)->toBe($subscriberWorkspace->id)
+        ->and($ingredient->owner_id)->toBe($subscriberWorkspace->id)
+        ->and($personalWorkspace->id)->not->toBe($ingredient->workspace_id);
+});
+
+it('stores a member formula in their active subscriber workspace', function () {
+    $subscriber = User::factory()->create();
+    $member = User::factory()->create();
+    $subscriberWorkspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
+    $personalWorkspace = Workspace::factory()->create(['owner_user_id' => $member->id]);
+    $productFamily = ProductFamily::factory()->create();
+
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $subscriberWorkspace->id,
+        'user_id' => $member->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    app(WorkspaceProvisioner::class)->activateWorkspace($member, $subscriberWorkspace);
+
+    $recipe = app(RecipeVersionRecordService::class)->createRecipe(
+        $member,
+        $productFamily,
+        'Subscriber Workspace Formula',
+    );
+
+    expect($recipe->workspace_id)->toBe($subscriberWorkspace->id)
+        ->and($recipe->owner_id)->toBe($subscriberWorkspace->id)
+        ->and($personalWorkspace->id)->not->toBe($recipe->workspace_id);
+});
+
+it('enforces the subscriber private ingredient limit when a company member creates an ingredient', function () {
+    $subscriber = User::factory()->create();
+    $member = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
+
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $member->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    Workspace::factory()->create(['owner_user_id' => $member->id]);
+    app(WorkspaceProvisioner::class)->activateWorkspace($member, $workspace);
+
+    $plan = Plan::factory()
+        ->hasLimit('private_ingredients', 1)
+        ->create(['is_default' => true]);
+
+    $subscriber->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    expect(fn () => app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Blocked Company Ingredient',
+        'category' => IngredientCategory::Additive->value,
+        'inci_name' => 'BLOCKED COMPANY INGREDIENT',
+    ], $member))->toThrow(ValidationException::class, '1 private ingredients');
+});
 
 it('blocks new recipes when the active plan recipe limit is reached', function () {
     $user = User::factory()->create();

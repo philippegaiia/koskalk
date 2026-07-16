@@ -6,6 +6,7 @@ use App\IngredientCategory;
 use App\Models\IfraCertificateLimit;
 use App\Models\Ingredient;
 use App\Models\User;
+use App\Models\Workspace;
 use App\OwnerType;
 use App\SoapSap;
 use App\Support\NumberLocale;
@@ -130,17 +131,17 @@ class UserIngredientAuthoringService
 
     public function create(array $state, User $user): Ingredient
     {
-        $this->entitlementService->assertCanCreatePrivateIngredient($user);
+        return $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($state, $user): Ingredient {
+            $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
 
-        return DB::transaction(function () use ($state, $user): Ingredient {
             $ingredient = new Ingredient([
                 'public_id' => Arr::get($state, 'public_id'),
                 'source_file' => 'user',
                 'source_key' => $this->ingredientDataEntryService->generateSourceKey('USR', 'user'),
                 'source_code_prefix' => 'USR',
-                'owner_type' => OwnerType::User,
-                'owner_id' => $user->id,
-                'workspace_id' => null,
+                'owner_type' => OwnerType::Workspace,
+                'owner_id' => $workspace->id,
+                'workspace_id' => $workspace->id,
                 'visibility' => Visibility::Private,
                 'requires_admin_review' => true,
                 'is_active' => true,
@@ -156,9 +157,9 @@ class UserIngredientAuthoringService
 
     public function update(Ingredient $ingredient, array $state, User $user): Ingredient
     {
-        if (! $ingredient->isOwnedBy($user)) {
+        if (! $ingredient->isEditableBy($user)) {
             throw ValidationException::withMessages([
-                'ingredient' => 'Only your own ingredients can be edited from the public app.',
+                'ingredient' => 'This private ingredient cannot be edited from the public app.',
             ]);
         }
 
@@ -185,8 +186,6 @@ class UserIngredientAuthoringService
 
     public function duplicate(Ingredient $source, User $user): Ingredient
     {
-        $this->entitlementService->assertCanCreatePrivateIngredient($user);
-
         if ($source->owner_type !== null) {
             throw ValidationException::withMessages([
                 'ingredient' => 'Only platform ingredients can be duplicated.',
@@ -202,37 +201,41 @@ class UserIngredientAuthoringService
             ]);
         }
 
-        $copy = $source->replicate([
-            'public_id',
-            'featured_image_path',
-            'icon_image_path',
-        ]);
+        return $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($source): Ingredient {
+            $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
 
-        $copy->source_file = 'user';
-        $copy->source_key = $this->ingredientDataEntryService->generateSourceKey('USR', 'user');
-        $copy->source_code_prefix = 'USR';
-        $copy->owner_type = OwnerType::User;
-        $copy->owner_id = $user->id;
-        $copy->workspace_id = null;
-        $copy->visibility = Visibility::Private;
-        $copy->requires_admin_review = false;
-        $copy->cas_number = $this->normalizeCasNumber($copy->cas_number);
-        $copy->ec_number = $this->normalizeEcNumber($copy->ec_number);
-        $copy->source_data = $this->duplicateSourceData($source);
-        $copy->featured_image_path = null;
-        $copy->icon_image_path = null;
-        $copy->save();
+            $copy = $source->replicate([
+                'public_id',
+                'featured_image_path',
+                'icon_image_path',
+            ]);
 
-        $this->deepCopyRelations($source, $copy);
+            $copy->source_file = 'user';
+            $copy->source_key = $this->ingredientDataEntryService->generateSourceKey('USR', 'user');
+            $copy->source_code_prefix = 'USR';
+            $copy->owner_type = OwnerType::Workspace;
+            $copy->owner_id = $workspace->id;
+            $copy->workspace_id = $workspace->id;
+            $copy->visibility = Visibility::Private;
+            $copy->requires_admin_review = false;
+            $copy->cas_number = $this->normalizeCasNumber($copy->cas_number);
+            $copy->ec_number = $this->normalizeEcNumber($copy->ec_number);
+            $copy->source_data = $this->duplicateSourceData($source);
+            $copy->featured_image_path = null;
+            $copy->icon_image_path = null;
+            $copy->save();
 
-        return $copy->fresh([
-            'sapProfile',
-            'fattyAcidEntries.fattyAcid',
-            'components.componentIngredient',
-            'allergenEntries.allergen',
-            'functions',
-            'ifraCertificates.limits.ifraProductCategory',
-        ]);
+            $this->deepCopyRelations($source, $copy);
+
+            return $copy->fresh([
+                'sapProfile',
+                'fattyAcidEntries.fattyAcid',
+                'components.componentIngredient',
+                'allergenEntries.allergen',
+                'functions',
+                'ifraCertificates.limits.ifraProductCategory',
+            ]);
+        });
     }
 
     private function deepCopyRelations(Ingredient $source, Ingredient $copy): void
@@ -519,7 +522,7 @@ class UserIngredientAuthoringService
 
     private function canRetainUserSoapTrust(Ingredient $ingredient): bool
     {
-        return $ingredient->owner_type === OwnerType::User
+        return $ingredient->owner_type !== null
             && is_numeric(Arr::get($ingredient->source_data, 'user_authoring.trusted_koh_sap_value'));
     }
 

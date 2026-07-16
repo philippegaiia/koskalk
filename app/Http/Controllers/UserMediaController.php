@@ -20,7 +20,7 @@ class UserMediaController extends Controller
 
         abort_unless(
             $user instanceof User
-            && $ingredient->isOwnedBy($user)
+            && $ingredient->isAccessibleBy($user)
             && MediaStorage::isIngredientPath($ingredient, $normalizedPath)
             && in_array($normalizedPath, [
                 $ingredient->featured_image_path,

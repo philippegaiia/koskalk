@@ -720,7 +720,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             $parts[] = 'This linked component does not yet have an INCI name.';
         }
 
-        if ($this->currentUser() instanceof User && $ingredient->isOwnedBy($this->currentUser())) {
+        if ($this->currentUser() instanceof User && $ingredient->isEditableBy($this->currentUser())) {
             $parts[] = sprintf(
                 '<a href="%s" class="font-medium text-[var(--color-accent-strong)] underline">Open ingredient</a>',
                 route('ingredients.edit', $ingredient),
@@ -742,16 +742,17 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
-        return Ingredient::query()
-            ->where(function ($query) use ($user): void {
-                $query->ownedByUser($user)
-                    ->orWhere(function ($platformQuery): void {
-                        $platformQuery
-                            ->whereNull('owner_type')
-                            ->where('is_active', true);
-                    });
-            })
-            ->find($this->ingredientId);
+        $ingredient = Ingredient::query()->find($this->ingredientId);
+
+        if (! $ingredient instanceof Ingredient) {
+            return null;
+        }
+
+        if ($ingredient->owner_type === null) {
+            return $ingredient->is_active ? $ingredient : null;
+        }
+
+        return $ingredient->isAccessibleBy($user) ? $ingredient : null;
     }
 
     private function currentUser(): ?User
@@ -796,8 +797,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
     private function isReadOnly(): bool
     {
         $ingredient = $this->currentIngredient();
+        $user = $this->currentUser();
 
-        return $ingredient instanceof Ingredient && $ingredient->owner_type === null;
+        return $ingredient instanceof Ingredient
+            && ($ingredient->owner_type === null || ! ($user instanceof User) || ! $ingredient->isEditableBy($user));
     }
 
     private static function isPublicAromaticCategory(mixed $state): bool

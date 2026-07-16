@@ -6,7 +6,10 @@ use App\Listeners\CreateDefaultCompany;
 use App\Listeners\SyncPlanEntitlementFromPaddleSubscription;
 use App\Services\LocalePreferenceResolver;
 use Filament\Auth\Events\Registered;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -29,6 +32,13 @@ class AppServiceProvider extends ServiceProvider
             ->mixedCase()
             ->numbers()
             ->symbols());
+
+        RateLimiter::for('beta-invite-accept', function (Request $request): array {
+            return [
+                Limit::perMinute(5)->by('beta-invite-ip:'.$request->ip()),
+                Limit::perMinute(5)->by('beta-invite-token:'.(string) $request->route('token').'|'.$request->ip()),
+            ];
+        });
 
         if ($this->app->isProduction()
             && ! $this->app->runningInConsole()

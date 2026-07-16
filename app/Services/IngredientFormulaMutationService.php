@@ -12,7 +12,6 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
 use App\Models\UserIngredientPrice;
-use App\OwnerType;
 use App\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -332,8 +331,7 @@ class IngredientFormulaMutationService
 
     private function isPrivateIngredientOwnedBy(Ingredient $ingredient, User $user): bool
     {
-        return $ingredient->tenantOwnerType() === OwnerType::User
-            && $ingredient->tenantOwnerId() === $user->id
+        return $ingredient->isEditableBy($user)
             && $ingredient->visibility === Visibility::Private;
     }
 

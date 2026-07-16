@@ -1809,6 +1809,118 @@ JS;
         ->and($payload['labelingSchedules'])->toBe(0);
 });
 
+it('coalesces overlapping calculation and labeling preview timers', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = () => null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async (workbench) => {
+  workbench.calculationRequests += 1;
+  workbench.isPreviewingCalculation = false;
+  workbench.calculationPreviewTimer = null;
+};
+const refreshWorkbenchLabelingPreview = async (workbench) => {
+  workbench.labelingRequests += 1;
+  workbench.labelingPreviewTimer = null;
+};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+
+let nextTimerId = 1;
+const timers = new Map();
+globalThis.setTimeout = (callback) => {
+  const timerId = nextTimerId++;
+  timers.set(timerId, callback);
+
+  return timerId;
+};
+globalThis.clearTimeout = (timerId) => timers.delete(timerId);
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({ phases: [], ingredients: [] });
+workbench.calculationRequests = 0;
+workbench.labelingRequests = 0;
+
+workbench.scheduleLabelingPreview();
+workbench.scheduleCalculationPreview();
+workbench.scheduleLabelingPreview();
+
+const pendingTimerCount = timers.size;
+const [runPendingTimer] = timers.values();
+await runPendingTimer();
+timers.clear();
+
+workbench.isPreviewingCalculation = true;
+workbench.scheduleLabelingPreview();
+const timersDuringCalculationRequest = timers.size;
+const calculationQueuedDuringCalculation = workbench.calculationPreviewPending;
+
+workbench.isPreviewingCalculation = false;
+workbench.releasePendingPreview();
+const timersAfterCalculationRequest = timers.size;
+const [runQueuedCalculationTimer] = timers.values();
+await runQueuedCalculationTimer();
+
+console.log(JSON.stringify({
+  pendingTimerCount,
+  calculationRequests: workbench.calculationRequests,
+  labelingRequests: workbench.labelingRequests,
+  timersDuringCalculationRequest,
+  calculationQueuedDuringCalculation,
+  timersAfterCalculationRequest,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload)->toMatchArray([
+        'pendingTimerCount' => 1,
+        'calculationRequests' => 2,
+        'labelingRequests' => 0,
+        'timersDuringCalculationRequest' => 0,
+        'calculationQueuedDuringCalculation' => true,
+        'timersAfterCalculationRequest' => 1,
+    ]);
+});
+
 it('keeps the save-only packaging success message visible after closing the modal', function () {
     $script = <<<'JS'
 import fs from 'node:fs';

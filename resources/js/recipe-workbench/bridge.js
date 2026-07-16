@@ -30,29 +30,7 @@ export async function refreshCalculationPreview(workbench) {
     } finally {
         workbench.isPreviewingCalculation = false;
         workbench.calculationPreviewTimer = null;
-    }
-}
-
-/**
- * Labeling preview stays independent from the soap calculation preview so
- * aromatic/additive changes can refresh INCI output without toggling the
- * fatty-acid or lye live-preview state.
- */
-export async function refreshLabelingPreview(workbench) {
-    try {
-        const response = await workbench.$wire.previewLabeling(serializeDraft(workbench));
-
-        if (response?.ok) {
-            workbench.backendLabeling = response.labeling ?? null;
-            workbench.backendRestrictions = response.restrictions ?? null;
-            workbench.syncIngredientListVariantSelection();
-            workbench.inciCopyMessage = '';
-        }
-    } catch (error) {
-        workbench.backendLabeling = null;
-        workbench.backendRestrictions = null;
-    } finally {
-        workbench.labelingPreviewTimer = null;
+        workbench.releasePendingPreview();
     }
 }
 

@@ -18,7 +18,6 @@ import {
 import {
     persistWorkbench,
     refreshCalculationPreview as refreshWorkbenchCalculationPreview,
-    refreshLabelingPreview as refreshWorkbenchLabelingPreview,
 } from './bridge';
 import {
     draftStateFromDraft as buildDraftStateFromDraft,
@@ -183,8 +182,8 @@ function createRecipeWorkbenchState(payload) {
         inciCopyMessage: '',
         calculationPreviewMessage: '',
         calculationPreviewTimer: null,
-        labelingPreviewTimer: null,
         isPreviewingCalculation: false,
+        calculationPreviewPending: false,
         draggedRowId: null,
         draggedRowPhaseKey: null,
         dropTargetPhaseKey: null,
@@ -767,8 +766,16 @@ function createPersistenceSection() {
                 clearTimeout(this.calculationPreviewTimer);
             }
 
-            this.isPreviewingCalculation = true;
+            if (this.isPreviewingCalculation) {
+                this.calculationPreviewTimer = null;
+                this.calculationPreviewPending = true;
+
+                return;
+            }
+
             this.calculationPreviewTimer = setTimeout(() => {
+                this.calculationPreviewTimer = null;
+                this.isPreviewingCalculation = true;
                 this.refreshCalculationPreview(resetBaseline);
             }, 120);
         },
@@ -780,19 +787,14 @@ function createPersistenceSection() {
         },
 
         scheduleLabelingPreview(resetBaseline = false) {
-            void resetBaseline;
-
-            if (this.labelingPreviewTimer) {
-                clearTimeout(this.labelingPreviewTimer);
-            }
-
-            this.labelingPreviewTimer = setTimeout(() => {
-                this.refreshLabelingPreview();
-            }, 120);
+            this.scheduleCalculationPreview(resetBaseline);
         },
 
-        async refreshLabelingPreview() {
-            await refreshWorkbenchLabelingPreview(this);
+        releasePendingPreview() {
+            if (this.calculationPreviewPending) {
+                this.calculationPreviewPending = false;
+                this.scheduleCalculationPreview();
+            }
         },
 
         async copyGeneratedIngredientList() {

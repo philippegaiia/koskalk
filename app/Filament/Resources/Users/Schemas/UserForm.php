@@ -46,7 +46,9 @@ class UserForm
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->maxLength(255)
                             ->rule(Password::defaults())
-                            ->helperText('Required for new users. Fill on edit only when you want to reset the password.')
+                            ->helperText(fn (string $operation): string => $operation === 'create'
+                                ? __('auth.password_requirements')
+                                : __('auth.password_requirements').' '.__('auth.password_optional_reset'))
                             ->columnSpanFull(),
                         TextInput::make('password_confirmation')
                             ->label('Confirm password')

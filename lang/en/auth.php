@@ -15,6 +15,8 @@ return [
 
     'failed' => 'These credentials do not match our records.',
     'password' => 'The provided password is incorrect.',
+    'password_requirements' => 'Use at least 12 characters, including an uppercase letter, a lowercase letter, a number, and a symbol.',
+    'password_optional_reset' => 'Leave blank to keep the current password.',
     'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
     'login' => [
         'page_title' => 'Sign in',

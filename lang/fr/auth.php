@@ -5,6 +5,8 @@ declare(strict_types=1);
 return [
     'failed' => 'Ces identifiants ne correspondent pas à nos enregistrements.',
     'password' => 'Le mot de passe est incorrect',
+    'password_requirements' => 'Utilisez au moins 12 caractères, avec une majuscule, une minuscule, un chiffre et un symbole.',
+    'password_optional_reset' => 'Laissez vide pour conserver le mot de passe actuel.',
     'throttle' => 'Tentatives de connexion trop nombreuses. Veuillez essayer de nouveau dans :seconds secondes.',
     'login' => [
         'page_title' => 'Connexion',

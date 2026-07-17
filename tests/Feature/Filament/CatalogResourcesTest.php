@@ -541,6 +541,7 @@ it('lets admins create and delete users', function () {
     $this->actingAs($admin);
 
     Livewire::test(CreateUser::class)
+        ->assertSee(__('auth.password_requirements'))
         ->fillForm([
             'name' => 'Created Maker',
             'email' => 'created@example.com',

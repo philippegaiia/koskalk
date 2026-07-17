@@ -154,6 +154,25 @@ it('rejects account passwords that do not meet the launch policy', function (str
     'missing symbol' => 'SecureLaunch12',
 ]);
 
+it('renders the complete password policy and every failed native rule on the account page', function () {
+    $user = User::factory()->create(['password' => 'old-password']);
+
+    $this->actingAs($user)
+        ->followingRedirects()
+        ->from(route('account'))
+        ->patch(route('account.password.update'), [
+            'current_password' => 'old-password',
+            'password' => 'toto',
+            'password_confirmation' => 'toto',
+        ])
+        ->assertSuccessful()
+        ->assertSeeText(__('auth.password_requirements'))
+        ->assertSeeText('The password field must be at least 12 characters.')
+        ->assertSeeText('The password field must contain at least one uppercase and one lowercase letter.')
+        ->assertSeeText('The password field must contain at least one number.')
+        ->assertSeeText('The password field must contain at least one symbol.');
+});
+
 it('redirects guests away from dashboard app routes', function () {
     $dashboardRoutes = [
         ['GET', route('dashboard')],

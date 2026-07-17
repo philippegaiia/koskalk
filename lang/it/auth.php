@@ -5,6 +5,8 @@ declare(strict_types=1);
 return [
     'failed' => 'Credenziali non valide.',
     'password' => 'Il campo :attribute non è corretto.',
+    'password_requirements' => 'Usa almeno 12 caratteri, con una lettera maiuscola, una minuscola, un numero e un simbolo.',
+    'password_optional_reset' => 'Lascia vuoto per mantenere la password attuale.',
     'throttle' => 'Troppi tentativi di accesso. Riprova tra :seconds secondi.',
     'login' => [
         'page_title' => 'Accedi',

@@ -44,7 +44,7 @@
  @endif
 
  <div class="grid gap-3 md:grid-cols-2">
- <label class="sk-inset p-4">
+ <label class="sk-inset grid content-start p-4">
  <span class="sk-eyebrow">Name</span>
  <input
  wire:model="name"
@@ -122,21 +122,32 @@
  </label>
 
  <div class="grid gap-3 md:grid-cols-2">
- <label class="sk-inset p-4">
+ <label class="sk-inset grid content-start p-4">
  <span class="sk-eyebrow">New password</span>
  <input
  wire:model="newPassword"
  type="password"
+ aria-invalid="@error('newPassword') true @else false @enderror"
+ aria-describedby="settings-password-requirements @error('newPassword') settings-password-error @enderror"
  class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
- @error('newPassword') <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+ <p id="settings-password-requirements" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('auth.password_requirements') }}</p>
+ @if ($errors->has('newPassword'))
+ <ul id="settings-password-error" role="alert" class="mt-2 grid list-disc gap-1 pl-5 text-xs leading-5 text-[var(--color-danger-strong)]">
+ @foreach ($errors->get('newPassword') as $message)
+ <li>{{ $message }}</li>
+ @endforeach
+ </ul>
+ @endif
  </label>
 
- <label class="sk-inset p-4">
+ <label class="sk-inset grid content-start p-4">
  <span class="sk-eyebrow">Confirm new password</span>
  <input
  wire:model="newPasswordConfirmation"
  type="password"
+ aria-invalid="@error('newPassword') true @else false @enderror"
+ aria-describedby="settings-password-requirements @error('newPassword') settings-password-error @enderror"
  class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]"
  />
  </label>

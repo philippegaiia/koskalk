@@ -45,8 +45,8 @@
                 @csrf
                 @method('PATCH')
 
-                <div class="grid gap-5 md:grid-cols-2">
-                    <label class="grid gap-2">
+                <div class="grid gap-5 md:grid-cols-2 md:items-start">
+                    <label class="grid content-start gap-2">
                         <span class="text-sm font-medium text-[var(--color-ink-strong)]">Name</span>
                         <input name="name" value="{{ old('name', $user->name) }}" required autocomplete="name" aria-label="Name" aria-invalid="@error('name') true @else false @enderror" @error('name') aria-describedby="account-name-error" @enderror class="sk-input">
                         @error('name')
@@ -54,7 +54,7 @@
                         @enderror
                     </label>
 
-                    <div class="grid gap-2">
+                    <div class="grid content-start gap-2">
                         <span class="text-sm font-medium text-[var(--color-ink-strong)]">Email</span>
                         <p class="sk-input cursor-not-allowed bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]" aria-label="Email">{{ $user->email }}</p>
                         <p class="text-xs text-[var(--color-ink-soft)]">Contact the administrator to change the provisioned email address.</p>
@@ -79,7 +79,7 @@
                 @csrf
                 @method('PATCH')
 
-                <label class="grid gap-2">
+                <label class="grid content-start gap-2">
                     <span class="text-sm font-medium text-[var(--color-ink-strong)]">Current password</span>
                     <input type="password" name="current_password" required autocomplete="current-password" aria-label="Current password" aria-invalid="@error('current_password') true @else false @enderror" @error('current_password') aria-describedby="account-current-password-error" @enderror class="sk-input">
                     @error('current_password')
@@ -87,18 +87,23 @@
                     @enderror
                 </label>
 
-                <div class="grid gap-5 md:grid-cols-2">
-                    <label class="grid gap-2">
+                <div class="grid gap-5 md:grid-cols-2 md:items-start">
+                    <label class="grid content-start gap-2">
                         <span class="text-sm font-medium text-[var(--color-ink-strong)]">New password</span>
-                        <input type="password" name="password" required autocomplete="new-password" aria-label="New password" aria-invalid="@error('password') true @else false @enderror" @error('password') aria-describedby="account-password-error" @enderror class="sk-input">
-                        @error('password')
-                            <span id="account-password-error" role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</span>
-                        @enderror
+                        <input type="password" name="password" required autocomplete="new-password" aria-label="New password" aria-invalid="@error('password') true @else false @enderror" aria-describedby="account-password-requirements @error('password') account-password-error @enderror" class="sk-input">
+                        <p id="account-password-requirements" class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('auth.password_requirements') }}</p>
+                        @if ($errors->has('password'))
+                            <ul id="account-password-error" role="alert" class="grid list-disc gap-1 pl-5 text-sm leading-5 text-[var(--color-danger-strong)]">
+                                @foreach ($errors->get('password') as $message)
+                                    <li>{{ $message }}</li>
+                                @endforeach
+                            </ul>
+                        @endif
                     </label>
 
-                    <label class="grid gap-2">
+                    <label class="grid content-start gap-2">
                         <span class="text-sm font-medium text-[var(--color-ink-strong)]">Confirm new password</span>
-                        <input type="password" name="password_confirmation" required autocomplete="new-password" aria-label="Confirm new password" class="sk-input">
+                        <input type="password" name="password_confirmation" required autocomplete="new-password" aria-label="Confirm new password" aria-invalid="@error('password') true @else false @enderror" aria-describedby="account-password-requirements @error('password') account-password-error @enderror" class="sk-input">
                     </label>
                 </div>
 

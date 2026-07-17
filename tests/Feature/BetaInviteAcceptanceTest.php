@@ -97,6 +97,29 @@ it('does not accept expired invitations', function () {
         ->assertNotFound();
 });
 
+it('renders the complete password policy and every failed native rule when accepting an invitation', function () {
+    $administrator = User::factory()->create(['is_admin' => true]);
+    $token = app(BetaInviteService::class)->issue(
+        $administrator,
+        'password.policy@example.com',
+        'Password Policy Studio',
+    );
+
+    $this->followingRedirects()
+        ->from(route('beta-invites.show', ['token' => $token]))
+        ->post(route('beta-invites.accept', ['token' => $token]), [
+            'name' => 'Password Policy Tester',
+            'password' => 'toto',
+            'password_confirmation' => 'toto',
+        ])
+        ->assertSuccessful()
+        ->assertSeeText(__('auth.password_requirements'))
+        ->assertSeeText('The password field must be at least 12 characters.')
+        ->assertSeeText('The password field must contain at least one uppercase and one lowercase letter.')
+        ->assertSeeText('The password field must contain at least one number.')
+        ->assertSeeText('The password field must contain at least one symbol.');
+});
+
 it('rate limits invalid invitation acceptance attempts by IP address', function () {
     foreach (range(1, 5) as $attempt) {
         $token = str_pad(dechex($attempt), 64, 'a', STR_PAD_LEFT);

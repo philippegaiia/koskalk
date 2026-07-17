@@ -127,11 +127,18 @@
         --sk-tone-strong: var(--color-success-strong);
     }
 
+    .sk-tone-summary {
+        --sk-tone: var(--color-line-strong);
+        --sk-tone-soft: var(--color-panel-strong);
+        --sk-tone-strong: var(--color-ink);
+    }
+
     .sk-tone-chemistry > .sk-section-header,
     .sk-tone-catalog > .sk-section-header,
     .sk-tone-materials > .sk-section-header,
     .sk-tone-info > .sk-section-header,
-    .sk-tone-analysis > .sk-section-header {
+    .sk-tone-analysis > .sk-section-header,
+    .sk-tone-summary > .sk-section-header {
         background: color-mix(in oklab, var(--sk-tone-soft) 62%, var(--color-panel) 38%);
         border-color: color-mix(in oklab, var(--sk-tone) 22%, var(--color-line));
     }
@@ -141,6 +148,7 @@
     .sk-tone-materials > .sk-section-header .sk-eyebrow,
     .sk-tone-info > .sk-section-header .sk-eyebrow,
     .sk-tone-analysis > .sk-section-header .sk-eyebrow,
+    .sk-tone-summary > .sk-section-header .sk-eyebrow,
     .sk-inset.sk-tone-chemistry > .sk-eyebrow,
     .sk-inset.sk-tone-catalog > .sk-eyebrow,
     .sk-inset.sk-tone-materials > .sk-eyebrow,
@@ -153,7 +161,8 @@
     .sk-inset.sk-tone-catalog,
     .sk-inset.sk-tone-materials,
     .sk-inset.sk-tone-info,
-    .sk-inset.sk-tone-analysis {
+    .sk-inset.sk-tone-analysis,
+    .sk-inset.sk-tone-summary {
         border-color: color-mix(in oklab, var(--sk-tone) 20%, var(--color-line));
         background: color-mix(in oklab, var(--sk-tone-soft) 34%, var(--color-panel) 66%);
     }

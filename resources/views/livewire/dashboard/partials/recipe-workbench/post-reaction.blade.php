@@ -1,5 +1,5 @@
 <section class="space-y-4" aria-labelledby="post-reaction-heading">
- <div id="post-reaction-phases" class="overflow-hidden sk-card sk-phase-craft sk-tone-materials transition-shadow duration-300">
+ <div id="post-reaction-phases" class="overflow-hidden sk-card sk-phase-craft sk-tone-summary transition-shadow duration-300">
  <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div>
@@ -155,7 +155,7 @@
  </div>
  </div>
 
- <div class="sk-card sk-tone-analysis overflow-hidden">
+ <div class="sk-card sk-tone-summary overflow-hidden">
  <div class="sk-section-header border-b px-5 py-4">
  <p class="sk-eyebrow">Batch totals</p>
  </div>

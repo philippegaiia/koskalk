@@ -40,6 +40,8 @@ it('keeps workbench navigation distinct from secondary formula actions', functio
     ])->render();
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
     $workbenchSource = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
+    $bottomActionBarSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-bottom-action-bar.blade.php'));
+    $recipeWorkbenchPageSource = file_get_contents(resource_path('views/recipes/workbench.blade.php'));
 
     preg_match(
         '/\\.sk-workbench \\.sk-workbench-tabs \\{(?<rule>.*?)\\n\\}/s',
@@ -73,7 +75,12 @@ it('keeps workbench navigation distinct from secondary formula actions', functio
         ->toContain('padding: 0.25rem')
         ->toContain('background-color: color-mix(')
         ->and($workbenchSource)
-        ->toContain('class="sk-workbench mx-auto max-w-[90rem] space-y-6"')
+        ->toContain('@container/workbench')
+        ->toContain('min-[96rem]:max-w-[104rem]')
+        ->and($bottomActionBarSource)
+        ->toContain('min-[96rem]:max-w-[104rem]')
+        ->and($recipeWorkbenchPageSource)
+        ->toContain('min-[96rem]:max-w-[104rem]')
         ->and($header)
         ->toContain('More formula actions')
         ->toContain('<details')
@@ -106,18 +113,25 @@ it('hardens compact workbench controls for touch and keyboard use', function () 
         ->toContain('@keydown.escape.prevent.stop="open = false"');
 });
 
-it('presents batch totals as one compact accented summary grid', function () {
+it('presents batch totals as one compact neutral summary grid', function () {
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+    $sharedStylesSource = file_get_contents(resource_path('css/shared/soapkraft.css'));
 
     expect($postReaction)
-        ->toContain('sk-card sk-tone-analysis overflow-hidden')
+        ->toContain('sk-phase-craft sk-tone-summary')
+        ->not->toContain('sk-phase-craft sk-tone-materials')
+        ->toContain('sk-card sk-tone-summary overflow-hidden')
         ->toContain('sk-section-header border-b px-5 py-4')
         ->toContain('grid gap-px bg-[var(--color-line)] sm:grid-cols-2 xl:grid-cols-4')
         ->toContain('bg-[var(--color-panel)] px-4 py-3')
         ->toContain('numeric mt-3 text-2xl')
         ->not->toContain('A quick read of the current formula outputs')
         ->not->toContain('sk-inset flex h-full flex-col justify-between p-4')
-        ->not->toContain('numeric pt-6');
+        ->not->toContain('numeric pt-6')
+        ->and($sharedStylesSource)
+        ->toContain('.sk-tone-summary')
+        ->toContain('--sk-tone-soft: var(--color-panel-strong)')
+        ->toContain('--sk-tone-strong: var(--color-ink)');
 });
 
 it('adapts recipe workbench tables for narrow screens before desktop grids', function () {
@@ -223,10 +237,10 @@ it('keeps the ingredient browser rail sticky on large screens and moves soap fat
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
 
     expect($formulaTabSource)
-        ->toContain('lg:grid-cols-[19rem_minmax(0,1fr)]')
-        ->toContain('class="space-y-4 lg:sticky lg:top-4 lg:self-start"')
-        ->toContain('class="hidden lg:block"')
-        ->toContain('class="lg:hidden"')
+        ->toContain('@5xl/workbench:grid-cols-[19rem_minmax(0,1fr)]')
+        ->toContain('class="space-y-4 @5xl/workbench:sticky @5xl/workbench:top-4 @5xl/workbench:self-start"')
+        ->toContain('class="hidden @5xl/workbench:block"')
+        ->toContain('class="@5xl/workbench:hidden"')
         ->not->toContain('lg:max-h-[calc(100vh-7rem)]')
         ->not->toContain('lg:overflow-y-auto')
         ->not->toContain('lg:pr-1')
@@ -244,31 +258,44 @@ it('keeps the ingredient browser rail sticky on large screens and moves soap fat
         ->toContain('xl:max-h-[600px]')
         ->not->toContain('Fatty acid profile');
 
-    expect(strpos($formulaTabSource, 'class="lg:hidden"'))
+    expect(strpos($formulaTabSource, 'class="@5xl/workbench:hidden"'))
         ->toBeGreaterThan(strpos($formulaTabSource, 'post-reaction'))
         ->toBeLessThan(strpos($formulaTabSource, 'formula-analysis'));
 });
 
-it('keeps the ingredient browser column lean on desktop displays', function () {
+it('allocates ingredient rail width and gutter from the real workbench width', function () {
     $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
 
     expect($formulaTabSource)
-        ->toContain('lg:grid-cols-[19rem_minmax(0,1fr)]')
-        ->toContain('2xl:grid-cols-[22rem_minmax(0,1fr)]')
-        ->not->toContain('class="grid gap-4 lg:grid-cols-[22rem_minmax(0,1fr)]');
+        ->toContain('@5xl/workbench:grid-cols-[19rem_minmax(0,1fr)]')
+        ->toContain('@5xl/workbench:gap-6')
+        ->toContain('@7xl/workbench:gap-8')
+        ->toContain('@min-[96rem]/workbench:grid-cols-[22rem_minmax(0,1fr)]')
+        ->toContain('@min-[96rem]/workbench:gap-10')
+        ->not->toContain('2xl:grid-cols-[22rem_minmax(0,1fr)]');
 });
 
-it('keeps long ingredient names readable without depending on hover', function () {
+it('keeps compact ingredient names readable and moves inci into the inspector', function () {
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
 
     expect($ingredientBrowser)
         ->toContain('line-clamp-2')
         ->toContain(':title="ingredient.name"')
+        ->toContain('text-[13px] font-semibold')
+        ->toContain('size-10 shrink-0')
+        ->toContain('grid size-9 place-items-center')
         ->toContain('User-created or user-modified ingredient')
         ->toContain('<p class="sk-eyebrow">Ingredient</p>')
+        ->toContain('x-ref="ingredientInspectorPanel"')
+        ->toContain('role="dialog"')
+        ->toContain('aria-label="Ingredient details"')
+        ->toContain('const panelHeight = this.$refs.ingredientInspectorPanel?.offsetHeight ?? 0')
+        ->toContain('max-h-[calc(100dvh-2rem)]')
         ->toContain('rounded-xl bg-[var(--color-panel)] px-3 py-2')
         ->toContain('text-sm font-semibold leading-snug text-[var(--color-ink-strong)]" x-text="ingredient.name"')
-        ->toContain('text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name ||');
+        ->toContain('text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name ||')
+        ->and(substr_count($ingredientBrowser, "ingredient.inci_name || 'INCI not entered yet'"))
+        ->toBe(1);
 });
 
 it('keeps ingredient browser filters visible and pill shaped while focused', function () {
@@ -631,7 +658,8 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->and($reactionCore)
         ->toContain('sk-tone-chemistry')
         ->and($postReaction)
-        ->toContain('sk-tone-materials')
+        ->toContain('sk-tone-summary')
+        ->not->toContain('sk-tone-materials')
         ->and($formulaDropTargets)
         ->toContain('bg-[var(--color-active-soft)]')
         ->toContain('text-[var(--color-active-strong)]')

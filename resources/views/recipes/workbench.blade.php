@@ -11,7 +11,7 @@
 
 @section('content')
     @if (isset($productType) && $productType)
-        <div class="mx-auto mb-4 max-w-[90rem]">
+        <div class="mx-auto mb-4 max-w-[90rem] min-[96rem]:max-w-[104rem]">
             <span class="sk-badge sk-badge-neutral">{{ $productType->name }}</span>
         </div>
     @endif

@@ -2,12 +2,12 @@
 
 <aside class="space-y-4">
  <div class="overflow-hidden sk-card sk-tone-catalog">
- <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-5">
+ <div class="sk-section-header border-b border-[var(--color-line)] px-4 py-4">
  <p class="sk-eyebrow">Ingredient browser</p>
  <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">Select ingredients</h3>
  </div>
 
- <div class="space-y-3 border-b border-[var(--color-line)] px-5 py-4">
+ <div class="space-y-3 border-b border-[var(--color-line)] px-4 py-4">
  <input x-model="search" type="search" placeholder="Search name or INCI..." aria-label="Search ingredients" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
 
  <select x-model="activeCategory" aria-label="Filter by category" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)]">
@@ -23,22 +23,21 @@
 
  <div class="max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="Ingredient list">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
- <div class="group px-4 py-2 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
+ <div class="group px-3 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
- <div class="size-11 shrink-0 overflow-hidden rounded-xl bg-[var(--color-panel)]">
+ <div class="size-10 shrink-0 overflow-hidden rounded-lg bg-[var(--color-panel)]">
  <template x-if="ingredient.image_url">
- <img :src="ingredient.image_url" :alt="ingredient.name" class="size-full object-cover" />
+ <img :src="ingredient.image_url" :alt="ingredient.name" loading="lazy" decoding="async" class="size-full object-cover" />
  </template>
  <template x-if="! ingredient.image_url">
  <div class="grid size-full place-items-center text-[10px] font-semibold tracking-[0.08em] text-[var(--color-ink-soft)]" x-text="ingredientCategoryCode(ingredient)"></div>
  </template>
  </div>
  <div class="min-w-0 flex-1">
- <p class="flex items-center gap-1.5 text-sm font-semibold leading-5 text-[var(--color-ink-strong)]" :title="ingredient.name">
+ <p class="flex items-center gap-1.5 text-[13px] font-semibold leading-[1.125rem] text-[var(--color-ink-strong)]" :title="ingredient.name">
  <span class="line-clamp-2" x-text="ingredient.name"></span>
  <span x-show="ingredient.is_user_owned" class="inline-block size-1.5 shrink-0 rounded-full bg-[var(--color-ink-soft)] opacity-60" role="img" aria-label="User-created or user-modified ingredient" title="User-created or user-modified ingredient"></span>
  </p>
- <p class="mt-0.5 min-w-0 truncate text-xs leading-4 text-[var(--color-ink-soft)]" :title="ingredient.inci_name || 'INCI not entered yet'" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
  </div>
 
  <div class="flex shrink-0 items-center gap-2">
@@ -46,13 +45,20 @@
  open: false,
  panelStyle: '',
  reposition() {
+ this.$nextTick(() => {
  const panelWidth = 256;
  const gutter = 16;
  const rect = this.$refs.trigger.getBoundingClientRect();
+ const panelHeight = this.$refs.ingredientInspectorPanel?.offsetHeight ?? 0;
  const left = Math.max(gutter, Math.min(window.innerWidth - panelWidth - gutter, rect.right - panelWidth));
- const top = Math.min(window.innerHeight - gutter, rect.bottom + 8);
+ const belowTop = rect.bottom + 8;
+ const aboveTop = rect.top - panelHeight - 8;
+ const top = belowTop + panelHeight > window.innerHeight - gutter
+ ? Math.max(gutter, aboveTop)
+ : belowTop;
 
  this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
+ });
  },
  }"
  class="relative shrink-0"
@@ -65,7 +71,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-10 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
+	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[10px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
  i
  </button>
  </template>
@@ -79,7 +85,10 @@
 	 @scroll.window="if (open) { reposition(); }"
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
- class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
+ x-ref="ingredientInspectorPanel"
+ role="dialog"
+ aria-label="Ingredient details"
+ class="z-[80] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] p-3">
  <p class="sk-eyebrow">Ingredient</p>
  <div class="mt-2.5 rounded-xl bg-[var(--color-panel)] px-3 py-2">
  <p class="text-sm font-semibold leading-snug text-[var(--color-ink-strong)]" x-text="ingredient.name"></p>
@@ -148,7 +157,7 @@
  @scroll.window="if (open) { reposition(); }"
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
- class="z-[90] max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto rounded-lg border border-[var(--color-line)] bg-white p-1 shadow-lg">
+ class="z-[90] max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-1 shadow-lg">
  <template x-for="phase in phaseOrder" :key="`${ingredient.id}-${phase.key}-add-option`">
  <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]">
  <span class="truncate" x-text="`Add to ${phase.name || humanizeKey(phase.key)}`"></span>

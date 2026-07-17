@@ -360,7 +360,7 @@
     }
 
     .sk-phase-craft .sk-section-header {
-        background: color-mix(in oklab, var(--color-panel) 72%, var(--color-surface) 28%);
+        background: color-mix(in oklab, var(--color-panel-strong) 52%, var(--color-panel) 48%);
     }
 
     .sk-quality-pill {

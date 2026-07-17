@@ -24,8 +24,8 @@
                 <div x-show="soapQualityPanel === 'qualities'" role="tabpanel" aria-labelledby="tab-qualities" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <template x-for="row in defaultQualityRows()" :key="row.key">
                         <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
-                            <span class="block min-h-10 text-sm font-medium leading-5 text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                            <div class="numeric mt-3 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
+                            <span class="block text-sm font-medium leading-5 text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                            <div class="numeric mt-1.5 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
                             <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
                                 <template x-if="targetZoneStyle(row.key)">
                                     <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
@@ -44,8 +44,8 @@
                 <div x-show="soapQualityPanel === 'advanced'" x-cloak role="tabpanel" aria-labelledby="tab-advanced" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     <template x-for="row in advancedQualityRows()" :key="row.key">
                         <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
-                            <span class="block min-h-10 text-sm font-medium leading-5 text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                            <div class="numeric mt-3 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
+                            <span class="block text-sm font-medium leading-5 text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                            <div class="numeric mt-1.5 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
                             <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
                                 <template x-if="targetZoneStyle(row.key)">
                                     <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
@@ -62,14 +62,17 @@
                 </div>
 
                 <template x-if="qualityFlags().length > 0">
-                    <div class="flex flex-wrap gap-2">
-                        <template x-for="flag in qualityFlags()" :key="flag.label">
-                            <div class="rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-3 py-2">
-                                <div class="text-xs font-medium text-[var(--color-ink-strong)]" x-text="flag.label"></div>
-                                <div class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="flag.explanation"></div>
-                            </div>
-                        </template>
-                    </div>
+                    <section aria-label="Formula notes" class="border-t border-[var(--color-line)] pt-3">
+                        <p class="sk-eyebrow">Formula notes</p>
+                        <div class="mt-1.5 divide-y divide-[var(--color-line)]">
+                            <template x-for="flag in qualityFlags()" :key="flag.label">
+                                <div class="grid gap-0.5 py-2 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
+                                    <div class="text-xs font-medium leading-4 text-[var(--color-ink-strong)]" x-text="flag.label"></div>
+                                    <div class="text-xs leading-4 text-[var(--color-ink-soft)]" x-text="flag.explanation"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </section>
                 </template>
             </div>
         </template>

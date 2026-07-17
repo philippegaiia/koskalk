@@ -115,6 +115,8 @@ it('hardens compact workbench controls for touch and keyboard use', function () 
 
 it('presents batch totals as one compact neutral summary grid', function () {
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
     $sharedStylesSource = file_get_contents(resource_path('css/shared/soapkraft.css'));
 
     expect($postReaction)
@@ -124,14 +126,40 @@ it('presents batch totals as one compact neutral summary grid', function () {
         ->toContain('sk-section-header border-b px-5 py-4')
         ->toContain('grid gap-px bg-[var(--color-line)] sm:grid-cols-2 xl:grid-cols-4')
         ->toContain('bg-[var(--color-panel)] px-4 py-3')
-        ->toContain('numeric mt-3 text-2xl')
+        ->toContain('numeric mt-3 text-xl')
+        ->not->toContain('numeric mt-3 text-2xl')
         ->not->toContain('A quick read of the current formula outputs')
         ->not->toContain('sk-inset flex h-full flex-col justify-between p-4')
         ->not->toContain('numeric pt-6')
+        ->and($reactionCore)
+        ->toContain('numeric whitespace-nowrap text-xl')
+        ->not->toContain('numeric whitespace-nowrap text-2xl')
+        ->and($appStylesSource)
+        ->toContain('.sk-phase-craft .sk-section-header')
+        ->toContain('background: color-mix(in oklab, var(--color-panel-strong) 52%, var(--color-panel) 48%)')
         ->and($sharedStylesSource)
         ->toContain('.sk-tone-summary')
         ->toContain('--sk-tone-soft: var(--color-panel-strong)')
         ->toContain('--sk-tone-strong: var(--color-ink)');
+});
+
+it('rounds water mode controls like the other formula setup surfaces', function () {
+    $formulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
+
+    expect(substr_count($formulaSettings, 'rounded-[1rem] px-4 py-2.5 text-left text-xs font-medium transition'))
+        ->toBe(3);
+});
+
+it('keeps soap qualities compact and presents comments as discreet formula notes', function () {
+    $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
+
+    expect($formulaAnalysis)
+        ->toContain('numeric mt-1.5 text-2xl')
+        ->not->toContain('min-h-10 text-sm font-medium')
+        ->toContain('aria-label="Formula notes"')
+        ->toContain('divide-y divide-[var(--color-line)]')
+        ->toContain('sm:grid-cols-[10rem_minmax(0,1fr)]')
+        ->not->toContain('rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-3 py-2');
 });
 
 it('adapts recipe workbench tables for narrow screens before desktop grids', function () {
@@ -412,7 +440,7 @@ it('keeps workbench card subheadings at the compact card title size', function (
 
     expect($combinedCardMarkup)
         ->toContain('text-lg font-semibold text-[var(--color-ink-strong)]')
-        ->not->toContain('text-xl font-semibold text-[var(--color-ink-strong)]');
+        ->not->toMatch('/<h3[^>]*class="[^"]*text-xl font-semibold text-\[var\(--color-ink-strong\)\]/');
 });
 
 it('keeps live formula diagnostics in a compact bottom save bar without SAP gap warnings', function () {

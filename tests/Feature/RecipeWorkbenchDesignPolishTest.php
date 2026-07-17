@@ -42,6 +42,7 @@ it('keeps workbench navigation distinct from secondary formula actions', functio
     $workbenchSource = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
     $bottomActionBarSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-bottom-action-bar.blade.php'));
     $recipeWorkbenchPageSource = file_get_contents(resource_path('views/recipes/workbench.blade.php'));
+    $appShellSource = file_get_contents(resource_path('views/layouts/app-shell.blade.php'));
 
     preg_match(
         '/\\.sk-workbench \\.sk-workbench-tabs \\{(?<rule>.*?)\\n\\}/s',
@@ -76,11 +77,19 @@ it('keeps workbench navigation distinct from secondary formula actions', functio
         ->toContain('background-color: color-mix(')
         ->and($workbenchSource)
         ->toContain('@container/workbench')
-        ->toContain('min-[96rem]:max-w-[104rem]')
+        ->toContain('mx-auto max-w-7xl')
+        ->not->toContain('max-w-[90rem]')
+        ->not->toContain('max-w-[104rem]')
         ->and($bottomActionBarSource)
-        ->toContain('min-[96rem]:max-w-[104rem]')
+        ->toContain('mx-auto max-w-7xl')
+        ->not->toContain('max-w-[90rem]')
+        ->not->toContain('max-w-[104rem]')
         ->and($recipeWorkbenchPageSource)
-        ->toContain('min-[96rem]:max-w-[104rem]')
+        ->toContain('mx-auto mb-4 max-w-7xl')
+        ->not->toContain('max-w-[90rem]')
+        ->not->toContain('max-w-[104rem]')
+        ->and($appShellSource)
+        ->toContain('class="relative mx-auto min-h-dvh w-full max-w-[120rem]')
         ->and($header)
         ->toContain('More formula actions')
         ->toContain('<details')
@@ -298,8 +307,8 @@ it('allocates ingredient rail width and gutter from the real workbench width', f
         ->toContain('@5xl/workbench:grid-cols-[19rem_minmax(0,1fr)]')
         ->toContain('@5xl/workbench:gap-6')
         ->toContain('@7xl/workbench:gap-8')
-        ->toContain('@min-[96rem]/workbench:grid-cols-[22rem_minmax(0,1fr)]')
-        ->toContain('@min-[96rem]/workbench:gap-10')
+        ->not->toContain('@min-[96rem]/workbench:grid-cols-[22rem_minmax(0,1fr)]')
+        ->not->toContain('@min-[96rem]/workbench:gap-10')
         ->not->toContain('2xl:grid-cols-[22rem_minmax(0,1fr)]');
 });
 

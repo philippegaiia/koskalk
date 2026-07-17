@@ -36,7 +36,7 @@
         <div
             data-app-shell
             data-sidebar-open="true"
-            class="relative min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-stretch transition-[grid-template-columns] duration-300 lg:transition-none"
+            class="relative mx-auto min-h-dvh w-full max-w-[120rem] lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-stretch transition-[grid-template-columns] duration-300 lg:transition-none"
         >
             <div data-sidebar-overlay data-sidebar-close class="fixed inset-0 z-40 hidden bg-black/35 lg:hidden"></div>
 

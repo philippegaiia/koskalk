@@ -1,7 +1,7 @@
 @php($isPublicCalculator = $isPublicCalculator ?? false)
 
 <div class="pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]">
- <section id="formula-save-bar" aria-label="Formula save bar" class="pointer-events-auto mx-auto max-w-[90rem] rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_82%,transparent)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] backdrop-blur-md min-[96rem]:max-w-[104rem]">
+ <section id="formula-save-bar" aria-label="Formula save bar" class="pointer-events-auto mx-auto max-w-7xl rounded-[1rem] bg-[color-mix(in_oklab,var(--color-panel)_82%,transparent)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] backdrop-blur-md">
  <span class="sr-only">Zero quantity diagnostics preserve formula ingredients at 0.</span>
  <div id="formula-bottom-diagnostics-details" x-show="isFormulaDiagnosticsOpen" x-cloak class="mb-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
  <template x-for="card in formulaDiagnosticCards" :key="`bottom-detail-${card.id}`">

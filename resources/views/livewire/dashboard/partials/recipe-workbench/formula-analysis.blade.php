@@ -25,7 +25,7 @@
                     <template x-for="row in defaultQualityRows()" :key="row.key">
                         <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
                             <span class="block text-sm font-medium leading-5 text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                            <div class="numeric mt-1.5 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
+                            <div class="numeric mt-2 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
                             <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
                                 <template x-if="targetZoneStyle(row.key)">
                                     <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>
@@ -45,7 +45,7 @@
                     <template x-for="row in advancedQualityRows()" :key="row.key">
                         <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
                             <span class="block text-sm font-medium leading-5 text-[var(--color-ink-soft)]" x-text="row.label"></span>
-                            <div class="numeric mt-1.5 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
+                            <div class="numeric mt-2 text-2xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
                             <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
                                 <template x-if="targetZoneStyle(row.key)">
                                     <div class="absolute inset-y-0 rounded-full bg-[var(--color-success-soft)]" :style="targetZoneStyle(row.key)"></div>

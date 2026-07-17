@@ -162,9 +162,9 @@
 
  <div class="grid gap-px bg-[var(--color-line)] sm:grid-cols-2 xl:grid-cols-4">
  <template x-for="card in totalSummaryCards" :key="card.id">
- <div class="flex min-h-24 flex-col justify-between bg-[var(--color-panel)] px-4 py-3">
+ <div class="flex min-h-24 flex-col bg-[var(--color-panel)] px-4 py-3">
  <p class="sk-eyebrow" x-text="card.label"></p>
- <p class="numeric mt-3 text-xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
+ <p class="numeric mt-2 text-xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
  </div>
  </template>
  </div>

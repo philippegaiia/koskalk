@@ -166,9 +166,9 @@
 
  <div class="mt-4 grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
  <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
- <div class="sk-inset flex min-h-[4.25rem] min-w-0 flex-col justify-between px-3 py-2.5">
+ <div class="sk-inset flex min-h-[4.25rem] min-w-0 flex-col px-3 py-2.5">
  <p class="sk-eyebrow" x-text="card.label"></p>
- <p class="numeric whitespace-nowrap text-xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
+ <p class="numeric mt-2 whitespace-nowrap text-xl font-semibold text-[var(--color-ink-strong)]" x-text="`${formatLyeSummaryCardValue(card)} ${oilUnit}`"></p>
  </div>
  </template>
  </div>

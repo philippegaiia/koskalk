@@ -119,6 +119,13 @@ These are the strongest candidates for the first cleanup pass:
 5. Reduce long output-basis paragraphs to compact assumptions plus a help entry point.
 6. Replace parenthetical quality disclaimers with a direct statement: results are estimates affected by process, additives, and cure.
 
+## Editorial decisions recorded after this audit
+
+- The soap bench should use `Saponification` rather than `Core reaction`.
+- The stage currently described as `Post-reaction phases` should use `Formula additions`. In cold-process soap, the reaction is not necessarily complete when additives or fragrance are incorporated.
+- Review page headers and explanatory text for natural, practical language before translation. Remove copy that tries to sell the product or explains application architecture instead of helping the maker complete the task.
+- Translation is a downstream activity. Approve the English source and terminology glossary first so every locale starts from stable wording.
+
 ## Documentation topics discovered
 
 Koskalk does not yet have end-user application documentation, a help center, or a complete "how to use the app" guide. The developer documents in this repository describe architecture and implementation; they are not user documentation.

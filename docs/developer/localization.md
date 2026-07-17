@@ -27,6 +27,19 @@ The implemented interface layer uses Laravel localization with `spatie/laravel-t
 
 Laravel's fallback locale remains English. An absent translation therefore renders the English source instead of a broken key.
 
+## Editorial readiness before translation
+
+Translation begins only after the English source is editorially approved. Existing user-facing copy is not assumed to be ready merely because it is visible in the application.
+
+Before extracting a surface into translation keys, review its labels, headings, helper text, warnings, empty states, status messages, and accessible labels. Rewrite or remove text that is sales-like, repetitive, architectural, vague, or chemically inaccurate. Prefer natural task language that helps a maker act in the current workflow.
+
+For the soap bench, the current terminology direction is:
+
+- Use `Saponification` for the oil-and-lye stage, not `Core reaction`.
+- Use `Formula additions` for the subsequent additive/fragrance stage, not `Post-reaction phases`. In cold-process soap, saponification can still be underway when these ingredients are added.
+
+Do not mechanically translate existing hard-coded text and then revise it later in every locale. The required order is: approve English, establish terminology, extract stable keys, then translate and review each locale.
+
 ## Seed and synchronization behavior
 
 The locale seeder currently registers:
@@ -58,7 +71,9 @@ Public pages such as the homepage keep their layout and English source copy in v
 
 English homepage changes are expected to go through the normal code review and deployment process. This is intentional: marketing copy changes often accompany product positioning, claims, links, or layout changes that should remain traceable in the repository. Non-English values can be reviewed and updated through the English-only Filament translation editor.
 
-Do not introduce a page builder, WordPress, Ghost, or a separate marketing CMS unless publishing volume and editorial staffing create a demonstrated need.
+The public marketing site is moving to WordPress. Until the move is complete, the Laravel homepage remains the visual and English-copy reference. Reproduce the existing homepage before redesigning it, then decide explicitly whether WordPress replaces the Laravel `/` route or remains a separate marketing and documentation site.
+
+WordPress can own marketing and long-form end-user documentation. The application should retain concise task-focused interface copy and link to the relevant documentation only when deeper explanation is useful.
 
 ### Canonical data that is not translated
 
@@ -105,6 +120,7 @@ The first workbench content inventory and the proposed split between microcopy, 
 
 ## Agent guardrails
 
+- Start translation work with an English content and terminology review; do not translate unreviewed source copy.
 - Keep English interface source strings in code and synchronize their keys into the database.
 - Never place ingredient, product type, compliance, or other platform records in `language_lines`.
 - Keep canonical English ingredient values on `ingredients` and non-English editorial values in `ingredient_translations`.

@@ -17,7 +17,7 @@ class IngredientFormulaUsageService
 
     /**
      * @param  Collection<int, Ingredient>  $ingredients
-     * @return array<int, array<int, array{recipe_id: int, name: string, version_count: int, url: string}>>
+     * @return array<int, array<int, array{recipe_id: int, name: string, is_current: bool, version_count: int, url: string}>>
      */
     public function forIngredients(User $user, Collection $ingredients): array
     {
@@ -50,7 +50,6 @@ class IngredientFormulaUsageService
             ->join('recipe_versions', 'recipe_items.recipe_version_id', '=', 'recipe_versions.id')
             ->join('recipes', 'recipe_versions.recipe_id', '=', 'recipes.id')
             ->whereIn('recipe_items.ingredient_id', $allUsageIngredientIds)
-            ->where('recipe_versions.is_current', true)
             ->where(fn (Builder $query): Builder => $this->whereAccessibleRecipe($query, $user, $ownedWorkspaceIds))
             ->get([
                 'recipe_items.ingredient_id',
@@ -73,7 +72,13 @@ class IngredientFormulaUsageService
                     return [
                         'recipe_id' => $firstRow['recipe_id'],
                         'name' => $firstRow['recipe_name'],
-                        'version_count' => 0,
+                        'is_current' => $recipeRows
+                            ->contains(fn (array $row): bool => $row['version_is_current']),
+                        'version_count' => $recipeRows
+                            ->reject(fn (array $row): bool => $row['version_is_current'])
+                            ->pluck('version_id')
+                            ->unique()
+                            ->count(),
                         'url' => route('recipes.edit', $firstRow['recipe_public_id']),
                     ];
                 })

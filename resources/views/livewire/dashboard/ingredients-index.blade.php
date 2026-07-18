@@ -123,6 +123,8 @@
                                     $canEdit = $ingredient->isEditableBy($currentUser);
                                     $formulaUsage = $formulaUsageByIngredient[$ingredient->id] ?? [];
                                     $formulaUsageCount = count($formulaUsage);
+                                    $currentFormulaUsageCount = count(array_filter($formulaUsage, fn (array $usage): bool => $usage['is_current']));
+                                    $historyOnlyFormulaUsageCount = $formulaUsageCount - $currentFormulaUsageCount;
                                     $hasFormulaUsage = $canEdit && $formulaUsageCount > 0;
                                     $usageDisclosureId = 'ingredient-usage-'.$ingredient->id;
                                 @endphp
@@ -189,9 +191,15 @@
                                                                 wire:click="toggleUsage({{ $ingredient->id }})"
                                                                 aria-expanded="{{ $expandedUsageIngredientId === $ingredient->id ? 'true' : 'false' }}"
                                                                 aria-controls="{{ $usageDisclosureId }}"
-                                                                class="inline-flex min-h-9 items-center justify-center rounded-lg px-2.5 text-xs font-medium text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                                                                class="{{ $currentFormulaUsageCount > 0 ? 'text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)]' }} inline-flex min-h-9 items-center justify-center rounded-lg px-2.5 text-xs font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                                                             >
-                                                                Used in {{ $formulaUsageCount }} {{ \Illuminate\Support\Str::plural('formula', $formulaUsageCount) }}
+                                                                @if ($currentFormulaUsageCount > 0 && $historyOnlyFormulaUsageCount > 0)
+                                                                    Used in {{ $currentFormulaUsageCount }} {{ \Illuminate\Support\Str::plural('formula', $currentFormulaUsageCount) }} · history of {{ $historyOnlyFormulaUsageCount }}
+                                                                @elseif ($currentFormulaUsageCount > 0)
+                                                                    Used in {{ $currentFormulaUsageCount }} {{ \Illuminate\Support\Str::plural('formula', $currentFormulaUsageCount) }}
+                                                                @else
+                                                                    Used in history of {{ $historyOnlyFormulaUsageCount }} {{ \Illuminate\Support\Str::plural('formula', $historyOnlyFormulaUsageCount) }}
+                                                                @endif
                                                             </button>
                                                             <button
                                                                 type="button"
@@ -212,10 +220,13 @@
                                                         <div id="{{ $usageDisclosureId }}" @if ($expandedUsageIngredientId !== $ingredient->id) hidden @endif class="mt-2 w-72 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-3 text-left shadow-sm">
                                                             <ul class="space-y-2">
                                                                 @foreach ($formulaUsage as $usage)
-                                                                    <li>
+                                                                    <li class="flex items-baseline justify-between gap-3">
                                                                         <a href="{{ $usage['url'] }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2">
                                                                             {{ $usage['name'] }}
                                                                         </a>
+                                                                        @if (! $usage['is_current'])
+                                                                            <span class="shrink-0 text-xs text-[var(--color-ink-soft)]">History only</span>
+                                                                        @endif
                                                                     </li>
                                                                 @endforeach
                                                             </ul>

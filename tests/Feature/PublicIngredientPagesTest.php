@@ -716,7 +716,7 @@ it('explains which current formulas use a private ingredient', function () {
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
 });
 
-it('omits backup-only usage from the catalog while preserving deletion safeguards', function () {
+it('shows history-only usage in the catalog while preserving deletion safeguards', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Single Backup Preservative',
@@ -750,7 +750,10 @@ it('omits backup-only usage from the catalog while preserving deletion safeguard
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->assertDontSee('Used in 1 formula')
+        ->assertSee('Used in history of 1 formula')
+        ->call('toggleUsage', $ingredient->id)
+        ->assertSee($recipe->name)
+        ->assertSee('History only')
         ->call('confirmDelete', $ingredient->id)
         ->assertSee('Replace everywhere and delete');
 });

@@ -18,7 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('groups current direct usage by recipe without counting saved backups', function () {
+it('groups direct usage by recipe and distinguishes current use from saved history', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
         'owner_type' => OwnerType::User,
@@ -62,12 +62,13 @@ it('groups current direct usage by recipe without counting saved backups', funct
         ->and($usage[$ingredient->id][0])->toMatchArray([
             'recipe_id' => $recipe->id,
             'name' => $recipe->name,
-            'version_count' => 0,
+            'is_current' => true,
+            'version_count' => 3,
             'url' => route('recipes.edit', $recipe),
         ]);
 });
 
-it('omits formulas where usage remains only in saved backups or costing rows', function () {
+it('reports history-only formula usage while ignoring stale costing rows', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create();
     $recipe = Recipe::factory()->create([
@@ -113,7 +114,13 @@ it('omits formulas where usage remains only in saved backups or costing rows', f
 
     $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
 
-    expect($usage)->not->toHaveKey($ingredient->id);
+    expect($usage[$ingredient->id])->toHaveCount(1)
+        ->and($usage[$ingredient->id][0])->toMatchArray([
+            'recipe_id' => $recipe->id,
+            'name' => 'Updated Formula',
+            'is_current' => false,
+            'version_count' => 1,
+        ]);
 });
 
 it('reports formulas reached through nested composite ancestors once', function () {
@@ -184,7 +191,10 @@ it('keeps draft-only usage while reporting zero saved backups', function () {
     $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
 
     expect($usage[$ingredient->id])->toHaveCount(1)
-        ->and($usage[$ingredient->id][0]['version_count'])->toBe(0);
+        ->and($usage[$ingredient->id][0])->toMatchArray([
+            'is_current' => true,
+            'version_count' => 0,
+        ]);
 });
 
 it('omits workspace formula usage from non-owner members', function () {
@@ -303,6 +313,7 @@ it('includes formula usage from a workspace owned by the user', function () {
     expect($usage[$ingredient->id][0])->toMatchArray([
         'recipe_id' => $recipe->id,
         'name' => 'Owned Workspace Formula',
+        'is_current' => true,
         'version_count' => 0,
     ]);
 });

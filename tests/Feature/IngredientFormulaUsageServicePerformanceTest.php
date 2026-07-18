@@ -74,6 +74,7 @@ it('deduplicates current direct formula usage while ignoring costing overlap', f
         ->and($usage[$ingredient->id][0])->toMatchArray([
             'recipe_id' => $recipe->id,
             'name' => 'Overlap Formula',
+            'is_current' => true,
             'version_count' => 0,
         ]);
 });

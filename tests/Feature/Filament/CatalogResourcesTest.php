@@ -35,6 +35,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
+use App\Models\RecipeVersion;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
 use App\Models\RegulatoryRegimeSubstanceRule;
@@ -289,6 +290,32 @@ it('blocks deletion of a used platform ingredient and recommends deactivation', 
         'owner_id' => null,
     ]);
     $recipeItem = RecipeItem::factory()->create([
+        'ingredient_id' => $ingredient->id,
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->callAction('delete')
+        ->assertActionHalted('delete')
+        ->assertNotified('Ingredient was not deleted');
+
+    $this->assertModelExists($ingredient);
+    $this->assertModelExists($recipeItem);
+});
+
+it('blocks admin deletion when a platform ingredient is used only in formula history', function () {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $historicalVersion = RecipeVersion::factory()->create([
+        'is_current' => false,
+        'saved_at' => now(),
+    ]);
+    $recipeItem = RecipeItem::factory()->create([
+        'recipe_version_id' => $historicalVersion->id,
         'ingredient_id' => $ingredient->id,
     ]);
 

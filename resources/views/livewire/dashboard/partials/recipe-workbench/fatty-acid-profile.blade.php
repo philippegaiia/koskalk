@@ -24,7 +24,7 @@
  <span class="min-w-0 flex-1 truncate text-[var(--color-ink-strong)]" x-text="segment.label"></span>
  </div>
  <span class="numeric shrink-0 text-right text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
- <span aria-hidden="true" class="pointer-events-none absolute inset-y-1 left-2 right-14 z-10 hidden items-center rounded-md bg-[var(--color-ink-strong)] px-3 font-medium text-white opacity-0 shadow-sm transition-opacity motion-reduce:transition-none lg:flex lg:group-hover/fatty-row:opacity-100" x-text="segment.label"></span>
+ <span aria-hidden="true" class="pointer-events-none absolute inset-y-1 left-2 right-14 z-10 hidden items-center rounded-md bg-[var(--color-accent)] px-3 font-medium text-[var(--color-on-accent)] opacity-0 shadow-sm transition-opacity motion-reduce:transition-none lg:flex lg:group-hover/fatty-row:opacity-100" x-text="segment.label"></span>
  </div>
  </template>
  </div>

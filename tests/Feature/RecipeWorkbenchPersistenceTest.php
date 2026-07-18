@@ -2403,6 +2403,8 @@ it('keeps fatty acid chemistry compact with grouped profile first and collapsed 
         ->toContain('group/fatty-row relative')
         ->toContain('lg:group-hover/fatty-row:opacity-100')
         ->toContain('aria-hidden="true"', false)
+        ->toContain('bg-[var(--color-accent)]')
+        ->toContain('text-[var(--color-on-accent)]')
         ->not->toContain(':title="segment.label"', false)
         ->toContain('backgroundColor: segment.softColor')
         ->toContain('color: segment.textColor')

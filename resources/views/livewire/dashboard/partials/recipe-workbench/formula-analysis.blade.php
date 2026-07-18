@@ -32,11 +32,11 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-4 sm:justify-end">
-                <div x-show="soapQualitiesExpanded" x-cloak role="tablist" aria-label="Quality metrics view" class="inline-flex items-center gap-6 border-b border-[var(--color-line)]">
-                    <button id="tab-bar-cure" type="button" role="tab" :aria-selected="soapQualityPanel === 'bar_cure'" aria-controls="panel-bar-cure" @click="soapQualityPanel = 'bar_cure'" :class="soapQualityPanel === 'bar_cure' ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="border-b-2 px-1 py-2 text-sm font-semibold transition-colors">
+                <div x-show="soapQualitiesExpanded" x-cloak role="tablist" aria-label="Quality metrics view" class="inline-flex items-center gap-2">
+                    <button id="tab-bar-cure" type="button" role="tab" :aria-selected="soapQualityPanel === 'bar_cure'" aria-controls="panel-bar-cure" @click="soapQualityPanel = 'bar_cure'" :class="soapQualityPanel === 'bar_cure' ? 'border-b-[var(--color-accent)] text-[var(--color-accent)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-white/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-white/55">
                         Bar &amp; cure
                     </button>
-                    <button id="tab-lather-feel" type="button" role="tab" :aria-selected="soapQualityPanel === 'lather_feel'" aria-controls="panel-lather-feel" @click="soapQualityPanel = 'lather_feel'" :class="soapQualityPanel === 'lather_feel' ? 'border-[var(--color-accent)] text-[var(--color-accent)]' : 'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="border-b-2 px-1 py-2 text-sm font-semibold transition-colors">
+                    <button id="tab-lather-feel" type="button" role="tab" :aria-selected="soapQualityPanel === 'lather_feel'" aria-controls="panel-lather-feel" @click="soapQualityPanel = 'lather_feel'" :class="soapQualityPanel === 'lather_feel' ? 'border-b-[var(--color-accent)] text-[var(--color-accent)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-white/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-white/55">
                         Lather &amp; feel
                     </button>
                 </div>
@@ -47,7 +47,7 @@
                     :aria-expanded="soapQualitiesExpanded.toString()"
                     aria-controls="soap-quality-content"
                     :aria-label="soapQualitiesExpanded ? 'Hide Soapkraft qualities' : 'Show Soapkraft qualities'"
-                    class="grid size-9 shrink-0 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                    class="sk-quality-disclosure grid size-9 shrink-0 place-items-center rounded-full border border-[var(--color-line-strong)] bg-white/45 text-[var(--color-ink-soft)] transition hover:bg-white/75 hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                 >
                     <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" class="size-4 motion-safe:transition-transform" :class="soapQualitiesExpanded ? 'rotate-180' : ''">
                         <path d="m6 8 4 4 4-4" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" />

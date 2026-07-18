@@ -535,6 +535,10 @@
     outline-offset: 2px;
 }
 
+.sk-workbench .sk-quality-disclosure:focus-visible {
+    border-radius: 9999px;
+}
+
 .sk-workbench .sk-ingredient-filter-control:focus,
 .sk-workbench .sk-ingredient-filter-control:focus-visible {
     border-radius: 1.15rem !important;

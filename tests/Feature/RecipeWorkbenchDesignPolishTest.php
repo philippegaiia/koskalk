@@ -165,16 +165,18 @@ it('rounds water mode controls like the other formula setup surfaces', function 
 
 it('keeps soap qualities compact and presents comments as discreet formula notes', function () {
     $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
 
     expect($formulaAnalysis)
         ->toContain('soapQualitiesExpanded: true')
         ->toContain(':aria-expanded="soapQualitiesExpanded.toString()"', false)
         ->toContain('Bar &amp; cure', false)
         ->toContain('Lather &amp; feel', false)
-        ->toContain('inline-flex items-center gap-6 border-b border-[var(--color-line)]')
-        ->toContain('border-b-2 px-1 py-2 text-sm font-semibold')
-        ->toContain("'border-[var(--color-accent)] text-[var(--color-accent)]'")
-        ->toContain('class="grid size-9 shrink-0 place-items-center', false)
+        ->toContain('inline-flex items-center gap-2')
+        ->toContain('rounded-lg border border-b-2 border-[var(--color-line)] bg-white/35 px-3.5 py-2')
+        ->toContain("'border-b-[var(--color-accent)] text-[var(--color-accent)]'")
+        ->toContain('class="sk-quality-disclosure grid size-9 shrink-0 place-items-center rounded-full border', false)
+        ->not->toContain('gap-6 border-b border-[var(--color-line)]')
         ->not->toContain('rounded-[1.15rem] border border-[var(--color-line)] bg-[var(--color-field)] p-1')
         ->not->toContain('<span x-text="soapQualitiesExpanded ? \'Hide\' : \'Show\'"></span>', false)
         ->toContain('sk-eyebrow block min-h-8')
@@ -184,7 +186,10 @@ it('keeps soap qualities compact and presents comments as discreet formula notes
         ->toContain('aria-label="Formula notes"')
         ->toContain('divide-y divide-[var(--color-line)]')
         ->toContain('sm:grid-cols-[10rem_minmax(0,1fr)]')
-        ->not->toContain('rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-3 py-2');
+        ->not->toContain('rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-3 py-2')
+        ->and($appStylesSource)
+        ->toContain('.sk-quality-disclosure:focus-visible')
+        ->toContain('border-radius: 9999px');
 });
 
 it('adapts recipe workbench tables for narrow screens before desktop grids', function () {

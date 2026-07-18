@@ -172,7 +172,7 @@
 	 <span :class="superfat < 0 ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]'" class="numeric font-semibold" x-text="`${format(superfat, 1)}%`"></span>
 	 </div>
 	 <input aria-labelledby="setting-superfat" x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfat < 0 ? 'accent-[var(--color-danger)]' : 'accent-[var(--color-active)]'" class="mt-3 w-full" />
-	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="number(superfat) < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
+	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="number(superfat) < 0 ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]'" class="sk-superfat-control numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
 	 </div>
 	 <div class="sk-inset sk-tone-info p-4">
 	 <p id="setting-exposure-soap" class="sk-eyebrow">Exposure</p>

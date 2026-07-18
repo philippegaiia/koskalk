@@ -539,6 +539,13 @@
     border-radius: 9999px;
 }
 
+.sk-workbench input.sk-superfat-control:focus,
+.sk-workbench input.sk-superfat-control:focus-visible {
+    border-color: var(--color-accent);
+    box-shadow: none;
+    outline: none;
+}
+
 .sk-workbench .sk-ingredient-filter-control:focus,
 .sk-workbench .sk-ingredient-filter-control:focus-visible {
     border-radius: 1.15rem !important;

@@ -2415,6 +2415,8 @@ it('keeps fatty acid chemistry compact with grouped profile first and collapsed 
         ->toContain('qualityTargetRangeLabel(\'iodine\')')
         ->toContain('qualityTargetRangeLabel(\'ins\')')
         ->toContain('fattyAcidSatUnsatRatio')
+        ->toContain("color: 'oklch(0.68 0.15 88)'")
+        ->toContain("color: 'oklch(0.60 0.13 28)'")
         ->not->toContain('Unsaturation')
         ->not->toContain('Soap balance');
 });

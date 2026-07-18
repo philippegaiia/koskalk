@@ -163,6 +163,18 @@ it('rounds water mode controls like the other formula setup surfaces', function 
         ->toBe(3);
 });
 
+it('uses one focus boundary on the superfat input', function () {
+    $formulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    expect($formulaSettings)
+        ->toContain('sk-superfat-control')
+        ->and($appStylesSource)
+        ->toContain('.sk-workbench input.sk-superfat-control:focus-visible')
+        ->toContain('box-shadow: none')
+        ->toContain('border-color: var(--color-accent)');
+});
+
 it('keeps soap qualities compact and presents comments as discreet formula notes', function () {
     $formulaAnalysis = view('livewire.dashboard.partials.recipe-workbench.formula-analysis')->render();
     $appStylesSource = file_get_contents(resource_path('css/app.css'));

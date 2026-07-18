@@ -192,8 +192,8 @@ export function createPresentationSection() {
 
         fattyAcidGroupDefinitions() {
             return [
-                { key: 'vs', shortLabel: 'VS', label: 'Quick-cleansing saturated fats', color: 'oklch(0.62 0.13 72)', softColor: 'oklch(0.93 0.04 72)', textColor: 'oklch(0.42 0.09 72)' },
-                { key: 'hs', shortLabel: 'HS', label: 'Hard saturated fats', color: 'oklch(0.60 0.10 42)', softColor: 'oklch(0.93 0.035 42)', textColor: 'oklch(0.43 0.08 42)' },
+                { key: 'vs', shortLabel: 'VS', label: 'Quick-cleansing saturated fats', color: 'oklch(0.68 0.15 88)', softColor: 'oklch(0.94 0.05 88)', textColor: 'oklch(0.42 0.10 78)' },
+                { key: 'hs', shortLabel: 'HS', label: 'Hard saturated fats', color: 'oklch(0.60 0.13 28)', softColor: 'oklch(0.93 0.04 28)', textColor: 'oklch(0.42 0.10 28)' },
                 { key: 'mu', shortLabel: 'MU', label: 'Monounsaturated fats', color: 'oklch(0.58 0.09 145)', softColor: 'oklch(0.93 0.03 145)', textColor: 'oklch(0.39 0.07 145)' },
                 { key: 'pu', shortLabel: 'PU', label: 'Polyunsaturated fats', color: 'oklch(0.59 0.09 240)', softColor: 'oklch(0.93 0.03 240)', textColor: 'oklch(0.40 0.07 240)' },
                 { key: 'sp', shortLabel: 'SP', label: 'Special lather fats', color: 'oklch(0.60 0.08 315)', softColor: 'oklch(0.93 0.03 315)', textColor: 'oklch(0.42 0.06 315)' },

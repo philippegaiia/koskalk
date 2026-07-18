@@ -192,11 +192,11 @@ export function createPresentationSection() {
 
         fattyAcidGroupDefinitions() {
             return [
-                { key: 'vs', shortLabel: 'VS', label: 'Quick-cleansing saturated fats', color: '#a16207' },
-                { key: 'hs', shortLabel: 'HS', label: 'Hard saturated fats', color: '#7c5a3a' },
-                { key: 'mu', shortLabel: 'MU', label: 'Monounsaturated fats', color: '#5f6f52' },
-                { key: 'pu', shortLabel: 'PU', label: 'Polyunsaturated fats', color: '#5b6c8f' },
-                { key: 'sp', shortLabel: 'SP', label: 'Special lather fats', color: '#8b6f8f' },
+                { key: 'vs', shortLabel: 'VS', label: 'Quick-cleansing saturated fats', color: 'oklch(0.62 0.13 72)', softColor: 'oklch(0.93 0.04 72)', textColor: 'oklch(0.42 0.09 72)' },
+                { key: 'hs', shortLabel: 'HS', label: 'Hard saturated fats', color: 'oklch(0.60 0.10 42)', softColor: 'oklch(0.93 0.035 42)', textColor: 'oklch(0.43 0.08 42)' },
+                { key: 'mu', shortLabel: 'MU', label: 'Monounsaturated fats', color: 'oklch(0.58 0.09 145)', softColor: 'oklch(0.93 0.03 145)', textColor: 'oklch(0.39 0.07 145)' },
+                { key: 'pu', shortLabel: 'PU', label: 'Polyunsaturated fats', color: 'oklch(0.59 0.09 240)', softColor: 'oklch(0.93 0.03 240)', textColor: 'oklch(0.40 0.07 240)' },
+                { key: 'sp', shortLabel: 'SP', label: 'Special lather fats', color: 'oklch(0.60 0.08 315)', softColor: 'oklch(0.93 0.03 315)', textColor: 'oklch(0.42 0.06 315)' },
             ];
         },
 
@@ -911,15 +911,15 @@ export function createPresentationSection() {
             return 'Balanced lather';
         },
 
-        defaultQualityRows() {
+        barAndCureQualityRows() {
             const quality = this.qualityMetrics();
 
             return [
                 ['Unmolding firmness', 'unmolding_firmness'],
                 ['Cured hardness', 'cured_hardness'],
                 ['Longevity', 'longevity'],
-                ['Cleansing strength', 'cleansing_strength'],
-                ['Mildness', 'mildness'],
+                ['Cure speed', 'cure_speed'],
+                ['DOS risk', 'dos_risk'],
             ].map(([label, key]) => ({
                 label,
                 key,
@@ -929,17 +929,17 @@ export function createPresentationSection() {
             }));
         },
 
-        advancedQualityRows() {
+        latherAndFeelQualityRows() {
             const quality = this.qualityMetrics();
 
             return [
+                ['Cleansing strength', 'cleansing_strength'],
+                ['Mildness', 'mildness'],
                 ['Bubble volume', 'bubble_volume'],
                 ['Creamy lather', 'creamy_lather'],
                 ['Lather stability', 'lather_stability'],
                 ['Conditioning feel', 'conditioning_feel'],
-                ['DOS risk', 'dos_risk'],
-                ['Slime risk', 'slime_risk'],
-                ['Cure speed', 'cure_speed'],
+                ['Slime tendency', 'slime_risk'],
             ].map(([label, key]) => ({
                 label,
                 key,

@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
 
-it('deduplicates archived versions when direct and costing usage overlap', function (): void {
+it('deduplicates current direct formula usage while ignoring costing overlap', function (): void {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
         'owner_type' => OwnerType::User,
@@ -30,7 +30,7 @@ it('deduplicates archived versions when direct and costing usage overlap', funct
         'recipe_id' => $recipe->id,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
-        'is_current' => false,
+        'is_current' => true,
     ]);
 
     RecipeItem::factory()->create([
@@ -74,7 +74,7 @@ it('deduplicates archived versions when direct and costing usage overlap', funct
         ->and($usage[$ingredient->id][0])->toMatchArray([
             'recipe_id' => $recipe->id,
             'name' => 'Overlap Formula',
-            'version_count' => 1,
+            'version_count' => 0,
         ]);
 });
 
@@ -94,7 +94,7 @@ it('keeps its query count constant as formula usage grows', function (): void {
 
     $scaledQueryCount = count(ingredientFormulaUsageQueries($user, $ingredient));
 
-    expect($baselineQueryCount)->toBe(4)
+    expect($baselineQueryCount)->toBe(3)
         ->and($scaledQueryCount)->toBe($baselineQueryCount);
 });
 

@@ -68,6 +68,7 @@ class RecipeVersionPublisher
             );
             $publishedVersion->save();
             $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
+            $this->recipeVersionCostingSynchronizer->reconcileExistingFormulaCosting($publishedVersion, $user);
 
             $newCurrentVersion = new RecipeVersion;
             $newCurrentVersion->recipe()->associate($recipe);

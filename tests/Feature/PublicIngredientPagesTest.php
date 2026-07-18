@@ -638,7 +638,7 @@ it('disables deleting a personal ingredient that is used in a recipe formula', f
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
 });
 
-it('explains which formula versions protect a private ingredient from deletion', function () {
+it('explains which current formulas use a private ingredient', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Protected Preservative',
@@ -659,7 +659,7 @@ it('explains which formula versions protect a private ingredient from deletion',
             'owner_id' => $user->id,
             'visibility' => Visibility::Private,
             'version_number' => $versionNumber,
-            'is_current' => false,
+            'is_current' => $versionNumber === 2,
         ]));
 
     foreach ($versions as $version) {
@@ -716,7 +716,7 @@ it('explains which formula versions protect a private ingredient from deletion',
     expect(Ingredient::query()->whereKey($ingredient->id)->exists())->toBeTrue();
 });
 
-it('does not expose saved backup counts in ingredient usage copy', function () {
+it('omits backup-only usage from the catalog while preserving deletion safeguards', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Single Backup Preservative',
@@ -750,9 +750,9 @@ it('does not expose saved backup counts in ingredient usage copy', function () {
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->call('toggleUsage', $ingredient->id)
-        ->assertSee($recipe->name)
-        ->assertDontSee('saved backup');
+        ->assertDontSee('Used in 1 formula')
+        ->call('confirmDelete', $ingredient->id)
+        ->assertSee('Replace everywhere and delete');
 });
 
 it('protects draft-only formula usage without labeling the draft as a saved backup', function () {

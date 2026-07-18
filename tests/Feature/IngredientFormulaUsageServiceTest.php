@@ -18,7 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('groups direct usage by recipe and counts unique saved backups', function () {
+it('groups current direct usage by recipe without counting saved backups', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
         'owner_type' => OwnerType::User,
@@ -62,9 +62,58 @@ it('groups direct usage by recipe and counts unique saved backups', function () 
         ->and($usage[$ingredient->id][0])->toMatchArray([
             'recipe_id' => $recipe->id,
             'name' => $recipe->name,
-            'version_count' => 3,
+            'version_count' => 0,
             'url' => route('recipes.edit', $recipe),
         ]);
+});
+
+it('omits formulas where usage remains only in saved backups or costing rows', function () {
+    $user = User::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+    $recipe = Recipe::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'name' => 'Updated Formula',
+    ]);
+    $savedBackup = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'version_number' => 1,
+        'is_current' => false,
+    ]);
+    $currentVersion = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'version_number' => 2,
+        'is_current' => true,
+    ]);
+
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $savedBackup->id,
+        'recipe_phase_id' => null,
+        'ingredient_id' => $ingredient->id,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $currentVersion->id,
+        'user_id' => $user->id,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'main',
+        'position' => 1,
+    ]);
+
+    $usage = app(IngredientFormulaUsageService::class)->forIngredients($user, collect([$ingredient]));
+
+    expect($usage)->not->toHaveKey($ingredient->id);
 });
 
 it('reports formulas reached through nested composite ancestors once', function () {
@@ -161,7 +210,7 @@ it('omits workspace formula usage from non-owner members', function () {
         'owner_id' => $workspace->id,
         'workspace_id' => $workspace->id,
         'visibility' => Visibility::Workspace,
-        'is_current' => false,
+        'is_current' => true,
     ]);
 
     RecipeItem::factory()->create([
@@ -236,7 +285,7 @@ it('includes formula usage from a workspace owned by the user', function () {
         'owner_id' => $workspace->id,
         'workspace_id' => $workspace->id,
         'visibility' => Visibility::Workspace,
-        'is_current' => false,
+        'is_current' => true,
     ]);
 
     RecipeItem::factory()->create([
@@ -254,7 +303,7 @@ it('includes formula usage from a workspace owned by the user', function () {
     expect($usage[$ingredient->id][0])->toMatchArray([
         'recipe_id' => $recipe->id,
         'name' => 'Owned Workspace Formula',
-        'version_count' => 1,
+        'version_count' => 0,
     ]);
 });
 
@@ -326,7 +375,7 @@ it('omits usage from an inaccessible workspace-owned formula without a workspace
     expect($usage)->not->toHaveKey($ingredient->id);
 });
 
-it('resolves costing-only usage to its recipe', function () {
+it('does not present costing-only records as formula usage', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create();
     $recipe = Recipe::factory()->create([
@@ -357,7 +406,7 @@ it('resolves costing-only usage to its recipe', function () {
         collect([$ingredient]),
     );
 
-    expect($usage[$ingredient->id][0]['recipe_id'])->toBe($recipe->id);
+    expect($usage)->not->toHaveKey($ingredient->id);
 });
 
 it('omits formula usage belonging to another user', function () {

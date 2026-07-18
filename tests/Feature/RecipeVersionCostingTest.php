@@ -846,6 +846,43 @@ it('copies pricing and packaging rows forward when a draft is published into a n
         ->exists())->toBeTrue();
 });
 
+it('removes obsolete costing rows from the published version when formula ingredients change', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $removedIngredient = makeSharedCarrierOilIngredient();
+    $retainedIngredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+
+    $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($removedIngredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $service->costingPayload($recipe, $user);
+
+    $newDraftVersion = $service->publish(
+        $user,
+        $soapFamily,
+        soapDraftPayload($retainedIngredient),
+        $recipe,
+    );
+
+    $publishedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->latest('version_number')
+        ->firstOrFail();
+
+    expect(RecipeVersionCostingItem::query()
+        ->whereHas('costing', fn ($query) => $query->where('recipe_version_id', $publishedVersion->id))
+        ->pluck('ingredient_id')
+        ->all())->toBe([$retainedIngredient->id])
+        ->and(RecipeVersionCostingItem::query()
+            ->whereHas('costing', fn ($query) => $query->where('recipe_version_id', $newDraftVersion->id))
+            ->pluck('ingredient_id')
+            ->all())->toBe([$retainedIngredient->id]);
+});
+
 function makeSharedCarrierOilIngredient(): Ingredient
 {
     return Ingredient::factory()->create([

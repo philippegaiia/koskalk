@@ -353,6 +353,23 @@ class RecipeVersionCostingSynchronizer
         });
     }
 
+    /** Reconcile formula rows without changing separately managed packaging costs. */
+    public function reconcileExistingFormulaCosting(RecipeVersion $recipeVersion, User $user): void
+    {
+        $costing = RecipeVersionCosting::query()
+            ->where('recipe_version_id', $recipeVersion->id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (! $costing instanceof RecipeVersionCosting) {
+            return;
+        }
+
+        DB::transaction(function () use ($costing): void {
+            $this->syncFormulaItems($costing);
+        });
+    }
+
     /**
      * Rebuild costing items from the current formula structure.
      *

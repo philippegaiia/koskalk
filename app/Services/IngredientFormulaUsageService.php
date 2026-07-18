@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\Ingredient;
 use App\Models\RecipeItem;
-use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
 use App\OwnerType;
 use Illuminate\Database\Eloquent\Builder;
@@ -51,6 +50,7 @@ class IngredientFormulaUsageService
             ->join('recipe_versions', 'recipe_items.recipe_version_id', '=', 'recipe_versions.id')
             ->join('recipes', 'recipe_versions.recipe_id', '=', 'recipes.id')
             ->whereIn('recipe_items.ingredient_id', $allUsageIngredientIds)
+            ->where('recipe_versions.is_current', true)
             ->where(fn (Builder $query): Builder => $this->whereAccessibleRecipe($query, $user, $ownedWorkspaceIds))
             ->get([
                 'recipe_items.ingredient_id',
@@ -61,23 +61,7 @@ class IngredientFormulaUsageService
                 'recipes.name as recipe_name',
             ]);
 
-        $costingItems = RecipeVersionCostingItem::query()
-            ->join('recipe_version_costings', 'recipe_version_costing_items.recipe_version_costing_id', '=', 'recipe_version_costings.id')
-            ->join('recipe_versions', 'recipe_version_costings.recipe_version_id', '=', 'recipe_versions.id')
-            ->join('recipes', 'recipe_versions.recipe_id', '=', 'recipes.id')
-            ->whereIn('recipe_version_costing_items.ingredient_id', $allUsageIngredientIds)
-            ->where(fn (Builder $query): Builder => $this->whereAccessibleRecipe($query, $user, $ownedWorkspaceIds))
-            ->get([
-                'recipe_version_costing_items.ingredient_id',
-                'recipe_versions.id as version_id',
-                'recipe_versions.is_current as version_is_current',
-                'recipes.id as recipe_id',
-                'recipes.public_id as recipe_public_id',
-                'recipes.name as recipe_name',
-            ]);
-
-        $usageRows = $this->usageRows($recipeItems, $sourceIngredientIdsByUsageIngredientId)
-            ->concat($this->usageRows($costingItems, $sourceIngredientIdsByUsageIngredientId));
+        $usageRows = $this->usageRows($recipeItems, $sourceIngredientIdsByUsageIngredientId);
 
         return $usageRows
             ->groupBy('ingredient_id')
@@ -89,11 +73,7 @@ class IngredientFormulaUsageService
                     return [
                         'recipe_id' => $firstRow['recipe_id'],
                         'name' => $firstRow['recipe_name'],
-                        'version_count' => $recipeRows
-                            ->reject(fn (array $row): bool => $row['version_is_current'])
-                            ->pluck('version_id')
-                            ->unique()
-                            ->count(),
+                        'version_count' => 0,
                         'url' => route('recipes.edit', $firstRow['recipe_public_id']),
                     ];
                 })
@@ -128,13 +108,13 @@ class IngredientFormulaUsageService
     }
 
     /**
-     * @param  Collection<int, RecipeItem|RecipeVersionCostingItem>  $usageItems
+     * @param  Collection<int, RecipeItem>  $usageItems
      * @param  Collection<int, Collection<int, int>>  $sourceIngredientIdsByUsageIngredientId
      * @return Collection<int, array{ingredient_id: int, recipe_id: int, recipe_public_id: string, recipe_name: string, version_id: int, version_is_current: bool}>
      */
     private function usageRows(Collection $usageItems, Collection $sourceIngredientIdsByUsageIngredientId): Collection
     {
-        return $usageItems->flatMap(fn (RecipeItem|RecipeVersionCostingItem $usageItem): Collection => $sourceIngredientIdsByUsageIngredientId
+        return $usageItems->flatMap(fn (RecipeItem $usageItem): Collection => $sourceIngredientIdsByUsageIngredientId
             ->get($usageItem->ingredient_id, collect())
             ->map(fn (int $sourceIngredientId): array => [
                 'ingredient_id' => $sourceIngredientId,

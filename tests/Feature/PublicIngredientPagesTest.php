@@ -60,6 +60,31 @@ it('renders the public ingredients index with only the current users private ing
         ->assertDontSee('Hidden Glycerin');
 });
 
+it('renders compact accessible pagination for the ingredient catalog', function () {
+    $user = User::factory()->create();
+
+    Ingredient::factory()->count(26)->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('ingredients.index'))
+        ->assertSuccessful()
+        ->assertSeeText('Rows per page')
+        ->assertSeeText('1–25 of 26')
+        ->assertSeeHtml('aria-label="Previous page"')
+        ->assertSeeHtml('aria-label="Next page"')
+        ->assertSeeHtml('bg-[var(--color-active)]')
+        ->assertSeeHtml('text-[var(--color-on-active)]')
+        ->assertSeeHtml('sk-pagination-select')
+        ->assertSeeHtml('focus-visible:outline-offset-2')
+        ->assertSeeHtml('focus-visible:outline-[var(--color-active)]')
+        ->assertDontSeeHtml('focus-visible:border-[var(--color-line-strong)]')
+        ->assertDontSeeText('Showing 1 to 25 of 26 results');
+});
+
 it('lets the signed-in user search their ingredient catalog table', function () {
     $user = User::factory()->create();
 
@@ -867,8 +892,8 @@ it('shows private ingredient allowance without a null limit', function () {
         ->get(route('ingredients.index'))
         ->assertSuccessful()
         ->assertSee('1 private ingredient')
-        ->assertDontSee('1 of')
         ->assertDontSee('1 /')
+        ->assertDontSee('1 of null private')
         ->assertDontSee('of null');
 });
 
@@ -894,7 +919,7 @@ it('pluralizes an unlimited private ingredient allowance', function () {
         ->get(route('ingredients.index'))
         ->assertSuccessful()
         ->assertSee('2 private ingredients')
-        ->assertDontSee('2 of')
+        ->assertDontSee('2 of null private')
         ->assertDontSee('of null');
 });
 

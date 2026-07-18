@@ -46,6 +46,35 @@ it('lets a signed-in user open the packaging items page and see saved items', fu
         ->assertSee('Tube 50 g');
 });
 
+it('renders compact accessible pagination for the packaging catalog', function () {
+    $user = User::factory()->create();
+
+    foreach (range(1, 26) as $number) {
+        UserPackagingItem::query()->create([
+            'user_id' => $user->id,
+            'name' => "Packaging item {$number}",
+            'unit_cost' => 0.12,
+            'currency' => 'EUR',
+            'notes' => null,
+        ]);
+    }
+
+    $this->actingAs($user)
+        ->get(route('packaging-items.index'))
+        ->assertSuccessful()
+        ->assertSeeText('Rows per page')
+        ->assertSeeText('1–25 of 26')
+        ->assertSeeHtml('aria-label="Previous page"')
+        ->assertSeeHtml('aria-label="Next page"')
+        ->assertSeeHtml('bg-[var(--color-active)]')
+        ->assertSeeHtml('text-[var(--color-on-active)]')
+        ->assertSeeHtml('sk-pagination-select')
+        ->assertSeeHtml('focus-visible:outline-offset-2')
+        ->assertSeeHtml('focus-visible:outline-[var(--color-active)]')
+        ->assertDontSeeHtml('focus-visible:border-[var(--color-line-strong)]')
+        ->assertDontSeeText('Showing 1 to 25 of 26 results');
+});
+
 it('shows packaging prices in the users current default currency', function () {
     $user = User::factory()->create();
     Workspace::factory()->create([

@@ -17,6 +17,7 @@ use App\Filament\Resources\RegulatoryRegimeSubstanceRules\RegulatoryRegimeSubsta
 use App\Filament\Resources\Substances\SubstanceResource;
 use App\Filament\Resources\SupportedLocales\Pages\CreateSupportedLocale;
 use App\Filament\Resources\SupportedLocales\Pages\EditSupportedLocale;
+use App\Filament\Resources\UserIngredients\Pages\ListUserIngredients;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\UserResource;
@@ -159,6 +160,59 @@ it('renders the catalog list resources in the admin panel', function () {
     $this->get(IngredientSapProfileResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Olive Oil');
+});
+
+it('lists user ingredients anonymously in a separate read only admin resource', function () {
+    $admin = User::factory()->admin()->create();
+    $ingredientOwner = User::factory()->create([
+        'name' => 'Confidential Maker',
+        'email' => 'private-maker@example.test',
+    ]);
+    $platformIngredient = Ingredient::factory()->create([
+        'display_name' => 'Platform Olive Oil',
+    ]);
+    $userIngredient = Ingredient::factory()->create([
+        'display_name' => 'Maker Apricot Oil',
+        'inci_name' => null,
+        'supplier_name' => 'Anonymous Supplier',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $ingredientOwner->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $completeUserIngredient = Ingredient::factory()->create([
+        'display_name' => 'Maker Cocoa Butter',
+        'inci_name' => 'THEOBROMA CACAO SEED BUTTER',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $ingredientOwner->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($admin)
+        ->get('/admin/user-ingredients')
+        ->assertSuccessful()
+        ->assertSeeText('User Ingredients')
+        ->assertSeeText($userIngredient->display_name)
+        ->assertSeeText('Not provided')
+        ->assertSeeText('Anonymous Supplier')
+        ->assertDontSeeText($platformIngredient->display_name)
+        ->assertDontSeeText($ingredientOwner->name)
+        ->assertDontSeeText($ingredientOwner->email)
+        ->assertDontSeeText('Formula');
+
+    Livewire::test(ListUserIngredients::class)
+        ->loadTable()
+        ->assertCanSeeTableRecords([$userIngredient, $completeUserIngredient])
+        ->assertCanNotSeeTableRecords([$platformIngredient])
+        ->searchTable('Maker Apricot')
+        ->assertCanSeeTableRecords([$userIngredient])
+        ->assertCanNotSeeTableRecords([$completeUserIngredient])
+        ->searchTable('')
+        ->filterTable('missing_inci')
+        ->assertCanSeeTableRecords([$userIngredient])
+        ->assertCanNotSeeTableRecords([$completeUserIngredient])
+        ->assertActionDoesNotExist(TestAction::make('view')->table($userIngredient))
+        ->assertActionDoesNotExist(TestAction::make('edit')->table($userIngredient))
+        ->assertActionDoesNotExist(TestAction::make('delete')->table($userIngredient));
 });
 
 it('renders registered platform ingredient translation locales in Filament', function () {
@@ -330,7 +384,7 @@ it('blocks admin deletion when a platform ingredient is used only in formula his
     $this->assertModelExists($recipeItem);
 });
 
-it('does not offer the platform deletion action for private user ingredients', function () {
+it('does not expose private user ingredients through the editable platform resource', function () {
     $admin = User::factory()->admin()->create();
     $owner = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
@@ -339,13 +393,12 @@ it('does not offer the platform deletion action for private user ingredients', f
         'visibility' => Visibility::Private,
     ]);
 
-    $this->actingAs($admin);
-
-    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
-        ->assertActionHidden('delete');
+    $this->actingAs($admin)
+        ->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
+        ->assertNotFound();
 });
 
-it('keeps the platform translation editor away from private ingredients', function () {
+it('does not expose private ingredients through the platform translation editor', function () {
     $admin = User::factory()->admin()->create();
     $owner = User::factory()->create();
     SupportedLocale::factory()->create(['code' => 'fr', 'name' => 'French']);
@@ -357,8 +410,7 @@ it('keeps the platform translation editor away from private ingredients', functi
 
     $this->actingAs($admin)
         ->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
-        ->assertSuccessful()
-        ->assertDontSeeText('Translate the public ingredient name and guidance.');
+        ->assertNotFound();
 });
 
 it('keeps composite component ingredient options current within the request', function () {
@@ -383,9 +435,19 @@ it('keeps composite component ingredient options current within the request', fu
         'is_active' => true,
     ]);
 
+    $privateIngredient = Ingredient::factory()->create([
+        'display_name' => 'Private Maker Blend',
+        'owner_type' => OwnerType::User,
+        'owner_id' => User::factory()->create()->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+
     $secondOptions = $method->invoke(null, null);
 
-    expect($secondOptions)->toHaveKey($coconutOil->id);
+    expect($secondOptions)
+        ->toHaveKey($coconutOil->id)
+        ->not->toHaveKey($privateIngredient->id);
 });
 
 it('offers a read-only view action on the ingredient admin table', function () {
@@ -402,6 +464,27 @@ it('offers a read-only view action on the ingredient admin table', function () {
         ->loadTable()
         ->assertActionExists(TestAction::make('view')->table($ingredient))
         ->assertActionExists(TestAction::make('edit')->table($ingredient));
+});
+
+it('keeps user ingredients out of the editable platform ingredient catalog', function () {
+    $admin = User::factory()->admin()->create();
+    $ingredientOwner = User::factory()->create();
+    $platformIngredient = Ingredient::factory()->create([
+        'display_name' => 'Platform Castor Oil',
+    ]);
+    $userIngredient = Ingredient::factory()->create([
+        'display_name' => 'Private Castor Blend',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $ingredientOwner->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(ListIngredients::class)
+        ->loadTable()
+        ->assertCanSeeTableRecords([$platformIngredient])
+        ->assertCanNotSeeTableRecords([$userIngredient]);
 });
 
 it('renders the catalog create forms in the admin panel', function () {

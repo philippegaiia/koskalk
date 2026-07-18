@@ -110,17 +110,7 @@
                     </table>
                 </div>
 
-                <div class="flex flex-col gap-3 border-t border-[var(--color-line)] px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex items-center gap-2 text-xs text-[var(--color-ink-soft)]">
-                        <span>Per page</span>
-                        <select wire:model.live="perPage" class="sk-select-control w-20" aria-label="Items per page">
-                            <option value="25">25</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                    </div>
-                    {{ $items->links() }}
-                </div>
+                <x-table-pagination :paginator="$items" per-page-label="Items per page" />
             @endif
         </section>
 

@@ -370,6 +370,7 @@ class IngredientForm
     private static function componentIngredientOptions(?Ingredient $record): array
     {
         return Ingredient::query()
+            ->whereNull('owner_type')
             ->where('is_active', true)
             ->when($record?->exists, fn ($query) => $query->whereKeyNot($record?->getKey()))
             ->get()

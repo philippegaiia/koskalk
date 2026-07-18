@@ -17,13 +17,14 @@
  </div>
  <div class="mt-3 grid gap-2">
  <template x-for="segment in fattyAcidGroupSegments()" :key="`${segment.key}-legend`">
- <div class="flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs">
+ <div class="group/fatty-row relative flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs">
  <div class="flex min-w-0 flex-1 items-center gap-2">
  <span class="inline-block h-2.5 w-2.5 shrink-0 rounded-full" :style="{ backgroundColor: segment.color }"></span>
  <span class="shrink-0 rounded-full px-2 py-0.5 font-medium" :style="{ backgroundColor: segment.softColor, color: segment.textColor }" x-text="segment.shortLabel"></span>
- <span class="min-w-0 flex-1 truncate text-[var(--color-ink-strong)]" :title="segment.label" x-text="segment.label"></span>
+ <span class="min-w-0 flex-1 truncate text-[var(--color-ink-strong)]" x-text="segment.label"></span>
  </div>
  <span class="numeric shrink-0 text-right text-[var(--color-ink-soft)]" x-text="`${format(segment.value, 1)}%`"></span>
+ <span aria-hidden="true" class="pointer-events-none absolute inset-y-1 left-2 right-14 z-10 hidden items-center rounded-md bg-[var(--color-ink-strong)] px-3 font-medium text-white opacity-0 shadow-sm transition-opacity motion-reduce:transition-none lg:flex lg:group-hover/fatty-row:opacity-100" x-text="segment.label"></span>
  </div>
  </template>
  </div>

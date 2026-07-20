@@ -25,7 +25,7 @@
  </template>
  </div>
  <div class="flex flex-wrap items-center gap-2 lg:flex-nowrap">
- <p class="sk-eyebrow shrink-0">Formula status</p>
+ <p class="sk-eyebrow shrink-0">{{ __('workbench.status.title') }}</p>
  <div class="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-0.5">
  <template x-for="card in formulaDiagnosticSummaryCards" :key="`bottom-summary-${card.id}`">
  <span

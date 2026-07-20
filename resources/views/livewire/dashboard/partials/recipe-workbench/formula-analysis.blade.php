@@ -24,10 +24,9 @@
     >
         <div class="sk-section-header flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="sk-eyebrow">Soapkraft qualities</p>
-                <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">At a glance</h3>
+                <p class="sk-eyebrow">{{ __('workbench.headings.soap_qualities') }}</p>
                 <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">
-                    (Indicative values — additives, process, and cure conditions can change the real soap.)
+                    {{ __('workbench.qualities.disclaimer') }}
                 </p>
             </div>
 
@@ -100,8 +99,8 @@
                     </div>
 
                     <template x-if="qualityFlags().length > 0">
-                        <section aria-label="Formula notes" class="border-t border-[var(--color-line)] pt-3">
-                            <p class="sk-eyebrow">Formula notes</p>
+                        <section aria-label="{{ __('workbench.qualities.review_title') }}" class="border-t border-[var(--color-line)] pt-3">
+                            <p class="sk-eyebrow">{{ __('workbench.qualities.review_title') }}</p>
                             <div class="mt-1.5 divide-y divide-[var(--color-line)]">
                                 <template x-for="flag in qualityFlags()" :key="flag.label">
                                     <div class="grid gap-0.5 py-2 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">
@@ -118,7 +117,7 @@
             <template x-if="!hasQualityMetricsData">
                 <div class="px-5 py-5">
                     <div class="rounded-lg bg-[var(--color-field)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
-                        Add saponifiable oils with SAP data to see backend-calculated Soapkraft qualities here.
+                        {{ __('workbench.qualities.empty') }}
                     </div>
                 </div>
             </template>

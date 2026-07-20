@@ -1,7 +1,7 @@
 <div class="sk-card sk-tone-analysis overflow-hidden">
  <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
  <div>
- <p class="sk-eyebrow">Fatty acid profile</p>
+ <p class="sk-eyebrow">{{ __('workbench.headings.fatty_acid_profile') }}</p>
  </div>
  </div>
  <div class="p-5">
@@ -9,7 +9,6 @@
  <template x-if="hasFattyAcidProfileData">
  <div class="mt-4 space-y-4">
  <div class="sk-inset p-4">
- <p class="sk-eyebrow">Grouped profile</p>
  <div class="mt-3 flex h-3 overflow-hidden rounded-full bg-white/80">
  <template x-for="segment in fattyAcidGroupSegments()" :key="segment.key">
  <div class="h-full shrink-0" :style="{ width: `${segment.percent}%`, backgroundColor: segment.color }"></div>
@@ -46,7 +45,7 @@
 
  <details class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]">
  <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 marker:hidden">
- <span class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-strong)]">Details</span>
+ <span class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-strong)]">{{ __('workbench.fatty_acids.details') }}</span>
  <span class="numeric shrink-0 text-xs text-[var(--color-ink-soft)]" x-text="`${fattyAcidProfileRows.length} acids`"></span>
  </summary>
  <div class="grid gap-1.5 border-t border-[var(--color-line)] px-3 py-3">
@@ -66,7 +65,7 @@
 
  <template x-if="!hasFattyAcidProfileData">
  <div class="mt-4 rounded-lg bg-[var(--color-field)] px-4 py-6 text-sm text-[var(--color-ink-soft)]">
- Fill the fatty acid profile on the selected carrier oils to see the blended profile here.
+ {{ __('workbench.fatty_acids.empty') }}
  </div>
  </template>
  </div>

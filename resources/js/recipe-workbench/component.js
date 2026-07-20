@@ -133,6 +133,16 @@ function createRecipeWorkbenchState(payload) {
     const numberLocale = resolvedNumberLocale(payload.numberLocale, numberLocaleOptions);
 
     return {
+        translations: payload.translations ?? {},
+        t(path, replacements = {}) {
+            const value = path.split('.').reduce((copy, segment) => copy?.[segment], this.translations);
+            const text = typeof value === 'string' ? value : path;
+
+            return Object.entries(replacements).reduce(
+                (translated, [key, replacement]) => translated.replaceAll(`:${key}`, String(replacement)),
+                text,
+            );
+        },
         activeWorkbenchTab: window.location.hash.replace('#', '') || 'formula',
         recipeId: payload.recipe?.id ?? null,
         canPersist: Boolean(payload.canPersist ?? false),
@@ -146,7 +156,9 @@ function createRecipeWorkbenchState(payload) {
         currentVersionNumber: payload.recipe?.version_number ?? null,
         currentVersionIsDraft: payload.recipe?.is_current ?? true,
         isFormulaLocked: Boolean(payload.recipe?.is_locked ?? false),
-        formulaName: isCosmeticFormula ? 'New Cosmetic Formula' : 'New Soap Formula',
+        formulaName: isCosmeticFormula
+            ? (payload.translations?.header?.new_cosmetic ?? 'New cosmetic product')
+            : (payload.translations?.header?.new_soap ?? 'New soap'),
         oilUnit: 'g',
         oilWeight: isCosmeticFormula ? 100 : 1000,
         manufacturingMode: isCosmeticFormula ? 'blend_only' : 'saponify_in_formula',

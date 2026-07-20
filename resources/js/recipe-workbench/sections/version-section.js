@@ -14,10 +14,10 @@ export function createVersionSection() {
 
         get formulaWorkbenchLabel() {
             if (this.isFormulaLocked) {
-                return 'Locked';
+                return this.t('header.locked');
             }
 
-            return this.hasCurrentFormula ? 'Current formula' : 'New formula';
+            return this.hasCurrentFormula ? this.t('header.current_product') : this.t('header.new_product');
         },
 
         get needsCatalogReview() {

@@ -3,7 +3,7 @@
     $tabBaseClass = 'sk-workbench-tab inline-flex min-w-[9.5rem] shrink-0 items-center justify-center whitespace-nowrap rounded-lg px-4 py-2.5 text-center text-sm font-semibold xl:min-w-0 xl:px-5 xl:py-3 xl:text-base';
 @endphp
 
-<nav class="sk-workbench-tabs {{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : '-mx-1 flex gap-2 overflow-x-auto xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible' }}" role="tablist" aria-label="Workbench sections">
+<nav class="sk-workbench-tabs {{ $isPublicCalculator ? 'grid gap-2 sm:grid-cols-2' : '-mx-1 flex gap-2 overflow-x-auto xl:mx-0 xl:grid xl:grid-cols-5 xl:overflow-visible' }}" role="tablist" aria-label="{{ __('workbench.tabs.aria_label') }}">
  <button
  id="tab-formula"
  role="tab"
@@ -13,7 +13,7 @@
 	 :class="{ 'is-active': activeWorkbenchTab === 'formula' }"
 	 class="{{ $tabBaseClass }}"
  >
- Formula
+ {{ __('workbench.tabs.formula') }}
  </button>
 
  @unless ($isPublicCalculator)
@@ -26,7 +26,7 @@
 	 :class="{ 'is-active': activeWorkbenchTab === 'packaging' }"
 class="{{ $tabBaseClass }}"
  >
- Packaging
+ {{ __('workbench.tabs.packaging') }}
  </button>
 
  <button
@@ -38,7 +38,7 @@ class="{{ $tabBaseClass }}"
 	 :class="{ 'is-active': activeWorkbenchTab === 'costing' }"
 class="{{ $tabBaseClass }}"
  >
- Costing
+ {{ __('workbench.tabs.costing') }}
  </button>
  @endunless
 
@@ -51,7 +51,7 @@ class="{{ $tabBaseClass }}"
 	 :class="{ 'is-active': activeWorkbenchTab === 'output' }"
 class="{{ $tabBaseClass }}"
  >
- Output
+ {{ __('workbench.tabs.output') }}
  </button>
 
  @unless ($isPublicCalculator)
@@ -64,7 +64,7 @@ class="{{ $tabBaseClass }}"
 	 :class="{ 'is-active': activeWorkbenchTab === 'instructions' }"
 class="{{ $tabBaseClass }}"
  >
- Instructions &amp; Media
+ {{ __('workbench.tabs.instructions') }}
  </button>
  @endunless
 </nav>

@@ -1,10 +1,9 @@
 <section class="overflow-hidden sk-card sk-phase-core sk-tone-chemistry" aria-labelledby="reaction-core-heading">
  <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
- <p class="sk-eyebrow">Reaction core</p>
- <div class="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
- <h3 id="reaction-core-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">Saponified oils + lye water</h3>
+ <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+ <h3 id="reaction-core-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.saponification.title') }}</h3>
  <div :class="oilPercentageIsBalanced ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium transition">
- <span x-text="oilPercentageStatusLabel"></span>
+ <span x-text="oilPercentageIsBalanced ? @js(__('workbench.saponification.balanced')) : @js(__('workbench.saponification.unbalanced'))"></span>
  <span class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"></span>
  </div>
  </div>
@@ -14,7 +13,7 @@
  <div class="overflow-hidden rounded-lg">
 	 <div class="hidden touch-pan-x lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">Oil</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.oil') }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">% oils</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y"></div>
@@ -85,7 +84,7 @@
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
  class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
- <p class="sk-eyebrow">Material details</p>
+ <p class="sk-eyebrow">{{ __('workbench.ingredients.properties') }}</p>
  <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
  <template x-for="detail in ingredientInspectorRows(row)" :key="detail.label">
  <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
@@ -97,7 +96,7 @@
  </div>
  <template x-if="ingredientFattyAcidRows(row).length > 0">
  <div class="mt-3">
- <p class="sk-eyebrow">Fatty acids</p>
+ <p class="sk-eyebrow">{{ __('workbench.common.fatty_acids') }}</p>
  <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs text-[var(--color-ink-soft)]">
  <template x-for="fattyAcid in ingredientFattyAcidRows(row)" :key="fattyAcid.key">
  <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
@@ -142,14 +141,14 @@
  @drop="dropDraggedRow('saponified_oils', $event)"
  :class="isDropTarget('saponified_oils') ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
 	 class="px-4 py-2.5 sk-formula-table-y text-center text-xs font-medium transition">
- Drop carrier oil here
+ {{ __('workbench.saponification.empty') }}
  </div>
  </template>
  </div>
 
 	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0">
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-2.5 sk-formula-table-y font-medium">Oil total</div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="flex items-center px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.saponification.total_oils') }}</div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center justify-between gap-3 px-4 py-2.5 sk-formula-table-y font-medium lg:block" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="numeric flex items-center justify-between gap-3 px-4 py-2.5 sk-formula-table-y font-medium lg:block" x-text="`${format(oilWeightTotal(), 1)}`"></div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'text-[var(--color-danger-strong)] bg-[var(--color-danger-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>
@@ -160,7 +159,7 @@
  <div class="sk-inset mt-5 p-4">
  <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
  <div>
- <p class="sk-eyebrow">Calculated lye and water</p>
+ <p class="sk-eyebrow">{{ __('workbench.saponification.lye_water') }}</p>
  </div>
  </div>
 

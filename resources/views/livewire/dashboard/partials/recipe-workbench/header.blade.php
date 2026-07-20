@@ -11,7 +11,7 @@
  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
  <div class="min-w-0 flex-1">
 	 <div class="flex flex-wrap items-center gap-2">
-	 <p class="sk-eyebrow">Formula</p>
+	 <p class="sk-eyebrow">{{ __('workbench.header.section') }}</p>
 	 <span :class="isFormulaLocked ? 'border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'" class="rounded-full px-3 py-1.5 text-xs font-medium shadow-sm" x-text="formulaWorkbenchLabel"></span>
 	 <span x-show="productTypeName" x-cloak class="sk-badge sk-badge-neutral" x-text="productTypeName"></span>
 	 <template x-if="saveMessage">
@@ -31,7 +31,7 @@
 	 </label>
 	 @endif
 	 </div>
-	 <input x-model="formulaName" type="text" aria-label="Formula name" :disabled="isFormulaLocked" :placeholder="isCosmeticFormula ? 'Untitled cosmetic formula' : 'Untitled soap formula'" class="sk-formula-title-control mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:bg-[var(--color-panel)] disabled:text-[var(--color-ink-soft)]" />
+	 <input x-model="formulaName" type="text" aria-label="{{ __('workbench.header.product_name') }}" :disabled="isFormulaLocked" :placeholder="isCosmeticFormula ? @js(__('workbench.header.untitled_cosmetic')) : @js(__('workbench.header.untitled_soap'))" class="sk-formula-title-control mt-2 w-full rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] px-4 py-3 text-2xl font-semibold text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:bg-[var(--color-panel)] disabled:text-[var(--color-ink-soft)]" />
 	 </div>
 
 	 @unless ($isPublicCalculator)
@@ -41,36 +41,36 @@
 	 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
 	 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M9 8h6M5.25 5.25A2.25 2.25 0 0 1 7.5 3h9A2.25 2.25 0 0 1 18.75 5.25v13.5A2.25 2.25 0 0 1 16.5 21h-9A2.25 2.25 0 0 1 5.25 18.75V5.25Z" />
 	 </svg>
-	 Formula sheet
+	 {{ __('workbench.header.product_sheet') }}
 	 </a>
 	 @endif
 	 <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="rounded-full px-4 py-2.5 text-sm font-medium transition">
-	 <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving…' : 'Save')"></span>
+	 <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
 	 </button>
  @if ($recipePublicId)
 	 @if ($isFormulaLocked)
  <form method="POST" action="{{ route('recipes.unlock', $recipePublicId) }}">
 	 @csrf
 	 <button type="submit" class="rounded-full bg-[var(--color-warning-soft)] px-4 py-2.5 text-sm font-medium text-[var(--color-warning-strong)] transition hover:bg-[var(--color-panel)]">
-	 Unlock formula
+	 {{ __('workbench.header.unlock_product') }}
 	 </button>
 	 </form>
 	 @else
  <form method="POST" action="{{ route('recipes.lock', $recipePublicId) }}">
 	 @csrf
 	 <button type="submit" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] shadow-sm transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
-	 Lock formula
+	 {{ __('workbench.header.lock_product') }}
 	 </button>
 	 </form>
 	 @endif
 	 @endif
 	 <details x-data="{ open: false }" :open="open" @toggle="open = $el.open" @click.outside="open = false" @keydown.escape.prevent.stop="open = false" class="relative">
 	 <summary class="list-none rounded-full bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] shadow-sm transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)] [&::-webkit-details-marker]:hidden" aria-haspopup="menu" :aria-expanded="open.toString()">
-	 More formula actions
+	 {{ __('workbench.header.more_actions') }}
 	 </summary>
 	 <div class="absolute right-0 z-40 mt-2 w-72 rounded-lg bg-white p-2 shadow-xl">
 	 <div class="px-3 py-2">
-	 <p class="sk-eyebrow">Formula context</p>
+	 <p class="sk-eyebrow">{{ __('workbench.header.product_details') }}</p>
 	 <div class="mt-2 space-y-1 text-xs leading-5 text-[var(--color-ink-soft)]">
 	 <p x-text="manufacturingModeLabel"></p>
 	 <p x-text="exposureModeLabel"></p>
@@ -79,11 +79,11 @@
 	 </div>
 	 @if ($hasSavedFormula && is_string($savedFormulaUrl))
 	 <a href="{{ $savedFormulaUrl }}" class="mt-1 flex rounded-md px-3 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)] hover:text-[var(--color-ink-strong)]">
-	 Formula sheet
+	 {{ __('workbench.header.product_sheet') }}
 	 </a>
 	 @endif
 	 <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-ink-strong)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
-	 Duplicate
+	 {{ __('workbench.header.duplicate_product') }}
 	 </button>
 	 </div>
 	 </details>

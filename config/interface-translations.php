@@ -4,6 +4,7 @@ return [
     'sources' => [
         'dashboard' => ['*'],
         'navigation' => ['*'],
+        'workbench' => ['*'],
         'number_formats' => ['*'],
         'public' => ['*'],
         'auth' => [

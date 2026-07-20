@@ -167,11 +167,11 @@ export function createFormulaSection() {
 
             return {
                 id: 'formula-balance',
-                label: this.isCosmeticFormula ? 'Formula balance' : 'Base balance',
+                label: this.isCosmeticFormula ? 'Formula balance' : this.t('status.oils'),
                 value: `${this.format(total, 2)}%`,
                 detail: this.oilPercentageIsBalanced
-                    ? 'Ready for saving and output previews.'
-                    : `${this.format(delta, 2)}% still needs balancing.`,
+                    ? this.t('status.ready')
+                    : this.t('status.balanced_remaining', { amount: this.format(delta, 2) }),
                 tone: this.oilPercentageIsBalanced ? 'success' : 'danger',
             };
         },
@@ -184,13 +184,13 @@ export function createFormulaSection() {
 
             return {
                 id: 'lye-water',
-                label: 'Lye / water',
+                label: this.t('status.lye_water'),
                 value: hasResolvedWeights
                     ? `${this.format(lyeWeight, 1)} / ${this.format(waterWeight, 1)} ${this.oilUnit}`
-                    : 'Pending',
+                    : this.t('status.pending'),
                 detail: hasResolvedWeights && this.oilPercentageIsBalanced
-                    ? 'Live weights are ready to weigh.'
-                    : 'Waiting for live lye weights from the current base.',
+                    ? this.t('status.amounts_calculated')
+                    : this.t('status.waiting'),
                 tone: hasResolvedWeights ? 'chemistry' : 'warning',
             };
         },
@@ -201,10 +201,10 @@ export function createFormulaSection() {
 
             return {
                 id: 'zero-quantity',
-                label: 'Zero quantity',
-                value: zeroRows.length > 0 ? `${zeroRows.length} at 0` : 'None',
+                label: this.t('status.missing_quantities'),
+                value: zeroRows.length > 0 ? `${zeroRows.length} at 0` : this.t('status.none'),
                 detail: zeroRows.length > 0
-                    ? 'Formula keeps these ingredients so quantities can be filled later.'
+                    ? this.t('status.zero_detail')
                     : `${rowCount} ${rowCount === 1 ? 'ingredient has' : 'ingredients have'} a quantity.`,
                 tone: zeroRows.length > 0 ? 'warning' : 'success',
             };
@@ -226,9 +226,9 @@ export function createFormulaSection() {
 
             return {
                 id: 'formula-state',
-                label: 'Save state',
-                value: this.isSaving ? 'Saving' : (hasSaveError ? "Couldn't save" : (hasUnsavedChanges ? 'Unsaved' : 'Saved')),
-                detail: this.saveMessage || (this.isSaving ? 'Saving current edits.' : (hasUnsavedChanges ? 'Save keeps these changes.' : 'Current edits are saved.')),
+                label: this.t('status.changes'),
+                value: this.isSaving ? this.t('status.saving') : (hasSaveError ? this.t('status.save_failed') : (hasUnsavedChanges ? this.t('status.unsaved') : this.t('status.saved'))),
+                detail: this.saveMessage || (this.isSaving ? this.t('status.saving_detail') : (hasUnsavedChanges ? this.t('status.save_changes') : this.t('status.saved_detail'))),
                 tone: hasSaveError ? 'danger' : (this.isSaving ? 'neutral' : (hasUnsavedChanges ? 'warning' : 'success')),
             };
         },
@@ -441,7 +441,7 @@ export function createFormulaSection() {
                 return this.oilPercentageIsBalanced ? 'Formula balanced' : 'Formula must reach 100%';
             }
 
-            return this.oilPercentageIsBalanced ? 'Base phase balanced' : 'Base phase must reach 100%';
+            return this.oilPercentageIsBalanced ? this.t('saponification.balanced') : this.t('saponification.unbalanced');
         },
 
         get canSaveDraft() {
@@ -644,7 +644,7 @@ export function createFormulaSection() {
                 return;
             }
 
-            if (!window.confirm('Negative superfat means excess lye in the finished product. This can cause skin irritation or burns. Proceed with a negative superfat?')) {
+            if (!window.confirm(this.t('status.negative_superfat_warning'))) {
                 this.superfat = 0;
             }
         },

@@ -3,8 +3,7 @@
  <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div>
- <p class="sk-eyebrow">Post-reaction phases</p>
- <h3 id="post-reaction-heading" class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Additives and aromatics</h3>
+ <h3 id="post-reaction-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.additions.title') }}</h3>
  </div>
  <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="`${format(totalAdditionPercentage(), 1)}% of oils`"></span>
  </div>
@@ -14,12 +13,12 @@
  <template x-if="additiveRows.length > 0 || canDropRowInPhase('additives')">
  <div class="overflow-hidden sk-inset">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
- <p class="font-medium text-[var(--color-ink-strong)]">Additives</p>
- <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Colorants, preservatives, and other post-reaction functional materials. Drag to reorder the additives already in this phase.</p>
+ <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.additives') }}</p>
+ <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.additions.additives_help') }}</p>
  </div>
 	 <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)]">
 	 <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
-	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">Ingredient</div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.ingredient') }}</div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">% oils</div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y"></div>
@@ -80,7 +79,7 @@
  @drop="dropDraggedRow('additives', $event)"
  :class="isDropTarget('additives') ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
 	 class="px-4 py-2.5 sk-formula-table-y text-center text-xs font-medium transition">
- Drop carrier oil here to use it as an additive
+ {{ __('workbench.additions.empty_oil') }}
  </div>
  </template>
  </div>
@@ -89,12 +88,12 @@
  <template x-if="fragranceRows.length > 0">
  <div class="overflow-hidden sk-inset">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
- <p class="font-medium text-[var(--color-ink-strong)]">Fragrance and aromatics</p>
- <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Essential oils and aromatic extracts with their own compliance context. Drag to reorder inside this aromatic phase.</p>
+ <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.fragrance') }}</p>
+ <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.additions.fragrance_help') }}</p>
  </div>
 	 <div class="hidden touch-pan-x text-sm lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)]">
 	 <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
-	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">Ingredient</div>
+	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.ingredient') }}</div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">% oils</div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]" x-text="`Weight (${oilUnit})`"></div>
 	 <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y"></div>
@@ -157,7 +156,7 @@
 
  <div class="sk-card sk-tone-summary overflow-hidden">
  <div class="sk-section-header border-b px-5 py-4">
- <p class="sk-eyebrow">Batch totals</p>
+ <p class="sk-eyebrow">{{ __('workbench.additions.batch_totals') }}</p>
  </div>
 
  <div class="grid gap-px bg-[var(--color-line)] sm:grid-cols-2 xl:grid-cols-4">
@@ -172,7 +171,7 @@
 
  <template x-if="Math.abs(totalOilPercentage() - 100) > 0.01">
  <div class="rounded-[1.5rem] border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink-strong)]" role="alert">
- The saponified oils should total 100% in the base phase before the formula is considered balanced.
+ {{ __('workbench.saponification.warning') }}
  </div>
  </template>
 </section>

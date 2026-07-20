@@ -56,6 +56,7 @@ class RecipeWorkbenchViewDataBuilder
             'numberLocale' => $user instanceof User ? NumberLocale::resolve($user->number_locale) : null,
             'numberLocaleOptions' => NumberLocale::options(),
             'canPersist' => $user instanceof User,
+            'translations' => trans('workbench'),
         ];
     }
 

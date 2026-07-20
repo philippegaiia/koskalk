@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\InterfaceTranslation;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 
 class InterfaceTranslationSeeder extends Seeder
@@ -29,7 +30,7 @@ class InterfaceTranslationSeeder extends Seeder
      */
     private function translations(): array
     {
-        return [
+        return array_merge([
             'navigation.actions.sign_out' => ['fr' => 'Se déconnecter', 'es' => 'Cerrar sesión', 'de' => 'Abmelden', 'it' => 'Esci', 'nl' => 'Uitloggen'],
             'navigation.items.account' => ['fr' => 'Compte', 'es' => 'Cuenta', 'de' => 'Konto', 'it' => 'Account', 'nl' => 'Account'],
             'navigation.items.compliance' => ['fr' => 'Conformité', 'es' => 'Cumplimiento', 'de' => 'Konformität', 'it' => 'Conformità', 'nl' => 'Regelgeving'],
@@ -54,6 +55,25 @@ class InterfaceTranslationSeeder extends Seeder
             'dashboard.library.products' => ['fr' => 'Produits', 'es' => 'Productos', 'de' => 'Produkte', 'it' => 'Prodotti', 'nl' => 'Producten'],
             'dashboard.library.ingredients' => ['fr' => 'Ingrédients', 'es' => 'Ingredientes', 'de' => 'Inhaltsstoffe', 'it' => 'Ingredienti', 'nl' => 'Ingrediënten'],
             'dashboard.library.locked_products' => ['fr' => 'Produits verrouillés', 'es' => 'Productos bloqueados', 'de' => 'Gesperrte Produkte', 'it' => 'Prodotti bloccati', 'nl' => 'Vergrendelde producten'],
-        ];
+        ], $this->workbenchTranslations());
+    }
+
+    /**
+     * @return array<string, array{fr: string, es: string, de: string, it: string, nl: string}>
+     */
+    private function workbenchTranslations(): array
+    {
+        $translations = [];
+
+        foreach (['fr', 'es', 'de', 'it', 'nl'] as $locale) {
+            /** @var array<string, mixed> $lines */
+            $lines = require lang_path("{$locale}/workbench.php");
+
+            foreach (Arr::dot($lines) as $key => $value) {
+                $translations["workbench.{$key}"][$locale] = $value;
+            }
+        }
+
+        return $translations;
     }
 }

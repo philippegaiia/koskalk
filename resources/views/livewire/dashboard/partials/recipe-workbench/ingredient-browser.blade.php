@@ -3,12 +3,11 @@
 <aside class="space-y-4">
  <div class="overflow-hidden sk-card sk-tone-catalog">
  <div class="sk-section-header border-b border-[var(--color-line)] px-4 py-4">
- <p class="sk-eyebrow">Ingredient browser</p>
- <h3 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">Select ingredients</h3>
+ <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.ingredients.title') }}</h3>
  </div>
 
  <div class="space-y-3 border-b border-[var(--color-line)] px-4 py-4">
- <input x-model="search" type="search" placeholder="Search name or INCI..." aria-label="Search ingredients" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
+ <input x-model="search" type="search" placeholder="{{ __('workbench.ingredients.search_placeholder') }}" aria-label="{{ __('workbench.ingredients.search_label') }}" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
 
  <select x-model="activeCategory" aria-label="Filter by category" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)]">
  <template x-for="option in categoryOptions" :key="option.value">
@@ -18,7 +17,7 @@
  </div>
 
  <div class="border-b border-[var(--color-line)] px-5 py-3">
- <p class="text-sm text-[var(--color-ink-soft)]"><span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="filteredIngredients.length"></span> match the current filter</p>
+ <p class="text-sm text-[var(--color-ink-soft)]" x-text="filteredIngredients.length === 1 ? t('ingredients.count_singular') : t('ingredients.count_plural', { count: filteredIngredients.length })"></p>
  </div>
 
  <div class="max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="Ingredient list">
@@ -89,12 +88,12 @@
  role="dialog"
  aria-label="Ingredient details"
  class="z-[80] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] p-3">
- <p class="sk-eyebrow">Ingredient</p>
+ <p class="sk-eyebrow">{{ __('workbench.common.ingredient') }}</p>
  <div class="mt-2.5 rounded-xl bg-[var(--color-panel)] px-3 py-2">
  <p class="text-sm font-semibold leading-snug text-[var(--color-ink-strong)]" x-text="ingredient.name"></p>
  <p class="mt-1 text-xs leading-4 text-[var(--color-ink-soft)]" x-text="ingredient.inci_name || 'INCI not entered yet'"></p>
  </div>
- <p class="mt-3 sk-eyebrow">Material details</p>
+ <p class="mt-3 sk-eyebrow">{{ __('workbench.ingredients.properties') }}</p>
  <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
  <template x-for="row in ingredientInspectorRows(ingredient)" :key="row.label">
  <div class="flex items-center justify-between gap-3 rounded-xl bg-[var(--color-panel)] px-3 py-2">
@@ -105,7 +104,7 @@
  </div>
  <template x-if="ingredientFattyAcidRows(ingredient).length > 0">
  <div class="mt-3">
- <p class="sk-eyebrow">Fatty acids</p>
+ <p class="sk-eyebrow">{{ __('workbench.common.fatty_acids') }}</p>
  <div class="mt-2 max-h-40 space-y-1 overflow-y-auto pr-1 text-xs text-[var(--color-ink-soft)]">
  <template x-for="row in ingredientFattyAcidRows(ingredient)" :key="row.key">
  <div class="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-line)] px-3 py-2">
@@ -182,7 +181,7 @@
  <template x-if="ingredients.some(ingredient => ingredient.is_user_owned)">
  <div class="border-t border-[var(--color-line)] px-5 py-2.5 text-[0.625rem] leading-4 text-[var(--color-ink-soft)]">
  <span class="mr-1 inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60"></span>
- User-created or user-modified ingredient. Data has not been verified by Soapkraft.
+ {{ __('workbench.ingredients.ownership_note') }}
  </div>
  </template>
  </div>

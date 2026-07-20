@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-07-11
+Last updated: 2026-07-20
 
 ## Stack
 
@@ -9,6 +9,7 @@ Last updated: 2026-07-11
 - Filament 5 for admin only
 - Blade + Livewire + Alpine for the user-facing product
 - Pest for tests
+- Symfony Intl for maintained localized currency reference data
 
 ## What exists today
 
@@ -139,11 +140,14 @@ The Filament admin remains English-only.
 The public interface localization foundation now uses Laravel localization with `spatie/laravel-translation-loader`:
 
 - English interface source text remains in version-controlled language files
-- `language_lines` stores reviewed non-English interface translations
+- `language_lines` stores only reviewed, application-authored interface translations
 - `supported_locales` stores locale metadata and activation state
 - English is active and is the fallback locale
-- French, Spanish, German, and Italian are registered but inactive until translated and reviewed
-- `php artisan translations:sync` inserts missing interface keys without overwriting translations
+- French, Spanish, German, Italian, and Dutch are registered but inactive by default until translated and reviewed
+- Laravel Lang supplies framework translations outside the interface editor
+- Symfony Intl supplies localized currency names and current selectable codes
+- `php artisan translations:sync` inserts missing owned keys without overwriting translations; `--prune` explicitly removes non-owned rows
+- `homepage.*`, currency names, and Laravel framework strings are excluded from `language_lines`
 
 Platform-managed catalog and compliance translations are intentionally not stored in `language_lines`.
 
@@ -164,13 +168,14 @@ The public app now has a real Blade + Tailwind shell:
 - `/` uses `HomeController` and a custom marketing-style landing page
 - `/dashboard` uses `DashboardController` and a first dashboard shell
 - shared layouts live in `resources/views/layouts/public.blade.php` and `resources/views/layouts/app-shell.blade.php`
+- the authenticated side menu is the first contextually translated application surface; `Admin` remains English-only
 
 ## Immediate next slice
 
 The next product slice should focus on using this data foundation inside the public formulation flow:
 
 - expose category-filtered ingredient picking in the workbench
-- model the soap reaction core separately from post-reaction additions in the recipe editor
+- model `Saponification` separately from `Formula additions` in the recipe editor
 - support both oil-basis and derived total-basis percentage views for soap
 - keep expanding curated allergen, substance, and IFRA data through admin stewardship
 - refine official source import/review workflows after launch, instead of auto-activating bulk regulatory imports

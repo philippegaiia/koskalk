@@ -1,12 +1,12 @@
 # Localization
 
-Last updated: 2026-07-11
+Last updated: 2026-07-20
 
 ## Scope
 
 Koskalk uses two distinct translation domains:
 
-1. Interface translations for application labels, messages, validation text, and other UI copy.
+1. Interface translations for Soapkraft-authored labels, messages, validation guidance, and other UI copy.
 2. Platform-data translations for managed catalog and compliance records such as ingredient display names and regulatory descriptions.
 
 Do not store platform catalog content in the interface translation table. Spatie's translation loader is the loading and storage engine for interface strings only.
@@ -17,8 +17,8 @@ The Filament admin remains English-only. It is the trusted editing interface for
 
 The implemented interface layer uses Laravel localization with `spatie/laravel-translation-loader`.
 
-- English source text remains version-controlled in `lang/en` and other Laravel translation files.
-- `App\Services\Translations\EnglishTranslationSource` reads the English source of truth.
+- English source text remains version-controlled in `lang/en`.
+- `App\Services\Translations\EnglishTranslationSource` reads only the application-owned groups and key patterns declared in `config/interface-translations.php`.
 - `App\Services\Translations\SyncInterfaceTranslations` inserts missing translation keys into `language_lines` without overwriting translations.
 - `App\Models\InterfaceTranslation` is the application model for Spatie language lines.
 - `supported_locales` controls which locales exist, their number-format locale, text direction, activation state, and display order.
@@ -26,6 +26,8 @@ The implemented interface layer uses Laravel localization with `spatie/laravel-t
 - Translation placeholders are validated so translated strings cannot silently lose required parameters.
 
 Laravel's fallback locale remains English. An absent translation therefore renders the English source instead of a broken key.
+
+`language_lines` is not a mirror of every Laravel language file. Framework authentication errors, validator messages, pagination, password-reset messages, currency names, and homepage marketing blocks stay outside the interface editor. Laravel Lang supplies framework translations; Symfony Intl supplies currency reference data; future WordPress content will own marketing and long-form documentation.
 
 ## Editorial readiness before translation
 
@@ -45,7 +47,7 @@ Do not mechanically translate existing hard-coded text and then revise it later 
 The locale seeder currently registers:
 
 - `en`: active and default
-- `fr`, `es`, `de`, `it`: registered but inactive
+- `fr`, `es`, `de`, `it`, `nl`: registered but inactive
 
 Registering a locale is not the same as translating or publishing it. The application may eventually support ten or more languages, but languages should be activated only after their required interface and platform content has been reviewed.
 
@@ -57,9 +59,17 @@ php artisan db:seed --class=Database\\Seeders\\SupportedLocaleSeeder --force
 php artisan translations:sync
 ```
 
-`translations:sync` creates missing key rows with empty translation maps. It never machine-translates text and never overwrites an existing translation. Run it after adding or renaming English translation keys.
+`translations:sync` creates missing application-owned rows with empty translation maps. It never machine-translates text and never overwrites an existing translation. The command is additive by default. Pass `--prune` only when rows outside the ownership manifest should be removed, such as after retiring a group or cleaning an older database.
 
 Adding another locale means adding or managing its `supported_locales` record, synchronizing keys, completing the translation review, and only then activating it. Do not seed guessed translations.
+
+Dutch framework files and the `nl_NL` number format are present, but Dutch remains inactive by default. A developer may activate it locally while reviewing a completed surface; that local trial does not change the seeded production state.
+
+## Currency reference data
+
+`symfony/intl` owns ISO currency names, symbols, fraction digits, and the current legal-tender list. `App\Services\CurrencyCatalog` is the application boundary around that data. Stored historical codes remain displayable, but users can select only current currencies.
+
+Currency names are localized from Symfony's maintained ICU data. They do not belong in `language_lines`, and Soapkraft does not maintain a separate list of 156 translated currency names.
 
 ## Platform-data boundary
 
@@ -67,13 +77,11 @@ Platform data needs a separate translation model because it has different identi
 
 ## Public and marketing pages
 
-Public pages such as the homepage keep their layout and English source copy in version-controlled Blade and Laravel language files. Homepage content is translated by complete semantic blocks, such as a heading, paragraph, button label, benefit, workflow step, or SEO field, using stable Spatie interface translation keys.
-
-English homepage changes are expected to go through the normal code review and deployment process. This is intentional: marketing copy changes often accompany product positioning, claims, links, or layout changes that should remain traceable in the repository. Non-English values can be reviewed and updated through the English-only Filament translation editor.
-
-The public marketing site is moving to WordPress. Until the move is complete, the Laravel homepage remains the visual and English-copy reference. Reproduce the existing homepage before redesigning it, then decide explicitly whether WordPress replaces the Laravel `/` route or remains a separate marketing and documentation site.
+`homepage.*` is excluded from Laravel database synchronization. The public marketing site and long-form documentation will move to WordPress later; that work is outside the current application-localization slice. When it starts, WordPress must first reproduce the current Laravel homepage, then the project must explicitly decide whether it replaces `/` or launches separately.
 
 WordPress can own marketing and long-form end-user documentation. The application should retain concise task-focused interface copy and link to the relevant documentation only when deeper explanation is useful.
+
+The content hierarchy is: concise interface copy first, contextual help when the current task needs a short explanation, and WordPress documentation for complete methods, examples, and editorial material. Contextual translations are reviewed in the rendered interface before production promotion; source-level correctness alone is not sufficient.
 
 ### Canonical data that is not translated
 

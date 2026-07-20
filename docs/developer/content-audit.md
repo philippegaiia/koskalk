@@ -1,6 +1,6 @@
 # First Content Audit
 
-Last updated: 2026-07-11
+Last updated: 2026-07-20
 
 ## Scope
 
@@ -13,7 +13,9 @@ This first pass covers the public soap calculator and the shared soap/cosmetic r
 
 It does not yet cover the landing page, account settings, recipe index, production screens, email, or the English-only Filament admin.
 
-The homepage was reviewed separately on 2026-07-11. Its agreed localization model is version-controlled English copy and layout, translated as complete semantic blocks through Spatie. A separate CMS or page builder is not currently planned.
+The localization program is not limited to the workbench. This file starts there because it is the densest product surface; login and registration, account and settings, indexes, production, email, and other customer-facing workflows still need the same English review before translation.
+
+The homepage was reviewed separately on 2026-07-11. WordPress will later own marketing, editorial content, and complete end-user documentation. That work has not started: WordPress must first reproduce the current Laravel homepage, after which the project will explicitly decide whether it replaces `/` or launches separately. Homepage marketing blocks are therefore excluded from Laravel interface synchronization.
 
 The detailed review is stored in `.impeccable/critique/2026-07-11T08-25-41Z__resources-views-welcome-blade-php.md`. Its main conclusion is to preserve the visual identity and calculation preview while making the product category literal, correcting account-path promises, adding real workspace proof, and substantially reducing repeated persuasion.
 
@@ -25,7 +27,7 @@ Every user-facing text should have one owner:
 
 1. **Interface microcopy**: labels, buttons, statuses, concise errors, empty states, tooltips, and accessibility text. Store through Laravel/Spatie translation keys.
 2. **Contextual help**: short explanations tied to a field, metric, warning, or section. Manage as structured, translatable platform content when editors need to revise it without deployment.
-3. **Documentation**: concepts, methods, examples, assumptions, and compliance explanations that need more than a few sentences. Publish as articles and link to them from contextual help.
+3. **Documentation**: concepts, methods, examples, assumptions, and compliance explanations that need more than a few sentences. Publish later in WordPress and link to them from contextual help.
 4. **Platform data**: translated names or descriptions belonging to ingredients, product types, categories, regulatory regimes, and similar managed records.
 5. **Remove or rewrite**: redundant, developer-facing, vague, or overly technical copy that does not help the current task.
 
@@ -67,7 +69,7 @@ Recommended pattern:
 
 ### 5. Translation boundaries are currently mixed
 
-Most workbench strings are hard-coded in Blade, JavaScript, or PHP. Only isolated values such as currency names already use Laravel translation keys.
+Most workbench strings are still hard-coded in Blade, JavaScript, or PHP. The authenticated side menu is the first contextually translated application surface. Currency names now come from Symfony Intl and are deliberately not interface translation keys.
 
 The current content also mixes:
 
@@ -93,9 +95,9 @@ Patterns such as `Price per kilogram for ` plus an ingredient name, manually ass
 | Water mode and superfat | Names only, with critical negative-superfat confirmation | Microcopy plus contextual help | Keep controls concise; add help for mode definitions; retain a direct safety warning | P1 |
 | Ingredient browser | Search, filters, result counts, inspector labels | Microcopy plus platform data | Translate controls; translate category taxonomy separately; preserve ingredient names through platform-data resolution | P1 |
 | Ingredient rows | Dynamic accessible labels using concatenated strings | Interface microcopy | Use placeholder-based full strings | P1 |
-| Reaction core | Section title, balance status, lye/water totals | Interface microcopy | Keep; standardize `base`, `oils`, and `reaction core` terminology | P1 |
+| Saponification | Section title, balance status, lye/water totals | Interface microcopy | Use the approved `Saponification` heading and practical oil-and-lye terminology | P1 |
 | Cosmetic phases | Phase labels and full-formula-basis explanation | Microcopy plus contextual help | Keep labels; shorten visible explanation; document percentage/weight behavior once | P2 |
-| Post-reaction phases | Reorder instructions repeated in section descriptions | Remove or rewrite | Put drag behavior in accessible labels/tooltips; remove repeated visible instructions | P0 |
+| Formula additions | Reorder instructions repeated in section descriptions | Remove or rewrite | Use the approved `Formula additions` heading; put drag behavior in accessible labels/tooltips and remove repeated visible instructions | P0 |
 | Soap qualities | Metric labels, target states, dozens of interpretations | Microcopy plus contextual help/documentation | Keep metric names and concise states in UI; move explanations into editable help content; document methodology | P0 |
 | Output basis | Cured basis, residual water, ingredient normalization | Contextual help plus documentation | Keep assumptions visible as compact metadata; move rationale and examples out of the main flow | P0 |
 | Ingredient-list preview | Generated/final/plain-language variants and warnings | Microcopy plus documentation | Keep workflow labels; clarify `generated` versus `final`; document labeling limitations | P1 |
@@ -145,9 +147,9 @@ The audit identifies the following candidate topics for a future documentation s
 - Formula percentages versus weight entry
 - Ingredient and packaging costing basis
 
-These articles do not exist yet. When created, they should be available independently and reusable by contextual help and the future companion.
+These articles do not exist yet. When the WordPress documentation work begins, they should be available independently and reusable by contextual help.
 
-## Contextual help and companion direction
+## Contextual help and documentation direction
 
 Use stable semantic help keys such as:
 
@@ -158,7 +160,7 @@ Use stable semantic help keys such as:
 - `labeling.generated_vs_final`
 - `compliance.restriction_screening`
 
-A help record should eventually support title, concise summary, article body or article link, locale, publication status, revision metadata, and optional placement metadata. The workbench and companion should resolve the same published content by key. Do not maintain separate companion explanations.
+A help record should eventually support title, concise summary, WordPress article link, locale, publication status, revision metadata, and optional placement metadata. Do not maintain separate explanations for the interface and documentation.
 
 For safety and compliance content, show the concise warning directly in the workflow. Help and documentation may explain it further but must not hide information needed to avoid harm.
 
@@ -167,10 +169,9 @@ For safety and compliance content, show the concise warning directly in the work
 1. Complete the P0 copy cleanup before translating the workbench.
 2. Establish a terminology glossary for formula, phase, batch, base, output, ingredient list, INCI, restriction, and compliance terms.
 3. Move ordinary interface strings to Laravel/Spatie keys, including PHP and JavaScript messages.
-4. Define the information architecture for new end-user documentation, including getting-started and task-based guides.
+4. Define the information architecture for future WordPress documentation, including getting-started and task-based guides.
 5. Design the structured contextual-help and documentation model from the topics discovered here.
-6. Connect the future companion to the same help keys.
-7. Audit the remaining public application surfaces before activating another locale.
+6. Audit login and registration, account and settings, indexes, production, email, and the remaining public application surfaces before activating another locale.
 
 ## Audit limitation
 

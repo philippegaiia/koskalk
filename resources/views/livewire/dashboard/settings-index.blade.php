@@ -198,7 +198,7 @@
  <x-search-combobox
  id="company-currency-search"
  label="Default currency"
- :options="collect(config('currencies', []))->map(fn (array $data, string $code): array => ['id' => $code, 'label' => $code.' — '.__('currencies.'.$code), 'searchText' => $code.' '.__('currencies.'.$code)])->values()->all()"
+ :options="$currencyOptions"
  :selected-id="$companyCurrency"
  placeholder="Search currencies"
  :allow-empty="false"

@@ -203,7 +203,7 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
      */
     public function defaultCurrency(): string
     {
-        return $this->company()?->default_currency ?? config('currencies.default', 'EUR');
+        return $this->company()?->default_currency ?? config('currency.default', 'EUR');
     }
 
     public function canAccessPanel(Panel $panel): bool

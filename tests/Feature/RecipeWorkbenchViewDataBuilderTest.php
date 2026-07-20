@@ -7,6 +7,7 @@ use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Models\Workspace;
 use App\Services\RecipeWorkbenchIfraOptionsBuilder;
 use App\Services\RecipeWorkbenchIngredientCatalogBuilder;
 use App\Services\RecipeWorkbenchService;
@@ -205,4 +206,29 @@ it('includes the user packaging catalog in the initial workbench payload', funct
             'currency' => 'EUR',
             'notes' => 'Reusable catalog item',
         ]);
+});
+
+it('uses localized maintained currency choices and preserves the stored currency', function () {
+    app()->setLocale('fr');
+
+    $productFamily = ProductFamily::factory()->create(['slug' => 'soap']);
+    $user = User::factory()->create();
+    Workspace::factory()->for($user, 'owner')->create(['default_currency' => 'HRK']);
+
+    mock(RecipeWorkbenchService::class, function ($mock): void {
+        $mock->shouldReceive('currentVersionPayloadUsingCatalog')->andReturn(null);
+        $mock->shouldReceive('packagingCatalogPayload')->andReturn([]);
+        $mock->shouldReceive('phaseBlueprints')->andReturn([]);
+    });
+    mock(RecipeWorkbenchIngredientCatalogBuilder::class, fn ($mock) => $mock->shouldReceive('build')->andReturn([]));
+    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
+        $mock->shouldReceive('categories')->andReturn([]);
+        $mock->shouldReceive('defaultCategoryId')->andReturn(null);
+    });
+
+    $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, $user);
+
+    expect($payload['currencies']['USD'])->toBe('dollar des États-Unis')
+        ->and($payload['currencies'])->toHaveKey('HRK')
+        ->and($payload['currencies'])->not->toHaveKey('ZWL');
 });

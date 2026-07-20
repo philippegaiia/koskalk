@@ -5,6 +5,7 @@ namespace App\Livewire\Dashboard;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\CurrencyCatalog;
 use App\Services\LocalePreferenceResolver;
 use App\Support\NumberLocale;
 use App\WorkspaceMemberRole;
@@ -16,6 +17,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -61,6 +63,13 @@ class SettingsIndex extends Component
     public string $companyStatus = '';
 
     public string $companyMessage = '';
+
+    private CurrencyCatalog $currencyCatalog;
+
+    public function boot(CurrencyCatalog $currencyCatalog): void
+    {
+        $this->currencyCatalog = $currencyCatalog;
+    }
 
     public function mount(): void
     {
@@ -195,7 +204,7 @@ class SettingsIndex extends Component
     {
         $this->validate([
             'companyName' => ['required', 'string', 'max:255'],
-            'companyCurrency' => ['required', 'string', 'size:3', Rule::in(array_keys(config('currencies', [])))],
+            'companyCurrency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
         ]);
 
         /** @var User $user */
@@ -233,8 +242,17 @@ class SettingsIndex extends Component
         $this->companyMessage = 'Company settings saved.';
     }
 
-    public function render()
+    public function render(): View
     {
-        return view('livewire.dashboard.settings-index');
+        $currencyOptions = collect($this->currencyCatalog->options(
+            app()->getLocale(),
+            [$this->companyCurrency],
+        ))->map(fn (string $name, string $code): array => [
+            'id' => $code,
+            'label' => "{$code} — {$name}",
+            'searchText' => "{$code} {$name}",
+        ])->values()->all();
+
+        return view('livewire.dashboard.settings-index', compact('currencyOptions'));
     }
 }

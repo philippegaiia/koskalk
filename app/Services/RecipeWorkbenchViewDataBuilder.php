@@ -16,6 +16,7 @@ class RecipeWorkbenchViewDataBuilder
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly RecipeWorkbenchIngredientCatalogBuilder $recipeWorkbenchIngredientCatalogBuilder,
         private readonly RecipeWorkbenchIfraOptionsBuilder $recipeWorkbenchIfraOptionsBuilder,
+        private readonly CurrencyCatalog $currencyCatalog,
     ) {}
 
     /**
@@ -51,26 +52,11 @@ class RecipeWorkbenchViewDataBuilder
             'costingLoaded' => false,
             'packagingCatalog' => $this->recipeWorkbenchService->packagingCatalogPayload($user),
             'defaultCurrency' => $defaultCurrency,
-            'currencies' => $this->currencyOptions(),
+            'currencies' => $this->currencyCatalog->options(app()->getLocale(), [$defaultCurrency]),
             'numberLocale' => $user instanceof User ? NumberLocale::resolve($user->number_locale) : null,
             'numberLocaleOptions' => NumberLocale::options(),
             'canPersist' => $user instanceof User,
         ];
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private function currencyOptions(): array
-    {
-        $currencies = config('currencies', []);
-
-        return collect($currencies)
-            ->mapWithKeys(fn (array $data, string $code): array => [
-                $code => __('currencies.'.$code),
-            ])
-            ->sort()
-            ->all();
     }
 
     /**

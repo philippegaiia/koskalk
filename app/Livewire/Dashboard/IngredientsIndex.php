@@ -523,7 +523,7 @@ class IngredientsIndex extends Component
 
     private function priceColumnLabel(string $label): string
     {
-        return sprintf('%s (%s)', $label, $this->currentCurrency ?? config('currencies.default', 'EUR'));
+        return sprintf('%s (%s)', $label, $this->currentCurrency ?? config('currency.default', 'EUR'));
     }
 
     private function normalizedPerPage(): int

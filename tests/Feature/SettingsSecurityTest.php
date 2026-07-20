@@ -59,6 +59,24 @@ it('does not allow a locked company identifier to update another workspace', fun
     expect($otherWorkspace->refresh()->name)->toBe('Other');
 });
 
+it('accepts only current selectable currencies for company settings', function () {
+    $user = User::factory()->create();
+    Workspace::factory()->for($user, 'owner')->create(['name' => 'Soap Studio']);
+
+    $this->actingAs($user);
+
+    Livewire::test(SettingsIndex::class)
+        ->set('companyCurrency', 'ZZZ')
+        ->call('saveCompany')
+        ->assertHasErrors(['companyCurrency'])
+        ->set('companyCurrency', 'EUR')
+        ->call('saveCompany')
+        ->assertHasNoErrors()
+        ->assertSet('companyStatus', 'success');
+
+    expect($user->company()?->refresh()->default_currency)->toBe('EUR');
+});
+
 it('requires a strong password and rate limits current-password attempts', function () {
     $user = User::factory()->create([
         'password' => 'correct-password',

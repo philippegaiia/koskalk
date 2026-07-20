@@ -197,7 +197,7 @@ class PackagingItemsIndex extends Component
         return view('livewire.dashboard.packaging-items-index', [
             'currentUser' => $currentUser,
             'items' => $items,
-            'unitPriceLabel' => sprintf('Unit price (%s)', $this->currentCurrency ?? config('currencies.default', 'EUR')),
+            'unitPriceLabel' => sprintf('Unit price (%s)', $this->currentCurrency ?? config('currency.default', 'EUR')),
             'pendingDeleteItem' => $pendingDeleteItem,
             'pendingDeleteImpact' => $pendingDeleteItem instanceof UserPackagingItem && $currentUser instanceof User
                 ? $packagingItemFormulaMutationService->impact($currentUser, $pendingDeleteItem)

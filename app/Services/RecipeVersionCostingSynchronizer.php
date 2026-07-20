@@ -34,6 +34,7 @@ class RecipeVersionCostingSynchronizer
     public function __construct(
         private readonly UserIngredientPriceMemory $userIngredientPriceMemory,
         private readonly LiveCostingPricePropagationService $liveCostingPricePropagationService,
+        private readonly CurrencyCatalog $currencyCatalog,
     ) {}
 
     /**
@@ -638,9 +639,10 @@ class RecipeVersionCostingSynchronizer
     private function normalizeCurrency(mixed $value): string
     {
         $currency = strtoupper(trim((string) $value));
-        $validCurrencies = array_keys(config('currencies', []));
 
-        return in_array($currency, $validCurrencies, true) ? $currency : 'EUR';
+        return $this->currencyCatalog->isSelectable($currency)
+            ? $currency
+            : config('currency.default', 'EUR');
     }
 
     /** Normalize an oil unit to one of the allowed values, defaulting to grams. */

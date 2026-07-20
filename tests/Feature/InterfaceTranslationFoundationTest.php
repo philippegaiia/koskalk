@@ -6,6 +6,7 @@ use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Services\Translations\EnglishTranslationSource;
 use App\Services\Translations\SyncInterfaceTranslations;
+use Database\Seeders\InterfaceTranslationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
@@ -178,6 +179,41 @@ it('exposes a deployment-safe interface translation sync command', function () {
         ->and(Artisan::output())->toContain('interface translation keys', 'pruned')
         ->and(InterfaceTranslation::query()->where('group', 'validation')->exists())->toBeFalse()
         ->and(InterfaceTranslation::query()->count())->toBeGreaterThan(0);
+});
+
+it('seeds reviewed interface translations without overwriting editor changes', function () {
+    InterfaceTranslation::query()->create([
+        'group' => 'navigation',
+        'key' => 'items.overview',
+        'text' => ['fr' => 'Révision manuelle'],
+    ]);
+
+    $this->seed(InterfaceTranslationSeeder::class);
+
+    expect(InterfaceTranslation::query()
+        ->where('group', 'navigation')
+        ->where('key', 'items.overview')
+        ->firstOrFail()
+        ->text)
+        ->toMatchArray([
+            'fr' => 'Révision manuelle',
+            'es' => 'Resumen',
+            'de' => 'Übersicht',
+            'it' => 'Panoramica',
+            'nl' => 'Overzicht',
+        ])
+        ->and(InterfaceTranslation::query()
+            ->where('group', 'dashboard')
+            ->where('key', 'create.cosmetic')
+            ->firstOrFail()
+            ->text)
+        ->toBe([
+            'fr' => 'Nouveau produit cosmétique',
+            'es' => 'Nuevo producto cosmético',
+            'de' => 'Neues Kosmetikprodukt',
+            'it' => 'Nuovo prodotto cosmetico',
+            'nl' => 'Nieuw cosmeticaproduct',
+        ]);
 });
 
 it('provides English-only admin resources for locales and interface translations', function () {

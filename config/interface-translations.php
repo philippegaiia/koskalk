@@ -2,6 +2,7 @@
 
 return [
     'sources' => [
+        'dashboard' => ['*'],
         'navigation' => ['*'],
         'number_formats' => ['*'],
         'public' => ['*'],

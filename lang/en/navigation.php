@@ -3,7 +3,7 @@
 return [
     'items' => [
         'overview' => 'Overview',
-        'formulas' => 'Formulas',
+        'formulas' => 'Products',
         'ingredients' => 'Ingredients',
         'packaging' => 'Packaging',
         'compliance' => 'Compliance',

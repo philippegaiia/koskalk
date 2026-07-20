@@ -55,17 +55,20 @@ it('renders the simplified dashboard with creation buttons, stat cards, and user
     $this->actingAs($user)
         ->get(route('dashboard'))
         ->assertSuccessful()
-        ->assertSee('Create soap formula')
-        ->assertSee('Create cosmetic formula')
-        ->assertSee('Recipes')
-        ->assertSee('Formulas')
+        ->assertSee('Create a product')
+        ->assertSee('New soap product')
+        ->assertSee('New cosmetic product')
+        ->assertSee('Your products')
+        ->assertSee('Products')
         ->assertSee('Ingredients')
         ->assertSee('Marie Maker')
         ->assertSee('marie@example.com')
         ->assertSee('Free account')
         ->assertDontSee('mt-3 flex min-w-0 items-start gap-3', false)
         ->assertDontSee('max-w-44 truncate text-xs text-[var(--color-ink-soft)]', false)
-        ->assertSee('Locked');
+        ->assertSee('Locked products')
+        ->assertDontSee('Welcome to your formulation workspace.')
+        ->assertDontSee('More modules coming soon.');
 });
 
 it('shows recipe and lock counts for the current user only', function () {

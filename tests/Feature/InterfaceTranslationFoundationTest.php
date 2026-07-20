@@ -53,54 +53,80 @@ it('seeds the initial locales without preventing future languages', function () 
         ->toBe('en');
 });
 
-it('reads keyed English source strings from Laravel language files', function () {
+it('reads only application-owned English source strings from Laravel language files', function () {
     expect(method_exists(EnglishTranslationSource::class, 'get'))->toBeTrue()
         ->and(method_exists(EnglishTranslationSource::class, 'all'))->toBeTrue();
 
     $source = app(EnglishTranslationSource::class);
 
-    expect($source->get('currencies', 'EUR'))->toBe('Euro')
-        ->and($source->get('homepage', 'hero.title'))->toBe('Make the formula. Keep the whole record.')
-        ->and($source->get('public', 'navigation.product'))->toBe('Product')
-        ->and($source->all())->toHaveKey('currencies.EUR', 'Euro');
+    expect($source->get('auth', 'login.heading'))->toBe('Sign in to your workspace')
+        ->and($source->get('auth', 'failed'))->toBeNull()
+        ->and($source->get('validation', 'required'))->toBeNull()
+        ->and($source->get('homepage', 'hero.title'))->toBeNull()
+        ->and($source->get('currencies', 'EUR'))->toBeNull()
+        ->and($source->all())->toHaveKey('public.language.label');
 });
 
 it('synchronizes missing interface keys without overwriting translations', function () {
     expect(method_exists(SyncInterfaceTranslations::class, 'handle'))->toBeTrue();
 
     InterfaceTranslation::query()->create([
-        'group' => 'currencies',
-        'key' => 'EUR',
-        'text' => ['fr' => 'euro personnalisé'],
+        'group' => 'auth',
+        'key' => 'login.heading',
+        'text' => ['fr' => 'Connexion à votre espace'],
     ]);
 
     $result = app(SyncInterfaceTranslations::class)->handle();
 
     expect($result['created'])->toBeGreaterThan(0)
-        ->and(InterfaceTranslation::query()->where('group', 'currencies')->where('key', 'EUR')->value('text'))
-        ->toBe(['fr' => 'euro personnalisé'])
-        ->and(InterfaceTranslation::query()->where('group', 'currencies')->where('key', 'GBP')->value('text'))
+        ->and(InterfaceTranslation::query()->where('group', 'auth')->where('key', 'login.heading')->value('text'))
+        ->toBe(['fr' => 'Connexion à votre espace'])
+        ->and(InterfaceTranslation::query()->where('group', 'public')->where('key', 'navigation.product')->value('text'))
         ->toBe([])
-        ->and(InterfaceTranslation::query()->where('group', 'homepage')->where('key', 'hero.title')->exists())
-        ->toBeTrue()
-        ->and(InterfaceTranslation::query()->where('group', 'public')->where('key', 'navigation.product')->exists())
-        ->toBeTrue();
+        ->and(InterfaceTranslation::query()->whereIn('group', ['currencies', 'homepage', 'validation'])->exists())
+        ->toBeFalse();
 });
 
 it('uses database translations while retaining the English file fallback', function () {
     InterfaceTranslation::query()->create([
-        'group' => 'currencies',
-        'key' => 'EUR',
-        'text' => ['fr' => 'Euro français'],
+        'group' => 'public',
+        'key' => 'navigation.product',
+        'text' => ['fr' => 'Produit'],
     ]);
 
     App::setLocale('fr');
 
-    expect(__('currencies.EUR'))->toBe('Euro français');
+    expect(__('public.navigation.product'))->toBe('Produit');
 
     App::setLocale('de');
 
-    expect(__('currencies.EUR'))->toBe('Euro');
+    expect(__('public.navigation.product'))->toBe('Product');
+});
+
+it('prunes only rows outside the application-owned source when explicitly requested', function () {
+    InterfaceTranslation::query()->create([
+        'group' => 'auth',
+        'key' => 'login.heading',
+        'text' => ['fr' => 'Connexion'],
+    ]);
+    InterfaceTranslation::query()->create([
+        'group' => 'validation',
+        'key' => 'required',
+        'text' => [],
+    ]);
+    InterfaceTranslation::query()->create([
+        'group' => 'homepage',
+        'key' => 'hero.title',
+        'text' => [],
+    ]);
+
+    $result = app(SyncInterfaceTranslations::class)->handle(prune: true);
+
+    expect($result['pruned'])->toBe(2)
+        ->and(InterfaceTranslation::query()->where('group', 'auth')->where('key', 'login.heading')->value('text'))
+        ->toBe(['fr' => 'Connexion'])
+        ->and(InterfaceTranslation::query()->whereIn('group', ['validation', 'homepage'])->exists())
+        ->toBeFalse();
 });
 
 it('rejects translations that change named placeholders', function () {
@@ -127,10 +153,17 @@ it('rejects translations that change named placeholders', function () {
 it('exposes a deployment-safe interface translation sync command', function () {
     expect(Artisan::all())->toHaveKey('translations:sync');
 
-    $exitCode = Artisan::call('translations:sync');
+    InterfaceTranslation::query()->create([
+        'group' => 'validation',
+        'key' => 'required',
+        'text' => [],
+    ]);
+
+    $exitCode = Artisan::call('translations:sync', ['--prune' => true]);
 
     expect($exitCode)->toBe(0)
-        ->and(Artisan::output())->toContain('interface translation keys')
+        ->and(Artisan::output())->toContain('interface translation keys', 'pruned')
+        ->and(InterfaceTranslation::query()->where('group', 'validation')->exists())->toBeFalse()
         ->and(InterfaceTranslation::query()->count())->toBeGreaterThan(0);
 });
 
@@ -152,8 +185,8 @@ it('renders the locale registry and translation editor in English', function () 
 
     $admin = User::factory()->admin()->create();
     $translation = InterfaceTranslation::query()
-        ->where('group', 'currencies')
-        ->where('key', 'EUR')
+        ->where('group', 'auth')
+        ->where('key', 'login.heading')
         ->firstOrFail();
 
     App::setLocale('fr');
@@ -167,14 +200,14 @@ it('renders the locale registry and translation editor in English', function () 
 
     $this->get($translationResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
-        ->assertSee('currencies')
-        ->assertSee('AED')
+        ->assertSee('auth')
+        ->assertSee('login.heading')
         ->assertSee('English source');
 
     $this->get($translationResource::getUrl('edit', ['record' => $translation], panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('English source')
-        ->assertSee('Euro')
+        ->assertSee('Sign in to your workspace')
         ->assertSee('French')
         ->assertSee('Spanish');
 
@@ -187,8 +220,8 @@ it('lets an administrator save interface translations without changing the key',
 
     $admin = User::factory()->admin()->create();
     $translation = InterfaceTranslation::query()
-        ->where('group', 'currencies')
-        ->where('key', 'EUR')
+        ->where('group', 'auth')
+        ->where('key', 'login.heading')
         ->firstOrFail();
 
     $this->actingAs($admin);
@@ -196,14 +229,14 @@ it('lets an administrator save interface translations without changing the key',
     Livewire::test(EditInterfaceTranslation::class, ['record' => $translation->getKey()])
         ->fillForm([
             'text' => [
-                'fr' => 'Euro français',
+                'fr' => 'Connexion à votre espace',
             ],
         ])
         ->call('save')
         ->assertHasNoFormErrors();
 
     expect($translation->refresh())
-        ->group->toBe('currencies')
-        ->key->toBe('EUR')
-        ->text->toBe(['fr' => 'Euro français']);
+        ->group->toBe('auth')
+        ->key->toBe('login.heading')
+        ->text->toBe(['fr' => 'Connexion à votre espace']);
 });

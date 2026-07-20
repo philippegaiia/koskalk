@@ -4,6 +4,7 @@ namespace App\Services\Translations;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class EnglishTranslationSource
 {
@@ -23,20 +24,21 @@ class EnglishTranslationSource
 
         $translations = [];
 
-        foreach (File::files(lang_path('en')) as $file) {
-            if ($file->getExtension() !== 'php') {
+        foreach (config('interface-translations.sources', []) as $group => $patterns) {
+            $path = lang_path("en/{$group}.php");
+
+            if (! File::exists($path)) {
                 continue;
             }
 
-            $group = $file->getFilenameWithoutExtension();
-            $lines = require $file->getPathname();
+            $lines = require $path;
 
             if (! is_array($lines)) {
                 continue;
             }
 
             foreach (Arr::dot($lines) as $key => $value) {
-                if (is_string($value)) {
+                if (is_string($value) && Str::is($patterns, $key)) {
                     $translations["{$group}.{$key}"] = $value;
                 }
             }

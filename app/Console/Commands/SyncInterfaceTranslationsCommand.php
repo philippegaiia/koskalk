@@ -7,7 +7,7 @@ use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 
-#[Signature('translations:sync')]
+#[Signature('translations:sync {--prune : Delete database rows that are not application-owned English keys}')]
 #[Description('Insert missing interface translation keys without overwriting existing translations')]
 class SyncInterfaceTranslationsCommand extends Command
 {
@@ -21,12 +21,13 @@ class SyncInterfaceTranslationsCommand extends Command
      */
     public function handle(): int
     {
-        $result = $this->synchronizer->handle();
+        $result = $this->synchronizer->handle(prune: (bool) $this->option('prune'));
 
         $this->info(sprintf(
-            'Synchronized interface translation keys: %d created, %d already present.',
+            'Synchronized interface translation keys: %d created, %d already present, %d pruned.',
             $result['created'],
             $result['existing'],
+            $result['pruned'],
         ));
 
         return self::SUCCESS;

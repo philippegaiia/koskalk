@@ -63,6 +63,16 @@ class SupportedLocaleSeeder extends Seeder
                 'is_default' => false,
                 'sort_order' => 50,
             ],
+            [
+                'code' => 'nl',
+                'name' => 'Dutch',
+                'native_name' => 'Nederlands',
+                'number_locale' => 'nl_NL',
+                'text_direction' => 'ltr',
+                'is_active' => false,
+                'is_default' => false,
+                'sort_order' => 60,
+            ],
         ], ['code'], [
             'name',
             'native_name',

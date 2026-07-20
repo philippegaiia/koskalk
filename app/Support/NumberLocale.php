@@ -72,6 +72,6 @@ class NumberLocale
 
     private static function usesDecimalComma(string $locale): bool
     {
-        return in_array($locale, ['fr_FR', 'es_ES', 'de_DE', 'it_IT'], true);
+        return in_array($locale, ['fr_FR', 'es_ES', 'de_DE', 'it_IT', 'nl_NL'], true);
     }
 }

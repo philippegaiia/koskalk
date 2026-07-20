@@ -10,5 +10,6 @@ return [
         'es_ES' => 'Spanish · 1.234,56',
         'de_DE' => 'German · 1.234,56',
         'it_IT' => 'Italian · 1.234,56',
+        'nl_NL' => 'Dutch · 1.234,56',
     ],
 ];

@@ -48,9 +48,22 @@ it('seeds the initial locales without preventing future languages', function () 
     $this->seed($seeder);
 
     expect(SupportedLocale::query()->orderBy('sort_order')->pluck('code')->all())
-        ->toBe(['en', 'fr', 'es', 'de', 'it'])
+        ->toBe(['en', 'fr', 'es', 'de', 'it', 'nl'])
         ->and(SupportedLocale::query()->where('is_default', true)->value('code'))
-        ->toBe('en');
+        ->toBe('en')
+        ->and(SupportedLocale::query()->where('code', 'nl')->firstOrFail()->only([
+            'native_name',
+            'number_locale',
+            'text_direction',
+            'is_active',
+            'sort_order',
+        ]))->toBe([
+            'native_name' => 'Nederlands',
+            'number_locale' => 'nl_NL',
+            'text_direction' => 'ltr',
+            'is_active' => false,
+            'sort_order' => 60,
+        ]);
 });
 
 it('reads only application-owned English source strings from Laravel language files', function () {

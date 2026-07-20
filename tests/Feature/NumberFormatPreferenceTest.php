@@ -21,8 +21,11 @@ it('defines number formats separately from interface languages', function () {
             'es_ES',
             'de_DE',
             'it_IT',
+            'nl_NL',
         ])
         ->and(NumberLocale::isSupported('en_GB'))->toBeTrue()
+        ->and(NumberLocale::isSupported('nl_NL'))->toBeTrue()
+        ->and(NumberLocale::formatDecimal(1234.56, 2, 'nl_NL'))->toBe('1234,56')
         ->and(NumberLocale::isSupported('pt_BR'))->toBeFalse();
 });
 

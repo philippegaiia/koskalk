@@ -58,6 +58,7 @@ it('renders the simplified dashboard with creation buttons, stat cards, and user
         ->assertSee('Create soap formula')
         ->assertSee('Create cosmetic formula')
         ->assertSee('Recipes')
+        ->assertSee('Formulas')
         ->assertSee('Ingredients')
         ->assertSee('Marie Maker')
         ->assertSee('marie@example.com')

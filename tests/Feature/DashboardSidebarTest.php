@@ -12,6 +12,9 @@ it('allows the hamburger to open the sidebar below the desktop breakpoint', func
         ->not->toContain('const nextOpen = isDesktop ? open : false;')
         ->and($appShell)
         ->toContain('data-sidebar-header-toggle')
+        ->toContain("__('navigation.items.overview')")
+        ->toContain("__('navigation.items.formulas')")
+        ->toContain("__('navigation.actions.sign_out')")
         ->toContain('bg-[var(--color-forest-deep)] text-[var(--color-inverse)]')
         ->toContain('hover:bg-[var(--color-forest-mid)]')
         ->not->toContain('bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]');

@@ -18,6 +18,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
 use App\Services\IngredientFormulaMutationService;
+use App\Services\MediaStorage;
 use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,6 +27,10 @@ use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyExceptio
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Storage::fake(MediaStorage::userDisk());
+});
 
 it('renders the public ingredients index with only the current users private ingredients', function () {
     $user = User::factory()->create();
@@ -198,7 +203,7 @@ it('allows deleting an unused personal ingredient from the catalog table', funct
     Livewire::test(IngredientsIndex::class)
         ->call('confirmDelete', $ingredient->id)
         ->assertSet('pendingDeleteId', $ingredient->id)
-        ->assertSee('This removes the ingredient from your private catalog.')
+        ->assertSee('This removes the ingredient from your catalog.')
         ->call('deleteIngredient')
         ->assertSet('pendingDeleteId', null)
         ->assertSee('Disposable Ingredient was deleted.');
@@ -226,7 +231,7 @@ it('uses the complex removal dialog for a composite only dependency', function (
         ->assertSee('Used in 1 composite ingredient.')
         ->assertDontSee('Also used in 1 composite ingredient.')
         ->assertSee('Replace everywhere and delete')
-        ->assertDontSee('This removes the ingredient from your private catalog.')
+        ->assertDontSee('This removes the ingredient from your catalog.')
         ->set('replacementIngredientId', $replacement->id)
         ->call('replaceEverywhereAndDelete')
         ->assertHasNoErrors();
@@ -260,7 +265,7 @@ it('shows and blocks a visible composite dependency that cannot be edited', func
         ->call('confirmDelete', $source->id)
         ->assertSee('Platform Protected Blend')
         ->assertSee('Edit the affected composite ingredients manually')
-        ->assertDontSee('This removes the ingredient from your private catalog.');
+        ->assertDontSee('This removes the ingredient from your catalog.');
 
     expect(ingredientButtonIsDisabled($component->html(), null, 'replaceEverywhereAndDelete'))->toBeTrue()
         ->and(ingredientButtonIsDisabled($component->html(), null, 'removeEverywhereAndDelete'))->toBeTrue();
@@ -440,7 +445,7 @@ it('closes a stale ingredient dialog and shows a persistent page error', functio
         ->call('deleteIngredient')
         ->assertSet('pendingDeleteId', null)
         ->assertSet('replacementIngredientId', null)
-        ->assertSee('The ingredient is no longer available in your private catalog.')
+        ->assertSee('The ingredient is no longer available in your catalog.')
         ->assertDontSee('Vanishing Additive')
         ->assertDispatched('ingredient-removal-closed');
 });
@@ -461,7 +466,7 @@ it('replaces a used ingredient everywhere and closes the dialog', function () {
         ->assertSet('pendingDeleteId', null)
         ->assertSet('replacementIngredientId', null)
         ->assertSee('Old Additive was replaced everywhere and deleted.')
-        ->assertSee('Mine (1)');
+        ->assertSee('Your ingredients (1)');
 
     expect($source->fresh())->toBeNull()
         ->and($recipeItem->fresh()->ingredient_id)->toBe($replacement->id);
@@ -480,7 +485,7 @@ it('removes a used ingredient everywhere and closes the dialog', function () {
         ->assertHasNoErrors()
         ->assertSet('pendingDeleteId', null)
         ->assertSee('Obsolete Additive was removed everywhere and deleted.')
-        ->assertSee('Mine (0)');
+        ->assertSee('Your ingredients (0)');
 
     expect($source->fresh())->toBeNull()
         ->and($recipeItem->fresh())->toBeNull();
@@ -787,7 +792,7 @@ it('shows history-only usage in the catalog while preserving deletion safeguards
     $this->actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->assertSee('Used in history of 1 formula')
+        ->assertSee('Used in the history of 1 formula')
         ->call('toggleUsage', $ingredient->id)
         ->assertSee($recipe->name)
         ->assertSee('History only')
@@ -977,14 +982,13 @@ it('shows authenticated users the platform ingredient record in read-only form',
     $this->actingAs($user)
         ->get(route('ingredients.edit', $ingredient))
         ->assertSuccessful()
-        ->assertSeeText('Platform ingredient')
-        ->assertSeeText('Ingredient reference')
+        ->assertSeeText('Soapkraft ingredient')
         ->assertSeeText('Platform Lavender Oil')
         ->assertSee('LAVANDULA ANGUSTIFOLIA OIL')
         ->assertSee('8000-28-0')
         ->assertSee('289-995-2')
         ->assertSeeText('LINALOOL')
-        ->assertDontSeeText('Save ingredient');
+        ->assertDontSeeText('Save changes');
 });
 
 it('rejects a forced Livewire save of a platform ingredient', function () {
@@ -1134,16 +1138,16 @@ it('renders the public ingredient create page for signed in users', function () 
         ->assertSeeHtml('aria-current="page"')
         ->assertSeeText('Ingredients')
         ->assertSeeText('New ingredient')
-        ->assertSeeText('Create a personal ingredient')
+        ->assertSeeText('Add an ingredient to your library.')
         ->assertDontSeeText('Back to ingredients')
         ->assertDontSeeText('Create the ingredient now, then enrich it on the next screen.')
-        ->assertSee('Identity')
-        ->assertSeeText('Essential details')
-        ->assertSeeText('Supplier and identifiers')
-        ->assertSeeText('Media and notes')
+        ->assertSee('Details')
+        ->assertSeeText('Ingredient details')
+        ->assertSeeText('Supplier details')
+        ->assertSeeText('Images and notes')
         ->assertSee('CAS number')
-        ->assertSee('EINECS / EC number')
-        ->assertSee('Organic')
+        ->assertSee('EC / EINECS number')
+        ->assertSee('Certified organic')
         ->assertDontSee('Allergens')
         ->assertDontSee('IFRA guidance');
 });
@@ -1158,7 +1162,7 @@ it('uses the ingredient name as compact edit-page context', function () {
         ->assertSeeHtml('aria-label="Breadcrumb"')
         ->assertSeeHtml('aria-current="page"')
         ->assertSeeText('My Glycerin')
-        ->assertSeeText('Edit personal ingredient')
+        ->assertSeeText('Edit ingredient details.')
         ->assertDontSeeText('Back to ingredients')
         ->assertDontSeeText('Refine the ingredient, its components, and optional aromatic compliance.');
 });
@@ -1173,7 +1177,7 @@ it('keeps one compact non-obstructing create action visible in the ingredient ed
     $saveAction = ingredientSaveActionState($response->getContent());
 
     expect($saveAction['submit_count'])->toBe(1)
-        ->and($saveAction['label'])->toBe('Create ingredient')
+        ->and($saveAction['label'])->toBe('Add ingredient')
         ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-10')
         ->not->toContain('sticky', 'z-30', 'border-t', 'bg-[var(--color-surface)]')
         ->and($saveAction['button_classes'])->toContain('pointer-events-auto', 'sk-btn', 'sk-btn-primary')
@@ -1191,7 +1195,7 @@ it('keeps one compact non-obstructing save action visible in the ingredient edit
     $saveAction = ingredientSaveActionState($response->getContent());
 
     expect($saveAction['submit_count'])->toBe(1)
-        ->and($saveAction['label'])->toBe('Save ingredient')
+        ->and($saveAction['label'])->toBe('Save changes')
         ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-10')
         ->not->toContain('sticky', 'z-30', 'border-t', 'bg-[var(--color-surface)]')
         ->and($saveAction['button_classes'])->toContain('pointer-events-auto', 'sk-btn', 'sk-btn-primary')

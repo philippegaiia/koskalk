@@ -112,8 +112,8 @@ it('shows billable plans with checkout disabled until Paddle keys are configured
         ->assertSuccessful()
         ->assertSeeText('Paddle')
         ->assertSeeText('Growth')
-        ->assertSeeText('Checkout disabled')
-        ->assertSeeText('Connect the Paddle API key and client-side token to enable checkout.');
+        ->assertSeeText('Checkout unavailable')
+        ->assertSeeText('Online checkout is not available yet.');
 });
 
 it('does not start Paddle checkout when billing keys are missing', function () {
@@ -130,7 +130,7 @@ it('does not start Paddle checkout when billing keys are missing', function () {
     $this->actingAs($user)
         ->get(route('billing.checkout', $plan))
         ->assertRedirect(route('account'))
-        ->assertSessionHas('billing_status', 'Paddle is installed, but checkout is disabled until the Paddle API key and client-side token are configured.');
+        ->assertSessionHas('billing_status', __('account.billing.online_checkout_unavailable'));
 });
 
 it('does not start a payment method update when billing keys are missing', function () {
@@ -145,7 +145,7 @@ it('does not start a payment method update when billing keys are missing', funct
     $this->actingAs($user)
         ->post(route('billing.payment-method.update'))
         ->assertRedirect(route('account'))
-        ->assertSessionHas('billing_status', 'Paddle is installed, but payment method updates are disabled until the Paddle API key and client-side token are configured.');
+        ->assertSessionHas('billing_status', __('account.billing.payment_update_unavailable'));
 });
 
 it('syncs the app entitlement when Paddle creates a paid subscription', function () {

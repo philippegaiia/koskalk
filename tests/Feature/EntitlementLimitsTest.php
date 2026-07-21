@@ -76,7 +76,7 @@ it('counts formulas against the subscriber workspace allowance for every workspa
         ]);
 });
 
-it('shows the company formula total on the subscriber account page', function () {
+it('shows the workspace product total on the subscriber account page', function () {
     $subscriber = User::factory()->create(['email_verified_at' => now()]);
     $workspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
     $plan = Plan::factory()

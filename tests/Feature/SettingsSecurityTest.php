@@ -1,8 +1,12 @@
 <?php
 
 use App\Livewire\Dashboard\SettingsIndex;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMember;
+use App\WorkspaceMemberRole;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
@@ -23,27 +27,49 @@ it('does not expose workspace membership or invitation controls during the MVP',
         ->and(method_exists(SettingsIndex::class, 'removeMember'))->toBeFalse();
 });
 
-it('keeps the provisioned login email immutable while allowing profile changes', function () {
+it('leaves profile and password management exclusively on the account page', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(SettingsIndex::class)
+        ->assertDontSee('Save profile')
+        ->assertDontSee('Current password')
+        ->assertDontSee('Update password');
+
+    expect(method_exists(SettingsIndex::class, 'saveProfile'))->toBeFalse()
+        ->and(method_exists(SettingsIndex::class, 'updatePassword'))->toBeFalse()
+        ->and(method_exists(SettingsIndex::class, 'savePreferences'))->toBeTrue();
+});
+
+it('saves display preferences without changing account identity', function () {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+
     $user = User::factory()->create([
         'name' => 'Original Owner',
         'email' => 'owner@example.com',
+        'locale' => 'en',
+        'number_locale' => 'en_US',
     ]);
 
     $this->actingAs($user);
 
     Livewire::test(SettingsIndex::class)
-        ->set('name', 'Updated Owner')
-        ->set('email', 'attacker@example.com')
-        ->call('saveProfile')
+        ->set('locale', 'fr')
+        ->set('numberLocale', 'fr_FR')
+        ->call('savePreferences')
         ->assertHasNoErrors()
-        ->assertSet('profileStatus', 'success');
+        ->assertSet('preferencesStatus', 'success');
 
     expect($user->refresh())
-        ->name->toBe('Updated Owner')
-        ->email->toBe('owner@example.com');
+        ->name->toBe('Original Owner')
+        ->email->toBe('owner@example.com')
+        ->locale->toBe('fr')
+        ->number_locale->toBe('fr_FR');
 });
 
-it('does not allow a locked company identifier to update another workspace', function () {
+it('does not allow a locked workspace identifier to update another workspace', function () {
     $owner = User::factory()->create();
     $otherOwner = User::factory()->create();
     $ownedWorkspace = Workspace::factory()->for($owner, 'owner')->create(['name' => 'Owned']);
@@ -52,75 +78,48 @@ it('does not allow a locked company identifier to update another workspace', fun
     $this->actingAs($owner);
 
     expect(fn () => Livewire::test(SettingsIndex::class)
-        ->assertSet('companyId', $ownedWorkspace->id)
-        ->set('companyId', $otherWorkspace->id))
+        ->assertSet('workspaceId', $ownedWorkspace->id)
+        ->set('workspaceId', $otherWorkspace->id))
         ->toThrow(CannotUpdateLockedPropertyException::class);
 
     expect($otherWorkspace->refresh()->name)->toBe('Other');
 });
 
-it('accepts only current selectable currencies for company settings', function () {
+it('accepts only current selectable currencies for workspace settings', function () {
     $user = User::factory()->create();
     Workspace::factory()->for($user, 'owner')->create(['name' => 'Soap Studio']);
 
     $this->actingAs($user);
 
     Livewire::test(SettingsIndex::class)
-        ->set('companyCurrency', 'ZZZ')
-        ->call('saveCompany')
-        ->assertHasErrors(['companyCurrency'])
-        ->set('companyCurrency', 'EUR')
-        ->call('saveCompany')
+        ->set('workspaceCurrency', 'ZZZ')
+        ->call('saveWorkspace')
+        ->assertHasErrors(['workspaceCurrency'])
+        ->set('workspaceCurrency', 'EUR')
+        ->call('saveWorkspace')
         ->assertHasNoErrors()
-        ->assertSet('companyStatus', 'success');
+        ->assertSet('workspaceStatus', 'success');
 
     expect($user->company()?->refresh()->default_currency)->toBe('EUR');
 });
 
-it('requires a strong password and rate limits current-password attempts', function () {
-    $user = User::factory()->create([
-        'password' => 'correct-password',
+it('denies workspace settings changes to non-owner members', function () {
+    $owner = User::factory()->create();
+    $member = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create(['name' => 'Owner workspace']);
+
+    WorkspaceMember::factory()->for($workspace)->for($member)->create([
+        'role' => WorkspaceMemberRole::Admin,
     ]);
-    $this->actingAs($user);
+    $member->update(['active_workspace_id' => $workspace->id]);
+
+    $this->actingAs($member);
 
     Livewire::test(SettingsIndex::class)
-        ->set('currentPassword', 'correct-password')
-        ->set('newPassword', 'too-short')
-        ->set('newPasswordConfirmation', 'too-short')
-        ->call('updatePassword')
-        ->assertHasErrors(['newPassword']);
+        ->assertSet('workspaceId', $workspace->id)
+        ->set('workspaceName', 'Unauthorized change')
+        ->call('saveWorkspace')
+        ->assertForbidden();
 
-    $component = Livewire::test(SettingsIndex::class)
-        ->set('newPassword', 'SecureSettings1!')
-        ->set('newPasswordConfirmation', 'SecureSettings1!');
-
-    foreach (range(1, 5) as $attempt) {
-        $component
-            ->set('currentPassword', 'wrong-password-'.$attempt)
-            ->call('updatePassword')
-            ->assertHasErrors(['currentPassword']);
-    }
-
-    $component
-        ->set('currentPassword', 'wrong-password-6')
-        ->call('updatePassword')
-        ->assertHasErrors(['currentPassword'])
-        ->assertSee('Too many password attempts');
+    expect($workspace->refresh()->name)->toBe('Owner workspace');
 });
-
-it('rejects settings passwords missing a required character class', function (string $password) {
-    $user = User::factory()->create(['password' => 'correct-password']);
-    $this->actingAs($user);
-
-    Livewire::test(SettingsIndex::class)
-        ->set('currentPassword', 'correct-password')
-        ->set('newPassword', $password)
-        ->set('newPasswordConfirmation', $password)
-        ->call('updatePassword')
-        ->assertHasErrors(['newPassword']);
-})->with([
-    'missing uppercase' => 'securelaunch1!',
-    'missing lowercase' => 'SECURELAUNCH1!',
-    'missing number' => 'SecureLaunch!!',
-    'missing symbol' => 'SecureLaunch12',
-]);

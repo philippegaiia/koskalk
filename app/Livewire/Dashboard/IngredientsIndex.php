@@ -116,7 +116,9 @@ class IngredientsIndex extends Component
             'ingredients' => $ingredients,
             'privateIngredientUsage' => $privateIngredientUsage,
             'formulaUsageByIngredient' => $formulaUsageByIngredient,
-            'priceLabel' => $this->priceColumnLabel('Price/kg'),
+            'priceLabel' => __('ingredients.price.column', [
+                'currency' => $this->currentCurrency ?? config('currency.default', 'EUR'),
+            ]),
             'pendingDeleteIngredient' => $pendingDeleteIngredient,
             'pendingDeleteImpact' => $pendingDeleteImpact,
             'replacementCandidates' => $replacementCandidates,
@@ -129,10 +131,10 @@ class IngredientsIndex extends Component
     public function ownershipFilterOptions(): array
     {
         return [
-            'all' => 'All ingredients',
-            'mine' => 'Mine',
-            'platform' => 'Platform',
-            'priced' => 'Priced',
+            'all' => __('ingredients.filters.all'),
+            'mine' => __('ingredients.filters.yours'),
+            'platform' => __('ingredients.filters.soapkraft'),
+            'priced' => __('ingredients.filters.priced'),
         ];
     }
 
@@ -237,7 +239,7 @@ class IngredientsIndex extends Component
 
         if (! $replacementIsAvailable) {
             $this->replacementIngredientId = null;
-            $this->addError('replacementIngredientId', 'Choose an available compatible replacement ingredient.');
+            $this->addError('replacementIngredientId', __('ingredients.validation.choose_compatible_replacement'));
 
             return;
         }
@@ -271,7 +273,7 @@ class IngredientsIndex extends Component
         $impact = $ingredientFormulaMutationService->impact($user, $ingredient);
 
         if ($impact['formula_count'] > 0 || $impact['composite_count'] > 0) {
-            $this->addError('ingredient', 'Choose how to update the formulas or composite ingredients that use this ingredient.');
+            $this->addError('ingredient', __('ingredients.validation.choose_dependency_action'));
 
             return;
         }
@@ -285,7 +287,7 @@ class IngredientsIndex extends Component
             return;
         }
 
-        $this->finishMutation($ingredientName.' was deleted.');
+        $this->finishMutation(__('ingredients.status.deleted', ['ingredient' => $ingredientName]));
     }
 
     public function replaceEverywhereAndDelete(IngredientFormulaMutationService $ingredientFormulaMutationService): void
@@ -305,7 +307,7 @@ class IngredientsIndex extends Component
         }
 
         if ($this->replacementIngredientId === null) {
-            $this->addError('replacementIngredientId', 'Choose a replacement ingredient.');
+            $this->addError('replacementIngredientId', __('ingredients.validation.choose_replacement'));
 
             return;
         }
@@ -313,7 +315,7 @@ class IngredientsIndex extends Component
         $replacement = Ingredient::query()->find($this->replacementIngredientId);
 
         if (! $replacement instanceof Ingredient) {
-            $this->addError('replacementIngredientId', 'The selected replacement ingredient is no longer available.');
+            $this->addError('replacementIngredientId', __('ingredients.validation.replacement_unavailable'));
 
             return;
         }
@@ -327,7 +329,7 @@ class IngredientsIndex extends Component
             return;
         }
 
-        $this->finishMutation($ingredientName.' was replaced everywhere and deleted.');
+        $this->finishMutation(__('ingredients.status.replaced_and_deleted', ['ingredient' => $ingredientName]));
     }
 
     public function removeEverywhereAndDelete(IngredientFormulaMutationService $ingredientFormulaMutationService): void
@@ -355,7 +357,7 @@ class IngredientsIndex extends Component
             return;
         }
 
-        $this->finishMutation($ingredientName.' was removed everywhere and deleted.');
+        $this->finishMutation(__('ingredients.status.removed_and_deleted', ['ingredient' => $ingredientName]));
     }
 
     public function catalogImageUrl(Ingredient $ingredient): ?string
@@ -485,7 +487,7 @@ class IngredientsIndex extends Component
     private function closeMissingPendingIngredient(): void
     {
         $this->restoreFocusToPendingTrigger();
-        $this->statusMessage = 'The ingredient is no longer available in your private catalog.';
+        $this->statusMessage = __('ingredients.status.unavailable');
         $this->statusType = 'error';
         $this->pendingDeleteId = null;
         $this->replacementIngredientId = null;
@@ -519,11 +521,6 @@ class IngredientsIndex extends Component
     private function currentUser(): ?User
     {
         return app(CurrentAppUserResolver::class)->resolve();
-    }
-
-    private function priceColumnLabel(string $label): string
-    {
-        return sprintf('%s (%s)', $label, $this->currentCurrency ?? config('currency.default', 'EUR'));
     }
 
     private function normalizedPerPage(): int

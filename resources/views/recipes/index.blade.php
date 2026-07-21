@@ -1,7 +1,7 @@
 @extends('layouts.app-shell')
 
-@section('title', 'Recipes · '.config('app.name'))
-@section('page_heading', 'Recipes')
+@section('title', __('products.page.title').' · '.config('app.name'))
+@section('page_heading', __('products.page.title'))
 
 @section('content')
     <livewire:dashboard.recipes-index />

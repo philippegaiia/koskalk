@@ -2,8 +2,14 @@
 
 return [
     'sources' => [
+        'account' => ['*'],
         'dashboard' => ['*'],
+        'ingredients' => ['*'],
         'navigation' => ['*'],
+        'packaging' => ['*'],
+        'products' => ['*'],
+        'settings' => ['*'],
+        'table' => ['*'],
         'workbench' => ['*'],
         'number_formats' => ['*'],
         'public' => ['*'],

@@ -5,53 +5,53 @@
         </div>
     @endif
 
-    <section class="sk-card p-5 sm:p-6" aria-label="Packaging catalog heading">
+    <section class="sk-card p-5 sm:p-6" aria-label="{{ __('packaging.page.aria_label') }}">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">
-                <p class="sk-eyebrow">Packaging items</p>
-                <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">Manage packaging used in recipe costing.</h3>
+                <p class="sk-eyebrow">{{ __('packaging.page.title') }}</p>
+                <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('packaging.page.heading') }}</h3>
                 <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-                    Add boxes, jars, labels, inserts, and other reusable packaging with a unit price. Saved items can be selected in recipe packaging and costing instead of retyped.
+                    {{ __('packaging.page.intro') }}
                 </p>
             </div>
 
             <a href="{{ route('dashboard') }}" wire:navigate class="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                Back to dashboard
+                {{ __('packaging.actions.back_to_dashboard') }}
             </a>
         </div>
     </section>
 
     @if (! $currentUser)
-        <section class="sk-card p-8 text-center" aria-label="Sign in required">
-            <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">Sign in to manage packaging items</h4>
-            <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Open the dashboard from your signed-in app or admin session to create and reuse packaging items.</p>
+        <section class="sk-card p-8 text-center" aria-label="{{ __('packaging.auth.aria_label') }}">
+            <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('packaging.auth.heading') }}</h4>
+            <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('packaging.auth.description') }}</p>
         </section>
     @else
-        <section class="overflow-hidden sk-card p-0" aria-label="Packaging catalog table">
+        <section class="overflow-hidden sk-card p-0" aria-label="{{ __('packaging.catalog.table_label') }}">
             <div class="flex flex-col gap-4 border-b border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                     <div>
-                        <p class="text-sm font-medium text-[var(--color-ink-strong)]">Packaging catalog</p>
-                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]">Saved boxes, jars, labels, and inserts available to recipe costing.</p>
+                        <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('packaging.catalog.heading') }}</p>
+                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('packaging.catalog.description') }}</p>
                     </div>
 
-                    <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">Add packaging item</a>
+                    <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('packaging.actions.add') }}</a>
                 </div>
 
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-center" aria-label="Packaging catalog filters">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center" aria-label="{{ __('packaging.catalog.filters_label') }}">
                     <label class="sk-field min-w-64">
-                        <span class="shrink-0 text-[var(--color-ink-soft)]">Search</span>
-                        <input wire:model.live.debounce.250ms="search" type="text" placeholder="Name or notes" class="sk-field-control" aria-label="Search packaging items" />
+                        <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('packaging.search.label') }}</span>
+                        <input wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('packaging.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('packaging.search.aria_label') }}" />
                     </label>
                 </div>
             </div>
 
             @if ($items->isEmpty())
                 <div class="p-8 text-center">
-                    <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $search !== '' ? 'No packaging items match' : 'No packaging items yet' }}</h4>
-                    <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">Create reusable boxes, labels, jars, and inserts once, then pull them into recipe costing when needed.</p>
+                    <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $search !== '' ? __('packaging.empty.no_matches') : __('packaging.empty.no_items') }}</h4>
+                    <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('packaging.empty.description') }}</p>
                     <div class="mt-5">
-                        <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary">Add packaging item</a>
+                        <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('packaging.actions.add') }}</a>
                     </div>
                 </div>
             @else
@@ -59,11 +59,11 @@
                     <table class="sk-table">
                         <thead>
                             <tr>
-                                <th scope="col">Picture</th>
-                                <th scope="col"><button type="button" wire:click="sortBy('name')" class="sk-table-sort-button">Name</button></th>
+                                <th scope="col"><span class="sr-only">{{ __('packaging.table.image') }}</span></th>
+                                <th scope="col"><button type="button" wire:click="sortBy('name')" class="sk-table-sort-button">{{ __('packaging.table.name') }}</button></th>
                                 <th scope="col"><button type="button" wire:click="sortBy('unit_cost')" class="sk-table-sort-button">{{ $unitPriceLabel }}</button></th>
-                                <th scope="col">Notes</th>
-                                <th scope="col" class="text-right">Actions</th>
+                                <th scope="col">{{ __('packaging.table.notes') }}</th>
+                                <th scope="col" class="text-right">{{ __('packaging.table.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -84,7 +84,7 @@
                                     </td>
                                     <td class="font-semibold text-[var(--color-ink-strong)]">{{ $item->name }}</td>
                                     <td>
-                                        <input type="text" inputmode="decimal" value="{{ $this->formattedUnitCost($item->unit_cost) }}" wire:change="updateUnitCost({{ $item->id }}, $event.target.value)" class="sk-input numeric w-32" aria-label="{{ $unitPriceLabel }} for {{ $item->name }}" />
+                                        <input type="text" inputmode="decimal" value="{{ $this->formattedUnitCost($item->unit_cost) }}" wire:change="updateUnitCost({{ $item->id }}, $event.target.value)" class="sk-input numeric w-32" aria-label="{{ __('packaging.accessibility.unit_price', ['item' => $item->name]) }}" />
                                         @error($errorKey)
                                             <p role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                                         @enderror
@@ -92,12 +92,12 @@
                                     <td class="text-[var(--color-ink-soft)]">{{ $item->notes ?? '-' }}</td>
                                     <td class="text-right">
                                         <div class="inline-flex items-center gap-1">
-                                            <a href="{{ route('packaging-items.edit', $item) }}" wire:navigate class="grid size-9 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)]" aria-label="Edit {{ $item->name }}" title="Edit">
+                                            <a href="{{ route('packaging-items.edit', $item) }}" wire:navigate class="grid size-9 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)]" aria-label="{{ __('packaging.accessibility.edit', ['item' => $item->name]) }}" title="{{ __('packaging.actions.edit') }}">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125" />
                                                 </svg>
                                             </a>
-                                            <button type="button" wire:click="confirmDelete({{ $item->id }})" class="grid size-9 place-items-center rounded-lg text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]" aria-label="Delete {{ $item->name }}" title="Delete">
+                                            <button type="button" wire:click="confirmDelete({{ $item->id }})" class="grid size-9 place-items-center rounded-lg text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]" aria-label="{{ __('packaging.accessibility.delete', ['item' => $item->name]) }}" title="{{ __('packaging.actions.delete') }}">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
                                                 </svg>
@@ -110,7 +110,7 @@
                     </table>
                 </div>
 
-                <x-table-pagination :paginator="$items" per-page-label="Items per page" />
+                <x-table-pagination :paginator="$items" :per-page-label="__('packaging.table.per_page')" />
             @endif
         </section>
 
@@ -120,26 +120,26 @@
                     @php($usedFormulaCount = $pendingDeleteImpact['formula_count'] ?? 0)
 
                     @if ($usedFormulaCount > 0)
-                        <h3 id="packaging-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">Manage "{{ $pendingDeleteItem->name }}"</h3>
+                        <h3 id="packaging-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('packaging.removal.used.heading', ['item' => $pendingDeleteItem->name]) }}</h3>
                         <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                            Used in {{ $usedFormulaCount }} {{ \Illuminate\Support\Str::plural('formula', $usedFormulaCount) }}. Removing it will delete it from every saved formula version, including backups and archived formulas, and from formula costing.
+                            {{ trans_choice('packaging.removal.used.description', $usedFormulaCount, ['count' => $usedFormulaCount]) }}
                         </p>
                         @error('packaging_item')
                             <p role="alert" class="mt-4 rounded-lg bg-[var(--color-danger-soft)] px-3 py-2 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
                         @enderror
                         <div class="mt-5 flex flex-col-reverse gap-2 sm:flex-row">
-                            <button type="button" wire:click="cancelDelete()" wire:loading.attr="disabled" wire:target="removeEverywhereAndDelete" class="sk-btn sk-btn-outline">Cancel</button>
-                            <button type="button" wire:click="removeEverywhereAndDelete" wire:loading.attr="disabled" wire:target="removeEverywhereAndDelete" class="sk-btn flex-1 bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]">Remove everywhere and delete</button>
+                            <button type="button" wire:click="cancelDelete()" wire:loading.attr="disabled" wire:target="removeEverywhereAndDelete" class="sk-btn sk-btn-outline">{{ __('packaging.actions.cancel') }}</button>
+                            <button type="button" wire:click="removeEverywhereAndDelete" wire:loading.attr="disabled" wire:target="removeEverywhereAndDelete" class="sk-btn flex-1 bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]">{{ __('packaging.actions.remove_everywhere') }}</button>
                         </div>
                     @else
-                        <h3 id="packaging-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">Delete "{{ $pendingDeleteItem->name }}"?</h3>
-                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">This removes the packaging item from your private catalog.</p>
+                        <h3 id="packaging-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('packaging.removal.unused.heading', ['item' => $pendingDeleteItem->name]) }}</h3>
+                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('packaging.removal.unused.description') }}</p>
                         @error('packaging_item')
                             <p role="alert" class="mt-4 rounded-lg bg-[var(--color-danger-soft)] px-3 py-2 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
                         @enderror
                         <div class="mt-5 flex gap-2">
-                            <button type="button" wire:click="cancelDelete()" class="sk-btn sk-btn-outline">Cancel</button>
-                            <button type="button" wire:click="deletePackagingItem({{ $pendingDeleteItem->id }})" class="sk-btn flex-1 bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]">Delete</button>
+                            <button type="button" wire:click="cancelDelete()" class="sk-btn sk-btn-outline">{{ __('packaging.actions.cancel') }}</button>
+                            <button type="button" wire:click="deletePackagingItem({{ $pendingDeleteItem->id }})" class="sk-btn flex-1 bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]">{{ __('packaging.actions.delete') }}</button>
                         </div>
                     @endif
                 </div>

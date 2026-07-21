@@ -17,7 +17,7 @@ class BillingController extends Controller
         if (! $billing->isConfigured()) {
             return redirect()
                 ->route('account')
-                ->with('billing_status', 'Paddle is installed, but checkout is disabled until the Paddle API key and client-side token are configured.');
+                ->with('billing_status', __('account.billing.online_checkout_unavailable'));
         }
 
         return view('billing.checkout', [
@@ -31,7 +31,7 @@ class BillingController extends Controller
         if (! $billing->isConfigured()) {
             return redirect()
                 ->route('account')
-                ->with('billing_status', 'Paddle is installed, but payment method updates are disabled until the Paddle API key and client-side token are configured.');
+                ->with('billing_status', __('account.billing.payment_update_unavailable'));
         }
 
         $subscription = $billing->currentSubscriptionFor($request->user());
@@ -39,7 +39,7 @@ class BillingController extends Controller
         if (! $subscription) {
             return redirect()
                 ->route('account')
-                ->with('billing_status', 'No active Paddle subscription is available for payment method updates.');
+                ->with('billing_status', __('account.billing.no_active_subscription'));
         }
 
         return $subscription->redirectToUpdatePaymentMethod();

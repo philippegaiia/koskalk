@@ -133,7 +133,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.edit', $duplicateRecipe)
-            ->with('status', 'Formula duplicated.');
+            ->with('status', __('products.status.duplicated'));
     }
 
     public function lock(string $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
@@ -155,7 +155,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.edit', $recipe)
-            ->with('status', 'Formula locked.');
+            ->with('status', __('products.status.locked'));
     }
 
     public function unlock(string $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
@@ -177,7 +177,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.edit', $recipe)
-            ->with('status', 'Formula unlocked.');
+            ->with('status', __('products.status.unlocked'));
     }
 
     public function editCurrentFormula(
@@ -439,7 +439,7 @@ class RecipeController extends Controller
 
         $this->authorize('delete', $recipe);
 
-        abort_unless($request->string('confirm_name')->toString() === $recipe->name, 403, 'Confirmation name does not match.');
+        abort_unless($request->string('confirm_name')->toString() === $recipe->name, 403, __('products.validation.confirmation_mismatch'));
 
         $mediaPaths = $recipe->mediaPaths();
 
@@ -454,7 +454,7 @@ class RecipeController extends Controller
 
         return redirect()
             ->route('recipes.index')
-            ->with('status', 'Recipe deleted.');
+            ->with('status', __('products.status.deleted'));
     }
 
     public function destroyVersion(
@@ -477,13 +477,13 @@ class RecipeController extends Controller
         $this->authorize('delete', $version);
 
         if (! $version->is_current) {
-            abort_unless($request->string('confirm_name')->toString() === $version->name, 403, 'Confirmation name does not match.');
+            abort_unless($request->string('confirm_name')->toString() === $version->name, 403, __('products.validation.confirmation_mismatch'));
         }
 
         $deletion = $recipeVersionDeletionService->delete($recipe, $version);
         $status = $deletion['last_published_deleted']
-            ? 'Last published version deleted. Recipe has no published versions.'
-            : 'Version deleted.';
+            ? __('products.status.last_version_deleted')
+            : __('products.status.version_deleted');
 
         return redirect()
             ->route('recipes.index')

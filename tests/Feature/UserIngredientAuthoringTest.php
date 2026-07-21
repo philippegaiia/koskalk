@@ -10,6 +10,7 @@ use App\Models\IngredientFunction;
 use App\Models\Plan;
 use App\Models\User;
 use App\OwnerType;
+use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,6 +19,11 @@ use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Storage::fake(MediaStorage::publicDisk());
+    Storage::fake(MediaStorage::userDisk());
+});
 
 it('creates a minimal private user ingredient from the public editor', function () {
     $user = User::factory()->create();
@@ -28,11 +34,11 @@ it('creates a minimal private user ingredient from the public editor', function 
 
     expect(method_exists($component->instance(), 'mountAction'))->toBeTrue();
 
-    $component->assertDontSee('Using this oil in soap calculations');
+    $component->assertDontSee('Using this oil in saponification');
 
     $component
         ->set('data.category', IngredientCategory::CarrierOil->value)
-        ->assertSee('Using this oil in soap calculations');
+        ->assertSee('Using this oil in saponification');
 
     $component
         ->set('data.name', 'French Green Clay')
@@ -67,17 +73,17 @@ it('shows composition only when the user chooses a blend', function () {
 
     Livewire::test(IngredientEditor::class)
         ->assertSet('data.ingredient_structure', 'ingredient')
-        ->assertDontSee('Search ingredient by name or INCI')
+        ->assertDontSee('Search by name or INCI')
         ->set('data.ingredient_structure', 'blend')
-        ->assertSee('Search ingredient by name or INCI')
+        ->assertSee('Search by name or INCI')
         ->assertSeeHtml('data-search-combobox="composition-ingredient-search"')
         ->assertSee('sk-combobox-control', false)
         ->assertSee('aria-autocomplete="list"', false)
         ->assertSee(':aria-activedescendant=', false)
-        ->assertSee('Create ingredient')
+        ->assertSee('Add a new ingredient')
         ->assertSee('quickComponentName', false)
         ->assertSee('quickComponentCategory', false)
-        ->assertSee('Create and add');
+        ->assertSee('Add ingredient');
 });
 
 it('shows category-specific tabs while creating an ingredient', function () {
@@ -86,11 +92,11 @@ it('shows category-specific tabs while creating an ingredient', function () {
 
     Livewire::test(IngredientEditor::class)
         ->set('data.category', IngredientCategory::CarrierOil->value)
-        ->assertSee('Soap Chemistry')
+        ->assertSee('Soap chemistry')
         ->assertDontSee('Compliance')
         ->set('data.category', IngredientCategory::EssentialOil->value)
         ->assertSee('Compliance')
-        ->assertDontSee('Soap Chemistry');
+        ->assertDontSee('Soap chemistry');
 });
 
 it('saves a blend composition and its source from the custom editor rows', function () {
@@ -528,7 +534,7 @@ it('shows one live fatty acid profile total without repeating the total rule on 
     Livewire::test(IngredientEditor::class, ['ingredient' => $copy])
         ->assertSee('Fatty acid total')
         ->assertSee('80.0%')
-        ->assertSee('Target: 80% to 100%')
+        ->assertSee('Recommended total: 80–100%')
         ->assertSee('Allowed: 48.0%–72.0%.')
         ->assertDontSee('The complete profile must total 80%–100%.')
         ->set('data.fatty_acid_entries', [

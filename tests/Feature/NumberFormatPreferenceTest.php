@@ -37,9 +37,9 @@ it('lets a registered user save a number format preference', function () {
     Livewire::test(SettingsIndex::class)
         ->assertSet('numberLocale', 'en_US')
         ->set('numberLocale', 'fr_FR')
-        ->call('saveProfile')
+        ->call('savePreferences')
         ->assertHasNoErrors()
-        ->assertSet('profileStatus', 'success');
+        ->assertSet('preferencesStatus', 'success');
 
     expect($user->refresh()->number_locale)->toBe('fr_FR');
 });
@@ -51,7 +51,7 @@ it('rejects an unsupported registered user number format', function () {
 
     Livewire::test(SettingsIndex::class)
         ->set('numberLocale', 'xx_XX')
-        ->call('saveProfile')
+        ->call('savePreferences')
         ->assertHasErrors(['numberLocale']);
 
     expect($user->refresh()->number_locale)->toBeNull();

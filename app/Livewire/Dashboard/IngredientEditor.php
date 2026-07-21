@@ -90,7 +90,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         if (! $user instanceof User) {
             $this->statusType = 'error';
-            $this->statusMessage = 'You need to be signed in before personal ingredients can be saved.';
+            $this->statusMessage = __('ingredients.editor.status.auth_required');
 
             return null;
         }
@@ -114,7 +114,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             }
 
             $this->statusType = 'error';
-            $this->statusMessage = 'The ingredient was not saved. Review the highlighted chemistry values.';
+            $this->statusMessage = __('ingredients.editor.status.invalid');
 
             return null;
         }
@@ -122,8 +122,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $this->ingredientId = $ingredient->id;
         $this->statusType = 'success';
         $this->statusMessage = $wasEditing
-            ? 'Ingredient saved.'
-            : 'Ingredient created. You can now enrich it with components or compliance data.';
+            ? __('ingredients.editor.status.saved')
+            : __('ingredients.editor.status.created');
 
         $this->form->fill($userIngredientAuthoringService->formData($ingredient));
 
@@ -146,20 +146,20 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 ->exists();
 
         if (! $componentIsAccessible) {
-            $this->addError('data.components', 'This ingredient is no longer available to add.');
+            $this->addError('data.components', __('ingredients.editor.validation.component_unavailable'));
 
             return;
         }
 
         if (count($this->data['components'] ?? []) >= 20) {
-            $this->addError('data.components', 'A blend can contain at most 20 components.');
+            $this->addError('data.components', __('ingredients.editor.validation.component_limit'));
 
             return;
         }
 
         if (collect($this->data['components'] ?? [])
             ->contains(fn (mixed $row): bool => (int) ($row['component_ingredient_id'] ?? 0) === $ingredientId)) {
-            $this->addError('data.components', 'That ingredient is already part of this blend.');
+            $this->addError('data.components', __('ingredients.editor.validation.component_duplicate'));
 
             return;
         }
@@ -175,13 +175,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $user = $this->currentUser();
 
         if (! $user instanceof User) {
-            $this->addError('quickComponentName', 'Sign in before creating an ingredient.');
+            $this->addError('quickComponentName', __('ingredients.editor.validation.quick_auth_required'));
 
             return;
         }
 
         if (count($this->data['components'] ?? []) >= 20) {
-            $this->addError('data.components', 'A blend can contain at most 20 components.');
+            $this->addError('data.components', __('ingredients.editor.validation.component_limit'));
 
             return;
         }
@@ -229,7 +229,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $percentage = NumberLocale::parseDecimalInput($value);
 
         if ($percentage === null || $percentage < 0 || $percentage > 100) {
-            $this->addError($field, 'Each component share must be between 0% and 100%.');
+            $this->addError($field, __('ingredients.editor.validation.component_share'));
         }
     }
 
@@ -237,66 +237,67 @@ class IngredientEditor extends Component implements HasActions, HasForms
     {
         return $schema
             ->components([
-                Tabs::make('Ingredient editor')
+                Tabs::make('ingredient-editor')
                     ->contained(false)
                     ->persistTabInQueryString('ingredient-tab')
                     ->tabs([
-                        Tab::make('Identity')
+                        Tab::make(__('ingredients.editor.tabs.details'))
                             ->schema([
-                                Section::make('Essential details')
-                                    ->description('Define what this catalog item is. Category and item type determine which specialist tabs are available.')
+                                Section::make(__('ingredients.editor.details.section'))
+                                    ->description(__('ingredients.editor.details.description'))
                                     ->columns([
                                         'md' => 2,
                                     ])
                                     ->schema([
                                         TextInput::make('name')
-                                            ->label('Name')
+                                            ->label(__('ingredients.editor.details.name'))
                                             ->required()
                                             ->maxLength(255),
                                         Select::make('ingredient_structure')
-                                            ->label('Catalog item type')
+                                            ->label(__('ingredients.editor.details.type.label'))
                                             ->options([
-                                                'ingredient' => 'Ingredient',
-                                                'blend' => 'Blend / composite',
+                                                'ingredient' => __('ingredients.editor.details.type.single'),
+                                                'blend' => __('ingredients.editor.details.type.blend'),
                                             ])
                                             ->required()
                                             ->live()
-                                            ->helperText('Choose Blend / composite only when this catalog item is made from other ingredients.'),
+                                            ->helperText(__('ingredients.editor.details.type.helper')),
                                         Select::make('category')
+                                            ->label(__('ingredients.editor.details.category'))
                                             ->options(IngredientCategory::class)
                                             ->required()
                                             ->live(),
                                         TextInput::make('inci_name')
-                                            ->label('INCI')
+                                            ->label(__('ingredients.editor.details.inci'))
                                             ->maxLength(255)
                                             ->columnSpanFull(),
                                     ]),
-                                Section::make('Supplier and identifiers')
-                                    ->description('Add traceability and regulatory identifiers when they are available from the supplier documentation.')
+                                Section::make(__('ingredients.editor.supplier.section'))
+                                    ->description(__('ingredients.editor.supplier.description'))
                                     ->columns([
                                         'md' => 2,
                                     ])
                                     ->schema([
                                         TextInput::make('supplier_name')
-                                            ->label('Supplier')
+                                            ->label(__('ingredients.editor.supplier.name'))
                                             ->maxLength(255),
                                         TextInput::make('supplier_reference')
-                                            ->label('Supplier reference')
+                                            ->label(__('ingredients.editor.supplier.reference'))
                                             ->maxLength(255),
                                         TextInput::make('cas_number')
-                                            ->label('CAS number')
+                                            ->label(__('ingredients.editor.supplier.cas_number'))
                                             ->maxLength(255)
-                                            ->placeholder('e.g. 8007-02-1'),
+                                            ->placeholder(__('ingredients.editor.supplier.cas_placeholder')),
                                         TextInput::make('ec_number')
-                                            ->label('EINECS / EC number')
+                                            ->label(__('ingredients.editor.supplier.ec_number'))
                                             ->maxLength(255)
-                                            ->placeholder('e.g. 232-274-1'),
+                                            ->placeholder(__('ingredients.editor.supplier.ec_placeholder')),
                                         Toggle::make('is_organic')
-                                            ->label('Organic')
-                                            ->helperText('Use this when the supplied ingredient is certified or sold as organic.')
+                                            ->label(__('ingredients.editor.supplier.organic'))
+                                            ->helperText(__('ingredients.editor.supplier.organic_helper'))
                                             ->columnSpanFull(),
                                         Select::make('function_ids')
-                                            ->label('EU / COSING functions')
+                                            ->label(__('ingredients.editor.supplier.functions'))
                                             ->multiple()
                                             ->searchable()
                                             ->preload()
@@ -306,18 +307,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                 ->orderBy('name')
                                                 ->pluck('name', 'id')
                                                 ->all())
-                                            ->helperText('Optional official functions for this ingredient. One ingredient can carry several COSING functions.')
+                                            ->helperText(__('ingredients.editor.supplier.functions_helper'))
                                             ->maxItems(10)
                                             ->columnSpanFull(),
                                     ]),
-                                Section::make('Media and notes')
-                                    ->description('Optional workspace context that helps people recognize and use the ingredient later.')
+                                Section::make(__('ingredients.editor.media.section'))
+                                    ->description(__('ingredients.editor.media.description'))
                                     ->columns([
                                         'md' => 2,
                                     ])
                                     ->schema([
                                         FileUpload::make('featured_image_path')
-                                            ->label('Ingredient image')
+                                            ->label(__('ingredients.editor.media.image'))
                                             ->image()
                                             ->maxSize(MediaStorage::ingredientImagesMaxSize())
                                             ->acceptedFileTypes([
@@ -346,10 +347,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->imageAspectRatio('1:1')
                                             ->imageEditorAspectRatioOptions(['1:1'])
                                             ->automaticallyOpenImageEditorForAspectRatio()
-                                            ->helperText('Optional square image for the ingredient sheet and larger cards.')
+                                            ->helperText(__('ingredients.editor.media.image_helper'))
                                             ->columnSpan(1),
                                         FileUpload::make('icon_image_path')
-                                            ->label('Ingredient icon')
+                                            ->label(__('ingredients.editor.media.icon'))
                                             ->image()
                                             ->maxSize(MediaStorage::ingredientIconsMaxSize())
                                             ->acceptedFileTypes([
@@ -378,32 +379,33 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->imageAspectRatio('1:1')
                                             ->imageEditorAspectRatioOptions(['1:1'])
                                             ->automaticallyOpenImageEditorForAspectRatio()
-                                            ->helperText('Optional 96x96 icon for compact selectors. If empty, the main image is used.')
+                                            ->helperText(__('ingredients.editor.media.icon_helper'))
                                             ->columnSpan(1),
                                         Textarea::make('info_markdown')
-                                            ->label('Notes and formulation info')
+                                            ->label(__('ingredients.editor.media.notes'))
+                                            ->helperText(__('ingredients.editor.media.notes_helper'))
                                             ->rows(4)
                                             ->maxLength(5000)
                                             ->columnSpanFull(),
                                     ]),
                             ]),
-                        Tab::make('Composition')
+                        Tab::make(__('ingredients.editor.tabs.composition'))
                             ->visible(fn (Get $get): bool => $get('ingredient_structure') === 'blend')
                             ->schema([
                                 SchemaView::make('livewire.dashboard.partials.ingredient-composition-rows')
                                     ->columnSpanFull(),
                             ]),
-                        Tab::make('Soap Chemistry')
+                        Tab::make(__('ingredients.editor.tabs.soap_chemistry'))
                             ->visible(fn (Get $get): bool => static::isCarrierOilCategory($get('category')))
                             ->schema([
-                                Section::make('SAP profile')
-                                    ->description('Keep the KOH SAP value, optional iodine and INS references, and fatty-acid profile for soap calculation.')
+                                Section::make(__('ingredients.editor.soap.section'))
+                                    ->description(__('ingredients.editor.soap.description'))
                                     ->columns([
                                         'md' => 2,
                                     ])
                                     ->schema([
                                         LocalizedDecimalInput::make('sap_profile.koh_sap_value')
-                                            ->label('KOH SAP')
+                                            ->label(__('ingredients.editor.soap.koh_sap'))
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(fn (LocalizedDecimalInput $component, mixed $state): mixed => $component->state(
                                                 $this->canonicalKohSapDisplay($state),
@@ -411,43 +413,43 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->helperText(fn (): string => $this->kohSapHelperText()),
                                         Group::make([
                                             TextEntry::make('sap_profile.naoh_sap_value')
-                                                ->label('NaOH SAP')
+                                                ->label(__('ingredients.editor.soap.naoh_sap'))
                                                 ->state(fn (Get $get): string => $this->derivedNaohSapDisplay($get('sap_profile.koh_sap_value')))
                                                 ->size('lg')
                                                 ->weight('semibold')
                                                 ->extraAttributes(['class' => 'numeric'])
-                                                ->belowContent('Calculated automatically from the KOH SAP value.'),
+                                                ->belowContent(__('ingredients.editor.soap.naoh_helper')),
                                         ])
                                             ->extraAttributes([
                                                 'class' => 'rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4',
                                             ]),
                                         LocalizedDecimalInput::make('sap_profile.iodine_value')
-                                            ->label('Iodine value'),
+                                            ->label(__('ingredients.editor.soap.iodine')),
                                         LocalizedDecimalInput::make('sap_profile.ins_value')
-                                            ->label('INS'),
+                                            ->label(__('ingredients.editor.soap.ins')),
                                         Textarea::make('sap_profile.source_notes')
-                                            ->label('Soap notes')
+                                            ->label(__('ingredients.editor.soap.notes'))
                                             ->rows(3)
                                             ->columnSpanFull(),
                                         Group::make([
                                             TextEntry::make('fatty_acid_total')
-                                                ->label('Fatty acid total')
+                                                ->label(__('ingredients.editor.soap.fatty_acid_total'))
                                                 ->state(fn (Get $get): string => $this->fattyAcidTotalDisplay($get('fatty_acid_entries')))
                                                 ->size('lg')
                                                 ->weight('semibold')
                                                 ->extraAttributes(['class' => 'numeric'])
-                                                ->belowContent('Target: 80% to 100%'),
+                                                ->belowContent(__('ingredients.editor.soap.recommended_total')),
                                         ])
                                             ->extraAttributes([
                                                 'class' => 'rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4',
                                             ])
                                             ->columnSpanFull(),
                                         Repeater::make('fatty_acid_entries')
-                                            ->label('Fatty acid profile')
+                                            ->label(__('ingredients.editor.soap.fatty_acid_profile'))
                                             ->schema([
                                                 Hidden::make('_original_percentage'),
                                                 Select::make('fatty_acid_id')
-                                                    ->label('Fatty acid')
+                                                    ->label(__('ingredients.editor.soap.fatty_acid'))
                                                     ->options(fn (): array => FattyAcid::query()
                                                         ->where('is_active', true)
                                                         ->orderBy('display_order')
@@ -457,6 +459,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->preload()
                                                     ->required(),
                                                 LocalizedDecimalInput::make('percentage')
+                                                    ->label(__('ingredients.editor.soap.percentage'))
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -472,17 +475,17 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->columnSpanFull(),
                                     ]),
                             ]),
-                        Tab::make('Compliance')
+                        Tab::make(__('ingredients.editor.tabs.compliance'))
                             ->visible(fn (Get $get): bool => static::isPublicAromaticCategory($get('category')))
                             ->schema([
-                                Section::make('Allergens')
-                                    ->description('Optional allergen declaration for aromatic ingredients.')
+                                Section::make(__('ingredients.editor.compliance.allergens.section'))
+                                    ->description(__('ingredients.editor.compliance.allergens.description'))
                                     ->schema([
                                         Repeater::make('allergen_entries')
-                                            ->label('Allergen composition')
+                                            ->label(__('ingredients.editor.compliance.allergens.composition'))
                                             ->schema([
                                                 Select::make('allergen_id')
-                                                    ->label('Allergen')
+                                                    ->label(__('ingredients.editor.compliance.allergens.allergen'))
                                                     ->options(fn (): array => Allergen::query()
                                                         ->orderBy('inci_name')
                                                         ->pluck('inci_name', 'id')
@@ -491,7 +494,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->preload()
                                                     ->required(),
                                                 LocalizedDecimalInput::make('concentration_percent')
-                                                    ->label('Concentration')
+                                                    ->label(__('ingredients.editor.compliance.allergens.concentration'))
                                                     ->suffix('%')
                                                     ->minValue(0)
                                                     ->maxValue(100)
@@ -503,36 +506,36 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->defaultItems(0)
                                             ->columnSpanFull(),
                                         Textarea::make('allergen_source_notes')
-                                            ->label('Allergen declaration source')
-                                            ->helperText('One source for the whole allergen declaration, e.g. IFRA or SDS allergen statement.')
+                                            ->label(__('ingredients.editor.compliance.allergens.source'))
+                                            ->helperText(__('ingredients.editor.compliance.allergens.source_helper'))
                                             ->rows(2)
                                             ->columnSpanFull(),
                                     ]),
-                                Section::make('IFRA guidance')
-                                    ->description('Keep the current IFRA reference and the category limits together here.')
+                                Section::make(__('ingredients.editor.compliance.ifra.section'))
+                                    ->description(__('ingredients.editor.compliance.ifra.description'))
                                     ->columns([
                                         'md' => 2,
                                     ])
                                     ->schema([
                                         TextInput::make('ifra.reference_label')
-                                            ->label('Reference label')
+                                            ->label(__('ingredients.editor.compliance.ifra.reference'))
                                             ->maxLength(255),
                                         TextInput::make('ifra.ifra_amendment')
-                                            ->label('IFRA amendment')
+                                            ->label(__('ingredients.editor.compliance.ifra.amendment'))
                                             ->maxLength(255),
                                         LocalizedDecimalInput::make('ifra.peroxide_value')
-                                            ->label('Peroxide value')
+                                            ->label(__('ingredients.editor.compliance.ifra.peroxide'))
                                             ->minValue(0)
                                             ->suffix('meq O2/kg'),
                                         Textarea::make('ifra.source_notes')
-                                            ->label('Notes')
+                                            ->label(__('ingredients.editor.compliance.ifra.notes'))
                                             ->rows(3)
                                             ->columnSpanFull(),
                                         Repeater::make('ifra.limits')
-                                            ->label('IFRA category limits')
+                                            ->label(__('ingredients.editor.compliance.ifra.limits'))
                                             ->schema([
                                                 Select::make('ifra_product_category_id')
-                                                    ->label('IFRA category')
+                                                    ->label(__('ingredients.editor.compliance.ifra.category'))
                                                     ->options(fn (): array => IfraProductCategory::query()
                                                         ->where('is_active', true)
                                                         ->orderBy('code')
@@ -545,7 +548,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                                     ->preload()
                                                     ->required(),
                                                 LocalizedDecimalInput::make('max_percentage')
-                                                    ->label('Max concentration')
+                                                    ->label(__('ingredients.editor.compliance.ifra.maximum'))
                                                     ->minValue(0)
                                                     ->maxValue(100)
                                                     ->required()
@@ -583,17 +586,16 @@ class IngredientEditor extends Component implements HasActions, HasForms
             : null;
 
         if ($range === null) {
-            return 'Enter professional-style KOH SAP like 245 or decimal-style 0.245. NaOH SAP is derived automatically.';
+            return __('ingredients.editor.soap.koh_helper');
         }
 
-        return sprintf(
-            'Allowed KOH SAP range: %.6f–%.6f (%.1f–%.1f in professional notation). Platform reference: %.6f.',
-            $range['minimum'],
-            $range['maximum'],
-            $range['minimum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR,
-            $range['maximum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR,
-            $range['original'],
-        );
+        return __('ingredients.editor.soap.koh_range', [
+            'minimum' => sprintf('%.6f', $range['minimum']),
+            'maximum' => sprintf('%.6f', $range['maximum']),
+            'professional_minimum' => sprintf('%.1f', $range['minimum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR),
+            'professional_maximum' => sprintf('%.1f', $range['maximum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR),
+            'reference' => sprintf('%.6f', $range['original']),
+        ]);
     }
 
     private function fattyAcidHelperText(mixed $fattyAcidId): ?string
@@ -607,7 +609,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
-        return sprintf('Allowed: %.1f%%–%.1f%%.', $range['minimum'], $range['maximum']);
+        return __('ingredients.editor.soap.allowed_range', [
+            'minimum' => sprintf('%.1f', $range['minimum']),
+            'maximum' => sprintf('%.1f', $range['maximum']),
+        ]);
     }
 
     private function derivedNaohSapDisplay(mixed $kohSapValue): string
@@ -615,7 +620,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $parsedKohSapValue = NumberLocale::parseDecimalInput($kohSapValue);
 
         if ($parsedKohSapValue === null) {
-            return 'Not available';
+            return __('ingredients.editor.common.not_available');
         }
 
         return number_format(SoapSap::deriveNaohFromKoh($parsedKohSapValue), 6, '.', '');
@@ -714,28 +719,31 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public function componentIngredientHelperText(mixed $ingredientId): Htmlable|string
     {
         if (! filled($ingredientId)) {
-            return 'Select an existing ingredient, or create the missing one from this picker.';
+            return __('ingredients.editor.composition.picker_helper');
         }
 
         $ingredient = Ingredient::query()
             ->find((int) $ingredientId);
 
         if (! $ingredient instanceof Ingredient) {
-            return 'This linked component could not be found anymore.';
+            return __('ingredients.editor.composition.missing_component');
         }
 
         $parts = [];
 
         if (filled($ingredient->inci_name)) {
-            $parts[] = sprintf('Resolved INCI: %s.', e($ingredient->inci_name));
+            $parts[] = __('ingredients.editor.composition.resolved_inci', [
+                'inci' => e($ingredient->inci_name),
+            ]);
         } else {
-            $parts[] = 'This linked component does not yet have an INCI name.';
+            $parts[] = __('ingredients.editor.composition.missing_inci');
         }
 
         if ($this->currentUser() instanceof User && $ingredient->isEditableBy($this->currentUser())) {
             $parts[] = sprintf(
-                '<a href="%s" class="font-medium text-[var(--color-accent-strong)] underline">Open ingredient</a>',
+                '<a href="%s" class="font-medium text-[var(--color-accent-strong)] underline">%s</a>',
                 route('ingredients.edit', $ingredient),
+                __('ingredients.editor.composition.open_ingredient'),
             );
         }
 

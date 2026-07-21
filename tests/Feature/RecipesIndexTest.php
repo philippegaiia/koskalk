@@ -57,7 +57,7 @@ it('shows saved recipes on the recipes index page', function () {
         ->assertSee('Olive Coconut Bar')
         ->assertSee('Open')
         ->assertSee('Duplicate')
-        ->assertSee('Lock formula')
+        ->assertSee('Lock product')
         ->assertDontSee('Open draft')
         ->assertDontSee('Edit formula')
         ->assertDontSee('Use recipe');

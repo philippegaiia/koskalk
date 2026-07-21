@@ -10,6 +10,7 @@ use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Services\MediaStorage;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +19,10 @@ use Livewire\Livewire;
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Storage::fake(MediaStorage::recipeDisk());
+});
 
 it('allows an owner to delete a recipe via the delete route', function (): void {
     [$user, $recipe, $draft, $publishedVersion] = createRecipeWithDraftAndPublishedVersion();
@@ -34,7 +39,7 @@ it('allows an owner to delete a recipe via the delete route', function (): void 
             'confirm_name' => $recipe->name,
         ])
         ->assertRedirect(route('recipes.index'))
-        ->assertSessionHas('status', 'Recipe deleted.');
+        ->assertSessionHas('status', 'Product deleted.');
 
     expect(Recipe::withoutGlobalScopes()->find($recipe->id))->toBeNull()
         ->and(RecipeVersion::withoutGlobalScopes()->find($draft->id))->toBeNull()
@@ -115,7 +120,7 @@ it('allows an owner to delete a published version via the delete route', functio
             'confirm_name' => $publishedVersion->name,
         ])
         ->assertRedirect(route('recipes.index'))
-        ->assertSessionHas('status', 'Last published version deleted. Recipe has no published versions.');
+        ->assertSessionHas('status', 'Last saved version deleted. This product has no saved versions.');
 
     expect(Recipe::withoutGlobalScopes()->find($recipe->id))->not->toBeNull()
         ->and(RecipeVersion::withoutGlobalScopes()->find($draft->id))->not->toBeNull()

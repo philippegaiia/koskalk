@@ -64,15 +64,19 @@ php artisan translations:sync
 
 `SupportedLocaleSeeder` registers locale metadata only. `DatabaseSeeder` does not insert non-English interface copy. Reviewed translations are database content: editing a locale value in Filament takes effect without a deployment, and later deployments must preserve it.
 
-The translation sequence for a new or changed key is:
+The development and review sequence for a new or changed key is:
 
 1. Approve the English wording and add it to the owned `lang/en` group.
-2. Deploy the English source and run `translations:sync` to create any missing database rows.
-3. Draft each missing locale from the English source, the complete key, nearby strings, and the task context.
-4. Save the draft in `language_lines`, review it in the rendered interface, and revise it there without changing source files.
-5. Activate a locale only after its required interface and platform content is complete.
+2. Run `translations:sync` locally to create any missing database rows.
+3. Draft each missing locale from the English source, the complete key, nearby strings, and the task context. Codex can do this directly during the review task; no OpenAI API key or runtime translation integration is required.
+4. Save only blank values in the local `language_lines` table, review them in the rendered interface, and revise them there without changing source files.
+5. Deploy the English source and run `translations:sync` in production to create the same keys without overwriting existing content.
+6. Promote the reviewed database values through an explicit, one-time database content import when production does not already contain them. During the current owner-only pre-launch phase, the production `language_lines` rows may instead be replaced once by a complete reviewed baseline. Do not reset application or user data. After launch, imports must preserve non-blank production edits.
+7. Activate a locale only after its required interface and platform content is complete.
 
 Automatic drafting is a separate operation from synchronization. It must fill only blank locale values, preserve reviewed database text, preserve placeholders, and provide enough task context to avoid literal word-for-word translation. A translation-provider integration must not be hidden inside deployment seeding.
+
+The local and production databases are independent content stores. A deployment can add English source keys, but it cannot infer or recover reviewed non-English values from the Git branch. Before the first localization release, export or otherwise promote the reviewed `language_lines` content into production once. Since the current production application is owner-only and pre-launch, that initial promotion may cleanly replace the existing `language_lines` rows; it must not reset any other database content. After that baseline, production Filament edits are authoritative and normal deployments remain additive only.
 
 Adding another locale means adding or managing its `supported_locales` record, synchronizing keys, completing the translation review, and only then activating it. Do not seed guessed translations.
 
@@ -132,6 +136,8 @@ Platform ingredient translations use the dedicated `ingredient_translations` tab
 `Ingredient::localizedDisplayName()` and `Ingredient::localizedInfoMarkdown()` resolve the requested locale and then fall back to canonical English. Private user-owned ingredients always remain as authored. Workbench and catalog queries eager-load only the current locale candidates so translation resolution does not introduce N+1 queries.
 
 Translations are edited in the English-only Filament ingredient editor. The native `Translations` section lists registered non-English locales and does not require `spatie/laravel-translatable` or an additional Filament translation plugin.
+
+The first platform catalog population happens only after the canonical ingredient database has been reviewed. That initial import should insert reviewed rows into `ingredient_translations` for the approved platform ingredients. Later platform ingredients created in production receive their translations manually in the production Filament editor. Private user-owned ingredients are never bulk-translated.
 
 The implemented first slice translates only ingredient display names and guidance. Other platform models should be inventoried before their own typed translation tables are introduced. A bulk missing-translation dashboard and per-row editorial workflow remain deferred until catalog volume requires them.
 

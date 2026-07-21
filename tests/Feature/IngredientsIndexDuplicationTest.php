@@ -17,7 +17,7 @@ it('shows a duplicate action in the ingredients page header', function () {
 
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSee('Duplicate platform ingredient');
+        ->assertSee('Duplicate a Soapkraft ingredient');
 });
 
 it('searches platform ingredients for duplication', function () {

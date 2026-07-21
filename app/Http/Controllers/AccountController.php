@@ -35,7 +35,7 @@ class AccountController extends Controller
 
         return redirect()
             ->route('account')
-            ->with('profile_status', 'Profile updated.');
+            ->with('profile_status', __('account.status.profile_updated'));
     }
 
     public function updatePassword(UpdateAccountPasswordRequest $request): RedirectResponse
@@ -48,6 +48,6 @@ class AccountController extends Controller
 
         return redirect()
             ->route('account')
-            ->with('password_status', 'Password updated.');
+            ->with('password_status', __('account.status.password_updated'));
     }
 }

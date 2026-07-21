@@ -247,7 +247,7 @@ it('locks and unlocks a formula', function () {
     $this->actingAs($user)
         ->post(route('recipes.lock', $recipe))
         ->assertRedirect(route('recipes.edit', $recipe))
-        ->assertSessionHas('status', 'Formula locked.');
+        ->assertSessionHas('status', 'Product locked.');
 
     expect($recipe->fresh()->locked_at)->not->toBeNull()
         ->and($recipe->fresh()->locked_by)->toBe($user->id);
@@ -261,7 +261,7 @@ it('locks and unlocks a formula', function () {
     $this->actingAs($user)
         ->post(route('recipes.unlock', $recipe))
         ->assertRedirect(route('recipes.edit', $recipe))
-        ->assertSessionHas('status', 'Formula unlocked.');
+        ->assertSessionHas('status', 'Product unlocked.');
 
     expect($recipe->fresh()->locked_at)->toBeNull()
         ->and($recipe->fresh()->locked_by)->toBeNull();

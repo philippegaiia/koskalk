@@ -2,18 +2,17 @@
  <section class="sk-card p-5 sm:p-6">
  <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">
- <p class="sk-eyebrow">Packaging item</p>
- <h3 class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]">
- {{ $packagingItem ? 'Refine the packaging record and keep it ready for costing.' : 'Create a reusable packaging item for recipe costing.' }}
+ <h3 class="text-2xl font-semibold text-[var(--color-ink-strong)]">
+ {{ $packagingItem ? __('packaging.editor.edit.heading') : __('packaging.editor.create.heading') }}
  </h3>
  <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
- Packaging items stay private to your account and can be reused across formulas without retyping the same details every time.
+ {{ $packagingItem ? __('packaging.editor.edit.intro') : __('packaging.editor.create.intro') }}
  </p>
  </div>
 
  <div class="flex flex-col gap-3 sm:flex-row">
  <a href="{{ route('packaging-items.index') }}" wire:navigate class="inline-flex justify-center rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
- Back to packaging
+ {{ __('packaging.editor.actions.back') }}
  </a>
  </div>
  </div>
@@ -30,7 +29,7 @@
 
  <div class="flex justify-end">
  <button type="submit" class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
- {{ $packagingItem ? 'Save packaging item' : 'Create packaging item' }}
+ {{ $packagingItem ? __('packaging.editor.actions.save') : __('packaging.editor.actions.create') }}
  </button>
  </div>
  </form>

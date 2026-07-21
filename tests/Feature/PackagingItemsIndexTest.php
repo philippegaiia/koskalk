@@ -11,14 +11,20 @@ use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
+use App\Services\MediaStorage;
 use App\Services\UserPackagingItemAuthoringService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 use function Pest\Laravel\actingAs;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Storage::fake(MediaStorage::userDisk());
+});
 
 it('lets a signed-in user open the packaging items page and see saved items', function () {
     $user = User::factory()->create();
@@ -34,10 +40,10 @@ it('lets a signed-in user open the packaging items page and see saved items', fu
     $this->actingAs($user)
         ->get(route('packaging-items.index'))
         ->assertSuccessful()
-        ->assertSee('Packaging Items')
-        ->assertSee('Manage packaging used in recipe costing.')
-        ->assertSee('Packaging catalog')
-        ->assertSeeHtml('aria-label="Packaging catalog filters"')
+        ->assertSee('Packaging')
+        ->assertSee('Manage packaging for your recipes and costing.')
+        ->assertSee('Packaging library')
+        ->assertSeeHtml('aria-label="Packaging library filters"')
         ->assertSeeHtml('class="sk-btn sk-btn-primary justify-center"')
         ->assertDontSeeHtml('fi-ta')
         ->assertSee('Unit price (EUR)')
@@ -147,7 +153,7 @@ it('renders the packaging item create page for signed in users', function () {
         ->get(route('packaging-items.create'))
         ->assertSuccessful()
         ->assertSee('Packaging image')
-        ->assertSee('Effective unit price (GBP)');
+        ->assertSee('Unit price (GBP)');
 });
 
 it('does not allow editing another users packaging item', function () {

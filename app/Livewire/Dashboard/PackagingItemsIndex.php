@@ -137,18 +137,18 @@ class PackagingItemsIndex extends Component
         }
 
         if ($packagingItemFormulaMutationService->impact($user, $packagingItem)['formula_count'] > 0) {
-            $this->addError('packaging_item', 'Remove this packaging item from every formula before deleting it.');
+            $this->addError('packaging_item', __('packaging.validation.remove_from_formulas'));
 
             return;
         }
 
         if (! app(UserPackagingItemAuthoringService::class)->delete($packagingItem, $user)) {
-            $this->addError('packaging_item', 'This packaging item is still in use and cannot be deleted.');
+            $this->addError('packaging_item', __('packaging.validation.in_use'));
 
             return;
         }
 
-        $this->finishDeletion($packagingItem->name.' was deleted.');
+        $this->finishDeletion(__('packaging.status.deleted', ['item' => $packagingItem->name]));
     }
 
     public function removeEverywhereAndDelete(
@@ -183,7 +183,7 @@ class PackagingItemsIndex extends Component
             return;
         }
 
-        $this->finishDeletion($packagingItemName.' was removed from every formula and deleted.');
+        $this->finishDeletion(__('packaging.status.removed_and_deleted', ['item' => $packagingItemName]));
     }
 
     public function render(PackagingItemFormulaMutationService $packagingItemFormulaMutationService): View
@@ -197,7 +197,9 @@ class PackagingItemsIndex extends Component
         return view('livewire.dashboard.packaging-items-index', [
             'currentUser' => $currentUser,
             'items' => $items,
-            'unitPriceLabel' => sprintf('Unit price (%s)', $this->currentCurrency ?? config('currency.default', 'EUR')),
+            'unitPriceLabel' => __('packaging.price.column', [
+                'currency' => $this->currentCurrency ?? config('currency.default', 'EUR'),
+            ]),
             'pendingDeleteItem' => $pendingDeleteItem,
             'pendingDeleteImpact' => $pendingDeleteItem instanceof UserPackagingItem && $currentUser instanceof User
                 ? $packagingItemFormulaMutationService->impact($currentUser, $pendingDeleteItem)

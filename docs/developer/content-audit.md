@@ -1,6 +1,6 @@
 # First Content Audit
 
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 
 ## Scope
 
@@ -84,6 +84,40 @@ They need separate translation paths. See [localization.md](./localization.md).
 ### 6. Dynamic strings need translation-safe composition
 
 Patterns such as `Price per kilogram for ` plus an ingredient name, manually assembled singular/plural text, and nested JavaScript ternaries will be difficult to translate correctly. Use complete keyed sentences with placeholders and Laravel pluralization where grammar changes by count.
+
+### 7. Ingredients index review
+
+The first authenticated catalog index has now been reviewed beyond the workbench. Its approved user-facing distinction is `Soapkraft ingredients` versus `Your ingredients`; internal `platform`, ownership, and database terminology should not appear in the interface. Keep `Source` as the table heading, use `You` and `Soapkraft` as its values, and label the editable costing field `Your price / kg`.
+
+The Ingredients index interface surface now includes its headers, filters, limits, search, empty states, table labels, duplicate flow, formula-usage states, removal dialogs, validation, status messages, and accessibility text in the interface translation domain. Ingredient names, guidance, category taxonomy, and INCI remain platform data and require a separate catalog review.
+
+The Add/Edit Ingredient editor adds 127 interface keys across Details, Composition, Soap chemistry, Compliance, and the read-only Soapkraft reference state. Its approved copy uses `Add ingredient`, `Ingredient details`, `Ingredient type`, and `Saponification values` instead of personal, catalog-record, and architecture-oriented language. A carrier oil created from scratch now has a direct warning explaining that users must duplicate the matching Soapkraft carrier oil before selecting it for saponification. Together, the Ingredients group contains 222 interface keys, with contextual local drafts complete for `fr`, `es`, `de`, `it`, and `nl`.
+
+### 8. Packaging index review
+
+The Packaging index now uses the task-focused title `Packaging`, the section name `Packaging library`, and the action `Add packaging`. Its overview explains that saved boxes, jars, labels, inserts, and other packaging can be reused in recipes and costing. The visible `Picture` heading has been removed while its accessible table label remains available to assistive technology.
+
+The complete index surface uses 40 interface keys covering headings, authentication guidance, search, empty states, table labels, unit prices, accessible actions, removal dialogs, validation, and status messages.
+
+The Add/Edit Packaging editor adds 20 interface keys. Its approved copy uses `Add packaging`, `Packaging details`, and `Edit packaging details`, with concise help for the name, unit price, image, and notes fields. Together, the Packaging group contains 60 interface keys. Contextual drafts are complete locally for `fr`, `es`, `de`, `it`, and `nl`. Saved packaging names and notes remain user-authored content and are not translated; Laravel and Filament validation and upload messages remain framework-owned.
+
+### 9. Products index review
+
+The former Recipes index mixed `Formulas`, `Recipes`, and `Products` for the same saved object. The approved interface is now product-first: a product is the complete saved item, while its formula and packaging are parts of that product. Internal Laravel route and model names may continue to use `recipe` without exposing that implementation terminology to users.
+
+The index now uses `Products`, `Manage your products`, `New soap product`, and `New cosmetic product`. Filters use `Category` and `Type` instead of the more internal `Family` label. Product cards, counts, empty states, lock and duplication actions, deletion confirmation, controller status messages, and accessibility labels are included in a 48-key interface group. Contextual drafts are complete locally for `fr`, `es`, `de`, `it`, and `nl`. Product names remain user-authored; category and type names remain catalog data for separate review.
+
+### 10. Account review
+
+The Account page now separates personal profile and password tasks from plan usage and billing. Its approved copy uses `Current plan`, `Workspace usage`, `Products`, and `Your ingredients`. It replaces the previous implementation-oriented email and Paddle setup messages with direct availability guidance. The complete surface contains 40 interface keys, including controller status messages and placeholder-safe usage labels. Contextual drafts are complete locally for `fr`, `es`, `de`, `it`, and `nl`.
+
+Plan names, descriptions, and prices remain catalog data. `Paddle` remains a provider name. Account is for personal details; the later Settings review should use `Workspace` for shared configuration. Although workspace membership tables and roles exist, the current launch scope and formula authorization remain owner-only. Member invitations and collaboration language must stay hidden until the access model is resolved and implemented consistently.
+
+### 11. Settings review
+
+Settings no longer duplicates the name, email, password, or unused avatar concerns handled by Account. The page now has two focused areas: `Preferences` for interface language and number format, and `Workspace` for the workspace name and default currency. All user-facing `Company` terminology has been replaced with `Workspace`.
+
+The Settings group contains 17 interface keys for page copy, tabs, workspace guidance, actions, and statuses. Existing shared translation keys continue to supply the interface-language and number-format labels and help. Contextual drafts are complete locally for `fr`, `es`, `de`, `it`, and `nl`. Workspace updates remain owner-only, and member or invitation controls remain hidden.
 
 ## First-pass inventory
 
@@ -172,6 +206,8 @@ For safety and compliance content, show the concise warning directly in the work
 4. Define the information architecture for future WordPress documentation, including getting-started and task-based guides.
 5. Design the structured contextual-help and documentation model from the topics discovered here.
 6. Audit login and registration, account and settings, indexes, production, email, and the remaining public application surfaces before activating another locale.
+
+The first index sequence—Ingredients, Packaging, then Products—is complete. Ingredient catalog-data review, product category/type catalog review, and user-authored packaging and product content remain deliberately outside those interface passes.
 
 ## Audit limitation
 

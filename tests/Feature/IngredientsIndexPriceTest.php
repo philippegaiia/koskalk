@@ -49,20 +49,20 @@ it('shows platform ingredients whether or not the user has priced them', functio
 
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSee('Use platform ingredients or maintain your own.')
+        ->assertSee('Manage ingredients for formulas and costing.')
         ->assertSee('Ingredient catalog')
-        ->assertSee('All ingredients')
+        ->assertSee('All')
         ->assertSeeHtml('aria-label="Ingredient catalog filters"')
         ->assertSeeHtml('class="sk-btn sk-btn-primary justify-center"')
         ->assertDontSeeHtml('fi-ta')
         ->assertSeeHtml('role="radiogroup"')
         ->assertSeeHtml('aria-checked="true"')
-        ->assertSee('Price/kg (EUR)')
+        ->assertSee('Your price / kg (EUR)')
         ->assertSee('5.25')
         ->assertDontSee('5.2500')
         ->assertSee('Olive Oil')
         ->assertSee('Coconut Oil')
-        ->assertSee('Platform');
+        ->assertSee('Soapkraft');
 });
 
 it('shows the ingredient price column in the users current default currency', function () {
@@ -83,7 +83,7 @@ it('shows the ingredient price column in the users current default currency', fu
     actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->assertSee('Price/kg (GBP)');
+        ->assertSee('Your price / kg (GBP)');
 });
 
 it('renders inline ingredient prices with the users saved English number format', function () {
@@ -189,8 +189,8 @@ it('shows user-owned ingredients in the unified table', function () {
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
         ->assertSee('My Lavender')
-        ->assertSeeHtml('aria-label="User-created or user-modified ingredient"')
-        ->assertSee('Data has not been verified by Soapkraft.')
+        ->assertSeeHtml('aria-label="Ingredient created or modified by you"')
+        ->assertSee('This ingredient has not been verified by Soapkraft.')
         ->assertDontSee('Other User Oil');
 });
 
@@ -216,7 +216,7 @@ it('shows private ingredient usage in the mine filter and plan allowance', funct
     actingAs($user);
 
     Livewire::test(IngredientsIndex::class)
-        ->assertSee('Mine (1)')
+        ->assertSee('Your ingredients (1)')
         ->assertSee('1 of 20 private ingredients');
 });
 

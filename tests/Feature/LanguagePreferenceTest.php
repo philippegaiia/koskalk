@@ -120,7 +120,7 @@ test('a registered user can change interface language in settings without changi
 
     Livewire::test(SettingsIndex::class)
         ->set('locale', 'fr')
-        ->call('saveProfile')
+        ->call('savePreferences')
         ->assertHasNoErrors();
 
     expect($user->refresh())

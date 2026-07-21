@@ -1,7 +1,7 @@
 @extends('layouts.app-shell')
 
-@section('title', isset($packagingItem) ? (($packagingItem->name ?? 'Packaging Item') . ' · '.config('app.name')) : 'New Packaging Item · '.config('app.name'))
-@section('page_heading', isset($packagingItem) ? ($packagingItem->name ?? 'Edit Packaging Item') : 'New Packaging Item')
+@section('title', isset($packagingItem) ? (($packagingItem->name ?? __('packaging.page.title')) . ' · '.config('app.name')) : __('packaging.editor.create.page_title').' · '.config('app.name'))
+@section('page_heading', isset($packagingItem) ? ($packagingItem->name ?? __('packaging.page.title')) : __('packaging.editor.create.page_title'))
 
 @section('content')
     <livewire:dashboard.packaging-item-editor :packaging-item="$packagingItem ?? null" />

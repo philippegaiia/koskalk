@@ -66,7 +66,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
 
         if (! $user instanceof User) {
             $this->statusType = 'error';
-            $this->statusMessage = 'You need to be signed in before packaging items can be saved.';
+            $this->statusMessage = __('packaging.editor.status.auth_required');
 
             return null;
         }
@@ -87,8 +87,8 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         $this->packagingItemId = $packagingItem->id;
         $this->statusType = 'success';
         $this->statusMessage = $wasEditing
-            ? 'Packaging item saved.'
-            : 'Packaging item created. You can keep using it in recipe costing.';
+            ? __('packaging.editor.status.saved')
+            : __('packaging.editor.status.created');
 
         $this->form->fill($authoringService->formData($packagingItem));
 
@@ -103,22 +103,25 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     {
         return $schema
             ->components([
-                Section::make('Packaging item')
-                    ->description('Keep the reusable packaging identity, square image, unit price, and notes together here.')
+                Section::make(__('packaging.editor.form.section'))
+                    ->description(__('packaging.editor.form.description'))
                     ->columns([
                         'md' => 2,
                     ])
                     ->schema([
                         TextInput::make('name')
-                            ->label('Name')
+                            ->label(__('packaging.editor.form.name.label'))
+                            ->placeholder(__('packaging.editor.form.name.placeholder'))
                             ->required()
                             ->maxLength(255),
                         LocalizedDecimalInput::make('unit_cost')
-                            ->label(fn (): string => $this->priceFieldLabel('Effective unit price'))
+                            ->label(fn (): string => __('packaging.editor.form.unit_price', [
+                                'currency' => $this->currentUser()?->defaultCurrency() ?? 'EUR',
+                            ]))
                             ->minValue(0)
                             ->required(),
                         FileUpload::make('featured_image_path')
-                            ->label('Packaging image')
+                            ->label(__('packaging.editor.form.image.label'))
                             ->image()
                             ->maxSize(MediaStorage::ingredientImagesMaxSize())
                             ->acceptedFileTypes([
@@ -162,10 +165,11 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                             ->imageAspectRatio('1:1')
                             ->imageEditorAspectRatioOptions(['1:1'])
                             ->automaticallyOpenImageEditorForAspectRatio()
-                            ->helperText('Optional square image for packaging selectors and catalog rows.')
+                            ->helperText(__('packaging.editor.form.image.helper'))
                             ->columnSpan(1),
                         Textarea::make('notes')
-                            ->label('Notes')
+                            ->label(__('packaging.editor.form.notes.label'))
+                            ->helperText(__('packaging.editor.form.notes.helper'))
                             ->rows(4)
                             ->columnSpan(1),
                     ]),
@@ -202,10 +206,5 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     private function isEditing(): bool
     {
         return $this->packagingItemId !== null;
-    }
-
-    private function priceFieldLabel(string $label): string
-    {
-        return sprintf('%s (%s)', $label, $this->currentUser()?->defaultCurrency() ?? 'EUR');
     }
 }

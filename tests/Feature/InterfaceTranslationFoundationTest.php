@@ -224,8 +224,8 @@ it('renders the locale registry and translation editor in English', function () 
 
     $this->get($translationResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
-        ->assertSee('auth')
-        ->assertSee('login.heading')
+        ->assertSee('account')
+        ->assertSee('page.title')
         ->assertSee('English source');
 
     $this->get($translationResource::getUrl('edit', ['record' => $translation], panel: 'admin'))

@@ -450,8 +450,13 @@ it('downloads the saved formula as a simple csv', function () {
         ->assertDownload('published-formula.csv');
 
     expect($response->streamedContent())
-        ->toContain('Phase,Ingredient,Source,"INCI name",Percentage,Weight,Note')
-        ->toContain('"Saponified oils","Olive Oil",Platform,"OLEA EUROPAEA FRUIT OIL",100,1000,');
+        ->toContain('Section,Ingredient,"Percentage basis",Percentage,"Scaled weight",Unit,Note')
+        ->toContain('"Saponified oils","Olive Oil",oils,100,1000,g,')
+        ->toContain('"Lye and water",NaOH,oils,')
+        ->toContain('"Lye and water",Water,oils,')
+        ->not->toContain('Platform')
+        ->not->toContain('User')
+        ->not->toContain('INCI name');
 });
 
 it('downloads the saved formula as an excel workbook', function () {
@@ -480,7 +485,7 @@ it('downloads the saved formula as an excel workbook', function () {
     expect($zip->open($path))->toBeTrue();
 
     $workbookXml = (string) $zip->getFromName('xl/workbook.xml');
-    $worksheetXml = collect(range(1, 6))
+    $worksheetXml = collect(range(1, 2))
         ->map(fn (int $index): string => (string) $zip->getFromName("xl/worksheets/sheet{$index}.xml"))
         ->implode("\n");
 
@@ -488,18 +493,21 @@ it('downloads the saved formula as an excel workbook', function () {
     unlink($path);
 
     expect($workbookXml)
-        ->toContain('Summary')
-        ->toContain('Formula')
-        ->toContain('Packaging')
-        ->toContain('Outputs')
-        ->toContain('INCI Declaration')
-        ->toContain('Costing')
+        ->toContain('Ingredient batch')
+        ->toContain('Soap output')
+        ->not->toContain('Summary')
+        ->not->toContain('Packaging')
+        ->not->toContain('Costing')
+        ->not->toContain('INCI Declaration');
+
+    expect(substr_count($workbookXml, '<sheet '))->toBe(2)
         ->and($worksheetXml)
-        ->toContain('Published Formula')
         ->toContain('Olive Oil')
-        ->toContain('B-2026-043')
-        ->toContain('<f>SUM(D4:D4)</f>')
-        ->toContain('<f>C10*D10/1000</f>')
+        ->toContain('NaOH')
+        ->toContain('SODIUM OLIVATE')
+        ->toContain('Final INCI')
+        ->not->toContain('Soap qualities')
+        ->not->toContain('Fatty-acid profile')
         ->toContain('customWidth="true"')
         ->toContain('<autoFilter');
 });
@@ -1164,7 +1172,7 @@ function recipeWorkbookXml(string $content): string
 
     expect($zip->open($path))->toBeTrue();
 
-    $xml = collect(range(1, 6))
+    $xml = collect(range(1, 2))
         ->map(fn (int $index): string => (string) $zip->getFromName("xl/worksheets/sheet{$index}.xml"))
         ->implode("\n");
 

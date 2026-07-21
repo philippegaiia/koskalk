@@ -769,6 +769,57 @@ it('renders saved cosmetic formula sheet with selected ingredients only', functi
         ->assertSee('Record production');
 });
 
+it('downloads the saved cosmetic formula as a one-sheet excel workbook', function () {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'name' => 'Cosmetic',
+        'slug' => 'cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $productType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+    ]);
+    $water = cosmeticIngredient('Water', 'AQUA');
+
+    $savedVersion = app(RecipeWorkbenchService::class)->publish(
+        $user,
+        $cosmeticFamily,
+        cosmeticDraftPayload($productType, [
+            'phase_a' => [cosmeticPayloadRow($water, percentage: 100, weight: 100)],
+        ]),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id);
+
+    $content = $this->actingAs($user)
+        ->get(route('recipes.export.xlsx', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->streamedContent();
+
+    $path = tempnam(sys_get_temp_dir(), 'koskalk-cosmetic-export-test-');
+    file_put_contents($path, $content);
+
+    $zip = new ZipArchive;
+
+    expect($zip->open($path))->toBeTrue();
+
+    $workbookXml = (string) $zip->getFromName('xl/workbook.xml');
+    $worksheetXml = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+
+    $zip->close();
+    unlink($path);
+
+    expect($workbookXml)
+        ->toContain('Ingredient batch')
+        ->not->toContain('Soap output');
+
+    expect(substr_count($workbookXml, '<sheet '))->toBe(1)
+        ->and($worksheetXml)
+        ->toContain('Phase A')
+        ->toContain('Water');
+});
+
 function cosmeticIngredient(string $name, string $inciName): Ingredient
 {
     return Ingredient::factory()->create([

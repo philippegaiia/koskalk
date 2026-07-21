@@ -7,7 +7,7 @@
 @endphp
 
 @section('title', isset($recipe) ? "{$recipe->name} · ".config('app.name') : $newFormulaTitle.' · '.config('app.name'))
-@section('page_heading', isset($recipe) ? $recipe->name : $newFormulaTitle)
+@section('page_heading', 'Recipe workbench')
 
 @section('content')
     @if (isset($productType) && $productType)

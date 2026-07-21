@@ -61,10 +61,11 @@ it('renders the formula sheet with print actions', function () {
 it('renders the formula workbench with one save path and lock controls', function () {
     [$user, $recipe] = createSavedRecipeVersion();
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->get(route('recipes.edit', ['recipe' => $recipe]))
         ->assertSuccessful()
         ->assertSee('Formula')
+        ->assertSee('Formula sheet')
         ->assertSee('Save')
         ->assertSee('Lock formula')
         ->assertSeeInOrder(['Save', 'Lock formula', 'More formula actions'])
@@ -74,6 +75,8 @@ it('renders the formula workbench with one save path and lock controls', functio
         ->assertDontSee('Update reference formula?')
         ->assertDontSee('This will replace the reference formula with your current draft.')
         ->assertDontSee('Save recipe');
+
+    expect(substr_count($response->getContent(), 'Formula sheet'))->toBe(1);
 });
 
 it('renders an existing formula workbench within its initial query budget', function () {

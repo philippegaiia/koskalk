@@ -7,14 +7,14 @@
  <template x-for="card in formulaDiagnosticCards" :key="`bottom-detail-${card.id}`">
  <article
  :class="{
- 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]': card.tone === 'success',
- 'bg-[var(--color-chemistry-soft)] text-[var(--color-chemistry-strong)]': card.tone === 'chemistry',
- 'bg-[var(--color-info-soft)] text-[var(--color-info-strong)]': card.tone === 'info',
- 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]': card.tone === 'warning',
- 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]': card.tone === 'danger',
- 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]': card.tone === 'neutral',
+ 'sk-tone-success': card.tone === 'success',
+ 'sk-tone-chemistry': card.tone === 'chemistry',
+ 'sk-tone-info': card.tone === 'info',
+ 'sk-tone-warning': card.tone === 'warning',
+ 'sk-tone-danger': card.tone === 'danger',
+ 'sk-tone-summary': card.tone === 'neutral',
  }"
- class="min-w-0 rounded-lg px-3 py-2.5 motion-safe:transition motion-safe:duration-200">
+ class="sk-status-surface min-w-0 rounded-lg px-3 py-2.5 motion-safe:transition motion-safe:duration-200">
  <div class="flex items-start justify-between gap-3">
  <p class="sk-eyebrow" x-text="card.label"></p>
  <span class="mt-1 size-1.5 shrink-0 rounded-full bg-current opacity-70"></span>
@@ -30,14 +30,14 @@
  <template x-for="card in formulaDiagnosticSummaryCards" :key="`bottom-summary-${card.id}`">
  <span
  :class="{
- 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]': card.tone === 'success',
- 'bg-[var(--color-chemistry-soft)] text-[var(--color-chemistry-strong)]': card.tone === 'chemistry',
- 'bg-[var(--color-info-soft)] text-[var(--color-info-strong)]': card.tone === 'info',
- 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]': card.tone === 'warning',
- 'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]': card.tone === 'danger',
- 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]': card.tone === 'neutral',
+ 'sk-tone-success': card.tone === 'success',
+ 'sk-tone-chemistry': card.tone === 'chemistry',
+ 'sk-tone-info': card.tone === 'info',
+ 'sk-tone-warning': card.tone === 'warning',
+ 'sk-tone-danger': card.tone === 'danger',
+ 'sk-tone-summary': card.tone === 'neutral',
  }"
- class="inline-flex min-h-8 shrink-0 items-center gap-2 rounded-full px-3 py-1 text-xs font-medium">
+ class="sk-status-surface inline-flex min-h-8 shrink-0 items-center gap-2 rounded-full px-3 py-1 text-xs font-medium">
  <span x-text="card.label"></span>
  <span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></span>
  </span>
@@ -48,10 +48,10 @@
  @click="toggleFormulaDiagnostics()"
  :aria-expanded="isFormulaDiagnosticsOpen.toString()"
  aria-controls="formula-bottom-diagnostics-details"
- class="inline-flex min-h-9 items-center justify-center rounded-lg bg-[var(--color-field-muted)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">
+ class="sk-btn bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]">
  <span x-text="isFormulaDiagnosticsOpen ? 'Hide details' : 'Show details'"></span>
  </button>
- <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="inline-flex min-h-9 items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition">
+ <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'bg-[var(--color-accent)] text-[var(--color-on-accent)] hover:bg-[var(--color-accent-hover)]'" class="sk-btn">
  <span x-text="isFormulaLocked ? 'Locked' : (isSaving ? 'Saving...' : 'Save')"></span>
  </button>
  </div>

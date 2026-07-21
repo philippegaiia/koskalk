@@ -28,7 +28,11 @@ it('creates a minimal private user ingredient from the public editor', function 
 
     expect(method_exists($component->instance(), 'mountAction'))->toBeTrue();
 
-    $component->assertSee('Carrier oils and soap calculation');
+    $component->assertDontSee('Using this oil in soap calculations');
+
+    $component
+        ->set('data.category', IngredientCategory::CarrierOil->value)
+        ->assertSee('Using this oil in soap calculations');
 
     $component
         ->set('data.name', 'French Green Clay')

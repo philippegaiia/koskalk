@@ -13,7 +13,7 @@ This first pass covers the public soap calculator and the shared soap/cosmetic r
 
 It does not yet cover the landing page, account settings, recipe index, production screens, email, or the English-only Filament admin.
 
-The homepage was reviewed separately on 2026-07-11. Its agreed localization model is version-controlled English copy and layout, translated as complete semantic blocks through Spatie. A separate CMS or page builder is not currently planned.
+The homepage was reviewed separately on 2026-07-11. Its agreed localization model is version-controlled English copy and layout, translated as complete semantic blocks through Spatie. The Laravel homepage remains the visual and English-copy reference while WordPress is prepared as the CMS for the complete end-user documentation, editorial content, and marketing site. Reproduce the current homepage in WordPress before redesigning it, then decide explicitly whether WordPress replaces the Laravel `/` route or initially remains separate.
 
 The detailed review is stored in `.impeccable/critique/2026-07-11T08-25-41Z__resources-views-welcome-blade-php.md`. Its main conclusion is to preserve the visual identity and calculation preview while making the product category literal, correcting account-path promises, adding real workspace proof, and substantially reducing repeated persuasion.
 

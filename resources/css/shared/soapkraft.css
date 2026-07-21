@@ -108,6 +108,24 @@
         --sk-tone-strong: var(--color-chemistry-strong);
     }
 
+    .sk-tone-success {
+        --sk-tone: var(--color-success);
+        --sk-tone-soft: var(--color-success-soft);
+        --sk-tone-strong: var(--color-success-strong);
+    }
+
+    .sk-tone-warning {
+        --sk-tone: var(--color-warning);
+        --sk-tone-soft: var(--color-warning-soft);
+        --sk-tone-strong: var(--color-warning-strong);
+    }
+
+    .sk-tone-danger {
+        --sk-tone: var(--color-danger);
+        --sk-tone-soft: var(--color-danger-soft);
+        --sk-tone-strong: var(--color-danger-strong);
+    }
+
     .sk-tone-catalog {
         --sk-tone: var(--color-active);
         --sk-tone-soft: var(--color-active-soft);
@@ -157,12 +175,18 @@
         color: var(--sk-tone-strong);
     }
 
+    .sk-status-surface {
+        border: 1px solid transparent;
+        color: var(--sk-tone-strong);
+    }
+
     .sk-inset.sk-tone-chemistry,
     .sk-inset.sk-tone-catalog,
     .sk-inset.sk-tone-materials,
     .sk-inset.sk-tone-info,
     .sk-inset.sk-tone-analysis,
-    .sk-inset.sk-tone-summary {
+    .sk-inset.sk-tone-summary,
+    .sk-status-surface {
         border-color: color-mix(in oklab, var(--sk-tone) 20%, var(--color-line));
         background: color-mix(in oklab, var(--sk-tone-soft) 34%, var(--color-panel) 66%);
     }
@@ -202,7 +226,7 @@ textarea:not(.fi-textarea):focus-visible {
 
 button:focus-visible,
 a:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 1px solid var(--color-accent);
     outline-offset: 2px;
     border-radius: 0.25rem;
 }
@@ -345,6 +369,6 @@ a:focus-visible {
     .sk-language-selector-control:focus-visible {
         border-color: transparent !important;
         outline: none !important;
-        box-shadow: inset 0 0 0 2px color-mix(in oklab, currentColor 58%, transparent) !important;
+        box-shadow: inset 0 0 0 1px color-mix(in oklab, currentColor 58%, transparent) !important;
     }
 }

@@ -243,10 +243,8 @@ class IngredientEditor extends Component implements HasActions, HasForms
                     ->tabs([
                         Tab::make('Identity')
                             ->schema([
-                                Section::make('Identity')
-                                    ->description($this->isEditing()
-                                        ? 'Keep the current material identity, supplier reference, identifiers, media, and notes here.'
-                                        : 'Create the ingredient with the essential data first. Composition and compliance can be added after the first save.')
+                                Section::make('Essential details')
+                                    ->description('Define what this catalog item is. Category and item type determine which specialist tabs are available.')
                                     ->columns([
                                         'md' => 2,
                                     ])
@@ -272,6 +270,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label('INCI')
                                             ->maxLength(255)
                                             ->columnSpanFull(),
+                                    ]),
+                                Section::make('Supplier and identifiers')
+                                    ->description('Add traceability and regulatory identifiers when they are available from the supplier documentation.')
+                                    ->columns([
+                                        'md' => 2,
+                                    ])
+                                    ->schema([
                                         TextInput::make('supplier_name')
                                             ->label('Supplier')
                                             ->maxLength(255),
@@ -290,6 +295,27 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label('Organic')
                                             ->helperText('Use this when the supplied ingredient is certified or sold as organic.')
                                             ->columnSpanFull(),
+                                        Select::make('function_ids')
+                                            ->label('EU / COSING functions')
+                                            ->multiple()
+                                            ->searchable()
+                                            ->preload()
+                                            ->options(fn (): array => IngredientFunction::query()
+                                                ->where('is_active', true)
+                                                ->orderBy('sort_order')
+                                                ->orderBy('name')
+                                                ->pluck('name', 'id')
+                                                ->all())
+                                            ->helperText('Optional official functions for this ingredient. One ingredient can carry several COSING functions.')
+                                            ->maxItems(10)
+                                            ->columnSpanFull(),
+                                    ]),
+                                Section::make('Media and notes')
+                                    ->description('Optional workspace context that helps people recognize and use the ingredient later.')
+                                    ->columns([
+                                        'md' => 2,
+                                    ])
+                                    ->schema([
                                         FileUpload::make('featured_image_path')
                                             ->label('Ingredient image')
                                             ->image()
@@ -358,20 +384,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label('Notes and formulation info')
                                             ->rows(4)
                                             ->maxLength(5000)
-                                            ->columnSpanFull(),
-                                        Select::make('function_ids')
-                                            ->label('EU / COSING functions')
-                                            ->multiple()
-                                            ->searchable()
-                                            ->preload()
-                                            ->options(fn (): array => IngredientFunction::query()
-                                                ->where('is_active', true)
-                                                ->orderBy('sort_order')
-                                                ->orderBy('name')
-                                                ->pluck('name', 'id')
-                                                ->all())
-                                            ->helperText('Optional official functions for this ingredient. One ingredient can carry several COSING functions.')
-                                            ->maxItems(10)
                                             ->columnSpanFull(),
                                     ]),
                             ]),

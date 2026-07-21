@@ -14,6 +14,7 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\OwnerType;
+use App\Services\MediaStorage;
 use App\Services\RecipeContentUpdater;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
@@ -28,6 +29,10 @@ use Symfony\Component\Process\Process;
 use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
+
+beforeEach(function () {
+    Storage::fake(MediaStorage::recipeDisk());
+});
 
 it('syncs the parent recipe name when a saved draft is renamed', function () {
     $user = User::factory()->create();

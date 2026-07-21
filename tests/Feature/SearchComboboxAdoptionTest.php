@@ -18,7 +18,7 @@ it('uses the shared search combobox for large user-facing catalogs', function ()
         ->toContain('id="cosmetic-ifra-context-search"')
         ->toContain('id="soap-ifra-context-search"')
         ->and($settings)
-        ->toContain('id="company-currency-search"');
+        ->toContain('id="workspace-currency-search"');
 });
 
 it('keeps the main formula ingredient browser unchanged', function () {

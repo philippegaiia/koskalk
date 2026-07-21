@@ -26,7 +26,7 @@ it('renders the recipes page for signed-in users', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('recipes.index'))
         ->assertSuccessful()
-        ->assertSee('Create soap formula');
+        ->assertSee('New soap product');
 });
 
 it('renders the soap workbench with filtered catalog data for signed-in users', function () {

@@ -13,6 +13,7 @@ class RecipeVersionViewDataBuilder
     public function __construct(
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
+        private readonly FormulaDocumentBuilder $formulaDocumentBuilder,
     ) {}
 
     /**
@@ -20,6 +21,7 @@ class RecipeVersionViewDataBuilder
      *     recipe: Recipe,
      *     version: RecipeVersion,
      *     snapshot: array<string, mixed>,
+     *     formulaDocument: array<string, mixed>,
      *     phaseSections: array<int, array<string, mixed>>,
      *     summaryCards: array<int, array<string, scalar|null>>,
      *     contextRows: array<int, array<string, scalar|null>>,
@@ -50,11 +52,22 @@ class RecipeVersionViewDataBuilder
 
         $phaseSections = $this->phaseSections($snapshot['draft'], $isCosmetic);
         $costingData = $this->costingData($recipe, $version, $selectedOilWeight, $normalizedBatchContext);
+        $formulaDocument = $this->formulaDocumentBuilder->build($snapshot, [
+            'name' => $recipe->name,
+            'product_family' => $recipe->productFamily?->name,
+            'product_type' => $recipe->productType?->name,
+            'calculation_basis' => $recipe->productFamily?->calculation_basis,
+            'state' => $version->saved_at === null ? 'current' : 'saved',
+            'saved_at' => $version->saved_at?->format('Y-m-d H:i'),
+            'description' => $recipe->description,
+            'manufacturing_procedure' => $recipe->manufacturing_instructions,
+        ]);
 
         return [
             'recipe' => $recipe,
             'version' => $version,
             'snapshot' => $snapshot,
+            'formulaDocument' => $formulaDocument,
             'phaseSections' => $phaseSections,
             'summaryCards' => $this->summaryCards($snapshot['draft'], $snapshot['calculation'], $isCosmetic),
             'contextRows' => $this->contextRows($snapshot['draft'], $snapshot['calculation'], $version, $isCosmetic),

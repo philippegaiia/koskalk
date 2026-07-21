@@ -71,17 +71,15 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="min-w-0 flex-1">
                     <div class="flex flex-wrap items-center gap-2">
-                        <p class="sk-eyebrow">Formula sheet</p>
+                        <p class="sk-eyebrow">{{ __('formula_documents.title') }}</p>
                         @if ($isHistorical)
-                            <span class="rounded-full border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-3 py-1 text-xs font-medium text-[var(--color-ink-strong)]">Previous version</span>
+                            <span class="rounded-full border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-3 py-1 text-xs font-medium text-[var(--color-ink-strong)]">{{ __('formula_documents.states.history') }}</span>
                         @else
-                            <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">Saved formula</span>
+                            <span class="rounded-full border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-3 py-1 text-xs font-medium text-[var(--color-success-strong)]">{{ __('formula_documents.states.saved') }}</span>
                         @endif
                     </div>
                     <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h1>
-                    <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">
-                        Use this saved formula for scaling, printing, and export. Quantity changes here only affect the sheet output.
-                    </p>
+                    <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('formula_documents.intro') }}</p>
 
                     <div class="mt-4 flex flex-wrap gap-2">
                         @if ($isHistorical)
@@ -90,28 +88,31 @@
                             </a>
                         @endif
                         <a href="{{ route('recipes.edit', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                            Open formula
+                            {{ __('formula_documents.actions.open') }}
                         </a>
                         <form method="POST" action="{{ route('recipes.duplicate', $recipe) }}">
                             @csrf
                             <button type="submit" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                                Duplicate
+                                {{ __('products.actions.duplicate') }}
                             </button>
                         </form>
-                        <a href="{{ route('recipes.print.production', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                            Batch production sheet
-                        </a>
-                        <a href="{{ route('recipes.print.technical', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                            Technical recipe sheet
-                        </a>
-                        <a href="{{ route('recipes.print.costing', $printQuery) }}" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
-                            Costing sheet
-                        </a>
+                        <form method="GET" action="{{ route('recipes.print.production', ['recipe' => $recipe]) }}" class="flex flex-wrap items-center gap-2">
+                            @foreach (collect($printQuery)->except('recipe') as $key => $value)
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
+                            @endforeach
+                            <label class="inline-flex items-center gap-2 text-xs text-[var(--color-ink-soft)]">
+                                <input type="checkbox" name="include_analysis" value="1" class="rounded border-[var(--color-line)]" />
+                                {{ __('formula_documents.print.include_analysis') }}
+                            </label>
+                            <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
+                                {{ __('formula_documents.actions.print') }}
+                            </button>
+                        </form>
                         <a href="{{ route('recipes.export.xlsx', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                            Export Excel
+                            {{ __('formula_documents.actions.export_excel') }}
                         </a>
                         <a href="{{ route('recipes.export.csv', $printQuery) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                            Export CSV
+                            {{ __('formula_documents.actions.export_csv') }}
                         </a>
                     </div>
                 </div>
@@ -169,15 +170,7 @@
         @endif
 
         @include('recipes.partials.version-sheet', [
-            'recipe' => $recipe,
-            'snapshot' => $snapshot,
-            'phaseSections' => $phaseSections,
-            'summaryCards' => $summaryCards,
-            'contextRows' => $contextRows,
-            'lyeRows' => $lyeRows,
-            'showDetails' => true,
-            'showSummary' => true,
-            'showIngredientLists' => true,
+            'formulaDocument' => $formulaDocument,
         ])
 
         <section class="grid gap-4 lg:grid-cols-2">

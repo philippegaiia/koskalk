@@ -22,40 +22,37 @@ use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
 
-it('renders the formula sheet with print actions', function () {
+it('renders the formula sheet around one aligned table', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
 
     $response = $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe]))
         ->assertSuccessful()
-        ->assertSee('Formula sheet')
-        ->assertSee('Use this saved formula for scaling, printing, and export.')
+        ->assertSee('Formula Sheet')
+        ->assertSeeInOrder(['Saponified oils', 'Lye and water', 'Formula additions'])
+        ->assertSee('% of oils')
+        ->assertSee('NaOH')
+        ->assertSee('Water')
+        ->assertSee('Calculated results')
         ->assertDontSee('v'.$publishedVersion->version_number)
         ->assertSee('Open formula')
         ->assertSee('Duplicate')
         ->assertDontSee('Reference formula')
         ->assertDontSee('Edit in draft')
         ->assertDontSee('Recovery snapshots')
-        ->assertSee('Batch production sheet')
-        ->assertSee('Technical recipe sheet')
-        ->assertSee('Costing sheet')
+        ->assertDontSee('Batch production sheet')
+        ->assertDontSee('Technical recipe sheet')
+        ->assertDontSee('Costing sheet')
         ->assertSee('Export Excel')
         ->assertSee('Export CSV')
-        ->assertSee('Published Formula')
-        ->assertSee('How this recipe was calculated')
-        ->assertSee('Lye and water')
+        ->assertDontSee('How this recipe was calculated')
         ->assertSee('Olive Oil')
-        ->assertSee('OLEA EUROPAEA')
-        ->assertSee('% oils')
         ->assertSee('Weight (g)')
-        ->assertSee('1000<span class="ml-1 text-sm font-medium text-[var(--color-ink-soft)]">g</span>', false)
         ->assertDontSee('1000.00');
 
-    expect(substr_count($response->getContent(), '<p class="sk-eyebrow">Oil quantity</p>'))->toBe(1)
-        ->and(substr_count($response->getContent(), 'Wet batch weight'))->toBe(1)
-        ->and(substr_count($response->getContent(), 'Weight after cure'))->toBe(1)
-        ->and(substr_count($response->getContent(), 'Produced glycerine'))->toBe(1)
-        ->and(substr_count($response->getContent(), 'Final ingredient list'))->toBe(1);
+    expect(substr_count($response->getContent(), 'data-formula-document-table'))->toBe(1)
+        ->and(strpos($response->getContent(), 'Lye and water'))
+        ->toBeLessThan(strpos($response->getContent(), 'Calculated results'));
 });
 
 it('renders the formula workbench with one save path and lock controls', function () {
@@ -542,17 +539,17 @@ it('routes active and historical formula sheets to their exact saved versions', 
         ->assertSee('<title>Formula B · Formula Sheet', false)
         ->assertSee('>Formula B</h1>', false)
         ->assertSee('Saved formula')
-        ->assertDontSee('Previous version');
+        ->assertDontSee('Saved history');
 
     $this->actingAs($user)
         ->get(route('recipes.version', ['recipe' => $recipe, 'version' => $formulaA]))
         ->assertSuccessful()
-        ->assertSee('Formula sheet')
+        ->assertSee('Formula Sheet')
         ->assertSee('<title>Formula B · Formula Sheet', false)
         ->assertDontSee('<title>Formula A · Formula Sheet', false)
         ->assertSee('>Formula B</h1>', false)
         ->assertDontSee('>Formula A</h1>', false)
-        ->assertSee('Previous version')
+        ->assertSee('Saved history')
         ->assertSee('Back to active formula')
         ->assertSee('href="'.route('recipes.saved', $recipe).'"', false)
         ->assertDontSee('action="'.route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $formulaA]).'"', false);
@@ -579,8 +576,6 @@ it('keeps the displayed historical version in every sheet action', function () {
 
     foreach ([
         'recipes.print.production',
-        'recipes.print.technical',
-        'recipes.print.costing',
         'recipes.export.xlsx',
         'recipes.export.csv',
     ] as $routeName) {
@@ -650,7 +645,7 @@ it('keeps the main recipe identity while rendering selected backup content', fun
         ->assertDontSee('<title>Formula A · Formula Sheet', false)
         ->assertSee('>Main Formula</h1>', false)
         ->assertDontSee('>Formula A</h1>', false)
-        ->assertSee('Previous version')
+        ->assertSee('Saved history')
         ->assertSee('Olive Oil')
         ->assertDontSee('Coconut Oil');
 

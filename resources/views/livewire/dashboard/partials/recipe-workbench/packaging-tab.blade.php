@@ -12,20 +12,20 @@
  <div class="border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-4">
  <div>
- <p class="sk-eyebrow">Packaging plan</p>
- <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Packaging plan</h3>
- <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">Define what one finished unit uses. Prices stay in Costing so the formula structure stays clear.</p>
+ <p class="sk-eyebrow">{{ __('workbench.packaging.plan.title') }}</p>
+ <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.packaging.plan.title') }}</h3>
+ <p class="mt-2 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.packaging.plan.help') }}</p>
  </div>
 
  <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
  <template x-if="packagingCatalog.length > 0">
  <x-search-combobox
  id="packaging-catalog-search"
- label="Search and add packaging item"
+ :label="__('workbench.packaging.plan.search_label')"
  :options="$packagingCatalogOptions"
- placeholder="Search or choose packaging item"
- action-label="Add"
- empty-message="No matching packaging items"
+ :placeholder="__('workbench.packaging.plan.search_placeholder')"
+ :action-label="__('workbench.packaging.plan.add')"
+ :empty-message="__('workbench.packaging.plan.no_matches')"
  :retain-selection="false"
  class="w-full sm:w-72 sm:min-w-72"
  x-effect="replaceOptions(packagingCatalog.map((item) => ({ id: item.id, label: item.name, description: item.notes || '', searchText: `${item.name} ${item.notes || ''}` })))"
@@ -33,7 +33,7 @@
  />
  </template>
  <button type="button" @click="openPackagingCatalogModal()" class="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
- New packaging item
+ {{ __('workbench.packaging.plan.create') }}
  </button>
  </div>
  </div>
@@ -41,8 +41,8 @@
 
  <template x-if="packagingPlanRows.length === 0">
  <div class="px-5 py-8 text-sm text-[var(--color-ink-soft)]">
- <p class="font-medium text-[var(--color-ink-strong)]">No packaging planned yet.</p>
- <p class="mt-2">Add boxes, jars, labels, stickers, or other components used by one finished unit.</p>
+ <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.packaging.plan.empty') }}</p>
+ <p class="mt-2">{{ __('workbench.packaging.plan.empty_help') }}</p>
  </div>
  </template>
 
@@ -50,9 +50,9 @@
 	 <div class="overflow-hidden touch-pan-x">
 	 <div>
 	 <div class="hidden text-sm lg:grid lg:grid-cols-[minmax(0,1.9fr)_9rem_minmax(0,1.3fr)_7rem] lg:gap-px lg:bg-[var(--color-line)]">
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Packaging item</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Components per unit</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">Notes</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.packaging.plan.item') }}</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.packaging.plan.quantity_per_unit') }}</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.packaging.plan.notes') }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3"></div>
  </div>
 
@@ -63,15 +63,15 @@
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
 	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
-	 <span class="sk-eyebrow lg:hidden">Components per unit</span>
- <input :value="row.components_per_unit" @blur="normalizeDecimalBlur($event); updatePackagingPlanComponents(row, $event.target.value)" type="text" inputmode="decimal" :aria-label="'Components per unit for ' + row.name" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+	 <span class="sk-eyebrow lg:hidden">{{ __('workbench.packaging.plan.quantity_per_unit') }}</span>
+ <input :value="row.components_per_unit" @blur="normalizeDecimalBlur($event); updatePackagingPlanComponents(row, $event.target.value)" type="text" inputmode="decimal" :aria-label="t('packaging.accessibility.quantity_for', { item: row.name })" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </div>
 	 <div class="flex flex-col gap-2 bg-white lg:flex-row lg:items-center lg:px-3 lg:py-3">
-	 <span class="sk-eyebrow lg:hidden">Notes</span>
- <input x-model="row.notes" type="text" :aria-label="'Notes for ' + row.name" class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+	 <span class="sk-eyebrow lg:hidden">{{ __('workbench.packaging.plan.notes') }}</span>
+ <input x-model="row.notes" type="text" :aria-label="t('packaging.accessibility.notes_for', { item: row.name })" class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </div>
 	 <div class="flex items-center justify-end bg-white lg:px-4 lg:py-3">
-	 <button type="button" @click="removePackagingPlanRow(row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="Remove packaging item">×</button>
+	 <button type="button" @click="removePackagingPlanRow(row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="{{ __('workbench.packaging.accessibility.remove_item') }}">×</button>
  </div>
  </div>
  </template>

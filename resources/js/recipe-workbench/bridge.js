@@ -101,21 +101,21 @@ export async function persistCosting(workbench, seq) {
 
         if (!response?.ok) {
             workbench.costingSaveStatus = 'error';
-            workbench.costingSaveMessage = response?.message ?? 'The costing data could not be saved.';
+            workbench.costingSaveMessage = response?.message ?? workbench.t('costing.messages.save_failed');
 
             return;
         }
 
         workbench.applyCostingPayload(response.costing ?? null);
         workbench.costingSaveStatus = 'success';
-        workbench.costingSaveMessage = response.message ?? 'Costing saved.';
+        workbench.costingSaveMessage = response.message ?? workbench.t('costing.messages.saved');
     } catch (error) {
         if (seq !== workbench.costingSaveSeq) {
             return;
         }
 
         workbench.costingSaveStatus = 'error';
-        workbench.costingSaveMessage = 'The costing data could not be saved.';
+        workbench.costingSaveMessage = workbench.t('costing.messages.save_failed');
     } finally {
         if (seq === workbench.costingSaveSeq) {
             workbench.isSavingCosting = false;
@@ -137,19 +137,19 @@ export async function persistPackagingCatalogItem(workbench, payload) {
 
         if (!response?.ok) {
             workbench.packagingCatalogStatus = 'error';
-            workbench.packagingCatalogMessage = response?.message ?? 'The packaging item could not be saved.';
+            workbench.packagingCatalogMessage = response?.message ?? workbench.t('packaging.messages.save_failed');
 
             return false;
         }
 
         workbench.packagingCatalog = response.packaging_catalog ?? [];
         workbench.packagingCatalogStatus = 'success';
-        workbench.packagingCatalogMessage = response.message ?? 'Packaging item saved.';
+        workbench.packagingCatalogMessage = response.message ?? workbench.t('packaging.messages.saved');
 
         return response.packaging_item ?? null;
     } catch (error) {
         workbench.packagingCatalogStatus = 'error';
-        workbench.packagingCatalogMessage = 'The packaging item could not be saved.';
+        workbench.packagingCatalogMessage = workbench.t('packaging.messages.save_failed');
 
         return false;
     }

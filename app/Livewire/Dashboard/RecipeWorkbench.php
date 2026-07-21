@@ -300,7 +300,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         if (! $user instanceof User || ! $recipe instanceof Recipe) {
             return [
                 'ok' => false,
-                'message' => 'Save the formula before keeping costing details.',
+                'message' => __('workbench.costing.messages.save_product'),
             ];
         }
 
@@ -308,7 +308,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         return [
             'ok' => true,
-            'message' => 'Costing saved.',
+            'message' => __('workbench.costing.messages.saved'),
             'costing' => $recipeWorkbenchService->saveCosting($user, $recipe, $costing),
         ];
     }
@@ -325,7 +325,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         if (! $user instanceof User || ! $recipe instanceof Recipe) {
             return [
                 'ok' => false,
-                'message' => 'Save the formula before pricing can be loaded.',
+                'message' => __('workbench.costing.messages.load_product'),
             ];
         }
 
@@ -349,13 +349,13 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         if (! $user instanceof User) {
             return [
                 'ok' => false,
-                'message' => 'Sign in before saving packaging items.',
+                'message' => __('workbench.packaging.messages.sign_in'),
             ];
         }
 
         return [
             'ok' => true,
-            'message' => 'Packaging item saved.',
+            'message' => __('workbench.packaging.messages.saved'),
             ...$recipeWorkbenchService->savePackagingCatalogItem($user, $packagingItem),
         ];
     }

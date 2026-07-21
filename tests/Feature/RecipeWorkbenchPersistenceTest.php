@@ -2146,6 +2146,86 @@ JS;
         ]);
 });
 
+it('localizes soap costing phase labels while preserving cosmetic phase names', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+globalThis.rowWeightForOilWeight = () => 100;
+globalThis.nonNegativeNumber = (value) => Number(value) || 0;
+globalThis.number = (value) => Number(value) || 0;
+globalThis.parseDecimalInput = (value) => Number(value) || 0;
+globalThis.roundTo = (value) => value;
+globalThis.formatDecimalInput = (value) => String(value);
+globalThis.persistCosting = async () => {};
+globalThis.persistPackagingCatalogItem = async () => null;
+
+const costingSource = fs
+  .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createCostingSection', 'function createCostingSection');
+
+eval(`${costingSource}\nglobalThis.createCostingSection = createCostingSection;`);
+
+function costingState({ isCosmeticFormula, phaseKey, phaseName }) {
+  const state = {
+    isCosmeticFormula,
+    phaseOrder: [{ key: phaseKey, name: phaseName }],
+    phaseItems: {
+      [phaseKey]: [{ id: 1, ingredient_id: 2, name: 'Olive Oil', percentage: 100 }],
+    },
+    oilWeight: 100,
+    oilUnit: 'g',
+    costingOilWeight: 100,
+    costingOilUnit: 'g',
+    costingPriceByRowId: {},
+    ingredientForRow() {
+      return null;
+    },
+    t(path) {
+      return {
+        'costing.phases.saponification': 'Localized saponification',
+        'costing.phases.additions': 'Localized additions',
+        'costing.phases.fragrance': 'Localized fragrance',
+      }[path] ?? path;
+    },
+  };
+
+  Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
+
+  return state.costingFormulaRows[0].phaseLabel;
+}
+
+console.log(JSON.stringify({
+  soap: costingState({
+    isCosmeticFormula: false,
+    phaseKey: 'saponified_oils',
+    phaseName: 'Saponified Oils',
+  }),
+  cosmetic: costingState({
+    isCosmeticFormula: true,
+    phaseKey: 'additives',
+    phaseName: 'Cool Down Additions',
+  }),
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload)->toBe([
+        'soap' => 'Localized saponification',
+        'cosmetic' => 'Cool Down Additions',
+    ]);
+});
+
 it('deletes the previous recipe featured image from storage when the image is cleared', function () {
     Storage::fake('local');
 

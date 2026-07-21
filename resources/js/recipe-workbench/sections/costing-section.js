@@ -6,10 +6,10 @@ import {
 import { nonNegativeNumber, number, parseDecimalInput, roundTo } from '../utils';
 import { formatDecimalInput } from '../number-format';
 
-const PHASE_LABELS = {
-    saponified_oils: 'Reaction core',
-    additives: 'Additives',
-    fragrance: 'Aromatics',
+const SYSTEM_PHASE_TRANSLATION_KEYS = {
+    saponified_oils: 'costing.phases.saponification',
+    additives: 'costing.phases.additions',
+    fragrance: 'costing.phases.fragrance',
 };
 
 const WEIGHT_FACTORS_IN_KG = {
@@ -45,7 +45,7 @@ export function createCostingSection(payload) {
 
                 if (!response?.ok) {
                     this.costingSaveStatus = 'error';
-                    this.costingSaveMessage = response?.message ?? 'The costing data could not be loaded.';
+                    this.costingSaveMessage = response?.message ?? this.t('costing.messages.load_failed');
 
                     return;
                 }
@@ -56,7 +56,7 @@ export function createCostingSection(payload) {
                 this.costingSaveMessage = '';
             } catch (error) {
                 this.costingSaveStatus = 'error';
-                this.costingSaveMessage = 'The costing data could not be loaded.';
+                this.costingSaveMessage = this.t('costing.messages.load_failed');
             } finally {
                 this.isLoadingCosting = false;
             }
@@ -128,7 +128,7 @@ export function createCostingSection(payload) {
                     rowId: row.id,
                     ingredient_id: row.ingredient_id,
                     phaseKey,
-                    phaseLabel: this.phaseOrder.find((phase) => phase.key === phaseKey)?.name ?? PHASE_LABELS[phaseKey] ?? phaseKey,
+                    phaseLabel: this.costingPhaseLabel(phaseKey),
                     position: index + 1,
                     name: row.name,
                     percentage: nonNegativeNumber(row.percentage),
@@ -141,6 +141,18 @@ export function createCostingSection(payload) {
 
         costingPriceForRow(row) {
             return this.costingPriceByRowId[row.rowId] ?? row.defaultPricePerKg ?? null;
+        },
+
+        costingPhaseLabel(phaseKey) {
+            const authoredPhaseName = this.phaseOrder.find((phase) => phase.key === phaseKey)?.name;
+
+            if (this.isCosmeticFormula) {
+                return authoredPhaseName ?? phaseKey;
+            }
+
+            const translationKey = SYSTEM_PHASE_TRANSLATION_KEYS[phaseKey];
+
+            return translationKey ? this.t(translationKey) : (authoredPhaseName ?? phaseKey);
         },
 
         updateCostingPrice(row, value) {
@@ -221,7 +233,7 @@ export function createCostingSection(payload) {
         scheduleCostingSave() {
             if (!this.hasCurrentFormula) {
                 this.costingSaveStatus = 'warning';
-                this.costingSaveMessage = 'Save the formula before pricing can be kept.';
+                this.costingSaveMessage = this.t('costing.messages.save_product');
 
                 return;
             }
@@ -280,7 +292,7 @@ export function createCostingSection(payload) {
         async savePackagingCatalogItem(addToPlan = false) {
             if (`${this.packagingCatalogForm.name ?? ''}`.trim() === '') {
                 this.packagingCatalogStatus = 'error';
-                this.packagingCatalogMessage = 'Packaging items need a name.';
+                this.packagingCatalogMessage = this.t('packaging.messages.name_required');
 
                 return null;
             }

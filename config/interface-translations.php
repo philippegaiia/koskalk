@@ -4,6 +4,7 @@ return [
     'sources' => [
         'account' => ['*'],
         'dashboard' => ['*'],
+        'formula_documents' => ['*'],
         'ingredients' => ['*'],
         'navigation' => ['*'],
         'packaging' => ['*'],

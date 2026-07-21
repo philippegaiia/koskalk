@@ -307,6 +307,20 @@ it('prints one working formula sheet with optional soap analysis', function () {
         ->assertSee('Fatty-acid profile');
 });
 
+it('omits empty authored sections from the working formula sheet', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $recipe->update([
+        'description' => '<p><br></p>',
+        'manufacturing_instructions' => '<p><br></p>',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.print.production', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->assertDontSee('Description')
+        ->assertDontSee('Manufacturing procedure');
+});
+
 it('renders compatibility print routes as the working formula sheet', function (string $routeName) {
     [$user, $recipe, $savedVersion] = createSavedRecipeVersion();
 
@@ -457,6 +471,22 @@ it('downloads the saved formula as a simple csv', function () {
         ->not->toContain('Platform')
         ->not->toContain('User')
         ->not->toContain('INCI name');
+});
+
+it('uses approved product and formula terminology on formula outputs', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+
+    $content = $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($content)
+        ->toContain('Formula Sheet')
+        ->toContain('Formula additions')
+        ->not->toContain('Core reaction')
+        ->not->toContain('Post-reaction phases')
+        ->not->toContain('Published version');
 });
 
 it('downloads the saved formula as an excel workbook', function () {

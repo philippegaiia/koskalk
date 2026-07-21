@@ -762,6 +762,7 @@ it('renders saved cosmetic formula sheet with selected ingredients only', functi
         ->assertSee('Glycerin')
         ->assertSeeInOrder(['Phase A', 'Water', 'Calculated results'])
         ->assertDontSee('Lye and water')
+        ->assertDontSee('Include soap analysis')
         ->assertDontSee('% of oils')
         ->assertDontSee('How this recipe was calculated')
         ->assertSee('Label text')

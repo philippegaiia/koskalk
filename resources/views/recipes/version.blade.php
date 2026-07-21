@@ -100,10 +100,12 @@
                             @foreach (collect($printQuery)->except('recipe') as $key => $value)
                                 <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
                             @endforeach
-                            <label class="inline-flex items-center gap-2 text-xs text-[var(--color-ink-soft)]">
-                                <input type="checkbox" name="include_analysis" value="1" class="rounded border-[var(--color-line)]" />
-                                {{ __('formula_documents.print.include_analysis') }}
-                            </label>
+                            @if (($formulaDocument['family'] ?? null) === 'soap')
+                                <label class="inline-flex items-center gap-2 text-xs text-[var(--color-ink-soft)]">
+                                    <input type="checkbox" name="include_analysis" value="1" class="rounded border-[var(--color-line)]" />
+                                    {{ __('formula_documents.print.include_analysis') }}
+                                </label>
+                            @endif
                             <button type="submit" class="inline-flex rounded-full bg-[var(--color-accent-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent)]">
                                 {{ __('formula_documents.actions.print') }}
                             </button>

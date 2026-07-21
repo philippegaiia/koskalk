@@ -22,6 +22,23 @@ it('places soap lye and water inside the aligned formula sections', function () 
         ->and($document['sections'][1]['rows'][0]['weight'])->toBe(135.0);
 });
 
+it('keeps every selected lye in the aligned lye and water section', function (float $naohWeight, float $kohWeight, array $expectedRows) {
+    $snapshot = soapFormulaDocumentSnapshot();
+    $snapshot['calculation']['lye']['selected']['naoh_weight'] = $naohWeight;
+    $snapshot['calculation']['lye']['selected']['koh_to_weigh'] = $kohWeight;
+
+    $document = app(FormulaDocumentBuilder::class)->build($snapshot, [
+        'name' => 'Workshop soap',
+        'calculation_basis' => 'oil_weight',
+        'state' => 'saved',
+    ]);
+
+    expect(collect($document['sections'][1]['rows'])->pluck('name')->all())->toBe($expectedRows);
+})->with([
+    'KOH only' => [0.0, 150.0, ['KOH', 'Water']],
+    'dual lye' => [80.0, 60.0, ['NaOH', 'KOH', 'Water']],
+]);
+
 it('keeps cosmetic phases aligned on total formula percentage', function () {
     $document = app(FormulaDocumentBuilder::class)->build(cosmeticFormulaDocumentSnapshot(), [
         'name' => 'Face cream',

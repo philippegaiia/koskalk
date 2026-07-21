@@ -119,6 +119,10 @@ Settings no longer duplicates the name, email, password, or unused avatar concer
 
 The Settings group contains 17 interface keys for page copy, tabs, workspace guidance, actions, and statuses. Existing shared translation keys continue to supply the interface-language and number-format labels and help. Contextual drafts are complete locally for `fr`, `es`, `de`, `it`, and `nl`. Workspace updates remain owner-only, and member or invitation controls remain hidden.
 
+### 12. Formula outputs review
+
+- Formula outputs: the English Formula Sheet, working print, CSV, and Excel vocabulary is approved. Interface copy is owned by `formula_documents.*`; authored product text and scientific INCI data remain outside interface translation. Contextual `fr`, `es`, `de`, `it`, and `nl` drafting begins only after this English browser review.
+
 ## First-pass inventory
 
 | Surface | Current content | Classification | Recommendation | Priority |

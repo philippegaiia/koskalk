@@ -78,7 +78,10 @@ it('reads only application-owned English source strings from Laravel language fi
         ->and($source->get('validation', 'required'))->toBeNull()
         ->and($source->get('homepage', 'hero.title'))->toBeNull()
         ->and($source->get('currencies', 'EUR'))->toBeNull()
-        ->and($source->all())->toHaveKey('public.language.label');
+        ->and($source->all())->toHaveKey('public.language.label')
+        ->toHaveKey('formula_documents.title')
+        ->toHaveKey('formula_documents.sections.lye_water')
+        ->toHaveKey('formula_documents.actions.print');
 });
 
 it('keeps non-English application translations exclusively in the database', function () {

@@ -3,6 +3,13 @@
 @section('title', $formulaDocument['identity']['name'].' · '.__('formula_documents.print.title').' · '.config('app.name'))
 
 @section('content')
+    @php
+        $description = (string) ($formulaDocument['identity']['description'] ?? '');
+        $manufacturingProcedure = (string) ($formulaDocument['identity']['manufacturing_procedure'] ?? '');
+        $hasDescription = filled(preg_replace('/\s+/u', '', html_entity_decode(strip_tags($description))));
+        $hasManufacturingProcedure = filled(preg_replace('/\s+/u', '', html_entity_decode(strip_tags($manufacturingProcedure))));
+    @endphp
+
     <div class="print-hidden mb-4 flex items-center justify-between gap-3 border border-slate-300 bg-white p-4">
         <a href="{{ route('recipes.saved', ['recipe' => $recipe]) }}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium">{{ __('formula_documents.actions.back') }}</a>
         <button type="button" data-print-document class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white">{{ __('formula_documents.actions.print') }}</button>
@@ -33,17 +40,17 @@
         <x-formula-document.table :document="$formulaDocument" class="mt-4" />
         <x-formula-document.results :document="$formulaDocument" class="mt-4" />
 
-        @if (filled($formulaDocument['identity']['description'] ?? null))
+        @if ($hasDescription)
             <section class="mt-5 break-inside-avoid">
                 <h2 class="text-xs font-semibold uppercase">{{ __('formula_documents.sections.description') }}</h2>
-                <div class="prose prose-sm mt-2 max-w-none">{!! str($formulaDocument['identity']['description'])->sanitizeHtml() !!}</div>
+                <div class="prose prose-sm mt-2 max-w-none">{!! str($description)->sanitizeHtml() !!}</div>
             </section>
         @endif
 
-        @if (filled($formulaDocument['identity']['manufacturing_procedure'] ?? null))
+        @if ($hasManufacturingProcedure)
             <section class="mt-5 break-inside-avoid">
                 <h2 class="text-xs font-semibold uppercase">{{ __('formula_documents.sections.manufacturing_procedure') }}</h2>
-                <div class="prose prose-sm mt-2 max-w-none">{!! str($formulaDocument['identity']['manufacturing_procedure'])->sanitizeHtml() !!}</div>
+                <div class="prose prose-sm mt-2 max-w-none">{!! str($manufacturingProcedure)->sanitizeHtml() !!}</div>
             </section>
         @endif
 

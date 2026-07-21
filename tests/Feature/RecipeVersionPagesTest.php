@@ -277,39 +277,50 @@ it('recalculates the saved formula view when a different oil quantity is request
         ->assertSee('Recalculate');
 });
 
-it('renders purpose-based print pages for the current saved formula', function () {
-    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
-    attachCostingToSavedVersion($user, $publishedVersion);
+it('prints one working formula sheet with optional soap analysis', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $recipe->update(['manufacturing_instructions' => '<p>Mix to emulsion, pour, and cure.</p>']);
 
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe]))
         ->assertSuccessful()
-        ->assertSee('Batch production sheet')
-        ->assertSee('Batch no.')
+        ->assertSee('Working Formula Sheet')
+        ->assertSeeInOrder(['Saponified oils', 'Lye and water', 'Formula additions'])
+        ->assertSee('Trial / batch no.')
         ->assertSee('Made by')
         ->assertSee('Checked by')
-        ->assertSee('document-sheet', false)
-        ->assertDontSee('Declaration details');
+        ->assertSee('Observations')
+        ->assertSee('Result')
+        ->assertSee('Manufacturing procedure')
+        ->assertDontSee('Cost summary')
+        ->assertDontSee('Declaration details')
+        ->assertDontSee('Packaging costs');
 
     $this->actingAs($user)
-        ->get(route('recipes.print.technical', ['recipe' => $recipe]))
+        ->get(route('recipes.print.production', [
+            'recipe' => $recipe,
+            'include_analysis' => 1,
+        ]))
         ->assertSuccessful()
-        ->assertSee('Technical recipe sheet')
-        ->assertSee('Ingredient list preview')
-        ->assertSee('Declaration details')
-        ->assertDontSee('Batch no.');
-
-    $this->actingAs($user)
-        ->get(route('recipes.print.costing', ['recipe' => $recipe]))
-        ->assertSuccessful()
-        ->assertSee('Costing sheet')
-        ->assertSee('Ingredient costs')
-        ->assertSee('Packaging costs')
-        ->assertSee('Olive Oil')
-        ->assertSee('Bottle')
-        ->assertSee('Total batch cost')
-        ->assertSee('120 EUR');
+        ->assertSee('Soap analysis')
+        ->assertSee('Soap qualities')
+        ->assertSee('Fatty-acid profile');
 });
+
+it('renders compatibility print routes as the working formula sheet', function (string $routeName) {
+    [$user, $recipe, $savedVersion] = createSavedRecipeVersion();
+
+    $this->actingAs($user)
+        ->get(route($routeName, ['recipe' => $recipe, 'version' => $savedVersion]))
+        ->assertSuccessful()
+        ->assertSee('Working Formula Sheet')
+        ->assertDontSee('Cost summary');
+})->with([
+    'technical route' => 'recipes.print.technical',
+    'costing route' => 'recipes.print.costing',
+    'legacy recipe route' => 'recipes.legacy.print.recipe',
+    'legacy details route' => 'recipes.legacy.print.details',
+]);
 
 it('passes batch context from the saved page to print sheets', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
@@ -343,9 +354,9 @@ it('passes batch context from the saved page to print sheets', function () {
             'units_produced' => 24,
         ]))
         ->assertSuccessful()
-        ->assertSee('B-2026-042')
-        ->assertSee('2026-04-20')
-        ->assertSee('24');
+        ->assertSee('Working Formula Sheet')
+        ->assertSee('Trial / batch no.')
+        ->assertSee('1,500.00 g');
 });
 
 it('prefills production units and priced packaging cost on the saved formula page', function () {
@@ -574,17 +585,17 @@ it('keeps the displayed historical version in every sheet action', function () {
         ->get(route('recipes.version', ['recipe' => $recipe, 'version' => $formulaA]))
         ->assertSuccessful();
 
-    foreach ([
-        'recipes.print.production',
-        'recipes.export.xlsx',
-        'recipes.export.csv',
-    ] as $routeName) {
+    foreach (['recipes.export.xlsx', 'recipes.export.csv'] as $routeName) {
         $routePath = parse_url(route($routeName, ['recipe' => $recipe]), PHP_URL_PATH);
         $html = html_entity_decode($response->getContent());
 
         expect($html)->toContain((string) $routePath)
             ->and($html)->toContain('version='.$formulaA->public_id);
     }
+
+    $response
+        ->assertSee('action="'.route('recipes.print.production', ['recipe' => $recipe]).'"', false)
+        ->assertSee('name="version" value="'.$formulaA->public_id.'"', false);
 
     $activeResponse = $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe]))
@@ -652,8 +663,8 @@ it('keeps the main recipe identity while rendering selected backup content', fun
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe, 'version' => $formulaA]))
         ->assertSuccessful()
-        ->assertSee('<title>Main Formula · Batch production sheet', false)
-        ->assertDontSee('<title>Formula A · Batch production sheet', false)
+        ->assertSee('<title>Main Formula · Working Formula Sheet', false)
+        ->assertDontSee('<title>Formula A · Working Formula Sheet', false)
         ->assertSee('>Main Formula</h1>', false)
         ->assertDontSee('>Formula A</h1>', false)
         ->assertSee('Olive Oil')
@@ -662,8 +673,8 @@ it('keeps the main recipe identity while rendering selected backup content', fun
     $this->actingAs($user)
         ->get(route('recipes.print.costing', ['recipe' => $recipe, 'version' => $formulaA]))
         ->assertSuccessful()
-        ->assertSee('Costs used for this saved formula.')
-        ->assertDontSee('Costs used for the current formula.');
+        ->assertSee('<title>Main Formula · Working Formula Sheet', false)
+        ->assertDontSee('Cost summary');
 
     $workbookResponse = $this->actingAs($user)
         ->get(route('recipes.export.xlsx', ['recipe' => $recipe, 'version' => $formulaA]))
@@ -688,7 +699,7 @@ it('uses the latest saved formula when sheet outputs do not request a version', 
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe]))
         ->assertSuccessful()
-        ->assertSee('<title>Formula B · Batch production sheet', false)
+        ->assertSee('<title>Formula B · Working Formula Sheet', false)
         ->assertDontSee('Formula C Draft')
         ->assertSee('Coconut Oil')
         ->assertDontSee('Olive Oil');

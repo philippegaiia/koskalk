@@ -572,6 +572,9 @@ class RecipeController extends Controller
         return $this->accessibleBackupVersion($recipePublicId, $requestedVersionPublicId, $currentAppUserResolver);
     }
 
+    /**
+     * @param  string  $printMode  Retained while legacy print routes share the canonical working-print renderer.
+     */
     private function printSheet(
         string $recipePublicId,
         Request $request,
@@ -589,7 +592,7 @@ class RecipeController extends Controller
 
         return view('recipes.print', [
             ...$recipeVersionViewDataBuilder->build($recipe, $version, $request->query('oil_weight'), $request->query()),
-            'printMode' => $printMode,
+            'includeAnalysis' => $request->boolean('include_analysis'),
             'isVersionSelected' => $explicitVersionPublicId !== null || $request->has('version'),
         ]);
     }

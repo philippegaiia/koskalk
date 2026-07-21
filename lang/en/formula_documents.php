@@ -73,6 +73,16 @@ return [
         'include_analysis' => 'Include soap analysis',
     ],
     'analysis' => [
+        'title' => 'Soap analysis',
+        'qualities' => 'Soap qualities',
+        'fatty_acids' => 'Fatty-acid profile',
+        'quality' => 'Quality',
+        'fatty_acid' => 'Fatty acid',
+        'value' => 'Value',
+        'percentage' => 'Percentage',
+        'suggested_range' => 'Suggested range',
+        'status' => 'Status',
+        'contribution' => 'Practical contribution',
         'above_range' => 'Above suggested range',
         'below_range' => 'Below suggested range',
         'in_range' => 'Within suggested range',
@@ -88,6 +98,11 @@ return [
             'quick_lather' => 'Quick lather',
         ],
         'quality_metrics' => [
+            'hardness' => 'Hardness',
+            'cleansing' => 'Cleansing',
+            'conditioning' => 'Conditioning',
+            'bubbly' => 'Bubbly lather',
+            'creamy' => 'Creamy lather',
             'unmolding_firmness' => 'Unmolding firmness',
             'cured_hardness' => 'Cured hardness',
             'longevity' => 'Longevity',
@@ -103,5 +118,9 @@ return [
             'iodine' => 'Iodine',
             'ins' => 'INS',
         ],
+    ],
+    'exports' => [
+        'ingredient_batch' => 'Ingredient batch',
+        'soap_output' => 'Soap output',
     ],
 ];

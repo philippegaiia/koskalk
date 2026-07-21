@@ -11,6 +11,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/css/public.css',
                 'resources/js/app.js',
+                'resources/js/print-document.js',
                 'resources/js/public.js',
                 'resources/css/filament/admin/theme.css',
             ],

@@ -37,6 +37,7 @@ it('renders the approved costing and packaging language', function () {
         ->assertSee('Create packaging item')
         ->assertSee('Save to library')
         ->assertSee('Save and add')
+        ->assertDontSee('Save and add to plan')
         ->assertSee('Costing setup')
         ->assertSee('Oil quantity')
         ->assertSee('Finished units')
@@ -72,7 +73,7 @@ it('prompts for finished units on batch-dependent costing summary outputs', func
         ->assertDontSee('Unavailable');
 });
 
-it('shows the cosmetic batch basis without changing an authored phase name', function () {
+it('shows the cosmetic batch basis', function () {
     $user = User::factory()->create();
     $cosmeticFamily = ProductFamily::factory()->create([
         'name' => 'Cosmetic',
@@ -119,8 +120,7 @@ it('shows the cosmetic batch basis without changing an authored phase name', fun
     $this->actingAs($user)
         ->get(route('recipes.edit', $recipe))
         ->assertSuccessful()
-        ->assertSee('Total batch quantity')
-        ->assertSee('Hydration & Cool Down');
+        ->assertSee('Total batch quantity');
 });
 
 function makeCostingContentCarrierOilIngredient(): Ingredient

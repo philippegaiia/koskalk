@@ -46,6 +46,8 @@ it('renders the approved costing and packaging language', function () {
         ->assertSee('Saponification')
         ->assertSee('Formula additions')
         ->assertSee('Fragrance and aromatics')
+        ->assertDontSee('Components per unit')
+        ->assertDontSee('New packaging item')
         ->assertDontSee('Business view without cluttering the formula bench')
         ->assertDontSee('Ingredient identity stays shared. The price memory stays private to the current user and can be refreshed later if supplier rates move.')
         ->assertDontSee('Formula rows stay read-only here except for price per kilo, so development and costing each get their own space.')

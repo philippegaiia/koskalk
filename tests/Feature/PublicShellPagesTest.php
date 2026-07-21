@@ -97,7 +97,7 @@ it('keeps the authenticated shell viewport bound while content can grow', functi
         ->get(route('dashboard'))
         ->assertSuccessful()
         ->assertSee('class="min-h-dvh bg-[var(--color-surface)]', false)
-        ->assertSee('class="relative min-h-dvh lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-stretch', false)
+        ->assertSee('class="relative mx-auto min-h-dvh w-full max-w-[2100px] lg:grid lg:grid-cols-[17rem_minmax(0,1fr)] lg:items-stretch', false)
         ->assertSee('w-72 overflow-x-hidden overflow-y-auto bg-[var(--color-sidebar)]', false)
         ->assertSee('lg:sticky lg:top-0 lg:h-dvh lg:self-start', false)
         ->assertSee('class="flex min-h-dvh min-w-0 flex-col"', false);

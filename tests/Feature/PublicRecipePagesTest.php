@@ -60,12 +60,12 @@ it('renders the soap workbench with filtered catalog data for signed-in users', 
     $this->actingAs(User::factory()->create())
         ->get(route('recipes.create'))
         ->assertSuccessful()
-        ->assertSee('Reaction core')
-        ->assertSee('Additives and aromatics')
+        ->assertSee('Saponification')
+        ->assertSee('Formula additions')
         ->assertSee('Olive Oil')
         ->assertSee('Lavender Essential Oil')
-        ->assertSee('Fatty acid profile')
-        ->assertSee('Details')
+        ->assertSee('Fatty-acid profile')
+        ->assertSee('Individual fatty acids')
         ->assertDontSee('Live blend feedback.')
         ->assertDontSee('while you adjust the oil selection.');
 });

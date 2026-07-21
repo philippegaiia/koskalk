@@ -1,36 +1,40 @@
-@php($isPlatformIngredient = $ingredient !== null && $ingredient->owner_type === null)
+@php
+ $isPlatformIngredient = $ingredient !== null && $ingredient->owner_type === null;
+ $ingredientContext = $ingredient?->display_name ?: 'New ingredient';
+ $isCarrierOil = ($data['category'] ?? null) === \App\IngredientCategory::CarrierOil->value;
+@endphp
 
 <div class="mx-auto w-full max-w-5xl space-y-6">
- <section class="sk-card p-5 sm:p-6">
- <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
- <div class="min-w-0">
+ <section aria-labelledby="ingredient-editor-title">
+ <nav aria-label="Breadcrumb" class="flex min-h-10 flex-wrap items-center gap-2 text-sm font-medium text-[var(--color-ink-soft)]">
+ <a href="{{ route('ingredients.index') }}" wire:navigate class="inline-flex min-h-10 items-center rounded-md text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
+ Ingredients
+ </a>
+ <span aria-hidden="true" class="text-[var(--color-line-strong)]">/</span>
+ <span aria-current="page" class="min-w-0 truncate">{{ $ingredientContext }}</span>
+ </nav>
+
+ <div class="mt-3 max-w-3xl">
  <p class="sk-eyebrow">{{ $isPlatformIngredient ? 'Platform ingredient' : 'Personal ingredient' }}</p>
- <h3 class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]">
- {{ $isPlatformIngredient ? 'Read-only reference' : ($ingredient ? 'Refine the ingredient, its components, and optional aromatic compliance.' : 'Create the ingredient now, then enrich it on the next screen.') }}
- </h3>
- <p class="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
+ <h1 id="ingredient-editor-title" class="mt-2 text-3xl font-semibold tracking-tight text-[var(--color-ink-strong)]">
+ {{ $isPlatformIngredient ? 'Ingredient reference' : ($ingredient ? 'Edit personal ingredient' : 'Create a personal ingredient') }}
+ </h1>
+ <p class="mt-2 max-w-[70ch] text-sm leading-6 text-[var(--color-ink-soft)]">
  @if ($isPlatformIngredient)
- This platform record is maintained by Soapkraft administrators. You can inspect its identity, composition, chemistry, allergens, and regulatory references, but it cannot be changed from your workspace.
+ This record is maintained by Soapkraft. You can review its identity, chemistry, and regulatory references, but it cannot be changed here.
+ @elseif ($ingredient)
+ Keep the identity and technical details your workspace uses in formulas up to date.
  @else
- Personal ingredients stay private to your workspace. They can be used in formulas and cosmetic phases, but new carrier oils do not become trusted soap oils automatically.
+ Add the essential details first. Composition, soap chemistry, and compliance become available when they are relevant.
  @endif
  </p>
 
- @unless ($isPlatformIngredient)
- <div class="mt-4 max-w-3xl rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-warning-strong)]">
- <p class="font-medium text-[var(--color-ink-strong)]">Carrier oils and soap calculation</p>
- <p class="mt-1">
- To use a carrier oil in the soap reaction core, duplicate a platform carrier oil first, then adjust it. A carrier oil created from scratch stays available as an ingredient, but it is not used for saponification math.
- </p>
- </div>
- @endunless
- </div>
-
- <div class="flex flex-col gap-3 sm:flex-row">
- <a href="{{ route('ingredients.index') }}" wire:navigate class="inline-flex justify-center rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
- Back to ingredients
- </a>
- </div>
+ @if (! $isPlatformIngredient && $isCarrierOil)
+ <aside class="mt-4 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-warning-strong)]" aria-labelledby="carrier-oil-guidance-title">
+ <p id="carrier-oil-guidance-title" class="font-medium text-[var(--color-ink-strong)]">Using this oil in soap calculations</p>
+ <p class="mt-1">A carrier oil created from scratch can be used as an ingredient, but not in saponification math. For soap calculations, duplicate a platform carrier oil and adjust that copy.</p>
+ </aside>
+ @endif
  </div>
  </section>
 
@@ -74,7 +78,7 @@
  </section>
  @endif
 
- <form wire:submit="save" class="space-y-4 pb-2">
+ <form wire:submit="save" class="space-y-4 pb-24">
  @if ($statusMessage)
  <div class="{{ $statusType === 'success' ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' }} rounded-[1.5rem] border px-4 py-3 text-sm">
  {{ $statusMessage }}
@@ -86,16 +90,18 @@
  @unless ($isPlatformIngredient)
  <div
  data-ingredient-save-bar
- class="sticky bottom-0 z-30 -mx-2 flex justify-end border-t border-[var(--color-line)] bg-[var(--color-surface)] px-2 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:-mx-4 sm:px-4"
+ class="pointer-events-none fixed bottom-0 left-0 right-0 z-10 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:left-[var(--app-sidebar-width,0rem)]"
  >
+ <div class="mx-auto flex max-w-5xl justify-end">
  <button
  type="submit"
  wire:loading.attr="disabled"
  wire:target="save"
- class="w-full rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-65 sm:w-auto"
+ class="pointer-events-auto sk-btn sk-btn-primary shadow-[0_8px_20px_rgba(60,50,30,0.16)]"
  >
  {{ $ingredient ? 'Save ingredient' : 'Create ingredient' }}
  </button>
+ </div>
  </div>
  @endunless
  </form>

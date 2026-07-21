@@ -17,12 +17,12 @@
 			<template x-for="card in formulaSetupSummaryCards" :key="`setup-${card.id}`">
 				<span
 					:class="{
-						'bg-[var(--color-chemistry-soft)] text-[var(--color-chemistry-strong)]': card.tone === 'chemistry',
-						'bg-[var(--color-info-soft)] text-[var(--color-info-strong)]': card.tone === 'info',
-						'bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]': card.tone === 'danger',
-						'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]': card.tone === 'neutral',
+						'sk-tone-chemistry': card.tone === 'chemistry',
+						'sk-tone-info': card.tone === 'info',
+						'sk-tone-danger': card.tone === 'danger',
+						'sk-tone-summary': card.tone === 'neutral',
 					}"
-					class="inline-flex min-h-8 items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
+					class="sk-status-surface inline-flex min-h-8 items-center gap-2 rounded-full px-3 py-1 text-xs font-medium"
 				>
 					<span x-text="card.label"></span>
 					<span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></span>
@@ -35,7 +35,7 @@
 			@click="toggleFormulaSettings()"
 			:aria-expanded="isFormulaSettingsOpen.toString()"
 			aria-controls="formula-settings-panel"
-			class="inline-flex min-h-10 shrink-0 items-center justify-center rounded-lg bg-[var(--color-field-muted)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]"
+			class="sk-btn shrink-0 bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]"
 		>
 			<span x-text="isFormulaSettingsOpen ? t('settings.hide') : t('settings.edit')"></span>
 		</button>

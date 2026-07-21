@@ -1409,7 +1409,15 @@ const workbench = globalThis.createRecipeWorkbench({
 
 workbench.phaseItems = {
   saponified_oils: [
-    { id: 'oil-1', ingredient_id: 1, name: 'Olive Oil', category: 'carrier_oil' },
+    {
+      id: 'oil-1',
+      ingredient_id: 1,
+      name: 'Olive Oil',
+      category: 'carrier_oil',
+      available_phases: ['saponified_oils', 'additives'],
+      can_add_to_saponified_oils: true,
+      koh_sap_value: 0.188,
+    },
   ],
   additives: [],
   fragrance: [],
@@ -1453,6 +1461,107 @@ JS;
         ->and($payload['oilCount'])->toBe(0)
         ->and($payload['additiveCount'])->toBe(1)
         ->and($payload['additiveRowId'])->toBe('oil-1');
+});
+
+it('prevents additive-only carrier oils from moving into saponified oils', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const CATEGORY_OPTIONS = [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+globalThis.window = { location: { hash: '' } };
+globalThis.document = { getElementById: () => null };
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const additiveOnlyOil = {
+  id: 2,
+  name: 'Unsaponifiable Carrier',
+  inci_name: 'UNSAPONIFIABLE CARRIER OIL',
+  category: 'carrier_oil',
+  available_phases: ['additives'],
+  can_add_to_saponified_oils: false,
+  can_add_to_additives: true,
+  koh_sap_value: null,
+  naoh_sap_value: null,
+};
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  ingredients: [additiveOnlyOil],
+});
+
+workbench.addIngredient(additiveOnlyOil, 'additives', false);
+
+const additiveRow = workbench.phaseItems.additives[0];
+const event = {
+  preventDefault() {},
+  dataTransfer: {
+    effectAllowed: '',
+    dropEffect: '',
+    setData() {},
+  },
+};
+
+workbench.beginRowDrag('additives', additiveRow.id, event);
+
+const canDropIntoSaponifiedOils = workbench.canDropRowInPhase('saponified_oils');
+
+workbench.dropDraggedRow('saponified_oils', event);
+
+console.log(JSON.stringify({
+  canDropIntoSaponifiedOils,
+  copiedAvailablePhases: additiveRow.available_phases,
+  copiedCanAddToSaponifiedOils: additiveRow.can_add_to_saponified_oils,
+  oilCount: workbench.phaseItems.saponified_oils.length,
+  additiveCount: workbench.phaseItems.additives.length,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['canDropIntoSaponifiedOils'])->toBeFalse()
+        ->and($payload['copiedAvailablePhases'])->toBe(['additives'])
+        ->and($payload['copiedCanAddToSaponifiedOils'])->toBeFalse()
+        ->and($payload['oilCount'])->toBe(0)
+        ->and($payload['additiveCount'])->toBe(1);
 });
 
 it('auto-scrolls the page near viewport edges while dragging formula rows', function () {
@@ -2385,7 +2494,7 @@ it('keeps formula visual states distinct and softly selected', function () {
         ->toContain('sk-workbench-tab')
         ->and($appStylesSource)
         ->toContain('.sk-workbench .sk-workbench-tab.is-active::before')
-        ->toContain('background-color: var(--color-panel)');
+        ->toContain('background-color: transparent');
 });
 
 it('keeps fatty acid chemistry compact with grouped profile first and collapsed details', function () {
@@ -2431,7 +2540,7 @@ it('presents soap qualities as compact tabbed metric cards', function () {
         ->toContain('soapQualitiesExpanded: true')
         ->toContain('localStorage.getItem(this.soapQualitiesStorageKey)')
         ->toContain('localStorage.setItem(this.soapQualitiesStorageKey')
-        ->toContain('Indicative values — additives, process, and cure conditions can change the real soap.')
+        ->toContain('These values are estimates. Process, additives and cure conditions affect the finished soap.')
         ->not->toContain('3–4% essential oils')
         ->not->toContain('sodium citrate')
         ->not->toContain('experimentation remains')

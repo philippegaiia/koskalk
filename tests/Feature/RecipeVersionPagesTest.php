@@ -61,19 +61,22 @@ it('renders the formula sheet with print actions', function () {
 it('renders the formula workbench with one save path and lock controls', function () {
     [$user, $recipe] = createSavedRecipeVersion();
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
         ->get(route('recipes.edit', ['recipe' => $recipe]))
         ->assertSuccessful()
         ->assertSee('Formula')
+        ->assertSee('Product sheet')
         ->assertSee('Save')
-        ->assertSee('Lock formula')
-        ->assertSeeInOrder(['Save', 'Lock formula', 'More formula actions'])
+        ->assertSee('Lock product')
+        ->assertSeeInOrder(['Save', 'Lock product', 'More actions'])
         ->assertDontSee('Editable draft')
         ->assertDontSee('Save draft')
         ->assertDontSee('Save as reference formula')
         ->assertDontSee('Update reference formula?')
         ->assertDontSee('This will replace the reference formula with your current draft.')
         ->assertDontSee('Save recipe');
+
+    expect(substr_count($response->getContent(), 'sk-formula-sheet-link'))->toBe(1);
 });
 
 it('renders an existing formula workbench within its initial query budget', function () {
@@ -252,8 +255,8 @@ it('locks and unlocks a formula', function () {
     $this->actingAs($user)
         ->get(route('recipes.edit', $recipe))
         ->assertSuccessful()
-        ->assertSee('Unlock formula')
-        ->assertSeeInOrder(['Unlock formula', 'More formula actions']);
+        ->assertSee('Unlock product')
+        ->assertSeeInOrder(['Unlock product', 'More actions']);
 
     $this->actingAs($user)
         ->post(route('recipes.unlock', $recipe))

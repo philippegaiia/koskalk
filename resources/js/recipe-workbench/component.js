@@ -112,9 +112,25 @@ function canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey) {
 
     const oilAdditivePhases = ['saponified_oils', 'additives'];
 
-    return row?.category === 'carrier_oil'
-        && oilAdditivePhases.includes(sourcePhaseKey)
-        && oilAdditivePhases.includes(targetPhaseKey);
+    if (row?.category !== 'carrier_oil'
+        || !oilAdditivePhases.includes(sourcePhaseKey)
+        || !oilAdditivePhases.includes(targetPhaseKey)) {
+        return false;
+    }
+
+    if (targetPhaseKey === 'additives') {
+        return true;
+    }
+
+    if (Array.isArray(row.available_phases)) {
+        return row.available_phases.includes('saponified_oils');
+    }
+
+    if (typeof row.can_add_to_saponified_oils === 'boolean') {
+        return row.can_add_to_saponified_oils;
+    }
+
+    return Number(row.koh_sap_value) > 0;
 }
 
 /**
@@ -447,6 +463,11 @@ function createCatalogSection() {
                 soap_inci_koh_name: ingredient.soap_inci_koh_name,
                 koh_sap_value: ingredient.koh_sap_value,
                 naoh_sap_value: ingredient.naoh_sap_value,
+                available_phases: Array.isArray(ingredient.available_phases)
+                    ? [...ingredient.available_phases]
+                    : [],
+                can_add_to_saponified_oils: Boolean(ingredient.can_add_to_saponified_oils),
+                can_add_to_additives: Boolean(ingredient.can_add_to_additives),
                 fatty_acid_profile: ingredient.fatty_acid_profile ?? {},
                 percentage: (targetPhase === 'saponified_oils' && this.phaseItems[targetPhase].length === 0)
                     || (this.isCosmeticFormula && this.cosmeticFormulaRows().length === 0)

@@ -85,6 +85,18 @@ it('renders compact accessible pagination for the ingredient catalog', function 
         ->assertDontSeeText('Showing 1 to 25 of 26 results');
 });
 
+it('keeps compact ingredient columns readable before the catalog scrolls horizontally', function () {
+    $catalogSource = file_get_contents(resource_path('views/livewire/dashboard/ingredients-index.blade.php'));
+
+    expect($catalogSource)
+        ->toContain('<table class="sk-table min-w-[68rem] table-auto">')
+        ->toContain('<col class="w-36" />')
+        ->toContain('<col class="w-24" />')
+        ->toContain('min-w-56 max-w-72 whitespace-normal')
+        ->toContain('inline-flex whitespace-nowrap rounded-full bg-[var(--color-panel-strong)] px-3 py-1.5 text-sm')
+        ->toContain('inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs');
+});
+
 it('lets the signed-in user search their ingredient catalog table', function () {
     $user = User::factory()->create();
 
@@ -966,7 +978,7 @@ it('shows authenticated users the platform ingredient record in read-only form',
         ->get(route('ingredients.edit', $ingredient))
         ->assertSuccessful()
         ->assertSeeText('Platform ingredient')
-        ->assertSeeText('Read-only reference')
+        ->assertSeeText('Ingredient reference')
         ->assertSeeText('Platform Lavender Oil')
         ->assertSee('LAVANDULA ANGUSTIFOLIA OIL')
         ->assertSee('8000-28-0')
@@ -1118,7 +1130,17 @@ it('renders the public ingredient create page for signed in users', function () 
     $this->actingAs($user)
         ->get(route('ingredients.create'))
         ->assertSuccessful()
+        ->assertSeeHtml('aria-label="Breadcrumb"')
+        ->assertSeeHtml('aria-current="page"')
+        ->assertSeeText('Ingredients')
+        ->assertSeeText('New ingredient')
+        ->assertSeeText('Create a personal ingredient')
+        ->assertDontSeeText('Back to ingredients')
+        ->assertDontSeeText('Create the ingredient now, then enrich it on the next screen.')
         ->assertSee('Identity')
+        ->assertSeeText('Essential details')
+        ->assertSeeText('Supplier and identifiers')
+        ->assertSeeText('Media and notes')
         ->assertSee('CAS number')
         ->assertSee('EINECS / EC number')
         ->assertSee('Organic')
@@ -1126,7 +1148,22 @@ it('renders the public ingredient create page for signed in users', function () 
         ->assertDontSee('IFRA guidance');
 });
 
-it('keeps one responsive create action visible at the bottom of the ingredient editor', function () {
+it('uses the ingredient name as compact edit-page context', function () {
+    $user = User::factory()->create();
+    $ingredient = catalogPrivateIngredient($user, IngredientCategory::Additive, 'My Glycerin');
+
+    $this->actingAs($user)
+        ->get(route('ingredients.edit', $ingredient))
+        ->assertSuccessful()
+        ->assertSeeHtml('aria-label="Breadcrumb"')
+        ->assertSeeHtml('aria-current="page"')
+        ->assertSeeText('My Glycerin')
+        ->assertSeeText('Edit personal ingredient')
+        ->assertDontSeeText('Back to ingredients')
+        ->assertDontSeeText('Refine the ingredient, its components, and optional aromatic compliance.');
+});
+
+it('keeps one compact non-obstructing create action visible in the ingredient editor', function () {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)
@@ -1137,11 +1174,13 @@ it('keeps one responsive create action visible at the bottom of the ingredient e
 
     expect($saveAction['submit_count'])->toBe(1)
         ->and($saveAction['label'])->toBe('Create ingredient')
-        ->and($saveAction['bar_classes'])->toContain('sticky', 'bottom-0')
-        ->and($saveAction['button_classes'])->toContain('w-full', 'sm:w-auto');
+        ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-10')
+        ->not->toContain('sticky', 'z-30', 'border-t', 'bg-[var(--color-surface)]')
+        ->and($saveAction['button_classes'])->toContain('pointer-events-auto', 'sk-btn', 'sk-btn-primary')
+        ->not->toContain('w-full');
 });
 
-it('keeps one responsive save action visible at the bottom of the ingredient editor', function () {
+it('keeps one compact non-obstructing save action visible in the ingredient editor', function () {
     $user = User::factory()->create();
     $ingredient = catalogPrivateIngredient($user, IngredientCategory::Additive, 'My Glycerin');
 
@@ -1153,8 +1192,10 @@ it('keeps one responsive save action visible at the bottom of the ingredient edi
 
     expect($saveAction['submit_count'])->toBe(1)
         ->and($saveAction['label'])->toBe('Save ingredient')
-        ->and($saveAction['bar_classes'])->toContain('sticky', 'bottom-0')
-        ->and($saveAction['button_classes'])->toContain('w-full', 'sm:w-auto');
+        ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-10')
+        ->not->toContain('sticky', 'z-30', 'border-t', 'bg-[var(--color-surface)]')
+        ->and($saveAction['button_classes'])->toContain('pointer-events-auto', 'sk-btn', 'sk-btn-primary')
+        ->not->toContain('w-full');
 });
 
 /**

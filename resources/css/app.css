@@ -76,7 +76,7 @@
     }
 
     .sk-combobox-control:focus-within {
-        box-shadow: inset 0 0 0 2px var(--color-accent);
+        box-shadow: inset 0 0 0 1px var(--color-accent);
     }
 
     .sk-combobox-control input:focus,
@@ -86,7 +86,7 @@
     }
 
     .sk-combobox-button:focus-visible {
-        outline: 2px solid var(--color-accent);
+        outline: 1px solid var(--color-accent);
         outline-offset: 2px;
     }
 
@@ -132,6 +132,7 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        min-height: 2.5rem;
         border: 1px solid transparent;
         border-radius: 0.5rem;
         background: transparent;
@@ -454,21 +455,16 @@
 }
 
 .sk-workbench .sk-workbench-tabs {
-    gap: 0.25rem;
-    padding: 0.25rem;
-    border-radius: 0.5rem;
-    background-color: color-mix(
-        in oklab,
-        var(--color-panel-strong) 64%,
-        var(--color-surface)
-    );
-    box-shadow: inset 0 0 0 1px
-        color-mix(in oklab, var(--color-line) 82%, transparent);
+    padding: 0;
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
 }
 
 .sk-workbench .sk-workbench-tab {
-    min-height: 2.875rem;
-    border-radius: 0.5rem;
+    position: relative;
+    min-height: 3.25rem;
+    border-radius: 0;
     color: var(--color-ink-soft);
     background-color: transparent;
     box-shadow: none;
@@ -480,35 +476,32 @@
 
 .sk-workbench .sk-workbench-tab:hover {
     color: var(--color-ink-strong);
-    background-color: color-mix(
-        in oklab,
-        var(--color-panel) 74%,
-        var(--color-panel-strong)
-    );
+    background-color: transparent;
 }
 
 .sk-workbench .sk-workbench-tab.is-active {
-    color: var(--color-ink-strong) !important;
-    background-color: var(--color-panel);
-    box-shadow: 0 1px 2px rgba(60, 50, 30, 0.075);
+    color: var(--color-accent-strong) !important;
+    background-color: transparent;
+    box-shadow: none;
 }
 
 .sk-workbench .sk-workbench-tab.is-active::before {
-    width: 0.3125rem;
-    height: 0.3125rem;
-    margin-right: 0.5rem;
-    flex: none;
-    border-radius: 9999px;
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 0.125rem;
+    border-radius: 9999px 9999px 0 0;
     background-color: var(--color-active);
     content: "";
 }
 
 .sk-workbench .sk-workbench-tab.is-active:hover {
-    background-color: var(--color-panel);
+    background-color: transparent;
 }
 
-.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]), select, textarea, a, summary):focus {
-    box-shadow: inset 0 0 0 2px
+.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control), select, textarea, a, summary):focus-visible {
+    box-shadow: inset 0 0 0 1px
         color-mix(in oklab, var(--color-active) 38%, transparent) !important;
     outline: none !important;
 }
@@ -521,17 +514,17 @@
 .sk-workbench input[type="range"]:focus-visible::-webkit-slider-thumb {
     box-shadow:
         0 0 0 3px var(--color-panel),
-        0 0 0 5px var(--color-active);
+        0 0 0 4px var(--color-active);
 }
 
 .sk-workbench input[type="range"]:focus-visible::-moz-range-thumb {
     box-shadow:
         0 0 0 3px var(--color-panel),
-        0 0 0 5px var(--color-active);
+        0 0 0 4px var(--color-active);
 }
 
 .sk-workbench [role="tab"]:focus-visible {
-    outline: 2px solid var(--color-active);
+    outline: 1px solid var(--color-active);
     outline-offset: 2px;
 }
 
@@ -546,11 +539,10 @@
     outline: none;
 }
 
-.sk-workbench .sk-ingredient-filter-control:focus,
 .sk-workbench .sk-ingredient-filter-control:focus-visible {
     border-radius: 1.15rem !important;
     background-color: var(--color-control);
-    box-shadow: inset 0 0 0 2px
+    box-shadow: inset 0 0 0 1px
         color-mix(in oklab, var(--color-active) 62%, var(--color-line)) !important;
     outline: none !important;
     outline-color: transparent !important;
@@ -559,16 +551,21 @@
     outline-width: 0 !important;
 }
 
-.sk-workbench .sk-formula-title-control,
-.sk-workbench .sk-formula-title-control:focus,
-.sk-workbench .sk-formula-title-control:focus-visible {
-    border-radius: 1.25rem !important;
+.sk-workbench .sk-formula-title-control {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
 }
 
 .sk-workbench .sk-formula-title-control:focus,
 .sk-workbench .sk-formula-title-control:focus-visible {
-    background-color: var(--color-control);
-    box-shadow: inset 0 0 0 2px
-        color-mix(in oklab, var(--color-active) 62%, var(--color-line)) !important;
+    border: 0 !important;
+    border-bottom: 1px solid color-mix(
+        in oklab,
+        var(--color-active) 55%,
+        var(--color-line-strong)
+    ) !important;
+    background-color: transparent;
+    box-shadow: none !important;
     outline: none !important;
 }

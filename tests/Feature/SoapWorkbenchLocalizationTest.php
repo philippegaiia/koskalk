@@ -6,23 +6,25 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('uses the approved product and formula terminology on the soap workbench', function () {
-    $header = view('livewire.dashboard.partials.recipe-workbench.header', [
-        'workbench' => [
-            'recipe' => [
-                'public_id' => 'test-product',
-                'has_saved_formula' => true,
-                'saved_formula_url' => '/products/test-product',
-                'is_locked' => false,
-            ],
+    $workbench = [
+        'recipe' => [
+            'public_id' => 'test-product',
+            'has_saved_formula' => true,
+            'saved_formula_url' => '/products/test-product',
+            'is_locked' => false,
         ],
+    ];
+    $header = view('livewire.dashboard.partials.recipe-workbench.header', [
+        'workbench' => $workbench,
     ])->render();
-    $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation')->render();
+    $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation', [
+        'workbench' => $workbench,
+    ])->render();
     $settings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
 
     expect($header)
         ->toContain('Product name')
         ->toContain('Untitled soap')
-        ->toContain('Product sheet')
         ->toContain('Lock product')
         ->toContain('More actions')
         ->toContain('Product details')
@@ -31,6 +33,7 @@ it('uses the approved product and formula terminology on the soap workbench', fu
         ->not->toContain('Lock formula')
         ->and($navigation)
         ->toContain('aria-label="Product sections"')
+        ->toContain('Product sheet')
         ->toContain('Label &amp; output')
         ->toContain('Instructions &amp; media')
         ->and($settings)
@@ -94,6 +97,8 @@ it('registers and seeds reviewed soap workbench translations for every supported
         app()->setLocale($locale);
 
         expect(__('workbench.header.product_name'))->not->toBe('workbench.header.product_name')
+            ->and(__('workbench.header.breadcrumb'))->not->toBe('workbench.header.breadcrumb')
+            ->and(__('workbench.header.save_before_locking'))->not->toBe('workbench.header.save_before_locking')
             ->and(__('workbench.saponification.title'))->not->toBe('workbench.saponification.title')
             ->and(__('workbench.additions.title'))->not->toBe('workbench.additions.title');
     }

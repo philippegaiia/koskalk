@@ -3,6 +3,8 @@
 return [
     'headings' => ['soap_qualities' => 'Soapkraft qualities', 'fatty_acid_profile' => 'Fatty-acid profile'],
     'header' => [
+        'breadcrumb' => 'Product navigation',
+        'save_before_locking' => 'Save the product before locking it.',
         'section' => 'Product',
         'product_name' => 'Product name',
         'untitled_soap' => 'Untitled soap',

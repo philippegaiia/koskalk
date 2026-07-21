@@ -92,7 +92,16 @@
                 </div>
             @else
                 <div class="sk-table-wrapper">
-                    <table class="sk-table">
+                    <table class="sk-table min-w-[68rem] table-auto">
+                        <colgroup>
+                            <col class="w-20" />
+                            <col />
+                            <col />
+                            <col class="w-36" />
+                            <col class="w-24" />
+                            <col class="w-40" />
+                            <col class="w-32" />
+                        </colgroup>
                         <thead>
                             <tr>
                                 <th scope="col">Picture</th>
@@ -149,14 +158,14 @@
                                             @endif
                                         </div>
                                     </td>
-                                    <td class="max-w-72 whitespace-normal text-[var(--color-ink-soft)]">{{ $ingredient->inci_name ?: '—' }}</td>
+                                    <td class="min-w-56 max-w-72 whitespace-normal text-[var(--color-ink-soft)]">{{ $ingredient->inci_name ?: '—' }}</td>
                                     <td>
-                                        <span class="inline-flex rounded-full bg-[var(--color-panel-strong)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-soft)]">
+                                        <span class="inline-flex whitespace-nowrap rounded-full bg-[var(--color-panel-strong)] px-3 py-1.5 text-sm font-medium text-[var(--color-ink-soft)]">
                                             {{ $ingredient->category?->getLabel() ?? 'Uncategorized' }}
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="{{ $isMine ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]' }} inline-flex rounded-full px-2.5 py-1 text-xs font-medium">
+                                        <span class="{{ $isMine ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]' }} inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium">
                                             {{ $isMine ? 'Mine' : 'Platform' }}
                                         </span>
                                     </td>

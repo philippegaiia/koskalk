@@ -9,7 +9,7 @@
  <div class="space-y-3 border-b border-[var(--color-line)] px-4 py-4">
  <input x-model="search" type="search" placeholder="{{ __('workbench.ingredients.search_placeholder') }}" aria-label="{{ __('workbench.ingredients.search_label') }}" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm text-[var(--color-ink-strong)] placeholder:text-[var(--color-ink-soft)]" />
 
- <select x-model="activeCategory" aria-label="Filter by category" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)]">
+ <select x-model="activeCategory" aria-label="{{ __('workbench.accessibility.filter_category') }}" class="sk-ingredient-filter-control w-full px-4 py-3 text-sm font-medium text-[var(--color-ink-strong)]">
  <template x-for="option in categoryOptions" :key="option.value">
  <option :value="option.value" :selected="option.value === activeCategory" x-text="`${option.label} (${categoryIngredientCount(option.value)})`"></option>
  </template>
@@ -20,7 +20,7 @@
  <p class="text-sm text-[var(--color-ink-soft)]" x-text="filteredIngredients.length === 1 ? t('ingredients.count_singular') : t('ingredients.count_plural', { count: filteredIngredients.length })"></p>
  </div>
 
- <div class="max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="Ingredient list">
+ <div class="max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="{{ __('workbench.accessibility.ingredient_list') }}">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
  <div class="group px-3 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
@@ -35,7 +35,7 @@
  <div class="min-w-0 flex-1">
  <p class="flex items-center gap-1.5 text-[13px] font-semibold leading-[1.125rem] text-[var(--color-ink-strong)]" :title="ingredient.name">
  <span class="line-clamp-2" x-text="ingredient.name"></span>
- <span x-show="ingredient.is_user_owned" class="inline-block size-1.5 shrink-0 rounded-full bg-[var(--color-ink-soft)] opacity-60" role="img" aria-label="User-created or user-modified ingredient" title="User-created or user-modified ingredient"></span>
+ <span x-show="ingredient.is_user_owned" class="inline-block size-1.5 shrink-0 rounded-full bg-[var(--color-ink-soft)] opacity-60" role="img" aria-label="{{ __('workbench.accessibility.user_owned') }}" title="{{ __('workbench.accessibility.user_owned') }}"></span>
  </p>
  </div>
 
@@ -70,7 +70,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[10px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
+	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[10px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="{{ __('workbench.accessibility.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
  i
  </button>
  </template>
@@ -86,7 +86,7 @@
  :style="panelStyle"
  x-ref="ingredientInspectorPanel"
  role="dialog"
- aria-label="Ingredient details"
+ aria-label="{{ __('workbench.accessibility.ingredient_details') }}"
  class="z-[80] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-field)] p-3">
  <p class="sk-eyebrow">{{ __('workbench.common.ingredient') }}</p>
  <div class="mt-2.5 rounded-xl bg-[var(--color-panel)] px-3 py-2">
@@ -121,7 +121,7 @@
  <div class="flex justify-end">
  @if ($isCosmeticWorkbench)
  <template x-if="phaseOrder.length <= 1">
- <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="Add ingredient">
+ <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
  <span>+</span>
  </button>
  </template>
@@ -144,7 +144,7 @@
  this.panelStyle = `position: fixed; top: ${top}px; left: ${left}px; width: ${panelWidth}px;`;
  },
  }" class="relative">
- <button type="button" x-ref="trigger" @click.stop="open = !open; if (open) { $nextTick(() => reposition()); }" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="Choose phase for ingredient" aria-haspopup="menu" :aria-expanded="open.toString()">
+ <button type="button" x-ref="trigger" @click.stop="open = !open; if (open) { $nextTick(() => reposition()); }" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.choose_phase') }}" aria-haspopup="menu" :aria-expanded="open.toString()">
  <span>+</span>
  </button>
  <template x-teleport="body">
@@ -159,7 +159,7 @@
  class="z-[90] max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-1 shadow-lg">
  <template x-for="phase in phaseOrder" :key="`${ingredient.id}-${phase.key}-add-option`">
  <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]">
- <span class="truncate" x-text="`Add to ${phase.name || humanizeKey(phase.key)}`"></span>
+ <span class="truncate" x-text="t('cosmetic.add_to_phase', { phase: phase.name || humanizeKey(phase.key) })"></span>
  <span class="numeric text-[var(--color-ink-soft)]" x-text="`${format(cosmeticPhasePercentageTotal(phase.key), 1)}%`"></span>
  </button>
  </template>
@@ -168,7 +168,7 @@
  </div>
  </template>
  @else
- <button type="button" @click.stop="addIngredient(ingredient)" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="Add ingredient">
+ <button type="button" @click.stop="addIngredient(ingredient)" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
  <span>+</span>
  </button>
  @endif

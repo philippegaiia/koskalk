@@ -25,11 +25,11 @@ export function createVersionSection() {
         },
 
         get manufacturingModeLabel() {
-            return this.manufacturingMode === 'blend_only' ? 'Blend only' : 'Saponify in formula';
+            return this.manufacturingMode === 'blend_only' ? this.t('cosmetic.blend_only') : 'Saponify in formula';
         },
 
         get exposureModeLabel() {
-            return this.exposureMode === 'leave_on' ? 'Leave-on' : 'Rinse-off';
+            return this.exposureMode === 'leave_on' ? this.t('common.leave_on') : this.t('common.rinse_off');
         },
 
         get selectedRegulatoryRegimeRecord() {
@@ -45,17 +45,23 @@ export function createVersionSection() {
             const substanceCount = Number(this.selectedRegulatoryRegimeRecord?.substance_rule_count ?? 0);
 
             if (allergenCount <= 0 && substanceCount <= 0) {
-                return 'No screening rules for this regime.';
+                return this.t('cosmetic.no_screening_rules');
             }
 
             const labels = [];
 
             if (allergenCount > 0) {
-                labels.push(`${allergenCount} ${allergenCount === 1 ? 'allergen' : 'allergens'}`);
+                labels.push(this.t(
+                    allergenCount === 1 ? 'cosmetic.allergen_singular' : 'cosmetic.allergen_plural',
+                    { count: allergenCount },
+                ));
             }
 
             if (substanceCount > 0) {
-                labels.push(`${substanceCount} ${substanceCount === 1 ? 'substance' : 'substances'}`);
+                labels.push(this.t(
+                    substanceCount === 1 ? 'cosmetic.substance_singular' : 'cosmetic.substance_plural',
+                    { count: substanceCount },
+                ));
             }
 
             return labels.join(' · ');

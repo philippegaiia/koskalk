@@ -60,7 +60,7 @@
 	 </div>
 	 <div class="sk-inset p-4">
 	 <p id="setting-batch-weight" class="sk-eyebrow">{{ __('workbench.common.total_batch') }}</p>
-	 <div role="radiogroup" aria-label="Weight unit" class="mt-3 flex gap-2">
+	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.weight_unit') }}" class="mt-3 flex gap-2">
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'g'" @click="oilUnit = 'g'" :class="oilUnit === 'g' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">g</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="oilUnit = 'oz'" :class="oilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'lb'" @click="oilUnit = 'lb'" :class="oilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">lb</button>
@@ -69,14 +69,14 @@
 	 </div>
 	 <div class="sk-inset p-4">
 	 <p id="setting-entry-mode" class="sk-eyebrow">{{ __('workbench.settings.entry_mode') }}</p>
-	 <div role="radiogroup" aria-label="Entry mode" class="mt-3 flex flex-wrap gap-2">
+	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.entry_mode') }}" class="mt-3 flex flex-wrap gap-2">
 	 <button type="button" role="radio" :aria-checked="editMode === 'percentage'" @click="editMode = 'percentage'" :class="editMode === 'percentage' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.formula_percent') }}</button>
 	 <button type="button" role="radio" :aria-checked="editMode === 'weight'" @click="editMode = 'weight'" :class="editMode === 'weight' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.weight') }}</button>
 	 </div>
 	 </div>
 	 <div class="sk-inset sk-tone-info p-4">
 	 <p id="setting-exposure" class="sk-eyebrow">{{ __('workbench.settings.product_use') }}</p>
-	 <div role="radiogroup" aria-label="Exposure type" class="mt-3 flex flex-wrap gap-2">
+	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.product_use') }}" class="mt-3 flex flex-wrap gap-2">
 	 <button type="button" role="radio" :aria-checked="exposureMode === 'rinse_off'" @click="exposureMode = 'rinse_off'" :class="exposureMode === 'rinse_off' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.rinse_off') }}</button>
 	 <button type="button" role="radio" :aria-checked="exposureMode === 'leave_on'" @click="exposureMode = 'leave_on'" :class="exposureMode === 'leave_on' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.common.leave_on') }}</button>
 	 </div>
@@ -87,7 +87,7 @@
 	 <span class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</span>
 	 <span class="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></span>
 	 </span>
-	 <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? 'Hide' : 'Show'"></span>
+	 <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? t('cosmetic.hide') : t('cosmetic.show')"></span>
 	 </button>
 	 <div x-show="isComplianceSettingsOpen" x-cloak class="mt-4 space-y-4">
 	 <div>
@@ -186,7 +186,7 @@
 	 <span class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</span>
 	 <span class="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></span>
 	 </span>
-	 <span class="rounded-full bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? 'Hide' : 'Show'"></span>
+	 <span class="rounded-full bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? t('cosmetic.hide') : t('cosmetic.show')"></span>
 	 </button>
 	 <div x-show="isComplianceSettingsOpen" x-cloak class="mt-4 space-y-4">
 	 <div>

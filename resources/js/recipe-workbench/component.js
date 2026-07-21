@@ -334,7 +334,10 @@ function createRecipeWorkbenchState(payload) {
 function createCatalogSection() {
     return {
         get categoryOptions() {
-            return CATEGORY_OPTIONS;
+            return CATEGORY_OPTIONS.map((option) => ({
+                ...option,
+                label: this.t(`categories.${option.value}`),
+            }));
         },
 
         get filteredIngredients() {

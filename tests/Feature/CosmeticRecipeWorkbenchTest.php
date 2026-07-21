@@ -485,9 +485,9 @@ it('exposes practical controls for choosing and reordering cosmetic phases', fun
     expect($ingredientBrowser)
         ->toContain('phaseOrder.length <= 1')
         ->toContain('phaseOrder.length > 1')
-        ->toContain('Add to')
+        ->toContain("t('cosmetic.add_to_phase'")
         ->and($cosmeticFormula)
-        ->toContain('Drop here')
+        ->toContain('Drop ingredients here')
         ->toContain("moveCosmeticPhase(phase.key, 'up')")
         ->toContain("moveCosmeticPhase(phase.key, 'down')")
         ->and($formulaSource)
@@ -508,10 +508,10 @@ it('keeps cosmetic phase editing calm and guarded', function () {
         ->toContain('document.activeElement !== $el')
         ->not->toContain(':value="format(rowWeight(row), 3)"')
         ->not->toContain("'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'")
-        ->toContain('Drop here')
+        ->toContain('Drop ingredients here')
         ->not->toContain('Drop here to move to the end of this phase')
         ->not->toContain('Phase total')
-        ->toContain('% of formula')
+        ->toContain("t('cosmetic.percent_of_formula'")
         ->toContain('confirmRemoveCosmeticPhase(phase.key)')
         ->toContain('items-center')
         ->and($formulaSource)
@@ -549,7 +549,7 @@ it('keeps the cosmetic workbench layout compact and table aligned', function () 
         ->toContain('Formula total</div>')
         ->toContain('cosmeticFormulaWeightTotal()')
         ->not->toContain('<p class="text-sm text-[var(--color-ink-soft)]">')
-        ->and(substr_count($cosmeticFormula, 'Drop here'))->toBeGreaterThanOrEqual(2);
+        ->and(substr_count($cosmeticFormula, 'Drop ingredients here'))->toBeGreaterThanOrEqual(2);
 });
 
 it('reloads weight mode cosmetic drafts without losing saved item weights', function () {

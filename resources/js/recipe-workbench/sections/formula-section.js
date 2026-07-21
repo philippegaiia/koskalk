@@ -99,20 +99,20 @@ export function createFormulaSection() {
             const cards = [
                 {
                     id: 'formula-product-category',
-                    label: 'Category',
-                    value: this.productTypeName ?? 'Choose later',
+                    label: this.t('cosmetic.category_label'),
+                    value: this.productTypeName ?? this.t('common.choose_later'),
                     tone: 'neutral',
                 },
                 {
                     id: 'formula-weight',
-                    label: this.isCosmeticFormula ? 'Total batch quantity' : 'Base',
+                    label: this.isCosmeticFormula ? this.t('common.total_batch') : 'Base',
                     value: `${this.format(this.oilWeight, this.oilUnit === 'g' ? 0 : 2)} ${this.oilUnit}`,
                     tone: 'neutral',
                 },
                 {
                     id: 'formula-entry',
-                    label: 'Entry',
-                    value: this.editMode === 'weight' ? 'Weight' : (this.isCosmeticFormula ? '% formula' : '% oils'),
+                    label: this.isCosmeticFormula ? this.t('cosmetic.entry_label') : 'Entry',
+                    value: this.editMode === 'weight' ? this.t('common.weight') : (this.isCosmeticFormula ? this.t('common.formula_percent') : '% oils'),
                     tone: 'neutral',
                 },
             ];
@@ -146,13 +146,13 @@ export function createFormulaSection() {
             cards.push(
                 {
                     id: 'formula-exposure',
-                    label: 'Exposure',
+                    label: this.t('cosmetic.exposure_label'),
                     value: this.exposureModeLabel,
                     tone: 'info',
                 },
                 {
                     id: 'formula-label',
-                    label: 'Label',
+                    label: this.t('cosmetic.label_label'),
                     value: this.formulaSetupLabelSummary,
                     tone: 'info',
                 },
@@ -167,7 +167,7 @@ export function createFormulaSection() {
 
             return {
                 id: 'formula-balance',
-                label: this.isCosmeticFormula ? 'Formula balance' : this.t('status.oils'),
+                label: this.isCosmeticFormula ? this.t('cosmetic.balance_label') : this.t('status.oils'),
                 value: `${this.format(total, 2)}%`,
                 detail: this.oilPercentageIsBalanced
                     ? this.t('status.ready')
@@ -205,7 +205,10 @@ export function createFormulaSection() {
                 value: zeroRows.length > 0 ? `${zeroRows.length} at 0` : this.t('status.none'),
                 detail: zeroRows.length > 0
                     ? this.t('status.zero_detail')
-                    : `${rowCount} ${rowCount === 1 ? 'ingredient has' : 'ingredients have'} a quantity.`,
+                    : this.t(
+                        rowCount === 1 ? 'cosmetic.quantity_complete_singular' : 'cosmetic.quantity_complete_plural',
+                        { count: rowCount },
+                    ),
                 tone: zeroRows.length > 0 ? 'warning' : 'success',
             };
         },
@@ -213,7 +216,7 @@ export function createFormulaSection() {
         get complianceDiagnostic() {
             return {
                 id: 'compliance-context',
-                label: 'Label context',
+                label: this.t('cosmetic.label_context'),
                 value: this.regulatoryRegimeLabel,
                 detail: this.regulatoryRegimeCoverageLabel,
                 tone: 'info',
@@ -438,7 +441,9 @@ export function createFormulaSection() {
 
         get oilPercentageStatusLabel() {
             if (this.isCosmeticFormula) {
-                return this.oilPercentageIsBalanced ? 'Formula balanced' : 'Formula must reach 100%';
+                return this.oilPercentageIsBalanced
+                    ? this.t('cosmetic.formula_balanced')
+                    : this.t('cosmetic.formula_unbalanced');
             }
 
             return this.oilPercentageIsBalanced ? this.t('saponification.balanced') : this.t('saponification.unbalanced');

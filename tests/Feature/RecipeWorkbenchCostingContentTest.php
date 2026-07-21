@@ -125,6 +125,14 @@ it('shows the cosmetic batch basis', function () {
         ->assertSee('Total batch quantity');
 });
 
+it('reads the cosmetic costing basis from Alpine component state', function () {
+    $costingTab = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php'));
+
+    expect($costingTab)
+        ->toContain('x-text="isCosmeticFormula ? t(\'costing.settings.batch_quantity\') : t(\'costing.settings.oil_quantity\')"')
+        ->not->toContain('this.isCosmeticFormula');
+});
+
 function makeCostingContentCarrierOilIngredient(): Ingredient
 {
     return Ingredient::factory()->create([

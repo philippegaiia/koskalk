@@ -14,7 +14,7 @@
 
  <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
  <label class="sk-inset p-4">
- <span class="sk-eyebrow" x-text="this.isCosmeticFormula ? t('costing.settings.batch_quantity') : t('costing.settings.oil_quantity')"></span>
+ <span class="sk-eyebrow" x-text="isCosmeticFormula ? t('costing.settings.batch_quantity') : t('costing.settings.oil_quantity')"></span>
  <input
  x-model="costingOilWeight"
  @blur="normalizeDecimalBlur($event); scheduleCostingSave()"

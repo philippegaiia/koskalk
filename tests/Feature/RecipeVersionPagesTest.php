@@ -3,12 +3,14 @@
 use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\InterfaceTranslation;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
@@ -18,6 +20,7 @@ use App\Services\RecipeWorkbenchService;
 use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
@@ -53,6 +56,50 @@ it('renders the formula sheet around one aligned table', function () {
     expect(substr_count($response->getContent(), 'data-formula-document-table'))->toBe(1)
         ->and(strpos($response->getContent(), 'Lye and water'))
         ->toBeLessThan(strpos($response->getContent(), 'Calculated results'));
+});
+
+it('localizes the formula sheet title and recalculation action from the interface database', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+
+    $this->seed('Database\\Seeders\\SupportedLocaleSeeder');
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+    $user->update(['locale' => 'fr']);
+    App::setLocale('fr');
+
+    InterfaceTranslation::query()->create([
+        'group' => 'formula_documents',
+        'key' => 'title',
+        'text' => ['fr' => 'Fiche de formule'],
+    ]);
+    InterfaceTranslation::query()->create([
+        'group' => 'formula_documents',
+        'key' => 'actions.recalculate',
+        'text' => ['fr' => 'Recalculer'],
+    ]);
+    InterfaceTranslation::query()->create([
+        'group' => 'formula_documents',
+        'key' => 'actions.reset',
+        'text' => ['fr' => 'Réinitialiser'],
+    ]);
+    InterfaceTranslation::query()->create([
+        'group' => 'formula_documents',
+        'key' => 'scale.title',
+        'text' => ['fr' => 'Ajuster la quantité'],
+    ]);
+    InterfaceTranslation::query()->create([
+        'group' => 'formula_documents',
+        'key' => 'scale.oil_quantity',
+        'text' => ['fr' => 'Quantité d’huiles'],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->assertSee('<title>'.$recipe->name.' · Fiche de formule', false)
+        ->assertSee('Ajuster la quantité')
+        ->assertSee('Quantité d’huiles')
+        ->assertSee('Recalculer')
+        ->assertSee('Réinitialiser');
 });
 
 it('renders the formula workbench with one save path and lock controls', function () {
@@ -131,15 +178,16 @@ it('shows older backups in version history', function () {
     $this->actingAs($user)
         ->get(route('recipes.saved', ['recipe' => $recipe]))
         ->assertSuccessful()
-        ->assertSee('Version history')
-        ->assertSee('Backup')
+        ->assertSee('Saved history')
+        ->assertSee('Earlier saved formula')
         ->assertDontSee('Formula A')
         ->assertSee('2026-07-12 09:30')
-        ->assertSee('View version')
+        ->assertSee('View saved formula')
         ->assertSee('href="'.route('recipes.version', ['recipe' => $recipe, 'version' => $olderSavedVersion]).'"', false)
-        ->assertSee('Restore to current formula')
+        ->assertSee('Use as current formula')
         ->assertSee('method="POST" action="'.route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $olderSavedVersion]).'"', false)
-        ->assertDontSee('action="'.route('recipes.saved.restore', ['recipe' => $recipe, 'version' => $olderSavedVersion]).'"', false);
+        ->assertDontSee('action="'.route('recipes.saved.restore', ['recipe' => $recipe, 'version' => $olderSavedVersion]).'"', false)
+        ->assertDontSee('Version history');
 
     $onlyVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Only Formula'));
 
@@ -148,7 +196,7 @@ it('shows older backups in version history', function () {
             'recipe' => Recipe::withoutGlobalScopes()->findOrFail($onlyVersion->recipe_id),
         ]))
         ->assertSuccessful()
-        ->assertDontSee('Version history');
+        ->assertDontSee('Saved history');
 });
 
 it('prevents read-only collaborators from restoring saved formula versions', function () {
@@ -588,7 +636,7 @@ it('routes active and historical formula sheets to their exact saved versions', 
         ->assertSee('<title>Formula B · Formula Sheet', false)
         ->assertSee('>Formula B</h1>', false)
         ->assertSee('Saved formula')
-        ->assertDontSee('Saved history');
+        ->assertSee('Saved history');
 
     $this->actingAs($user)
         ->get(route('recipes.version', ['recipe' => $recipe, 'version' => $formulaA]))
@@ -599,7 +647,7 @@ it('routes active and historical formula sheets to their exact saved versions', 
         ->assertSee('>Formula B</h1>', false)
         ->assertDontSee('>Formula A</h1>', false)
         ->assertSee('Saved history')
-        ->assertSee('Back to active formula')
+        ->assertSee('Back to current formula')
         ->assertSee('href="'.route('recipes.saved', $recipe).'"', false)
         ->assertDontSee('action="'.route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $formulaA]).'"', false);
 });

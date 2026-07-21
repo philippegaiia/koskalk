@@ -10,11 +10,15 @@ return [
     ],
     'actions' => [
         'back' => 'Back to formulas',
+        'back_to_current' => 'Back to current formula',
         'export_csv' => 'Export CSV',
         'export_excel' => 'Export Excel',
         'open' => 'Open formula',
         'print' => 'Print formula',
         'recalculate' => 'Recalculate',
+        'reset' => 'Reset',
+        'use_as_current' => 'Use as current formula',
+        'view_saved' => 'View saved formula',
     ],
     'columns' => [
         'ingredient' => 'Ingredient',
@@ -61,6 +65,16 @@ return [
         'superfat' => 'Superfat',
         'water' => 'Water setting',
         'weight' => 'Weight',
+    ],
+    'scale' => [
+        'title' => 'Scale quantity',
+        'oil_quantity' => 'Oil quantity',
+        'total_batch_quantity' => 'Total batch quantity',
+    ],
+    'history' => [
+        'title' => 'Saved history',
+        'entry' => 'Earlier saved formula',
+        'date_not_recorded' => 'Date not recorded',
     ],
     'print' => [
         'title' => 'Working Formula Sheet',

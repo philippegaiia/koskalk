@@ -121,7 +121,7 @@ The Settings group contains 17 interface keys for page copy, tabs, workspace gui
 
 ### 12. Formula outputs review
 
-- Formula outputs: the English Formula Sheet, working print, CSV, and Excel vocabulary is approved. Interface copy is owned by `formula_documents.*`; authored product text and scientific INCI data remain outside interface translation. Contextual `fr`, `es`, `de`, `it`, and `nl` drafting begins only after this English browser review.
+- Formula outputs: the English Formula Sheet, working print, CSV, and Excel vocabulary is approved. Interface copy is owned by `formula_documents.*`; authored product text and scientific INCI data remain outside interface translation. All 108 `formula_documents` keys now have contextual local drafts for `fr`, `es`, `de`, `it`, and `nl`. The Formula Sheet and working print were reviewed in every locale, including the soap-bench terminology, saved-history wording, batch fields, and optional soap-analysis page.
 
 ## First-pass inventory
 

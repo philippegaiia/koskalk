@@ -1,7 +1,7 @@
 @extends('layouts.app-shell')
 
-@section('title', $recipe->name.' · Formula Sheet · '.config('app.name'))
-@section('page_heading', 'Formula Sheet')
+@section('title', $recipe->name.' · '.__('formula_documents.title').' · '.config('app.name'))
+@section('page_heading', __('formula_documents.title'))
 
 @section('content')
     <div class="mx-auto max-w-[90rem] space-y-6">
@@ -84,7 +84,7 @@
                     <div class="mt-4 flex flex-wrap gap-2">
                         @if ($isHistorical)
                             <a href="{{ route('recipes.saved', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                                Back to active formula
+                                {{ __('formula_documents.actions.back_to_current') }}
                             </a>
                         @endif
                         <a href="{{ route('recipes.edit', $recipe) }}" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
@@ -120,18 +120,18 @@
                 </div>
 
                 <form method="GET" action="{{ $sheetRoute }}" class="sk-inset p-4 lg:min-w-[16rem]">
-                    <p class="sk-eyebrow">Scale quantity</p>
-                    <label class="mt-2 block text-sm font-medium text-[var(--color-ink-strong)]" for="oil_weight">{{ $isCosmeticFormula ? 'Total batch quantity' : 'Oil quantity' }}</label>
+                    <p class="sk-eyebrow">{{ __('formula_documents.scale.title') }}</p>
+                    <label class="mt-2 block text-sm font-medium text-[var(--color-ink-strong)]" for="oil_weight">{{ $isCosmeticFormula ? __('formula_documents.scale.total_batch_quantity') : __('formula_documents.scale.oil_quantity') }}</label>
                     <div class="mt-2 flex items-center gap-2">
                         <input id="oil_weight" name="oil_weight" type="number" min="0.01" step="0.01" value="{{ rtrim(rtrim(number_format($selectedOilWeight, 2, '.', ''), '0'), '.') }}" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                         <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ $snapshot['draft']['oilUnit'] ?? 'g' }}</span>
                     </div>
                     <div class="mt-3 flex gap-2">
                         <button type="submit" class="rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
-                            Recalculate
+                            {{ __('formula_documents.actions.recalculate') }}
                         </button>
                         <a href="{{ $sheetRoute }}" class="rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-white">
-                            Reset
+                            {{ __('formula_documents.actions.reset') }}
                         </a>
                     </div>
                 </form>
@@ -140,27 +140,27 @@
 
         @if ($otherSavedVersions->isNotEmpty())
             <details class="sk-card p-5">
-                <summary class="cursor-pointer text-sm font-semibold text-[var(--color-ink-strong)]">Version history</summary>
+                <summary class="cursor-pointer text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('formula_documents.history.title') }}</summary>
 
                 <div class="mt-4 space-y-3">
                     @foreach ($otherSavedVersions as $savedVersion)
                         <article class="flex flex-col gap-3 rounded-xl border border-[var(--color-line)] p-4 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <p class="font-medium text-[var(--color-ink-strong)]">Backup</p>
+                                <p class="font-medium text-[var(--color-ink-strong)]">{{ __('formula_documents.history.entry') }}</p>
                                 <p class="numeric mt-1 text-xs text-[var(--color-ink-soft)]">
-                                    {{ filled($savedVersion['saved_at'] ?? null) ? \Illuminate\Support\Carbon::parse($savedVersion['saved_at'])->format('Y-m-d H:i') : 'Date not recorded' }}
+                                    {{ filled($savedVersion['saved_at'] ?? null) ? \Illuminate\Support\Carbon::parse($savedVersion['saved_at'])->format('Y-m-d H:i') : __('formula_documents.history.date_not_recorded') }}
                                 </p>
                             </div>
 
                             <div class="flex flex-wrap gap-2">
                                 <a href="{{ route('recipes.version', ['recipe' => $recipe, 'version' => $savedVersion['public_id']]) }}" class="inline-flex rounded-full border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
-                                    View version
+                                    {{ __('formula_documents.actions.view_saved') }}
                                 </a>
                                 @if ($canRestoreVersion)
                                     <form method="POST" action="{{ route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $savedVersion['public_id']]) }}">
                                         @csrf
                                         <button type="submit" class="inline-flex rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                                            Restore to current formula
+                                            {{ __('formula_documents.actions.use_as_current') }}
                                         </button>
                                     </form>
                                 @endif

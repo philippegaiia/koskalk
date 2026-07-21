@@ -9,6 +9,7 @@ use App\Models\RegulatoryRegime;
 use App\Models\User;
 use App\Support\NumberLocale;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Translation\Translator;
 
 class RecipeWorkbenchViewDataBuilder
 {
@@ -17,6 +18,7 @@ class RecipeWorkbenchViewDataBuilder
         private readonly RecipeWorkbenchIngredientCatalogBuilder $recipeWorkbenchIngredientCatalogBuilder,
         private readonly RecipeWorkbenchIfraOptionsBuilder $recipeWorkbenchIfraOptionsBuilder,
         private readonly CurrencyCatalog $currencyCatalog,
+        private readonly Translator $translator,
     ) {}
 
     /**
@@ -56,8 +58,22 @@ class RecipeWorkbenchViewDataBuilder
             'numberLocale' => $user instanceof User ? NumberLocale::resolve($user->number_locale) : null,
             'numberLocaleOptions' => NumberLocale::options(),
             'canPersist' => $user instanceof User,
-            'translations' => trans('workbench'),
+            'translations' => $this->translations(),
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function translations(): array
+    {
+        $fallbackTranslations = $this->translator->get('workbench', [], $this->translator->getFallback());
+        $localizedTranslations = $this->translator->get('workbench', [], $this->translator->getLocale());
+
+        return array_replace_recursive(
+            is_array($fallbackTranslations) ? $fallbackTranslations : [],
+            is_array($localizedTranslations) ? $localizedTranslations : [],
+        );
     }
 
     /**

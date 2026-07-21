@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\InterfaceTranslation;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
@@ -231,4 +232,34 @@ it('uses localized maintained currency choices and preserves the stored currency
     expect($payload['currencies']['USD'])->toBe('dollar des États-Unis')
         ->and($payload['currencies'])->toHaveKey('HRK')
         ->and($payload['currencies'])->not->toHaveKey('ZWL');
+});
+
+it('overlays partial localized workbench translations on the English payload', function () {
+    config(['app.fallback_locale' => 'en']);
+    app()->setLocale('fr');
+
+    InterfaceTranslation::query()->create([
+        'group' => 'workbench',
+        'key' => 'header.product_name',
+        'text' => ['fr' => 'Nom du produit partiel'],
+    ]);
+
+    $productFamily = ProductFamily::factory()->create(['slug' => 'soap']);
+
+    mock(RecipeWorkbenchService::class, function ($mock): void {
+        $mock->shouldReceive('currentVersionPayloadUsingCatalog')->andReturn(null);
+        $mock->shouldReceive('packagingCatalogPayload')->andReturn([]);
+        $mock->shouldReceive('phaseBlueprints')->andReturn([]);
+    });
+    mock(RecipeWorkbenchIngredientCatalogBuilder::class, fn ($mock) => $mock->shouldReceive('build')->andReturn([]));
+    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
+        $mock->shouldReceive('categories')->andReturn([]);
+        $mock->shouldReceive('defaultCategoryId')->andReturn(null);
+    });
+
+    $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, null);
+
+    expect($payload['translations']['header']['product_name'])->toBe('Nom du produit partiel')
+        ->and($payload['translations']['packaging']['plan']['title'])->toBe('Packaging plan')
+        ->and($payload['translations']['costing']['settings']['title'])->toBe('Costing setup');
 });

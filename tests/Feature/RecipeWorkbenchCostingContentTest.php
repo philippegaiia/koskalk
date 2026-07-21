@@ -3,6 +3,7 @@
 use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Services\RecipeWorkbenchService;
@@ -10,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-it('renders packaging below ingredient costing with simplified wording', function () {
+it('renders the approved costing and packaging language', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -26,28 +27,32 @@ it('renders packaging below ingredient costing with simplified wording', functio
         ->get(route('recipes.edit', $recipe))
         ->assertSuccessful()
         ->assertSeeInOrder([
-            'Ingredient costing',
-            'Packaging costing',
+            'Ingredient costs',
+            'Packaging costs',
             'Cost summary',
         ])
-        ->assertSee('Packaging structure comes from the Packaging tab. Costing only updates the effective unit price.')
-        ->assertSee('Packaging item')
-        ->assertSee('New packaging item')
-        ->assertSee('Components per unit')
-        ->assertSee('Unit price')
-        ->assertSee('Cost per unit')
-        ->assertSee('Batch cost')
-        ->assertSee('Save and add to plan')
-        ->assertSee('Save only')
-        ->assertSee('No packaging planned yet.')
-        ->assertSee('Add packaging on the Packaging tab, then save the formula to price it here.')
-        ->assertDontSee('Add reusable packaging items used for one finished unit.')
-        ->assertDontSee('Add a reusable packaging item to include boxes, labels, stickers, and other unit-level packaging in this costing.')
-        ->assertDontSee('Packaging usage per finished unit')
-        ->assertDontSee('Quantity');
+        ->assertSee('Packaging plan')
+        ->assertSee('Quantity per unit')
+        ->assertSee('No packaging added yet.')
+        ->assertSee('Create packaging item')
+        ->assertSee('Save to library')
+        ->assertSee('Save and add')
+        ->assertSee('Costing setup')
+        ->assertSee('Oil quantity')
+        ->assertSee('Finished units')
+        ->assertSee('Your price / kg')
+        ->assertSee('Enter finished units')
+        ->assertSee('Saponification')
+        ->assertSee('Formula additions')
+        ->assertSee('Fragrance and aromatics')
+        ->assertDontSee('Business view without cluttering the formula bench')
+        ->assertDontSee('Ingredient identity stays shared. The price memory stays private to the current user and can be refreshed later if supplier rates move.')
+        ->assertDontSee('Formula rows stay read-only here except for price per kilo, so development and costing each get their own space.')
+        ->assertDontSee('Packaging structure comes from the Packaging tab. Costing only updates the effective unit price.')
+        ->assertDontSee('Prices stay in Costing so the formula structure stays clear.');
 });
 
-it('shows units-produced fallback on batch-dependent costing summary outputs', function () {
+it('prompts for finished units on batch-dependent costing summary outputs', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -62,8 +67,60 @@ it('shows units-produced fallback on batch-dependent costing summary outputs', f
     $this->actingAs($user)
         ->get(route('recipes.edit', $recipe))
         ->assertSuccessful()
-        ->assertSee('Set units produced')
+        ->assertSee('Enter finished units')
+        ->assertDontSee('Set units produced')
         ->assertDontSee('Unavailable');
+});
+
+it('shows the cosmetic batch basis without changing an authored phase name', function () {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'name' => 'Cosmetic',
+        'slug' => 'cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $productType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'name' => 'Cream / lotion',
+        'slug' => 'cream-lotion',
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Water',
+        'inci_name' => 'AQUA',
+        'is_active' => true,
+    ]);
+
+    $draftVersion = app(RecipeWorkbenchService::class)->save($user, $cosmeticFamily, [
+        'name' => 'Cosmetic Copy Check',
+        'product_type_id' => $productType->id,
+        'oil_unit' => 'g',
+        'oil_weight' => 500,
+        'manufacturing_mode' => 'blend_only',
+        'exposure_mode' => 'leave_on',
+        'regulatory_regime' => 'eu',
+        'editing_mode' => 'percentage',
+        'ifra_product_category_id' => null,
+        'phases' => [
+            ['key' => 'hydration', 'name' => 'Hydration & Cool Down'],
+        ],
+        'phase_items' => [
+            'hydration' => [
+                [
+                    'ingredient_id' => $ingredient->id,
+                    'percentage' => 100,
+                    'weight' => 500,
+                    'note' => null,
+                ],
+            ],
+        ],
+    ]);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $this->actingAs($user)
+        ->get(route('recipes.edit', $recipe))
+        ->assertSuccessful()
+        ->assertSee('Total batch quantity')
+        ->assertSee('Hydration & Cool Down');
 });
 
 function makeCostingContentCarrierOilIngredient(): Ingredient

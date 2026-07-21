@@ -73,6 +73,7 @@ it('uses concise task focused copy for the soap formula sections', function () {
         ->not->toContain('Saponified oils + lye water')
         ->and($additions)
         ->toContain('Formula additions')
+        ->toContain('Fragrance and aromatics')
         ->toContain('Colorants, preservatives and other functional ingredients.')
         ->toContain('Fragrance oils, essential oils and aromatic extracts.')
         ->toContain('Drop an oil here to use it as an additive.')

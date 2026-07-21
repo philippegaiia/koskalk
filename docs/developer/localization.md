@@ -1,6 +1,6 @@
 # Localization
 
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 
 ## Scope
 
@@ -18,6 +18,7 @@ The Filament admin remains English-only. It is the trusted editing interface for
 The implemented interface layer uses Laravel localization with `spatie/laravel-translation-loader`.
 
 - English source text remains version-controlled in `lang/en`.
+- Non-English application strings live only in `language_lines`; there are no parallel application-owned locale files or translation-value seeders.
 - `App\Services\Translations\EnglishTranslationSource` reads only the application-owned groups and key patterns declared in `config/interface-translations.php`.
 - `App\Services\Translations\SyncInterfaceTranslations` inserts missing translation keys into `language_lines` without overwriting translations.
 - `App\Models\InterfaceTranslation` is the application model for Spatie language lines.
@@ -60,6 +61,18 @@ php artisan translations:sync
 ```
 
 `translations:sync` creates missing application-owned rows with empty translation maps. It never machine-translates text and never overwrites an existing translation. The command is additive by default. Pass `--prune` only when rows outside the ownership manifest should be removed, such as after retiring a group or cleaning an older database.
+
+`SupportedLocaleSeeder` registers locale metadata only. `DatabaseSeeder` does not insert non-English interface copy. Reviewed translations are database content: editing a locale value in Filament takes effect without a deployment, and later deployments must preserve it.
+
+The translation sequence for a new or changed key is:
+
+1. Approve the English wording and add it to the owned `lang/en` group.
+2. Deploy the English source and run `translations:sync` to create any missing database rows.
+3. Draft each missing locale from the English source, the complete key, nearby strings, and the task context.
+4. Save the draft in `language_lines`, review it in the rendered interface, and revise it there without changing source files.
+5. Activate a locale only after its required interface and platform content is complete.
+
+Automatic drafting is a separate operation from synchronization. It must fill only blank locale values, preserve reviewed database text, preserve placeholders, and provide enough task context to avoid literal word-for-word translation. A translation-provider integration must not be hidden inside deployment seeding.
 
 Adding another locale means adding or managing its `supported_locales` record, synchronizing keys, completing the translation review, and only then activating it. Do not seed guessed translations.
 

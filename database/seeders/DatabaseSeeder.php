@@ -13,7 +13,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             SupportedLocaleSeeder::class,
-            InterfaceTranslationSeeder::class,
             ProductFamilySeeder::class,
             ProductTypeSeeder::class,
             FattyAcidSeeder::class,

@@ -6,7 +6,6 @@ use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Services\Translations\EnglishTranslationSource;
 use App\Services\Translations\SyncInterfaceTranslations;
-use Database\Seeders\InterfaceTranslationSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Artisan;
@@ -64,7 +63,8 @@ it('seeds the initial locales without preventing future languages', function () 
             'text_direction' => 'ltr',
             'is_active' => false,
             'sort_order' => 60,
-        ]);
+        ])
+        ->and(InterfaceTranslation::query()->exists())->toBeFalse();
 });
 
 it('reads only application-owned English source strings from Laravel language files', function () {
@@ -79,6 +79,16 @@ it('reads only application-owned English source strings from Laravel language fi
         ->and($source->get('homepage', 'hero.title'))->toBeNull()
         ->and($source->get('currencies', 'EUR'))->toBeNull()
         ->and($source->all())->toHaveKey('public.language.label');
+});
+
+it('keeps non-English application translations exclusively in the database', function () {
+    foreach (['fr', 'es', 'de', 'it', 'nl'] as $locale) {
+        expect(lang_path("{$locale}/workbench.php"))->not->toBeFile();
+    }
+
+    expect(base_path('database/seeders/InterfaceTranslationSeeder.php'))->not->toBeFile()
+        ->and(file_get_contents(base_path('database/seeders/DatabaseSeeder.php')))
+        ->not->toContain('InterfaceTranslationSeeder');
 });
 
 it('synchronizes missing interface keys without overwriting translations', function () {
@@ -179,41 +189,6 @@ it('exposes a deployment-safe interface translation sync command', function () {
         ->and(Artisan::output())->toContain('interface translation keys', 'pruned')
         ->and(InterfaceTranslation::query()->where('group', 'validation')->exists())->toBeFalse()
         ->and(InterfaceTranslation::query()->count())->toBeGreaterThan(0);
-});
-
-it('seeds reviewed interface translations without overwriting editor changes', function () {
-    InterfaceTranslation::query()->create([
-        'group' => 'navigation',
-        'key' => 'items.overview',
-        'text' => ['fr' => 'Révision manuelle'],
-    ]);
-
-    $this->seed(InterfaceTranslationSeeder::class);
-
-    expect(InterfaceTranslation::query()
-        ->where('group', 'navigation')
-        ->where('key', 'items.overview')
-        ->firstOrFail()
-        ->text)
-        ->toMatchArray([
-            'fr' => 'Révision manuelle',
-            'es' => 'Resumen',
-            'de' => 'Übersicht',
-            'it' => 'Panoramica',
-            'nl' => 'Overzicht',
-        ])
-        ->and(InterfaceTranslation::query()
-            ->where('group', 'dashboard')
-            ->where('key', 'create.cosmetic')
-            ->firstOrFail()
-            ->text)
-        ->toBe([
-            'fr' => 'Nouveau produit cosmétique',
-            'es' => 'Nuevo producto cosmético',
-            'de' => 'Neues Kosmetikprodukt',
-            'it' => 'Nuovo prodotto cosmetico',
-            'nl' => 'Nieuw cosmeticaproduct',
-        ]);
 });
 
 it('provides English-only admin resources for locales and interface translations', function () {

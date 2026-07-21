@@ -1,6 +1,6 @@
 <?php
 
-use Database\Seeders\InterfaceTranslationSeeder;
+use App\Models\InterfaceTranslation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -88,24 +88,45 @@ it('uses concise task focused copy for the soap formula sections', function () {
         ->not->toContain('Grouped profile');
 });
 
-it('registers and seeds reviewed soap workbench translations for every supported locale', function () {
+it('loads reviewed soap workbench translations from the database for every supported locale', function () {
     expect(config('interface-translations.sources.workbench'))->toBe(['*']);
 
-    $this->seed(InterfaceTranslationSeeder::class);
+    $translations = [
+        'header.product_name' => ['fr' => 'Nom du produit', 'es' => 'Nombre del producto', 'de' => 'Produktname', 'it' => 'Nome del prodotto', 'nl' => 'Productnaam'],
+        'header.breadcrumb' => ['fr' => 'Navigation du produit', 'es' => 'Navegación del producto', 'de' => 'Produktnavigation', 'it' => 'Navigazione del prodotto', 'nl' => 'Productnavigatie'],
+        'header.save_before_locking' => ['fr' => 'Enregistrez le produit avant de le verrouiller.', 'es' => 'Guarda el producto antes de bloquearlo.', 'de' => 'Speichern Sie das Produkt, bevor Sie es sperren.', 'it' => 'Salva il prodotto prima di bloccarlo.', 'nl' => 'Sla het product op voordat je het vergrendelt.'],
+        'saponification.title' => ['fr' => 'Saponification', 'es' => 'Saponificación', 'de' => 'Verseifung', 'it' => 'Saponificazione', 'nl' => 'Verzeping'],
+        'additions.title' => ['fr' => 'Ajouts à la formule', 'es' => 'Adiciones a la fórmula', 'de' => 'Rezepturzusätze', 'it' => 'Aggiunte alla formula', 'nl' => 'Formuletoevoegingen'],
+    ];
+
+    foreach ($translations as $key => $text) {
+        InterfaceTranslation::query()->create([
+            'group' => 'workbench',
+            'key' => $key,
+            'text' => $text,
+        ]);
+    }
 
     foreach (['fr', 'es', 'de', 'it', 'nl'] as $locale) {
         app()->setLocale($locale);
 
-        expect(__('workbench.header.product_name'))->not->toBe('workbench.header.product_name')
-            ->and(__('workbench.header.breadcrumb'))->not->toBe('workbench.header.breadcrumb')
-            ->and(__('workbench.header.save_before_locking'))->not->toBe('workbench.header.save_before_locking')
-            ->and(__('workbench.saponification.title'))->not->toBe('workbench.saponification.title')
-            ->and(__('workbench.additions.title'))->not->toBe('workbench.additions.title');
+        expect(__('workbench.header.product_name'))->toBe($translations['header.product_name'][$locale])
+            ->and(__('workbench.header.breadcrumb'))->toBe($translations['header.breadcrumb'][$locale])
+            ->and(__('workbench.header.save_before_locking'))->toBe($translations['header.save_before_locking'][$locale])
+            ->and(__('workbench.saponification.title'))->toBe($translations['saponification.title'][$locale])
+            ->and(__('workbench.additions.title'))->toBe($translations['additions.title'][$locale]);
     }
 });
 
 it('renders the cosmetic formula editor with contextual translations', function (string $locale, array $expected) {
-    $this->seed(InterfaceTranslationSeeder::class);
+    foreach ($expected as $key => $text) {
+        InterfaceTranslation::query()->create([
+            'group' => 'workbench',
+            'key' => "cosmetic.{$key}",
+            'text' => [$locale => $text],
+        ]);
+    }
+
     app()->setLocale($locale);
 
     $formula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();

@@ -1,6 +1,6 @@
 # Translation Work Handoff
 
-Last updated: 2026-07-17
+Last updated: 2026-07-21
 
 ## Goal
 
@@ -42,14 +42,16 @@ The longer Soapkraft-quality explanations should not become a large set of ordin
 ## Rollout rules
 
 - English is the canonical fallback.
-- `en` is active and default; `fr`, `es`, `de`, and `it` are registered but inactive.
+- `en` is active and default; `fr`, `es`, `de`, `it`, and `nl` are registered but inactive.
 - Add or rename English keys, then run `php artisan translations:sync`.
+- Keep non-English application strings only in `language_lines`. Do not create locale copies of application files or seed translation values during deployment.
+- Draft only blank locale values, preserve reviewed database edits and placeholders, and review translations in the rendered task before activation.
 - Review both interface and relevant platform ingredient content before activating a locale.
 - Never activate incomplete translations.
 
 ## WordPress context
 
-The user is building the WordPress marketing site. Reproduce the existing Laravel homepage before redesigning it. The source of truth is:
+The CMS will be WordPress, but that work is intentionally deferred while the application interface is reviewed and translated. When WordPress work begins, reproduce the existing Laravel homepage before redesigning it. The source of truth is:
 
 - `resources/views/welcome.blade.php`
 - `resources/views/layouts/public.blade.php`
@@ -57,7 +59,7 @@ The user is building the WordPress marketing site. Reproduce the existing Larave
 - `lang/en/public.php`
 - `public/images/public/soapkraft-hero-benches.webp`
 
-WordPress can become the marketing and long-form documentation layer. Confirm at the start of the next conversation whether it replaces the Laravel homepage or is initially a separate site.
+WordPress can become the marketing, editorial, and long-form documentation layer. After reproducing the homepage, explicitly decide whether WordPress replaces `/` or begins as a separate site.
 
 ## Reference documents
 

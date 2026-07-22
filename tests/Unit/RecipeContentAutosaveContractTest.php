@@ -159,6 +159,147 @@ assert.equal(registry.blocksNavigation(), false);
 JS);
 });
 
+it('attaches scoped listeners once and destroys them safely', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const clock = new FakeClock(0);
+const eventTarget = new FakeEventTarget();
+const registry = createDirtyStateRegistry();
+const controller = createRecipeContentAutosave({ clock, eventTarget, registry });
+
+controller.init();
+controller.init();
+
+for (const eventName of ['input', 'change', 'livewire-upload-start', 'livewire-upload-finish', 'livewire-upload-error', 'livewire-upload-cancel']) {
+    assert.equal(eventTarget.listenerCount(eventName), 1, `${eventName} should be attached once`);
+}
+
+assert.equal(eventTarget.captureFor('input'), true);
+assert.equal(eventTarget.captureFor('change'), true);
+assert.equal(eventTarget.captureFor('livewire-upload-start'), false);
+
+eventTarget.dispatch('input');
+assert.equal(controller.state, 'dirty');
+assert.equal(clock.timers.size, 1);
+
+controller.destroy();
+controller.destroy();
+
+assert.equal(eventTarget.listenerCount(), 0);
+assert.equal(clock.timers.size, 0);
+assert.equal(registry.blocksNavigation(), false);
+JS);
+});
+
+it('formats saved timestamps with the browser locale', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const isoTimestamp = '2026-07-22T10:15:00.000000Z';
+const controller = createRecipeContentAutosave({
+    clock: new FakeClock(0),
+    save: async () => ({ ok: true, message: 'Saved', saved_at: isoTimestamp }),
+});
+
+controller.markDirty();
+await controller.save();
+
+assert.ok(controller.savedAt.length > 0);
+assert.notEqual(controller.savedAt, isoTimestamp);
+assert.match(controller.savedAt, /\d{1,2}[^\d]\d{2}/);
+assert.equal(controller.statusText, `Saved at ${controller.savedAt}`);
+JS);
+});
+
+it('makes upload errors failed and blocking while decrementing uploads', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const registry = createDirtyStateRegistry();
+const controller = createRecipeContentAutosave({ registry, clock: new FakeClock(0) });
+
+controller.markDirty();
+controller.uploadStarted();
+controller.uploadStarted();
+controller.uploadErrored();
+
+assert.equal(controller.activeUploads, 1);
+assert.equal(controller.state, 'failed');
+assert.equal(registry.blocksNavigation(), true);
+
+controller.uploadErrored();
+
+assert.equal(controller.activeUploads, 0);
+assert.equal(controller.state, 'failed');
+assert.equal(registry.blocksNavigation(), true);
+JS);
+});
+
+it('saves overdue dirty content after the final upload is cancelled', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const clock = new FakeClock(0);
+let saves = 0;
+const controller = createRecipeContentAutosave({
+    clock,
+    save: async () => {
+        saves += 1;
+
+        return { ok: true, message: 'Saved', saved_at: '2026-07-22T10:15:00.000000Z' };
+    },
+});
+
+controller.markDirty();
+controller.uploadStarted();
+clock.advance(120_000);
+controller.uploadCancelled();
+await settle();
+
+assert.equal(controller.activeUploads, 0);
+assert.equal(saves, 1);
+assert.equal(controller.state, 'saved');
+JS);
+});
+
+it('keeps edits made during a save dirty until a fixed-deadline follow-up succeeds', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const clock = new FakeClock(0);
+const firstSave = deferred();
+let saves = 0;
+const controller = createRecipeContentAutosave({
+    clock,
+    save: () => {
+        saves += 1;
+
+        return saves === 1
+            ? firstSave.promise
+            : Promise.resolve({ ok: true, message: 'Saved', saved_at: '2026-07-22T10:15:00.000000Z' });
+    },
+});
+
+controller.markDirty();
+clock.advance(100_000);
+const inFlight = controller.save();
+clock.advance(10_000);
+controller.markDirty();
+
+firstSave.resolve({ ok: true, message: 'Saved', saved_at: '2026-07-22T10:15:00.000000Z' });
+await inFlight;
+
+assert.equal(controller.state, 'dirty');
+assert.equal(controller.saveDeadline, 120_000);
+assert.equal(clock.nextDueAt(), 120_000);
+
+clock.advance(10_000);
+await settle();
+
+assert.equal(saves, 2);
+assert.equal(controller.state, 'saved');
+JS);
+});
+
+it('lets Alpine own root initialization while preserving the public calculator adjustment', function () {
+    $source = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/dashboard/recipe-workbench.blade.php');
+
+    expect($source)
+        ->not->toContain('x-init="init();')
+        ->toContain('x-init="if (@js($isPublicCalculator)');
+});
+
 function runRecipeContentAutosaveContract(string $contract): void
 {
     $script = <<<'JS'
@@ -205,6 +346,48 @@ class FakeClock {
             this.timers.delete(timerId);
             timer.callback();
         }
+    }
+
+    nextDueAt() {
+        return [...this.timers.values()]
+            .map((timer) => timer.dueAt)
+            .sort((left, right) => left - right)[0] ?? null;
+    }
+}
+
+class FakeEventTarget {
+    constructor() {
+        this.listeners = new Map();
+    }
+
+    addEventListener(eventName, callback, options = false) {
+        const listeners = this.listeners.get(eventName) ?? [];
+        listeners.push({ callback, capture: options === true || options?.capture === true });
+        this.listeners.set(eventName, listeners);
+    }
+
+    removeEventListener(eventName, callback, options = false) {
+        const capture = options === true || options?.capture === true;
+        const listeners = this.listeners.get(eventName) ?? [];
+        this.listeners.set(eventName, listeners.filter((listener) => listener.callback !== callback || listener.capture !== capture));
+    }
+
+    dispatch(eventName) {
+        for (const listener of this.listeners.get(eventName) ?? []) {
+            listener.callback({ type: eventName });
+        }
+    }
+
+    listenerCount(eventName = null) {
+        if (eventName !== null) {
+            return (this.listeners.get(eventName) ?? []).length;
+        }
+
+        return [...this.listeners.values()].reduce((total, listeners) => total + listeners.length, 0);
+    }
+
+    captureFor(eventName) {
+        return (this.listeners.get(eventName) ?? [])[0]?.capture ?? null;
     }
 }
 

@@ -51,6 +51,7 @@ export function createRecipeContentAutosave(options = {}) {
         clock,
         labels,
         changeSequence: 0,
+        isInitialized: false,
         isDestroyed: false,
         inputHandler: null,
         uploadStartHandler: null,
@@ -83,6 +84,11 @@ export function createRecipeContentAutosave(options = {}) {
         },
 
         init() {
+            if (this.isInitialized) {
+                return;
+            }
+
+            this.isInitialized = true;
             this.isDestroyed = false;
             this.eventTarget ??= this.$el ?? null;
             this.updateRegistry();
@@ -109,7 +115,7 @@ export function createRecipeContentAutosave(options = {}) {
             this.isDestroyed = true;
             this.clearSaveTimer();
 
-            if (this.eventTarget) {
+            if (this.isInitialized && this.eventTarget) {
                 this.eventTarget.removeEventListener('input', this.inputHandler, true);
                 this.eventTarget.removeEventListener('change', this.inputHandler, true);
                 this.eventTarget.removeEventListener('livewire-upload-start', this.uploadStartHandler);
@@ -118,6 +124,7 @@ export function createRecipeContentAutosave(options = {}) {
                 this.eventTarget.removeEventListener('livewire-upload-cancel', this.uploadCancelHandler);
             }
 
+            this.isInitialized = false;
             this.registry?.remove(this.registryKey);
         },
 

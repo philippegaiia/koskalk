@@ -745,6 +745,199 @@ it('returns a structured recipe content error when no saved recipe exists', func
         ->assertSet('recipeContentMessage', __('workbench.instructions.draft_text_help'));
 });
 
+it('composes one translated root navigation guard from formula and nested dirty state', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+    .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+    .replace(/^import[\s\S]*?;\n/gm, '')
+    .replace(/export function /g, 'function ');
+
+eval(`${source}\nglobalThis.createPersistenceSection = createPersistenceSection;`);
+
+const windowListeners = new Map();
+const documentListeners = new Map();
+let translatedKey = null;
+let confirmationMessage = null;
+
+globalThis.window = {
+    addEventListener(eventName, callback) {
+        windowListeners.set(eventName, [...(windowListeners.get(eventName) ?? []), callback]);
+    },
+    removeEventListener(eventName, callback) {
+        windowListeners.set(eventName, (windowListeners.get(eventName) ?? []).filter((listener) => listener !== callback));
+    },
+    confirm(message) {
+        confirmationMessage = message;
+
+        return false;
+    },
+};
+
+globalThis.document = {
+    addEventListener(eventName, callback) {
+        documentListeners.set(eventName, [...(documentListeners.get(eventName) ?? []), callback]);
+    },
+    removeEventListener(eventName, callback) {
+        documentListeners.set(eventName, (documentListeners.get(eventName) ?? []).filter((listener) => listener !== callback));
+    },
+};
+
+const section = globalThis.createPersistenceSection();
+const registry = {
+    blocked: false,
+    blocksNavigation() {
+        return this.blocked;
+    },
+};
+const workbench = {
+    ...section,
+    formulaDirty: false,
+    isSaving: false,
+    saveStatus: null,
+    dirtyStateRegistry: registry,
+    unsavedBeforeUnloadHandler: null,
+    unsavedNavigateHandler: null,
+    hasUnsavedWorkbenchChanges() {
+        return this.formulaDirty;
+    },
+    t(key) {
+        translatedKey = key;
+
+        return 'Translated leave warning';
+    },
+};
+
+assert.equal(workbench.blocksNavigation(), false);
+
+workbench.formulaDirty = true;
+assert.equal(workbench.blocksNavigation(), true);
+workbench.formulaDirty = false;
+
+workbench.isSaving = true;
+assert.equal(workbench.blocksNavigation(), true);
+workbench.isSaving = false;
+
+workbench.saveStatus = 'error';
+assert.equal(workbench.blocksNavigation(), true);
+workbench.saveStatus = null;
+
+registry.blocked = true;
+assert.equal(workbench.blocksNavigation(), true);
+
+workbench.installUnsavedChangesGuard();
+workbench.installUnsavedChangesGuard();
+
+assert.equal(windowListeners.get('beforeunload').length, 1);
+assert.equal(documentListeners.get('livewire:navigate').length, 1);
+
+let prevented = false;
+documentListeners.get('livewire:navigate')[0]({
+    preventDefault() {
+        prevented = true;
+    },
+});
+
+assert.equal(prevented, true);
+assert.equal(translatedKey, 'instructions.leave_warning');
+assert.equal(confirmationMessage, 'Translated leave warning');
+
+workbench.removeUnsavedChangesGuard();
+workbench.removeUnsavedChangesGuard();
+
+assert.equal(windowListeners.get('beforeunload').length, 0);
+assert.equal(documentListeners.get('livewire:navigate').length, 0);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('clears recipe content blocking only for a successful first-save redirect', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+    .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
+    .replace(/^import[\s\S]*?;\n/gm, '')
+    .replace(/export async function /g, 'async function ');
+const serializeDraft = () => ({});
+const serializeCosting = () => ({});
+
+eval(`${source}\nglobalThis.persistWorkbench = persistWorkbench;`);
+
+const navigations = [];
+globalThis.window = {
+    Livewire: {
+        navigate(target) {
+            navigations.push(target);
+        },
+    },
+    location: {
+        assign(target) {
+            throw new Error(`Unexpected hard navigation to ${target}`);
+        },
+    },
+};
+
+function makeWorkbench(recipeId, activeWorkbenchTab, redirect) {
+    const registryWrites = [];
+
+    return {
+        recipeId,
+        activeWorkbenchTab,
+        formulaName: 'Formula',
+        oilUnit: 'g',
+        oilWeight: 1000,
+        phaseItems: {},
+        phaseOrder: [],
+        packagingPlanRows: [],
+        dirtyStateRegistry: {
+            set(key, state) {
+                registryWrites.push([key, state]);
+            },
+        },
+        registryWrites,
+        $wire: {
+            save: async () => ({ ok: true, message: 'Saved', redirect }),
+        },
+        applySnapshot() {},
+        refreshDirtyBaseline() {},
+    };
+}
+
+const firstSave = makeWorkbench(null, 'instructions', '/recipes/first');
+await globalThis.persistWorkbench(firstSave, 'save');
+
+assert.deepEqual(firstSave.registryWrites, [['recipe-content', 'saved']]);
+assert.equal(firstSave.isSaving, false);
+assert.equal(navigations[0], '/recipes/first#instructions');
+
+const existingSave = makeWorkbench(42, 'output', '/recipes/existing');
+await globalThis.persistWorkbench(existingSave, 'save');
+
+assert.deepEqual(existingSave.registryWrites, []);
+assert.equal(existingSave.isSaving, false);
+assert.equal(navigations[1], '/recipes/existing#output');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
 it('returns the saved packaging item payload when saving a packaging catalog item', function () {
     $user = User::factory()->create();
 

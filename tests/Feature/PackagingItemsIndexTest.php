@@ -23,6 +23,7 @@ use function Pest\Laravel\actingAs;
 uses(RefreshDatabase::class);
 
 beforeEach(function () {
+    Storage::fake(MediaStorage::publicDisk());
     Storage::fake(MediaStorage::userDisk());
 });
 

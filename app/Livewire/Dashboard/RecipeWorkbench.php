@@ -616,6 +616,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      */
     private function draftWithWorkbenchContext(array $draft): array
     {
+        $draft['manufacturing_instructions'] = $this->pendingRichContentValue('manufacturing_instructions');
         $productType = $this->productType();
 
         if ($productType instanceof ProductType) {

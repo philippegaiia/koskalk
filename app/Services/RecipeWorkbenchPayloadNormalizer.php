@@ -26,6 +26,7 @@ class RecipeWorkbenchPayloadNormalizer
      *     regulatory_regime: string,
      *     editing_mode: string,
      *     ifra_product_category_id: int|null,
+     *     manufacturing_instructions: string|null,
      *     water_settings: array{mode: string, value: float},
      *     calculation_context: array<string, mixed>,
      *     phases: array<int, array<string, mixed>>,
@@ -73,6 +74,7 @@ class RecipeWorkbenchPayloadNormalizer
             'ifra_product_category_id' => isset($payload['ifra_product_category_id']) && is_numeric($payload['ifra_product_category_id'])
                 ? (int) $payload['ifra_product_category_id']
                 : null,
+            'manufacturing_instructions' => $this->nullableTrimmedText($payload['manufacturing_instructions'] ?? null),
             'final_ingredient_list' => $this->nullableTrimmedText($payload['final_ingredient_list'] ?? null),
             'final_ingredient_list_basis_hash' => $this->nullableTrimmedText($payload['final_ingredient_list_basis_hash'] ?? null),
             'final_plain_ingredient_list' => $this->nullableTrimmedText($payload['final_plain_ingredient_list'] ?? null),
@@ -124,6 +126,7 @@ class RecipeWorkbenchPayloadNormalizer
      *     regulatory_regime: string,
      *     editing_mode: string,
      *     ifra_product_category_id: int|null,
+     *     manufacturing_instructions: string|null,
      *     water_settings: array<string, mixed>,
      *     calculation_context: array<string, mixed>,
      *     phases: array<int, array<string, mixed>>,
@@ -219,6 +222,7 @@ class RecipeWorkbenchPayloadNormalizer
             'ifra_product_category_id' => isset($payload['ifra_product_category_id']) && is_numeric($payload['ifra_product_category_id'])
                 ? (int) $payload['ifra_product_category_id']
                 : null,
+            'manufacturing_instructions' => $this->nullableTrimmedText($payload['manufacturing_instructions'] ?? null),
             'final_ingredient_list' => $this->nullableTrimmedText($payload['final_ingredient_list'] ?? null),
             'final_ingredient_list_basis_hash' => $this->nullableTrimmedText($payload['final_ingredient_list_basis_hash'] ?? null),
             'final_plain_ingredient_list' => $this->nullableTrimmedText($payload['final_plain_ingredient_list'] ?? null),

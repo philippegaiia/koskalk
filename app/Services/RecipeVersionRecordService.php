@@ -74,6 +74,7 @@ class RecipeVersionRecordService
         $recipeVersion->batch_size = $normalizedPayload['oil_weight'];
         $recipeVersion->batch_unit = $normalizedPayload['oil_unit'];
         $recipeVersion->manufacturing_mode = $normalizedPayload['manufacturing_mode'];
+        $recipeVersion->manufacturing_instructions = $normalizedPayload['manufacturing_instructions'] ?? null;
         $recipeVersion->exposure_mode = $normalizedPayload['exposure_mode'];
         $recipeVersion->regulatory_regime = $normalizedPayload['regulatory_regime'];
         $recipeVersion->regulatory_regime_id = RegulatoryRegime::query()

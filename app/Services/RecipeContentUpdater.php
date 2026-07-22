@@ -11,6 +11,8 @@ use Illuminate\Validation\ValidationException;
 
 class RecipeContentUpdater
 {
+    public function __construct(private readonly RecipeSopSnapshotService $recipeSopSnapshotService) {}
+
     /**
      * @param  array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}  $state
      */
@@ -33,6 +35,10 @@ class RecipeContentUpdater
                     : null,
             ]);
             $recipe->save();
+            $this->recipeSopSnapshotService->syncCurrentVersion(
+                $recipe,
+                $recipe->manufacturing_instructions,
+            );
 
             $pathsToDelete = $this->pathsToDelete(
                 $previousFeaturedImagePath,

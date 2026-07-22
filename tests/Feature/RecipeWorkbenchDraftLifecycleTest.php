@@ -55,6 +55,96 @@ it('publishes the current draft and opens a fresh draft when saving as a new ver
         ->and($recipe->fresh()->name)->toBe('Published Formula');
 });
 
+it('copies the visible instructions to the published snapshot and new current version', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchLifecycleOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount($recipe);
+    $component->data['manufacturing_instructions'] = '<p>Visible publish procedure.</p>';
+
+    $result = $component->publish(
+        recipeWorkbenchLifecyclePayload($oil),
+        $service,
+        app(RecipeContentUpdater::class),
+    );
+
+    $versions = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->orderBy('version_number')
+        ->get();
+
+    expect($result['ok'])->toBeTrue()
+        ->and($versions)->toHaveCount(2)
+        ->and($versions->first()->is_current)->toBeFalse()
+        ->and($versions->first()->manufacturing_instructions)->toBe('<p>Visible publish procedure.</p>')
+        ->and($versions->last()->is_current)->toBeTrue()
+        ->and($versions->last()->manufacturing_instructions)->toBe('<p>Visible publish procedure.</p>');
+});
+
+it('does not mutate published instructions when current instructions are saved later', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchLifecycleOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $payload = recipeWorkbenchLifecyclePayload($oil, [
+        'manufacturing_instructions' => '<p>Original procedure</p>',
+    ]);
+    $draftVersion = $service->save($user, $soapFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish(
+        $user,
+        $soapFamily,
+        $payload,
+        $recipe,
+    );
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount($recipe);
+    $component->data['manufacturing_instructions'] = '<p>Revised procedure</p>';
+    $contentResult = $component->saveRecipeContent(app(RecipeContentUpdater::class));
+
+    $publishedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->firstOrFail();
+    $currentVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    expect($contentResult['ok'])->toBeTrue()
+        ->and($publishedVersion->fresh()->manufacturing_instructions)->toBe('<p>Original procedure</p>')
+        ->and($currentVersion->fresh()->manufacturing_instructions)->toBe('<p>Revised procedure</p>');
+});
+
 it('does not save through a mounted component after the auth session is gone', function () {
     $user = User::factory()->create();
     ProductFamily::factory()->create([

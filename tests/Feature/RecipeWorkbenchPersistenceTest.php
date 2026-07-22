@@ -124,7 +124,7 @@ it('does not save a draft from a mounted component after the auth session is gon
         ->and($soapFamily->exists)->toBeTrue();
 });
 
-it('keeps instructions entered before the first draft is saved', function () {
+it('stores instructions entered before the first draft on the new current version', function () {
     $user = User::factory()->create();
     ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -148,9 +148,14 @@ it('keeps instructions entered before the first draft is saved', function () {
     expect($result['ok'])->toBeTrue();
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($result['snapshot']['draft']['recipe']['id']);
+    $currentVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
 
     expect($recipe->description)->toContain('Presentation ready before the first save')
         ->and($recipe->manufacturing_instructions)->toContain('Prepare the mould')
+        ->and($currentVersion->manufacturing_instructions)->toBe('<p>Step 1: Prepare the mould.</p>')
         ->and($recipe->featured_image_path)->toBeNull();
 });
 
@@ -724,6 +729,34 @@ it('saves recipe content through the standalone filament form', function () {
         ->manufacturing_instructions->toContain('Blend the base gently')
         ->featured_image_path->toBe($featuredImagePath)
         ->featured_image_original_name->toBe($featuredImageOriginalName);
+});
+
+it('syncs standalone instruction saves to the current version', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $recipe = Recipe::factory()->create([
+        'product_family_id' => $soapFamily->id,
+        'owner_id' => $user->id,
+        'manufacturing_instructions' => '<p>Original procedure.</p>',
+    ]);
+    $currentVersion = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'is_current' => true,
+        'manufacturing_instructions' => '<p>Original procedure.</p>',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set('data.manufacturing_instructions', '<p>Updated procedure.</p>')
+        ->call('saveRecipeContent')
+        ->assertSet('recipeContentStatus', 'success');
+
+    expect($recipe->fresh()->manufacturing_instructions)->toBe('<p>Updated procedure.</p>')
+        ->and($currentVersion->fresh()->manufacturing_instructions)->toBe('<p>Updated procedure.</p>');
 });
 
 it('returns a structured recipe content error when no saved recipe exists', function () {

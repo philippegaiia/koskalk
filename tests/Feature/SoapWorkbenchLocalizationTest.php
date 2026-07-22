@@ -89,6 +89,26 @@ it('uses concise task focused copy for the soap formula sections', function () {
         ->not->toContain('Grouped profile');
 });
 
+it('uses approved instructions and media terminology', function () {
+    expect(__('workbench.instructions.title'))->toBe('Instructions & media')
+        ->and(__('workbench.instructions.intro'))->toBe('Add the product description and image used on the Product page, then record the manufacturing procedure used at the bench.')
+        ->and(__('workbench.instructions.presentation_title'))->toBe('Product presentation')
+        ->and(__('workbench.instructions.description_label'))->toBe('Product description')
+        ->and(__('workbench.instructions.description_help'))->toBe('Describe the finished product for its Product page. You can include up to two images.')
+        ->and(__('workbench.instructions.featured_label'))->toBe('Featured product image')
+        ->and(__('workbench.instructions.featured_help'))->toBe('JPG, PNG or WebP up to 3 MB. Minimum edges: 300 px and 500 px. The image keeps its original proportions.')
+        ->and(__('workbench.instructions.procedure_label'))->toBe('Manufacturing procedure')
+        ->and(__('workbench.instructions.procedure_help'))->toBe('Record the process steps, temperatures, timings, checks and cautions used at the bench. You can include up to eight images.')
+        ->and(__('workbench.instructions.draft_text_help'))->toBe('You can start writing now. Save the formula before attaching images.')
+        ->and(__('workbench.instructions.save_changes'))->toBe('Save changes')
+        ->and(__('workbench.instructions.all_saved'))->toBe('All changes saved')
+        ->and(__('workbench.instructions.unsaved'))->toBe('Unsaved changes')
+        ->and(__('workbench.instructions.saving'))->toBe('Saving…')
+        ->and(__('workbench.instructions.saved_at', ['time' => '10:30']))->toBe('Saved at 10:30')
+        ->and(__('workbench.instructions.save_failed'))->toBe('Save failed')
+        ->and(__('workbench.instructions.leave_warning'))->toBe('You have unsaved changes. Leave without saving?');
+});
+
 it('loads reviewed soap workbench translations from the database for every supported locale', function () {
     expect(config('interface-translations.sources.workbench'))->toBe(['*']);
 

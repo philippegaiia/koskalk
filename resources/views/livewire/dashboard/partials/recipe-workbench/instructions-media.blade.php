@@ -1,37 +1,39 @@
-<section x-show="activeWorkbenchTab === 'instructions'" x-cloak role="tabpanel" aria-labelledby="tab-instructions" id="panel-instructions" class="sk-card">
- <div class="border-b border-[var(--color-line)] px-5 py-4">
- <p class="sk-eyebrow">Content &amp; Media</p>
- <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Presentation, manufacturing steps, and product image</h3>
- <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Keep customer-facing presentation separate from the print-ready manufacturing instructions.</p>
- </div>
+<section x-show="activeWorkbenchTab === 'instructions'" x-cloak role="tabpanel" aria-labelledby="tab-instructions" id="panel-instructions" class="pb-32 sm:pb-36">
+ <header class="border-b border-[var(--color-line)] pb-4">
+ <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.instructions.title') }}</h3>
+ <p class="mt-2 max-w-[75ch] text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('workbench.instructions.intro') }}</p>
+ </header>
 
- <div class="px-5 py-5">
- <form wire:submit="saveRecipeContent" class="space-y-4">
- @if ($recipeContentMessage)
- <div class="{{ $recipeContentStatus === 'success' ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' }} rounded-[1.5rem] border px-4 py-3 text-sm" role="status">
- {{ $recipeContentMessage }}
- </div>
- @endif
-
+ <form wire:submit="saveRecipeContent" class="space-y-6 pt-5">
  @if (! $workbench['recipe'])
- <div class="sk-inset px-4 py-4 text-sm text-[var(--color-ink-soft)]">
- You can prepare the presentation, manufacturing instructions, and image now. They will be kept when you save the formula.
- </div>
+ <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('workbench.instructions.draft_text_help') }}</p>
  @endif
 
  {{ $this->form }}
 
- <div class="flex justify-end">
+ <div class="pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]">
+ <section id="instructions-media-save-bar" data-instructions-save-bar aria-live="polite" class="pointer-events-auto mx-auto flex max-w-7xl flex-col gap-3 rounded-[1rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] sm:flex-row sm:items-center sm:justify-between">
+ <p class="text-sm text-[var(--color-ink-soft)]" role="status">
+ @if ($recipeContentStatus === 'success')
+ {{ __('workbench.instructions.all_saved') }}
+ @elseif ($recipeContentStatus === 'error')
+ {{ __('workbench.instructions.save_failed') }}
+ @else
+ {{ __('workbench.instructions.unsaved') }}
+ @endif
+ </p>
+
  @if ($workbench['recipe'])
- <button type="submit" class="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
- Save content and media
+ <button type="submit" wire:loading.attr="disabled" wire:target="saveRecipeContent" class="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)] disabled:cursor-wait disabled:opacity-70">
+ <span wire:loading.remove wire:target="saveRecipeContent">{{ __('workbench.instructions.save_changes') }}</span>
+ <span wire:loading wire:target="saveRecipeContent">{{ __('workbench.instructions.saving') }}</span>
  </button>
  @else
- <div class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)]">
- Save the formula above to attach this content.
- </div>
+ <button type="button" disabled class="cursor-not-allowed rounded-full bg-[var(--color-field-muted)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)]">
+ {{ __('workbench.instructions.save_changes') }}
+ </button>
  @endif
+ </section>
  </div>
  </form>
- </div>
 </section>

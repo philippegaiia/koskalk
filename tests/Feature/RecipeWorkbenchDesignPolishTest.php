@@ -1,5 +1,7 @@
 <?php
 
+use Illuminate\Support\Facades\Blade;
+
 it('starts soap users in the carrier oil catalog and keeps the visible selector synced', function () {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
@@ -352,6 +354,56 @@ it('keeps dashboard select chevrons away from the right edge', function () {
         ->toContain('appearance: none')
         ->toContain('padding-inline-end: 3rem')
         ->toContain('background-position: right 1.25rem center');
+});
+
+it('organizes instructions and media as a calm responsive editing surface', function () {
+    $instructionsMedia = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/instructions-media.blade.php'));
+    $contentSchema = file_get_contents(app_path('Services/RecipeWorkbenchContentFormSchema.php'));
+    $renderedInstructionsMedia = Blade::render(
+        str_replace('{{ $this->form }}', '', $instructionsMedia),
+        [
+            'recipeContentStatus' => 'idle',
+            'workbench' => ['recipe' => null],
+        ],
+    );
+
+    expect($instructionsMedia)
+        ->toContain("__('workbench.instructions.title')")
+        ->toContain("__('workbench.instructions.intro')")
+        ->toContain('max-w-[75ch]')
+        ->toContain('instructions-media-save-bar')
+        ->toContain('fixed bottom-0')
+        ->toContain('pb-32')
+        ->toContain("__('workbench.instructions.draft_text_help')")
+        ->not->toContain('Content &amp; Media')
+        ->not->toContain('Save content and media')
+        ->not->toContain('Save the formula above to attach this content.')
+        ->and($contentSchema)
+        ->toContain("Section::make(__('workbench.instructions.presentation_title'))")
+        ->toContain("RichEditor::make('description')")
+        ->toContain("FileUpload::make('featured_image_path')")
+        ->toContain("RichEditor::make('manufacturing_instructions')")
+        ->toContain("'lg' => 12")
+        ->toContain("'lg' => 8")
+        ->toContain("'lg' => 4")
+        ->toContain('min-h-[12rem]')
+        ->toContain('min-h-[22rem]')
+        ->toContain('->disabled(fn (?Recipe $record): bool => ! $record instanceof Recipe)')
+        ->not->toContain("Section::make('Recipe content')")
+        ->not->toContain("->imagePreviewHeight('20rem')")
+        ->not->toContain("->imagePreviewHeight('4:3')");
+
+    expect($renderedInstructionsMedia)
+        ->toContain('Instructions &amp; media')
+        ->toContain('Product page')
+        ->toContain('You can start writing now. Save the formula before attaching images.')
+        ->toContain('Unsaved changes')
+        ->not->toContain('Content &amp; Media');
+
+    expect(strpos($contentSchema, "RichEditor::make('description')"))
+        ->toBeLessThan(strpos($contentSchema, "FileUpload::make('featured_image_path')"))
+        ->and(strpos($contentSchema, "FileUpload::make('featured_image_path')"))
+        ->toBeLessThan(strpos($contentSchema, "RichEditor::make('manufacturing_instructions')"));
 });
 
 it('keeps the ingredient browser rail sticky on large screens and moves soap fatty acids below the table on mobile', function () {

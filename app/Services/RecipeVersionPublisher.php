@@ -121,13 +121,29 @@ class RecipeVersionPublisher
      * Restore a previous version by creating a new published snapshot from the given payload.
      *
      * Unlike publish(), this does not create a new current version — it only snapshots the
-     * restored state as a published version.
+     * restored state as a published version. Costing is copied before retention pruning so
+     * restoring the oldest retained snapshot cannot delete its costing before it is copied.
      *
      * @param  array<string, mixed>  $normalizedPayload
      */
-    public function restore(User $user, Recipe $recipe, array $normalizedPayload): RecipeVersion
-    {
-        return DB::transaction(function () use ($normalizedPayload, $recipe, $user): RecipeVersion {
+    public function restore(
+        User $user,
+        Recipe $recipe,
+        array $normalizedPayload,
+        RecipeVersion $sourceVersion,
+    ): RecipeVersion {
+        return DB::transaction(function () use ($normalizedPayload, $recipe, $sourceVersion, $user): RecipeVersion {
+            $recipe = Recipe::withoutGlobalScopes()
+                ->whereKey($recipe->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+            $sourceVersion = RecipeVersion::withoutGlobalScopes()
+                ->whereKey($sourceVersion->id)
+                ->where('recipe_id', $recipe->id)
+                ->where('is_current', false)
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $publishedVersion = new RecipeVersion;
             $publishedVersion->recipe()->associate($recipe);
             $publishedVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
@@ -141,6 +157,7 @@ class RecipeVersionPublisher
             );
             $publishedVersion->save();
             $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
+            $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $publishedVersion, $user);
             $this->recipeVersionDeletionService->pruneHiddenRecoverySnapshots(
                 $recipe,
                 $this->retainedPublishedVersionCountFor($user),

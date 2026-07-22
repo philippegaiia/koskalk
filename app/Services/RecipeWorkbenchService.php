@@ -359,18 +359,14 @@ class RecipeWorkbenchService
 
         $sourceVersion = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
-            ->find($versionId);
+            ->findOrFail($versionId);
 
         $productFamily = $recipe->productFamily()->withoutGlobalScopes()->firstOrFail();
         $versionPayload = $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId);
         $savePayload = $this->recipeWorkbenchDraftPayloadMapper->toSavePayload($versionPayload);
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($savePayload, $productFamily, true);
 
-        $publishedVersion = $this->recipeVersionPublisher->restore($user, $recipe, $normalizedPayload);
-
-        $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $publishedVersion, $user);
-
-        return $publishedVersion;
+        return $this->recipeVersionPublisher->restore($user, $recipe, $normalizedPayload, $sourceVersion);
     }
 
     /**

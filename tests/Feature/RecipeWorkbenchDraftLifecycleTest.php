@@ -8,13 +8,18 @@ use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\RecipeVersionCosting;
+use App\Models\RecipeVersionCostingItem;
+use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Services\MediaStorage;
 use App\Services\RecipeContentUpdater;
+use App\Services\RecipeVersionDeletionService;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
+use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
 
@@ -388,6 +393,114 @@ it('publishes after restoring a recovery snapshot without reusing the recovery v
         ->and($newDraft->version_number)->toBeGreaterThan($restoredVersion->version_number);
 });
 
+it('restores costing before pruning the oldest saved snapshot at plan capacity', function (): void {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
+    grantLifecycleSavedFormulaHistory($user, 3);
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Formula A',
+    ]));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $mediaPath = MediaStorage::recipeDirectory($recipe, 'rich-content').'/restored-at-capacity.webp';
+    $formulaAInstructions = '<p><img data-id="'.$mediaPath.'"></p>';
+    Storage::disk('local')->put($mediaPath, 'restored-at-capacity-image');
+
+    foreach (['Formula A', 'Formula B', 'Formula C', 'Formula D'] as $name) {
+        $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+            'name' => $name,
+            'manufacturing_instructions' => $name === 'Formula A'
+                ? $formulaAInstructions
+                : '<p>'.$name.' procedure.</p>',
+        ]), $recipe);
+    }
+
+    $oldestSavedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->oldest('version_number')
+        ->firstOrFail();
+    attachRecipeLifecycleCosting($user, $oldestSavedVersion, $oil);
+
+    expect(RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->count())->toBe(4);
+
+    $restoredVersion = $service->restorePublishedFormula($user, $recipe, $oldestSavedVersion->id);
+    $restoredCosting = RecipeVersionCosting::query()
+        ->with(['items', 'packagingItems'])
+        ->where('recipe_version_id', $restoredVersion->id)
+        ->where('user_id', $user->id)
+        ->first();
+
+    expect(RecipeVersion::withoutGlobalScopes()->find($oldestSavedVersion->id))->toBeNull()
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->count())->toBe(4)
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', true)->count())->toBe(1)
+        ->and($restoredVersion->name)->toBe('Formula A')
+        ->and($restoredVersion->manufacturing_instructions)->toBe($formulaAInstructions)
+        ->and(Storage::disk('local')->exists($mediaPath))->toBeTrue()
+        ->and($restoredCosting)->toBeInstanceOf(RecipeVersionCosting::class)
+        ->and($restoredCosting?->oil_weight_for_costing)->toBe('1250.000')
+        ->and($restoredCosting?->oil_unit_for_costing)->toBe('g')
+        ->and($restoredCosting?->units_produced)->toBe(24)
+        ->and($restoredCosting?->currency)->toBe('EUR')
+        ->and($restoredCosting?->items)->toHaveCount(1)
+        ->and($restoredCosting?->items->first()?->ingredient_id)->toBe($oil->id)
+        ->and($restoredCosting?->items->first()?->phase_key)->toBe('saponified_oils')
+        ->and($restoredCosting?->items->first()?->position)->toBe(1)
+        ->and($restoredCosting?->items->first()?->price_per_kg)->toBe('8.5000')
+        ->and($restoredCosting?->packagingItems)->toHaveCount(1)
+        ->and($restoredCosting?->packagingItems->first()?->name)->toBe('Bottle')
+        ->and($restoredCosting?->packagingItems->first()?->unit_cost)->toBe('1.2000')
+        ->and($restoredCosting?->packagingItems->first()?->quantity)->toBe('10.000');
+});
+
+it('rolls back the restored formula and costing when retention pruning fails', function (): void {
+    [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
+    grantLifecycleSavedFormulaHistory($user, 3);
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Formula A',
+    ]));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Formula A',
+    ]), $recipe);
+    $sourceVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->firstOrFail();
+    $sourceCosting = attachRecipeLifecycleCosting($user, $sourceVersion, $oil);
+    $versionIdsBeforeRestore = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->orderBy('id')
+        ->pluck('id')
+        ->all();
+
+    $this->mock(RecipeVersionDeletionService::class, function (MockInterface $mock): void {
+        $mock->shouldReceive('pruneHiddenRecoverySnapshots')
+            ->once()
+            ->andThrow(new RuntimeException('Forced pruning failure.'));
+    });
+
+    expect(fn (): RecipeVersion => app(RecipeWorkbenchService::class)
+        ->restorePublishedFormula($user, $recipe, $sourceVersion->id))
+        ->toThrow(RuntimeException::class, 'Forced pruning failure.');
+
+    expect(RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->orderBy('id')
+        ->pluck('id')
+        ->all())->toBe($versionIdsBeforeRestore)
+        ->and(RecipeVersionCosting::query()->where('recipe_version_id', $sourceVersion->id)->value('id'))->toBe($sourceCosting->id)
+        ->and(RecipeVersionCosting::query()->where('user_id', $user->id)->count())->toBe(1)
+        ->and(RecipeVersionCostingItem::query()->count())->toBe(1)
+        ->and(RecipeVersionCostingPackagingItem::query()->count())->toBe(1);
+});
+
 it('keeps only the latest saved snapshot and current version on the free plan', function (): void {
     [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
     $service = app(RecipeWorkbenchService::class);
@@ -475,6 +588,38 @@ function recipeHistoryLifecycleContext(): array
     ]);
 
     return [$user, $soapFamily, $oil];
+}
+
+function attachRecipeLifecycleCosting(
+    User $user,
+    RecipeVersion $version,
+    Ingredient $ingredient,
+): RecipeVersionCosting {
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1250,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 24,
+        'currency' => 'EUR',
+    ]);
+
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'saponified_oils',
+        'position' => 1,
+        'price_per_kg' => 8.5,
+    ]);
+
+    RecipeVersionCostingPackagingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'name' => 'Bottle',
+        'unit_cost' => 1.2,
+        'quantity' => 10,
+    ]);
+
+    return $costing;
 }
 
 function grantLifecycleSavedFormulaHistory(User $user, int $limit): void

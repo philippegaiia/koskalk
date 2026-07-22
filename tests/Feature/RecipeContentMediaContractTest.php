@@ -77,6 +77,31 @@ it('does not mutate recipe content or delete media when image limits fail valida
     }
 });
 
+it('binds a live TipTap image limit failure to the description field', function () {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    $user = User::factory()->create();
+    $recipe = Recipe::factory()->create([
+        'owner_id' => $user->id,
+        'description' => '<p>Original presentation.</p>',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set('data.description', recipeTipTapContent([
+            '018fa7f2-91aa-74a5-a665-18f8f3bf42d1',
+            '018fa7f2-91aa-74a5-a665-18f8f3bf42d2',
+            '018fa7f2-91aa-74a5-a665-18f8f3bf42d3',
+        ]))
+        ->call('saveRecipeContent')
+        ->assertHasErrors(['data.description'])
+        ->assertSet('recipeContentStatus', 'idle');
+
+    expect($recipe->fresh()->description)->toBe('<p>Original presentation.</p>');
+});
+
 it('deletes the previous featured image when the recipe image is cleared', function () {
     Storage::fake('local');
 
@@ -147,3 +172,30 @@ it('keeps a shared rich content attachment when it moves between recipe editors 
         ->and($recipe->fresh()->description)->not->toContain($sharedAttachment)
         ->and($recipe->fresh()->manufacturing_instructions)->toContain($sharedAttachment);
 });
+
+/**
+ * @param  array<int, string>  $temporaryIds
+ * @return array{type: string, content: array<int, array<string, mixed>>}
+ */
+function recipeTipTapContent(array $temporaryIds): array
+{
+    return [
+        'type' => 'doc',
+        'content' => [[
+            'type' => 'paragraph',
+            'content' => collect($temporaryIds)
+                ->map(fn (string $temporaryId): array => [
+                    'type' => 'image',
+                    'attrs' => [
+                        'src' => '/livewire/preview-file/'.$temporaryId,
+                        'alt' => null,
+                        'title' => null,
+                        'id' => $temporaryId,
+                        'width' => null,
+                        'height' => null,
+                    ],
+                ])
+                ->all(),
+        ]],
+    ];
+}

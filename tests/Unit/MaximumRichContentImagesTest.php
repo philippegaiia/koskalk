@@ -88,6 +88,80 @@ it('does not count non-image rich content links', function (): void {
     expect($validator->passes())->toBeTrue();
 });
 
+it('accepts two temporary image identities in TipTap state', function (): void {
+    $validator = Validator::make([
+        'description' => tipTapRichContent([
+            '018fa7f2-91aa-74a5-a665-18f8f3bf42d1',
+            '018fa7f2-91aa-74a5-a665-18f8f3bf42d2',
+        ]),
+    ], [
+        'description' => [new MaximumRichContentImages(2, 'workbench.instructions.description_image_limit')],
+    ]);
+
+    expect($validator->passes())->toBeTrue();
+});
+
+it('rejects three temporary image identities in TipTap state', function (): void {
+    $validator = Validator::make([
+        'description' => tipTapRichContent([
+            '018fa7f2-91aa-74a5-a665-18f8f3bf42d1',
+            '018fa7f2-91aa-74a5-a665-18f8f3bf42d2',
+            '018fa7f2-91aa-74a5-a665-18f8f3bf42d3',
+        ]),
+    ], [
+        'description' => [new MaximumRichContentImages(2, 'workbench.instructions.description_image_limit')],
+    ]);
+
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->first('description'))->toBe('The product description may contain up to 2 images.');
+});
+
+it('counts a repeated temporary TipTap image identity once', function (): void {
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d1';
+    $validator = Validator::make([
+        'description' => tipTapRichContent([$temporaryId, $temporaryId]),
+    ], [
+        'description' => [new MaximumRichContentImages(1, 'workbench.instructions.description_image_limit')],
+    ]);
+
+    expect($validator->passes())->toBeTrue();
+});
+
+it('ignores non-image TipTap nodes and link marks', function (): void {
+    $validator = Validator::make([
+        'description' => [
+            'type' => 'doc',
+            'content' => [
+                [
+                    'type' => 'paragraph',
+                    'content' => [
+                        [
+                            'type' => 'text',
+                            'marks' => [[
+                                'type' => 'link',
+                                'attrs' => [
+                                    'href' => '/dashboard/recipes/recipe-1/media/recipes/recipe-1/rich-content/notes.pdf',
+                                    'target' => null,
+                                    'rel' => null,
+                                    'class' => null,
+                                ],
+                            ]],
+                            'text' => 'Manufacturing notes',
+                        ],
+                    ],
+                ],
+                [
+                    'type' => 'horizontalRule',
+                ],
+            ],
+        ],
+    ], [
+        'description' => [new MaximumRichContentImages(0, 'workbench.instructions.description_image_limit')],
+    ]);
+
+    expect($validator->passes())->toBeTrue();
+});
+
 /**
  * @param  array<int, int|string>  $images
  */
@@ -102,4 +176,31 @@ function richContentImages(array $images, string $prefix = 'presentation'): stri
             return '<img data-id="'.$path.'">';
         })
         ->implode('');
+}
+
+/**
+ * @param  array<int, string>  $temporaryIds
+ * @return array{type: string, content: array<int, array<string, mixed>>}
+ */
+function tipTapRichContent(array $temporaryIds): array
+{
+    return [
+        'type' => 'doc',
+        'content' => [[
+            'type' => 'paragraph',
+            'content' => collect($temporaryIds)
+                ->map(fn (string $temporaryId): array => [
+                    'type' => 'image',
+                    'attrs' => [
+                        'src' => '/livewire/preview-file/'.$temporaryId,
+                        'alt' => null,
+                        'title' => null,
+                        'id' => $temporaryId,
+                        'width' => null,
+                        'height' => null,
+                    ],
+                ])
+                ->all(),
+        ]],
+    ];
 }

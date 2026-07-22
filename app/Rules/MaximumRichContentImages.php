@@ -21,20 +21,10 @@ class MaximumRichContentImages implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $imageCount = RichContentAttachmentPaths::extract($value)
-            ->filter(fn (string $path): bool => $this->isImagePath($path))
-            ->count();
+        $imageCount = RichContentAttachmentPaths::extractImageIdentities($value)->count();
 
         if ($imageCount > $this->max) {
             $fail(__($this->messageKey, ['max' => $this->max]));
         }
-    }
-
-    private function isImagePath(string $path): bool
-    {
-        $pathWithoutQuery = parse_url($path, PHP_URL_PATH);
-        $extension = pathinfo(is_string($pathWithoutQuery) ? $pathWithoutQuery : $path, PATHINFO_EXTENSION);
-
-        return in_array(strtolower($extension), ['jpeg', 'jpg', 'png', 'webp'], true);
     }
 }

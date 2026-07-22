@@ -4,14 +4,17 @@ use App\IngredientCategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Services\MediaStorage;
 use App\Services\RecipeContentUpdater;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
 
@@ -339,6 +342,7 @@ it('detects instructions-only differences before replacing the current version',
 
 it('publishes after restoring a recovery snapshot without reusing the recovery version number', function () {
     $user = User::factory()->create();
+    grantLifecycleSavedFormulaHistory($user, 3);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -383,6 +387,108 @@ it('publishes after restoring a recovery snapshot without reusing the recovery v
         ->and($restoredVersion->manufacturing_instructions)->toBe('<p>Formula A procedure.</p>')
         ->and($newDraft->version_number)->toBeGreaterThan($restoredVersion->version_number);
 });
+
+it('keeps only the latest saved snapshot and current version on the free plan', function (): void {
+    [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']), $recipe);
+    $oldestSavedVersionId = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->value('id');
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula B']), $recipe);
+
+    expect(RecipeVersion::withoutGlobalScopes()->find($oldestSavedVersionId))->toBeNull()
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->pluck('name')->all())->toBe(['Formula B'])
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', true)->count())->toBe(1);
+});
+
+it('keeps the latest save plus three earlier saves for a plan limit of three', function (): void {
+    [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
+    grantLifecycleSavedFormulaHistory($user, 3);
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    foreach (['Formula A', 'Formula B', 'Formula C', 'Formula D'] as $name) {
+        $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => $name]), $recipe);
+    }
+
+    $oldestSavedVersionId = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->oldest('version_number')
+        ->value('id');
+
+    expect(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->count())->toBe(4)
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', true)->count())->toBe(1);
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula E']), $recipe);
+
+    expect(RecipeVersion::withoutGlobalScopes()->find($oldestSavedVersionId))->toBeNull()
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->orderBy('version_number')->pluck('name')->all())
+        ->toBe(['Formula B', 'Formula C', 'Formula D', 'Formula E'])
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', true)->count())->toBe(1);
+});
+
+it('deletes media orphaned when the free plan prunes an older saved snapshot', function (): void {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $path = MediaStorage::recipeDirectory($recipe, 'rich-content').'/pruned-plan-history.webp';
+    $instructions = '<p><img data-id="'.$path.'"></p>';
+    Storage::disk('local')->put($path, 'pruned-plan-history-image');
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Formula A',
+        'manufacturing_instructions' => $instructions,
+    ]), $recipe);
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Formula B',
+        'manufacturing_instructions' => '<p>Formula B procedure.</p>',
+    ]), $recipe);
+
+    expect(Storage::disk('local')->exists($path))->toBeFalse();
+});
+
+/** @return array{0: User, 1: ProductFamily, 2: Ingredient} */
+function recipeHistoryLifecycleContext(): array
+{
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap-'.fake()->unique()->slug(),
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchLifecycleOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    return [$user, $soapFamily, $oil];
+}
+
+function grantLifecycleSavedFormulaHistory(User $user, int $limit): void
+{
+    $plan = Plan::factory()
+        ->hasLimit('saved_formula_history', $limit)
+        ->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+}
 
 function recipeWorkbenchLifecycleOil(array $overrides = []): Ingredient
 {

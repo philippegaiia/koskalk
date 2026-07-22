@@ -4,6 +4,7 @@ use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\InterfaceTranslation;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -158,6 +159,7 @@ it('shows older backups in version history', function () {
     $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
     $ingredient = makeSavedRecipeIngredient();
     $service = app(RecipeWorkbenchService::class);
+    grantRecipeVersionPageHistory($user, 3);
 
     $draftVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'));
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
@@ -197,6 +199,34 @@ it('shows older backups in version history', function () {
         ]))
         ->assertSuccessful()
         ->assertDontSee('Saved history');
+});
+
+it('does not expose a saved snapshot pruned by the free history limit', function (): void {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeSavedRecipeIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula A'), $recipe);
+    $prunedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->firstOrFail();
+    $prunedVersionUrl = route('recipes.version', ['recipe' => $recipe, 'version' => $prunedVersion]);
+
+    $service->publish($user, $soapFamily, soapVersionDraftPayload($ingredient, 'Formula B'), $recipe);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->assertDontSee($prunedVersionUrl, false)
+        ->assertDontSee('Formula A');
+
+    $this->actingAs($user)
+        ->get($prunedVersionUrl)
+        ->assertNotFound();
 });
 
 it('prevents read-only collaborators from restoring saved formula versions', function () {
@@ -663,6 +693,7 @@ it('does not expose the saved formula to other users', function () {
 
 it('routes active and historical formula sheets to their exact saved versions', function () {
     $user = User::factory()->create();
+    grantRecipeVersionPageHistory($user, 3);
     $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
     $ingredient = makeSavedRecipeIngredient();
     $service = app(RecipeWorkbenchService::class);
@@ -978,6 +1009,7 @@ it('asks for confirmation before replacing a changed draft with the saved formul
 
 it('can restore an older saved snapshot as the current saved formula', function () {
     $user = User::factory()->create();
+    grantRecipeVersionPageHistory($user, 3);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -1066,6 +1098,7 @@ it('rejects the current draft before invoking the legacy saved backup restore se
 
 it('preserves the current draft when restoring an older saved snapshot', function () {
     $user = User::factory()->create();
+    grantRecipeVersionPageHistory($user, 3);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -1119,6 +1152,7 @@ it('preserves the current draft when restoring an older saved snapshot', functio
 
 it('asks for confirmation before replacing the draft with an older recovery snapshot', function () {
     $user = User::factory()->create();
+    grantRecipeVersionPageHistory($user, 3);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -1182,6 +1216,7 @@ it('asks for confirmation before replacing the draft with an older recovery snap
 
 it('redirects signed-out users before replacing the draft with a saved version', function () {
     $user = User::factory()->create();
+    grantRecipeVersionPageHistory($user, 3);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -1254,6 +1289,7 @@ function createSavedRecipeVersion(): array
 function createRecipeWithTwoDistinctSavedVersions(?User $user = null): array
 {
     $user ??= User::factory()->create();
+    grantRecipeVersionPageHistory($user, 3);
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap-'.fake()->unique()->slug(),
         'name' => 'Soap',
@@ -1288,6 +1324,32 @@ function createRecipeWithTwoDistinctSavedVersions(?User $user = null): array
         ->firstOrFail();
 
     return [$user, $recipe, $formulaA];
+}
+
+function grantRecipeVersionPageHistory(User $user, int $limit): void
+{
+    $hasHistoryPlan = $user->entitlements()
+        ->active()
+        ->whereHas('plan.limits', function ($query) use ($limit): void {
+            $query
+                ->where('key', 'saved_formula_history')
+                ->where('value', '>=', $limit);
+        })
+        ->exists();
+
+    if ($hasHistoryPlan) {
+        return;
+    }
+
+    $plan = Plan::factory()
+        ->hasLimit('saved_formula_history', $limit)
+        ->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
 }
 
 function recipeWorkbookXml(string $content): string

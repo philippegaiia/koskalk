@@ -347,6 +347,54 @@ it('returns the same private ingredient usage from the focused method', function
         ->toBe($entitlements->usageFor($user)['private_ingredients']);
 });
 
+it('defaults saved formula history to zero on the free plan', function (): void {
+    $this->seed(PlanSeeder::class);
+
+    $user = User::factory()->create();
+
+    expect(app(EntitlementService::class)->savedFormulaHistoryLimitFor($user))->toBe(0);
+});
+
+it('uses the workspace subscriber saved formula history limit for members', function (): void {
+    $subscriber = User::factory()->create();
+    $member = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $subscriber->id]);
+
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $member->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    app(WorkspaceProvisioner::class)->activateWorkspace($member, $workspace);
+
+    $plan = Plan::factory()
+        ->hasLimit('saved_formula_history', 3)
+        ->create();
+
+    $subscriber->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    expect(app(EntitlementService::class)->savedFormulaHistoryLimitFor($member))->toBe(3);
+});
+
+it('clamps a negative saved formula history limit to zero', function (): void {
+    $user = User::factory()->create();
+    $plan = Plan::factory()
+        ->hasLimit('saved_formula_history', -2)
+        ->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    expect(app(EntitlementService::class)->savedFormulaHistoryLimitFor($user))->toBe(0);
+});
+
 it('rejects saving a new recipe when the recipe plan limit is reached', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -485,6 +533,7 @@ it('seeds the initial free registered plan limits', function () {
             'saved_recipes' => 15,
             'private_ingredients' => 20,
             'production_batches' => 0,
+            'saved_formula_history' => 0,
         ]);
 });
 

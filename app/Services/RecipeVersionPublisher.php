@@ -18,15 +18,13 @@ use Illuminate\Support\Facades\DB;
  */
 class RecipeVersionPublisher
 {
-    /** Maximum number of older published versions to keep as hidden recovery snapshots. */
-    private const MAX_HIDDEN_RECOVERY_SNAPSHOTS = 3;
-
     public function __construct(
         private readonly RecipeVersionRecordService $recipeVersionRecordService,
         private readonly RecipeVersionStructureSynchronizer $recipeVersionStructureSynchronizer,
         private readonly RecipeVersionCostingSynchronizer $recipeVersionCostingSynchronizer,
         private readonly RecipeMediaRollbackGuard $recipeMediaRollbackGuard,
         private readonly RecipeVersionDeletionService $recipeVersionDeletionService,
+        private readonly EntitlementService $entitlementService,
     ) {}
 
     /**
@@ -110,7 +108,7 @@ class RecipeVersionPublisher
                     $this->recipeVersionCostingSynchronizer->copyToVersion($publishedVersion, $newCurrentVersion, $user);
                     $this->recipeVersionDeletionService->pruneHiddenRecoverySnapshots(
                         $recipe,
-                        self::MAX_HIDDEN_RECOVERY_SNAPSHOTS + 1,
+                        $this->retainedPublishedVersionCountFor($user),
                     );
 
                     return $newCurrentVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
@@ -145,10 +143,15 @@ class RecipeVersionPublisher
             $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
             $this->recipeVersionDeletionService->pruneHiddenRecoverySnapshots(
                 $recipe,
-                self::MAX_HIDDEN_RECOVERY_SNAPSHOTS + 1,
+                $this->retainedPublishedVersionCountFor($user),
             );
 
             return $publishedVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
         });
+    }
+
+    private function retainedPublishedVersionCountFor(User $user): int
+    {
+        return 1 + $this->entitlementService->savedFormulaHistoryLimitFor($user);
     }
 }

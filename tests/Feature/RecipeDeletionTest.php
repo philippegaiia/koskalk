@@ -4,6 +4,7 @@ use App\IngredientCategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
@@ -294,6 +295,16 @@ function createRecipeWithDraftAndPublishedVersion(?User $user = null): array
 function createRecipeWithTwoPublishedVersions(): array
 {
     [$user, $recipe] = createRecipeWithDraftAndPublishedVersion();
+    $plan = Plan::factory()
+        ->hasLimit('saved_formula_history', 3)
+        ->create();
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
     $soapFamily = makeDeletionSoapFamily();
     $ingredient = makeDeletionCarrierOilIngredient();
 

@@ -52,6 +52,15 @@ class EntitlementService
         return $this->privateIngredientUsage($subscriber, $workspace, $this->limitsFor($subscriber));
     }
 
+    public function savedFormulaHistoryLimitFor(User $user): int
+    {
+        $workspace = $this->companyWorkspaceFor($user);
+        $subscriber = $workspace?->owner ?? $user;
+        $limit = $this->limitsFor($subscriber)['saved_formula_history'] ?? 0;
+
+        return max(0, (int) $limit);
+    }
+
     public function canCreateRecipe(User $user): bool
     {
         return $this->usageFor($user)['saved_recipes']['allowed'];

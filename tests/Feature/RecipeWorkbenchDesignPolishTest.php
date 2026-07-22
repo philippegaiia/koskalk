@@ -1,6 +1,19 @@
 <?php
 
+use App\Livewire\Dashboard\RecipeWorkbench;
+use App\Models\ProductFamily;
+use App\Models\Recipe;
+use App\Models\User;
+use Filament\Forms\Components\Field;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\RichEditor;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Blade;
+use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
 
 it('starts soap users in the carrier oil catalog and keeps the visible selector synced', function () {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
@@ -356,9 +369,8 @@ it('keeps dashboard select chevrons away from the right edge', function () {
         ->toContain('background-position: right 1.25rem center');
 });
 
-it('organizes instructions and media as a calm responsive editing surface', function () {
+it('keeps instructions copy and the save bar in context', function () {
     $instructionsMedia = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/instructions-media.blade.php'));
-    $contentSchema = file_get_contents(app_path('Services/RecipeWorkbenchContentFormSchema.php'));
     $renderedInstructionsMedia = Blade::render(
         str_replace('{{ $this->form }}', '', $instructionsMedia),
         [
@@ -383,21 +395,7 @@ it('organizes instructions and media as a calm responsive editing surface', func
         ->toContain("__('workbench.instructions.draft_text_help')")
         ->not->toContain('Content &amp; Media')
         ->not->toContain('Save content and media')
-        ->not->toContain('Save the formula above to attach this content.')
-        ->and($contentSchema)
-        ->toContain("Section::make(__('workbench.instructions.presentation_title'))")
-        ->toContain("RichEditor::make('description')")
-        ->toContain("FileUpload::make('featured_image_path')")
-        ->toContain("RichEditor::make('manufacturing_instructions')")
-        ->toContain("'lg' => 12")
-        ->toContain("'lg' => 8")
-        ->toContain("'lg' => 4")
-        ->toContain('min-h-[12rem]')
-        ->toContain('min-h-[22rem]')
-        ->toContain('->disabled(fn (?Recipe $record): bool => ! $record instanceof Recipe)')
-        ->not->toContain("Section::make('Recipe content')")
-        ->not->toContain("->imagePreviewHeight('20rem')")
-        ->not->toContain("->imagePreviewHeight('4:3')");
+        ->not->toContain('Save the formula above to attach this content.');
 
     expect($renderedInstructionsMedia)
         ->toContain('Instructions &amp; media')
@@ -405,11 +403,119 @@ it('organizes instructions and media as a calm responsive editing surface', func
         ->toContain('You can start writing now. Save the formula before attaching images.')
         ->toContain('Unsaved changes')
         ->not->toContain('Content &amp; Media');
+});
 
-    expect(strpos($contentSchema, "RichEditor::make('description')"))
-        ->toBeLessThan(strpos($contentSchema, "FileUpload::make('featured_image_path')"))
-        ->and(strpos($contentSchema, "FileUpload::make('featured_image_path')"))
-        ->toBeLessThan(strpos($contentSchema, "RichEditor::make('manufacturing_instructions')"));
+it('organizes saved instructions and media with responsive schema contracts', function () {
+    $owner = User::factory()->create();
+    $productFamily = ProductFamily::factory()->create([
+        'name' => 'Soap',
+        'slug' => 'soap',
+    ]);
+    $recipe = Recipe::factory()->create([
+        'product_family_id' => $productFamily->id,
+        'owner_id' => $owner->id,
+    ]);
+
+    $this->actingAs($owner);
+
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe]);
+    $form = $component->instance()->form;
+    $description = $form->getComponent('description');
+    $featuredImage = $form->getComponent('featured_image_path');
+    $manufacturingInstructions = $form->getComponent('manufacturing_instructions');
+    $presentationGrid = $description->getContainer()->getParentComponent();
+    $procedureGrid = $manufacturingInstructions->getContainer()->getParentComponent();
+    $procedureSection = $form->getComponent(
+        fn ($schemaComponent): bool => $schemaComponent instanceof Section
+            && $schemaComponent->getHeading() === __('workbench.instructions.procedure_label'),
+    );
+    $orderedContentFields = collect($form->getFlatFields())
+        ->map(fn (Field $field): string => $field->getName())
+        ->filter(fn (string $name): bool => in_array($name, [
+            'description',
+            'featured_image_path',
+            'manufacturing_instructions',
+        ], true))
+        ->values()
+        ->all();
+
+    expect($orderedContentFields)->toBe([
+        'description',
+        'featured_image_path',
+        'manufacturing_instructions',
+    ])
+        ->and($description)->toBeInstanceOf(RichEditor::class)
+        ->and($featuredImage)->toBeInstanceOf(FileUpload::class)
+        ->and($manufacturingInstructions)->toBeInstanceOf(RichEditor::class)
+        ->and($presentationGrid)->toBeInstanceOf(Grid::class)
+        ->and($presentationGrid->getColumns('default'))->toBe(1)
+        ->and($presentationGrid->getColumns('lg'))->toBe(12)
+        ->and($description->getColumnSpan('lg'))->toBe(8)
+        ->and($featuredImage->getColumnSpan('lg'))->toBe(4)
+        ->and($procedureSection)->toBeInstanceOf(Section::class)
+        ->and($procedureGrid)->toBeInstanceOf(Grid::class)
+        ->and($procedureGrid->getColumns('default'))->toBe(1)
+        ->and($procedureGrid->getColumns('lg'))->toBe(12)
+        ->and($manufacturingInstructions->getColumnSpan('lg'))->toBe(12)
+        ->and($manufacturingInstructions->isLabelHidden())->toBeTrue();
+
+    $renderedWorkbench = $component->html();
+    $visibleWorkbench = preg_replace(
+        '/<(?<tag>[a-z0-9]+)[^>]*class="[^"]*fi-sr-only[^"]*"[^>]*>.*?<\/\\k<tag>>/si',
+        '',
+        $renderedWorkbench,
+    );
+
+    expect($renderedWorkbench)
+        ->toMatch('/class="[^"]*fi-fo-field-label[^"]*fi-sr-only[^"]*"[^>]*>\s*Manufacturing procedure\s*<\/label>/')
+        ->and(substr_count(strip_tags($visibleWorkbench), 'Manufacturing procedure'))->toBe(1);
+});
+
+it('enables media attachments only after the recipe has been saved', function () {
+    $owner = User::factory()->create();
+    $productFamily = ProductFamily::factory()->create([
+        'name' => 'Soap',
+        'slug' => 'soap',
+    ]);
+    $recipe = Recipe::factory()->create([
+        'product_family_id' => $productFamily->id,
+        'owner_id' => $owner->id,
+    ]);
+
+    $this->actingAs($owner);
+
+    $unsavedForm = Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
+        ->instance()
+        ->form;
+    $savedForm = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->instance()
+        ->form;
+
+    $unsavedDescription = $unsavedForm->getComponent('description');
+    $unsavedManufacturingInstructions = $unsavedForm->getComponent('manufacturing_instructions');
+    $unsavedFeaturedImage = $unsavedForm->getComponent('featured_image_path');
+    $savedDescription = $savedForm->getComponent('description');
+    $savedManufacturingInstructions = $savedForm->getComponent('manufacturing_instructions');
+    $savedFeaturedImage = $savedForm->getComponent('featured_image_path');
+
+    expect($unsavedDescription)->toBeInstanceOf(RichEditor::class)
+        ->and($unsavedDescription->isEnabled())->toBeTrue()
+        ->and($unsavedDescription->hasFileAttachments())->toBeFalse()
+        ->and(collect($unsavedDescription->getToolbarButtons())->flatten()->all())->not->toContain('attachFiles')
+        ->and($unsavedManufacturingInstructions)->toBeInstanceOf(RichEditor::class)
+        ->and($unsavedManufacturingInstructions->isEnabled())->toBeTrue()
+        ->and($unsavedManufacturingInstructions->hasFileAttachments())->toBeFalse()
+        ->and(collect($unsavedManufacturingInstructions->getToolbarButtons())->flatten()->all())->not->toContain('attachFiles')
+        ->and($unsavedFeaturedImage)->toBeInstanceOf(FileUpload::class)
+        ->and($unsavedFeaturedImage->isDisabled())->toBeTrue()
+        ->and($savedDescription)->toBeInstanceOf(RichEditor::class)
+        ->and($savedDescription->hasFileAttachments())->toBeTrue()
+        ->and(collect($savedDescription->getToolbarButtons())->flatten()->all())->toContain('attachFiles')
+        ->and($savedManufacturingInstructions)->toBeInstanceOf(RichEditor::class)
+        ->and($savedManufacturingInstructions->hasFileAttachments())->toBeTrue()
+        ->and(collect($savedManufacturingInstructions->getToolbarButtons())->flatten()->all())->toContain('attachFiles')
+        ->and($savedFeaturedImage)->toBeInstanceOf(FileUpload::class)
+        ->and($savedFeaturedImage->isEnabled())->toBeTrue();
 });
 
 it('keeps the ingredient browser rail sticky on large screens and moves soap fatty acids below the table on mobile', function () {

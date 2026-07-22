@@ -35,7 +35,9 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
         'visibility' => Visibility::Public,
         'is_potentially_saponifiable' => false,
         'featured_image_path' => 'ingredients/featured-images/lavender.webp',
+        'featured_image_original_name' => 'Lavender portrait.webp',
         'icon_image_path' => 'ingredients/icons/lavender.webp',
+        'icon_image_original_name' => 'Lavender icon.webp',
         'info_markdown' => 'A popular essential oil.',
         'is_active' => true,
     ]);
@@ -74,7 +76,9 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
     expect($copy->cas_number)->toBe('8000-28-0');
     expect($copy->is_organic)->toBeTrue();
     expect($copy->featured_image_path)->toBeNull();
+    expect($copy->featured_image_original_name)->toBeNull();
     expect($copy->icon_image_path)->toBeNull();
+    expect($copy->icon_image_original_name)->toBeNull();
     expect($copy->info_markdown)->toBe('A popular essential oil.');
     expect($copy->is_active)->toBeTrue();
     expect($copy->source_file)->toBe('user');

@@ -40,7 +40,9 @@ class UserIngredientAuthoringService
             'ec_number' => null,
             'is_organic' => false,
             'featured_image_path' => null,
+            'featured_image_original_name' => null,
             'icon_image_path' => null,
+            'icon_image_original_name' => null,
             'info_markdown' => null,
             'composition_source_notes' => null,
             'allergen_source_notes' => null,
@@ -87,7 +89,9 @@ class UserIngredientAuthoringService
             'ec_number' => data_get($entryData, 'current_version.ec_number'),
             'is_organic' => (bool) data_get($entryData, 'current_version.is_organic', false),
             'featured_image_path' => $ingredient->featured_image_path,
+            'featured_image_original_name' => $ingredient->featured_image_original_name,
             'icon_image_path' => $ingredient->icon_image_path,
+            'icon_image_original_name' => $ingredient->icon_image_original_name,
             'info_markdown' => $ingredient->info_markdown,
             'composition_source_notes' => $ingredient->composition_source_notes,
             'allergen_source_notes' => $ingredient->allergen_source_notes,
@@ -207,7 +211,9 @@ class UserIngredientAuthoringService
             $copy = $source->replicate([
                 'public_id',
                 'featured_image_path',
+                'featured_image_original_name',
                 'icon_image_path',
+                'icon_image_original_name',
             ]);
 
             $copy->source_file = 'user';
@@ -222,7 +228,9 @@ class UserIngredientAuthoringService
             $copy->ec_number = $this->normalizeEcNumber($copy->ec_number);
             $copy->source_data = $this->duplicateSourceData($source);
             $copy->featured_image_path = null;
+            $copy->featured_image_original_name = null;
             $copy->icon_image_path = null;
+            $copy->icon_image_original_name = null;
             $copy->save();
 
             $this->deepCopyRelations($source, $copy);
@@ -316,8 +324,17 @@ class UserIngredientAuthoringService
             $ingredient->category = IngredientCategory::from((string) $category);
         }
 
-        $ingredient->featured_image_path = Arr::get($state, 'featured_image_path');
-        $ingredient->icon_image_path = Arr::get($state, 'icon_image_path');
+        $featuredImagePath = Arr::get($state, 'featured_image_path');
+        $iconImagePath = Arr::get($state, 'icon_image_path');
+
+        $ingredient->featured_image_path = $featuredImagePath;
+        $ingredient->featured_image_original_name = filled($featuredImagePath)
+            ? Arr::get($state, 'featured_image_original_name')
+            : null;
+        $ingredient->icon_image_path = $iconImagePath;
+        $ingredient->icon_image_original_name = filled($iconImagePath)
+            ? Arr::get($state, 'icon_image_original_name')
+            : null;
         $ingredient->info_markdown = Arr::get($state, 'info_markdown');
         $ingredient->composition_source_notes = Arr::get($state, 'ingredient_structure') === 'blend'
             ? Arr::get($state, 'composition_source_notes')

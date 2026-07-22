@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 class RecipeContentUpdater
 {
     /**
-     * @param  array{description:?string, manufacturing_instructions:?string, featured_image_path:?string}  $state
+     * @param  array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}  $state
      */
     public function update(Recipe $recipe, array $state): Recipe
     {
@@ -20,11 +20,15 @@ class RecipeContentUpdater
         $updatedRecipe = DB::transaction(function () use ($recipe, $state, &$pathsToDelete): Recipe {
             $previousFeaturedImagePath = $recipe->featured_image_path;
             $previousRichContentAttachmentPaths = $recipe->richContentAttachmentPaths();
+            $featuredImagePath = $state['featured_image_path'] ?? null;
 
             $recipe->fill([
                 'description' => $state['description'] ?? null,
                 'manufacturing_instructions' => $state['manufacturing_instructions'] ?? null,
-                'featured_image_path' => $state['featured_image_path'] ?? null,
+                'featured_image_path' => $featuredImagePath,
+                'featured_image_original_name' => filled($featuredImagePath)
+                    ? ($state['featured_image_original_name'] ?? null)
+                    : null,
             ]);
             $recipe->save();
 
@@ -46,7 +50,7 @@ class RecipeContentUpdater
     }
 
     /**
-     * @param  array{description:?string, manufacturing_instructions:?string, featured_image_path:?string}  $state
+     * @param  array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}  $state
      */
     private function validateMediaPaths(Recipe $recipe, array $state): void
     {

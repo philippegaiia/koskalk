@@ -207,9 +207,34 @@ it('stores the packaging image path through the packaging authoring service', fu
         'unit_cost' => 0.36,
         'notes' => 'With square image',
         'featured_image_path' => 'packaging/featured-images/picture-box.webp',
+        'featured_image_original_name' => 'Picture box portrait.webp',
     ], $user);
 
-    expect($packagingItem->featured_image_path)->toBe('packaging/featured-images/picture-box.webp');
+    expect($packagingItem->fresh())
+        ->featured_image_path->toBe('packaging/featured-images/picture-box.webp')
+        ->featured_image_original_name->toBe('Picture box portrait.webp');
+
+    $updated = app(UserPackagingItemAuthoringService::class)->update($packagingItem, [
+        'name' => 'Picture Box',
+        'unit_cost' => 0.36,
+        'notes' => 'With portrait image',
+        'featured_image_path' => 'packaging/featured-images/picture-box-portrait.webp',
+        'featured_image_original_name' => 'Picture box portrait 2.webp',
+    ], $user);
+
+    expect($updated->fresh()->featured_image_original_name)->toBe('Picture box portrait 2.webp');
+
+    $cleared = app(UserPackagingItemAuthoringService::class)->update($updated, [
+        'name' => 'Picture Box',
+        'unit_cost' => 0.36,
+        'notes' => 'No image',
+        'featured_image_path' => null,
+        'featured_image_original_name' => 'Stale picture box portrait.webp',
+    ], $user);
+
+    expect($cleared->fresh())
+        ->featured_image_path->toBeNull()
+        ->featured_image_original_name->toBeNull();
 });
 
 it('only shows the signed-in users packaging items in the packaging table and supports searching', function () {

@@ -706,18 +706,21 @@ it('saves recipe content through the standalone filament form', function () {
 
     $this->actingAs($user);
     $featuredImagePath = 'recipes/'.$recipe->public_id.'/featured-images/soap.jpg';
+    $featuredImageOriginalName = 'Olive oil portrait.jpg';
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
         ->set('data.description', '<p>A calming creamy bar for daily cleansing.</p>')
         ->set('data.manufacturing_instructions', '<p>Blend the base gently, then pour into the mould.</p>')
         ->set('data.featured_image_path', [$featuredImagePath])
+        ->set('data.featured_image_original_name', $featuredImageOriginalName)
         ->call('saveRecipeContent')
         ->assertSet('recipeContentStatus', 'success');
 
     expect($recipe->fresh())
         ->description->toContain('calming creamy bar')
         ->manufacturing_instructions->toContain('Blend the base gently')
-        ->featured_image_path->toBe($featuredImagePath);
+        ->featured_image_path->toBe($featuredImagePath)
+        ->featured_image_original_name->toBe($featuredImageOriginalName);
 });
 
 it('returns the saved packaging item payload when saving a packaging catalog item', function () {
@@ -2243,6 +2246,7 @@ it('deletes the previous recipe featured image from storage when the image is cl
         'product_family_id' => $soapFamily->id,
         'owner_id' => $user->id,
         'featured_image_path' => 'recipes/featured-images/original.webp',
+        'featured_image_original_name' => 'Original recipe portrait.webp',
     ]);
 
     Storage::disk('local')->put('recipes/featured-images/original.webp', 'old-image');
@@ -2253,11 +2257,13 @@ it('deletes the previous recipe featured image from storage when the image is cl
         ->set('data.description', '<p>Presentation only.</p>')
         ->set('data.manufacturing_instructions', '<p>Manufacturing only.</p>')
         ->set('data.featured_image_path', null)
+        ->set('data.featured_image_original_name', 'Stale recipe portrait.webp')
         ->call('saveRecipeContent')
         ->assertSet('recipeContentStatus', 'success');
 
     expect(Storage::disk('local')->exists('recipes/featured-images/original.webp'))->toBeFalse()
-        ->and($recipe->fresh()->featured_image_path)->toBeNull();
+        ->and($recipe->fresh()->featured_image_path)->toBeNull()
+        ->and($recipe->fresh()->featured_image_original_name)->toBeNull();
 });
 
 it('keeps a shared rich content attachment when it is moved between recipe editors in one save', function () {

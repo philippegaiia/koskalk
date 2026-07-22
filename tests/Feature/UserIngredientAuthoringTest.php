@@ -328,11 +328,29 @@ it('persists an optional ingredient icon separately from the main image', functi
         'name' => 'Green Clay',
         'category' => IngredientCategory::Clay->value,
         'featured_image_path' => 'ingredients/featured-images/green-clay.webp',
+        'featured_image_original_name' => 'Green clay portrait.webp',
         'icon_image_path' => 'ingredients/icons/green-clay-icon.webp',
+        'icon_image_original_name' => 'Green clay icon.webp',
     ], $user);
 
-    expect($ingredient->featured_image_path)->toBe('ingredients/featured-images/green-clay.webp')
-        ->and($ingredient->icon_image_path)->toBe('ingredients/icons/green-clay-icon.webp');
+    expect($ingredient->fresh())
+        ->featured_image_path->toBe('ingredients/featured-images/green-clay.webp')
+        ->featured_image_original_name->toBe('Green clay portrait.webp')
+        ->icon_image_path->toBe('ingredients/icons/green-clay-icon.webp')
+        ->icon_image_original_name->toBe('Green clay icon.webp');
+
+    $updated = app(UserIngredientAuthoringService::class)->update($ingredient, [
+        'name' => 'French Green Clay',
+        'category' => IngredientCategory::Clay->value,
+        'featured_image_path' => 'ingredients/featured-images/french-green-clay.webp',
+        'featured_image_original_name' => 'French green clay portrait.webp',
+        'icon_image_path' => 'ingredients/icons/french-green-clay-icon.webp',
+        'icon_image_original_name' => 'French green clay icon.webp',
+    ], $user);
+
+    expect($updated->fresh())
+        ->featured_image_original_name->toBe('French green clay portrait.webp')
+        ->icon_image_original_name->toBe('French green clay icon.webp');
 });
 
 it('falls back to the main ingredient image when no icon exists for picker surfaces', function () {
@@ -700,7 +718,9 @@ it('deletes replaced ingredient media from storage during update', function () {
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'featured_image_path' => 'ingredients/featured-images/original.webp',
+        'featured_image_original_name' => 'Original ingredient portrait.webp',
         'icon_image_path' => 'ingredients/icons/original-icon.webp',
+        'icon_image_original_name' => 'Original ingredient icon.webp',
     ]);
 
     Storage::disk('public')->put('ingredients/featured-images/original.webp', 'old-image');
@@ -710,11 +730,15 @@ it('deletes replaced ingredient media from storage during update', function () {
         'name' => $ingredient->display_name,
         'category' => $ingredient->category->value,
         'featured_image_path' => null,
+        'featured_image_original_name' => 'Stale ingredient portrait.webp',
         'icon_image_path' => null,
+        'icon_image_original_name' => 'Stale ingredient icon.webp',
     ], $user);
 
     expect(Storage::disk('public')->exists('ingredients/featured-images/original.webp'))->toBeFalse()
         ->and(Storage::disk('public')->exists('ingredients/icons/original-icon.webp'))->toBeFalse()
         ->and($updated->featured_image_path)->toBeNull()
-        ->and($updated->icon_image_path)->toBeNull();
+        ->and($updated->featured_image_original_name)->toBeNull()
+        ->and($updated->icon_image_path)->toBeNull()
+        ->and($updated->icon_image_original_name)->toBeNull();
 });

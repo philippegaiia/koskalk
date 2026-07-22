@@ -433,11 +433,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $this->authorize('update', $recipe);
         $pendingRichContentState = $this->pendingRecipeRichContentState();
 
-        /** @var array{description:?string, manufacturing_instructions:?string, featured_image_path:?string} $state */
+        /** @var array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string} $state */
         $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
 
         try {
-            $state = $this->form->getState();
+            $state = [
+                ...$this->form->getState(),
+                'featured_image_original_name' => $this->pendingFeaturedImageOriginalName(),
+            ];
         } finally {
             $this->clearPendingRichContentStateOnRecipeTargets($recipe);
         }
@@ -622,7 +625,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     }
 
     /**
-     * @return array{description:?string, manufacturing_instructions:?string, featured_image_path:?string}
+     * @return array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}
      */
     private function recipeContentFormState(?Recipe $recipe = null): array
     {
@@ -632,6 +635,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             'description' => $recipe?->description,
             'manufacturing_instructions' => $recipe?->manufacturing_instructions,
             'featured_image_path' => $recipe?->featured_image_path,
+            'featured_image_original_name' => $recipe?->featured_image_original_name,
         ];
     }
 
@@ -673,7 +677,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     }
 
     /**
-     * @return array{description:?string, manufacturing_instructions:?string, featured_image_path:?string}
+     * @return array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}
      */
     private function pendingRecipeContentState(): array
     {
@@ -681,6 +685,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             'description' => $this->pendingRichContentValue('description'),
             'manufacturing_instructions' => $this->pendingRichContentValue('manufacturing_instructions'),
             'featured_image_path' => $this->pendingFeaturedImagePath(),
+            'featured_image_original_name' => $this->pendingFeaturedImageOriginalName(),
         ];
     }
 
@@ -743,6 +748,11 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ->first(fn (mixed $path): bool => is_string($path) && $path !== '');
 
         return is_string($firstValue) ? $firstValue : null;
+    }
+
+    private function pendingFeaturedImageOriginalName(): ?string
+    {
+        return $this->pendingRichContentValue('featured_image_original_name');
     }
 
     private function currentUser(): ?User

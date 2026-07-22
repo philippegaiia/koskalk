@@ -24,6 +24,7 @@ class UserPackagingItemAuthoringService
             'unit_cost' => null,
             'notes' => null,
             'featured_image_path' => null,
+            'featured_image_original_name' => null,
         ];
     }
 
@@ -37,6 +38,7 @@ class UserPackagingItemAuthoringService
             'unit_cost' => $packagingItem->unit_cost === null ? null : (float) $packagingItem->unit_cost,
             'notes' => $packagingItem->notes,
             'featured_image_path' => $packagingItem->featured_image_path,
+            'featured_image_original_name' => $packagingItem->featured_image_original_name,
         ];
     }
 
@@ -171,7 +173,12 @@ class UserPackagingItemAuthoringService
         $packagingItem->notes = blank(Arr::get($state, 'notes'))
             ? null
             : trim((string) Arr::get($state, 'notes'));
-        $packagingItem->featured_image_path = Arr::get($state, 'featured_image_path');
+        $featuredImagePath = Arr::get($state, 'featured_image_path');
+
+        $packagingItem->featured_image_path = $featuredImagePath;
+        $packagingItem->featured_image_original_name = filled($featuredImagePath)
+            ? Arr::get($state, 'featured_image_original_name')
+            : null;
         $packagingItem->save();
 
         return $packagingItem->fresh();

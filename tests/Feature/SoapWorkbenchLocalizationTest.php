@@ -139,6 +139,106 @@ it('loads reviewed soap workbench translations from the database for every suppo
     }
 });
 
+it('loads contextual instructions and media translations from the database for every supported locale', function () {
+    $originalLocale = app()->getLocale();
+
+    $translations = [
+        'fr' => [
+            'instructions.title' => 'Instructions et médias',
+            'instructions.presentation_title' => 'Présentation du produit',
+            'instructions.description_help' => 'Présentez le produit fini pour sa fiche produit. Vous pouvez ajouter jusqu’à deux images.',
+            'instructions.featured_help' => 'JPG, PNG ou WebP jusqu’à 3 Mo. Dimensions minimales : 300 px pour le petit côté et 500 px pour le grand. Les proportions d’origine sont conservées.',
+            'instructions.procedure_label' => 'Mode opératoire de fabrication',
+            'instructions.procedure_help' => 'Consignez les étapes, températures, durées, contrôles et précautions appliqués à l’atelier. Vous pouvez ajouter jusqu’à huit images.',
+            'instructions.all_saved' => 'Toutes les modifications sont enregistrées',
+            'instructions.save_failed' => 'Échec de l’enregistrement',
+            'instructions.leave_warning' => 'Des modifications ne sont pas enregistrées. Quitter sans les enregistrer ?',
+            'instructions.minimum_image_edges' => 'Le petit côté de l’image doit mesurer au moins :short pixels et le grand côté au moins :long pixels.',
+        ],
+        'es' => [
+            'instructions.title' => 'Instrucciones y contenido multimedia',
+            'instructions.presentation_title' => 'Presentación del producto',
+            'instructions.description_help' => 'Describe el producto terminado para su ficha. Puedes incluir hasta dos imágenes.',
+            'instructions.featured_help' => 'JPG, PNG o WebP de hasta 3 MB. Dimensiones mínimas: 300 px en el lado corto y 500 px en el largo. Se conservan las proporciones originales.',
+            'instructions.procedure_label' => 'Procedimiento de fabricación',
+            'instructions.procedure_help' => 'Anota los pasos, las temperaturas, los tiempos, los controles y las precauciones utilizados en el taller. Puedes incluir hasta ocho imágenes.',
+            'instructions.all_saved' => 'Todos los cambios están guardados',
+            'instructions.save_failed' => 'No se han podido guardar los cambios',
+            'instructions.leave_warning' => 'Hay cambios sin guardar. ¿Quieres salir sin guardarlos?',
+            'instructions.minimum_image_edges' => 'El lado corto de la imagen debe medir al menos :short píxeles y el lado largo al menos :long píxeles.',
+        ],
+        'de' => [
+            'instructions.title' => 'Anleitung und Medien',
+            'instructions.presentation_title' => 'Produktdarstellung',
+            'instructions.description_help' => 'Beschreiben Sie das fertige Produkt für seine Produktseite. Sie können bis zu zwei Bilder einfügen.',
+            'instructions.featured_help' => 'JPG, PNG oder WebP bis 3 MB. Mindestmaße: 300 px an der kurzen und 500 px an der langen Seite. Das ursprüngliche Seitenverhältnis bleibt erhalten.',
+            'instructions.procedure_label' => 'Herstellungsverfahren',
+            'instructions.procedure_help' => 'Dokumentieren Sie Arbeitsschritte, Temperaturen, Zeiten, Kontrollen und Vorsichtsmaßnahmen. Sie können bis zu acht Bilder einfügen.',
+            'instructions.all_saved' => 'Alle Änderungen gespeichert',
+            'instructions.save_failed' => 'Speichern fehlgeschlagen',
+            'instructions.leave_warning' => 'Es gibt nicht gespeicherte Änderungen. Seite ohne Speichern verlassen?',
+            'instructions.minimum_image_edges' => 'Die kurze Bildseite muss mindestens :short Pixel und die lange mindestens :long Pixel groß sein.',
+        ],
+        'it' => [
+            'instructions.title' => 'Istruzioni e contenuti multimediali',
+            'instructions.presentation_title' => 'Presentazione del prodotto',
+            'instructions.description_help' => 'Descrivi il prodotto finito per la sua scheda. Puoi includere fino a due immagini.',
+            'instructions.featured_help' => 'JPG, PNG o WebP fino a 3 MB. Dimensioni minime: 300 px sul lato corto e 500 px sul lato lungo. Le proporzioni originali vengono mantenute.',
+            'instructions.procedure_label' => 'Procedura di fabbricazione',
+            'instructions.procedure_help' => 'Registra fasi, temperature, tempi, controlli e precauzioni seguiti in laboratorio. Puoi includere fino a otto immagini.',
+            'instructions.all_saved' => 'Tutte le modifiche sono state salvate',
+            'instructions.save_failed' => 'Salvataggio non riuscito',
+            'instructions.leave_warning' => 'Sono presenti modifiche non salvate. Uscire senza salvarle?',
+            'instructions.minimum_image_edges' => 'Il lato corto dell’immagine deve misurare almeno :short pixel e quello lungo almeno :long pixel.',
+        ],
+        'nl' => [
+            'instructions.title' => 'Instructies en media',
+            'instructions.presentation_title' => 'Productpresentatie',
+            'instructions.description_help' => 'Beschrijf het afgewerkte product voor de productpagina. Je kunt maximaal twee afbeeldingen toevoegen.',
+            'instructions.featured_help' => 'JPG, PNG of WebP tot 3 MB. Minimale afmetingen: 300 px aan de korte zijde en 500 px aan de lange zijde. De oorspronkelijke verhoudingen blijven behouden.',
+            'instructions.procedure_label' => 'Productiewijze',
+            'instructions.procedure_help' => 'Leg de stappen, temperaturen, tijden, controles en voorzorgsmaatregelen aan de werkbank vast. Je kunt maximaal acht afbeeldingen toevoegen.',
+            'instructions.all_saved' => 'Alle wijzigingen zijn opgeslagen',
+            'instructions.save_failed' => 'Opslaan mislukt',
+            'instructions.leave_warning' => 'Er zijn niet-opgeslagen wijzigingen. Wil je de pagina verlaten zonder op te slaan?',
+            'instructions.minimum_image_edges' => 'De korte zijde van de afbeelding moet minimaal :short pixels zijn en de lange zijde minimaal :long pixels.',
+        ],
+    ];
+
+    foreach (array_keys(reset($translations)) as $key) {
+        InterfaceTranslation::query()->create([
+            'group' => 'workbench',
+            'key' => $key,
+            'text' => collect($translations)->mapWithKeys(
+                fn (array $localeTranslations, string $locale): array => [$locale => $localeTranslations[$key]],
+            )->all(),
+        ]);
+    }
+
+    app('translator')->setLoaded([]);
+
+    try {
+        foreach ($translations as $locale => $expected) {
+            app()->setLocale($locale);
+
+            expect(__('workbench.instructions.title'))->toBe($expected['instructions.title'])
+                ->and(__('workbench.instructions.presentation_title'))->toBe($expected['instructions.presentation_title'])
+                ->and(__('workbench.instructions.description_help'))->toBe($expected['instructions.description_help'])
+                ->and(__('workbench.instructions.featured_help'))->toBe($expected['instructions.featured_help'])
+                ->and(__('workbench.instructions.procedure_label'))->toBe($expected['instructions.procedure_label'])
+                ->and(__('workbench.instructions.procedure_help'))->toBe($expected['instructions.procedure_help'])
+                ->and(__('workbench.instructions.all_saved'))->toBe($expected['instructions.all_saved'])
+                ->and(__('workbench.instructions.save_failed'))->toBe($expected['instructions.save_failed'])
+                ->and(__('workbench.instructions.leave_warning'))->toBe($expected['instructions.leave_warning'])
+                ->and(__('workbench.instructions.minimum_image_edges', ['short' => 300, 'long' => 500]))
+                ->toBe(str_replace([':short', ':long'], ['300', '500'], $expected['instructions.minimum_image_edges']));
+        }
+    } finally {
+        app()->setLocale($originalLocale);
+        app('translator')->setLoaded([]);
+    }
+});
+
 it('renders the cosmetic formula editor with contextual translations', function (string $locale, array $expected) {
     foreach ($expected as $key => $text) {
         InterfaceTranslation::query()->create([

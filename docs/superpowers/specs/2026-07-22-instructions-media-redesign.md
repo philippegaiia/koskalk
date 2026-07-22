@@ -1,7 +1,13 @@
 # Instructions & Media Redesign
 
 **Date:** 22 July 2026  
-**Status:** Approved design; implementation plan pending
+**Status:** Approved design; implementation plans ready
+
+Implementation plans:
+
+1. `docs/superpowers/plans/2026-07-22-upload-original-filenames.md`
+2. `docs/superpowers/plans/2026-07-22-instructions-media-workflow.md`
+3. `docs/superpowers/plans/2026-07-22-sop-snapshots-media-retention.md`
 
 ## Purpose
 

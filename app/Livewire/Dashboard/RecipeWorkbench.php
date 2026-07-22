@@ -15,6 +15,7 @@ use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
@@ -241,6 +242,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 $user,
                 $this->productFamily(),
                 $this->draftWithWorkbenchContext($draft),
+                $recipe,
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
             return $this->saveErrorResponse($exception);
@@ -759,7 +761,31 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     {
         $value = $this->data[$key] ?? null;
 
-        return is_string($value) || $value === null ? $value : null;
+        if (is_string($value) || $value === null) {
+            return $value;
+        }
+
+        if (! is_array($value)) {
+            return null;
+        }
+
+        $richEditor = $this->form->getComponent($key);
+
+        if (! $richEditor instanceof RichEditor) {
+            return null;
+        }
+
+        $editor = $richEditor->getTipTapEditor()->setContent($value);
+
+        if ($richEditor->getFileAttachmentsVisibility() === 'private') {
+            $editor->descendants(function (object &$node): void {
+                if ($node->type === 'image' && filled($node->attrs->id ?? null)) {
+                    $node->attrs->src = null;
+                }
+            });
+        }
+
+        return $editor->getHTML();
     }
 
     private function pendingFeaturedImagePath(): ?string

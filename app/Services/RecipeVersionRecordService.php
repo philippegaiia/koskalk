@@ -61,6 +61,10 @@ class RecipeVersionRecordService
             $recipe->name = $normalizedPayload['name'];
         }
 
+        if ($isCurrent) {
+            $recipe->manufacturing_instructions = $normalizedPayload['manufacturing_instructions'] ?? null;
+        }
+
         if ($recipe->isDirty()) {
             $recipe->save();
         }

@@ -13,20 +13,34 @@ class RecipeDraftSaver
     public function __construct(
         private readonly RecipeVersionRecordService $recipeVersionRecordService,
         private readonly RecipeVersionStructureSynchronizer $recipeVersionStructureSynchronizer,
+        private readonly RecipeSopSnapshotService $recipeSopSnapshotService,
     ) {}
 
     /**
      * @param  array<string, mixed>  $normalizedPayload
      */
-    public function save(User $user, ProductFamily $productFamily, array $normalizedPayload, ?Recipe $recipe = null): RecipeVersion
-    {
-        return DB::transaction(function () use ($normalizedPayload, $productFamily, $recipe, $user): RecipeVersion {
+    public function save(
+        User $user,
+        ProductFamily $productFamily,
+        array $normalizedPayload,
+        ?Recipe $recipe = null,
+        ?Recipe $sopSourceRecipe = null,
+    ): RecipeVersion {
+        return DB::transaction(function () use ($normalizedPayload, $productFamily, $recipe, $sopSourceRecipe, $user): RecipeVersion {
             $recipe ??= $this->recipeVersionRecordService->createRecipe(
                 $user,
                 $productFamily,
                 $normalizedPayload['name'],
                 $normalizedPayload['product_type_id'] ?? null,
             );
+
+            if ($sopSourceRecipe instanceof Recipe && ! $sopSourceRecipe->is($recipe)) {
+                $normalizedPayload['manufacturing_instructions'] = $this->recipeSopSnapshotService->duplicateInstructions(
+                    $sopSourceRecipe,
+                    $recipe,
+                    $normalizedPayload['manufacturing_instructions'] ?? null,
+                );
+            }
 
             $currentVersion = RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $recipe->id)

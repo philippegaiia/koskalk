@@ -75,6 +75,7 @@ class RecipeWorkbenchVersionPayloadMapper
             'manufacturingMode' => in_array($version->manufacturing_mode, ['saponify_in_formula', 'blend_only'], true)
                 ? $version->manufacturing_mode
                 : 'saponify_in_formula',
+            'manufacturingInstructions' => $version->manufacturing_instructions,
             'exposureMode' => in_array($version->exposure_mode, ['rinse_off', 'leave_on'], true)
                 ? $version->exposure_mode
                 : 'rinse_off',

@@ -88,13 +88,47 @@ it('copies the visible instructions to the published snapshot and new current ve
         ->where('recipe_id', $recipe->id)
         ->orderBy('version_number')
         ->get();
+    $remountedComponent = app(RecipeWorkbench::class);
+    $remountedComponent->mount($recipe->fresh());
 
     expect($result['ok'])->toBeTrue()
         ->and($versions)->toHaveCount(2)
         ->and($versions->first()->is_current)->toBeFalse()
         ->and($versions->first()->manufacturing_instructions)->toBe('<p>Visible publish procedure.</p>')
         ->and($versions->last()->is_current)->toBeTrue()
-        ->and($versions->last()->manufacturing_instructions)->toBe('<p>Visible publish procedure.</p>');
+        ->and($versions->last()->manufacturing_instructions)->toBe('<p>Visible publish procedure.</p>')
+        ->and($recipe->fresh()->manufacturing_instructions)->toBe('<p>Visible publish procedure.</p>')
+        ->and($remountedComponent->data['manufacturing_instructions'])->toBeArray()
+        ->and(json_encode($remountedComponent->data['manufacturing_instructions'], JSON_THROW_ON_ERROR))
+        ->toContain('Visible publish procedure.');
+});
+
+it('round trips saved instructions when duplicating a recipe', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchLifecycleOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $sourceVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Source Formula',
+        'manufacturing_instructions' => '<p>Duplicate this procedure.</p>',
+    ]));
+    $sourceRecipe = Recipe::withoutGlobalScopes()->findOrFail($sourceVersion->recipe_id);
+
+    $duplicateVersion = $service->duplicateRecipe($user, $sourceRecipe);
+    $duplicateRecipe = Recipe::withoutGlobalScopes()->findOrFail($duplicateVersion->recipe_id);
+
+    expect($duplicateRecipe->id)->not->toBe($sourceRecipe->id)
+        ->and($duplicateRecipe->manufacturing_instructions)->toBe('<p>Duplicate this procedure.</p>')
+        ->and($duplicateVersion->manufacturing_instructions)->toBe('<p>Duplicate this procedure.</p>');
 });
 
 it('does not mutate published instructions when current instructions are saved later', function () {
@@ -234,6 +268,7 @@ it('replaces the working draft with the selected saved version using the same wo
         'water_mode' => 'lye_ratio',
         'water_value' => 2.1,
         'superfat' => 7,
+        'manufacturing_instructions' => '<p>Published baseline procedure.</p>',
     ]), $recipe);
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
@@ -244,16 +279,62 @@ it('replaces the working draft with the selected saved version using the same wo
 
     $expectedPayload = $service->versionPayload($recipe, $publishedVersion->id);
 
+    $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
+        'name' => 'Published Baseline',
+        'exposure_mode' => 'leave_on',
+        'water_mode' => 'lye_ratio',
+        'water_value' => 2.1,
+        'superfat' => 7,
+        'manufacturing_instructions' => '<p>Current revised procedure.</p>',
+    ]), $recipe);
+
     $service->restoreCurrentVersion($user, $recipe, $publishedVersion->id);
 
     $actualPayload = $service->currentVersionPayload($recipe->fresh());
 
     expect($actualPayload)->not->toBeNull()
+        ->and($expectedPayload['manufacturingInstructions'])->toBe('<p>Published baseline procedure.</p>')
         ->and(recipeWorkbenchComparableDraftPayload($actualPayload))
         ->toEqual(recipeWorkbenchComparableDraftPayload($expectedPayload))
+        ->and($actualPayload['manufacturingInstructions'])->toBe('<p>Published baseline procedure.</p>')
+        ->and($recipe->fresh()->manufacturing_instructions)->toBe('<p>Published baseline procedure.</p>')
         ->and($actualPayload['recipe']['is_current'])->toBeTrue()
         ->and($actualPayload['recipe']['version_number'])->toBeGreaterThan($publishedVersion->version_number)
         ->and($actualPayload['catalogReview']['needs_review'])->toBeFalse();
+});
+
+it('detects instructions-only differences before replacing the current version', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchLifecycleOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $originalPayload = recipeWorkbenchLifecyclePayload($oil, [
+        'manufacturing_instructions' => '<p>Original comparison procedure.</p>',
+    ]);
+    $draftVersion = $service->save($user, $soapFamily, $originalPayload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $service->publish($user, $soapFamily, $originalPayload, $recipe);
+
+    $publishedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->firstOrFail();
+
+    $service->save($user, $soapFamily, [
+        ...$originalPayload,
+        'manufacturing_instructions' => '<p>Revised comparison procedure.</p>',
+    ], $recipe);
+
+    expect($service->currentVersionWouldBeReplacedByVersion($recipe, $publishedVersion->id))->toBeTrue();
 });
 
 it('publishes after restoring a recovery snapshot without reusing the recovery version number', function () {
@@ -272,15 +353,18 @@ it('publishes after restoring a recovery snapshot without reusing the recovery v
     $service = app(RecipeWorkbenchService::class);
     $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Formula A',
+        'manufacturing_instructions' => '<p>Formula A procedure.</p>',
     ]));
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Formula A',
+        'manufacturing_instructions' => '<p>Formula A procedure.</p>',
     ]), $recipe);
     $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, [
         'name' => 'Formula B',
+        'manufacturing_instructions' => '<p>Formula B procedure.</p>',
     ]), $recipe);
 
     $olderSavedVersion = RecipeVersion::withoutGlobalScopes()
@@ -296,6 +380,7 @@ it('publishes after restoring a recovery snapshot without reusing the recovery v
     ]), $recipe);
 
     expect($newDraft->is_current)->toBeTrue()
+        ->and($restoredVersion->manufacturing_instructions)->toBe('<p>Formula A procedure.</p>')
         ->and($newDraft->version_number)->toBeGreaterThan($restoredVersion->version_number);
 });
 

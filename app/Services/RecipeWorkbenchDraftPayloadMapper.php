@@ -41,6 +41,7 @@ class RecipeWorkbenchDraftPayloadMapper
             'oil_unit' => $draft['oilUnit'] ?? 'g',
             'oil_weight' => $draft['oilWeight'] ?? 0,
             'manufacturing_mode' => $draft['manufacturingMode'] ?? 'saponify_in_formula',
+            'manufacturing_instructions' => $draft['manufacturingInstructions'] ?? null,
             'exposure_mode' => $draft['exposureMode'] ?? 'rinse_off',
             'regulatory_regime' => $draft['regulatoryRegime'] ?? 'eu',
             'product_type_id' => $draft['productTypeId'] ?? null,

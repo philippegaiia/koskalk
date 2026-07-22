@@ -159,6 +159,107 @@ it('stores instructions entered before the first draft on the new current versio
         ->and($recipe->featured_image_path)->toBeNull();
 });
 
+it('keeps an existing recipe aligned with its current version after a formula save and remount', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Existing Formula'),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount($recipe);
+    $component->data['manufacturing_instructions'] = '<p>Saved from the formula action.</p>';
+    $result = $component->save(
+        workbenchSoapDraftPayload($ingredient, name: 'Existing Formula'),
+        $service,
+        app(RecipeContentUpdater::class),
+    );
+
+    $remountedComponent = app(RecipeWorkbench::class);
+    $remountedComponent->mount($recipe->fresh());
+
+    expect($result['ok'])->toBeTrue()
+        ->and($recipe->fresh()->manufacturing_instructions)->toBe('<p>Saved from the formula action.</p>')
+        ->and($draftVersion->fresh()->manufacturing_instructions)->toBe('<p>Saved from the formula action.</p>')
+        ->and($remountedComponent->data['manufacturing_instructions'])->toBeArray()
+        ->and(json_encode($remountedComponent->data['manufacturing_instructions'], JSON_THROW_ON_ERROR))
+        ->toContain('Saved from the formula action.');
+});
+
+it('copies component-duplicated instruction attachments into the destination recipe namespace', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $sourceVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Media Source'),
+    );
+    $sourceRecipe = Recipe::withoutGlobalScopes()->findOrFail($sourceVersion->recipe_id);
+    $sourceAttachment = 'recipes/'.$sourceRecipe->public_id.'/rich-content/procedure.webp';
+    $sourceInstructions = '<p><img data-id="'.$sourceAttachment.'" src="/storage/'.$sourceAttachment.'"></p>';
+
+    Storage::disk(MediaStorage::recipeDisk())->put($sourceAttachment, 'procedure-image');
+    app(RecipeContentUpdater::class)->update($sourceRecipe, [
+        'description' => null,
+        'manufacturing_instructions' => $sourceInstructions,
+        'featured_image_path' => null,
+        'featured_image_original_name' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount($sourceRecipe->fresh());
+    $result = $component->duplicateFormula(
+        workbenchSoapDraftPayload($ingredient, name: 'Media Source'),
+        $service,
+    );
+
+    $destinationRecipe = Recipe::withoutGlobalScopes()
+        ->where('name', 'Copy of Media Source')
+        ->firstOrFail();
+    $destinationVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $destinationRecipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    expect($result['ok'])->toBeTrue()
+        ->and($destinationRecipe->manufacturing_instructions)->not->toBeNull()
+        ->and($destinationVersion->manufacturing_instructions)->toBe($destinationRecipe->manufacturing_instructions);
+
+    $destinationAttachment = $destinationRecipe
+        ->richContentAttachmentPaths('manufacturing_instructions')
+        ->sole();
+    $remountedComponent = app(RecipeWorkbench::class);
+    $remountedComponent->mount($destinationRecipe);
+
+    expect($destinationAttachment)->not->toBe($sourceAttachment)
+        ->and(MediaStorage::isRecipePath($destinationRecipe, $destinationAttachment))->toBeTrue()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->exists($destinationAttachment))->toBeTrue()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->get($destinationAttachment))->toBe('procedure-image')
+        ->and($remountedComponent->data['manufacturing_instructions'])->toBeArray()
+        ->and(json_encode(
+            $remountedComponent->data['manufacturing_instructions'],
+            JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
+        ))
+        ->toContain($destinationAttachment);
+});
+
 it('returns backend soap calculation preview data for the workbench', function () {
     ProductFamily::factory()->create([
         'slug' => 'soap',

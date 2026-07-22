@@ -160,8 +160,13 @@ class RecipeWorkbenchService
         return $this->recipeWorkbenchPreviewService->snapshotFromWorkbenchDraft($draft);
     }
 
-    public function save(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
-    {
+    public function save(
+        User $user,
+        ProductFamily $productFamily,
+        array $payload,
+        ?Recipe $recipe = null,
+        ?Recipe $sopSourceRecipe = null,
+    ): RecipeVersion {
         if ($recipe instanceof Recipe) {
             Gate::forUser($user)->authorize('update', $recipe);
         }
@@ -170,7 +175,13 @@ class RecipeWorkbenchService
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
-        $save = fn (): RecipeVersion => $this->recipeDraftSaver->save($user, $productFamily, $normalizedPayload, $recipe);
+        $save = fn (): RecipeVersion => $this->recipeDraftSaver->save(
+            $user,
+            $productFamily,
+            $normalizedPayload,
+            $recipe,
+            $sopSourceRecipe,
+        );
 
         $currentVersion = $recipe instanceof Recipe
             ? $save()
@@ -213,12 +224,16 @@ class RecipeWorkbenchService
         return $this->publish($user, $productFamily, $payload, $recipe);
     }
 
-    public function duplicate(User $user, ProductFamily $productFamily, array $payload): RecipeVersion
-    {
+    public function duplicate(
+        User $user,
+        ProductFamily $productFamily,
+        array $payload,
+        ?Recipe $sourceRecipe = null,
+    ): RecipeVersion {
         $copyPayload = $payload;
         $copyPayload['name'] = $this->duplicateName((string) ($payload['name'] ?? 'Soap Formula'));
 
-        return $this->save($user, $productFamily, $copyPayload);
+        return $this->save($user, $productFamily, $copyPayload, sopSourceRecipe: $sourceRecipe);
     }
 
     public function duplicateRecipe(User $user, Recipe $recipe): RecipeVersion
@@ -239,6 +254,7 @@ class RecipeWorkbenchService
             $user,
             $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
             $this->recipeWorkbenchDraftPayloadMapper->toSavePayload($workbenchPayload),
+            $recipe,
         );
 
         $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $duplicate, $user);

@@ -18,7 +18,7 @@ class RecipeContentUpdater
      */
     public function update(Recipe $recipe, array $state): Recipe
     {
-        $this->validateMediaPaths($recipe, $state);
+        $this->validate($recipe, $state);
         $pathsToDelete = collect();
 
         $updatedRecipe = DB::transaction(function () use ($recipe, $state, &$pathsToDelete): Recipe {
@@ -60,7 +60,7 @@ class RecipeContentUpdater
     /**
      * @param  array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}  $state
      */
-    private function validateMediaPaths(Recipe $recipe, array $state): void
+    public function validate(Recipe $recipe, array $state): void
     {
         Validator::make([
             'description' => $state['description'] ?? null,

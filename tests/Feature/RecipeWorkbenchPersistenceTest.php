@@ -21,6 +21,7 @@ use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -194,6 +195,188 @@ it('keeps an existing recipe aligned with its current version after a formula sa
         ->and($remountedComponent->data['manufacturing_instructions'])->toBeArray()
         ->and(json_encode($remountedComponent->data['manufacturing_instructions'], JSON_THROW_ON_ERROR))
         ->toContain('Saved from the formula action.');
+});
+
+it('persists a pending procedure image before an immediate formula save', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Immediate Media Save'),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d1';
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set(
+            'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
+            UploadedFile::fake()->image('procedure.jpg', 1200, 600),
+        )
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($temporaryId))
+        ->call('save', workbenchSoapDraftPayload($ingredient, name: 'Immediate Media Save'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true);
+
+    $recipe = $recipe->fresh();
+    $currentVersion = $draftVersion->fresh();
+    $storedPath = $recipe->richContentAttachmentPaths('manufacturing_instructions')->sole();
+
+    expect($storedPath)->not->toBe($temporaryId)
+        ->and(MediaStorage::isRecipePath($recipe, $storedPath))->toBeTrue()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->exists($storedPath))->toBeTrue()
+        ->and($recipe->manufacturing_instructions)->toContain($storedPath)
+        ->and($currentVersion->manufacturing_instructions)->toContain($storedPath)
+        ->and($recipe->manufacturing_instructions)->not->toContain($temporaryId)
+        ->and($currentVersion->manufacturing_instructions)->not->toContain($temporaryId);
+});
+
+it('persists a pending procedure image before an immediate formula publish', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Immediate Media Publish'),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d2';
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set(
+            'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
+            UploadedFile::fake()->image('published-procedure.jpg', 1200, 600),
+        )
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($temporaryId))
+        ->call('publish', workbenchSoapDraftPayload($ingredient, name: 'Immediate Media Publish'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true);
+
+    $recipe = $recipe->fresh();
+    $versions = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->orderBy('version_number')
+        ->get();
+    $storedPath = $recipe->richContentAttachmentPaths('manufacturing_instructions')->sole();
+
+    expect($versions)->toHaveCount(2)
+        ->and($storedPath)->not->toBe($temporaryId)
+        ->and(MediaStorage::isRecipePath($recipe, $storedPath))->toBeTrue()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->exists($storedPath))->toBeTrue()
+        ->and($versions->first()->manufacturing_instructions)->toContain($storedPath)
+        ->and($versions->last()->manufacturing_instructions)->toContain($storedPath)
+        ->and($versions->pluck('manufacturing_instructions')->implode(' '))->not->toContain($temporaryId);
+});
+
+it('copies a pending procedure image into the destination namespace on immediate duplication', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $sourceVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Immediate Media Duplicate'),
+    );
+    $sourceRecipe = Recipe::withoutGlobalScopes()->findOrFail($sourceVersion->recipe_id);
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d3';
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $sourceRecipe])
+        ->set(
+            'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
+            UploadedFile::fake()->image('duplicated-procedure.jpg', 1200, 600),
+        )
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($temporaryId))
+        ->call('duplicateFormula', workbenchSoapDraftPayload($ingredient, name: 'Immediate Media Duplicate'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true);
+
+    $destinationRecipe = Recipe::withoutGlobalScopes()
+        ->where('name', 'Copy of Immediate Media Duplicate')
+        ->firstOrFail();
+    $destinationVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $destinationRecipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+    $destinationPath = $destinationRecipe
+        ->richContentAttachmentPaths('manufacturing_instructions')
+        ->sole();
+
+    expect($destinationPath)->not->toBe($temporaryId)
+        ->and(MediaStorage::isRecipePath($destinationRecipe, $destinationPath))->toBeTrue()
+        ->and(MediaStorage::isRecipePath($sourceRecipe, $destinationPath))->toBeFalse()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->exists($destinationPath))->toBeTrue()
+        ->and($destinationRecipe->manufacturing_instructions)->toContain($destinationPath)
+        ->and($destinationVersion->manufacturing_instructions)->toContain($destinationPath)
+        ->and($destinationRecipe->manufacturing_instructions)->not->toContain($temporaryId);
+});
+
+it('rejects more than eight pending procedure images during a formula action', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, workbenchSoapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $temporaryIds = collect(range(1, 9))
+        ->map(fn (int $index): string => '018fa7f2-91aa-74a5-a665-'.str_pad((string) $index, 12, '0', STR_PAD_LEFT))
+        ->all();
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($temporaryIds))
+        ->call('save', workbenchSoapDraftPayload($ingredient))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === false
+            && str_contains($response['message'], 'up to 8 images'));
+
+    expect($recipe->fresh()->manufacturing_instructions)->toBeNull()
+        ->and($draftVersion->fresh()->manufacturing_instructions)->toBeNull();
+});
+
+it('rejects a procedure image from another recipe during a formula action', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, workbenchSoapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+    $otherRecipe = Recipe::factory()->create(['owner_id' => $user->id]);
+    $otherPath = 'recipes/'.$otherRecipe->public_id.'/rich-content/private.webp';
+    Storage::disk(MediaStorage::recipeDisk())->put($otherPath, 'other-recipe-image');
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($otherPath))
+        ->call('save', workbenchSoapDraftPayload($ingredient))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === false);
+
+    expect($recipe->fresh()->manufacturing_instructions)->toBeNull()
+        ->and($draftVersion->fresh()->manufacturing_instructions)->toBeNull()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->exists($otherPath))->toBeTrue();
 });
 
 it('copies component-duplicated instruction attachments into the destination recipe namespace', function () {
@@ -3173,6 +3356,34 @@ function makeCarrierOilIngredient(): Ingredient
         'is_potentially_saponifiable' => true,
         'is_active' => true,
     ]);
+}
+
+/**
+ * @return array{type: string, content: array<int, array<string, mixed>>}
+ */
+function recipeWorkbenchTipTapProcedure(string|array $temporaryIds): array
+{
+    $temporaryIds = is_array($temporaryIds) ? $temporaryIds : [$temporaryIds];
+
+    return [
+        'type' => 'doc',
+        'content' => [[
+            'type' => 'paragraph',
+            'content' => collect($temporaryIds)
+                ->map(fn (string $temporaryId): array => [
+                    'type' => 'image',
+                    'attrs' => [
+                        'src' => '/livewire/preview-file/'.$temporaryId,
+                        'alt' => null,
+                        'title' => null,
+                        'id' => $temporaryId,
+                        'width' => null,
+                        'height' => null,
+                    ],
+                ])
+                ->all(),
+        ]],
+    ];
 }
 
 /**

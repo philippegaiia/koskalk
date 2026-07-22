@@ -119,7 +119,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $recipeVersion = $recipeWorkbenchService->save(
                 $user,
                 $this->productFamily(),
-                $this->draftWithWorkbenchContext($draft),
+                $this->draftWithWorkbenchContext($draft, $recipeContentUpdater),
                 $this->currentRecipe(),
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
@@ -177,7 +177,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $recipeVersion = $recipeWorkbenchService->publish(
                 $user,
                 $this->productFamily(),
-                $this->draftWithWorkbenchContext($draft),
+                $this->draftWithWorkbenchContext($draft, $recipeContentUpdater),
                 $this->currentRecipe(),
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
@@ -218,8 +218,11 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      * @param  array<string, mixed>  $draft
      * @return array<string, mixed>
      */
-    public function duplicateFormula(array $draft, RecipeWorkbenchService $recipeWorkbenchService): array
-    {
+    public function duplicateFormula(
+        array $draft,
+        RecipeWorkbenchService $recipeWorkbenchService,
+        ?RecipeContentUpdater $recipeContentUpdater = null,
+    ): array {
         $user = $this->currentUser();
 
         if (! $user instanceof User) {
@@ -241,7 +244,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $recipeVersion = $recipeWorkbenchService->duplicate(
                 $user,
                 $this->productFamily(),
-                $this->draftWithWorkbenchContext($draft),
+                $this->draftWithWorkbenchContext($draft, $recipeContentUpdater ?? app(RecipeContentUpdater::class)),
                 $recipe,
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
@@ -616,9 +619,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      * @param  array<string, mixed>  $draft
      * @return array<string, mixed>
      */
-    private function draftWithWorkbenchContext(array $draft): array
+    private function draftWithWorkbenchContext(array $draft, RecipeContentUpdater $recipeContentUpdater): array
     {
-        $draft['manufacturing_instructions'] = $this->pendingRichContentValue('manufacturing_instructions');
+        $draft['manufacturing_instructions'] = $this->dehydratePendingManufacturingInstructions($recipeContentUpdater);
         $productType = $this->productType();
 
         if ($productType instanceof ProductType) {
@@ -626,6 +629,40 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         return $draft;
+    }
+
+    private function dehydratePendingManufacturingInstructions(RecipeContentUpdater $recipeContentUpdater): ?string
+    {
+        $recipe = $this->currentRecipe();
+
+        if (! $recipe instanceof Recipe) {
+            return $this->pendingRichContentValue('manufacturing_instructions');
+        }
+
+        $richEditor = $this->form->getComponent('manufacturing_instructions');
+
+        if (! $richEditor instanceof RichEditor) {
+            return null;
+        }
+
+        $this->validateOnly('data.manufacturing_instructions');
+        $pendingRichContentState = $this->pendingRecipeRichContentState();
+        $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
+
+        try {
+            $richEditor->saveFileAttachments();
+            $manufacturingInstructions = $this->pendingRichContentValue('manufacturing_instructions');
+            $recipeContentUpdater->validate($recipe, [
+                'description' => $recipe->description,
+                'manufacturing_instructions' => $manufacturingInstructions,
+                'featured_image_path' => $recipe->featured_image_path,
+                'featured_image_original_name' => $recipe->featured_image_original_name,
+            ]);
+
+            return $manufacturingInstructions;
+        } finally {
+            $this->clearPendingRichContentStateOnRecipeTargets($recipe);
+        }
     }
 
     private function currentRecipe(): ?Recipe

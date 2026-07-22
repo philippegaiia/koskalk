@@ -13,7 +13,9 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Models\Workspace;
 use App\OwnerType;
+use App\Services\EntitlementService;
 use App\Services\MediaStorage;
 use App\Services\RecipeContentUpdater;
 use App\Services\RecipeVersionViewDataBuilder;
@@ -22,6 +24,7 @@ use App\Services\RecipeWorkbenchViewDataBuilder;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -387,6 +390,51 @@ it('persists a pending procedure image before an immediate formula publish', fun
         ->and($versions->pluck('manufacturing_instructions')->implode(' '))->not->toContain($temporaryId);
 });
 
+it('cleans first-action media when the outer quota transaction fails', function (string $action) {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $events = [];
+    $entitlementService = mock(EntitlementService::class);
+
+    $entitlementService->shouldReceive('withinCompanyQuotaLock')
+        ->once()
+        ->andReturnUsing(function (User $lockedUser, Closure $callback) use (&$events, $workspace): mixed {
+            return DB::transaction(function () use ($callback, &$events, $workspace): never {
+                $events[] = 'quota-started';
+                $callback($workspace);
+                $events[] = 'formula-saved';
+
+                throw new RuntimeException('Outer quota transaction failed.');
+            });
+        });
+    $entitlementService->shouldReceive('assertCanCreateRecipeInWorkspace')->once();
+
+    $this->actingAs($user);
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d6';
+    $component = Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
+        ->set(
+            'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
+            UploadedFile::fake()->image('outer-rollback.jpg', 1200, 600),
+        )
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($temporaryId));
+
+    expect(fn () => $component->call(
+        $action,
+        workbenchSoapDraftPayload($ingredient, name: 'Rolled Back Formula'),
+    ))->toThrow(RuntimeException::class, 'Outer quota transaction failed.')
+        ->and(Recipe::withoutGlobalScopes()->where('name', 'Rolled Back Formula')->exists())->toBeFalse()
+        ->and($events)->toBe(['quota-started', 'formula-saved'])
+        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes'))->toBe([]);
+})->with([
+    'first save' => ['save'],
+    'first publish' => ['publish'],
+]);
+
 it('copies a pending procedure image into the destination namespace on immediate duplication', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -434,6 +482,55 @@ it('copies a pending procedure image into the destination namespace on immediate
         ->and($destinationRecipe->manufacturing_instructions)->not->toContain($temporaryId)
         ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes/'.$sourceRecipe->public_id))
         ->toBe([]);
+});
+
+it('copies saved and pending procedure images together without source orphans', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $sourceVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Mixed Media Duplicate'),
+    );
+    $sourceRecipe = Recipe::withoutGlobalScopes()->findOrFail($sourceVersion->recipe_id);
+    $sourcePath = MediaStorage::recipeDirectory($sourceRecipe, 'rich-content').'/saved.webp';
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d5';
+    Storage::disk(MediaStorage::recipeDisk())->put($sourcePath, 'saved-image');
+    app(RecipeContentUpdater::class)->update($sourceRecipe, [
+        'description' => null,
+        'manufacturing_instructions' => '<p><img data-id="'.$sourcePath.'"></p>',
+        'featured_image_path' => null,
+        'featured_image_original_name' => null,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $sourceRecipe->fresh()])
+        ->set(
+            'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
+            UploadedFile::fake()->image('pending.jpg', 1200, 600),
+        )
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure([$sourcePath, $temporaryId]))
+        ->call('duplicateFormula', workbenchSoapDraftPayload($ingredient, name: 'Mixed Media Duplicate'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true);
+
+    $destinationRecipe = Recipe::withoutGlobalScopes()
+        ->where('name', 'Copy of Mixed Media Duplicate')
+        ->firstOrFail();
+    $destinationPaths = $destinationRecipe->richContentAttachmentPaths('manufacturing_instructions');
+
+    expect($destinationPaths)->toHaveCount(2)
+        ->and($destinationPaths->every(
+            fn (string $path): bool => MediaStorage::isRecipePath($destinationRecipe, $path)
+                && Storage::disk(MediaStorage::recipeDisk())->exists($path),
+        ))->toBeTrue()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes/'.$sourceRecipe->public_id))
+        ->toBe([$sourcePath]);
 });
 
 it('cleans pending source media when an existing formula duplicate is rejected', function () {

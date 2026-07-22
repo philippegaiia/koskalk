@@ -8,6 +8,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Services\RecipeContentUpdater;
+use App\Services\RecipeSopSnapshotService;
 use App\Services\RecipeVersionDeletionService;
 use App\Services\RecipeWorkbenchContentFormSchema;
 use App\Services\RecipeWorkbenchContextResolver;
@@ -248,6 +249,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 $destinationRecipe,
                 $payload,
                 $recipeContentUpdater,
+                $recipe,
             )
             : null;
 
@@ -723,6 +725,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         Recipe $recipe,
         array $payload,
         RecipeContentUpdater $recipeContentUpdater,
+        ?Recipe $sopSourceRecipe = null,
     ): array {
         $previousRecord = $this->form->getRecord();
         $this->form->model($recipe);
@@ -734,7 +737,19 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 &$payload,
                 $recipe,
                 $recipeContentUpdater,
+                $sopSourceRecipe,
             ): void {
+                if ($sopSourceRecipe instanceof Recipe && ! $sopSourceRecipe->is($recipe)) {
+                    $state['manufacturing_instructions'] = app(RecipeSopSnapshotService::class)
+                        ->duplicateInstructions(
+                            $sopSourceRecipe,
+                            $recipe,
+                            $state['manufacturing_instructions'] ?? null,
+                            preserveDestinationPaths: true,
+                            rejectInvalidPaths: true,
+                        );
+                }
+
                 $recipeContentUpdater->update($recipe, $state);
                 $payload['manufacturing_instructions'] = $state['manufacturing_instructions'] ?? null;
             });

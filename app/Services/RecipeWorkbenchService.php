@@ -26,6 +26,7 @@ class RecipeWorkbenchService
         private readonly RecipeWorkbenchPhaseBlueprints $recipeWorkbenchPhaseBlueprints,
         private readonly RecipeWorkbenchVersionDataService $recipeWorkbenchVersionDataService,
         private readonly EntitlementService $entitlementService,
+        private readonly RecipeMediaRollbackGuard $recipeMediaRollbackGuard,
     ) {}
 
     /**
@@ -177,6 +178,10 @@ class RecipeWorkbenchService
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
+        $createdRecipe = null;
+        $trackCreatedRecipe = function (Recipe $destinationRecipe) use (&$createdRecipe): void {
+            $createdRecipe = $destinationRecipe;
+        };
         $save = fn (): RecipeVersion => $this->recipeDraftSaver->save(
             $user,
             $productFamily,
@@ -184,15 +189,22 @@ class RecipeWorkbenchService
             $recipe,
             $sopSourceRecipe,
             $preparePayloadForRecipe,
+            $trackCreatedRecipe,
         );
 
         $currentVersion = $recipe instanceof Recipe
             ? $save()
-            : $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($save): RecipeVersion {
-                $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
+            : $this->recipeMediaRollbackGuard->run(
+                true,
+                function () use (&$createdRecipe): ?Recipe {
+                    return $createdRecipe;
+                },
+                fn (): RecipeVersion => $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($save): RecipeVersion {
+                    $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
 
-                return $save();
-            });
+                    return $save();
+                }),
+            );
 
         $this->recipeVersionCostingSynchronizer->reconcileExistingCosting($currentVersion, $user);
 
@@ -214,23 +226,34 @@ class RecipeWorkbenchService
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
+        $createdRecipe = null;
+        $trackCreatedRecipe = function (Recipe $destinationRecipe) use (&$createdRecipe): void {
+            $createdRecipe = $destinationRecipe;
+        };
         $publish = fn (): RecipeVersion => $this->recipeVersionPublisher->publish(
             $user,
             $productFamily,
             $normalizedPayload,
             $recipe,
             $preparePayloadForRecipe,
+            $trackCreatedRecipe,
         );
 
         if ($recipe instanceof Recipe) {
             return $publish();
         }
 
-        return $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($publish): RecipeVersion {
-            $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
+        return $this->recipeMediaRollbackGuard->run(
+            true,
+            function () use (&$createdRecipe): ?Recipe {
+                return $createdRecipe;
+            },
+            fn (): RecipeVersion => $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($publish): RecipeVersion {
+                $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
 
-            return $publish();
-        });
+                return $publish();
+            }),
+        );
     }
 
     public function saveAsNewVersion(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion

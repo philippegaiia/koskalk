@@ -44,6 +44,7 @@ class RecipeVersionPublisher
         array $normalizedPayload,
         ?Recipe $recipe = null,
         ?Closure $preparePayloadForRecipe = null,
+        ?Closure $onRecipeCreated = null,
     ): RecipeVersion {
         $isNewRecipe = ! $recipe instanceof Recipe;
 
@@ -52,14 +53,18 @@ class RecipeVersionPublisher
             function () use (&$recipe): ?Recipe {
                 return $recipe;
             },
-            function () use (&$recipe, $normalizedPayload, $preparePayloadForRecipe, $productFamily, $user): RecipeVersion {
-                return DB::transaction(function () use (&$recipe, $normalizedPayload, $preparePayloadForRecipe, $productFamily, $user): RecipeVersion {
+            function () use (&$recipe, $isNewRecipe, $normalizedPayload, $onRecipeCreated, $preparePayloadForRecipe, $productFamily, $user): RecipeVersion {
+                return DB::transaction(function () use (&$recipe, $isNewRecipe, $normalizedPayload, $onRecipeCreated, $preparePayloadForRecipe, $productFamily, $user): RecipeVersion {
                     $recipe ??= $this->recipeVersionRecordService->createRecipe(
                         $user,
                         $productFamily,
                         $normalizedPayload['name'],
                         $normalizedPayload['product_type_id'] ?? null,
                     );
+
+                    if ($isNewRecipe && $onRecipeCreated instanceof Closure) {
+                        $onRecipeCreated($recipe);
+                    }
 
                     if ($preparePayloadForRecipe instanceof Closure) {
                         $normalizedPayload = $preparePayloadForRecipe($recipe, $normalizedPayload);

@@ -7,6 +7,7 @@ use App\Models\RecipeVersion;
 use App\Support\RichContentAttachmentPaths;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class RecipeSopSnapshotService
 {
@@ -20,15 +21,32 @@ class RecipeSopSnapshotService
             ]);
     }
 
-    public function duplicateInstructions(Recipe $sourceRecipe, Recipe $destinationRecipe, ?string $instructions): ?string
-    {
+    public function duplicateInstructions(
+        Recipe $sourceRecipe,
+        Recipe $destinationRecipe,
+        ?string $instructions,
+        bool $preserveDestinationPaths = false,
+        bool $rejectInvalidPaths = false,
+    ): ?string {
         if ($instructions === null || $instructions === '') {
             return $instructions;
         }
 
         return RichContentAttachmentPaths::extract($instructions)
-            ->reduce(function (string $copiedInstructions, string $sourcePath) use ($sourceRecipe, $destinationRecipe): string {
+            ->reduce(function (string $copiedInstructions, string $sourcePath) use ($sourceRecipe, $destinationRecipe, $preserveDestinationPaths, $rejectInvalidPaths): string {
                 if (! MediaStorage::isRecipePath($sourceRecipe, $sourcePath)) {
+                    if ($preserveDestinationPaths
+                        && MediaStorage::isRecipePath($destinationRecipe, $sourcePath)
+                        && Storage::disk(MediaStorage::recipeDisk())->exists($sourcePath)) {
+                        return $copiedInstructions;
+                    }
+
+                    if ($rejectInvalidPaths) {
+                        throw ValidationException::withMessages([
+                            'manufacturing_instructions' => 'The selected recipe media does not belong to this formula.',
+                        ]);
+                    }
+
                     return $this->removeAttachmentImage($copiedInstructions, $sourcePath);
                 }
 

@@ -13,17 +13,17 @@ return [
     'recipe_visibility' => 'private',
 
     'recipe_featured_images' => [
-        'max_size_kb' => 1024,
+        'max_size_kb' => 3072,
         'max_width' => 800,
-        'max_height' => 600,
-        'quality' => 85,
+        'max_height' => 800,
+        'quality' => 82,
     ],
 
     'recipe_rich_content_images' => [
         'max_size_kb' => 1536,
-        'max_width' => 1600,
-        'max_height' => 1600,
-        'quality' => 85,
+        'max_width' => 680,
+        'max_height' => 680,
+        'quality' => 80,
     ],
 
     'ingredient_images' => [

@@ -103,12 +103,12 @@ it('omits unsupported object ACL options for R2 disks', function () {
         ->toBe(['visibility' => 'private']);
 });
 
-it('stores rich content images as bounded webp attachments', function () {
+it('stores rich content images as bounded webp attachments without cropping', function () {
     Storage::fake('local');
 
     config(['media.recipe_disk' => 'local']);
 
-    $file = UploadedFile::fake()->image('inline.jpg', 2800, 2200);
+    $file = UploadedFile::fake()->image('inline.jpg', 1200, 600);
     $recipe = Recipe::factory()->create();
 
     $path = app(RecipeRichContentAttachmentProvider::class)
@@ -122,9 +122,68 @@ it('stores rich content images as bounded webp attachments', function () {
         ->and(MediaStorage::recipeVisibility())->toBe('private')
         ->and($image)->not->toBeFalse()
         ->and($image['mime'] ?? null)->toBe('image/webp')
-        ->and($image[0] ?? null)->toBeLessThanOrEqual(1600)
-        ->and($image[1] ?? null)->toBeLessThanOrEqual(1600);
+        ->and($image[0] ?? null)->toBeLessThanOrEqual(680)
+        ->and($image[1] ?? null)->toBeLessThanOrEqual(340)
+        ->and(($image[0] ?? 0) / ($image[1] ?? 1))->toBeGreaterThan(1.99)
+        ->and(($image[0] ?? 0) / ($image[1] ?? 1))->toBeLessThan(2.01);
 });
+
+it('stores featured recipe images within their configured bounds without cropping', function (): void {
+    Storage::fake('local');
+
+    config(['media.recipe_disk' => 'local']);
+
+    $file = UploadedFile::fake()->image('featured.jpg', 600, 1200);
+    $path = MediaStorage::storeRecipeResizedWebp(
+        $file,
+        'recipes/featured-images',
+        MediaStorage::recipeFeaturedImagesWidth(),
+        MediaStorage::recipeFeaturedImagesHeight(),
+        MediaStorage::recipeFeaturedImagesQuality(),
+    );
+    $image = getimagesizefromstring(Storage::disk('local')->get($path));
+
+    expect($image)->not->toBeFalse()
+        ->and($image['mime'] ?? null)->toBe('image/webp')
+        ->and($image[0] ?? null)->toBeLessThanOrEqual(400)
+        ->and($image[1] ?? null)->toBeLessThanOrEqual(800)
+        ->and(($image[0] ?? 0) / ($image[1] ?? 1))->toBeGreaterThan(0.49)
+        ->and(($image[0] ?? 0) / ($image[1] ?? 1))->toBeLessThan(0.51);
+});
+
+it('never upscales valid recipe images', function (): void {
+    Storage::fake('local');
+
+    config(['media.recipe_disk' => 'local']);
+
+    $file = UploadedFile::fake()->image('featured.jpg', 500, 300);
+    $path = MediaStorage::storeRecipeResizedWebp(
+        $file,
+        'recipes/featured-images',
+        MediaStorage::recipeFeaturedImagesWidth(),
+        MediaStorage::recipeFeaturedImagesHeight(),
+        MediaStorage::recipeFeaturedImagesQuality(),
+    );
+    $image = getimagesizefromstring(Storage::disk('local')->get($path));
+
+    expect($image)->not->toBeFalse()
+        ->and($image[0] ?? null)->toBe(500)
+        ->and($image[1] ?? null)->toBe(300);
+});
+
+it('converts JPEG, PNG, and WebP recipe image uploads to WebP', function (string $extension): void {
+    Storage::fake('local');
+
+    config(['media.recipe_disk' => 'local']);
+
+    $file = UploadedFile::fake()->image('recipe.'.$extension, 600, 300);
+    $path = MediaStorage::storeRecipeResizedWebp($file, 'recipes/featured-images', 800, 800, 82);
+    $image = getimagesizefromstring(Storage::disk('local')->get($path));
+
+    expect($path)->toEndWith('.webp')
+        ->and($image)->not->toBeFalse()
+        ->and($image['mime'] ?? null)->toBe('image/webp');
+})->with(['jpg', 'png', 'webp']);
 
 it('cleans up recipe rich content attachments that are no longer referenced', function () {
     Storage::fake('local');

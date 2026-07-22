@@ -107,7 +107,7 @@ class MediaStorage
 
     public static function recipeFeaturedImagesHeight(): int
     {
-        return (int) config('media.recipe_featured_images.max_height', 600);
+        return (int) config('media.recipe_featured_images.max_height', 800);
     }
 
     public static function recipeRichContentImagesMaxSize(): int
@@ -117,17 +117,17 @@ class MediaStorage
 
     public static function recipeRichContentImagesWidth(): int
     {
-        return (int) config('media.recipe_rich_content_images.max_width', 1600);
+        return (int) config('media.recipe_rich_content_images.max_width', 680);
     }
 
     public static function recipeRichContentImagesHeight(): int
     {
-        return (int) config('media.recipe_rich_content_images.max_height', 1600);
+        return (int) config('media.recipe_rich_content_images.max_height', 680);
     }
 
     public static function recipeRichContentImagesQuality(): int
     {
-        return (int) config('media.recipe_rich_content_images.quality', 85);
+        return (int) config('media.recipe_rich_content_images.quality', 80);
     }
 
     public static function ingredientImagesMaxSize(): int
@@ -162,7 +162,7 @@ class MediaStorage
 
     public static function recipeFeaturedImagesQuality(): int
     {
-        return (int) config('media.recipe_featured_images.quality', 85);
+        return (int) config('media.recipe_featured_images.quality', 82);
     }
 
     public static function ingredientImagesQuality(): int

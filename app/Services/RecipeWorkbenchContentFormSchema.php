@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Recipe;
+use App\Rules\MinimumImageEdges;
 use App\Support\FilamentUploadMetadata;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
@@ -38,6 +39,7 @@ class RecipeWorkbenchContentFormSchema
                             ->fileAttachmentsVisibility(MediaStorage::recipeVisibility())
                             ->fileAttachmentsAcceptedFileTypes([
                                 'image/jpeg',
+                                'image/png',
                                 'image/webp',
                             ])
                             ->fileAttachmentsMaxSize(MediaStorage::recipeRichContentImagesMaxSize())
@@ -63,6 +65,7 @@ class RecipeWorkbenchContentFormSchema
                             ->fileAttachmentsVisibility(MediaStorage::recipeVisibility())
                             ->fileAttachmentsAcceptedFileTypes([
                                 'image/jpeg',
+                                'image/png',
                                 'image/webp',
                             ])
                             ->fileAttachmentsMaxSize(MediaStorage::recipeRichContentImagesMaxSize())
@@ -112,14 +115,17 @@ class RecipeWorkbenchContentFormSchema
                             ->deleteUploadedFileUsing(function (string $file): void {
                                 MediaStorage::deleteRecipePath($file);
                             })
-                            ->imagePreviewHeight('20rem')
-                            ->panelLayout('integrated')
-                            ->panelAspectRatio('4:3')
+                            ->imagePreviewHeight('14rem')
+                            ->panelLayout('compact')
                             ->acceptedFileTypes([
                                 'image/jpeg',
+                                'image/png',
                                 'image/webp',
                             ])
                             ->maxSize(MediaStorage::recipeFeaturedImagesMaxSize())
+                            ->rules([
+                                new MinimumImageEdges(300, 500),
+                            ])
                             ->saveUploadedFileUsing(function (BaseFileUpload $component, TemporaryUploadedFile $file, ?Recipe $record): string {
                                 if (! $record instanceof Recipe) {
                                     throw new \RuntimeException('Save the formula before adding a featured image.');
@@ -128,18 +134,13 @@ class RecipeWorkbenchContentFormSchema
                                 return MediaStorage::storeRecipeResizedWebp(
                                     $file,
                                     (string) $component->getDirectory(),
-                                    (int) config('media.recipe_featured_images.max_width', 800),
-                                    (int) config('media.recipe_featured_images.max_height', 600),
+                                    MediaStorage::recipeFeaturedImagesWidth(),
+                                    MediaStorage::recipeFeaturedImagesHeight(),
                                     MediaStorage::recipeFeaturedImagesQuality(),
                                 );
                             })
                             ->imageEditor()
-                            ->imageAspectRatio('4:3')
-                            ->imageEditorAspectRatioOptions(['4:3'])
-                            ->imageEditorViewportWidth('800')
-                            ->imageEditorViewportHeight('600')
-                            ->automaticallyOpenImageEditorForAspectRatio()
-                            ->helperText('Allowed: JPG or WebP, up to 1 MB. Recipe images are cropped to 4:3 and stored up to 800x600.')
+                            ->helperText('Allowed: JPG, PNG, or WebP, up to 3 MB. Images keep their proportions and are stored up to 800×800.')
                             ->columnSpan([
                                 'lg' => 12,
                             ]),

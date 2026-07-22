@@ -6,6 +6,7 @@ return [
         'dashboard' => ['*'],
         'formula_documents' => ['*'],
         'ingredients' => ['*'],
+        'media' => ['*'],
         'navigation' => ['*'],
         'packaging' => ['*'],
         'products' => ['*'],

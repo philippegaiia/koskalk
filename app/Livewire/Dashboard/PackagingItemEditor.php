@@ -7,6 +7,7 @@ use App\Models\UserPackagingItem;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use App\Services\UserPackagingItemAuthoringService;
+use App\Support\FilamentUploadMetadata;
 use App\Support\LocalizedDecimalInput;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -131,6 +132,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                             ->disk(MediaStorage::userDisk())
                             ->directory(fn (): string => MediaStorage::packagingItemDirectoryForPublicId($this->mediaPublicId, 'featured-images'))
                             ->visibility(MediaStorage::userVisibility())
+                            ->storeFileNamesIn('featured_image_original_name')
                             ->getUploadedFileUsing(function (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array {
                                 $packagingItem = $this->currentPackagingItem();
                                 $url = $packagingItem instanceof UserPackagingItem
@@ -141,7 +143,11 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                                     return null;
                                 }
 
-                                $metadata = $component->getUploadedFile($file, $storedFileNames);
+                                $metadata = FilamentUploadMetadata::applyDisplayName(
+                                    $component->getUploadedFile($file, $storedFileNames),
+                                    $storedFileNames,
+                                    __('media.current_image'),
+                                );
 
                                 if ($metadata === null) {
                                     return null;

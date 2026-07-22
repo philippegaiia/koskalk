@@ -13,6 +13,7 @@ use App\Services\CurrentAppUserResolver;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
 use App\SoapSap;
+use App\Support\FilamentUploadMetadata;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -328,6 +329,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->disk(MediaStorage::userDisk())
                                             ->directory(fn (): string => MediaStorage::ingredientDirectoryForPublicId($this->mediaPublicId, 'featured-images'))
                                             ->visibility(MediaStorage::userVisibility())
+                                            ->storeFileNamesIn('featured_image_original_name')
                                             ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => $this->privateIngredientUploadMetadata(
                                                 $component,
                                                 $file,
@@ -360,6 +362,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->disk(MediaStorage::userDisk())
                                             ->directory(fn (): string => MediaStorage::ingredientDirectoryForPublicId($this->mediaPublicId, 'icons'))
                                             ->visibility(MediaStorage::userVisibility())
+                                            ->storeFileNamesIn('icon_image_original_name')
                                             ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => $this->privateIngredientUploadMetadata(
                                                 $component,
                                                 $file,
@@ -798,7 +801,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
-        $metadata = $component->getUploadedFile($file, $storedFileNames);
+        $metadata = FilamentUploadMetadata::applyDisplayName(
+            $component->getUploadedFile($file, $storedFileNames),
+            $storedFileNames,
+            __('media.current_image'),
+        );
 
         if ($metadata === null) {
             return null;

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\ProductTypes\Schemas;
 
 use App\Models\IfraProductCategory;
 use App\Services\MediaStorage;
+use App\Support\FilamentUploadMetadata;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
@@ -72,6 +73,12 @@ class ProductTypeForm
                             ->disk(MediaStorage::publicDisk())
                             ->directory('product-types/fallback-images')
                             ->visibility(MediaStorage::publicVisibility())
+                            ->storeFileNamesIn('fallback_image_original_name')
+                            ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => FilamentUploadMetadata::applyDisplayName(
+                                $component->getUploadedFile($file, $storedFileNames),
+                                $storedFileNames,
+                                'Current image',
+                            ))
                             ->deleteUploadedFileUsing(function (string $file): void {
                                 MediaStorage::deletePublicPath($file);
                             })

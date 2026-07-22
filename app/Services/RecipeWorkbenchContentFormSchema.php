@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Recipe;
+use App\Support\FilamentUploadMetadata;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
@@ -80,6 +81,7 @@ class RecipeWorkbenchContentFormSchema
                                 ? MediaStorage::recipeDirectory($record, 'featured-images')
                                 : 'recipes/pending/featured-images')
                             ->visibility(MediaStorage::recipeVisibility())
+                            ->storeFileNamesIn('featured_image_original_name')
                             ->getUploadedFileUsing(function (BaseFileUpload $component, string $file, string|array|null $storedFileNames, ?Recipe $record): ?array {
                                 $url = $record instanceof Recipe
                                     ? MediaStorage::recipeUrl($record, $file)
@@ -89,7 +91,11 @@ class RecipeWorkbenchContentFormSchema
                                     return null;
                                 }
 
-                                $metadata = $component->getUploadedFile($file, $storedFileNames);
+                                $metadata = FilamentUploadMetadata::applyDisplayName(
+                                    $component->getUploadedFile($file, $storedFileNames),
+                                    $storedFileNames,
+                                    __('media.current_image'),
+                                );
 
                                 if ($metadata === null) {
                                     return null;

@@ -10,6 +10,7 @@ use App\Models\IngredientFunction;
 use App\Models\SupportedLocale;
 use App\Services\MediaStorage;
 use App\SoapSap;
+use App\Support\FilamentUploadMetadata;
 use Closure;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
@@ -126,6 +127,12 @@ class IngredientForm
                             ->disk(MediaStorage::publicDisk())
                             ->directory('ingredients/featured-images')
                             ->visibility(MediaStorage::publicVisibility())
+                            ->storeFileNamesIn('featured_image_original_name')
+                            ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => FilamentUploadMetadata::applyDisplayName(
+                                $component->getUploadedFile($file, $storedFileNames),
+                                $storedFileNames,
+                                'Current image',
+                            ))
                             ->deleteUploadedFileUsing(function (string $file): void {
                                 MediaStorage::deletePublicPath($file);
                             })
@@ -149,6 +156,12 @@ class IngredientForm
                             ->disk(MediaStorage::publicDisk())
                             ->directory('ingredients/icons')
                             ->visibility(MediaStorage::publicVisibility())
+                            ->storeFileNamesIn('icon_image_original_name')
+                            ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => FilamentUploadMetadata::applyDisplayName(
+                                $component->getUploadedFile($file, $storedFileNames),
+                                $storedFileNames,
+                                'Current image',
+                            ))
                             ->deleteUploadedFileUsing(function (string $file): void {
                                 MediaStorage::deletePublicPath($file);
                             })

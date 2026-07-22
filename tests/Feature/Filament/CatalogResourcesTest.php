@@ -48,11 +48,49 @@ use App\Visibility;
 use Database\Seeders\PlanSeeder;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
+use Filament\Forms\Components\FileUpload;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('keeps original upload names in the admin ingredient form state', function () {
+    config(['media.disk' => 'local']);
+    Storage::fake('local');
+
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'featured_image_path' => 'ingredients/featured-images/01JQ4RANDOM.webp',
+        'icon_image_path' => 'ingredients/icons/01JQ5RANDOM.webp',
+    ]);
+    $this->actingAs($admin);
+
+    $featuredField = Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->instance()
+        ->form
+        ->getComponent('featured_image_path');
+    $iconField = Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->instance()
+        ->form
+        ->getComponent('icon_image_path');
+    Storage::disk($featuredField->getDiskName())->put($ingredient->featured_image_path, 'public-image');
+    Storage::disk($iconField->getDiskName())->put($ingredient->icon_image_path, 'public-image');
+    $featuredField->rawState([$ingredient->featured_image_path => $ingredient->featured_image_path]);
+    $iconField->rawState([$ingredient->icon_image_path => $ingredient->icon_image_path]);
+
+    expect($featuredField)->toBeInstanceOf(FileUpload::class)
+        ->and($featuredField->getFileNamesStatePath())->toEndWith('featured_image_original_name')
+        ->and(array_values($featuredField->getUploadedFiles())[0]['name'])->toBe('Current image')
+        ->and(array_values($featuredField->getUploadedFiles())[0]['name'])->not->toBe(basename($ingredient->featured_image_path))
+        ->and($iconField)->toBeInstanceOf(FileUpload::class)
+        ->and($iconField->getFileNamesStatePath())->toEndWith('icon_image_original_name')
+        ->and(array_values($iconField->getUploadedFiles())[0]['name'])->toBe('Current image')
+        ->and(array_values($iconField->getUploadedFiles())[0]['name'])->not->toBe(basename($ingredient->icon_image_path));
+});
 
 it('creates a language from the Laravel Lang catalogue', function () {
     $admin = User::factory()->admin()->create();

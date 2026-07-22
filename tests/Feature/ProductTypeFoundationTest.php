@@ -10,8 +10,10 @@ use App\Models\User;
 use Database\Seeders\ProductFamilySeeder;
 use Database\Seeders\ProductTypeSeeder;
 use Filament\Actions\DeleteAction;
+use Filament\Forms\Components\FileUpload;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -122,4 +124,28 @@ it('disables product type deletion when recipes reference it', function () {
 
     Livewire::test(EditProductType::class, ['record' => $productType->id])
         ->assertActionDisabled(DeleteAction::class);
+});
+
+it('keeps the original fallback image name in the product type form and uses a neutral legacy display name', function () {
+    config(['media.disk' => 'local']);
+    Storage::fake('local');
+
+    $admin = User::factory()->admin()->create();
+    $productType = ProductType::factory()->create();
+    $path = 'product-types/fallback-images/01JQ3RANDOM.webp';
+    $productType->update(['fallback_image_path' => $path]);
+
+    $this->actingAs($admin);
+
+    $field = Livewire::test(EditProductType::class, ['record' => $productType->id])
+        ->instance()
+        ->form
+        ->getComponent('fallback_image_path');
+    Storage::disk($field->getDiskName())->put($path, 'public-image');
+    $field->rawState([$path => $path]);
+
+    expect($field)->toBeInstanceOf(FileUpload::class)
+        ->and($field->getFileNamesStatePath())->toEndWith('fallback_image_original_name')
+        ->and(array_values($field->getUploadedFiles())[0]['name'])->toBe('Current image')
+        ->and(array_values($field->getUploadedFiles())[0]['name'])->not->toBe(basename($path));
 });

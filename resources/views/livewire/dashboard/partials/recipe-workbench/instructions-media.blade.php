@@ -1,18 +1,18 @@
-<section x-show="activeWorkbenchTab === 'instructions'" x-cloak role="tabpanel" aria-labelledby="tab-instructions" id="panel-instructions" class="pb-32 sm:pb-36">
+<section x-show="activeWorkbenchTab === 'instructions'" x-cloak role="tabpanel" aria-labelledby="tab-instructions" id="panel-instructions">
  <header class="border-b border-[var(--color-line)] pb-4">
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.instructions.title') }}</h3>
  <p class="mt-2 max-w-[75ch] text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('workbench.instructions.intro') }}</p>
  </header>
 
- <form wire:submit="saveRecipeContent" class="space-y-6 pt-5">
+ <form wire:submit="saveRecipeContent" class="space-y-6 pb-6 pt-5">
  @if (! $workbench['recipe'])
  <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('workbench.instructions.draft_text_help') }}</p>
  @endif
 
  {{ $this->form }}
 
- <div class="pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-3 sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]">
- <section id="instructions-media-save-bar" data-instructions-save-bar aria-live="polite" class="pointer-events-auto mx-auto flex max-w-7xl flex-col gap-3 rounded-[1rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] sm:flex-row sm:items-center sm:justify-between">
+ <div class="sticky bottom-3 z-30">
+ <section id="instructions-media-save-bar" data-instructions-save-bar aria-live="polite" class="flex flex-col gap-3 rounded-[1rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] sm:flex-row sm:items-center sm:justify-between">
  <p class="text-sm text-[var(--color-ink-soft)]" role="status">
  @if ($recipeContentStatus === 'success')
  {{ __('workbench.instructions.all_saved') }}

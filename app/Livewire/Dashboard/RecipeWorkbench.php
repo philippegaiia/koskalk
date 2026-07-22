@@ -114,6 +114,13 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         $wasUnsavedRecipe = ! ($this->currentRecipe() instanceof Recipe);
+        $preparePayloadForRecipe = $wasUnsavedRecipe
+            ? fn (Recipe $recipe, array $payload): array => $this->prepareNewRecipePayload(
+                $recipe,
+                $payload,
+                $recipeContentUpdater,
+            )
+            : null;
 
         try {
             $recipeVersion = $recipeWorkbenchService->save(
@@ -121,6 +128,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 $this->productFamily(),
                 $this->draftWithWorkbenchContext($draft, $recipeContentUpdater),
                 $this->currentRecipe(),
+                preparePayloadForRecipe: $preparePayloadForRecipe,
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
             return $this->saveErrorResponse($exception);
@@ -129,10 +137,6 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $this->recipeId = $recipeVersion->recipe_id;
         $this->flushResolvedContext();
         $recipe = Recipe::withoutGlobalScopes()->find($recipeVersion->recipe_id);
-
-        if ($wasUnsavedRecipe && $recipe instanceof Recipe && $this->hasPendingRecipeContent()) {
-            $recipe = $this->persistRecipeContent($recipe, $recipeContentUpdater);
-        }
 
         $snapshot = $recipeWorkbenchService->currentVersionSnapshot($recipe);
         $this->refreshRecipeContentForm($recipe);
@@ -172,6 +176,13 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         $wasUnsavedRecipe = ! ($this->currentRecipe() instanceof Recipe);
+        $preparePayloadForRecipe = $wasUnsavedRecipe
+            ? fn (Recipe $recipe, array $payload): array => $this->prepareNewRecipePayload(
+                $recipe,
+                $payload,
+                $recipeContentUpdater,
+            )
+            : null;
 
         try {
             $recipeVersion = $recipeWorkbenchService->publish(
@@ -179,6 +190,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 $this->productFamily(),
                 $this->draftWithWorkbenchContext($draft, $recipeContentUpdater),
                 $this->currentRecipe(),
+                $preparePayloadForRecipe,
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
             return $this->saveErrorResponse($exception);
@@ -187,10 +199,6 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $this->recipeId = $recipeVersion->recipe_id;
         $this->flushResolvedContext();
         $recipe = Recipe::withoutGlobalScopes()->find($recipeVersion->recipe_id);
-
-        if ($wasUnsavedRecipe && $recipe instanceof Recipe && $this->hasPendingRecipeContent()) {
-            $recipe = $this->persistRecipeContent($recipe, $recipeContentUpdater);
-        }
 
         $snapshot = $recipeWorkbenchService->currentVersionSnapshot($recipe);
         $this->refreshRecipeContentForm($recipe);
@@ -233,6 +241,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         $recipe = $this->currentRecipe();
+        $recipeContentUpdater ??= app(RecipeContentUpdater::class);
+        $preparePayloadForRecipe = ! $recipe instanceof Recipe
+            ? fn (Recipe $destinationRecipe, array $payload): array => $this->prepareNewRecipePayload(
+                $destinationRecipe,
+                $payload,
+                $recipeContentUpdater,
+            )
+            : null;
 
         if ($recipe instanceof Recipe) {
             $this->authorize('view', $recipe);
@@ -244,8 +260,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $recipeVersion = $recipeWorkbenchService->duplicate(
                 $user,
                 $this->productFamily(),
-                $this->draftWithWorkbenchContext($draft, $recipeContentUpdater ?? app(RecipeContentUpdater::class)),
+                $this->draftWithWorkbenchContext($draft, $recipeContentUpdater),
                 $recipe,
+                $preparePayloadForRecipe,
             );
         } catch (ValidationException|InvalidArgumentException $exception) {
             return $this->saveErrorResponse($exception);
@@ -636,6 +653,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $recipe = $this->currentRecipe();
 
         if (! $recipe instanceof Recipe) {
+            $this->validateOnly('data.manufacturing_instructions');
+
             return $this->pendingRichContentValue('manufacturing_instructions');
         }
 
@@ -660,6 +679,35 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             ]);
 
             return $manufacturingInstructions;
+        } finally {
+            $this->clearPendingRichContentStateOnRecipeTargets($recipe);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function prepareNewRecipePayload(
+        Recipe $recipe,
+        array $payload,
+        RecipeContentUpdater $recipeContentUpdater,
+    ): array {
+        $this->form->model($recipe);
+        $pendingRichContentState = $this->pendingRecipeRichContentState();
+        $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
+
+        try {
+            $this->form->getState(afterValidate: function (array $state) use (
+                &$payload,
+                $recipe,
+                $recipeContentUpdater,
+            ): void {
+                $recipeContentUpdater->update($recipe, $state);
+                $payload['manufacturing_instructions'] = $state['manufacturing_instructions'] ?? null;
+            });
+
+            return $payload;
         } finally {
             $this->clearPendingRichContentStateOnRecipeTargets($recipe);
         }
@@ -728,36 +776,6 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             || filled($featuredImagePath);
     }
 
-    private function persistRecipeContent(Recipe $recipe, RecipeContentUpdater $recipeContentUpdater): Recipe
-    {
-        $state = $this->pendingRecipeContentState();
-        $pendingRichContentState = [
-            'description' => $state['description'],
-            'manufacturing_instructions' => $state['manufacturing_instructions'],
-        ];
-
-        $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
-
-        try {
-            return $recipeContentUpdater->update($recipe, $state);
-        } finally {
-            $this->clearPendingRichContentStateOnRecipeTargets($recipe);
-        }
-    }
-
-    /**
-     * @return array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}
-     */
-    private function pendingRecipeContentState(): array
-    {
-        return [
-            'description' => $this->pendingRichContentValue('description'),
-            'manufacturing_instructions' => $this->pendingRichContentValue('manufacturing_instructions'),
-            'featured_image_path' => $this->pendingFeaturedImagePath(),
-            'featured_image_original_name' => $this->pendingFeaturedImageOriginalName(),
-        ];
-    }
-
     /**
      * @return array{description:?string, manufacturing_instructions:?string}
      */
@@ -823,24 +841,6 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         return $editor->getHTML();
-    }
-
-    private function pendingFeaturedImagePath(): ?string
-    {
-        $value = $this->data['featured_image_path'] ?? null;
-
-        if (is_string($value) || $value === null) {
-            return $value;
-        }
-
-        if (! is_array($value)) {
-            return null;
-        }
-
-        $firstValue = collect($value)
-            ->first(fn (mixed $path): bool => is_string($path) && $path !== '');
-
-        return is_string($firstValue) ? $firstValue : null;
     }
 
     private function pendingFeaturedImageOriginalName(): ?string

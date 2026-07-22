@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Recipe;
 use App\Rules\MaximumRichContentImages;
+use App\Support\RichContentAttachmentPaths;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -70,17 +71,25 @@ class RecipeContentUpdater
             'manufacturing_instructions' => [new MaximumRichContentImages(8, 'workbench.instructions.procedure_image_limit')],
         ])->validate();
 
-        $submittedRecipe = clone $recipe;
-        $submittedRecipe->fill($state);
         $existingPaths = $recipe->mediaPaths();
-        $invalidPath = $submittedRecipe->mediaPaths()
-            ->first(fn (string $path): bool => ! $existingPaths->contains($path)
+        $submittedPathsByField = [
+            'description' => RichContentAttachmentPaths::extractImageIdentities($state['description'] ?? null),
+            'manufacturing_instructions' => RichContentAttachmentPaths::extractImageIdentities(
+                $state['manufacturing_instructions'] ?? null,
+            ),
+            'featured_image_path' => collect([$state['featured_image_path'] ?? null])
+                ->filter(fn (mixed $path): bool => is_string($path) && $path !== ''),
+        ];
+
+        foreach ($submittedPathsByField as $field => $submittedPaths) {
+            $invalidPath = $submittedPaths->first(fn (string $path): bool => ! $existingPaths->contains($path)
                 && ! MediaStorage::isRecipePath($recipe, $path));
 
-        if (is_string($invalidPath)) {
-            throw ValidationException::withMessages([
-                'featured_image_path' => 'The selected recipe media does not belong to this formula.',
-            ]);
+            if (is_string($invalidPath)) {
+                throw ValidationException::withMessages([
+                    $field => 'The selected recipe media does not belong to this formula.',
+                ]);
+            }
         }
     }
 

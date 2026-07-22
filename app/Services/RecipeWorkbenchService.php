@@ -8,6 +8,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
+use Closure;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -166,6 +167,7 @@ class RecipeWorkbenchService
         array $payload,
         ?Recipe $recipe = null,
         ?Recipe $sopSourceRecipe = null,
+        ?Closure $preparePayloadForRecipe = null,
     ): RecipeVersion {
         if ($recipe instanceof Recipe) {
             Gate::forUser($user)->authorize('update', $recipe);
@@ -181,6 +183,7 @@ class RecipeWorkbenchService
             $normalizedPayload,
             $recipe,
             $sopSourceRecipe,
+            $preparePayloadForRecipe,
         );
 
         $currentVersion = $recipe instanceof Recipe
@@ -196,8 +199,13 @@ class RecipeWorkbenchService
         return $currentVersion;
     }
 
-    public function publish(User $user, ProductFamily $productFamily, array $payload, ?Recipe $recipe = null): RecipeVersion
-    {
+    public function publish(
+        User $user,
+        ProductFamily $productFamily,
+        array $payload,
+        ?Recipe $recipe = null,
+        ?Closure $preparePayloadForRecipe = null,
+    ): RecipeVersion {
         if ($recipe instanceof Recipe) {
             Gate::forUser($user)->authorize('update', $recipe);
         }
@@ -206,7 +214,13 @@ class RecipeWorkbenchService
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
-        $publish = fn (): RecipeVersion => $this->recipeVersionPublisher->publish($user, $productFamily, $normalizedPayload, $recipe);
+        $publish = fn (): RecipeVersion => $this->recipeVersionPublisher->publish(
+            $user,
+            $productFamily,
+            $normalizedPayload,
+            $recipe,
+            $preparePayloadForRecipe,
+        );
 
         if ($recipe instanceof Recipe) {
             return $publish();
@@ -229,11 +243,18 @@ class RecipeWorkbenchService
         ProductFamily $productFamily,
         array $payload,
         ?Recipe $sourceRecipe = null,
+        ?Closure $preparePayloadForRecipe = null,
     ): RecipeVersion {
         $copyPayload = $payload;
         $copyPayload['name'] = $this->duplicateName((string) ($payload['name'] ?? 'Soap Formula'));
 
-        return $this->save($user, $productFamily, $copyPayload, sopSourceRecipe: $sourceRecipe);
+        return $this->save(
+            $user,
+            $productFamily,
+            $copyPayload,
+            sopSourceRecipe: $sourceRecipe,
+            preparePayloadForRecipe: $preparePayloadForRecipe,
+        );
     }
 
     public function duplicateRecipe(User $user, Recipe $recipe): RecipeVersion

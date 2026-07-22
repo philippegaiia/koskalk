@@ -6,6 +6,7 @@ use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use Closure;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,6 +25,7 @@ class RecipeVersionPublisher
         private readonly RecipeVersionRecordService $recipeVersionRecordService,
         private readonly RecipeVersionStructureSynchronizer $recipeVersionStructureSynchronizer,
         private readonly RecipeVersionCostingSynchronizer $recipeVersionCostingSynchronizer,
+        private readonly RecipeMediaRollbackGuard $recipeMediaRollbackGuard,
     ) {}
 
     /**
@@ -36,9 +38,15 @@ class RecipeVersionPublisher
      *
      * @param  array<string, mixed>  $normalizedPayload
      */
-    public function publish(User $user, ProductFamily $productFamily, array $normalizedPayload, ?Recipe $recipe = null): RecipeVersion
-    {
-        return DB::transaction(function () use ($normalizedPayload, $productFamily, $recipe, $user): RecipeVersion {
+    public function publish(
+        User $user,
+        ProductFamily $productFamily,
+        array $normalizedPayload,
+        ?Recipe $recipe = null,
+        ?Closure $preparePayloadForRecipe = null,
+    ): RecipeVersion {
+        return DB::transaction(function () use ($normalizedPayload, $preparePayloadForRecipe, $productFamily, $recipe, $user): RecipeVersion {
+            $isNewRecipe = ! $recipe instanceof Recipe;
             $recipe ??= $this->recipeVersionRecordService->createRecipe(
                 $user,
                 $productFamily,
@@ -46,46 +54,57 @@ class RecipeVersionPublisher
                 $normalizedPayload['product_type_id'] ?? null,
             );
 
-            $currentVersion = RecipeVersion::withoutGlobalScopes()
-                ->where('recipe_id', $recipe->id)
-                ->where('is_current', true)
-                ->first();
-
-            $publishedVersion = $currentVersion;
-
-            if (! $publishedVersion instanceof RecipeVersion) {
-                $publishedVersion = new RecipeVersion;
-                $publishedVersion->recipe()->associate($recipe);
-                $publishedVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
-            }
-
-            $this->recipeVersionRecordService->fillVersion(
-                $publishedVersion,
+            return $this->recipeMediaRollbackGuard->run($recipe, $isNewRecipe, function () use (
+                &$normalizedPayload,
+                $preparePayloadForRecipe,
                 $recipe,
                 $user,
-                $normalizedPayload,
-                false,
-            );
-            $publishedVersion->save();
-            $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
-            $this->recipeVersionCostingSynchronizer->reconcileExistingFormulaCosting($publishedVersion, $user);
+            ): RecipeVersion {
+                if ($preparePayloadForRecipe instanceof Closure) {
+                    $normalizedPayload = $preparePayloadForRecipe($recipe, $normalizedPayload);
+                }
 
-            $newCurrentVersion = new RecipeVersion;
-            $newCurrentVersion->recipe()->associate($recipe);
-            $newCurrentVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
-            $this->recipeVersionRecordService->fillVersion(
-                $newCurrentVersion,
-                $recipe,
-                $user,
-                $normalizedPayload,
-                true,
-            );
-            $newCurrentVersion->save();
-            $this->recipeVersionStructureSynchronizer->sync($newCurrentVersion, $user, $normalizedPayload);
-            $this->recipeVersionCostingSynchronizer->copyToVersion($publishedVersion, $newCurrentVersion, $user);
-            $this->pruneHiddenRecoverySnapshots($recipe);
+                $currentVersion = RecipeVersion::withoutGlobalScopes()
+                    ->where('recipe_id', $recipe->id)
+                    ->where('is_current', true)
+                    ->first();
 
-            return $newCurrentVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
+                $publishedVersion = $currentVersion;
+
+                if (! $publishedVersion instanceof RecipeVersion) {
+                    $publishedVersion = new RecipeVersion;
+                    $publishedVersion->recipe()->associate($recipe);
+                    $publishedVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
+                }
+
+                $this->recipeVersionRecordService->fillVersion(
+                    $publishedVersion,
+                    $recipe,
+                    $user,
+                    $normalizedPayload,
+                    false,
+                );
+                $publishedVersion->save();
+                $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
+                $this->recipeVersionCostingSynchronizer->reconcileExistingFormulaCosting($publishedVersion, $user);
+
+                $newCurrentVersion = new RecipeVersion;
+                $newCurrentVersion->recipe()->associate($recipe);
+                $newCurrentVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
+                $this->recipeVersionRecordService->fillVersion(
+                    $newCurrentVersion,
+                    $recipe,
+                    $user,
+                    $normalizedPayload,
+                    true,
+                );
+                $newCurrentVersion->save();
+                $this->recipeVersionStructureSynchronizer->sync($newCurrentVersion, $user, $normalizedPayload);
+                $this->recipeVersionCostingSynchronizer->copyToVersion($publishedVersion, $newCurrentVersion, $user);
+                $this->pruneHiddenRecoverySnapshots($recipe);
+
+                return $newCurrentVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
+            });
         });
     }
 

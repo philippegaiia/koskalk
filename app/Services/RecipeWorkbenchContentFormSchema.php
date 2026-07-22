@@ -137,6 +137,7 @@ class RecipeWorkbenchContentFormSchema
                                 RichEditor::make('manufacturing_instructions')
                                     ->label(__('workbench.instructions.procedure_label'))
                                     ->hiddenLabel()
+                                    ->fileAttachments(true)
                                     ->helperText(__('workbench.instructions.procedure_help'))
                                     ->toolbarButtons(fn (?Recipe $record): array => [
                                         ['bold', 'italic', 'underline', 'strike', 'link'],

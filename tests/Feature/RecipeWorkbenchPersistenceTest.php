@@ -237,6 +237,108 @@ it('persists a pending procedure image before an immediate formula save', functi
         ->and($currentVersion->manufacturing_instructions)->not->toContain($temporaryId);
 });
 
+it('persists a pending procedure image atomically for an unsaved formula action', function (
+    string $action,
+    string $expectedName,
+    int $expectedVersionCount,
+) {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf4301';
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
+        ->set(
+            'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
+            UploadedFile::fake()->image('first-procedure.jpg', 1200, 600),
+        )
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($temporaryId))
+        ->call($action, workbenchSoapDraftPayload($ingredient, name: 'First Media Formula'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true);
+
+    $recipe = Recipe::withoutGlobalScopes()->where('name', $expectedName)->sole();
+    $versions = RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->get();
+    $storedPath = $recipe->richContentAttachmentPaths('manufacturing_instructions')->sole();
+
+    expect(Recipe::withoutGlobalScopes()->count())->toBe(1)
+        ->and($versions)->toHaveCount($expectedVersionCount)
+        ->and($versions->pluck('manufacturing_instructions')->filter()->count())->toBe($expectedVersionCount)
+        ->and($versions->pluck('manufacturing_instructions')->implode(' '))->toContain($storedPath)
+        ->and($storedPath)->not->toBe($temporaryId)
+        ->and(MediaStorage::isRecipePath($recipe, $storedPath))->toBeTrue()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->exists($storedPath))->toBeTrue()
+        ->and($recipe->manufacturing_instructions)->not->toContain($temporaryId);
+})->with([
+    'first save' => ['save', 'First Media Formula', 1],
+    'first publish' => ['publish', 'First Media Formula', 2],
+    'unsaved duplicate' => ['duplicateFormula', 'Copy of First Media Formula', 1],
+]);
+
+it('rolls back an unsaved formula action when the procedure exceeds eight images', function (string $action) {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $temporaryIds = collect(range(1, 9))
+        ->map(fn (int $index): string => '018fa7f2-91aa-74a5-a665-'.str_pad((string) $index, 12, '0', STR_PAD_LEFT))
+        ->all();
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure($temporaryIds))
+        ->call($action, workbenchSoapDraftPayload($ingredient, name: 'Invalid First Formula'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === false
+            && str_contains($response['message'], 'up to 8 images'));
+
+    expect(Recipe::withoutGlobalScopes()->count())->toBe(0)
+        ->and(RecipeVersion::withoutGlobalScopes()->count())->toBe(0)
+        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes'))->toBe([]);
+})->with([
+    'first save' => ['save'],
+    'first publish' => ['publish'],
+    'unsaved duplicate' => ['duplicateFormula'],
+]);
+
+it('rolls back an unsaved formula action containing a cross-recipe procedure image', function (string $action) {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $otherRecipe = Recipe::factory()->create(['owner_id' => $user->id]);
+    $otherPath = 'recipes/'.$otherRecipe->public_id.'/rich-content/private.webp';
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf4302';
+    Storage::disk(MediaStorage::recipeDisk())->put($otherPath, 'other-recipe-image');
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
+        ->set(
+            'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
+            UploadedFile::fake()->image('rolled-back-procedure.jpg', 1200, 600),
+        )
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure([$temporaryId, $otherPath]))
+        ->call($action, workbenchSoapDraftPayload($ingredient, name: 'Cross Reference Formula'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === false);
+
+    expect(Recipe::withoutGlobalScopes()->count())->toBe(1)
+        ->and(RecipeVersion::withoutGlobalScopes()->count())->toBe(0)
+        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes'))->toBe([$otherPath]);
+})->with([
+    'first save' => ['save'],
+    'first publish' => ['publish'],
+    'unsaved duplicate' => ['duplicateFormula'],
+]);
+
 it('persists a pending procedure image before an immediate formula publish', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

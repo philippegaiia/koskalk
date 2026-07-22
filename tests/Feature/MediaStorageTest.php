@@ -1,11 +1,14 @@
 <?php
 
 use App\Models\Recipe;
+use App\Models\RecipeVersion;
 use App\Services\MediaStorage;
 use App\Services\RecipeMediaRollbackGuard;
 use App\Services\RecipeRichContentAttachmentProvider;
+use App\Services\RecipeVersionDeletionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
@@ -242,6 +245,109 @@ it('preserves shared rich content attachments that are still referenced by the o
     expect(Storage::disk('local')->exists('recipes/rich-content/keep.webp'))->toBeTrue()
         ->and(Storage::disk('local')->exists('recipes/rich-content/shared.webp'))->toBeTrue()
         ->and(Storage::disk('local')->exists('recipes/rich-content/remove.webp'))->toBeFalse();
+});
+
+it('preserves attachments referenced by a retained historical SOP during editor cleanup', function (): void {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    $recipe = Recipe::factory()->create();
+    $path = MediaStorage::recipeDirectory($recipe, 'rich-content').'/historical.webp';
+    $html = '<p><img data-id="'.$path.'"></p>';
+    $recipe->update(['description' => $html]);
+    RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'version_number' => 1,
+        'is_current' => false,
+        'manufacturing_instructions' => $html,
+    ]);
+    Storage::disk('local')->put($path, 'historical-image');
+
+    app(RecipeRichContentAttachmentProvider::class)
+        ->attribute($recipe->getRichContentAttribute('description'))
+        ->cleanUpFileAttachments([]);
+
+    expect(Storage::disk('local')->exists($path))->toBeTrue();
+});
+
+it('deletes an attachment after the last saved SOP referencing it is deleted', function (): void {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    $recipe = Recipe::factory()->create();
+    $path = MediaStorage::recipeDirectory($recipe, 'rich-content').'/last-snapshot.webp';
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'version_number' => 1,
+        'is_current' => false,
+        'manufacturing_instructions' => '<p><img data-id="'.$path.'"></p>',
+    ]);
+    Storage::disk('local')->put($path, 'last-snapshot-image');
+
+    app(RecipeVersionDeletionService::class)->delete($recipe, $version);
+
+    expect(Storage::disk('local')->exists($path))->toBeFalse();
+});
+
+it('deletes only newly orphaned attachments when old recovery snapshots are pruned', function (): void {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    $recipe = Recipe::factory()->create();
+    $directory = MediaStorage::recipeDirectory($recipe, 'rich-content');
+    $orphanedPath = $directory.'/pruned-only.webp';
+    $sharedPath = $directory.'/shared-with-retained.webp';
+
+    RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'version_number' => 1,
+        'is_current' => false,
+        'manufacturing_instructions' => '<p><img data-id="'.$orphanedPath.'"><img data-id="'.$sharedPath.'"></p>',
+    ]);
+    RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'version_number' => 2,
+        'is_current' => false,
+        'manufacturing_instructions' => '<p><img data-id="'.$sharedPath.'"></p>',
+    ]);
+    RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'version_number' => 3,
+        'is_current' => false,
+        'manufacturing_instructions' => '<p>Newest saved SOP.</p>',
+    ]);
+    Storage::disk('local')->put($orphanedPath, 'orphaned-after-prune');
+    Storage::disk('local')->put($sharedPath, 'still-referenced');
+
+    app(RecipeVersionDeletionService::class)->pruneHiddenRecoverySnapshots($recipe, 2);
+
+    expect(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->count())->toBe(2)
+        ->and(Storage::disk('local')->exists($orphanedPath))->toBeFalse()
+        ->and(Storage::disk('local')->exists($sharedPath))->toBeTrue();
+});
+
+it('does not delete an attachment when version deletion is rolled back', function (): void {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    $recipe = Recipe::factory()->create();
+    $path = MediaStorage::recipeDirectory($recipe, 'rich-content').'/rolled-back-deletion.webp';
+    $version = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'version_number' => 1,
+        'is_current' => false,
+        'manufacturing_instructions' => '<p><img data-id="'.$path.'"></p>',
+    ]);
+    Storage::disk('local')->put($path, 'must-survive');
+
+    expect(fn () => DB::transaction(function () use ($recipe, $version): void {
+        app(RecipeVersionDeletionService::class)->delete($recipe, $version);
+
+        throw new RuntimeException('Force rollback.');
+    }))->toThrow(RuntimeException::class, 'Force rollback.');
+
+    expect(RecipeVersion::withoutGlobalScopes()->find($version->id))->not->toBeNull()
+        ->and(Storage::disk('local')->exists($path))->toBeTrue();
 });
 
 it('auto orients jpeg uploads before converting them to webp', function () {

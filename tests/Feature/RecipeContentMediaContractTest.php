@@ -3,6 +3,7 @@
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
+use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Services\RecipeContentUpdater;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -169,9 +170,66 @@ it('keeps a shared rich content attachment when it moves between recipe editors 
         ->assertSet('recipeContentStatus', 'success');
 
     expect(Storage::disk('local')->exists($sharedAttachment))->toBeTrue()
+        ->and(Storage::disk('local')->allFiles('recipes/'.$recipe->public_id.'/rich-content'))->toBe([$sharedAttachment])
         ->and($recipe->fresh()->description)->not->toContain($sharedAttachment)
         ->and($recipe->fresh()->manufacturing_instructions)->toContain($sharedAttachment);
 });
+
+it('keeps an attachment removed from the current SOP while a saved SOP still references it', function (): void {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    $recipe = Recipe::factory()->create();
+    $path = 'recipes/'.$recipe->public_id.'/rich-content/saved-sop.webp';
+    $sop = '<p><img data-id="'.$path.'"></p>';
+
+    $recipe->update(['manufacturing_instructions' => $sop]);
+    RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'version_number' => 1,
+        'is_current' => true,
+        'manufacturing_instructions' => $sop,
+    ]);
+    RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'version_number' => 2,
+        'is_current' => false,
+        'manufacturing_instructions' => $sop,
+    ]);
+    Storage::disk('local')->put($path, 'saved-sop-image');
+
+    app(RecipeContentUpdater::class)->update($recipe, [
+        'description' => null,
+        'manufacturing_instructions' => '<p>No image in the current SOP.</p>',
+        'featured_image_path' => null,
+    ]);
+
+    expect(Storage::disk('local')->exists($path))->toBeTrue()
+        ->and($recipe->fresh()->manufacturing_instructions)->not->toContain($path)
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', true)->value('manufacturing_instructions'))->not->toContain($path);
+});
+
+it('keeps a path shared by current description and SOP when removed from either field', function (string $removedField): void {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    $recipe = Recipe::factory()->create();
+    $path = 'recipes/'.$recipe->public_id.'/rich-content/shared-current.webp';
+    $html = '<p><img data-id="'.$path.'"></p>';
+    $recipe->update([
+        'description' => $html,
+        'manufacturing_instructions' => $html,
+    ]);
+    Storage::disk('local')->put($path, 'shared-current-image');
+
+    app(RecipeContentUpdater::class)->update($recipe, [
+        'description' => $removedField === 'description' ? null : $html,
+        'manufacturing_instructions' => $removedField === 'manufacturing_instructions' ? null : $html,
+        'featured_image_path' => null,
+    ]);
+
+    expect(Storage::disk('local')->exists($path))->toBeTrue();
+})->with(['description', 'manufacturing_instructions']);
 
 /**
  * @param  array<int, string>  $temporaryIds

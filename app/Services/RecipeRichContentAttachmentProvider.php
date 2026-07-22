@@ -13,6 +13,8 @@ class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
 {
     private ?RichContentAttribute $attribute = null;
 
+    public function __construct(private readonly RecipeMediaReferenceService $recipeMediaReferenceService) {}
+
     public function attribute(RichContentAttribute $attribute): static
     {
         $this->attribute = $attribute;
@@ -71,6 +73,7 @@ class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
         $preservedAttachmentIds = collect($exceptIds)
             ->filter(fn (mixed $value): bool => is_string($value))
             ->merge($this->otherAttributeAttachmentIds())
+            ->merge($this->historicalSopAttachmentIds())
             ->unique()
             ->values();
 
@@ -109,6 +112,16 @@ class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
         }
 
         return $recipe->otherRichContentAttachmentPaths($attributeName);
+    }
+
+    /** @return Collection<int, string> */
+    private function historicalSopAttachmentIds(): Collection
+    {
+        $recipe = $this->recipe();
+
+        return $recipe instanceof Recipe
+            ? $this->recipeMediaReferenceService->historicalSopPaths($recipe)
+            : collect();
     }
 
     private function recipe(): ?Recipe

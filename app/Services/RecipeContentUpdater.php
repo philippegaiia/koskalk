@@ -5,14 +5,16 @@ namespace App\Services;
 use App\Models\Recipe;
 use App\Rules\MaximumRichContentImages;
 use App\Support\RichContentAttachmentPaths;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class RecipeContentUpdater
 {
-    public function __construct(private readonly RecipeSopSnapshotService $recipeSopSnapshotService) {}
+    public function __construct(
+        private readonly RecipeSopSnapshotService $recipeSopSnapshotService,
+        private readonly RecipeMediaReferenceService $recipeMediaReferenceService,
+    ) {}
 
     /**
      * @param  array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}  $state
@@ -20,9 +22,10 @@ class RecipeContentUpdater
     public function update(Recipe $recipe, array $state): Recipe
     {
         $this->validate($recipe, $state);
-        $pathsToDelete = collect();
+        $removedFeaturedImagePath = null;
+        $removedRichContentAttachmentPaths = collect();
 
-        $updatedRecipe = DB::transaction(function () use ($recipe, $state, &$pathsToDelete): Recipe {
+        $updatedRecipe = DB::transaction(function () use ($recipe, $state, &$removedFeaturedImagePath, &$removedRichContentAttachmentPaths): Recipe {
             $previousFeaturedImagePath = $recipe->featured_image_path;
             $previousRichContentAttachmentPaths = $recipe->richContentAttachmentPaths();
             $featuredImagePath = $state['featured_image_path'] ?? null;
@@ -41,18 +44,22 @@ class RecipeContentUpdater
                 $recipe->manufacturing_instructions,
             );
 
-            $pathsToDelete = $this->pathsToDelete(
-                $previousFeaturedImagePath,
-                $recipe->featured_image_path,
-                $previousRichContentAttachmentPaths,
-                $recipe->richContentAttachmentPaths(),
-            );
+            $removedFeaturedImagePath = $previousFeaturedImagePath !== $recipe->featured_image_path
+                ? $previousFeaturedImagePath
+                : null;
+            $removedRichContentAttachmentPaths = $previousRichContentAttachmentPaths
+                ->diff($recipe->richContentAttachmentPaths())
+                ->values();
 
             return $recipe->fresh();
         });
 
-        $pathsToDelete->each(function (string $path): void {
-            MediaStorage::deleteRecipePath($path);
+        DB::afterCommit(function () use ($removedFeaturedImagePath, $removedRichContentAttachmentPaths, $updatedRecipe): void {
+            MediaStorage::deleteRecipePath($removedFeaturedImagePath);
+            $this->recipeMediaReferenceService->deleteIfUnreferenced(
+                $updatedRecipe,
+                $removedRichContentAttachmentPaths,
+            );
         });
 
         return $updatedRecipe;
@@ -91,28 +98,5 @@ class RecipeContentUpdater
                 ]);
             }
         }
-    }
-
-    /**
-     * @param  Collection<int, string>  $previousRichContentAttachmentPaths
-     * @param  Collection<int, string>  $currentRichContentAttachmentPaths
-     * @return Collection<int, string>
-     */
-    private function pathsToDelete(
-        ?string $previousFeaturedImagePath,
-        ?string $currentFeaturedImagePath,
-        Collection $previousRichContentAttachmentPaths,
-        Collection $currentRichContentAttachmentPaths,
-    ): Collection {
-        $removedFeaturedImagePaths = collect();
-
-        if ($previousFeaturedImagePath !== $currentFeaturedImagePath && filled($previousFeaturedImagePath)) {
-            $removedFeaturedImagePaths->push($previousFeaturedImagePath);
-        }
-
-        return $removedFeaturedImagePaths
-            ->merge($previousRichContentAttachmentPaths->diff($currentRichContentAttachmentPaths))
-            ->unique()
-            ->values();
     }
 }

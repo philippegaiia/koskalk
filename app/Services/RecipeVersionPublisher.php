@@ -26,6 +26,7 @@ class RecipeVersionPublisher
         private readonly RecipeVersionStructureSynchronizer $recipeVersionStructureSynchronizer,
         private readonly RecipeVersionCostingSynchronizer $recipeVersionCostingSynchronizer,
         private readonly RecipeMediaRollbackGuard $recipeMediaRollbackGuard,
+        private readonly RecipeVersionDeletionService $recipeVersionDeletionService,
     ) {}
 
     /**
@@ -107,7 +108,10 @@ class RecipeVersionPublisher
                     $newCurrentVersion->save();
                     $this->recipeVersionStructureSynchronizer->sync($newCurrentVersion, $user, $normalizedPayload);
                     $this->recipeVersionCostingSynchronizer->copyToVersion($publishedVersion, $newCurrentVersion, $user);
-                    $this->pruneHiddenRecoverySnapshots($recipe);
+                    $this->recipeVersionDeletionService->pruneHiddenRecoverySnapshots(
+                        $recipe,
+                        self::MAX_HIDDEN_RECOVERY_SNAPSHOTS + 1,
+                    );
 
                     return $newCurrentVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
                 });
@@ -139,22 +143,12 @@ class RecipeVersionPublisher
             );
             $publishedVersion->save();
             $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
-            $this->pruneHiddenRecoverySnapshots($recipe);
+            $this->recipeVersionDeletionService->pruneHiddenRecoverySnapshots(
+                $recipe,
+                self::MAX_HIDDEN_RECOVERY_SNAPSHOTS + 1,
+            );
 
             return $publishedVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
         });
-    }
-
-    /** Remove older published versions beyond the recovery snapshot limit. */
-    private function pruneHiddenRecoverySnapshots(Recipe $recipe): void
-    {
-        RecipeVersion::withoutGlobalScopes()
-            ->where('recipe_id', $recipe->id)
-            ->where('is_current', false)
-            ->orderByDesc('version_number')
-            ->get()
-            ->slice(self::MAX_HIDDEN_RECOVERY_SNAPSHOTS + 1)
-            ->each
-            ->delete();
     }
 }

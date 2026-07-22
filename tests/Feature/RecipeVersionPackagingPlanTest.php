@@ -144,7 +144,7 @@ it('renders packaging as its own workbench tab', function () {
         ->assertSuccessful()
         ->assertSee('Packaging')
         ->assertSee('Packaging plan')
-        ->assertSee('Components per unit')
+        ->assertSee('Quantity per unit')
         ->assertSee('Effective unit price (GBP)')
         ->assertSeeHtml('data-search-combobox="packaging-catalog-search"')
         ->assertSee('aria-label="Search and add packaging item"', false)

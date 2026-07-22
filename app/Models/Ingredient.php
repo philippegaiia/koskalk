@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\OriginalFilename;
 use App\IngredientCategory;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
@@ -49,7 +50,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'composition_source_notes',
     'allergen_source_notes',
     'featured_image_path',
+    'featured_image_original_name',
     'icon_image_path',
+    'icon_image_original_name',
 ])]
 class Ingredient extends Model
 {
@@ -367,6 +370,8 @@ class Ingredient extends Model
             'is_active' => 'bool',
             'is_manufactured' => 'bool',
             'source_data' => 'array',
+            'featured_image_original_name' => OriginalFilename::class,
+            'icon_image_original_name' => OriginalFilename::class,
         ];
     }
 }

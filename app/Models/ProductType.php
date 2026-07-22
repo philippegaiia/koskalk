@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\OriginalFilename;
 use App\Services\MediaStorage;
 use Database\Factories\ProductTypeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name',
     'slug',
     'fallback_image_path',
+    'fallback_image_original_name',
     'sort_order',
     'is_active',
     'description',
@@ -49,6 +51,7 @@ class ProductType extends Model
     {
         return [
             'is_active' => 'bool',
+            'fallback_image_original_name' => OriginalFilename::class,
         ];
     }
 }

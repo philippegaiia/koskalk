@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\OriginalFilename;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
@@ -33,6 +34,7 @@ use Illuminate\Support\Collection;
     'description',
     'manufacturing_instructions',
     'featured_image_path',
+    'featured_image_original_name',
     'slug',
     'archived_at',
     'locked_at',
@@ -238,6 +240,7 @@ class Recipe extends Model implements HasRichContent
             'visibility' => Visibility::class,
             'archived_at' => 'datetime',
             'locked_at' => 'datetime',
+            'featured_image_original_name' => OriginalFilename::class,
         ];
     }
 

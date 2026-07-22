@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\OriginalFilename;
 use App\Models\Concerns\HasPublicId;
 use App\Services\MediaStorage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -19,6 +20,7 @@ use Illuminate\Support\Carbon;
     'currency',
     'notes',
     'featured_image_path',
+    'featured_image_original_name',
 ])]
 /**
  * Stores reusable packaging items that can be pulled into a formula costing.
@@ -65,6 +67,7 @@ class UserPackagingItem extends Model
     {
         return [
             'unit_cost' => 'decimal:4',
+            'featured_image_original_name' => OriginalFilename::class,
         ];
     }
 

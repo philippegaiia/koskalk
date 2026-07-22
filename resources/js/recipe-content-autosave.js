@@ -1,5 +1,10 @@
 const DEFAULT_SAVE_INTERVAL = 120_000;
+const DEFAULT_UPLOAD_SAFETY_INTERVAL = 600_000;
 const DEFAULT_REGISTRY_KEY = 'recipe-content';
+const DEFAULT_WATCH_PATHS = [
+    'data.description',
+    'data.manufacturing_instructions',
+];
 
 function browserClock() {
     return {
@@ -43,21 +48,37 @@ export function createRecipeContentAutosave(options = {}) {
         savedAt: null,
         errorMessage: '',
         eventTarget: options.eventTarget ?? null,
+        uploadEventTarget: options.uploadEventTarget ?? (typeof window === 'undefined' ? null : window),
+        livewireId: options.livewireId ?? null,
+        watchCallback: options.watch ?? null,
+        watchPaths: options.watchPaths ?? DEFAULT_WATCH_PATHS,
         registry: options.registry ?? null,
         registryKey: options.registryKey ?? DEFAULT_REGISTRY_KEY,
         saveInterval: options.interval ?? DEFAULT_SAVE_INTERVAL,
+        uploadSafetyInterval: options.uploadSafetyInterval ?? DEFAULT_UPLOAD_SAFETY_INTERVAL,
         saveCallback: options.save ?? (async () => ({ ok: false, message: labels.saveFailed })),
         savedAtFormatter: options.formatSavedAt ?? defaultSavedAtFormatter,
         clock,
         labels,
         changeSequence: 0,
+        lifecycleVersion: 0,
         isInitialized: false,
         isDestroyed: false,
+        nativeUploads: 0,
+        richUploads: new Map(),
+        formProcessingDepth: 0,
+        richUploadSafetyTimer: null,
+        unwatchCallbacks: [],
         inputHandler: null,
         uploadStartHandler: null,
         uploadFinishHandler: null,
         uploadErrorHandler: null,
         uploadCancelHandler: null,
+        richUploadStartHandler: null,
+        richUploadFinishHandler: null,
+        richUploadValidationHandler: null,
+        formProcessingStartHandler: null,
+        formProcessingFinishHandler: null,
 
         get statusText() {
             if (this.state === 'saving') {
@@ -90,8 +111,15 @@ export function createRecipeContentAutosave(options = {}) {
 
             this.isInitialized = true;
             this.isDestroyed = false;
+            this.lifecycleVersion += 1;
             this.eventTarget ??= this.$el ?? null;
             this.updateRegistry();
+
+            if (this.watchCallback) {
+                this.unwatchCallbacks = this.watchPaths
+                    .map((path) => this.watchCallback(path, () => this.markDirty()))
+                    .filter((unwatch) => typeof unwatch === 'function');
+            }
 
             if (!this.eventTarget) {
                 return;
@@ -102,6 +130,25 @@ export function createRecipeContentAutosave(options = {}) {
             this.uploadFinishHandler = () => this.uploadFinished();
             this.uploadErrorHandler = () => this.uploadErrored();
             this.uploadCancelHandler = () => this.uploadCancelled();
+            this.formProcessingStartHandler = () => {
+                this.formProcessingDepth += 1;
+            };
+            this.formProcessingFinishHandler = () => this.formProcessingFinished();
+            this.richUploadStartHandler = (event) => {
+                if (this.isMatchingRichEditorEvent(event)) {
+                    this.richUploadStarted(event.detail.key);
+                }
+            };
+            this.richUploadFinishHandler = (event) => {
+                if (this.isMatchingRichEditorEvent(event)) {
+                    this.richUploadFinished(event.detail.key);
+                }
+            };
+            this.richUploadValidationHandler = (event) => {
+                if (this.isMatchingRichEditorEvent(event)) {
+                    this.richUploadFinished(event.detail.key);
+                }
+            };
 
             this.eventTarget.addEventListener('input', this.inputHandler, true);
             this.eventTarget.addEventListener('change', this.inputHandler, true);
@@ -109,11 +156,19 @@ export function createRecipeContentAutosave(options = {}) {
             this.eventTarget.addEventListener('livewire-upload-finish', this.uploadFinishHandler);
             this.eventTarget.addEventListener('livewire-upload-error', this.uploadErrorHandler);
             this.eventTarget.addEventListener('livewire-upload-cancel', this.uploadCancelHandler);
+            this.eventTarget.addEventListener('form-processing-started', this.formProcessingStartHandler);
+            this.eventTarget.addEventListener('form-processing-finished', this.formProcessingFinishHandler);
+            this.uploadEventTarget?.addEventListener('rich-editor-uploading-file', this.richUploadStartHandler);
+            this.uploadEventTarget?.addEventListener('rich-editor-uploaded-file', this.richUploadFinishHandler);
+            this.uploadEventTarget?.addEventListener('rich-editor-file-validation-message', this.richUploadValidationHandler);
         },
 
         destroy() {
             this.isDestroyed = true;
+            this.lifecycleVersion += 1;
             this.clearSaveTimer();
+            this.clearRichUploadSafetyTimer();
+            this.inFlight = null;
 
             if (this.isInitialized && this.eventTarget) {
                 this.eventTarget.removeEventListener('input', this.inputHandler, true);
@@ -122,13 +177,35 @@ export function createRecipeContentAutosave(options = {}) {
                 this.eventTarget.removeEventListener('livewire-upload-finish', this.uploadFinishHandler);
                 this.eventTarget.removeEventListener('livewire-upload-error', this.uploadErrorHandler);
                 this.eventTarget.removeEventListener('livewire-upload-cancel', this.uploadCancelHandler);
+                this.eventTarget.removeEventListener('form-processing-started', this.formProcessingStartHandler);
+                this.eventTarget.removeEventListener('form-processing-finished', this.formProcessingFinishHandler);
             }
+
+            if (this.isInitialized && this.uploadEventTarget) {
+                this.uploadEventTarget.removeEventListener('rich-editor-uploading-file', this.richUploadStartHandler);
+                this.uploadEventTarget.removeEventListener('rich-editor-uploaded-file', this.richUploadFinishHandler);
+                this.uploadEventTarget.removeEventListener('rich-editor-file-validation-message', this.richUploadValidationHandler);
+            }
+
+            for (const unwatch of this.unwatchCallbacks) {
+                unwatch();
+            }
+
+            this.unwatchCallbacks = [];
+            this.nativeUploads = 0;
+            this.richUploads.clear();
+            this.formProcessingDepth = 0;
+            this.activeUploads = 0;
 
             this.isInitialized = false;
             this.registry?.remove(this.registryKey);
         },
 
         markDirty() {
+            if (this.isDestroyed) {
+                return;
+            }
+
             this.changeSequence += 1;
 
             if (this.dirtySince === null) {
@@ -146,7 +223,12 @@ export function createRecipeContentAutosave(options = {}) {
         },
 
         uploadStarted() {
-            this.activeUploads += 1;
+            if (this.isDestroyed) {
+                return;
+            }
+
+            this.nativeUploads += 1;
+            this.syncActiveUploads();
             this.markDirty();
         },
 
@@ -155,7 +237,12 @@ export function createRecipeContentAutosave(options = {}) {
         },
 
         uploadErrored() {
-            this.activeUploads = Math.max(0, this.activeUploads - 1);
+            if (this.isDestroyed) {
+                return;
+            }
+
+            this.nativeUploads = Math.max(0, this.nativeUploads - 1);
+            this.syncActiveUploads();
             this.errorMessage = this.labels.saveFailed;
             this.clearSaveTimer();
             this.setState('failed');
@@ -166,8 +253,101 @@ export function createRecipeContentAutosave(options = {}) {
         },
 
         finishUpload() {
-            this.activeUploads = Math.max(0, this.activeUploads - 1);
+            if (this.isDestroyed) {
+                return;
+            }
 
+            this.nativeUploads = Math.max(0, this.nativeUploads - 1);
+            this.syncActiveUploads();
+            this.saveOverdueChangesAfterUploads();
+        },
+
+        isMatchingRichEditorEvent(event) {
+            return event?.detail?.livewireId === this.livewireId
+                && typeof event.detail.key === 'string';
+        },
+
+        richUploadStarted(key) {
+            if (this.isDestroyed) {
+                return;
+            }
+
+            this.richUploads.set(key, (this.richUploads.get(key) ?? 0) + 1);
+            this.syncActiveUploads();
+            this.scheduleRichUploadSafetyTimer();
+            this.markDirty();
+        },
+
+        richUploadFinished(key) {
+            if (this.isDestroyed) {
+                return;
+            }
+
+            const remainingUploads = Math.max(0, (this.richUploads.get(key) ?? 0) - 1);
+
+            if (remainingUploads === 0) {
+                this.richUploads.delete(key);
+            } else {
+                this.richUploads.set(key, remainingUploads);
+            }
+
+            if (this.richUploads.size === 0) {
+                this.clearRichUploadSafetyTimer();
+            }
+
+            this.syncActiveUploads();
+            this.saveOverdueChangesAfterUploads();
+        },
+
+        formProcessingFinished() {
+            if (this.isDestroyed) {
+                return;
+            }
+
+            this.formProcessingDepth = Math.max(0, this.formProcessingDepth - 1);
+
+            if (this.formProcessingDepth === 0 && this.richUploads.size === 0) {
+                this.clearRichUploadSafetyTimer();
+            }
+
+            this.saveOverdueChangesAfterUploads();
+        },
+
+        syncActiveUploads() {
+            const richUploadCount = [...this.richUploads.values()]
+                .reduce((total, count) => total + count, 0);
+
+            this.activeUploads = this.nativeUploads + richUploadCount;
+        },
+
+        scheduleRichUploadSafetyTimer() {
+            this.clearRichUploadSafetyTimer();
+            this.richUploadSafetyTimer = this.clock.setTimeout(() => {
+                this.richUploadSafetyTimer = null;
+
+                if (this.isDestroyed || this.richUploads.size === 0) {
+                    return;
+                }
+
+                this.richUploads.clear();
+                this.formProcessingDepth = 0;
+                this.syncActiveUploads();
+                this.errorMessage = this.labels.saveFailed;
+                this.clearSaveTimer();
+                this.setState('failed');
+            }, this.uploadSafetyInterval);
+        },
+
+        clearRichUploadSafetyTimer() {
+            if (this.richUploadSafetyTimer === null) {
+                return;
+            }
+
+            this.clock.clearTimeout(this.richUploadSafetyTimer);
+            this.richUploadSafetyTimer = null;
+        },
+
+        saveOverdueChangesAfterUploads() {
             if (this.activeUploads === 0
                 && this.state === 'dirty'
                 && this.saveDeadline !== null
@@ -203,6 +383,10 @@ export function createRecipeContentAutosave(options = {}) {
         },
 
         save() {
+            if (this.isDestroyed) {
+                return Promise.resolve(null);
+            }
+
             if (this.inFlight) {
                 return this.inFlight;
             }
@@ -212,6 +396,7 @@ export function createRecipeContentAutosave(options = {}) {
             }
 
             const savedSequence = this.changeSequence;
+            const saveLifecycleVersion = this.lifecycleVersion;
             this.clearSaveTimer();
             this.errorMessage = '';
             this.setState('saving');
@@ -224,8 +409,12 @@ export function createRecipeContentAutosave(options = {}) {
                 response = Promise.reject(error);
             }
 
-            this.inFlight = Promise.resolve(response)
+            const savePromise = Promise.resolve(response)
                 .then((result) => {
+                    if (this.isDestroyed || this.lifecycleVersion !== saveLifecycleVersion) {
+                        return result;
+                    }
+
                     if (!result?.ok) {
                         this.errorMessage = result?.message ?? this.labels.saveFailed;
                         this.setState('failed');
@@ -248,18 +437,30 @@ export function createRecipeContentAutosave(options = {}) {
                     return result;
                 })
                 .catch((error) => {
+                    if (this.isDestroyed || this.lifecycleVersion !== saveLifecycleVersion) {
+                        return { ok: false, message: error?.message || this.labels.saveFailed };
+                    }
+
                     this.errorMessage = error?.message || this.labels.saveFailed;
                     this.setState('failed');
 
                     return { ok: false, message: this.errorMessage };
                 })
                 .finally(() => {
-                    this.inFlight = null;
+                    if (this.inFlight === savePromise) {
+                        this.inFlight = null;
+                    }
+
+                    if (this.isDestroyed || this.lifecycleVersion !== saveLifecycleVersion) {
+                        return;
+                    }
 
                     if (this.state === 'dirty') {
                         this.scheduleSaveTimer();
                     }
                 });
+
+            this.inFlight = savePromise;
 
             return this.inFlight;
         },

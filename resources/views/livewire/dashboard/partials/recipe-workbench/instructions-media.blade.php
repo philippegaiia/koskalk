@@ -14,6 +14,9 @@
          'savedAt' => __('workbench.instructions.saved_at'),
          'saveFailed' => __('workbench.instructions.save_failed'),
      ]),
+     livewireId: $wire.$id,
+     uploadEventTarget: window,
+     watch: (path, callback) => $wire.$watch(path, callback),
      save: () => $wire.saveRecipeContent(),
  })"
  @submit.prevent="save()"

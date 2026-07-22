@@ -190,6 +190,225 @@ assert.equal(registry.blocksNavigation(), false);
 JS);
 });
 
+it('watches both rich editor state paths without an initial dirty change or leaked subscriptions', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const clock = new FakeClock(0);
+const watchSource = new FakeWatchSource({
+    'data.description': { type: 'doc', content: [] },
+    'data.manufacturing_instructions': { type: 'doc', content: [] },
+});
+const controller = createRecipeContentAutosave({
+    clock,
+    watch: watchSource.watch,
+});
+
+controller.init();
+controller.init();
+
+assert.equal(controller.state, 'saved');
+assert.equal(controller.dirtySince, null);
+assert.equal(clock.timers.size, 0);
+assert.equal(watchSource.listenerCount('data.description'), 1);
+assert.equal(watchSource.listenerCount('data.manufacturing_instructions'), 1);
+
+watchSource.set('data.description', { type: 'doc', content: [{ type: 'paragraph' }] });
+
+assert.equal(controller.state, 'dirty');
+assert.equal(controller.dirtySince, 0);
+assert.equal(clock.timers.size, 1);
+
+controller.destroy();
+controller.destroy();
+
+assert.equal(watchSource.listenerCount(), 0);
+assert.equal(watchSource.unsubscribeCalls, 2);
+
+watchSource.set('data.manufacturing_instructions', { type: 'doc', content: [{ type: 'paragraph' }] });
+assert.equal(clock.timers.size, 0);
+JS);
+});
+
+it('tracks concurrent Filament rich editor uploads without counting form processing twice', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const clock = new FakeClock(0);
+const form = new FakeEventTarget();
+const windowTarget = new FakeEventTarget();
+let saves = 0;
+const controller = createRecipeContentAutosave({
+    clock,
+    eventTarget: form,
+    uploadEventTarget: windowTarget,
+    livewireId: 'recipe-workbench-1',
+    save: async () => {
+        saves += 1;
+
+        return { ok: true, saved_at: '2026-07-22T10:15:00.000000Z' };
+    },
+});
+
+controller.init();
+
+form.dispatch('form-processing-started');
+windowTarget.dispatch('rich-editor-uploading-file', { livewireId: 'another-component', key: 'description' });
+windowTarget.dispatch('rich-editor-uploading-file', { livewireId: 'recipe-workbench-1', key: 'description' });
+windowTarget.dispatch('rich-editor-uploading-file', { livewireId: 'recipe-workbench-1', key: 'manufacturing-instructions' });
+
+assert.equal(controller.activeUploads, 2);
+assert.equal(controller.state, 'dirty');
+
+clock.advance(120_000);
+await settle();
+assert.equal(saves, 0);
+
+windowTarget.dispatch('rich-editor-uploaded-file', { livewireId: 'recipe-workbench-1', key: 'description' });
+form.dispatch('form-processing-finished');
+assert.equal(controller.activeUploads, 1);
+assert.equal(saves, 0);
+
+windowTarget.dispatch('rich-editor-uploaded-file', { livewireId: 'recipe-workbench-1', key: 'manufacturing-instructions' });
+await settle();
+
+assert.equal(controller.activeUploads, 0);
+assert.equal(saves, 1);
+assert.equal(controller.state, 'saved');
+JS);
+});
+
+it('uses Filament and Livewire terminal events to prevent stuck upload state', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const form = new FakeEventTarget();
+const windowTarget = new FakeEventTarget();
+const controller = createRecipeContentAutosave({
+    clock: new FakeClock(0),
+    eventTarget: form,
+    uploadEventTarget: windowTarget,
+    livewireId: 'recipe-workbench-1',
+});
+
+controller.init();
+
+form.dispatch('form-processing-started');
+windowTarget.dispatch('rich-editor-uploading-file', { livewireId: 'recipe-workbench-1', key: 'description' });
+windowTarget.dispatch('rich-editor-uploaded-file', { livewireId: 'recipe-workbench-1', key: 'description' });
+form.dispatch('form-processing-finished');
+assert.equal(controller.activeUploads, 0);
+
+form.dispatch('livewire-upload-start');
+form.dispatch('livewire-upload-start');
+form.dispatch('livewire-upload-error');
+form.dispatch('livewire-upload-cancel');
+assert.equal(controller.activeUploads, 0);
+assert.equal(controller.state, 'failed');
+
+windowTarget.dispatch('rich-editor-file-validation-message', {
+    livewireId: 'recipe-workbench-1',
+    key: 'description',
+    validationMessage: 'Invalid file',
+});
+assert.equal(controller.activeUploads, 0);
+
+controller.destroy();
+
+for (const eventName of ['rich-editor-uploading-file', 'rich-editor-uploaded-file', 'rich-editor-file-validation-message']) {
+    assert.equal(windowTarget.listenerCount(eventName), 0, `${eventName} should be removed`);
+}
+
+for (const eventName of ['form-processing-started', 'form-processing-finished']) {
+    assert.equal(form.listenerCount(eventName), 0, `${eventName} should be removed`);
+}
+JS);
+});
+
+it('fails safely when Filament emits no terminal event for a rich editor upload', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const clock = new FakeClock(0);
+const form = new FakeEventTarget();
+const windowTarget = new FakeEventTarget();
+const registry = createDirtyStateRegistry();
+const controller = createRecipeContentAutosave({
+    clock,
+    eventTarget: form,
+    uploadEventTarget: windowTarget,
+    livewireId: 'recipe-workbench-1',
+    registry,
+    uploadSafetyInterval: 30_000,
+});
+
+controller.init();
+form.dispatch('form-processing-started');
+windowTarget.dispatch('rich-editor-uploading-file', { livewireId: 'recipe-workbench-1', key: 'description' });
+
+clock.advance(30_000);
+
+assert.equal(controller.activeUploads, 0);
+assert.equal(controller.state, 'failed');
+assert.equal(registry.blocksNavigation(), true);
+assert.equal(clock.timers.size, 0);
+JS);
+});
+
+it('ignores a resolved in-flight save after destruction', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const clock = new FakeClock(0);
+const registry = createDirtyStateRegistry();
+const pendingSave = deferred();
+const controller = createRecipeContentAutosave({ clock, registry, save: () => pendingSave.promise });
+
+controller.init();
+controller.markDirty();
+const save = controller.save();
+controller.markDirty();
+controller.destroy();
+
+pendingSave.resolve({ ok: true, saved_at: '2026-07-22T10:15:00.000000Z' });
+await save;
+
+assert.equal(controller.state, 'saving');
+assert.equal(controller.inFlight, null);
+assert.equal(clock.timers.size, 0);
+assert.equal(registry.blocksNavigation(), false);
+JS);
+});
+
+it('ignores a rejected in-flight save after destruction', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const clock = new FakeClock(0);
+const registry = createDirtyStateRegistry();
+const pendingSave = deferred();
+const controller = createRecipeContentAutosave({ clock, registry, save: () => pendingSave.promise });
+
+controller.init();
+controller.markDirty();
+const save = controller.save();
+controller.destroy();
+
+pendingSave.reject(new Error('Network failed'));
+await save;
+
+assert.equal(controller.state, 'saving');
+assert.equal(controller.errorMessage, '');
+assert.equal(controller.inFlight, null);
+assert.equal(clock.timers.size, 0);
+assert.equal(registry.blocksNavigation(), false);
+JS);
+});
+
+it('documents the installed Filament rich editor state and upload event contract', function () {
+    $richEditorSource = file_get_contents(dirname(__DIR__, 2).'/vendor/filament/forms/resources/js/components/rich-editor.js');
+    $localFilesSource = file_get_contents(dirname(__DIR__, 2).'/vendor/filament/forms/resources/js/components/rich-editor/extension-local-files.js');
+
+    expect($richEditorSource)
+        ->toContain("editor.on('update'")
+        ->toContain('this.state = editor.getJSON()')
+        ->toContain("'rich-editor-uploading-file'")
+        ->toContain("'rich-editor-uploaded-file'")
+        ->toContain("'rich-editor-file-validation-message'");
+
+    expect($localFilesSource)
+        ->toContain("'form-processing-started'")
+        ->toContain("'form-processing-finished'");
+});
+
 it('formats saved timestamps with the browser locale', function () {
     runRecipeContentAutosaveContract(<<<'JS'
 const isoTimestamp = '2026-07-22T10:15:00.000000Z';
@@ -300,6 +519,15 @@ it('lets Alpine own root initialization while preserving the public calculator a
         ->toContain('x-init="if (@js($isPublicCalculator)');
 });
 
+it('bridges the autosave controller to the public Livewire watcher and component id APIs', function () {
+    $source = file_get_contents(dirname(__DIR__, 2).'/resources/views/livewire/dashboard/partials/recipe-workbench/instructions-media.blade.php');
+
+    expect($source)
+        ->toContain('livewireId: $wire.$id')
+        ->toContain('uploadEventTarget: window')
+        ->toContain('watch: (path, callback) => $wire.$watch(path, callback)');
+});
+
 function runRecipeContentAutosaveContract(string $contract): void
 {
     $script = <<<'JS'
@@ -372,9 +600,9 @@ class FakeEventTarget {
         this.listeners.set(eventName, listeners.filter((listener) => listener.callback !== callback || listener.capture !== capture));
     }
 
-    dispatch(eventName) {
+    dispatch(eventName, detail = {}) {
         for (const listener of this.listeners.get(eventName) ?? []) {
-            listener.callback({ type: eventName });
+            listener.callback({ detail, type: eventName });
         }
     }
 
@@ -388,6 +616,49 @@ class FakeEventTarget {
 
     captureFor(eventName) {
         return (this.listeners.get(eventName) ?? [])[0]?.capture ?? null;
+    }
+}
+
+class FakeWatchSource {
+    constructor(values = {}) {
+        this.listeners = new Map();
+        this.unsubscribeCalls = 0;
+        this.values = new Map(Object.entries(values));
+    }
+
+    watch = (path, callback) => {
+        const listeners = this.listeners.get(path) ?? [];
+        listeners.push(callback);
+        this.listeners.set(path, listeners);
+
+        let isSubscribed = true;
+
+        return () => {
+            if (!isSubscribed) {
+                return;
+            }
+
+            isSubscribed = false;
+            this.unsubscribeCalls += 1;
+            this.listeners.set(path, (this.listeners.get(path) ?? []).filter((listener) => listener !== callback));
+        };
+    };
+
+    set(path, value) {
+        const previousValue = this.values.get(path);
+        this.values.set(path, value);
+
+        for (const listener of this.listeners.get(path) ?? []) {
+            listener(value, previousValue);
+        }
+    }
+
+    listenerCount(path = null) {
+        if (path !== null) {
+            return (this.listeners.get(path) ?? []).length;
+        }
+
+        return [...this.listeners.values()].reduce((total, listeners) => total + listeners.length, 0);
     }
 }
 

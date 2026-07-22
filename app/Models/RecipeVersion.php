@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'batch_size',
     'batch_unit',
     'manufacturing_mode',
+    'manufacturing_instructions',
     'exposure_mode',
     'regulatory_regime',
     'regulatory_regime_id',

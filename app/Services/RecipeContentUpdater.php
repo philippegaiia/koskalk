@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Recipe;
+use App\Rules\MaximumRichContentImages;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class RecipeContentUpdater
@@ -54,6 +56,14 @@ class RecipeContentUpdater
      */
     private function validateMediaPaths(Recipe $recipe, array $state): void
     {
+        Validator::make([
+            'description' => $state['description'] ?? null,
+            'manufacturing_instructions' => $state['manufacturing_instructions'] ?? null,
+        ], [
+            'description' => [new MaximumRichContentImages(2, 'workbench.instructions.description_image_limit')],
+            'manufacturing_instructions' => [new MaximumRichContentImages(8, 'workbench.instructions.procedure_image_limit')],
+        ])->validate();
+
         $submittedRecipe = clone $recipe;
         $submittedRecipe->fill($state);
         $existingPaths = $recipe->mediaPaths();

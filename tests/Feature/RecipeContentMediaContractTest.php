@@ -31,6 +31,52 @@ it('rejects a media path belonging to another formula namespace', function () {
         ->and(Storage::disk('local')->exists($otherPath))->toBeTrue();
 });
 
+it('does not mutate recipe content or delete media when image limits fail validation', function () {
+    Storage::fake('local');
+    config(['media.recipe_disk' => 'local']);
+
+    $recipe = Recipe::factory()->create();
+    $previousPath = 'recipes/'.$recipe->public_id.'/rich-content/previous.webp';
+    $submittedPaths = [
+        'recipes/'.$recipe->public_id.'/rich-content/presentation-1.webp',
+        'recipes/'.$recipe->public_id.'/rich-content/presentation-2.webp',
+        'recipes/'.$recipe->public_id.'/rich-content/presentation-3.webp',
+    ];
+    $previousDescription = '<p><img data-id="'.$previousPath.'"></p>';
+
+    $recipe->update(['description' => $previousDescription]);
+    Storage::disk('local')->put($previousPath, 'previous-image');
+
+    foreach ($submittedPaths as $submittedPath) {
+        Storage::disk('local')->put($submittedPath, 'submitted-image');
+    }
+
+    $exception = null;
+
+    try {
+        app(RecipeContentUpdater::class)->update($recipe, [
+            'description' => '<p>'.collect($submittedPaths)
+                ->map(fn (string $path): string => '<img data-id="'.$path.'">')
+                ->implode('').'</p>',
+            'manufacturing_instructions' => null,
+            'featured_image_path' => null,
+        ]);
+    } catch (ValidationException $validationException) {
+        $exception = $validationException;
+    }
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception->errors())->toHaveKey('description')
+        ->and($exception->errors()['description'][0])->toBe('The product description may contain up to 2 images.');
+
+    expect($recipe->fresh()->description)->toBe($previousDescription)
+        ->and(Storage::disk('local')->exists($previousPath))->toBeTrue();
+
+    foreach ($submittedPaths as $submittedPath) {
+        expect(Storage::disk('local')->exists($submittedPath))->toBeTrue();
+    }
+});
+
 it('deletes the previous featured image when the recipe image is cleared', function () {
     Storage::fake('local');
 
@@ -78,27 +124,26 @@ it('keeps a shared rich content attachment when it moves between recipe editors 
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-    $sharedAttachment = 'recipes/rich-content/shared.webp';
-    $sharedHtml = '<p><img data-id="'.$sharedAttachment.'" src="/storage/'.$sharedAttachment.'"></p>';
-
     $recipe = Recipe::factory()->create([
         'product_family_id' => $soapFamily->id,
         'owner_id' => $user->id,
-        'description' => '<p>Presentation intro.</p>',
-        'manufacturing_instructions' => $sharedHtml,
+        'manufacturing_instructions' => '<p>Step 1: Warm the oils.</p>',
     ]);
+    $sharedAttachment = 'recipes/'.$recipe->public_id.'/rich-content/shared.webp';
+    $sharedHtml = '<p><img data-id="'.$sharedAttachment.'" src="/dashboard/recipes/'.$recipe->public_id.'/media/'.$sharedAttachment.'"></p>';
+    $recipe->update(['description' => $sharedHtml]);
 
     Storage::disk('local')->put($sharedAttachment, 'shared-image');
 
     $this->actingAs($user);
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
-        ->set('data.description', $sharedHtml)
-        ->set('data.manufacturing_instructions', '<p>Step 1: Warm the oils.</p>')
+        ->set('data.description', '<p>Presentation intro.</p>')
+        ->set('data.manufacturing_instructions', $sharedHtml)
         ->call('saveRecipeContent')
         ->assertSet('recipeContentStatus', 'success');
 
     expect(Storage::disk('local')->exists($sharedAttachment))->toBeTrue()
-        ->and($recipe->fresh()->description)->toContain($sharedAttachment)
-        ->and($recipe->fresh()->manufacturing_instructions)->not->toContain($sharedAttachment);
+        ->and($recipe->fresh()->description)->not->toContain($sharedAttachment)
+        ->and($recipe->fresh()->manufacturing_instructions)->toContain($sharedAttachment);
 });

@@ -33,6 +33,8 @@ return [
     ],
     'instructions' => [
         'minimum_image_edges' => 'The image must have a short edge of at least :short pixels and a long edge of at least :long pixels.',
+        'description_image_limit' => 'The product description may contain up to :max images.',
+        'procedure_image_limit' => 'The manufacturing procedure may contain up to :max images.',
     ],
     'common' => ['ingredient' => 'Ingredient', 'oil' => 'Oil', 'weight' => 'Weight', 'additives' => 'Additives', 'fragrance' => 'Fragrance and aromatics', 'fatty_acids' => 'Fatty acids', 'lye_type' => 'Lye type', 'dual_lye' => 'Dual lye', 'superfat' => 'Superfat', 'rinse_off' => 'Rinse-off', 'leave_on' => 'Leave-on', 'product_category' => 'Product category', 'choose_later' => 'Choose later', 'total_batch' => 'Total batch quantity', 'cosmetic_categories_unavailable' => 'Product categories are currently unavailable.', 'label_compliance' => 'Label & compliance', 'water_percent' => 'Water as % of oils', 'water_ratio' => 'Water : lye ratio', 'lye_concentration' => 'Lye concentration', 'formula_percent' => '% formula'],
     'cosmetic' => [

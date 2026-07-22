@@ -9,6 +9,7 @@ use App\Models\Scopes\OwnedByCurrentTenantScope;
 use App\OwnerType;
 use App\Services\MediaStorage;
 use App\Services\RecipeRichContentAttachmentProvider;
+use App\Support\RichContentAttachmentPaths;
 use App\Visibility;
 use Database\Factories\RecipeFactory;
 use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
@@ -152,7 +153,7 @@ class Recipe extends Model implements HasRichContent
 
         return collect($attributeNames)
             ->filter(fn (mixed $name): bool => is_string($name) && $name !== '')
-            ->flatMap(fn (string $name): Collection => static::extractRichContentAttachmentPaths($this->getAttribute($name)))
+            ->flatMap(fn (string $name): Collection => RichContentAttachmentPaths::extract($this->getAttribute($name)))
             ->unique()
             ->values();
     }
@@ -170,7 +171,7 @@ class Recipe extends Model implements HasRichContent
                     ? $pendingRichContentState[$name]
                     : $this->getAttribute($name);
 
-                return static::extractRichContentAttachmentPaths($content);
+                return RichContentAttachmentPaths::extract($content);
             })
             ->unique()
             ->values();
@@ -242,36 +243,6 @@ class Recipe extends Model implements HasRichContent
             'locked_at' => 'datetime',
             'featured_image_original_name' => OriginalFilename::class,
         ];
-    }
-
-    /**
-     * @return Collection<int, string>
-     */
-    private static function extractRichContentAttachmentPaths(mixed $content): Collection
-    {
-        if (! is_string($content) || $content === '') {
-            return collect();
-        }
-
-        preg_match_all('/data-id="([^"]+)"/', $content, $dataIdMatches);
-        preg_match_all('/(?:src|href)="([^"]*recipes\/(?:[^\/]+\/)?rich-content\/[^"]+)"/', $content, $sourceMatches);
-
-        $sourcePaths = collect($sourceMatches[1] ?? [])
-            ->map(function (string $path): string {
-                $normalizedPath = parse_url($path, PHP_URL_PATH);
-
-                if (is_string($normalizedPath) && preg_match('~recipes/(?:[^/]+/)?rich-content/.*$~', $normalizedPath, $matches) === 1) {
-                    return $matches[0];
-                }
-
-                return $path;
-            });
-
-        return collect($dataIdMatches[1] ?? [])
-            ->merge($sourcePaths)
-            ->filter(fn (mixed $value): bool => is_string($value) && str_contains($value, '/rich-content/'))
-            ->unique()
-            ->values();
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Recipe;
+use App\Rules\MaximumRichContentImages;
 use App\Rules\MinimumImageEdges;
 use App\Support\FilamentUploadMetadata;
 use Filament\Forms\Components\BaseFileUpload;
@@ -44,6 +45,9 @@ class RecipeWorkbenchContentFormSchema
                             ])
                             ->fileAttachmentsMaxSize(MediaStorage::recipeRichContentImagesMaxSize())
                             ->resizableImages()
+                            ->rules([
+                                new MaximumRichContentImages(8, 'workbench.instructions.procedure_image_limit'),
+                            ])
                             ->extraInputAttributes([
                                 'class' => 'min-h-[20rem] [&_.fi-fo-rich-editor-content]:min-h-[18rem]',
                             ])
@@ -70,6 +74,9 @@ class RecipeWorkbenchContentFormSchema
                             ])
                             ->fileAttachmentsMaxSize(MediaStorage::recipeRichContentImagesMaxSize())
                             ->resizableImages()
+                            ->rules([
+                                new MaximumRichContentImages(2, 'workbench.instructions.description_image_limit'),
+                            ])
                             ->extraInputAttributes([
                                 'class' => 'min-h-[20rem] [&_.fi-fo-rich-editor-content]:min-h-[18rem]',
                             ])

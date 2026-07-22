@@ -452,6 +452,15 @@ it('organizes saved instructions and media with responsive schema contracts', fu
         ->and($presentationGrid->getColumns('lg'))->toBe(12)
         ->and($description->getColumnSpan('lg'))->toBe(8)
         ->and($featuredImage->getColumnSpan('lg'))->toBe(4)
+        ->and($featuredImage->getPanelLayout())->toBe('compact')
+        ->and($featuredImage->getImagePreviewHeight())->toBeNull()
+        ->and($featuredImage->hasImageEditor())->toBeTrue()
+        ->and(array_values($featuredImage->getImageEditorAspectRatioOptionsForJs()))->toBe([
+            'NaN',
+            1.0,
+            4 / 3,
+            3 / 4,
+        ])
         ->and($procedureSection)->toBeInstanceOf(Section::class)
         ->and($procedureGrid)->toBeInstanceOf(Grid::class)
         ->and($procedureGrid->getColumns('default'))->toBe(1)

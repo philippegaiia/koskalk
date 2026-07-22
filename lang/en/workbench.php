@@ -38,7 +38,7 @@ return [
         'description_label' => 'Product description',
         'description_help' => 'Describe the finished product for its Product page. You can include up to two images.',
         'featured_label' => 'Featured product image',
-        'featured_help' => 'JPG, PNG or WebP up to 3 MB. Minimum edges: 300 px and 500 px. The image keeps its original proportions.',
+        'featured_help' => 'JPG, PNG or WebP up to 3 MB. Minimum dimensions: 300 px on the short side and 500 px on the long side. Keep the original proportions or crop the image after upload.',
         'procedure_label' => 'Manufacturing procedure',
         'procedure_help' => 'Record the process steps, temperatures, timings, checks and cautions used at the bench. You can include up to eight images.',
         'draft_text_help' => 'You can start writing now. Save the formula before attaching images.',

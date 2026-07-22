@@ -95,8 +95,6 @@ class RecipeWorkbenchContentFormSchema
                                     ->deleteUploadedFileUsing(function (string $file): void {
                                         MediaStorage::deleteRecipePath($file);
                                     })
-                                    ->imagePreviewHeight('14rem')
-                                    ->panelLayout('compact')
                                     ->acceptedFileTypes([
                                         'image/jpeg',
                                         'image/png',
@@ -120,6 +118,12 @@ class RecipeWorkbenchContentFormSchema
                                         );
                                     })
                                     ->imageEditor()
+                                    ->imageEditorAspectRatioOptions([
+                                        null,
+                                        '1:1',
+                                        '4:3',
+                                        '3:4',
+                                    ])
                                     ->helperText(__('workbench.instructions.featured_help'))
                                     ->disabled(fn (?Recipe $record): bool => ! $record instanceof Recipe)
                                     ->columnSpan([

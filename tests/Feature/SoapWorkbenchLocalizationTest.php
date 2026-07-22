@@ -96,7 +96,7 @@ it('uses approved instructions and media terminology', function () {
         ->and(__('workbench.instructions.description_label'))->toBe('Product description')
         ->and(__('workbench.instructions.description_help'))->toBe('Describe the finished product for its Product page. You can include up to two images.')
         ->and(__('workbench.instructions.featured_label'))->toBe('Featured product image')
-        ->and(__('workbench.instructions.featured_help'))->toBe('JPG, PNG or WebP up to 3 MB. Minimum edges: 300 px and 500 px. The image keeps its original proportions.')
+        ->and(__('workbench.instructions.featured_help'))->toBe('JPG, PNG or WebP up to 3 MB. Minimum dimensions: 300 px on the short side and 500 px on the long side. Keep the original proportions or crop the image after upload.')
         ->and(__('workbench.instructions.procedure_label'))->toBe('Manufacturing procedure')
         ->and(__('workbench.instructions.procedure_help'))->toBe('Record the process steps, temperatures, timings, checks and cautions used at the bench. You can include up to eight images.')
         ->and(__('workbench.instructions.draft_text_help'))->toBe('You can start writing now. Save the formula before attaching images.')
@@ -147,7 +147,7 @@ it('loads contextual instructions and media translations from the database for e
             'instructions.title' => 'Instructions et médias',
             'instructions.presentation_title' => 'Présentation du produit',
             'instructions.description_help' => 'Présentez le produit fini pour sa fiche produit. Vous pouvez ajouter jusqu’à deux images.',
-            'instructions.featured_help' => 'JPG, PNG ou WebP jusqu’à 3 Mo. Dimensions minimales : 300 px pour le petit côté et 500 px pour le grand. Les proportions d’origine sont conservées.',
+            'instructions.featured_help' => 'JPG, PNG ou WebP jusqu’à 3 Mo. Dimensions minimales : 300 px pour le petit côté et 500 px pour le grand. Conservez les proportions d’origine ou recadrez l’image après l’import.',
             'instructions.procedure_label' => 'Mode opératoire de fabrication',
             'instructions.procedure_help' => 'Consignez les étapes, températures, durées, contrôles et précautions appliqués à l’atelier. Vous pouvez ajouter jusqu’à huit images.',
             'instructions.all_saved' => 'Toutes les modifications sont enregistrées',
@@ -159,7 +159,7 @@ it('loads contextual instructions and media translations from the database for e
             'instructions.title' => 'Instrucciones y contenido multimedia',
             'instructions.presentation_title' => 'Presentación del producto',
             'instructions.description_help' => 'Describe el producto terminado para su ficha. Puedes incluir hasta dos imágenes.',
-            'instructions.featured_help' => 'JPG, PNG o WebP de hasta 3 MB. Dimensiones mínimas: 300 px en el lado corto y 500 px en el largo. Se conservan las proporciones originales.',
+            'instructions.featured_help' => 'JPG, PNG o WebP de hasta 3 MB. Dimensiones mínimas: 300 px en el lado corto y 500 px en el largo. Conserva las proporciones originales o recorta la imagen después de subirla.',
             'instructions.procedure_label' => 'Procedimiento de fabricación',
             'instructions.procedure_help' => 'Anota los pasos, las temperaturas, los tiempos, los controles y las precauciones utilizados en el taller. Puedes incluir hasta ocho imágenes.',
             'instructions.all_saved' => 'Todos los cambios están guardados',
@@ -171,7 +171,7 @@ it('loads contextual instructions and media translations from the database for e
             'instructions.title' => 'Anleitung und Medien',
             'instructions.presentation_title' => 'Produktdarstellung',
             'instructions.description_help' => 'Beschreiben Sie das fertige Produkt für seine Produktseite. Sie können bis zu zwei Bilder einfügen.',
-            'instructions.featured_help' => 'JPG, PNG oder WebP bis 3 MB. Mindestmaße: 300 px an der kurzen und 500 px an der langen Seite. Das ursprüngliche Seitenverhältnis bleibt erhalten.',
+            'instructions.featured_help' => 'JPG, PNG oder WebP bis 3 MB. Mindestmaße: 300 px an der kurzen und 500 px an der langen Seite. Behalten Sie das ursprüngliche Seitenverhältnis bei oder schneiden Sie das Bild nach dem Hochladen zu.',
             'instructions.procedure_label' => 'Herstellungsverfahren',
             'instructions.procedure_help' => 'Dokumentieren Sie Arbeitsschritte, Temperaturen, Zeiten, Kontrollen und Vorsichtsmaßnahmen. Sie können bis zu acht Bilder einfügen.',
             'instructions.all_saved' => 'Alle Änderungen gespeichert',
@@ -183,7 +183,7 @@ it('loads contextual instructions and media translations from the database for e
             'instructions.title' => 'Istruzioni e contenuti multimediali',
             'instructions.presentation_title' => 'Presentazione del prodotto',
             'instructions.description_help' => 'Descrivi il prodotto finito per la sua scheda. Puoi includere fino a due immagini.',
-            'instructions.featured_help' => 'JPG, PNG o WebP fino a 3 MB. Dimensioni minime: 300 px sul lato corto e 500 px sul lato lungo. Le proporzioni originali vengono mantenute.',
+            'instructions.featured_help' => 'JPG, PNG o WebP fino a 3 MB. Dimensioni minime: 300 px sul lato corto e 500 px su quello lungo. Mantieni le proporzioni originali oppure ritaglia l’immagine dopo il caricamento.',
             'instructions.procedure_label' => 'Procedura di fabbricazione',
             'instructions.procedure_help' => 'Registra fasi, temperature, tempi, controlli e precauzioni seguiti in laboratorio. Puoi includere fino a otto immagini.',
             'instructions.all_saved' => 'Tutte le modifiche sono state salvate',
@@ -195,7 +195,7 @@ it('loads contextual instructions and media translations from the database for e
             'instructions.title' => 'Instructies en media',
             'instructions.presentation_title' => 'Productpresentatie',
             'instructions.description_help' => 'Beschrijf het afgewerkte product voor de productpagina. Je kunt maximaal twee afbeeldingen toevoegen.',
-            'instructions.featured_help' => 'JPG, PNG of WebP tot 3 MB. Minimale afmetingen: 300 px aan de korte zijde en 500 px aan de lange zijde. De oorspronkelijke verhoudingen blijven behouden.',
+            'instructions.featured_help' => 'JPG, PNG of WebP tot 3 MB. Minimale afmetingen: 300 px aan de korte zijde en 500 px aan de lange zijde. Behoud de oorspronkelijke verhoudingen of snijd de afbeelding bij na het uploaden.',
             'instructions.procedure_label' => 'Productiewijze',
             'instructions.procedure_help' => 'Leg de stappen, temperaturen, tijden, controles en voorzorgsmaatregelen aan de werkbank vast. Je kunt maximaal acht afbeeldingen toevoegen.',
             'instructions.all_saved' => 'Alle wijzigingen zijn opgeslagen',

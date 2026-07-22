@@ -29,6 +29,7 @@ function defaultSavedAtFormatter(value) {
 
 export function createRecipeContentAutosave(options = {}) {
     const clock = options.clock ?? browserClock();
+    const uploadEventTarget = options.uploadEventTarget ?? (typeof window === 'undefined' ? null : window);
     const labels = {
         allSaved: 'All changes saved',
         unsaved: 'Unsaved changes',
@@ -48,7 +49,6 @@ export function createRecipeContentAutosave(options = {}) {
         savedAt: null,
         errorMessage: '',
         eventTarget: options.eventTarget ?? null,
-        uploadEventTarget: options.uploadEventTarget ?? (typeof window === 'undefined' ? null : window),
         livewireId: options.livewireId ?? null,
         watchCallback: options.watch ?? null,
         watchPaths: options.watchPaths ?? DEFAULT_WATCH_PATHS,
@@ -158,9 +158,9 @@ export function createRecipeContentAutosave(options = {}) {
             this.eventTarget.addEventListener('livewire-upload-cancel', this.uploadCancelHandler);
             this.eventTarget.addEventListener('form-processing-started', this.formProcessingStartHandler);
             this.eventTarget.addEventListener('form-processing-finished', this.formProcessingFinishHandler);
-            this.uploadEventTarget?.addEventListener('rich-editor-uploading-file', this.richUploadStartHandler);
-            this.uploadEventTarget?.addEventListener('rich-editor-uploaded-file', this.richUploadFinishHandler);
-            this.uploadEventTarget?.addEventListener('rich-editor-file-validation-message', this.richUploadValidationHandler);
+            uploadEventTarget?.addEventListener('rich-editor-uploading-file', this.richUploadStartHandler);
+            uploadEventTarget?.addEventListener('rich-editor-uploaded-file', this.richUploadFinishHandler);
+            uploadEventTarget?.addEventListener('rich-editor-file-validation-message', this.richUploadValidationHandler);
         },
 
         destroy() {
@@ -181,10 +181,10 @@ export function createRecipeContentAutosave(options = {}) {
                 this.eventTarget.removeEventListener('form-processing-finished', this.formProcessingFinishHandler);
             }
 
-            if (this.isInitialized && this.uploadEventTarget) {
-                this.uploadEventTarget.removeEventListener('rich-editor-uploading-file', this.richUploadStartHandler);
-                this.uploadEventTarget.removeEventListener('rich-editor-uploaded-file', this.richUploadFinishHandler);
-                this.uploadEventTarget.removeEventListener('rich-editor-file-validation-message', this.richUploadValidationHandler);
+            if (this.isInitialized && uploadEventTarget) {
+                uploadEventTarget.removeEventListener('rich-editor-uploading-file', this.richUploadStartHandler);
+                uploadEventTarget.removeEventListener('rich-editor-uploaded-file', this.richUploadFinishHandler);
+                uploadEventTarget.removeEventListener('rich-editor-file-validation-message', this.richUploadValidationHandler);
             }
 
             for (const unwatch of this.unwatchCallbacks) {

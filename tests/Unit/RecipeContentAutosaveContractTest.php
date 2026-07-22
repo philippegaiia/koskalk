@@ -274,6 +274,20 @@ assert.equal(controller.state, 'saved');
 JS);
 });
 
+it('keeps the browser upload target outside Alpine reactive state', function () {
+    runRecipeContentAutosaveContract(<<<'JS'
+const windowTarget = new FakeEventTarget();
+windowTarget.window = windowTarget;
+
+const controller = createRecipeContentAutosave({ uploadEventTarget: windowTarget });
+
+assert.equal(
+    Object.prototype.propertyIsEnumerable.call(controller, 'uploadEventTarget'),
+    false,
+);
+JS);
+});
+
 it('uses Filament and Livewire terminal events to prevent stuck upload state', function () {
     runRecipeContentAutosaveContract(<<<'JS'
 const form = new FakeEventTarget();

@@ -44,6 +44,7 @@ use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\OwnerType;
+use App\Services\MediaStorage;
 use App\Visibility;
 use Database\Seeders\PlanSeeder;
 use Filament\Actions\DeleteAction;
@@ -58,7 +59,7 @@ uses(RefreshDatabase::class);
 
 it('keeps original upload names in the admin ingredient form state', function () {
     config(['media.disk' => 'local']);
-    Storage::fake('local');
+    Storage::fake(MediaStorage::publicDisk());
 
     $admin = User::factory()->admin()->create();
     $ingredient = Ingredient::factory()->create([

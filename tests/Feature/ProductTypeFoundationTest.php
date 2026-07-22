@@ -7,6 +7,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Services\MediaStorage;
 use Database\Seeders\ProductFamilySeeder;
 use Database\Seeders\ProductTypeSeeder;
 use Filament\Actions\DeleteAction;
@@ -128,7 +129,7 @@ it('disables product type deletion when recipes reference it', function () {
 
 it('keeps the original fallback image name in the product type form and uses a neutral legacy display name', function () {
     config(['media.disk' => 'local']);
-    Storage::fake('local');
+    Storage::fake(MediaStorage::publicDisk());
 
     $admin = User::factory()->admin()->create();
     $productType = ProductType::factory()->create();

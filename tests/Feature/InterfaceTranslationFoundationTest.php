@@ -114,6 +114,35 @@ it('synchronizes missing interface keys without overwriting translations', funct
         ->toBeFalse();
 });
 
+it('loads the reviewed current image translation for every supported locale', function () {
+    app(SyncInterfaceTranslations::class)->handle();
+
+    $translations = [
+        'fr' => 'Image actuelle',
+        'es' => 'Imagen actual',
+        'de' => 'Aktuelles Bild',
+        'it' => 'Immagine attuale',
+        'nl' => 'Huidige afbeelding',
+    ];
+
+    $translation = InterfaceTranslation::query()
+        ->where('group', 'media')
+        ->where('key', 'current_image')
+        ->firstOrFail();
+
+    $translation->update(['text' => $translations]);
+
+    foreach ($translations as $locale => $text) {
+        App::setLocale($locale);
+
+        expect(__('media.current_image'))->toBe($text);
+    }
+
+    App::setLocale('en');
+
+    expect(__('media.current_image'))->toBe('Current image');
+});
+
 it('uses database translations while retaining the English file fallback', function () {
     InterfaceTranslation::query()->create([
         'group' => 'public',

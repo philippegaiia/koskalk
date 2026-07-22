@@ -29,8 +29,7 @@ it('rejects images whose shortest or longest edge is too small', function (int $
     ]);
 
     expect($validator->fails())->toBeTrue()
-        ->and($validator->errors()->first('image'))->toContain('300')
-        ->and($validator->errors()->first('image'))->toContain('500');
+        ->and($validator->errors()->first('image'))->toBe('The image must have a short edge of at least 300 pixels and a long edge of at least 500 pixels.');
 })->with([
     'shortest edge is too small in portrait orientation' => [299, 800],
     'shortest edge is too small in landscape orientation' => [800, 299],

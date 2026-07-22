@@ -47,8 +47,8 @@ class MinimumImageEdges implements ValidationRule
     private function message(): string
     {
         return __('workbench.instructions.minimum_image_edges', [
-            'short_edge' => $this->shortEdge,
-            'long_edge' => $this->longEdge,
+            'short' => $this->shortEdge,
+            'long' => $this->longEdge,
         ]);
     }
 }

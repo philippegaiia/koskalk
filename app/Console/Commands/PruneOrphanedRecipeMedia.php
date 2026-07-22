@@ -39,6 +39,7 @@ class PruneOrphanedRecipeMedia extends Command
             ->keyBy(fn (Recipe $recipe): string => (string) $recipe->public_id);
         $referencedPathsByRecipe = collect();
         $deletedCount = 0;
+        $failedDeletionCount = 0;
 
         foreach ($eligiblePaths as $path) {
             $recipePublicId = $this->recipePublicId($path);
@@ -64,10 +65,21 @@ class PruneOrphanedRecipeMedia extends Command
 
             if ($disk->delete($path)) {
                 $deletedCount++;
+            } else {
+                $failedDeletionCount++;
             }
         }
 
-        $this->components->info('Scanned: '.$paths->count().'; Deleted: '.$deletedCount.'; Preserved: '.($paths->count() - $deletedCount).'.');
+        $preservedCount = $paths->count() - $deletedCount - $failedDeletionCount;
+        $summary = 'Scanned: '.$paths->count().'; Deleted: '.$deletedCount.'; Preserved: '.$preservedCount.'; Failed: '.$failedDeletionCount.'.';
+
+        if ($failedDeletionCount > 0) {
+            $this->components->error($summary);
+
+            return self::FAILURE;
+        }
+
+        $this->components->info($summary);
 
         return self::SUCCESS;
     }

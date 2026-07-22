@@ -89,6 +89,33 @@ it('rejects an age below one hour without deleting media', function (): void {
     Storage::disk('local')->assertExists($path);
 });
 
+it('fails with aggregate counts when a media deletion fails', function (): void {
+    $recipe = Recipe::factory()->create();
+    $path = MediaStorage::recipeDirectory($recipe, 'featured-images').'/failed-delete.webp';
+    putRecipePruneTestFile($path, now()->subHours(25));
+    $realDisk = Storage::disk('local');
+    $failingDisk = Mockery::mock($realDisk)->makePartial();
+    $failingDisk->shouldReceive('delete')
+        ->once()
+        ->with($path)
+        ->andReturnFalse();
+    Storage::shouldReceive('disk')
+        ->once()
+        ->with('local')
+        ->andReturn($failingDisk);
+
+    $exitCode = Artisan::call('media:prune-orphaned-recipe', ['--age' => 24]);
+    $output = Artisan::output();
+
+    expect($exitCode)->toBe(1)
+        ->and($output)->toContain('Scanned: 1')
+        ->and($output)->toContain('Deleted: 0')
+        ->and($output)->toContain('Preserved: 0')
+        ->and($output)->toContain('Failed: 1')
+        ->and($output)->not->toContain($path);
+    $realDisk->assertExists($path);
+});
+
 it('schedules orphaned recipe media pruning daily without overlap', function (): void {
     $event = collect(app(Schedule::class)->events())
         ->first(fn ($event): bool => str_contains($event->command, 'media:prune-orphaned-recipe'));

@@ -199,11 +199,15 @@ class RecipeWorkbenchService
                 function () use (&$createdRecipe): ?Recipe {
                     return $createdRecipe;
                 },
-                fn (): RecipeVersion => $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($save): RecipeVersion {
-                    $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
+                fn (): RecipeVersion => $this->entitlementService->withinCompanyQuotaLock(
+                    $user,
+                    function (Workspace $workspace) use ($save): RecipeVersion {
+                        $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
 
-                    return $save();
-                }),
+                        return $save();
+                    },
+                    attempts: 1,
+                ),
             );
 
         $this->recipeVersionCostingSynchronizer->reconcileExistingCosting($currentVersion, $user);
@@ -248,11 +252,15 @@ class RecipeWorkbenchService
             function () use (&$createdRecipe): ?Recipe {
                 return $createdRecipe;
             },
-            fn (): RecipeVersion => $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($publish): RecipeVersion {
-                $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
+            fn (): RecipeVersion => $this->entitlementService->withinCompanyQuotaLock(
+                $user,
+                function (Workspace $workspace) use ($publish): RecipeVersion {
+                    $this->entitlementService->assertCanCreateRecipeInWorkspace($workspace);
 
-                return $publish();
-            }),
+                    return $publish();
+                },
+                attempts: 1,
+            ),
         );
     }
 

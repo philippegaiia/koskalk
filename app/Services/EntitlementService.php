@@ -105,7 +105,7 @@ class EntitlementService
      * @param  Closure(Workspace): T  $callback
      * @return T
      */
-    public function withinCompanyQuotaLock(User $user, Closure $callback): mixed
+    public function withinCompanyQuotaLock(User $user, Closure $callback, int $attempts = 5): mixed
     {
         $workspace = $this->workspaceProvisioner->ensureCompanyWorkspace($user);
 
@@ -116,7 +116,7 @@ class EntitlementService
                 ->findOrFail($workspace->id);
 
             return $callback($lockedWorkspace);
-        }, attempts: 5);
+        }, attempts: $attempts);
     }
 
     public function assertCanCreateRecipe(User $user): void

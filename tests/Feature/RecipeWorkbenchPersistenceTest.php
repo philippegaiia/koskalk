@@ -403,7 +403,9 @@ it('cleans first-action media when the outer quota transaction fails', function 
 
     $entitlementService->shouldReceive('withinCompanyQuotaLock')
         ->once()
-        ->andReturnUsing(function (User $lockedUser, Closure $callback) use (&$events, $workspace): mixed {
+        ->andReturnUsing(function (User $lockedUser, Closure $callback, int $attempts) use (&$events, $workspace): mixed {
+            expect($attempts)->toBe(1);
+
             return DB::transaction(function () use ($callback, &$events, $workspace): never {
                 $events[] = 'quota-started';
                 $callback($workspace);

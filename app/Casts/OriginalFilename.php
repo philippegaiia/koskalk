@@ -37,6 +37,6 @@ class OriginalFilename implements CastsAttributes
             return null;
         }
 
-        return Str::limit($name, 255, '');
+        return Str::substr($name, 0, 255);
     }
 }

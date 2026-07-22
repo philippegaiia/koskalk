@@ -14,3 +14,7 @@ Schedule::command('backup:database')
     ->environments(['production'])
     ->withoutOverlapping(120)
     ->onOneServer();
+
+Schedule::command('media:prune-orphaned-recipe')
+    ->dailyAt('03:30')
+    ->withoutOverlapping();

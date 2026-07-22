@@ -714,6 +714,9 @@ it('saves recipe content through the standalone filament form', function () {
         ->set('data.featured_image_path', [$featuredImagePath])
         ->set('data.featured_image_original_name', $featuredImageOriginalName)
         ->call('saveRecipeContent')
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true
+            && $response['message'] === __('workbench.instructions.all_saved')
+            && is_string($response['saved_at'] ?? null))
         ->assertSet('recipeContentStatus', 'success');
 
     expect($recipe->fresh())
@@ -721,6 +724,25 @@ it('saves recipe content through the standalone filament form', function () {
         ->manufacturing_instructions->toContain('Blend the base gently')
         ->featured_image_path->toBe($featuredImagePath)
         ->featured_image_original_name->toBe($featuredImageOriginalName);
+});
+
+it('returns a structured recipe content error when no saved recipe exists', function () {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class)
+        ->call('saveRecipeContent')
+        ->assertReturned([
+            'ok' => false,
+            'message' => __('workbench.instructions.draft_text_help'),
+        ])
+        ->assertSet('recipeContentStatus', 'error')
+        ->assertSet('recipeContentMessage', __('workbench.instructions.draft_text_help'));
 });
 
 it('returns the saved packaging item payload when saving a packaging catalog item', function () {

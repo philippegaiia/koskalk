@@ -26,6 +26,7 @@ use InvalidArgumentException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
 use Livewire\Component;
+use Throwable;
 
 class RecipeWorkbench extends Component implements HasActions, HasForms
 {
@@ -419,35 +420,63 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         ];
     }
 
-    public function saveRecipeContent(RecipeContentUpdater $recipeContentUpdater): void
+    /**
+     * @return array{ok: bool, message: string, saved_at?: string}
+     */
+    public function saveRecipeContent(RecipeContentUpdater $recipeContentUpdater): array
     {
         $recipe = $this->currentRecipe();
 
         if (! $recipe instanceof Recipe) {
             $this->recipeContentStatus = 'error';
-            $this->recipeContentMessage = 'Save the formula before adding recipe content and images.';
+            $this->recipeContentMessage = __('workbench.instructions.draft_text_help');
 
-            return;
+            return [
+                'ok' => false,
+                'message' => $this->recipeContentMessage,
+            ];
         }
 
         $this->authorize('update', $recipe);
-        $pendingRichContentState = $this->pendingRecipeRichContentState();
-
-        /** @var array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string} $state */
-        $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
 
         try {
-            $state = [
-                ...$this->form->getState(),
-                'featured_image_original_name' => $this->pendingFeaturedImageOriginalName(),
+            $pendingRichContentState = $this->pendingRecipeRichContentState();
+
+            /** @var array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string} $state */
+            $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
+
+            try {
+                $state = [
+                    ...$this->form->getState(),
+                    'featured_image_original_name' => $this->pendingFeaturedImageOriginalName(),
+                ];
+            } finally {
+                $this->clearPendingRichContentStateOnRecipeTargets($recipe);
+            }
+
+            $updatedRecipe = $recipeContentUpdater->update($recipe, $state);
+        } catch (ValidationException $exception) {
+            throw $exception;
+        } catch (Throwable $exception) {
+            report($exception);
+            $this->recipeContentStatus = 'error';
+            $this->recipeContentMessage = __('workbench.instructions.save_failed');
+
+            return [
+                'ok' => false,
+                'message' => $this->recipeContentMessage,
             ];
-        } finally {
-            $this->clearPendingRichContentStateOnRecipeTargets($recipe);
         }
 
         $this->recipeContentStatus = 'success';
-        $this->recipeContentMessage = 'Recipe content saved.';
-        $this->refreshRecipeContentForm($recipeContentUpdater->update($recipe, $state));
+        $this->recipeContentMessage = __('workbench.instructions.all_saved');
+        $this->refreshRecipeContentForm($updatedRecipe);
+
+        return [
+            'ok' => true,
+            'message' => $this->recipeContentMessage,
+            'saved_at' => now()->toISOString(),
+        ];
     }
 
     public function deleteVersion(int $versionId, string $confirmName = ''): void

@@ -1,8 +1,11 @@
 import './bootstrap';
+import { createDirtyStateRegistry } from './dirty-state-registry';
+import { createRecipeContentAutosave } from './recipe-content-autosave';
 import { createRecipeWorkbench } from './recipe-workbench/component';
 import { createSearchCombobox } from './search-combobox';
 
-window.recipeWorkbench = createRecipeWorkbench;
+window.recipeContentAutosave = createRecipeContentAutosave;
+window.recipeWorkbench = (payload) => createRecipeWorkbench(payload, createDirtyStateRegistry);
 window.searchCombobox = createSearchCombobox;
 
 const SIDEBAR_STORAGE_KEY = 'koskalk:sidebar-open';

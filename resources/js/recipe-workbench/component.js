@@ -137,7 +137,7 @@ function canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey) {
  * This section owns the public state keys and the boot-time watchers that keep
  * the preview in sync while the user edits the workbench.
  */
-function createRecipeWorkbenchState(payload) {
+function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
     const initialSnapshot = payload.savedSnapshot ?? null;
     const initialDraft = payload.savedDraft ?? initialSnapshot?.draft ?? null;
     const productFamilySlug = payload.productFamily?.slug ?? 'soap';
@@ -256,6 +256,7 @@ function createRecipeWorkbenchState(payload) {
         packagingCatalogMessage: '',
         lastCalculationPhaseSignature: null,
         dirtyBaselineSignature: null,
+        dirtyStateRegistry,
         unsavedBeforeUnloadHandler: null,
         unsavedNavigateHandler: null,
         lastAddedIngredientRowId: null,
@@ -870,13 +871,20 @@ function createPersistenceSection() {
                 && this.currentDirtySignature() !== this.dirtyBaselineSignature;
         },
 
+        blocksNavigation() {
+            return this.hasUnsavedWorkbenchChanges()
+                || this.isSaving
+                || this.saveStatus === 'error'
+                || this.dirtyStateRegistry.blocksNavigation();
+        },
+
         installUnsavedChangesGuard() {
             if (this.unsavedBeforeUnloadHandler || this.unsavedNavigateHandler) {
                 return;
             }
 
             this.unsavedBeforeUnloadHandler = (event) => {
-                if (!this.hasUnsavedWorkbenchChanges() || this.isSaving) {
+                if (!this.blocksNavigation()) {
                     return;
                 }
 
@@ -887,11 +895,11 @@ function createPersistenceSection() {
             };
 
             this.unsavedNavigateHandler = (event) => {
-                if (!this.hasUnsavedWorkbenchChanges() || this.isSaving) {
+                if (!this.blocksNavigation()) {
                     return;
                 }
 
-                if (!window.confirm('You have unsaved formula changes. Leave without saving?')) {
+                if (!window.confirm(this.t('instructions.leave_warning'))) {
                     event.preventDefault();
                 }
             };
@@ -934,11 +942,18 @@ function createPersistenceSection() {
     };
 }
 
-export function createRecipeWorkbench(payload) {
+export function createRecipeWorkbench(payload, createRegistry = null) {
     const component = {};
+    const dirtyStateRegistry = typeof createRegistry === 'function'
+        ? createRegistry()
+        : {
+            set() {},
+            remove() {},
+            blocksNavigation: () => false,
+        };
 
     [
-        createRecipeWorkbenchState(payload),
+        createRecipeWorkbenchState(payload, dirtyStateRegistry),
         createCatalogSection(),
         createPersistenceSection(),
         createFormulaSection(),

@@ -415,6 +415,9 @@ it('cleans first-action media when the outer quota transaction fails', function 
             });
         });
     $entitlementService->shouldReceive('assertCanCreateRecipeInWorkspace')->once();
+    $entitlementService->shouldReceive('savedFormulaHistoryLimitFor')
+        ->zeroOrMoreTimes()
+        ->andReturn(0);
 
     $this->actingAs($user);
     $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d6';

@@ -60,7 +60,7 @@ class RecipeVersionViewDataBuilder
             'state' => $version->saved_at === null ? 'current' : 'saved',
             'saved_at' => $version->saved_at?->format('Y-m-d H:i'),
             'description' => $recipe->description,
-            'manufacturing_procedure' => $recipe->manufacturing_instructions,
+            'manufacturing_procedure' => $version->manufacturing_instructions,
         ]);
 
         return [

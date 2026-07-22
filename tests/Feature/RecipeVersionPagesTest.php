@@ -326,8 +326,9 @@ it('recalculates the saved formula view when a different oil quantity is request
 });
 
 it('prints one working formula sheet with optional soap analysis', function () {
-    [$user, $recipe] = createSavedRecipeVersion();
+    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
     $recipe->update(['manufacturing_instructions' => '<p>Mix to emulsion, pour, and cure.</p>']);
+    $publishedVersion->update(['manufacturing_instructions' => '<p>Mix to emulsion, pour, and cure.</p>']);
 
     $this->actingAs($user)
         ->get(route('recipes.print.production', ['recipe' => $recipe]))
@@ -353,6 +354,54 @@ it('prints one working formula sheet with optional soap analysis', function () {
         ->assertSee('Soap analysis')
         ->assertSee('Soap qualities')
         ->assertSee('Fatty-acid profile');
+});
+
+it('renders the procedure stored on the selected formula snapshot', function () {
+    [$user, $recipe, $historicalVersion] = createSavedRecipeVersion();
+    $currentVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    $historicalVersion->update([
+        'manufacturing_instructions' => '<p>Original procedure</p>',
+    ]);
+    $currentVersion->update([
+        'manufacturing_instructions' => '<p>Revised procedure</p>',
+    ]);
+    $recipe->update([
+        'manufacturing_instructions' => '<p>Revised procedure</p>',
+    ]);
+
+    foreach (['recipes.version', 'recipes.print.production'] as $routeName) {
+        $this->actingAs($user)
+            ->get(route($routeName, ['recipe' => $recipe, 'version' => $historicalVersion]))
+            ->assertSuccessful()
+            ->assertSee('Original procedure')
+            ->assertDontSee('Revised procedure');
+    }
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->assertSee('Revised procedure')
+        ->assertDontSee('Original procedure');
+});
+
+it('does not substitute current procedure content into a legacy null snapshot', function () {
+    [$user, $recipe, $historicalVersion] = createSavedRecipeVersion();
+    $historicalVersion->update(['manufacturing_instructions' => null]);
+    $recipe->update([
+        'manufacturing_instructions' => '<p>Newer recipe procedure</p>',
+    ]);
+
+    foreach (['recipes.version', 'recipes.print.production'] as $routeName) {
+        $this->actingAs($user)
+            ->get(route($routeName, ['recipe' => $recipe, 'version' => $historicalVersion]))
+            ->assertSuccessful()
+            ->assertDontSee('Newer recipe procedure')
+            ->assertDontSee('Manufacturing procedure');
+    }
 });
 
 it('omits empty authored sections from the working formula sheet', function () {

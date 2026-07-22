@@ -8,12 +8,14 @@ use Throwable;
 
 class RecipeMediaRollbackGuard
 {
-    public function run(Recipe $recipe, bool $isNewRecipe, Closure $callback): mixed
+    public function run(bool $isNewRecipe, Closure $recipeResolver, Closure $callback): mixed
     {
         try {
             return $callback();
         } catch (Throwable $exception) {
-            if ($isNewRecipe) {
+            $recipe = $recipeResolver();
+
+            if ($isNewRecipe && $recipe instanceof Recipe) {
                 MediaStorage::deleteRecipeDirectory($recipe);
             }
 

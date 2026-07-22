@@ -242,7 +242,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         $recipe = $this->currentRecipe();
         $recipeContentUpdater ??= app(RecipeContentUpdater::class);
-        $preparePayloadForRecipe = ! $recipe instanceof Recipe
+        $hasPendingAttachments = $this->hasPendingManufacturingAttachments();
+        $preparePayloadForRecipe = (! $recipe instanceof Recipe || $hasPendingAttachments)
             ? fn (Recipe $destinationRecipe, array $payload): array => $this->prepareNewRecipePayload(
                 $destinationRecipe,
                 $payload,
@@ -260,7 +261,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             $recipeVersion = $recipeWorkbenchService->duplicate(
                 $user,
                 $this->productFamily(),
-                $this->draftWithWorkbenchContext($draft, $recipeContentUpdater),
+                $preparePayloadForRecipe !== null
+                    ? $this->draftWithPendingWorkbenchContext($draft)
+                    : $this->draftWithWorkbenchContext($draft, $recipeContentUpdater),
                 $recipe,
                 $preparePayloadForRecipe,
             );
@@ -648,6 +651,34 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         return $draft;
     }
 
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    private function draftWithPendingWorkbenchContext(array $draft): array
+    {
+        $this->validateOnly('data.manufacturing_instructions');
+        $draft['manufacturing_instructions'] = $this->pendingRichContentValue('manufacturing_instructions');
+        $productType = $this->productType();
+
+        if ($productType instanceof ProductType) {
+            $draft['product_type_id'] = $productType->id;
+        }
+
+        return $draft;
+    }
+
+    private function hasPendingManufacturingAttachments(): bool
+    {
+        $attachments = data_get(
+            $this->componentFileAttachments,
+            'data.manufacturing_instructions',
+            [],
+        );
+
+        return is_array($attachments) && $attachments !== [];
+    }
+
     private function dehydratePendingManufacturingInstructions(RecipeContentUpdater $recipeContentUpdater): ?string
     {
         $recipe = $this->currentRecipe();
@@ -693,6 +724,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         array $payload,
         RecipeContentUpdater $recipeContentUpdater,
     ): array {
+        $previousRecord = $this->form->getRecord();
         $this->form->model($recipe);
         $pendingRichContentState = $this->pendingRecipeRichContentState();
         $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
@@ -710,6 +742,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             return $payload;
         } finally {
             $this->clearPendingRichContentStateOnRecipeTargets($recipe);
+            $this->form->model($previousRecord instanceof Recipe ? $previousRecord : Recipe::class);
         }
     }
 

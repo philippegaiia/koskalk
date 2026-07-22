@@ -321,7 +321,7 @@ it('rolls back an unsaved formula action containing a cross-recipe procedure ima
 
     $this->actingAs($user);
 
-    Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
+    $component = Livewire::test(RecipeWorkbench::class, ['productFamilySlug' => 'soap'])
         ->set(
             'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
             UploadedFile::fake()->image('rolled-back-procedure.jpg', 1200, 600),
@@ -330,9 +330,14 @@ it('rolls back an unsaved formula action containing a cross-recipe procedure ima
         ->call($action, workbenchSoapDraftPayload($ingredient, name: 'Cross Reference Formula'))
         ->assertReturned(fn (array $response): bool => $response['ok'] === false);
 
+    $manufacturingInstructions = $component->instance()->form->getComponent('manufacturing_instructions');
+
     expect(Recipe::withoutGlobalScopes()->count())->toBe(1)
         ->and(RecipeVersion::withoutGlobalScopes()->count())->toBe(0)
-        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes'))->toBe([$otherPath]);
+        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes'))->toBe([$otherPath])
+        ->and($component->instance()->form->getRecord())->not->toBeInstanceOf(Recipe::class)
+        ->and(collect($manufacturingInstructions->getToolbarButtons())->flatten()->all())
+        ->not->toContain('attachFiles');
 })->with([
     'first save' => ['save'],
     'first publish' => ['publish'],
@@ -426,7 +431,46 @@ it('copies a pending procedure image into the destination namespace on immediate
         ->and(Storage::disk(MediaStorage::recipeDisk())->exists($destinationPath))->toBeTrue()
         ->and($destinationRecipe->manufacturing_instructions)->toContain($destinationPath)
         ->and($destinationVersion->manufacturing_instructions)->toContain($destinationPath)
-        ->and($destinationRecipe->manufacturing_instructions)->not->toContain($temporaryId);
+        ->and($destinationRecipe->manufacturing_instructions)->not->toContain($temporaryId)
+        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes/'.$sourceRecipe->public_id))
+        ->toBe([]);
+});
+
+it('cleans pending source media when an existing formula duplicate is rejected', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $sourceVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Rejected Media Duplicate'),
+    );
+    $sourceRecipe = Recipe::withoutGlobalScopes()->findOrFail($sourceVersion->recipe_id);
+    $otherRecipe = Recipe::factory()->create(['owner_id' => $user->id]);
+    $otherPath = MediaStorage::recipeDirectory($otherRecipe, 'rich-content').'/private.webp';
+    $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d4';
+    Storage::disk(MediaStorage::recipeDisk())->put($otherPath, 'other-recipe-image');
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $sourceRecipe])
+        ->set(
+            'componentFileAttachments.data.manufacturing_instructions.'.$temporaryId,
+            UploadedFile::fake()->image('rejected-duplicate.jpg', 1200, 600),
+        )
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapProcedure([$temporaryId, $otherPath]))
+        ->call('duplicateFormula', workbenchSoapDraftPayload($ingredient, name: 'Rejected Media Duplicate'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === false);
+
+    expect(Recipe::withoutGlobalScopes()->where('name', 'Copy of Rejected Media Duplicate')->exists())->toBeFalse()
+        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes/'.$sourceRecipe->public_id))
+        ->toBe([])
+        ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes'))
+        ->toBe([$otherPath]);
 });
 
 it('rejects more than eight pending procedure images during a formula action', function () {

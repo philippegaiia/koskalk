@@ -29,59 +29,62 @@ class RecipeDraftSaver
         ?Recipe $sopSourceRecipe = null,
         ?Closure $preparePayloadForRecipe = null,
     ): RecipeVersion {
-        return DB::transaction(function () use ($normalizedPayload, $preparePayloadForRecipe, $productFamily, $recipe, $sopSourceRecipe, $user): RecipeVersion {
-            $isNewRecipe = ! $recipe instanceof Recipe;
-            $recipe ??= $this->recipeVersionRecordService->createRecipe(
-                $user,
-                $productFamily,
-                $normalizedPayload['name'],
-                $normalizedPayload['product_type_id'] ?? null,
-            );
+        $isNewRecipe = ! $recipe instanceof Recipe;
 
-            return $this->recipeMediaRollbackGuard->run($recipe, $isNewRecipe, function () use (
-                &$normalizedPayload,
-                $preparePayloadForRecipe,
-                $recipe,
-                $sopSourceRecipe,
-                $user,
-            ): RecipeVersion {
-                if ($preparePayloadForRecipe instanceof Closure) {
-                    $normalizedPayload = $preparePayloadForRecipe($recipe, $normalizedPayload);
-                }
-
-                if ($sopSourceRecipe instanceof Recipe && ! $sopSourceRecipe->is($recipe)) {
-                    $normalizedPayload['manufacturing_instructions'] = $this->recipeSopSnapshotService->duplicateInstructions(
-                        $sopSourceRecipe,
-                        $recipe,
-                        $normalizedPayload['manufacturing_instructions'] ?? null,
+        return $this->recipeMediaRollbackGuard->run(
+            $isNewRecipe,
+            function () use (&$recipe): ?Recipe {
+                return $recipe;
+            },
+            function () use (&$recipe, $normalizedPayload, $preparePayloadForRecipe, $productFamily, $sopSourceRecipe, $user): RecipeVersion {
+                return DB::transaction(function () use (&$recipe, $normalizedPayload, $preparePayloadForRecipe, $productFamily, $sopSourceRecipe, $user): RecipeVersion {
+                    $recipe ??= $this->recipeVersionRecordService->createRecipe(
+                        $user,
+                        $productFamily,
+                        $normalizedPayload['name'],
+                        $normalizedPayload['product_type_id'] ?? null,
                     );
-                }
 
-                $currentVersion = RecipeVersion::withoutGlobalScopes()
-                    ->where('recipe_id', $recipe->id)
-                    ->where('is_current', true)
-                    ->first();
+                    if ($preparePayloadForRecipe instanceof Closure) {
+                        $normalizedPayload = $preparePayloadForRecipe($recipe, $normalizedPayload);
+                    }
 
-                if (! $currentVersion instanceof RecipeVersion) {
-                    $currentVersion = new RecipeVersion;
-                    $currentVersion->recipe()->associate($recipe);
-                    $currentVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
-                    $currentVersion->is_current = true;
-                }
+                    if ($sopSourceRecipe instanceof Recipe
+                        && ! $sopSourceRecipe->is($recipe)
+                        && ! $preparePayloadForRecipe instanceof Closure) {
+                        $normalizedPayload['manufacturing_instructions'] = $this->recipeSopSnapshotService->duplicateInstructions(
+                            $sopSourceRecipe,
+                            $recipe,
+                            $normalizedPayload['manufacturing_instructions'] ?? null,
+                        );
+                    }
 
-                $this->recipeVersionRecordService->fillVersion(
-                    $currentVersion,
-                    $recipe,
-                    $user,
-                    $normalizedPayload,
-                    true,
-                );
-                $currentVersion->save();
+                    $currentVersion = RecipeVersion::withoutGlobalScopes()
+                        ->where('recipe_id', $recipe->id)
+                        ->where('is_current', true)
+                        ->first();
 
-                $this->recipeVersionStructureSynchronizer->sync($currentVersion, $user, $normalizedPayload);
+                    if (! $currentVersion instanceof RecipeVersion) {
+                        $currentVersion = new RecipeVersion;
+                        $currentVersion->recipe()->associate($recipe);
+                        $currentVersion->version_number = $this->recipeVersionRecordService->nextVersionNumber($recipe);
+                        $currentVersion->is_current = true;
+                    }
 
-                return $currentVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
-            });
-        });
+                    $this->recipeVersionRecordService->fillVersion(
+                        $currentVersion,
+                        $recipe,
+                        $user,
+                        $normalizedPayload,
+                        true,
+                    );
+                    $currentVersion->save();
+
+                    $this->recipeVersionStructureSynchronizer->sync($currentVersion, $user, $normalizedPayload);
+
+                    return $currentVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
+                });
+            },
+        );
     }
 }

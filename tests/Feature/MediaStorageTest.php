@@ -2,12 +2,28 @@
 
 use App\Models\Recipe;
 use App\Services\MediaStorage;
+use App\Services\RecipeMediaRollbackGuard;
 use App\Services\RecipeRichContentAttachmentProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 uses(RefreshDatabase::class);
+
+it('cleans new recipe media when the guarded transaction boundary throws', function () {
+    Storage::fake(MediaStorage::recipeDisk());
+
+    $recipe = Recipe::factory()->create();
+    $path = MediaStorage::recipeDirectory($recipe, 'rich-content').'/rolled-back.webp';
+    Storage::disk(MediaStorage::recipeDisk())->put($path, 'rolled-back-image');
+
+    expect(fn () => app(RecipeMediaRollbackGuard::class)->run(
+        true,
+        fn (): Recipe => $recipe,
+        fn () => throw new RuntimeException('Transaction boundary failed.'),
+    ))->toThrow(RuntimeException::class, 'Transaction boundary failed.')
+        ->and(Storage::disk(MediaStorage::recipeDisk())->exists($path))->toBeFalse();
+});
 
 it('stores recipe images as webp within the configured bounds', function () {
     Storage::fake('public');

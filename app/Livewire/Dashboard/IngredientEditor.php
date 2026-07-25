@@ -2,7 +2,11 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Forms\Components\MediaAssetPicker;
 use App\IngredientCategory;
+use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
+use App\MediaAssetUsageRole;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
@@ -10,16 +14,13 @@ use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
-use App\Services\MediaStorage;
+use App\Services\MediaAssetUsageService;
 use App\Services\UserIngredientAuthoringService;
 use App\SoapSap;
-use App\Support\FilamentUploadMetadata;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Components\BaseFileUpload;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -39,18 +40,20 @@ use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class IngredientEditor extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
+    use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithMediaAssetPickerUploads;
     use RestrictsFileUploadsToSchemaComponents;
 
     #[Locked]
@@ -72,26 +75,39 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
     public ?string $quickComponentCategory = null;
 
-    public function mount(?Ingredient $ingredient, UserIngredientAuthoringService $userIngredientAuthoringService): void
-    {
+    public function mount(
+        ?Ingredient $ingredient,
+        UserIngredientAuthoringService $userIngredientAuthoringService,
+        MediaAssetUsageService $mediaAssetUsages,
+    ): void {
         $this->ingredientId = $ingredient?->id;
         $this->mediaPublicId = (string) ($ingredient?->public_id ?? Str::uuid());
 
-        $this->form->fill(
-            $ingredient instanceof Ingredient
-                ? $userIngredientAuthoringService->formData($ingredient)
-                : $userIngredientAuthoringService->blankState(),
-        );
+        $state = $ingredient instanceof Ingredient
+            ? $userIngredientAuthoringService->formData($ingredient)
+            : $userIngredientAuthoringService->blankState();
+        $state['featured_media_asset_id'] = $ingredient instanceof Ingredient
+            ? ($mediaAssetUsages->idsFor($ingredient, MediaAssetUsageRole::IngredientMain)[0] ?? null)
+            : null;
+        $state['icon_media_asset_id'] = $ingredient instanceof Ingredient
+            ? ($mediaAssetUsages->idsFor($ingredient, MediaAssetUsageRole::IngredientIconOverride)[0] ?? null)
+            : null;
+
+        $this->form->fill($state);
     }
 
-    public function save(UserIngredientAuthoringService $userIngredientAuthoringService)
-    {
+    public function save(
+        UserIngredientAuthoringService $userIngredientAuthoringService,
+        MediaAssetUsageService $mediaAssetUsages,
+    ) {
         $user = $this->currentUser();
         $wasEditing = $this->isEditing();
 
         if (! $user instanceof User) {
-            $this->statusType = 'error';
-            $this->statusMessage = __('ingredients.editor.status.auth_required');
+            $this->showAppNotification(
+                __('ingredients.editor.status.auth_required'),
+                'error',
+            );
 
             return null;
         }
@@ -100,13 +116,33 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         /** @var array<string, mixed> $state */
         $state = $this->mergeCustomCompositionState($this->form->getState());
+        $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
+        $iconMediaAssetId = $state['icon_media_asset_id'] ?? null;
+        unset($state['featured_media_asset_id'], $state['icon_media_asset_id']);
         $state['public_id'] = $this->mediaPublicId;
         $currentIngredient = $this->currentIngredient();
 
         try {
-            $ingredient = $currentIngredient instanceof Ingredient
-                ? $userIngredientAuthoringService->update($currentIngredient, $state, $user)
-                : $userIngredientAuthoringService->create($state, $user);
+            $ingredient = DB::transaction(function () use ($currentIngredient, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService): Ingredient {
+                $ingredient = $currentIngredient instanceof Ingredient
+                    ? $userIngredientAuthoringService->update($currentIngredient, $state, $user)
+                    : $userIngredientAuthoringService->create($state, $user);
+
+                $mediaAssetUsages->syncSingle(
+                    $user,
+                    $ingredient,
+                    MediaAssetUsageRole::IngredientMain,
+                    $featuredMediaAssetId,
+                );
+                $mediaAssetUsages->syncSingle(
+                    $user,
+                    $ingredient,
+                    MediaAssetUsageRole::IngredientIconOverride,
+                    $iconMediaAssetId,
+                );
+
+                return $ingredient;
+            });
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $key => $messages) {
                 foreach ($messages as $message) {
@@ -114,21 +150,28 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 }
             }
 
-            $this->statusType = 'error';
-            $this->statusMessage = __('ingredients.editor.status.invalid');
+            $this->showAppNotification(
+                __('ingredients.editor.status.invalid'),
+                'error',
+            );
 
             return null;
         }
 
         $this->ingredientId = $ingredient->id;
-        $this->statusType = 'success';
-        $this->statusMessage = $wasEditing
+        $statusMessage = $wasEditing
             ? __('ingredients.editor.status.saved')
             : __('ingredients.editor.status.created');
+        $this->showAppNotification($statusMessage);
 
-        $this->form->fill($userIngredientAuthoringService->formData($ingredient));
+        $refreshedState = $userIngredientAuthoringService->formData($ingredient);
+        $refreshedState['featured_media_asset_id'] = $featuredMediaAssetId;
+        $refreshedState['icon_media_asset_id'] = $iconMediaAssetId;
+        $this->form->fill($refreshedState);
 
         if (! $wasEditing) {
+            session()->flash('status', $statusMessage);
+
             return redirect()->route('ingredients.edit', $ingredient);
         }
 
@@ -318,70 +361,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         'md' => 2,
                                     ])
                                     ->schema([
-                                        FileUpload::make('featured_image_path')
+                                        MediaAssetPicker::make('featured_media_asset_id')
                                             ->label(__('ingredients.editor.media.image'))
-                                            ->image()
-                                            ->maxSize(MediaStorage::ingredientImagesMaxSize())
-                                            ->acceptedFileTypes([
-                                                'image/jpeg',
-                                                'image/webp',
-                                            ])
-                                            ->disk(MediaStorage::userDisk())
-                                            ->directory(fn (): string => MediaStorage::ingredientDirectoryForPublicId($this->mediaPublicId, 'featured-images'))
-                                            ->visibility(MediaStorage::userVisibility())
-                                            ->storeFileNamesIn('featured_image_original_name')
-                                            ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => $this->privateIngredientUploadMetadata(
-                                                $component,
-                                                $file,
-                                                $storedFileNames,
-                                            ))
-                                            ->deleteUploadedFileUsing(function (string $file): void {
-                                                MediaStorage::deleteUserPath($file);
-                                            })
-                                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeUserFittedWebp(
-                                                $file,
-                                                (string) $component->getDirectory(),
-                                                MediaStorage::ingredientImageWidth(),
-                                                MediaStorage::ingredientImageHeight(),
-                                                MediaStorage::ingredientImagesQuality(),
-                                            ))
-                                            ->imageEditor()
-                                            ->imageAspectRatio('1:1')
-                                            ->imageEditorAspectRatioOptions(['1:1'])
-                                            ->automaticallyOpenImageEditorForAspectRatio()
                                             ->helperText(__('ingredients.editor.media.image_helper'))
                                             ->columnSpan(1),
-                                        FileUpload::make('icon_image_path')
+                                        MediaAssetPicker::make('icon_media_asset_id')
                                             ->label(__('ingredients.editor.media.icon'))
-                                            ->image()
-                                            ->maxSize(MediaStorage::ingredientIconsMaxSize())
-                                            ->acceptedFileTypes([
-                                                'image/jpeg',
-                                                'image/webp',
-                                            ])
-                                            ->disk(MediaStorage::userDisk())
-                                            ->directory(fn (): string => MediaStorage::ingredientDirectoryForPublicId($this->mediaPublicId, 'icons'))
-                                            ->visibility(MediaStorage::userVisibility())
-                                            ->storeFileNamesIn('icon_image_original_name')
-                                            ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => $this->privateIngredientUploadMetadata(
-                                                $component,
-                                                $file,
-                                                $storedFileNames,
-                                            ))
-                                            ->deleteUploadedFileUsing(function (string $file): void {
-                                                MediaStorage::deleteUserPath($file);
-                                            })
-                                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeUserFittedWebp(
-                                                $file,
-                                                (string) $component->getDirectory(),
-                                                MediaStorage::ingredientIconsWidth(),
-                                                MediaStorage::ingredientIconsHeight(),
-                                                MediaStorage::ingredientIconsQuality(),
-                                            ))
-                                            ->imageEditor()
-                                            ->imageAspectRatio('1:1')
-                                            ->imageEditorAspectRatioOptions(['1:1'])
-                                            ->automaticallyOpenImageEditorForAspectRatio()
                                             ->helperText(__('ingredients.editor.media.icon_helper'))
                                             ->columnSpan(1),
                                         Textarea::make('info_markdown')
@@ -781,39 +766,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
     private function currentUser(): ?User
     {
         return app(CurrentAppUserResolver::class)->resolve();
-    }
-
-    /**
-     * @param  string|array<string, string>|null  $storedFileNames
-     * @return array{name: string, size: int, type: ?string, url: ?string}|null
-     */
-    private function privateIngredientUploadMetadata(
-        BaseFileUpload $component,
-        string $file,
-        string|array|null $storedFileNames,
-    ): ?array {
-        $ingredient = $this->currentIngredient();
-        $url = $ingredient instanceof Ingredient
-            ? MediaStorage::ingredientUrl($ingredient, $file)
-            : null;
-
-        if ($url === null) {
-            return null;
-        }
-
-        $metadata = FilamentUploadMetadata::applyDisplayName(
-            $component->getUploadedFile($file, $storedFileNames),
-            $storedFileNames,
-            __('media.current_image'),
-        );
-
-        if ($metadata === null) {
-            return null;
-        }
-
-        $metadata['url'] = $url;
-
-        return $metadata;
     }
 
     private function isEditing(): bool

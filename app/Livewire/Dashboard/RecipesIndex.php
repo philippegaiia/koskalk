@@ -41,6 +41,7 @@ class RecipesIndex extends Component
                     'productType',
                     'currentVersion',
                     'latestPublishedVersion',
+                    'mediaAssetUsages.mediaAsset',
                 ])
                 ->whereNull('archived_at');
 

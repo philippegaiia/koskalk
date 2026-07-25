@@ -19,12 +19,6 @@
  </section>
 
  <form wire:submit="save" class="space-y-4">
- @if ($statusMessage)
- <div class="{{ $statusType === 'success' ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' }} rounded-[1.5rem] border px-4 py-3 text-sm">
- {{ $statusMessage }}
- </div>
- @endif
-
  {{ $this->form }}
 
  <div class="flex justify-end">

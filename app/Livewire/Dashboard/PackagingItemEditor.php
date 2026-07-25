@@ -2,17 +2,18 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Forms\Components\MediaAssetPicker;
+use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
+use App\MediaAssetUsageRole;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Services\CurrentAppUserResolver;
-use App\Services\MediaStorage;
+use App\Services\MediaAssetUsageService;
 use App\Services\UserPackagingItemAuthoringService;
-use App\Support\FilamentUploadMetadata;
 use App\Support\LocalizedDecimalInput;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms\Components\BaseFileUpload;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -21,16 +22,18 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class PackagingItemEditor extends Component implements HasActions, HasForms
 {
     use InteractsWithActions;
+    use InteractsWithAppNotifications;
     use InteractsWithForms;
+    use InteractsWithMediaAssetPickerUploads;
     use RestrictsFileUploadsToSchemaComponents;
 
     #[Locked]
@@ -48,52 +51,79 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
 
     public string $statusType = 'idle';
 
-    public function mount(?UserPackagingItem $packagingItem, UserPackagingItemAuthoringService $authoringService): void
-    {
+    public function mount(
+        ?UserPackagingItem $packagingItem,
+        UserPackagingItemAuthoringService $authoringService,
+        MediaAssetUsageService $mediaAssetUsages,
+    ): void {
         $this->packagingItemId = $packagingItem?->id;
         $this->mediaPublicId = (string) ($packagingItem?->public_id ?? Str::uuid());
 
-        $this->form->fill(
-            $packagingItem instanceof UserPackagingItem
-                ? $authoringService->formData($packagingItem)
-                : $authoringService->blankState(),
-        );
+        $state = $packagingItem instanceof UserPackagingItem
+            ? $authoringService->formData($packagingItem)
+            : $authoringService->blankState();
+        $state['featured_media_asset_id'] = $packagingItem instanceof UserPackagingItem
+            ? ($mediaAssetUsages->idsFor($packagingItem, MediaAssetUsageRole::PackagingMain)[0] ?? null)
+            : null;
+
+        $this->form->fill($state);
     }
 
-    public function save(UserPackagingItemAuthoringService $authoringService)
-    {
+    public function save(
+        UserPackagingItemAuthoringService $authoringService,
+        MediaAssetUsageService $mediaAssetUsages,
+    ) {
         $user = $this->currentUser();
         $wasEditing = $this->isEditing();
 
         if (! $user instanceof User) {
-            $this->statusType = 'error';
-            $this->statusMessage = __('packaging.editor.status.auth_required');
+            $this->showAppNotification(
+                __('packaging.editor.status.auth_required'),
+                'error',
+            );
 
             return null;
         }
 
         /** @var array<string, mixed> $state */
         $state = $this->form->getState();
+        $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
+        unset($state['featured_media_asset_id']);
         $state['public_id'] = $this->mediaPublicId;
         $currentPackagingItem = $this->currentPackagingItem();
 
         try {
-            $packagingItem = $currentPackagingItem instanceof UserPackagingItem
-                ? $authoringService->update($currentPackagingItem, $state, $user)
-                : $authoringService->create($state, $user);
+            $packagingItem = DB::transaction(function () use ($authoringService, $currentPackagingItem, $featuredMediaAssetId, $mediaAssetUsages, $state, $user): UserPackagingItem {
+                $packagingItem = $currentPackagingItem instanceof UserPackagingItem
+                    ? $authoringService->update($currentPackagingItem, $state, $user)
+                    : $authoringService->create($state, $user);
+
+                $mediaAssetUsages->syncSingle(
+                    $user,
+                    $packagingItem,
+                    MediaAssetUsageRole::PackagingMain,
+                    $featuredMediaAssetId,
+                );
+
+                return $packagingItem;
+            });
         } catch (ValidationException $exception) {
             throw $exception;
         }
 
         $this->packagingItemId = $packagingItem->id;
-        $this->statusType = 'success';
-        $this->statusMessage = $wasEditing
+        $statusMessage = $wasEditing
             ? __('packaging.editor.status.saved')
             : __('packaging.editor.status.created');
+        $this->showAppNotification($statusMessage);
 
-        $this->form->fill($authoringService->formData($packagingItem));
+        $refreshedState = $authoringService->formData($packagingItem);
+        $refreshedState['featured_media_asset_id'] = $featuredMediaAssetId;
+        $this->form->fill($refreshedState);
 
         if (! $wasEditing) {
+            session()->flash('status', $statusMessage);
+
             return redirect()->route('packaging-items.edit', $packagingItem);
         }
 
@@ -121,56 +151,8 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                             ]))
                             ->minValue(0)
                             ->required(),
-                        FileUpload::make('featured_image_path')
+                        MediaAssetPicker::make('featured_media_asset_id')
                             ->label(__('packaging.editor.form.image.label'))
-                            ->image()
-                            ->maxSize(MediaStorage::ingredientImagesMaxSize())
-                            ->acceptedFileTypes([
-                                'image/jpeg',
-                                'image/webp',
-                            ])
-                            ->disk(MediaStorage::userDisk())
-                            ->directory(fn (): string => MediaStorage::packagingItemDirectoryForPublicId($this->mediaPublicId, 'featured-images'))
-                            ->visibility(MediaStorage::userVisibility())
-                            ->storeFileNamesIn('featured_image_original_name')
-                            ->getUploadedFileUsing(function (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array {
-                                $packagingItem = $this->currentPackagingItem();
-                                $url = $packagingItem instanceof UserPackagingItem
-                                    ? MediaStorage::packagingItemUrl($packagingItem, $file)
-                                    : null;
-
-                                if ($url === null) {
-                                    return null;
-                                }
-
-                                $metadata = FilamentUploadMetadata::applyDisplayName(
-                                    $component->getUploadedFile($file, $storedFileNames),
-                                    $storedFileNames,
-                                    __('media.current_image'),
-                                );
-
-                                if ($metadata === null) {
-                                    return null;
-                                }
-
-                                $metadata['url'] = $url;
-
-                                return $metadata;
-                            })
-                            ->deleteUploadedFileUsing(function (string $file): void {
-                                MediaStorage::deleteUserPath($file);
-                            })
-                            ->saveUploadedFileUsing(fn (BaseFileUpload $component, TemporaryUploadedFile $file): string => MediaStorage::storeUserFittedWebp(
-                                $file,
-                                (string) $component->getDirectory(),
-                                MediaStorage::ingredientImageWidth(),
-                                MediaStorage::ingredientImageHeight(),
-                                MediaStorage::ingredientImagesQuality(),
-                            ))
-                            ->imageEditor()
-                            ->imageAspectRatio('1:1')
-                            ->imageEditorAspectRatioOptions(['1:1'])
-                            ->automaticallyOpenImageEditorForAspectRatio()
                             ->helperText(__('packaging.editor.form.image.helper'))
                             ->columnSpan(1),
                         Textarea::make('notes')

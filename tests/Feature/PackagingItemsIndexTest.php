@@ -549,7 +549,12 @@ it('removes packaging from every saved formula version and costing before deleti
         ->call('confirmDelete', $packagingItem->id)
         ->call('removeEverywhereAndDelete')
         ->assertHasNoErrors()
-        ->assertSee('was removed from every formula and deleted');
+        ->assertDispatched(
+            'app-notification',
+            fn (string $event, array $payload): bool => $event === 'app-notification'
+                && str_contains($payload['message'], 'was removed from every formula and deleted')
+                && $payload['type'] === 'success',
+        );
 
     expect(UserPackagingItem::query()->find($packagingItem->id))->toBeNull()
         ->and(RecipeVersionPackagingItem::query()->where('user_packaging_item_id', $packagingItem->id)->exists())->toBeFalse()

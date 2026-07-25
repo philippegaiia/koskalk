@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Casts\OriginalFilename;
+use App\MediaAssetUsageRole;
+use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Services\MediaStorage;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -43,6 +45,7 @@ use Illuminate\Support\Carbon;
  */
 class UserPackagingItem extends Model
 {
+    use HasMediaAssetUsages;
     use HasPublicId;
 
     /** The user who owns this packaging catalog item. */
@@ -73,6 +76,23 @@ class UserPackagingItem extends Model
 
     public function featuredImageUrl(): ?string
     {
+        $mediaAsset = $this->mediaAssetForRole(MediaAssetUsageRole::PackagingMain);
+
+        if ($mediaAsset instanceof MediaAsset) {
+            return route('media.show', [$mediaAsset, 'catalog']);
+        }
+
         return MediaStorage::packagingItemUrl($this, $this->featured_image_path);
+    }
+
+    public function iconImageUrl(): ?string
+    {
+        $mediaAsset = $this->mediaAssetForRole(MediaAssetUsageRole::PackagingMain);
+
+        if ($mediaAsset instanceof MediaAsset) {
+            return route('media.show', [$mediaAsset, 'icon']);
+        }
+
+        return $this->featuredImageUrl();
     }
 }

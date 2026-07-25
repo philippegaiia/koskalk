@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Casts\OriginalFilename;
 use App\IngredientCategory;
+use App\MediaAssetUsageRole;
+use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\OwnerType;
@@ -59,6 +61,7 @@ class Ingredient extends Model
     /** @use HasFactory<IngredientFactory> */
     use HasFactory;
 
+    use HasMediaAssetUsages;
     use HasPublicId;
     use HasTenantOwnership {
         isAccessibleBy as tenantIsAccessibleBy;
@@ -170,6 +173,12 @@ class Ingredient extends Model
 
     public function featuredImageUrl(): ?string
     {
+        $mediaAsset = $this->mediaAssetForRole(MediaAssetUsageRole::IngredientMain);
+
+        if ($mediaAsset instanceof MediaAsset) {
+            return route('media.show', [$mediaAsset, 'catalog']);
+        }
+
         return $this->owner_type === null
             ? MediaStorage::publicUrl($this->featured_image_path)
             : MediaStorage::ingredientUrl($this, $this->featured_image_path);
@@ -177,6 +186,13 @@ class Ingredient extends Model
 
     public function iconImageUrl(): ?string
     {
+        $mediaAsset = $this->mediaAssetForRole(MediaAssetUsageRole::IngredientIconOverride)
+            ?? $this->mediaAssetForRole(MediaAssetUsageRole::IngredientMain);
+
+        if ($mediaAsset instanceof MediaAsset) {
+            return route('media.show', [$mediaAsset, 'icon']);
+        }
+
         return $this->owner_type === null
             ? MediaStorage::publicUrl($this->icon_image_path)
             : MediaStorage::ingredientUrl($this, $this->icon_image_path);

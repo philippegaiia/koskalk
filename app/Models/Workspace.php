@@ -48,6 +48,11 @@ class Workspace extends Model
         return $this->hasMany(Recipe::class);
     }
 
+    public function mediaAssets(): HasMany
+    {
+        return $this->hasMany(MediaAsset::class);
+    }
+
     public function brands(): HasMany
     {
         return $this->hasMany(Brand::class);
@@ -73,6 +78,8 @@ class Workspace extends Model
             ->where('user_id', $user->id)
             ->value('role');
 
-        return $role === null ? null : WorkspaceMemberRole::from($role);
+        return $role instanceof WorkspaceMemberRole
+            ? $role
+            : ($role === null ? null : WorkspaceMemberRole::from($role));
     }
 }

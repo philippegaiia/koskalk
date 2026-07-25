@@ -173,12 +173,13 @@ class UserPackagingItemAuthoringService
         $packagingItem->notes = blank(Arr::get($state, 'notes'))
             ? null
             : trim((string) Arr::get($state, 'notes'));
-        $featuredImagePath = Arr::get($state, 'featured_image_path');
-
-        $packagingItem->featured_image_path = $featuredImagePath;
-        $packagingItem->featured_image_original_name = filled($featuredImagePath)
-            ? Arr::get($state, 'featured_image_original_name')
-            : null;
+        if (array_key_exists('featured_image_path', $state)) {
+            $featuredImagePath = Arr::get($state, 'featured_image_path');
+            $packagingItem->featured_image_path = $featuredImagePath;
+            $packagingItem->featured_image_original_name = filled($featuredImagePath)
+                ? Arr::get($state, 'featured_image_original_name')
+                : null;
+        }
         $packagingItem->save();
 
         return $packagingItem->fresh();

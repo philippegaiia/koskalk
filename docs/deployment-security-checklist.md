@@ -39,8 +39,13 @@ MEDIA_DISK=r2_public
 MEDIA_VISIBILITY=public
 RECIPE_MEDIA_DISK=r2_private
 USER_MEDIA_DISK=r2_private
+MEDIA_ASSET_DISK=r2_private
+MEDIA_ASSET_PENDING_DISK=local
+MEDIA_QUEUE=media
+IMAGE_DRIVER=imagick
 
 QUEUE_CONNECTION=database
+DB_QUEUE_RETRY_AFTER=360
 DB_SSLMODE=prefer
 ```
 
@@ -51,7 +56,8 @@ Use `DB_SSLMODE=require` when PostgreSQL is on the second server. Generate a uni
 ## Deploy and application
 
 - Deploy only over HTTPS. Put the application in maintenance mode, take the verified backup, run `php artisan migrate --force`, then run `php artisan app:migrate-recipe-media-to-private`. The media command copies and verifies every legacy formula file, updates database references transactionally, and only then removes the old public/private legacy paths; it is safe to rerun. Cache production configuration, routes, events, and views afterward.
-- Run a persistent Forge queue worker for the database queue and configure the scheduler every minute. Restart workers after each deployment.
+- Run the existing persistent Forge queue worker plus one dedicated worker for the `media` queue using `--queue=media --tries=1 --timeout=300`, starting with a single media process to control image-processing memory usage. Keep `DB_QUEUE_RETRY_AFTER=360`, configure the scheduler every minute, and restart all workers after each deployment.
+- Before enabling uploads, verify that production Imagick reports both HEIC and HEIF support (for example, through `Imagick::queryFormats()`). A deployment without either codec does not satisfy the media-library requirements; the application will reject that format with a clear processing failure instead of leaving the asset or quota reservation stuck.
 - Provision the initial verified owner interactively with `php artisan app:provision-workspace-owner owner@example.com`; never pass its password on the command line.
 - Confirm `/register`, `/calculator`, and `/calculator/draft` return 404; unverified accounts cannot enter the dashboard.
 - Confirm formula and production URLs contain UUIDs, numeric URLs return 404, and another account receives 404 for owner formula URLs.

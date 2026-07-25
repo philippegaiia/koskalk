@@ -190,12 +190,13 @@ assert.equal(registry.blocksNavigation(), false);
 JS);
 });
 
-it('watches both rich editor state paths without an initial dirty change or leaked subscriptions', function () {
+it('watches active instruction and featured media state paths without stale subscriptions', function () {
     runRecipeContentAutosaveContract(<<<'JS'
 const clock = new FakeClock(0);
 const watchSource = new FakeWatchSource({
     'data.description': { type: 'doc', content: [] },
     'data.manufacturing_instructions': { type: 'doc', content: [] },
+    'data.featured_media_asset_id': null,
 });
 const controller = createRecipeContentAutosave({
     clock,
@@ -210,8 +211,10 @@ assert.equal(controller.dirtySince, null);
 assert.equal(clock.timers.size, 0);
 assert.equal(watchSource.listenerCount('data.description'), 1);
 assert.equal(watchSource.listenerCount('data.manufacturing_instructions'), 1);
+assert.equal(watchSource.listenerCount('data.featured_media_asset_id'), 1);
+assert.equal(watchSource.listenerCount('data.manufacturing_media_asset_ids'), 0);
 
-watchSource.set('data.description', { type: 'doc', content: [{ type: 'paragraph' }] });
+watchSource.set('data.featured_media_asset_id', 123);
 
 assert.equal(controller.state, 'dirty');
 assert.equal(controller.dirtySince, 0);
@@ -221,9 +224,9 @@ controller.destroy();
 controller.destroy();
 
 assert.equal(watchSource.listenerCount(), 0);
-assert.equal(watchSource.unsubscribeCalls, 2);
+assert.equal(watchSource.unsubscribeCalls, 3);
 
-watchSource.set('data.manufacturing_instructions', { type: 'doc', content: [{ type: 'paragraph' }] });
+watchSource.set('data.manufacturing_media_asset_ids', [123, 456]);
 assert.equal(clock.timers.size, 0);
 JS);
 });

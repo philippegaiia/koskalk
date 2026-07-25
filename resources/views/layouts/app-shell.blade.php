@@ -72,6 +72,7 @@
                     <a href="{{ route('recipes.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('recipes.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.formulas') }}</a>
                     <a href="{{ route('ingredients.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('ingredients.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.ingredients') }}</a>
                     <a href="{{ route('packaging-items.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('packaging-items.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.packaging') }}</a>
+                    <a href="{{ route('media.index') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('media.*') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.media_library') }}</a>
                     <a href="javascript:void(0)" data-sidebar-mobile-close aria-disabled="true" tabindex="-1" title="{{ __('navigation.status.coming_soon') }}" class="rounded-lg px-4 py-3 text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">{{ __('navigation.items.compliance') }}</a>
                     <a href="{{ route('account') }}" wire:navigate data-sidebar-mobile-close class="{{ request()->routeIs('account') ? 'bg-[var(--color-sidebar-active)] font-medium text-[var(--color-sidebar-active-text)] ring-1 ring-[var(--color-sidebar-active-ring)]' : 'text-[var(--color-ink-sidebar-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]' }} rounded-lg px-4 py-3 transition">{{ __('navigation.items.account') }}</a>
                     <a href="/admin" data-sidebar-mobile-close class="rounded-lg px-4 py-3 text-[var(--color-ink-sidebar-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-sidebar)]">Admin</a>
@@ -132,6 +133,8 @@
                 </main>
             </div>
         </div>
+
+        <x-app-notification :message="session('status')" />
 
         @filamentScripts
     </body>

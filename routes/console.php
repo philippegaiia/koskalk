@@ -18,3 +18,8 @@ Schedule::command('backup:database')
 Schedule::command('media:prune-orphaned-recipe')
     ->dailyAt('03:30')
     ->withoutOverlapping();
+
+Schedule::command('media:fail-stale-assets')
+    ->everyFiveMinutes()
+    ->withoutOverlapping()
+    ->onOneServer();

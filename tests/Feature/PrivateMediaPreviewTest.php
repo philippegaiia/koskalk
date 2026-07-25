@@ -1,206 +1,178 @@
 <?php
 
+use App\Forms\Components\MediaAssetPicker;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Livewire\Dashboard\PackagingItemEditor;
 use App\Livewire\Dashboard\RecipeWorkbench;
+use App\MediaAssetUsageRole;
 use App\Models\Ingredient;
+use App\Models\MediaAsset;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\UserPackagingItem;
+use App\Models\Workspace;
 use App\OwnerType;
-use App\Services\MediaStorage;
+use App\Services\MediaAssetUsageService;
 use App\Visibility;
-use Filament\Forms\Components\FileUpload;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
-    config([
-        'media.recipe_disk' => 'local',
-        'media.user_disk' => 'local',
+it('hydrates a recipe featured image from the private media library', function () {
+    [$owner, $workspace] = privateMediaWorkspace();
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'Lavender soap.webp',
     ]);
-
-    Storage::fake('local');
-});
-
-it('loads a private recipe image preview through its authenticated application route', function () {
-    $owner = User::factory()->create();
     $recipe = Recipe::factory()->create([
+        'workspace_id' => $workspace->id,
         'product_family_id' => ProductFamily::factory()->create()->id,
         'owner_id' => $owner->id,
-        'featured_image_path' => null,
     ]);
-    $path = MediaStorage::recipeDirectory($recipe, 'featured-images').'/soap.webp';
-    $recipe->update(['featured_image_path' => $path]);
-    Storage::disk('local')->put($path, 'private-image');
+
+    app(MediaAssetUsageService::class)->syncSingle(
+        $owner,
+        $recipe,
+        MediaAssetUsageRole::RecipeFeatured,
+        $asset->id,
+    );
 
     $this->actingAs($owner);
 
-    $field = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
-        ->instance()
-        ->form
-        ->getComponent('featured_image_path');
+    $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe]);
+    $field = $component->instance()->form->getComponent('featured_media_asset_id');
 
-    expect($field)->toBeInstanceOf(FileUpload::class)
-        ->and(array_values($field->getUploadedFiles())[0]['url'])->toBe(route('recipes.media', [
-            'recipe' => $recipe,
-            'path' => $path,
-        ]));
+    expect($field)->toBeInstanceOf(MediaAssetPicker::class)
+        ->and((int) $field->getState())->toBe($asset->id);
+
+    $component->assertSee('Lavender soap.webp');
 });
 
-it('loads a private ingredient image preview through its authenticated application route', function () {
-    $owner = User::factory()->create();
+it('hydrates ingredient main and icon override images from the private media library', function () {
+    [$owner, $workspace] = privateMediaWorkspace();
+    $main = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'Sodium citrate.webp',
+    ]);
+    $icon = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'Sodium citrate icon.webp',
+    ]);
     $ingredient = Ingredient::factory()->create([
+        'workspace_id' => $workspace->id,
         'owner_type' => OwnerType::User,
         'owner_id' => $owner->id,
         'visibility' => Visibility::Private,
-        'featured_image_path' => null,
     ]);
-    $path = MediaStorage::ingredientDirectory($ingredient, 'featured-images').'/sodium-citrate.webp';
-    $ingredient->update(['featured_image_path' => $path]);
-    Storage::disk('local')->put($path, 'private-image');
+
+    $usages = app(MediaAssetUsageService::class);
+    $usages->syncSingle($owner, $ingredient, MediaAssetUsageRole::IngredientMain, $main->id);
+    $usages->syncSingle($owner, $ingredient, MediaAssetUsageRole::IngredientIconOverride, $icon->id);
 
     $this->actingAs($owner);
 
-    $field = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
+    $form = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->instance()
-        ->form
-        ->getComponent('featured_image_path');
+        ->form;
 
-    expect($field)->toBeInstanceOf(FileUpload::class)
-        ->and(array_values($field->getUploadedFiles())[0]['url'])->toBe(route('ingredients.media', [
-            'ingredient' => $ingredient,
-            'path' => $path,
-        ]));
+    expect($form->getComponent('featured_media_asset_id'))->toBeInstanceOf(MediaAssetPicker::class)
+        ->and((int) $form->getComponent('featured_media_asset_id')->getState())->toBe($main->id)
+        ->and($form->getComponent('icon_media_asset_id'))->toBeInstanceOf(MediaAssetPicker::class)
+        ->and((int) $form->getComponent('icon_media_asset_id')->getState())->toBe($icon->id);
 });
 
-it('loads a private packaging image preview through its authenticated application route', function () {
-    $owner = User::factory()->create();
+it('hydrates a packaging image from the private media library', function () {
+    [$owner, $workspace] = privateMediaWorkspace();
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'Amber carton.webp',
+    ]);
     $packagingItem = UserPackagingItem::query()->create([
         'user_id' => $owner->id,
         'name' => 'Private carton',
         'unit_cost' => 1.25,
         'currency' => 'EUR',
     ]);
-    $path = MediaStorage::packagingItemDirectory($packagingItem, 'featured-images').'/carton.webp';
-    $packagingItem->update(['featured_image_path' => $path]);
-    Storage::disk('local')->put($path, 'private-image');
+
+    app(MediaAssetUsageService::class)->syncSingle(
+        $owner,
+        $packagingItem,
+        MediaAssetUsageRole::PackagingMain,
+        $asset->id,
+    );
 
     $this->actingAs($owner);
 
     $field = Livewire::test(PackagingItemEditor::class, ['packagingItem' => $packagingItem])
         ->instance()
         ->form
-        ->getComponent('featured_image_path');
+        ->getComponent('featured_media_asset_id');
 
-    expect($field)->toBeInstanceOf(FileUpload::class)
-        ->and(array_values($field->getUploadedFiles())[0]['url'])->toBe(route('packaging-items.media', [
-            'packagingItem' => $packagingItem,
-            'path' => $path,
-        ]));
+    expect($field)->toBeInstanceOf(MediaAssetPicker::class)
+        ->and((int) $field->getState())->toBe($asset->id);
 });
 
-it('keeps original upload names in the private media form state', function () {
-    $owner = User::factory()->create();
+it('keeps original upload names visible in media picker state', function () {
+    [$owner, $workspace] = privateMediaWorkspace();
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'Sérum visage.png',
+    ]);
     $recipe = Recipe::factory()->create([
+        'workspace_id' => $workspace->id,
         'product_family_id' => ProductFamily::factory()->create()->id,
         'owner_id' => $owner->id,
     ]);
-    $ingredient = Ingredient::factory()->create([
-        'owner_type' => OwnerType::User,
-        'owner_id' => $owner->id,
-        'visibility' => Visibility::Private,
-    ]);
-    $packagingItem = UserPackagingItem::query()->create([
-        'user_id' => $owner->id,
-        'name' => 'Private carton',
-        'unit_cost' => 1.25,
-        'currency' => 'EUR',
-    ]);
+
+    app(MediaAssetUsageService::class)->syncSingle(
+        $owner,
+        $recipe,
+        MediaAssetUsageRole::RecipeFeatured,
+        $asset->id,
+    );
 
     $this->actingAs($owner);
 
-    $recipeField = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
-        ->instance()
-        ->form
-        ->getComponent('featured_image_path');
-    $ingredientFeaturedField = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
-        ->instance()
-        ->form
-        ->getComponent('featured_image_path');
-    $ingredientIconField = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
-        ->instance()
-        ->form
-        ->getComponent('icon_image_path');
-    $packagingField = Livewire::test(PackagingItemEditor::class, ['packagingItem' => $packagingItem])
-        ->instance()
-        ->form
-        ->getComponent('featured_image_path');
-
-    expect($recipeField)->toBeInstanceOf(FileUpload::class)
-        ->and($recipeField->getFileNamesStatePath())->toBeString()->toEndWith('featured_image_original_name')
-        ->and($ingredientFeaturedField)->toBeInstanceOf(FileUpload::class)
-        ->and($ingredientFeaturedField->getFileNamesStatePath())->toBeString()->toEndWith('featured_image_original_name')
-        ->and($ingredientIconField)->toBeInstanceOf(FileUpload::class)
-        ->and($ingredientIconField->getFileNamesStatePath())->toBeString()->toEndWith('icon_image_original_name')
-        ->and($packagingField)->toBeInstanceOf(FileUpload::class)
-        ->and($packagingField->getFileNamesStatePath())->toBeString()->toEndWith('featured_image_original_name');
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->assertSee('Sérum visage.png');
 });
 
-it('uses a neutral display name for legacy private uploads and restores a saved original name', function () {
-    $owner = User::factory()->create();
+it('does not expose opaque storage names as media picker labels', function () {
+    [$owner, $workspace] = privateMediaWorkspace();
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'Rose soap.png',
+        'pending_path' => 'media-pending/01JQ0RANDOM.webp',
+    ]);
     $recipe = Recipe::factory()->create([
+        'workspace_id' => $workspace->id,
         'product_family_id' => ProductFamily::factory()->create()->id,
         'owner_id' => $owner->id,
     ]);
-    $recipePath = MediaStorage::recipeDirectory($recipe, 'featured-images').'/01JQ0RANDOM.webp';
-    $recipe->update(['featured_image_path' => $recipePath]);
-    Storage::disk('local')->put($recipePath, 'private-image');
 
-    $ingredient = Ingredient::factory()->create([
-        'owner_type' => OwnerType::User,
-        'owner_id' => $owner->id,
-        'visibility' => Visibility::Private,
-    ]);
-    $ingredientPath = MediaStorage::ingredientDirectory($ingredient, 'featured-images').'/01JQ1RANDOM.webp';
-    $ingredient->update([
-        'featured_image_path' => $ingredientPath,
-        'featured_image_original_name' => 'Sérum visage.png',
-    ]);
-    Storage::disk('local')->put($ingredientPath, 'private-image');
-
-    $packagingItem = UserPackagingItem::query()->create([
-        'user_id' => $owner->id,
-        'name' => 'Private carton',
-        'unit_cost' => 1.25,
-        'currency' => 'EUR',
-    ]);
-    $packagingPath = MediaStorage::packagingItemDirectory($packagingItem, 'featured-images').'/01JQ2RANDOM.webp';
-    $packagingItem->update(['featured_image_path' => $packagingPath]);
-    Storage::disk('local')->put($packagingPath, 'private-image');
+    app(MediaAssetUsageService::class)->syncSingle(
+        $owner,
+        $recipe,
+        MediaAssetUsageRole::RecipeFeatured,
+        $asset->id,
+    );
 
     $this->actingAs($owner);
 
-    $recipeField = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
-        ->instance()
-        ->form
-        ->getComponent('featured_image_path');
-    $ingredientField = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient->fresh()])
-        ->instance()
-        ->form
-        ->getComponent('featured_image_path');
-    $packagingField = Livewire::test(PackagingItemEditor::class, ['packagingItem' => $packagingItem])
-        ->instance()
-        ->form
-        ->getComponent('featured_image_path');
-
-    expect(array_values($recipeField->getUploadedFiles())[0]['name'])->toBe(__('media.current_image'))
-        ->and(array_values($recipeField->getUploadedFiles())[0]['name'])->not->toBe(basename($recipePath))
-        ->and(array_values($ingredientField->getUploadedFiles())[0]['name'])->toBe('Sérum visage.png')
-        ->and(array_values($packagingField->getUploadedFiles())[0]['name'])->toBe(__('media.current_image'))
-        ->and(array_values($packagingField->getUploadedFiles())[0]['name'])->not->toBe(basename($packagingPath));
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->assertSee('Rose soap.png')
+        ->assertDontSee('01JQ0RANDOM.webp');
 });
+
+/**
+ * @return array{User, Workspace}
+ */
+function privateMediaWorkspace(): array
+{
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+
+    return [$owner, $workspace];
+}

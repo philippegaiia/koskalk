@@ -83,6 +83,11 @@ return [
             'region' => env('R2_REGION', 'auto'),
             'bucket' => env('R2_PRIVATE_BUCKET'),
             'endpoint' => env('R2_ENDPOINT'),
+            'http' => [
+                'connect_timeout' => 5,
+                'timeout' => 45,
+            ],
+            'retries' => 0,
             'use_path_style_endpoint' => false,
             'visibility' => 'private',
             'supports_visibility' => false,

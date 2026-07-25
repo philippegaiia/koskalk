@@ -7,6 +7,8 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
+use Filament\Forms\Components\RichEditor\RichContentAttribute;
+use Filament\Forms\Components\RichEditor\RichContentRenderer;
 
 class RecipeVersionViewDataBuilder
 {
@@ -14,6 +16,7 @@ class RecipeVersionViewDataBuilder
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
         private readonly FormulaDocumentBuilder $formulaDocumentBuilder,
+        private readonly RecipeRichContentAttachmentProvider $recipeRichContentAttachmentProvider,
     ) {}
 
     /**
@@ -60,7 +63,7 @@ class RecipeVersionViewDataBuilder
             'state' => $version->saved_at === null ? 'current' : 'saved',
             'saved_at' => $version->saved_at?->format('Y-m-d H:i'),
             'description' => $recipe->description,
-            'manufacturing_procedure' => $version->manufacturing_instructions,
+            'manufacturing_procedure' => $this->renderManufacturingInstructions($recipe, $version),
         ]);
 
         return [
@@ -83,6 +86,21 @@ class RecipeVersionViewDataBuilder
             'batchContext' => $normalizedBatchContext,
             'selectedOilWeight' => $selectedOilWeight,
         ];
+    }
+
+    private function renderManufacturingInstructions(Recipe $recipe, RecipeVersion $version): string
+    {
+        if (blank($version->manufacturing_instructions)) {
+            return '';
+        }
+
+        return RichContentRenderer::make($version->manufacturing_instructions)
+            ->fileAttachmentProvider(
+                $this->recipeRichContentAttachmentProvider->attribute(
+                    RichContentAttribute::make($recipe, 'manufacturing_instructions'),
+                )->content($version->manufacturing_instructions),
+            )
+            ->toHtml();
     }
 
     /**

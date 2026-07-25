@@ -2,11 +2,13 @@
 
 use App\IngredientCategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
+use App\MediaAssetUsageRole;
 use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
+use App\Models\MediaAsset;
 use App\Models\ProductFamily;
 use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
@@ -16,11 +18,14 @@ use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\EntitlementService;
+use App\Services\MediaAssetUsageService;
 use App\Services\MediaStorage;
 use App\Services\RecipeContentUpdater;
+use App\Services\RecipeVersionStructureSynchronizer;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
+use App\Support\RichContentAttachmentPaths;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -200,6 +205,81 @@ it('keeps an existing recipe aligned with its current version after a formula sa
         ->toContain('Saved from the formula action.');
 });
 
+it('synchronizes inline SOP media before an immediate formula save snapshots the current version', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $currentVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Inline SOP Save'),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($currentVersion->recipe_id);
+    $workspace = $user->company();
+    $staleAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $inlineAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $usages = app(MediaAssetUsageService::class);
+    $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeSop, $staleAsset->id);
+    $usages->syncSingle($user, $currentVersion, MediaAssetUsageRole::RecipeSop, $staleAsset->id);
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set('data.manufacturing_instructions', recipeWorkbenchTipTapMediaAssets($inlineAsset))
+        ->call('save', workbenchSoapDraftPayload($ingredient, name: 'Inline SOP Save'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true);
+
+    expect($usages->idsFor($recipe, MediaAssetUsageRole::RecipeSop))->toBe([$inlineAsset->id])
+        ->and($usages->idsFor($currentVersion, MediaAssetUsageRole::RecipeSop))->toBe([$inlineAsset->id])
+        ->and(MediaAsset::query()->whereKey($staleAsset->id)->exists())->toBeTrue();
+});
+
+it('rolls back inline SOP usage synchronization when the formula snapshot fails', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $currentVersion = app(RecipeWorkbenchService::class)->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'SOP Rollback'),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($currentVersion->recipe_id);
+    $workspace = $user->company();
+    $staleAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $inlineAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $originalInstructions = recipeWorkbenchInlineMediaHtml($staleAsset);
+    $recipe->update(['manufacturing_instructions' => $originalInstructions]);
+    $currentVersion->update(['manufacturing_instructions' => $originalInstructions]);
+    $usages = app(MediaAssetUsageService::class);
+    $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeSop, $staleAsset->id);
+    $usages->syncSingle($user, $currentVersion, MediaAssetUsageRole::RecipeSop, $staleAsset->id);
+    mock(RecipeVersionStructureSynchronizer::class)
+        ->shouldReceive('sync')
+        ->once()
+        ->andThrow(new RuntimeException('Snapshot failed.'));
+    $payload = workbenchSoapDraftPayload($ingredient, name: 'SOP Rollback');
+    $payload['manufacturing_instructions'] = recipeWorkbenchInlineMediaHtml($inlineAsset);
+
+    expect(fn () => app(RecipeWorkbenchService::class)->save(
+        $user,
+        $soapFamily,
+        $payload,
+        $recipe,
+    ))->toThrow(RuntimeException::class, 'Snapshot failed.');
+
+    expect($usages->idsFor($recipe, MediaAssetUsageRole::RecipeSop))->toBe([$staleAsset->id])
+        ->and($usages->idsFor($currentVersion, MediaAssetUsageRole::RecipeSop))->toBe([$staleAsset->id])
+        ->and($recipe->fresh()->manufacturing_instructions)->toBe($originalInstructions)
+        ->and($currentVersion->fresh()->manufacturing_instructions)->toBe($originalInstructions);
+});
+
 it('persists a pending procedure image before an immediate formula save', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -238,7 +318,7 @@ it('persists a pending procedure image before an immediate formula save', functi
         ->and($currentVersion->manufacturing_instructions)->toContain($storedPath)
         ->and($recipe->manufacturing_instructions)->not->toContain($temporaryId)
         ->and($currentVersion->manufacturing_instructions)->not->toContain($temporaryId);
-});
+})->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('persists a pending procedure image atomically for an unsaved formula action', function (
     string $action,
@@ -280,7 +360,7 @@ it('persists a pending procedure image atomically for an unsaved formula action'
     'first save' => ['save', 'First Media Formula', 1],
     'first publish' => ['publish', 'First Media Formula', 2],
     'unsaved duplicate' => ['duplicateFormula', 'Copy of First Media Formula', 1],
-]);
+])->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('rolls back an unsaved formula action when the procedure exceeds eight images', function (string $action) {
     $user = User::factory()->create();
@@ -308,7 +388,7 @@ it('rolls back an unsaved formula action when the procedure exceeds eight images
     'first save' => ['save'],
     'first publish' => ['publish'],
     'unsaved duplicate' => ['duplicateFormula'],
-]);
+])->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('rolls back an unsaved formula action containing a cross-recipe procedure image', function (string $action) {
     $user = User::factory()->create();
@@ -345,7 +425,7 @@ it('rolls back an unsaved formula action containing a cross-recipe procedure ima
     'first save' => ['save'],
     'first publish' => ['publish'],
     'unsaved duplicate' => ['duplicateFormula'],
-]);
+])->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('persists a pending procedure image before an immediate formula publish', function () {
     $user = User::factory()->create();
@@ -388,6 +468,48 @@ it('persists a pending procedure image before an immediate formula publish', fun
         ->and($versions->first()->manufacturing_instructions)->toContain($storedPath)
         ->and($versions->last()->manufacturing_instructions)->toContain($storedPath)
         ->and($versions->pluck('manufacturing_instructions')->implode(' '))->not->toContain($temporaryId);
+})->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
+
+it('clears inline SOP media before an immediate formula publish snapshots both versions', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $currentVersion = $service->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload($ingredient, name: 'Inline SOP Publish'),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($currentVersion->recipe_id);
+    $workspace = $user->company();
+    $removedAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $instructions = recipeWorkbenchInlineMediaHtml($removedAsset);
+    $recipe->update(['manufacturing_instructions' => $instructions]);
+    $currentVersion->update(['manufacturing_instructions' => $instructions]);
+    $usages = app(MediaAssetUsageService::class);
+    $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeSop, $removedAsset->id);
+    $usages->syncSingle($user, $currentVersion, MediaAssetUsageRole::RecipeSop, $removedAsset->id);
+
+    $this->actingAs($user);
+
+    Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set('data.manufacturing_instructions', '<p>Procedure image removed.</p>')
+        ->call('publish', workbenchSoapDraftPayload($ingredient, name: 'Inline SOP Publish'))
+        ->assertReturned(fn (array $response): bool => $response['ok'] === true);
+
+    $versions = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->orderBy('version_number')
+        ->get();
+
+    expect($versions)->toHaveCount(2)
+        ->and($usages->idsFor($recipe, MediaAssetUsageRole::RecipeSop))->toBe([])
+        ->and($usages->idsFor($versions->first(), MediaAssetUsageRole::RecipeSop))->toBe([])
+        ->and($usages->idsFor($versions->last(), MediaAssetUsageRole::RecipeSop))->toBe([])
+        ->and(MediaAsset::query()->whereKey($removedAsset->id)->exists())->toBeTrue();
 });
 
 it('cleans first-action media when the outer quota transaction fails', function (string $action) {
@@ -438,7 +560,7 @@ it('cleans first-action media when the outer quota transaction fails', function 
 })->with([
     'first save' => ['save'],
     'first publish' => ['publish'],
-]);
+])->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('copies a pending procedure image into the destination namespace on immediate duplication', function () {
     $user = User::factory()->create();
@@ -487,7 +609,7 @@ it('copies a pending procedure image into the destination namespace on immediate
         ->and($destinationRecipe->manufacturing_instructions)->not->toContain($temporaryId)
         ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes/'.$sourceRecipe->public_id))
         ->toBe([]);
-});
+})->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('copies saved and pending procedure images together without source orphans', function () {
     $user = User::factory()->create();
@@ -536,7 +658,7 @@ it('copies saved and pending procedure images together without source orphans', 
         ))->toBeTrue()
         ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes/'.$sourceRecipe->public_id))
         ->toBe([$sourcePath]);
-});
+})->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('cleans pending source media when an existing formula duplicate is rejected', function () {
     $user = User::factory()->create();
@@ -573,7 +695,7 @@ it('cleans pending source media when an existing formula duplicate is rejected',
         ->toBe([])
         ->and(Storage::disk(MediaStorage::recipeDisk())->allFiles('recipes'))
         ->toBe([$otherPath]);
-});
+})->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('rejects more than eight pending procedure images during a formula action', function () {
     $user = User::factory()->create();
@@ -599,7 +721,7 @@ it('rejects more than eight pending procedure images during a formula action', f
 
     expect($recipe->fresh()->manufacturing_instructions)->toBeNull()
         ->and($draftVersion->fresh()->manufacturing_instructions)->toBeNull();
-});
+})->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('rejects a procedure image from another recipe during a formula action', function () {
     $user = User::factory()->create();
@@ -625,7 +747,7 @@ it('rejects a procedure image from another recipe during a formula action', func
     expect($recipe->fresh()->manufacturing_instructions)->toBeNull()
         ->and($draftVersion->fresh()->manufacturing_instructions)->toBeNull()
         ->and(Storage::disk(MediaStorage::recipeDisk())->exists($otherPath))->toBeTrue();
-});
+})->skip('Direct rich-content uploads were replaced by reusable Media Library selections.');
 
 it('copies component-duplicated instruction attachments into the destination recipe namespace', function () {
     $user = User::factory()->create();
@@ -689,7 +811,7 @@ it('copies component-duplicated instruction attachments into the destination rec
             JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES,
         ))
         ->toContain($destinationAttachment);
-});
+})->skip('Inline recipe images were replaced by reusable Media Library selections.');
 
 it('returns backend soap calculation preview data for the workbench', function () {
     ProductFamily::factory()->create([
@@ -1239,17 +1361,19 @@ it('saves recipe content through the standalone filament form', function () {
     $recipe = Recipe::factory()->create([
         'product_family_id' => $soapFamily->id,
         'owner_id' => $user->id,
+        'workspace_id' => Workspace::factory()->create(['owner_user_id' => $user->id])->id,
+    ]);
+    $featuredImage = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $recipe->workspace_id,
+        'original_filename' => 'Olive oil portrait.jpg',
     ]);
 
     $this->actingAs($user);
-    $featuredImagePath = 'recipes/'.$recipe->public_id.'/featured-images/soap.jpg';
-    $featuredImageOriginalName = 'Olive oil portrait.jpg';
 
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
         ->set('data.description', '<p>A calming creamy bar for daily cleansing.</p>')
         ->set('data.manufacturing_instructions', '<p>Blend the base gently, then pour into the mould.</p>')
-        ->set('data.featured_image_path', [$featuredImagePath])
-        ->set('data.featured_image_original_name', $featuredImageOriginalName)
+        ->set('data.featured_media_asset_id', $featuredImage->id)
         ->call('saveRecipeContent')
         ->assertReturned(fn (array $response): bool => $response['ok'] === true
             && $response['message'] === __('workbench.instructions.all_saved')
@@ -1259,8 +1383,11 @@ it('saves recipe content through the standalone filament form', function () {
     expect($recipe->fresh())
         ->description->toContain('calming creamy bar')
         ->manufacturing_instructions->toContain('Blend the base gently')
-        ->featured_image_path->toBe($featuredImagePath)
-        ->featured_image_original_name->toBe($featuredImageOriginalName);
+        ->featured_image_path->toBeNull()
+        ->and(app(MediaAssetUsageService::class)->idsFor(
+            $recipe,
+            MediaAssetUsageRole::RecipeFeatured,
+        ))->toBe([$featuredImage->id]);
 });
 
 it('syncs standalone instruction saves to the current version', function () {
@@ -3009,7 +3136,7 @@ JS;
     ]);
 });
 
-it('deletes the previous recipe featured image from storage when the image is cleared', function () {
+it('preserves a legacy recipe featured image when saving through the media-library form', function () {
     Storage::fake('local');
 
     config([
@@ -3036,14 +3163,12 @@ it('deletes the previous recipe featured image from storage when the image is cl
     Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe])
         ->set('data.description', '<p>Presentation only.</p>')
         ->set('data.manufacturing_instructions', '<p>Manufacturing only.</p>')
-        ->set('data.featured_image_path', null)
-        ->set('data.featured_image_original_name', 'Stale recipe portrait.webp')
         ->call('saveRecipeContent')
         ->assertSet('recipeContentStatus', 'success');
 
-    expect(Storage::disk('local')->exists('recipes/featured-images/original.webp'))->toBeFalse()
-        ->and($recipe->fresh()->featured_image_path)->toBeNull()
-        ->and($recipe->fresh()->featured_image_original_name)->toBeNull();
+    expect(Storage::disk('local')->exists('recipes/featured-images/original.webp'))->toBeTrue()
+        ->and($recipe->fresh()->featured_image_path)->toBe('recipes/featured-images/original.webp')
+        ->and((string) $recipe->fresh()->featured_image_original_name)->toBe('Original recipe portrait.webp');
 });
 
 it('keeps a shared rich content attachment when it is moved between recipe editors in one save', function () {
@@ -3082,7 +3207,7 @@ it('keeps a shared rich content attachment when it is moved between recipe edito
     expect(Storage::disk('local')->exists($sharedAttachment))->toBeTrue()
         ->and($recipe->fresh()->description)->toContain($sharedAttachment)
         ->and($recipe->fresh()->manufacturing_instructions)->not->toContain($sharedAttachment);
-});
+})->skip('Inline recipe images were replaced by reusable Media Library selections.');
 
 it('keeps comparison snapshots aligned with the version payload and backend calculation', function () {
     $user = User::factory()->create();
@@ -3632,6 +3757,43 @@ function recipeWorkbenchTipTapProcedure(string|array $temporaryIds): array
                 ->all(),
         ]],
     ];
+}
+
+/**
+ * @return array{type: string, content: array<int, array<string, mixed>>}
+ */
+function recipeWorkbenchTipTapMediaAssets(MediaAsset|array $assets): array
+{
+    $assets = is_array($assets) ? $assets : [$assets];
+
+    return [
+        'type' => 'doc',
+        'content' => [[
+            'type' => 'paragraph',
+            'content' => collect($assets)
+                ->map(fn (MediaAsset $asset): array => [
+                    'type' => 'image',
+                    'attrs' => [
+                        'src' => route('media.show', [$asset, 'master']),
+                        'alt' => null,
+                        'title' => null,
+                        'id' => RichContentAttachmentPaths::mediaAssetIdentity($asset->public_id),
+                        'width' => null,
+                        'height' => null,
+                    ],
+                ])
+                ->all(),
+        ]],
+    ];
+}
+
+function recipeWorkbenchInlineMediaHtml(MediaAsset $asset): string
+{
+    return sprintf(
+        '<img data-id="%s" src="%s">',
+        RichContentAttachmentPaths::mediaAssetIdentity($asset->public_id),
+        route('media.show', [$asset, 'master']),
+    );
 }
 
 /**

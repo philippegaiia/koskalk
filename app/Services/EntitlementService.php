@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\MediaAssetStatus;
 use App\Models\Ingredient;
+use App\Models\MediaAsset;
 use App\Models\Plan;
 use App\Models\PlanLimit;
 use App\Models\ProductionBatch;
@@ -38,6 +40,7 @@ class EntitlementService
                 used: $this->productionBatchCount($user),
                 limit: $limits['production_batches'] ?? null,
             ),
+            'media_assets' => $this->mediaAssetUsage($workspace, $limits),
         ];
     }
 
@@ -50,6 +53,17 @@ class EntitlementService
         $subscriber = $workspace?->owner ?? $user;
 
         return $this->privateIngredientUsage($subscriber, $workspace, $this->limitsFor($subscriber));
+    }
+
+    /**
+     * @return array{used: int, limit: int|null, remaining: int|null, allowed: bool}
+     */
+    public function mediaAssetUsageFor(User $user): array
+    {
+        $workspace = $this->companyWorkspaceFor($user);
+        $subscriber = $workspace?->owner ?? $user;
+
+        return $this->mediaAssetUsage($workspace, $this->limitsFor($subscriber));
     }
 
     public function savedFormulaHistoryLimitFor(User $user): int
@@ -118,6 +132,17 @@ class EntitlementService
     {
         $workspace = $this->workspaceProvisioner->ensureCompanyWorkspace($user);
 
+        return $this->withinWorkspaceQuotaLock($workspace, $callback, $attempts);
+    }
+
+    /**
+     * @template T
+     *
+     * @param  Closure(Workspace): T  $callback
+     * @return T
+     */
+    public function withinWorkspaceQuotaLock(Workspace $workspace, Closure $callback, int $attempts = 5): mixed
+    {
         return DB::transaction(function () use ($callback, $workspace): mixed {
             $lockedWorkspace = Workspace::withoutGlobalScopes()
                 ->with('owner')
@@ -165,6 +190,16 @@ class EntitlementService
         $this->assertUsageAllows(
             $this->privateIngredientUsage($subscriber, $workspace, $this->limitsFor($subscriber)),
             'private ingredients',
+        );
+    }
+
+    public function assertCanUploadMediaAssetInWorkspace(Workspace $workspace): void
+    {
+        $subscriber = $this->subscriberForWorkspace($workspace);
+
+        $this->assertUsageAllows(
+            $this->mediaAssetUsage($workspace, $this->limitsFor($subscriber)),
+            'media assets',
         );
     }
 
@@ -277,6 +312,28 @@ class EntitlementService
         return $this->usageLine(
             used: $this->privateIngredientCount($subscriber, $workspace),
             limit: $limits['private_ingredients'] ?? null,
+        );
+    }
+
+    /**
+     * @param  array<string, int|null>  $limits
+     * @return array{used: int, limit: int|null, remaining: int|null, allowed: bool}
+     */
+    private function mediaAssetUsage(?Workspace $workspace, array $limits): array
+    {
+        $used = $workspace instanceof Workspace
+            ? MediaAsset::query()
+                ->where('workspace_id', $workspace->id)
+                ->whereIn('status', [
+                    MediaAssetStatus::Processing,
+                    MediaAssetStatus::Ready,
+                ])
+                ->count()
+            : 0;
+
+        return $this->usageLine(
+            used: $used,
+            limit: $limits['media_assets'] ?? null,
         );
     }
 

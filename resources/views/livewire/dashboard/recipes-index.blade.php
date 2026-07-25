@@ -1,10 +1,4 @@
 <div class="mx-auto max-w-[90rem] space-y-6">
-    @if (session('status'))
-        <div class="rounded-xl bg-[var(--color-success-soft)] px-6 py-4 text-sm text-[var(--color-success-strong)]" role="status">
-            {{ session('status') }}
-        </div>
-    @endif
-
     <section class="sk-card p-6" aria-label="{{ __('products.page.aria_label') }}">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">
@@ -95,7 +89,7 @@
                     $productFamilySlug = $recipe->productFamily?->slug ?? 'product';
                     $productTypeName = $recipe->productType?->name;
                     $categoryLabel = $productTypeName ?? $productFamilyName;
-                    $thumbnailUrl = $recipe->featuredImageUrl() ?? $recipe->productType?->fallbackImageUrl();
+                    $thumbnailUrl = $recipe->indexImageUrl() ?? $recipe->productType?->fallbackImageUrl();
                     $isLocked = $recipe->isLocked();
                     $fallbackThumbnailClasses = match ($productFamilySlug) {
                         'soap' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
@@ -110,7 +104,7 @@
                 >
                     <div class="relative aspect-[4/3] {{ $thumbnailUrl ? '' : $fallbackThumbnailClasses }}">
                         @if ($thumbnailUrl)
-                            <img src="{{ $thumbnailUrl }}" alt="{{ $recipe->name }}" class="h-full w-full object-cover" />
+                            <img src="{{ $thumbnailUrl }}" alt="{{ $recipe->name }}" class="h-full w-full object-contain" />
                         @else
                             <div class="grid h-full w-full place-items-center">
                                 <div class="text-center">

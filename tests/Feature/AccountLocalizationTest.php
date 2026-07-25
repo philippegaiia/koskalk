@@ -34,6 +34,7 @@ it('uses the approved English account copy', function () {
         ->assertSeeText('Products')
         ->assertSeeText('Your ingredients')
         ->assertSeeText('Production batches')
+        ->assertSeeText('Media assets')
         ->assertSeeText('Free account')
         ->assertSeeText('Checkout unavailable')
         ->assertSeeText('Online checkout is not available yet.')
@@ -107,6 +108,8 @@ it('keeps every account string in the account translation group', function () {
         'usage.products',
         'usage.ingredients',
         'usage.production_batches',
+        'usage.media_assets',
+        'usage.media_uploads_blocked',
         'usage.used',
         'usage.used_unlimited',
         'usage.unlimited',

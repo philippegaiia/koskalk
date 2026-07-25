@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Casts\OriginalFilename;
+use App\MediaAssetUsageRole;
+use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
@@ -46,6 +48,7 @@ class Recipe extends Model implements HasRichContent
     /** @use HasFactory<RecipeFactory> */
     use HasFactory;
 
+    use HasMediaAssetUsages;
     use HasPublicId;
     use HasTenantOwnership;
     use InteractsWithRichContent;
@@ -58,6 +61,17 @@ class Recipe extends Model implements HasRichContent
     protected static function booted(): void
     {
         static::addGlobalScope(new OwnedByCurrentTenantScope);
+
+        static::deleting(function (self $recipe): void {
+            $versionIds = RecipeVersion::withoutGlobalScopes()
+                ->where('recipe_id', $recipe->id)
+                ->pluck('id');
+
+            MediaAssetUsage::query()
+                ->where('usable_type', (new RecipeVersion)->getMorphClass())
+                ->whereIn('usable_id', $versionIds)
+                ->delete();
+        });
     }
 
     public function productFamily(): BelongsTo
@@ -139,7 +153,24 @@ class Recipe extends Model implements HasRichContent
 
     public function featuredImageUrl(): ?string
     {
+        $mediaAsset = $this->mediaAssetForRole(MediaAssetUsageRole::RecipeFeatured);
+
+        if ($mediaAsset instanceof MediaAsset) {
+            return route('media.show', [$mediaAsset, 'catalog']);
+        }
+
         return MediaStorage::recipeUrl($this, $this->featured_image_path);
+    }
+
+    public function indexImageUrl(): ?string
+    {
+        $mediaAsset = $this->mediaAssetForRole(MediaAssetUsageRole::RecipeFeatured);
+
+        if ($mediaAsset instanceof MediaAsset) {
+            return route('media.show', [$mediaAsset, 'recipe-index']);
+        }
+
+        return $this->featuredImageUrl();
     }
 
     /**

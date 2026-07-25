@@ -61,7 +61,8 @@ it('shows the account page with current plan usage', function () {
         ->assertSuccessful()
         ->assertSeeText('Free beta')
         ->assertSeeText('15')
-        ->assertSeeText('20');
+        ->assertSeeText('20')
+        ->assertSeeText('200');
 });
 
 it('updates account profile details', function () {

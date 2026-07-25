@@ -24,6 +24,7 @@
 /public/hot
 /public/storage
 /storage/debugbar
+/storage/media-library
 /storage/*.key
 /storage/pail
 /vendor
@@ -36,3 +37,6 @@ Thumbs.db
 .graphify_python
 .graphify_detect.json
 graphify-out/
+
+# Local UI review artifacts
+/.impeccable/critique/

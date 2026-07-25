@@ -137,7 +137,12 @@ it('loads the saved ingredient status from the database', function () {
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->call('save')
         ->assertHasNoErrors()
-        ->assertSet('statusMessage', 'Modifications enregistrées.');
+        ->assertSet('statusMessage', 'Modifications enregistrées.')
+        ->assertDispatched(
+            'app-notification',
+            message: 'Modifications enregistrées.',
+            type: 'success',
+        );
 });
 
 it('keeps every ingredient editor string in the ingredients translation group', function () {

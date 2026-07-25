@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Services\CurrentAppUserResolver;
@@ -18,6 +19,7 @@ use Livewire\WithPagination;
 
 class PackagingItemsIndex extends Component
 {
+    use InteractsWithAppNotifications;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [25, 50, 100];
@@ -225,6 +227,7 @@ class PackagingItemsIndex extends Component
             ->select(['id', 'public_id', 'user_id', 'name', 'unit_cost', 'currency', 'notes', 'featured_image_path', 'created_at', 'updated_at'])
             ->where('user_id', $user->id)
             ->withCount('costingItems')
+            ->with('mediaAssetUsages.mediaAsset')
             ->when($this->search !== '', fn (Builder $query): Builder => $query
                 ->where(fn (Builder $where): Builder => $where
                     ->where('name', 'like', '%'.$this->search.'%')
@@ -246,7 +249,7 @@ class PackagingItemsIndex extends Component
 
     private function finishDeletion(string $message): void
     {
-        $this->statusMessage = $message;
+        $this->showAppNotification($message);
         $this->pendingDeleteId = null;
         $this->resetErrorBag();
         $this->resetPage();

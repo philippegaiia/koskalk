@@ -105,9 +105,4 @@
         </div>
     </template>
 
-    @if (session('status'))
-        <div role="status" class="mt-4 rounded-[1.5rem] border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-4 py-3 text-sm text-[var(--color-success-strong)]">
-            {{ session('status') }}
-        </div>
-    @endif
 </section>

@@ -1,11 +1,12 @@
 <?php
 
+use App\Forms\Components\MediaAssetPicker;
+use App\Forms\RichEditor\Plugins\MediaLibraryRichContentPlugin;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\User;
 use Filament\Forms\Components\Field;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -421,7 +422,7 @@ it('organizes saved instructions and media with responsive schema contracts', fu
     $component = Livewire::test(RecipeWorkbench::class, ['recipe' => $recipe]);
     $form = $component->instance()->form;
     $description = $form->getComponent('description');
-    $featuredImage = $form->getComponent('featured_image_path');
+    $featuredImage = $form->getComponent('featured_media_asset_id');
     $manufacturingInstructions = $form->getComponent('manufacturing_instructions');
     $presentationGrid = $description->getContainer()->getParentComponent();
     $procedureGrid = $manufacturingInstructions->getContainer()->getParentComponent();
@@ -433,7 +434,7 @@ it('organizes saved instructions and media with responsive schema contracts', fu
         ->map(fn (Field $field): string => $field->getName())
         ->filter(fn (string $name): bool => in_array($name, [
             'description',
-            'featured_image_path',
+            'featured_media_asset_id',
             'manufacturing_instructions',
         ], true))
         ->values()
@@ -441,32 +442,37 @@ it('organizes saved instructions and media with responsive schema contracts', fu
 
     expect($orderedContentFields)->toBe([
         'description',
-        'featured_image_path',
+        'featured_media_asset_id',
         'manufacturing_instructions',
     ])
         ->and($description)->toBeInstanceOf(RichEditor::class)
-        ->and($featuredImage)->toBeInstanceOf(FileUpload::class)
+        ->and($featuredImage)->toBeInstanceOf(MediaAssetPicker::class)
         ->and($manufacturingInstructions)->toBeInstanceOf(RichEditor::class)
+        ->and($form->getComponent('manufacturing_media_asset_ids'))->toBeNull()
         ->and($presentationGrid)->toBeInstanceOf(Grid::class)
         ->and($presentationGrid->getColumns('default'))->toBe(1)
         ->and($presentationGrid->getColumns('lg'))->toBe(12)
         ->and($description->getColumnSpan('lg'))->toBe(8)
         ->and($featuredImage->getColumnSpan('lg'))->toBe(4)
-        ->and($featuredImage->getPanelLayout())->toBe('compact')
-        ->and($featuredImage->getImagePreviewHeight())->toBeNull()
-        ->and($featuredImage->hasImageEditor())->toBeTrue()
-        ->and(array_values($featuredImage->getImageEditorAspectRatioOptionsForJs()))->toBe([
-            'NaN',
-            1.0,
-            4 / 3,
-            3 / 4,
-        ])
         ->and($procedureSection)->toBeInstanceOf(Section::class)
         ->and($procedureGrid)->toBeInstanceOf(Grid::class)
         ->and($procedureGrid->getColumns('default'))->toBe(1)
         ->and($procedureGrid->getColumns('lg'))->toBe(12)
         ->and($manufacturingInstructions->getColumnSpan('lg'))->toBe(12)
-        ->and($manufacturingInstructions->isLabelHidden())->toBeTrue();
+        ->and($manufacturingInstructions->isLabelHidden())->toBeTrue()
+        ->and($description->hasResizableImages())->toBeFalse()
+        ->and($manufacturingInstructions->hasResizableImages())->toBeTrue()
+        ->and($manufacturingInstructions->getExtraInputAttributes()['class'])->toContain(
+            '[&_.fi-fo-rich-editor-content]:mx-auto',
+            '[&_.fi-fo-rich-editor-content]:max-w-[680px]',
+            '[&_.fi-fo-rich-editor-content_img]:!h-auto',
+        )
+        ->and($description->getExtraInputAttributes()['class'])
+        ->not->toContain('[&_.fi-fo-rich-editor-content]:max-w-[680px]')
+        ->and($manufacturingInstructions->getPlugins())
+        ->toContainOnlyInstancesOf(MediaLibraryRichContentPlugin::class)
+        ->and(collect($manufacturingInstructions->getToolbarButtons())->flatten()->all())
+        ->toContain('insertFromMediaLibrary');
 
     $renderedWorkbench = $component->html();
     $visibleWorkbench = preg_replace(
@@ -476,11 +482,11 @@ it('organizes saved instructions and media with responsive schema contracts', fu
     );
 
     expect($renderedWorkbench)
-        ->toMatch('/class="[^"]*fi-fo-field-label[^"]*fi-sr-only[^"]*"[^>]*>\s*Manufacturing procedure\s*<\/label>/')
+        ->toMatch('/<(?<tag>[a-z0-9]+)[^>]*class="[^"]*fi-fo-field-label[^"]*fi-sr-only[^"]*"[^>]*>\s*Manufacturing procedure\s*<\/\\k<tag>>/')
         ->and(substr_count(strip_tags($visibleWorkbench), 'Manufacturing procedure'))->toBe(1);
 });
 
-it('enables media attachments only after the recipe has been saved', function () {
+it('keeps rich content text-only and enables library pickers after the recipe has been saved', function () {
     $owner = User::factory()->create();
     $productFamily = ProductFamily::factory()->create([
         'name' => 'Soap',
@@ -502,10 +508,10 @@ it('enables media attachments only after the recipe has been saved', function ()
 
     $unsavedDescription = $unsavedForm->getComponent('description');
     $unsavedManufacturingInstructions = $unsavedForm->getComponent('manufacturing_instructions');
-    $unsavedFeaturedImage = $unsavedForm->getComponent('featured_image_path');
+    $unsavedFeaturedImage = $unsavedForm->getComponent('featured_media_asset_id');
     $savedDescription = $savedForm->getComponent('description');
     $savedManufacturingInstructions = $savedForm->getComponent('manufacturing_instructions');
-    $savedFeaturedImage = $savedForm->getComponent('featured_image_path');
+    $savedFeaturedImage = $savedForm->getComponent('featured_media_asset_id');
 
     expect($unsavedDescription)->toBeInstanceOf(RichEditor::class)
         ->and($unsavedDescription->isEnabled())->toBeTrue()
@@ -513,18 +519,20 @@ it('enables media attachments only after the recipe has been saved', function ()
         ->and(collect($unsavedDescription->getToolbarButtons())->flatten()->all())->not->toContain('attachFiles')
         ->and($unsavedManufacturingInstructions)->toBeInstanceOf(RichEditor::class)
         ->and($unsavedManufacturingInstructions->isEnabled())->toBeTrue()
-        ->and($unsavedManufacturingInstructions->hasFileAttachments())->toBeTrue()
+        ->and($unsavedManufacturingInstructions->hasFileAttachments())->toBeFalse()
         ->and(collect($unsavedManufacturingInstructions->getToolbarButtons())->flatten()->all())->not->toContain('attachFiles')
-        ->and($unsavedFeaturedImage)->toBeInstanceOf(FileUpload::class)
+        ->and($unsavedFeaturedImage)->toBeInstanceOf(MediaAssetPicker::class)
         ->and($unsavedFeaturedImage->isDisabled())->toBeTrue()
+        ->and($unsavedForm->getComponent('manufacturing_media_asset_ids'))->toBeNull()
         ->and($savedDescription)->toBeInstanceOf(RichEditor::class)
-        ->and($savedDescription->hasFileAttachments())->toBeTrue()
-        ->and(collect($savedDescription->getToolbarButtons())->flatten()->all())->toContain('attachFiles')
+        ->and($savedDescription->hasFileAttachments())->toBeFalse()
+        ->and(collect($savedDescription->getToolbarButtons())->flatten()->all())->not->toContain('attachFiles')
         ->and($savedManufacturingInstructions)->toBeInstanceOf(RichEditor::class)
-        ->and($savedManufacturingInstructions->hasFileAttachments())->toBeTrue()
-        ->and(collect($savedManufacturingInstructions->getToolbarButtons())->flatten()->all())->toContain('attachFiles')
-        ->and($savedFeaturedImage)->toBeInstanceOf(FileUpload::class)
-        ->and($savedFeaturedImage->isEnabled())->toBeTrue();
+        ->and($savedManufacturingInstructions->hasFileAttachments())->toBeFalse()
+        ->and(collect($savedManufacturingInstructions->getToolbarButtons())->flatten()->all())->not->toContain('attachFiles')
+        ->and($savedFeaturedImage)->toBeInstanceOf(MediaAssetPicker::class)
+        ->and($savedFeaturedImage->isEnabled())->toBeTrue()
+        ->and($savedForm->getComponent('manufacturing_media_asset_ids'))->toBeNull();
 });
 
 it('keeps the ingredient browser rail sticky on large screens and moves soap fatty acids below the table on mobile', function () {

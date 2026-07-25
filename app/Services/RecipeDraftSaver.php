@@ -15,6 +15,7 @@ class RecipeDraftSaver
         private readonly RecipeVersionRecordService $recipeVersionRecordService,
         private readonly RecipeVersionStructureSynchronizer $recipeVersionStructureSynchronizer,
         private readonly RecipeSopSnapshotService $recipeSopSnapshotService,
+        private readonly RecipeSopMediaAssetSynchronizer $recipeSopMediaAssetSynchronizer,
         private readonly RecipeMediaRollbackGuard $recipeMediaRollbackGuard,
     ) {}
 
@@ -64,6 +65,16 @@ class RecipeDraftSaver
                         );
                     }
 
+                    if ($sopSourceRecipe instanceof Recipe && ! $sopSourceRecipe->is($recipe)) {
+                        app(MediaAssetUsageService::class)->copyRecipeUsages($sopSourceRecipe, $recipe);
+                    }
+
+                    $this->recipeSopMediaAssetSynchronizer->syncRecipeUsages(
+                        $user,
+                        $recipe,
+                        $normalizedPayload['manufacturing_instructions'] ?? null,
+                    );
+
                     $currentVersion = RecipeVersion::withoutGlobalScopes()
                         ->where('recipe_id', $recipe->id)
                         ->where('is_current', true)
@@ -86,6 +97,7 @@ class RecipeDraftSaver
                     $currentVersion->save();
 
                     $this->recipeVersionStructureSynchronizer->sync($currentVersion, $user, $normalizedPayload);
+                    $this->recipeSopSnapshotService->copySopMediaAssets($recipe, $currentVersion);
 
                     return $currentVersion->fresh($this->recipeVersionRecordService->freshWorkbenchRelations());
                 });

@@ -1,10 +1,4 @@
 <div class="mx-auto w-full max-w-7xl space-y-6">
-    @if ($statusMessage)
-        <div role="status" class="rounded-xl border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-5 py-3 text-sm text-[var(--color-success-strong)]">
-            {{ $statusMessage }}
-        </div>
-    @endif
-
     <section class="sk-card p-5 sm:p-6" aria-label="{{ __('packaging.page.aria_label') }}">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">
@@ -70,7 +64,7 @@
                             @foreach ($items as $item)
                                 @php
                                     $errorKey = 'unit_cost_'.$item->id;
-                                    $imageUrl = $item->featuredImageUrl();
+                                    $imageUrl = $item->iconImageUrl();
                                 @endphp
                                 <tr wire:key="packaging-item-{{ $item->id }}">
                                     <td>

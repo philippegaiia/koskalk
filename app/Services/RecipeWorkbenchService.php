@@ -9,6 +9,7 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use Closure;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -316,22 +317,26 @@ class RecipeWorkbenchService
 
     public function restoreCurrentVersion(User $user, Recipe $recipe, int $versionId): RecipeVersion
     {
-        $currentVersion = $this->save(
-            $user,
-            $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
-            $this->recipeWorkbenchDraftPayloadMapper->toSavePayload(
-                $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId),
-            ),
-            $recipe,
-        );
+        return DB::transaction(function () use ($recipe, $user, $versionId): RecipeVersion {
+            $currentVersion = $this->save(
+                $user,
+                $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
+                $this->recipeWorkbenchDraftPayloadMapper->toSavePayload(
+                    $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId),
+                ),
+                $recipe,
+            );
 
-        $sourceVersion = RecipeVersion::withoutGlobalScopes()
-            ->where('recipe_id', $recipe->id)
-            ->find($versionId);
+            $sourceVersion = RecipeVersion::withoutGlobalScopes()
+                ->where('recipe_id', $recipe->id)
+                ->findOrFail($versionId);
 
-        $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $currentVersion, $user);
+            $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $currentVersion, $user);
+            app(RecipeSopSnapshotService::class)->copySopMediaAssets($sourceVersion, $recipe);
+            app(RecipeSopSnapshotService::class)->copySopMediaAssets($sourceVersion, $currentVersion);
 
-        return $currentVersion;
+            return $currentVersion;
+        });
     }
 
     public function currentVersionWouldBeReplacedByVersion(Recipe $recipe, int $versionId): bool

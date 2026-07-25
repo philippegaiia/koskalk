@@ -1,10 +1,14 @@
 import './bootstrap';
+import { createAppNotification } from './app-notification';
 import { createDirtyStateRegistry } from './dirty-state-registry';
+import { createMediaAssetPicker } from './media-asset-picker';
 import { createRecipeContentAutosave } from './recipe-content-autosave';
 import { createRecipeWorkbench } from './recipe-workbench/component';
 import { createSearchCombobox } from './search-combobox';
 
+window.appNotification = createAppNotification;
 window.recipeContentAutosave = createRecipeContentAutosave;
+window.mediaAssetPicker = createMediaAssetPicker;
 window.recipeWorkbench = (payload) => createRecipeWorkbench(payload, createDirtyStateRegistry);
 window.searchCombobox = createSearchCombobox;
 

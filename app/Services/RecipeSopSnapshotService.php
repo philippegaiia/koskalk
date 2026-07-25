@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\MediaAssetUsageRole;
+use App\Models\MediaAssetUsage;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Support\RichContentAttachmentPaths;
@@ -13,12 +15,42 @@ class RecipeSopSnapshotService
 {
     public function syncCurrentVersion(Recipe $recipe, ?string $instructions): void
     {
-        RecipeVersion::withoutGlobalScopes()
+        $currentVersion = RecipeVersion::withoutGlobalScopes()
             ->where('recipe_id', $recipe->id)
             ->where('is_current', true)
-            ->update([
-                'manufacturing_instructions' => $instructions,
+            ->first();
+
+        if (! $currentVersion instanceof RecipeVersion) {
+            return;
+        }
+
+        $currentVersion->update(['manufacturing_instructions' => $instructions]);
+        $this->copySopMediaAssets($recipe, $currentVersion);
+    }
+
+    public function copySopMediaAssets(Recipe|RecipeVersion $source, Recipe|RecipeVersion $destination): void
+    {
+        $sourceUsages = MediaAssetUsage::query()
+            ->where('usable_type', $source->getMorphClass())
+            ->where('usable_id', $source->getKey())
+            ->where('role', MediaAssetUsageRole::RecipeSop)
+            ->orderBy('id')
+            ->get(['media_asset_id']);
+
+        MediaAssetUsage::query()
+            ->where('usable_type', $destination->getMorphClass())
+            ->where('usable_id', $destination->getKey())
+            ->where('role', MediaAssetUsageRole::RecipeSop)
+            ->delete();
+
+        foreach ($sourceUsages as $usage) {
+            MediaAssetUsage::query()->create([
+                'media_asset_id' => $usage->media_asset_id,
+                'usable_type' => $destination->getMorphClass(),
+                'usable_id' => $destination->getKey(),
+                'role' => MediaAssetUsageRole::RecipeSop,
             ]);
+        }
     }
 
     public function duplicateInstructions(
@@ -43,7 +75,7 @@ class RecipeSopSnapshotService
 
                     if ($rejectInvalidPaths) {
                         throw ValidationException::withMessages([
-                            'manufacturing_instructions' => 'The selected recipe media does not belong to this formula.',
+                            'manufacturing_instructions' => __('media_library.validation.recipe_media_mismatch'),
                         ]);
                     }
 

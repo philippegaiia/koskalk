@@ -21,10 +21,39 @@ class MaximumRichContentImages implements ValidationRule
      */
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
-        $imageCount = RichContentAttachmentPaths::extractImageIdentities($value)->count();
+        if ($this->max === 0 && $this->containsImage($value)) {
+            $fail(__($this->messageKey, ['max' => $this->max]));
+
+            return;
+        }
+
+        $imageCount = RichContentAttachmentPaths::countImageOccurrences($value);
 
         if ($imageCount > $this->max) {
             $fail(__($this->messageKey, ['max' => $this->max]));
         }
+    }
+
+    private function containsImage(mixed $value): bool
+    {
+        if (is_string($value)) {
+            return preg_match('/<img\b/i', $value) === 1;
+        }
+
+        if (! is_array($value)) {
+            return false;
+        }
+
+        if (($value['type'] ?? null) === 'image') {
+            return true;
+        }
+
+        foreach ($value as $child) {
+            if ($this->containsImage($child)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

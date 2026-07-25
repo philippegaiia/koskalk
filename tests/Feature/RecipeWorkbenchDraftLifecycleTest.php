@@ -13,6 +13,7 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Services\MediaStorage;
+use App\Services\RecipeContentPersistenceService;
 use App\Services\RecipeContentUpdater;
 use App\Services\RecipeVersionDeletionService;
 use App\Services\RecipeWorkbenchService;
@@ -171,7 +172,7 @@ it('does not mutate published instructions when current instructions are saved l
     $component = app(RecipeWorkbench::class);
     $component->mount($recipe);
     $component->data['manufacturing_instructions'] = '<p>Revised procedure</p>';
-    $contentResult = $component->saveRecipeContent(app(RecipeContentUpdater::class));
+    $contentResult = $component->saveRecipeContent(app(RecipeContentPersistenceService::class));
 
     $publishedVersion = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)

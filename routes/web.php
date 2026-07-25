@@ -8,6 +8,10 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
 use App\Http\Controllers\LocalePreferenceController;
+use App\Http\Controllers\MediaAssetController;
+use App\Http\Controllers\MediaAssetPickerMutationController;
+use App\Http\Controllers\MediaAssetStatusController;
+use App\Http\Controllers\MediaLibraryController;
 use App\Http\Controllers\PackagingItemController;
 use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\RecipeController;
@@ -45,6 +49,22 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('account.password.update');
     Route::get('/dashboard/billing/checkout/{plan}', [BillingController::class, 'checkout'])->name('billing.checkout');
     Route::post('/dashboard/billing/payment-method', [BillingController::class, 'updatePaymentMethod'])->name('billing.payment-method.update');
+    Route::get('/dashboard/media', [MediaLibraryController::class, 'index'])->name('media.index');
+    Route::get('/dashboard/media/picker/assets', [MediaAssetPickerMutationController::class, 'index'])
+        ->middleware('throttle:120,1')
+        ->name('media.picker-assets');
+    Route::get('/dashboard/media/{mediaAsset}/status', MediaAssetStatusController::class)
+        ->middleware('throttle:120,1')
+        ->name('media.status');
+    Route::post('/dashboard/media/{mediaAsset}/retry', [MediaAssetPickerMutationController::class, 'retry'])
+        ->middleware('throttle:20,1')
+        ->name('media.retry');
+    Route::delete('/dashboard/media/{mediaAsset}', [MediaAssetPickerMutationController::class, 'remove'])
+        ->middleware('throttle:20,1')
+        ->name('media.remove');
+    Route::get('/dashboard/media/{mediaAsset}/{conversion}', MediaAssetController::class)
+        ->middleware('throttle:240,1')
+        ->name('media.show');
 
     Route::controller(RecipeController::class)
         ->prefix('/dashboard/recipes')

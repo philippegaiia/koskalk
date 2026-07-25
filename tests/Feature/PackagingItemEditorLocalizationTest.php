@@ -134,7 +134,12 @@ it('loads the saved packaging status from the database', function () {
         ->set('data.notes', 'Boîte de 100 g')
         ->call('save')
         ->assertHasNoErrors()
-        ->assertSet('statusMessage', 'Modifications enregistrées.');
+        ->assertSet('statusMessage', 'Modifications enregistrées.')
+        ->assertDispatched(
+            'app-notification',
+            message: 'Modifications enregistrées.',
+            type: 'success',
+        );
 });
 
 it('keeps every packaging editor string in the packaging translation group', function () {

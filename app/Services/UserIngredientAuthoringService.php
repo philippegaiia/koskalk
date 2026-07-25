@@ -324,17 +324,21 @@ class UserIngredientAuthoringService
             $ingredient->category = IngredientCategory::from((string) $category);
         }
 
-        $featuredImagePath = Arr::get($state, 'featured_image_path');
-        $iconImagePath = Arr::get($state, 'icon_image_path');
+        if (array_key_exists('featured_image_path', $state)) {
+            $featuredImagePath = Arr::get($state, 'featured_image_path');
+            $ingredient->featured_image_path = $featuredImagePath;
+            $ingredient->featured_image_original_name = filled($featuredImagePath)
+                ? Arr::get($state, 'featured_image_original_name')
+                : null;
+        }
 
-        $ingredient->featured_image_path = $featuredImagePath;
-        $ingredient->featured_image_original_name = filled($featuredImagePath)
-            ? Arr::get($state, 'featured_image_original_name')
-            : null;
-        $ingredient->icon_image_path = $iconImagePath;
-        $ingredient->icon_image_original_name = filled($iconImagePath)
-            ? Arr::get($state, 'icon_image_original_name')
-            : null;
+        if (array_key_exists('icon_image_path', $state)) {
+            $iconImagePath = Arr::get($state, 'icon_image_path');
+            $ingredient->icon_image_path = $iconImagePath;
+            $ingredient->icon_image_original_name = filled($iconImagePath)
+                ? Arr::get($state, 'icon_image_original_name')
+                : null;
+        }
         $ingredient->info_markdown = Arr::get($state, 'info_markdown');
         $ingredient->composition_source_notes = Arr::get($state, 'ingredient_structure') === 'blend'
             ? Arr::get($state, 'composition_source_notes')

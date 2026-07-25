@@ -73,7 +73,7 @@ class PlanForm
                         'md' => 2,
                     ]),
                 Section::make('Limits')
-                    ->description('Leave a value empty for no hard limit. Initial free plan target: 15 saved recipes, 20 private ingredients, and 0 production batches.')
+                    ->description('Leave a value empty for no hard limit. Initial free plan target: 15 saved recipes, 20 private ingredients, 200 media assets, and 0 production batches.')
                     ->icon(Heroicon::AdjustmentsHorizontal)
                     ->schema([
                         Repeater::make('limits')
@@ -84,6 +84,7 @@ class PlanForm
                                         'saved_recipes' => 'Saved recipes',
                                         'private_ingredients' => 'Private ingredients',
                                         'production_batches' => 'Production batches',
+                                        'media_assets' => 'Media assets',
                                     ])
                                     ->native(false)
                                     ->required()

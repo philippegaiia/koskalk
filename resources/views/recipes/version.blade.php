@@ -400,10 +400,5 @@
             @endif
         </section>
 
-        @if (session('status'))
-            <div role="status" class="rounded-xl border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-6 py-4 text-sm text-[var(--color-success-strong)]">
-                {{ session('status') }}
-            </div>
-        @endif
     </div>
 @endsection

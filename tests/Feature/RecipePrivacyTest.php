@@ -42,6 +42,21 @@ test('workspace formulas are visible only to the workspace owner during the MVP'
     expect($editor->can('view', $recipe))->toBeFalse();
 });
 
+test('workspace role lookups accept roles already cast by Eloquent', function () {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+    $member = User::factory()->create();
+
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $member->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+
+    expect($workspace->roleFor($member))->toBe(WorkspaceMemberRole::Editor)
+        ->and($member->workspaceRoleFor($workspace->id))->toBe(WorkspaceMemberRole::Editor);
+});
+
 test('workspace formulas can only be updated by the workspace owner during the MVP', function () {
     $owner = User::factory()->create();
     $company = Workspace::factory()->create(['owner_user_id' => $owner->id]);

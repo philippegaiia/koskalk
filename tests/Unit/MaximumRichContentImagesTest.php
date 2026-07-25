@@ -38,7 +38,7 @@ it('accepts eight distinct private images in manufacturing instructions', functi
     $validator = Validator::make([
         'manufacturing_instructions' => richContentImages(range(1, 8), 'procedure'),
     ], [
-        'manufacturing_instructions' => [new MaximumRichContentImages(8, 'workbench.instructions.procedure_image_limit')],
+        'manufacturing_instructions' => [new MaximumRichContentImages(8, 'media_library.validation.procedure_image_limit')],
     ]);
 
     expect($validator->passes())->toBeTrue();
@@ -48,14 +48,14 @@ it('rejects nine distinct private images in manufacturing instructions', functio
     $validator = Validator::make([
         'manufacturing_instructions' => richContentImages(range(1, 9), 'procedure'),
     ], [
-        'manufacturing_instructions' => [new MaximumRichContentImages(8, 'workbench.instructions.procedure_image_limit')],
+        'manufacturing_instructions' => [new MaximumRichContentImages(8, 'media_library.validation.procedure_image_limit')],
     ]);
 
     expect($validator->fails())->toBeTrue()
         ->and($validator->errors()->first('manufacturing_instructions'))->toBe('The manufacturing procedure may contain up to 8 images.');
 });
 
-it('counts a repeated rich content attachment once', function (): void {
+it('counts every occurrence of a repeated rich content attachment', function (): void {
     $path = 'recipes/recipe-1/rich-content/repeated.webp';
     $validator = Validator::make([
         'description' => '<p><img data-id="'.$path.'"><img data-id="'.$path.'"></p>',
@@ -63,7 +63,8 @@ it('counts a repeated rich content attachment once', function (): void {
         'description' => [new MaximumRichContentImages(1, 'workbench.instructions.description_image_limit')],
     ]);
 
-    expect($validator->passes())->toBeTrue();
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->first('description'))->toBe('The product description may contain up to 1 images.');
 });
 
 it('counts image source URLs', function (): void {
@@ -72,6 +73,16 @@ it('counts image source URLs', function (): void {
         'description' => '<p><img src="/dashboard/recipes/recipe-1/media/'.$imagePath.'"></p>',
     ], [
         'description' => [new MaximumRichContentImages(0, 'workbench.instructions.description_image_limit')],
+    ]);
+
+    expect($validator->fails())->toBeTrue();
+});
+
+it('rejects any inline image when the field is text-only', function (): void {
+    $validator = Validator::make([
+        'description' => '<p><img data-id="temporary-image-without-a-file-extension"></p>',
+    ], [
+        'description' => [new MaximumRichContentImages(0, 'media_library.validation.description_text_only')],
     ]);
 
     expect($validator->fails())->toBeTrue();
@@ -116,7 +127,7 @@ it('rejects three temporary image identities in TipTap state', function (): void
         ->and($validator->errors()->first('description'))->toBe('The product description may contain up to 2 images.');
 });
 
-it('counts a repeated temporary TipTap image identity once', function (): void {
+it('counts every occurrence of a repeated temporary TipTap image identity', function (): void {
     $temporaryId = '018fa7f2-91aa-74a5-a665-18f8f3bf42d1';
     $validator = Validator::make([
         'description' => tipTapRichContent([$temporaryId, $temporaryId]),
@@ -124,7 +135,8 @@ it('counts a repeated temporary TipTap image identity once', function (): void {
         'description' => [new MaximumRichContentImages(1, 'workbench.instructions.description_image_limit')],
     ]);
 
-    expect($validator->passes())->toBeTrue();
+    expect($validator->fails())->toBeTrue()
+        ->and($validator->errors()->first('description'))->toBe('The product description may contain up to 1 images.');
 });
 
 it('ignores non-image TipTap nodes and link marks', function (): void {

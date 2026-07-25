@@ -94,11 +94,11 @@ it('uses approved instructions and media terminology', function () {
         ->and(__('workbench.instructions.intro'))->toBe('Add the product description and image used on the Product page, then record the manufacturing procedure used at the bench.')
         ->and(__('workbench.instructions.presentation_title'))->toBe('Product presentation')
         ->and(__('workbench.instructions.description_label'))->toBe('Product description')
-        ->and(__('workbench.instructions.description_help'))->toBe('Describe the finished product for its Product page. You can include up to two images.')
+        ->and(__('workbench.instructions.description_help'))->toBe('Describe the finished product for its Product page. This field is text-only; use the featured image field for its main image.')
         ->and(__('workbench.instructions.featured_label'))->toBe('Featured product image')
         ->and(__('workbench.instructions.featured_help'))->toBe('JPG, PNG or WebP up to 3 MB. Minimum dimensions: 300 px on the short side and 500 px on the long side. Keep the original proportions or crop the image after upload.')
         ->and(__('workbench.instructions.procedure_label'))->toBe('Manufacturing procedure')
-        ->and(__('workbench.instructions.procedure_help'))->toBe('Record the process steps, temperatures, timings, checks and cautions used at the bench. You can include up to eight images.')
+        ->and(__('workbench.instructions.procedure_help'))->toBe('Record the process steps, temperatures, timings, checks and cautions used at the bench. Add up to eight procedure images with Insert from Media Library in the toolbar.')
         ->and(__('workbench.instructions.draft_text_help'))->toBe('You can start writing now. Save the formula before attaching images.')
         ->and(__('workbench.instructions.save_changes'))->toBe('Save changes')
         ->and(__('workbench.instructions.all_saved'))->toBe('All changes saved')
@@ -146,10 +146,10 @@ it('loads contextual instructions and media translations from the database for e
         'fr' => [
             'instructions.title' => 'Instructions et médias',
             'instructions.presentation_title' => 'Présentation du produit',
-            'instructions.description_help' => 'Présentez le produit fini pour sa fiche produit. Vous pouvez ajouter jusqu’à deux images.',
+            'instructions.description_help' => 'Présentez le produit fini pour sa fiche produit. Ce champ est uniquement textuel ; utilisez l’image principale séparée.',
             'instructions.featured_help' => 'JPG, PNG ou WebP jusqu’à 3 Mo. Dimensions minimales : 300 px pour le petit côté et 500 px pour le grand. Conservez les proportions d’origine ou recadrez l’image après l’import.',
             'instructions.procedure_label' => 'Mode opératoire de fabrication',
-            'instructions.procedure_help' => 'Consignez les étapes, températures, durées, contrôles et précautions appliqués à l’atelier. Vous pouvez ajouter jusqu’à huit images.',
+            'instructions.procedure_help' => 'Consignez les étapes, températures, durées, contrôles et précautions appliqués à l’atelier. Ajoutez jusqu’à huit images avec Insérer depuis la médiathèque.',
             'instructions.all_saved' => 'Toutes les modifications sont enregistrées',
             'instructions.save_failed' => 'Échec de l’enregistrement',
             'instructions.leave_warning' => 'Des modifications ne sont pas enregistrées. Quitter sans les enregistrer ?',
@@ -158,10 +158,10 @@ it('loads contextual instructions and media translations from the database for e
         'es' => [
             'instructions.title' => 'Instrucciones y contenido multimedia',
             'instructions.presentation_title' => 'Presentación del producto',
-            'instructions.description_help' => 'Describe el producto terminado para su ficha. Puedes incluir hasta dos imágenes.',
+            'instructions.description_help' => 'Describe el producto terminado para su ficha. Este campo es solo de texto; usa la imagen destacada por separado.',
             'instructions.featured_help' => 'JPG, PNG o WebP de hasta 3 MB. Dimensiones mínimas: 300 px en el lado corto y 500 px en el largo. Conserva las proporciones originales o recorta la imagen después de subirla.',
             'instructions.procedure_label' => 'Procedimiento de fabricación',
-            'instructions.procedure_help' => 'Anota los pasos, las temperaturas, los tiempos, los controles y las precauciones utilizados en el taller. Puedes incluir hasta ocho imágenes.',
+            'instructions.procedure_help' => 'Anota los pasos, las temperaturas, los tiempos, los controles y las precauciones utilizados en el taller. Añade hasta ocho imágenes con Insertar desde la biblioteca multimedia.',
             'instructions.all_saved' => 'Todos los cambios están guardados',
             'instructions.save_failed' => 'No se han podido guardar los cambios',
             'instructions.leave_warning' => 'Hay cambios sin guardar. ¿Quieres salir sin guardarlos?',
@@ -170,10 +170,10 @@ it('loads contextual instructions and media translations from the database for e
         'de' => [
             'instructions.title' => 'Anleitung und Medien',
             'instructions.presentation_title' => 'Produktdarstellung',
-            'instructions.description_help' => 'Beschreiben Sie das fertige Produkt für seine Produktseite. Sie können bis zu zwei Bilder einfügen.',
+            'instructions.description_help' => 'Beschreiben Sie das fertige Produkt für seine Produktseite. Dieses Feld ist nur für Text; verwenden Sie das separate Titelbild.',
             'instructions.featured_help' => 'JPG, PNG oder WebP bis 3 MB. Mindestmaße: 300 px an der kurzen und 500 px an der langen Seite. Behalten Sie das ursprüngliche Seitenverhältnis bei oder schneiden Sie das Bild nach dem Hochladen zu.',
             'instructions.procedure_label' => 'Herstellungsverfahren',
-            'instructions.procedure_help' => 'Dokumentieren Sie Arbeitsschritte, Temperaturen, Zeiten, Kontrollen und Vorsichtsmaßnahmen. Sie können bis zu acht Bilder einfügen.',
+            'instructions.procedure_help' => 'Dokumentieren Sie Arbeitsschritte, Temperaturen, Zeiten, Kontrollen und Vorsichtsmaßnahmen. Fügen Sie bis zu acht Bilder über Aus Medienbibliothek einfügen hinzu.',
             'instructions.all_saved' => 'Alle Änderungen gespeichert',
             'instructions.save_failed' => 'Speichern fehlgeschlagen',
             'instructions.leave_warning' => 'Es gibt nicht gespeicherte Änderungen. Seite ohne Speichern verlassen?',
@@ -182,10 +182,10 @@ it('loads contextual instructions and media translations from the database for e
         'it' => [
             'instructions.title' => 'Istruzioni e contenuti multimediali',
             'instructions.presentation_title' => 'Presentazione del prodotto',
-            'instructions.description_help' => 'Descrivi il prodotto finito per la sua scheda. Puoi includere fino a due immagini.',
+            'instructions.description_help' => 'Descrivi il prodotto finito per la sua scheda. Questo campo è solo testo; usa separatamente l’immagine in evidenza.',
             'instructions.featured_help' => 'JPG, PNG o WebP fino a 3 MB. Dimensioni minime: 300 px sul lato corto e 500 px su quello lungo. Mantieni le proporzioni originali oppure ritaglia l’immagine dopo il caricamento.',
             'instructions.procedure_label' => 'Procedura di fabbricazione',
-            'instructions.procedure_help' => 'Registra fasi, temperature, tempi, controlli e precauzioni seguiti in laboratorio. Puoi includere fino a otto immagini.',
+            'instructions.procedure_help' => 'Registra fasi, temperature, tempi, controlli e precauzioni seguiti in laboratorio. Aggiungi fino a otto immagini con Inserisci dalla libreria multimediale.',
             'instructions.all_saved' => 'Tutte le modifiche sono state salvate',
             'instructions.save_failed' => 'Salvataggio non riuscito',
             'instructions.leave_warning' => 'Sono presenti modifiche non salvate. Uscire senza salvarle?',
@@ -194,10 +194,10 @@ it('loads contextual instructions and media translations from the database for e
         'nl' => [
             'instructions.title' => 'Instructies en media',
             'instructions.presentation_title' => 'Productpresentatie',
-            'instructions.description_help' => 'Beschrijf het afgewerkte product voor de productpagina. Je kunt maximaal twee afbeeldingen toevoegen.',
+            'instructions.description_help' => 'Beschrijf het afgewerkte product voor de productpagina. Dit veld is alleen tekst; gebruik de aparte uitgelichte afbeelding.',
             'instructions.featured_help' => 'JPG, PNG of WebP tot 3 MB. Minimale afmetingen: 300 px aan de korte zijde en 500 px aan de lange zijde. Behoud de oorspronkelijke verhoudingen of snijd de afbeelding bij na het uploaden.',
             'instructions.procedure_label' => 'Productiewijze',
-            'instructions.procedure_help' => 'Leg de stappen, temperaturen, tijden, controles en voorzorgsmaatregelen aan de werkbank vast. Je kunt maximaal acht afbeeldingen toevoegen.',
+            'instructions.procedure_help' => 'Leg de stappen, temperaturen, tijden, controles en voorzorgsmaatregelen aan de werkbank vast. Voeg maximaal acht afbeeldingen toe via Invoegen uit mediabibliotheek.',
             'instructions.all_saved' => 'Alle wijzigingen zijn opgeslagen',
             'instructions.save_failed' => 'Opslaan mislukt',
             'instructions.leave_warning' => 'Er zijn niet-opgeslagen wijzigingen. Wil je de pagina verlaten zonder op te slaan?',
@@ -237,6 +237,75 @@ it('loads contextual instructions and media translations from the database for e
         app()->setLocale($originalLocale);
         app('translator')->setLoaded([]);
     }
+});
+
+it('localizes Media Library validation errors for every supported locale', function () {
+    $originalLocale = app()->getLocale();
+    $messages = [
+        'media_library.validation.picker_ready_workspace' => ['Choose a ready image from this workspace.', []],
+        'media_library.validation.procedure_images_unavailable' => ['One or more procedure images are unavailable, still processing, or outside this workspace.', []],
+        'media_library.validation.procedure_use_library' => ['Add procedure images with Insert from Media Library.', []],
+        'media_library.validation.procedure_secure_url' => ['Procedure images must use their secure Media Library URL.', []],
+        'media_library.validation.recipe_media_mismatch' => ['The selected recipe media does not belong to this formula.', []],
+        'media_library.validation.upload_store_failed' => ['The image could not be stored. Please try again.', []],
+        'media_library.validation.retry_failed_only' => ['Only failed images can be retried.', []],
+        'media_library.validation.retry_source_missing' => ['The original upload is no longer available. Remove this image and upload it again.', []],
+        'media_library.validation.upload_extension' => ['Choose a JPEG, PNG, WebP, HEIC, or HEIF image.', []],
+        'media_library.validation.upload_invalid_image' => ['Choose a valid JPEG, PNG, WebP, HEIC, or HEIF image.', []],
+        'media_library.validation.upload_size' => ['The image must not be larger than 10 MB.', ['max' => 10]],
+        'media_library.validation.maximum_images' => ['Choose up to 3 images.', ['max' => 3]],
+        'media_library.validation.selected_images_unavailable' => ['One or more selected images are unavailable or still processing.', []],
+        'media_library.validation.workspace_unavailable' => ['The selected workspace is unavailable.', []],
+        'media_library.validation.procedure_image_limit' => ['The manufacturing procedure may contain up to 8 images.', ['max' => 8]],
+        'media_library.validation.description_text_only' => ['The product description is text-only. Choose images from the Media Library.', []],
+    ];
+
+    try {
+        app()->setLocale('en');
+
+        foreach ($messages as $key => [$english, $replace]) {
+            expect(__($key, $replace))->toBe($english);
+        }
+
+        foreach (['fr', 'es', 'de', 'it', 'nl'] as $locale) {
+            app()->setLocale($locale);
+
+            foreach ($messages as $key => [$english, $replace]) {
+                expect(__($key, $replace))
+                    ->not->toBe($key)
+                    ->not->toBe($english);
+            }
+        }
+    } finally {
+        app()->setLocale($originalLocale);
+    }
+});
+
+it('does not leave raw Media Library validation messages in services', function () {
+    $serviceSource = collect([
+        app_path('Services/MediaAssetUploadService.php'),
+        app_path('Services/MediaAssetUsageService.php'),
+    ])->map(fn (string $path): string => file_get_contents($path))->join("\n");
+
+    foreach ([
+        'The image could not be stored. Please try again.',
+        'Only failed images can be retried.',
+        'The original upload is no longer available. Remove this image and upload it again.',
+        'Choose a JPEG, PNG, WebP, HEIC, or HEIF image.',
+        'Choose a valid JPEG, PNG, WebP, HEIC, or HEIF image.',
+        'The image must not be larger than 10 MB.',
+        'Choose up to {$maximum} images.',
+        'One or more selected images are unavailable or still processing.',
+        'The selected workspace is unavailable.',
+    ] as $message) {
+        expect($serviceSource)->not->toContain($message);
+    }
+
+    expect(file_get_contents(app_path('Services/RecipeSopMediaAssetSynchronizer.php')))
+        ->toContain("__('media_library.validation.procedure_image_limit'");
+
+    expect(file_get_contents(app_path('Services/RecipeContentUpdater.php')))
+        ->toContain("__('media_library.validation.description_text_only'");
 });
 
 it('renders the cosmetic formula editor with contextual translations', function (string $locale, array $expected) {

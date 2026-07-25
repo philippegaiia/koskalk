@@ -6,6 +6,7 @@ return [
         'formulas' => 'Products',
         'ingredients' => 'Ingredients',
         'packaging' => 'Packaging',
+        'media_library' => 'Media Library',
         'compliance' => 'Compliance',
         'account' => 'Account',
         'settings' => 'Settings',
@@ -22,6 +23,7 @@ return [
         'free_account' => 'Free account',
     ],
     'actions' => [
+        'dismiss_notification' => 'Dismiss notification',
         'sign_out' => 'Sign out',
     ],
     'status' => [

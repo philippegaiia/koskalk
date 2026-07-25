@@ -2,11 +2,15 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
+use App\MediaAssetUsageRole;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Services\MediaAssetUsageService;
+use App\Services\RecipeContentPersistenceService;
 use App\Services\RecipeContentUpdater;
 use App\Services\RecipeSopSnapshotService;
 use App\Services\RecipeVersionDeletionService;
@@ -35,6 +39,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     use AuthorizesRequests;
     use InteractsWithActions;
     use InteractsWithForms;
+    use InteractsWithMediaAssetPickerUploads;
     use RestrictsFileUploadsToSchemaComponents;
 
     #[Locked]
@@ -77,6 +82,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $this->productTypeSlug = $recipe?->productType?->slug ?? $productTypeSlug;
 
         if ($recipe instanceof Recipe) {
+            $recipe->loadMissing('mediaAssetUsages');
             $this->resolvedCurrentRecipe = $recipe;
             $this->hasResolvedCurrentRecipe = true;
             $this->resolvedProductFamily = $recipe->productFamily;
@@ -450,7 +456,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     /**
      * @return array{ok: bool, message: string, saved_at?: string}
      */
-    public function saveRecipeContent(RecipeContentUpdater $recipeContentUpdater): array
+    public function saveRecipeContent(RecipeContentPersistenceService $recipeContentPersistenceService): array
     {
         $recipe = $this->currentRecipe();
 
@@ -465,23 +471,29 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         $this->authorize('update', $recipe);
-
         try {
             $pendingRichContentState = $this->pendingRecipeRichContentState();
 
-            /** @var array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string} $state */
             $this->setPendingRichContentStateOnRecipeTargets($recipe, $pendingRichContentState);
 
             try {
-                $state = [
-                    ...$this->form->getState(),
-                    'featured_image_original_name' => $this->pendingFeaturedImageOriginalName(),
-                ];
+                $state = $this->form->getState();
+                $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
+                unset($state['featured_media_asset_id']);
             } finally {
                 $this->clearPendingRichContentStateOnRecipeTargets($recipe);
             }
 
-            $updatedRecipe = $recipeContentUpdater->update($recipe, $state);
+            $user = $this->currentUser();
+
+            abort_unless($user instanceof User, 403);
+
+            $updatedRecipe = $recipeContentPersistenceService->update(
+                $user,
+                $recipe,
+                $state,
+                $featuredMediaAssetId,
+            );
         } catch (ValidationException $exception) {
             throw $exception;
         } catch (Throwable $exception) {
@@ -739,6 +751,12 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 $recipeContentUpdater,
                 $sopSourceRecipe,
             ): void {
+                $user = $this->currentUser();
+
+                abort_unless($user instanceof User, 403);
+
+                $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
+
                 if ($sopSourceRecipe instanceof Recipe && ! $sopSourceRecipe->is($recipe)) {
                     $state['manufacturing_instructions'] = app(RecipeSopSnapshotService::class)
                         ->duplicateInstructions(
@@ -751,6 +769,13 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 }
 
                 $recipeContentUpdater->update($recipe, $state);
+                $mediaAssetUsages = app(MediaAssetUsageService::class);
+                $mediaAssetUsages->syncSingle(
+                    $user,
+                    $recipe,
+                    MediaAssetUsageRole::RecipeFeatured,
+                    $featuredMediaAssetId,
+                );
                 $payload['manufacturing_instructions'] = $state['manufacturing_instructions'] ?? null;
             });
 
@@ -789,9 +814,6 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         $this->authorize('create', Recipe::class);
     }
 
-    /**
-     * @return array{description:?string, manufacturing_instructions:?string, featured_image_path:?string, featured_image_original_name:?string}
-     */
     private function recipeContentFormState(?Recipe $recipe = null): array
     {
         $recipe ??= $this->currentRecipe();
@@ -799,9 +821,26 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         return [
             'description' => $recipe?->description,
             'manufacturing_instructions' => $recipe?->manufacturing_instructions,
-            'featured_image_path' => $recipe?->featured_image_path,
-            'featured_image_original_name' => $recipe?->featured_image_original_name,
+            'featured_media_asset_id' => $recipe instanceof Recipe
+                ? ($this->mediaAssetUsageIds($recipe, MediaAssetUsageRole::RecipeFeatured)[0] ?? null)
+                : null,
         ];
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function mediaAssetUsageIds(Recipe $recipe, MediaAssetUsageRole $role): array
+    {
+        if ($recipe->relationLoaded('mediaAssetUsages')) {
+            return $recipe->mediaAssetUsages
+                ->where('role', $role)
+                ->sortBy('id')
+                ->pluck('media_asset_id')
+                ->all();
+        }
+
+        return app(MediaAssetUsageService::class)->idsFor($recipe, $role);
     }
 
     private function refreshRecipeContentForm(?Recipe $recipe = null): void
@@ -817,7 +856,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     {
         $description = $this->pendingRichContentValue('description');
         $manufacturingInstructions = $this->pendingRichContentValue('manufacturing_instructions');
-        $featuredImagePath = $this->data['featured_image_path'] ?? null;
+        $featuredImagePath = $this->data['featured_media_asset_id'] ?? null;
 
         return filled($description)
             || filled($manufacturingInstructions)

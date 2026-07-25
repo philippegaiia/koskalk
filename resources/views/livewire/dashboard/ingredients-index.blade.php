@@ -2,15 +2,6 @@
     class="mx-auto w-full max-w-7xl space-y-6"
     x-on:ingredient-removal-closed.window="$nextTick(() => (document.getElementById($event.detail.triggerId) ?? document.getElementById('ingredient-catalog-heading'))?.focus())"
 >
-    @if ($statusMessage)
-        <div
-            role="{{ $statusType === 'error' ? 'alert' : 'status' }}"
-            class="{{ $statusType === 'error' ? 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' }} rounded-xl border px-5 py-3 text-sm"
-        >
-            {{ $statusMessage }}
-        </div>
-    @endif
-
     <section class="sk-card p-5 sm:p-6">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">

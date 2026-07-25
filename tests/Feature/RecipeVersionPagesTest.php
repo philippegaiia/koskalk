@@ -1,9 +1,11 @@
 <?php
 
 use App\IngredientCategory;
+use App\MediaAssetUsageRole;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\InterfaceTranslation;
+use App\Models\MediaAsset;
 use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
@@ -17,7 +19,10 @@ use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
+use App\Services\MediaAssetUsageService;
+use App\Services\RecipeSopSnapshotService;
 use App\Services\RecipeWorkbenchService;
+use App\Support\RichContentAttachmentPaths;
 use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -138,7 +143,7 @@ it('renders an existing formula workbench within its initial query budget', func
 
     DB::disableQueryLog();
 
-    expect($queryCount)->toBeLessThanOrEqual(25);
+    expect($queryCount)->toBeLessThanOrEqual(32);
 });
 
 it('keeps an inactive saved ingredient available in the formula workbench', function () {
@@ -416,6 +421,180 @@ it('renders the procedure stored on the selected formula snapshot', function () 
         ->assertSuccessful()
         ->assertSee('Revised procedure')
         ->assertDontSee('Original procedure');
+});
+
+it('renders inline SOP media stored on the selected historical formula snapshot', function () {
+    [$user, $recipe, $historicalVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $recipe->update(['workspace_id' => $workspace->id]);
+    $historicalVersion->update(['workspace_id' => $workspace->id]);
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id, 'original_filename' => 'Historic SOP.webp']);
+    $historicalVersion->update([
+        'manufacturing_instructions' => sprintf(
+            '<p>Historic procedure</p><img data-id="%s" src="https://attacker.invalid/tampered.webp">',
+            RichContentAttachmentPaths::mediaAssetIdentity($asset->public_id),
+        ),
+    ]);
+
+    app(MediaAssetUsageService::class)->syncSingle($user, $historicalVersion, MediaAssetUsageRole::RecipeSop, $asset->id);
+
+    $this->actingAs($user)
+        ->get(route('recipes.version', ['recipe' => $recipe, 'version' => $historicalVersion]))
+        ->assertSuccessful()
+        ->assertSee(route('media.show', [$asset, 'master']))
+        ->assertDontSee('attacker.invalid')
+        ->assertDontSee('Historic SOP.webp');
+});
+
+it('renders inline SOP media from the current version rather than the mutable recipe', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $recipe->update(['workspace_id' => $workspace->id]);
+    $currentVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+    $currentVersion->update(['workspace_id' => $workspace->id]);
+    $recipeAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id, 'original_filename' => 'Mutable recipe SOP.webp']);
+    $versionAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id, 'original_filename' => 'Current snapshot SOP.webp']);
+    $recipe->update([
+        'manufacturing_instructions' => sprintf(
+            '<img data-id="%s" src="%s">',
+            RichContentAttachmentPaths::mediaAssetIdentity($recipeAsset->public_id),
+            route('media.show', [$recipeAsset, 'master']),
+        ),
+    ]);
+    $currentVersion->update([
+        'manufacturing_instructions' => sprintf(
+            '<img data-id="%s" src="%s">',
+            RichContentAttachmentPaths::mediaAssetIdentity($versionAsset->public_id),
+            route('media.show', [$versionAsset, 'master']),
+        ),
+    ]);
+    $usages = app(MediaAssetUsageService::class);
+    $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeSop, $recipeAsset->id);
+    $usages->syncSingle($user, $currentVersion, MediaAssetUsageRole::RecipeSop, $versionAsset->id);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe]))
+        ->assertSuccessful()
+        ->assertSee(route('media.show', [$versionAsset, 'master']))
+        ->assertDontSee(route('media.show', [$recipeAsset, 'master']))
+        ->assertDontSee('Current snapshot SOP.webp')
+        ->assertDontSee('Mutable recipe SOP.webp');
+});
+
+it('copies SOP media from the synchronized current version to both versions created by publish', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $recipe->update(['workspace_id' => $workspace->id]);
+    RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->update(['workspace_id' => $workspace->id]);
+    $currentVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $instructions = sprintf(
+        '<img data-id="%s" src="%s">',
+        RichContentAttachmentPaths::mediaAssetIdentity($asset->public_id),
+        route('media.show', [$asset, 'master']),
+    );
+    $recipe->update(['manufacturing_instructions' => $instructions]);
+    app(MediaAssetUsageService::class)->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeSop, $asset->id);
+    app(RecipeSopSnapshotService::class)->syncCurrentVersion($recipe, $instructions);
+
+    $ingredient = makeSavedRecipeIngredient();
+    $payload = soapVersionDraftPayload($ingredient, 'SOP published');
+    $payload['manufacturing_instructions'] = $instructions;
+    $newCurrentVersion = app(RecipeWorkbenchService::class)->saveAsNewVersion(
+        $user,
+        $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
+        $payload,
+        $recipe,
+    );
+
+    $publishedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->latest('version_number')
+        ->firstOrFail();
+
+    expect($publishedVersion->mediaAssetsForRole(MediaAssetUsageRole::RecipeSop)->pluck('id')->all())->toBe([$asset->id])
+        ->and($newCurrentVersion->mediaAssetsForRole(MediaAssetUsageRole::RecipeSop)->pluck('id')->all())->toBe([$asset->id]);
+});
+
+it('copies SOP media from the restored source version rather than recipe or current media', function () {
+    [$user, $recipe, $sourceVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $recipe->update(['workspace_id' => $workspace->id]);
+    RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->update(['workspace_id' => $workspace->id]);
+    $currentVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+    $sourceVersion = RecipeVersion::withoutGlobalScopes()->findOrFail($sourceVersion->id);
+    $sourceAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $currentAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $recipeAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $usages = app(MediaAssetUsageService::class);
+    $usages->syncSingle($user, $sourceVersion, MediaAssetUsageRole::RecipeSop, $sourceAsset->id);
+    $usages->syncSingle($user, $currentVersion, MediaAssetUsageRole::RecipeSop, $currentAsset->id);
+    $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeSop, $recipeAsset->id);
+
+    $restoredVersion = app(RecipeWorkbenchService::class)->restorePublishedFormula($user, $recipe, $sourceVersion->id);
+
+    expect($restoredVersion->mediaAssetsForRole(MediaAssetUsageRole::RecipeSop)->pluck('id')->all())
+        ->toBe([$sourceAsset->id]);
+});
+
+it('copies featured and SOP recipe usages when duplicating and snapshots SOP on the new current version', function () {
+    [$user, $recipe] = createSavedRecipeVersion();
+    $workspace = $user->company();
+    $recipe->update(['workspace_id' => $workspace->id]);
+    RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->update(['workspace_id' => $workspace->id]);
+    $featured = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $sop = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $instructions = sprintf(
+        '<img data-id="%s" src="%s">',
+        RichContentAttachmentPaths::mediaAssetIdentity($sop->public_id),
+        route('media.show', [$sop, 'master']),
+    );
+    $currentVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', true)
+        ->firstOrFail();
+    $recipe->update(['manufacturing_instructions' => $instructions]);
+    $currentVersion->update(['manufacturing_instructions' => $instructions]);
+    $usages = app(MediaAssetUsageService::class);
+    $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeFeatured, $featured->id);
+    $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeSop, $sop->id);
+
+    $duplicateCurrent = app(RecipeWorkbenchService::class)->duplicateRecipe($user, $recipe);
+    $duplicateRecipe = Recipe::withoutGlobalScopes()->findOrFail($duplicateCurrent->recipe_id);
+
+    expect($usages->idsFor($duplicateRecipe, MediaAssetUsageRole::RecipeFeatured))->toBe([$featured->id])
+        ->and($usages->idsFor($duplicateRecipe, MediaAssetUsageRole::RecipeSop))->toBe([$sop->id])
+        ->and($duplicateCurrent->mediaAssetsForRole(MediaAssetUsageRole::RecipeSop)->pluck('id')->all())->toBe([$sop->id]);
+});
+
+it('restores source-version SOP media to both the recipe and current version', function () {
+    [$user, $recipe, $sourceVersion] = createSavedRecipeVersion();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $recipe->update(['workspace_id' => $workspace->id]);
+    RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->update(['workspace_id' => $workspace->id]);
+    $sourceVersion = RecipeVersion::withoutGlobalScopes()->findOrFail($sourceVersion->id);
+    $currentVersion = RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', true)->firstOrFail();
+    $sourceAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $currentAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $usages = app(MediaAssetUsageService::class);
+    $usages->syncSingle($user, $sourceVersion, MediaAssetUsageRole::RecipeSop, $sourceAsset->id);
+    $usages->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeSop, $currentAsset->id);
+    $usages->syncSingle($user, $currentVersion, MediaAssetUsageRole::RecipeSop, $currentAsset->id);
+
+    $restoredCurrent = app(RecipeWorkbenchService::class)->restoreCurrentVersion($user, $recipe, $sourceVersion->id);
+
+    expect($usages->idsFor($recipe, MediaAssetUsageRole::RecipeSop))->toBe([$sourceAsset->id])
+        ->and($restoredCurrent->mediaAssetsForRole(MediaAssetUsageRole::RecipeSop)->pluck('id')->all())->toBe([$sourceAsset->id]);
 });
 
 it('does not substitute current procedure content into a legacy null snapshot', function () {

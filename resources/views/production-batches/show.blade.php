@@ -16,12 +16,6 @@
 
 @section('content')
     <div class="mx-auto max-w-[90rem] space-y-6">
-        @if (session('status'))
-            <div class="rounded-xl border border-[var(--color-success-soft)] bg-[var(--color-success-soft)] px-4 py-3 text-sm font-medium text-[var(--color-success-strong)]">
-                {{ session('status') }}
-            </div>
-        @endif
-
         <section class="sk-card p-5">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="min-w-0">

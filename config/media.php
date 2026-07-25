@@ -10,6 +10,18 @@ return [
 
     'user_disk' => env('USER_MEDIA_DISK', env('RECIPE_MEDIA_DISK', 'local')),
 
+    'asset_disk' => env('MEDIA_ASSET_DISK', env('RECIPE_MEDIA_DISK', 'local')),
+
+    'asset_pending_disk' => env('MEDIA_ASSET_PENDING_DISK', 'local'),
+
+    'asset_uploads' => [
+        'max_size_kb' => 10240,
+        'max_pixels' => 50000000,
+        'master_max_edge' => 800,
+        'quality' => 85,
+        'accepted_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
+    ],
+
     'recipe_visibility' => 'private',
 
     'recipe_featured_images' => [

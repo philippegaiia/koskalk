@@ -22,6 +22,8 @@ class RecipeVersionPublisher
         private readonly RecipeVersionRecordService $recipeVersionRecordService,
         private readonly RecipeVersionStructureSynchronizer $recipeVersionStructureSynchronizer,
         private readonly RecipeVersionCostingSynchronizer $recipeVersionCostingSynchronizer,
+        private readonly RecipeSopSnapshotService $recipeSopSnapshotService,
+        private readonly RecipeSopMediaAssetSynchronizer $recipeSopMediaAssetSynchronizer,
         private readonly RecipeMediaRollbackGuard $recipeMediaRollbackGuard,
         private readonly RecipeVersionDeletionService $recipeVersionDeletionService,
         private readonly EntitlementService $entitlementService,
@@ -69,6 +71,12 @@ class RecipeVersionPublisher
                         $normalizedPayload = $preparePayloadForRecipe($recipe, $normalizedPayload);
                     }
 
+                    $this->recipeSopMediaAssetSynchronizer->syncRecipeUsages(
+                        $user,
+                        $recipe,
+                        $normalizedPayload['manufacturing_instructions'] ?? null,
+                    );
+
                     $currentVersion = RecipeVersion::withoutGlobalScopes()
                         ->where('recipe_id', $recipe->id)
                         ->where('is_current', true)
@@ -92,6 +100,7 @@ class RecipeVersionPublisher
                     $publishedVersion->save();
                     $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
                     $this->recipeVersionCostingSynchronizer->reconcileExistingFormulaCosting($publishedVersion, $user);
+                    $this->recipeSopSnapshotService->copySopMediaAssets($recipe, $publishedVersion);
 
                     $newCurrentVersion = new RecipeVersion;
                     $newCurrentVersion->recipe()->associate($recipe);
@@ -106,6 +115,7 @@ class RecipeVersionPublisher
                     $newCurrentVersion->save();
                     $this->recipeVersionStructureSynchronizer->sync($newCurrentVersion, $user, $normalizedPayload);
                     $this->recipeVersionCostingSynchronizer->copyToVersion($publishedVersion, $newCurrentVersion, $user);
+                    $this->recipeSopSnapshotService->copySopMediaAssets($publishedVersion, $newCurrentVersion);
                     $this->recipeVersionDeletionService->pruneHiddenRecoverySnapshots(
                         $recipe,
                         $this->retainedPublishedVersionCountFor($user),
@@ -158,6 +168,7 @@ class RecipeVersionPublisher
             $publishedVersion->save();
             $this->recipeVersionStructureSynchronizer->sync($publishedVersion, $user, $normalizedPayload);
             $this->recipeVersionCostingSynchronizer->copyToVersion($sourceVersion, $publishedVersion, $user);
+            $this->recipeSopSnapshotService->copySopMediaAssets($sourceVersion, $publishedVersion);
             $this->recipeVersionDeletionService->pruneHiddenRecoverySnapshots(
                 $recipe,
                 $this->retainedPublishedVersionCountFor($user),

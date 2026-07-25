@@ -4,6 +4,7 @@ const DEFAULT_REGISTRY_KEY = 'recipe-content';
 const DEFAULT_WATCH_PATHS = [
     'data.description',
     'data.manufacturing_instructions',
+    'data.featured_media_asset_id',
 ];
 
 function browserClock() {

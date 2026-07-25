@@ -206,7 +206,11 @@ it('allows deleting an unused personal ingredient from the catalog table', funct
         ->assertSee('This removes the ingredient from your catalog.')
         ->call('deleteIngredient')
         ->assertSet('pendingDeleteId', null)
-        ->assertSee('Disposable Ingredient was deleted.');
+        ->assertDispatched(
+            'app-notification',
+            message: 'Disposable Ingredient was deleted.',
+            type: 'success',
+        );
 
     expect(Ingredient::query()->find($ingredient->id))->toBeNull()
         ->and(Storage::disk('public')->exists('ingredients/featured-images/delete-me.webp'))->toBeFalse()
@@ -445,8 +449,12 @@ it('closes a stale ingredient dialog and shows a persistent page error', functio
         ->call('deleteIngredient')
         ->assertSet('pendingDeleteId', null)
         ->assertSet('replacementIngredientId', null)
-        ->assertSee('The ingredient is no longer available in your catalog.')
         ->assertDontSee('Vanishing Additive')
+        ->assertDispatched(
+            'app-notification',
+            message: 'The ingredient is no longer available in your catalog.',
+            type: 'error',
+        )
         ->assertDispatched('ingredient-removal-closed');
 });
 
@@ -465,7 +473,11 @@ it('replaces a used ingredient everywhere and closes the dialog', function () {
         ->assertHasNoErrors()
         ->assertSet('pendingDeleteId', null)
         ->assertSet('replacementIngredientId', null)
-        ->assertSee('Old Additive was replaced everywhere and deleted.')
+        ->assertDispatched(
+            'app-notification',
+            message: 'Old Additive was replaced everywhere and deleted.',
+            type: 'success',
+        )
         ->assertSee('Your ingredients (1)');
 
     expect($source->fresh())->toBeNull()
@@ -484,7 +496,11 @@ it('removes a used ingredient everywhere and closes the dialog', function () {
         ->call('removeEverywhereAndDelete')
         ->assertHasNoErrors()
         ->assertSet('pendingDeleteId', null)
-        ->assertSee('Obsolete Additive was removed everywhere and deleted.')
+        ->assertDispatched(
+            'app-notification',
+            message: 'Obsolete Additive was removed everywhere and deleted.',
+            type: 'success',
+        )
         ->assertSee('Your ingredients (0)');
 
     expect($source->fresh())->toBeNull()

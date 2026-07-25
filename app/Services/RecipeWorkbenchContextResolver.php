@@ -49,6 +49,7 @@ class RecipeWorkbenchContextResolver
         }
 
         $recipe = Recipe::withoutGlobalScopes()
+            ->with('mediaAssetUsages')
             ->whereKey($recipeId)
             ->first();
 

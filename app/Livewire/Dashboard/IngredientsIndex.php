@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\OwnerType;
@@ -24,6 +25,7 @@ use Livewire\WithPagination;
 
 class IngredientsIndex extends Component
 {
+    use InteractsWithAppNotifications;
     use WithoutUrlPagination;
     use WithPagination;
 
@@ -400,6 +402,7 @@ class IngredientsIndex extends Component
         return Ingredient::query()
             ->withCount(['costingItems', 'recipeItems'])
             ->with([
+                'mediaAssetUsages.mediaAsset',
                 'userPrices' => fn ($query) => $query->where('user_id', $user->id),
                 'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
             ])
@@ -475,8 +478,7 @@ class IngredientsIndex extends Component
     private function finishMutation(string $statusMessage): void
     {
         $this->restoreFocusToPendingTrigger();
-        $this->statusMessage = $statusMessage;
-        $this->statusType = 'success';
+        $this->showAppNotification($statusMessage);
         $this->pendingDeleteId = null;
         $this->replacementIngredientId = null;
         $this->expandedUsageIngredientId = null;
@@ -487,8 +489,10 @@ class IngredientsIndex extends Component
     private function closeMissingPendingIngredient(): void
     {
         $this->restoreFocusToPendingTrigger();
-        $this->statusMessage = __('ingredients.status.unavailable');
-        $this->statusType = 'error';
+        $this->showAppNotification(
+            __('ingredients.status.unavailable'),
+            'error',
+        );
         $this->pendingDeleteId = null;
         $this->replacementIngredientId = null;
         $this->expandedUsageIngredientId = null;

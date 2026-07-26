@@ -16,7 +16,7 @@ return [
 
     'asset_uploads' => [
         'max_size_kb' => 10240,
-        'max_pixels' => 50000000,
+        'max_pixels' => 25_000_000,
         'master_max_edge' => 800,
         'quality' => 85,
         'accepted_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],

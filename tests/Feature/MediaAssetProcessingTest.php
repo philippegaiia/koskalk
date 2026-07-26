@@ -1,5 +1,6 @@
 <?php
 
+use App\Exceptions\MediaAssetProcessingException;
 use App\Jobs\NormalizeMediaAssetJob;
 use App\Jobs\RegenerateMediaAssetConversionsJob;
 use App\MediaAssetStatus;
@@ -89,6 +90,18 @@ beforeEach(function () {
     config()->set('media.asset_pending_disk', 'local');
     config()->set('media-library.disk_name', 'local');
     config()->set('media-library.conversions_disk_name', 'local');
+});
+
+it('defaults media processing to a 25 megapixel limit', function () {
+    expect(config('media.asset_uploads.max_pixels'))->toBe(25_000_000);
+});
+
+it('reports the configured megapixel limit when dimensions are excessive', function () {
+    config()->set('media.asset_uploads.max_pixels', 25_000_000);
+    $method = new ReflectionMethod(MediaAssetProcessingService::class, 'assertPixelLimit');
+
+    expect(fn () => $method->invoke(app(MediaAssetProcessingService::class), 5001, 5000))
+        ->toThrow(MediaAssetProcessingException::class, '25 megapixels');
 });
 
 it('reserves quota, stores an opaque pending file, and queues processing', function () {

@@ -217,9 +217,13 @@ class MediaAssetProcessingService
 
     private function assertPixelLimit(int $width, int $height): void
     {
-        if (($width * $height) > (int) config('media.asset_uploads.max_pixels', 50_000_000)) {
+        $maxPixels = (int) config('media.asset_uploads.max_pixels', 25_000_000);
+
+        if (($width * $height) > $maxPixels) {
+            $maxMegapixels = (int) ceil($maxPixels / 1_000_000);
+
             throw new MediaAssetProcessingException(
-                'The image dimensions are too large. Choose an image smaller than 50 megapixels.',
+                "The image dimensions are too large. Choose an image smaller than {$maxMegapixels} megapixels.",
                 'pixel_limit_exceeded',
             );
         }

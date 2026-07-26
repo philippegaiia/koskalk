@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Jobs\NormalizeMediaAssetJob;
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\Models\MediaAsset;
 use App\Models\User;
 use App\Models\Workspace;
@@ -22,11 +23,18 @@ class MediaAssetUploadService
         private readonly EntitlementService $entitlements,
     ) {}
 
-    public function start(User $user, Workspace $workspace, UploadedFile $upload): MediaAsset
-    {
+    /**
+     * @param  array<int, MediaAssetType>  $allowedTypes
+     */
+    public function start(
+        User $user,
+        Workspace $workspace,
+        UploadedFile $upload,
+        array $allowedTypes = [MediaAssetType::Image],
+    ): MediaAsset {
         Gate::forUser($user)->authorize('create', MediaAsset::class);
         $this->assertCanEditWorkspace($user, $workspace);
-        $this->validateUpload($upload);
+        $type = $this->validateUpload($upload, $allowedTypes);
 
         $disk = (string) config('media.asset_pending_disk');
         $extension = strtolower($upload->getClientOriginalExtension());
@@ -37,7 +45,7 @@ class MediaAssetUploadService
         try {
             $asset = $this->entitlements->withinWorkspaceQuotaLock(
                 $workspace,
-                function (Workspace $lockedWorkspace) use ($disk, $pendingPath, $upload, $user): MediaAsset {
+                function (Workspace $lockedWorkspace) use ($disk, $pendingPath, $type, $upload, $user): MediaAsset {
                     $this->assertCanEditWorkspace($user, $lockedWorkspace);
                     $this->entitlements->assertCanUploadMediaAssetInWorkspace($lockedWorkspace);
 
@@ -45,6 +53,7 @@ class MediaAssetUploadService
                         'workspace_id' => $lockedWorkspace->id,
                         'uploaded_by_user_id' => $user->id,
                         'status' => MediaAssetStatus::Processing,
+                        'type' => $type,
                         'original_filename' => $upload->getClientOriginalName(),
                         'original_mime_type' => $upload->getMimeType(),
                         'original_size' => $upload->getSize(),
@@ -143,12 +152,42 @@ class MediaAssetUploadService
         }
     }
 
-    private function validateUpload(UploadedFile $upload): void
+    /**
+     * @param  array<int, MediaAssetType>  $allowedTypes
+     */
+    private function validateUpload(UploadedFile $upload, array $allowedTypes): MediaAssetType
     {
         $extension = strtolower($upload->getClientOriginalExtension());
-        $acceptedExtensions = config('media.asset_uploads.accepted_extensions', []);
         $maxBytes = ((int) config('media.asset_uploads.max_size_kb', 10240)) * 1024;
         $mimeType = $upload->getMimeType();
+
+        if (($upload->getSize() ?: 0) > $maxBytes) {
+            throw ValidationException::withMessages([
+                'upload' => __('media_library.validation.upload_size', [
+                    'max' => max(1, (int) ceil($maxBytes / 1024 / 1024)),
+                ]),
+            ]);
+        }
+
+        $type = $extension === 'pdf'
+            ? $this->validatePdf($upload, $mimeType)
+            : $this->validateImage($upload, $extension, $mimeType);
+
+        if (! in_array($type, $allowedTypes, true)) {
+            throw ValidationException::withMessages([
+                'upload' => __('media_library.validation.upload_type'),
+            ]);
+        }
+
+        return $type;
+    }
+
+    private function validateImage(UploadedFile $upload, string $extension, ?string $mimeType): MediaAssetType
+    {
+        $acceptedExtensions = config(
+            'media.asset_uploads.accepted_image_extensions',
+            config('media.asset_uploads.accepted_extensions', []),
+        );
 
         if (! in_array($extension, $acceptedExtensions, true)) {
             throw ValidationException::withMessages([
@@ -178,13 +217,26 @@ class MediaAssetUploadService
             ]);
         }
 
-        if (($upload->getSize() ?: 0) > $maxBytes) {
+        return MediaAssetType::Image;
+    }
+
+    private function validatePdf(UploadedFile $upload, ?string $mimeType): MediaAssetType
+    {
+        $acceptedExtensions = config('media.asset_uploads.accepted_document_extensions', ['pdf']);
+        $extension = strtolower($upload->getClientOriginalExtension());
+        $header = file_get_contents($upload->getPathname(), false, null, 0, 5);
+
+        if (
+            ! in_array($extension, $acceptedExtensions, true)
+            || $header !== '%PDF-'
+            || $mimeType !== 'application/pdf'
+        ) {
             throw ValidationException::withMessages([
-                'upload' => __('media_library.validation.upload_size', [
-                    'max' => max(1, (int) ceil($maxBytes / 1024 / 1024)),
-                ]),
+                'upload' => __('media_library.validation.upload_invalid_pdf'),
             ]);
         }
+
+        return MediaAssetType::Pdf;
     }
 
     private function detectedImageType(UploadedFile $upload): ?string

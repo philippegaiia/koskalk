@@ -20,6 +20,14 @@ return [
         'master_max_edge' => 800,
         'quality' => 85,
         'accepted_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
+        'accepted_image_extensions' => ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'],
+        'accepted_document_extensions' => ['pdf'],
+        'pdf' => [
+            'max_pages' => 50,
+            'pdfinfo_binary' => env('PDFINFO_BINARY', 'pdfinfo'),
+            'pdftoppm_binary' => env('PDFTOPPM_BINARY', 'pdftoppm'),
+            'process_timeout' => 30,
+        ],
     ],
 
     'recipe_visibility' => 'private',

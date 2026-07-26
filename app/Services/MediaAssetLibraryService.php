@@ -35,6 +35,7 @@ class MediaAssetLibraryService
 
             $lockedAsset->update(['display_name' => $validated['display_name']]);
             $lockedAsset->getFirstMedia('master')?->update(['name' => $validated['display_name']]);
+            $lockedAsset->getFirstMedia('document')?->update(['name' => $validated['display_name']]);
         });
     }
 

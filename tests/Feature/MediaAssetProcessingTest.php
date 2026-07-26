@@ -4,6 +4,7 @@ use App\Exceptions\MediaAssetProcessingException;
 use App\Jobs\NormalizeMediaAssetJob;
 use App\Jobs\RegenerateMediaAssetConversionsJob;
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\Models\MediaAsset;
 use App\Models\Plan;
 use App\Models\User;
@@ -11,12 +12,15 @@ use App\Models\Workspace;
 use App\Services\EntitlementService;
 use App\Services\MediaAssetProcessingService;
 use App\Services\MediaAssetUploadService;
+use App\Services\PdfPreviewRenderer;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+
+use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 
@@ -83,6 +87,60 @@ it('rejects image extension and content signature mismatches', function (string 
     'png extension with jpeg content' => ['mismatch.png', "\xFF\xD8\xFFcontent"],
     'heic extension with jpeg content' => ['mismatch.heic', "\xFF\xD8\xFFcontent"],
 ]);
+
+it('classifies a valid pdf when the caller accepts documents', function () {
+    Queue::fake();
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    [$user, $workspace] = mediaProcessingWorkspace(10);
+    $upload = mediaPdfUpload('certificate.pdf');
+
+    $asset = app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        $upload,
+        [MediaAssetType::Image, MediaAssetType::Pdf],
+    );
+
+    expect($asset->type)->toBe(MediaAssetType::Pdf)
+        ->and($asset->original_mime_type)->toBe('application/pdf')
+        ->and(Storage::disk('local')->exists($asset->pending_path))->toBeTrue();
+});
+
+it('keeps existing image pickers image-only by default', function () {
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    [$user, $workspace] = mediaProcessingWorkspace(10);
+
+    expect(fn () => app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        mediaPdfUpload('certificate.pdf'),
+    ))->toThrow(ValidationException::class, 'file type');
+
+    expect(MediaAsset::query()->count())->toBe(0);
+});
+
+it('rejects a renamed payload and oversized files as pdf documents', function () {
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    [$user, $workspace] = mediaProcessingWorkspace(10);
+    $allowedTypes = [MediaAssetType::Pdf];
+
+    expect(fn () => app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        UploadedFile::fake()->createWithContent('renamed.pdf', 'not a pdf'),
+        $allowedTypes,
+    ))->toThrow(ValidationException::class, 'valid PDF');
+
+    expect(fn () => app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        UploadedFile::fake()->create('large.pdf', 10241, 'application/pdf'),
+        $allowedTypes,
+    ))->toThrow(ValidationException::class, '10 MB');
+});
 
 beforeEach(function () {
     Storage::fake('local');
@@ -231,6 +289,103 @@ it('creates an uncropped 800 master and the required focal and contained convers
         ->and(Storage::disk('local')->allFiles('media-assets/pending'))->toBeEmpty();
 });
 
+it('stores a pdf original and optional first-page preview on the private media disk', function () {
+    Queue::fake();
+    [$user, $workspace] = mediaProcessingWorkspace(limit: 2);
+    $previewPath = tempnam(sys_get_temp_dir(), 'media-pdf-preview-');
+    $preview = imagecreatetruecolor(600, 800);
+    imagewebp($preview, $previewPath, 85);
+    imagedestroy($preview);
+
+    mock(PdfPreviewRenderer::class)
+        ->shouldReceive('pageCount')->once()->andReturn(2)
+        ->shouldReceive('renderFirstPage')->once()->andReturn($previewPath);
+
+    $asset = app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        mediaPdfUpload('safety-data-sheet.pdf'),
+        [MediaAssetType::Pdf],
+    );
+
+    (new NormalizeMediaAssetJob($asset->id, $asset->processing_token))
+        ->handle(app(MediaAssetProcessingService::class));
+
+    $asset->refresh();
+    $document = $asset->getFirstMedia('document');
+    $master = $asset->getFirstMedia('master');
+
+    expect($asset->status)->toBe(MediaAssetStatus::Ready)
+        ->and($document)->not->toBeNull()
+        ->and($document->mime_type)->toBe('application/pdf')
+        ->and($document->file_name)->toEndWith('.pdf')
+        ->and($master)->not->toBeNull()
+        ->and($master->file_name)->toEndWith('.webp')
+        ->and($master->hasGeneratedConversion('thumbnail'))->toBeTrue()
+        ->and(Storage::disk('local')->allFiles('media-assets/pending'))->toBeEmpty();
+});
+
+it('keeps a valid pdf ready and downloadable when preview tooling is unavailable', function () {
+    Queue::fake();
+    [$user, $workspace] = mediaProcessingWorkspace(limit: 2);
+
+    mock(PdfPreviewRenderer::class)
+        ->shouldReceive('pageCount')->once()->andReturnNull()
+        ->shouldReceive('renderFirstPage')->once()->andReturnNull();
+
+    $asset = app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        mediaPdfUpload('certificate.pdf'),
+        [MediaAssetType::Pdf],
+    );
+
+    (new NormalizeMediaAssetJob($asset->id, $asset->processing_token))
+        ->handle(app(MediaAssetProcessingService::class));
+
+    $asset->refresh();
+
+    expect($asset->status)->toBe(MediaAssetStatus::Ready)
+        ->and($asset->getFirstMedia('document'))->not->toBeNull()
+        ->and($asset->getFirstMedia('master'))->toBeNull();
+
+    $response = $this->actingAs($user)->get(route('media.download', $asset));
+
+    $response->assertSuccessful()
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertHeader('x-content-type-options', 'nosniff');
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('media.download', $asset))
+        ->assertNotFound();
+});
+
+it('fails pdfs above the configured page limit while retaining the pending source', function () {
+    Queue::fake();
+    config()->set('media.asset_uploads.pdf.max_pages', 50);
+    [$user, $workspace] = mediaProcessingWorkspace(limit: 2);
+
+    mock(PdfPreviewRenderer::class)
+        ->shouldReceive('pageCount')->once()->andReturn(51)
+        ->shouldNotReceive('renderFirstPage');
+
+    $asset = app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        mediaPdfUpload('too-long.pdf'),
+        [MediaAssetType::Pdf],
+    );
+    $pendingPath = $asset->pending_path;
+
+    (new NormalizeMediaAssetJob($asset->id, $asset->processing_token))
+        ->handle(app(MediaAssetProcessingService::class));
+
+    expect($asset->refresh()->status)->toBe(MediaAssetStatus::Failed)
+        ->and($asset->failure_code)->toBe('pdf_page_limit_exceeded')
+        ->and($asset->failure_reason)->toContain('50 pages')
+        ->and(Storage::disk('local')->exists($pendingPath))->toBeTrue();
+});
+
 it('upscales small source images to every required square conversion size', function () {
     Queue::fake();
     [$user, $workspace] = mediaProcessingWorkspace(limit: 2);
@@ -370,6 +525,14 @@ function mediaProcessingWorkspace(int $limit): array
     ]);
 
     return [$user, $workspace];
+}
+
+function mediaPdfUpload(string $filename): UploadedFile
+{
+    $path = tempnam(sys_get_temp_dir(), 'media-pdf-upload-');
+    file_put_contents($path, "%PDF-1.4\n% Soapkraft test PDF\n%%EOF");
+
+    return new UploadedFile($path, $filename, 'application/pdf', null, true);
 }
 
 /**

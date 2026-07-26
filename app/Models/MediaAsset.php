@@ -77,6 +77,11 @@ class MediaAsset extends Model implements HasMedia
             ->useDisk(config('media.asset_disk'))
             ->acceptsMimeTypes(['image/webp'])
             ->singleFile();
+
+        $this->addMediaCollection('document')
+            ->useDisk(config('media.asset_disk'))
+            ->acceptsMimeTypes(['application/pdf'])
+            ->singleFile();
     }
 
     public function registerMediaConversions(?Media $media = null): void

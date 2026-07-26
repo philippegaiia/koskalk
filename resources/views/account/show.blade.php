@@ -8,6 +8,7 @@
     $ingredientUsage = $usage['private_ingredients'];
     $productionBatchUsage = $usage['production_batches'];
     $mediaAssetUsage = $usage['media_assets'];
+    $mediaLabelUsage = $usage['media_labels'];
     $usagePercent = function (array $line): int {
         if (($line['limit'] ?? null) === null || (int) $line['limit'] <= 0) {
             return 0;
@@ -122,9 +123,9 @@
     <aside class="space-y-6">
         <section aria-labelledby="account-plan-heading" class="sk-card p-6">
             <p class="sk-eyebrow">{{ __('account.plan.heading') }}</p>
-            <h3 id="account-plan-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $plan?->name ?? __('account.plan.none') }}</h3>
-            @if ($plan?->description)
-                <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $plan->description }}</p>
+            <h3 id="account-plan-heading" class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $planPresentation['name'] ?? __('account.plan.none') }}</h3>
+            @if ($planPresentation['description'] ?? null)
+                <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $planPresentation['description'] }}</p>
             @endif
 
             <p class="mt-6 text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('account.plan.usage_heading') }}</p>
@@ -176,6 +177,17 @@
                         <p class="mt-2 text-xs leading-5 text-[var(--color-warning-strong)]">{{ __('account.usage.media_uploads_blocked') }}</p>
                     @endif
                 </div>
+
+                <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('account.usage.media_labels') }}</p>
+                        <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $usageLabel($mediaLabelUsage) }}</p>
+                    </div>
+                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-field-muted)]">
+                        <div class="h-full rounded-full bg-[var(--color-accent)]" style="width: {{ $usagePercent($mediaLabelUsage) }}%"></div>
+                    </div>
+                    <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $remainingLabel($mediaLabelUsage) }}</p>
+                </div>
             </div>
         </section>
 
@@ -201,12 +213,13 @@
             @if ($billingPlans->isNotEmpty())
                 <div class="mt-6 grid gap-3">
                     @foreach ($billingPlans as $billingPlan)
+                        @php($billingPlanPresentation = $billingPlanPresentations[$billingPlan->id])
                         <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
-                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $billingPlan->name }}</p>
-                                    @if ($billingPlan->price_label)
-                                        <p class="numeric mt-1 text-sm text-[var(--color-ink-soft)]">{{ $billingPlan->price_label }}</p>
+                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $billingPlanPresentation['name'] }}</p>
+                                    @if ($billingPlanPresentation['price_label'])
+                                        <p class="numeric mt-1 text-sm text-[var(--color-ink-soft)]">{{ $billingPlanPresentation['price_label'] }}</p>
                                     @endif
                                 </div>
                             </div>

@@ -4,14 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Models\Plan;
 use App\Services\Billing\PaddleBillingService;
+use App\Services\Billing\PlanPresenter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class BillingController extends Controller
 {
-    public function checkout(Request $request, Plan $plan, PaddleBillingService $billing): View|RedirectResponse
-    {
+    public function checkout(
+        Request $request,
+        Plan $plan,
+        PaddleBillingService $billing,
+        PlanPresenter $planPresenter,
+    ): View|RedirectResponse {
         abort_unless($plan->is_active && $plan->isBillable(), 404);
 
         if (! $billing->isConfigured()) {
@@ -22,6 +27,7 @@ class BillingController extends Controller
 
         return view('billing.checkout', [
             'plan' => $plan,
+            'planPresentation' => $planPresenter->present($plan),
             'checkout' => $billing->checkoutFor($request->user(), $plan),
         ]);
     }

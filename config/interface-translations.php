@@ -10,6 +10,7 @@ return [
         'media_library' => ['*'],
         'navigation' => ['*'],
         'packaging' => ['*'],
+        'plans' => ['*'],
         'products' => ['*'],
         'settings' => ['*'],
         'table' => ['*'],

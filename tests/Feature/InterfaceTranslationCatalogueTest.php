@@ -107,6 +107,37 @@ it('exports a deterministic human-reviewable catalogue without database metadata
         ->toBeTrue();
 });
 
+it('sorts exported keys bytewise instead of relying on the database collation', function () {
+    InterfaceTranslation::query()->create([
+        'group' => 'media_library',
+        'key' => 'processing_stages.storing_document',
+        'text' => [],
+    ]);
+    InterfaceTranslation::query()->create([
+        'group' => 'media_library',
+        'key' => 'processing.failed',
+        'text' => [],
+    ]);
+
+    $this->artisan('translations:catalogue:export', ['--path' => $this->cataloguePath])
+        ->assertSuccessful();
+
+    $translations = json_decode(
+        File::get($this->cataloguePath),
+        true,
+        512,
+        JSON_THROW_ON_ERROR,
+    )['translations'];
+
+    expect(Arr::map(
+        $translations,
+        fn (array $translation): string => "{$translation['group']}.{$translation['key']}",
+    ))->toBe([
+        'media_library.processing.failed',
+        'media_library.processing_stages.storing_document',
+    ]);
+});
+
 it('round trips Unicode multiline and placeholder values and remains idempotent', function () {
     $translations = [
         'de' => 'Original: :name',

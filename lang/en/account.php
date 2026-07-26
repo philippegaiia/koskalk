@@ -29,6 +29,7 @@ return [
         'ingredients' => 'Your ingredients',
         'production_batches' => 'Production batches',
         'media_assets' => 'Media assets',
+        'media_labels' => 'Media labels',
         'media_uploads_blocked' => 'Existing assets remain available. New uploads resume after assets are removed or the plan is upgraded.',
         'used' => ':used / :limit',
         'used_unlimited' => ':used / Unlimited',

@@ -390,6 +390,17 @@
         },
         {
             "group": "account",
+            "key": "usage.media_labels",
+            "text": {
+                "de": "Medienlabels",
+                "es": "Etiquetas de medios",
+                "fr": "Étiquettes des médias",
+                "it": "Etichette dei media",
+                "nl": "Medialabels"
+            }
+        },
+        {
+            "group": "account",
             "key": "usage.media_uploads_blocked",
             "text": {}
         },
@@ -2874,6 +2885,28 @@
         },
         {
             "group": "ingredients",
+            "key": "editor.media.documents",
+            "text": {
+                "de": "COA und technische Dokumente",
+                "es": "COA y documentos técnicos",
+                "fr": "COA et documents techniques",
+                "it": "COA e documenti tecnici",
+                "nl": "Analysecertificaten en technische documenten"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.media.documents_helper",
+            "text": {
+                "de": "Hängen Sie bis zu 8 PDF-Zertifikate, Sicherheitsdatenblätter oder technische Datenblätter an.",
+                "es": "Adjunta hasta 8 certificados, fichas de seguridad o fichas técnicas en PDF.",
+                "fr": "Joignez jusqu’à 8 certificats, fiches de données de sécurité ou fiches techniques au format PDF.",
+                "it": "Allega fino a 8 certificati, schede di sicurezza o schede tecniche in PDF.",
+                "nl": "Voeg maximaal 8 PDF-certificaten, veiligheidsinformatiebladen of technische fiches toe."
+            }
+        },
+        {
+            "group": "ingredients",
             "key": "editor.media.icon",
             "text": {
                 "de": "Zutatensymbol",
@@ -4306,11 +4339,11 @@
             "group": "media_library",
             "key": "batch_limit",
             "text": {
-                "de": "Maximal :max Bilder pro Upload. Reduzieren Sie die Auswahl um :count, um fortzufahren.",
-                "es": "Máximo :max imágenes por carga. Reduce la selección en :count para continuar.",
-                "fr": "Limite de :max images par import. Réduisez la sélection de :count pour continuer.",
-                "it": "Massimo :max immagini per caricamento. Riduci la selezione di :count per continuare.",
-                "nl": "Maximaal :max afbeeldingen per upload. Verminder de selectie met :count om door te gaan."
+                "de": "Maximal :max Dateien pro Upload. Reduzieren Sie die Auswahl um :count, um fortzufahren.",
+                "es": "Máximo :max archivos por carga. Reduce la selección en :count para continuar.",
+                "fr": "Limite de :max fichiers par import. Réduisez la sélection de :count pour continuer.",
+                "it": "Massimo :max file per caricamento. Riduci la selezione di :count per continuare.",
+                "nl": "Maximaal :max bestanden per upload. Verminder de selectie met :count om door te gaan."
             }
         },
         {
@@ -4339,11 +4372,11 @@
             "group": "media_library",
             "key": "choose_files",
             "text": {
-                "de": "Bilder auswählen",
-                "es": "Elegir imágenes",
-                "fr": "Choisir des images",
-                "it": "Scegli immagini",
-                "nl": "Afbeeldingen kiezen"
+                "de": "Dateien auswählen",
+                "es": "Elegir archivos",
+                "fr": "Choisir des fichiers",
+                "it": "Scegli file",
+                "nl": "Bestanden kiezen"
             }
         },
         {
@@ -4405,11 +4438,11 @@
             "group": "media_library",
             "key": "description",
             "text": {
-                "de": "Einmal hochladen und dasselbe Bild anschließend in Produkten, Zutaten, Verpackungen und Herstellungsanweisungen wiederverwenden.",
-                "es": "Sube una imagen una vez y reutilízala en productos, ingredientes, envases e instrucciones de fabricación.",
-                "fr": "Importez une image une fois, puis réutilisez-la dans les produits, les ingrédients, les emballages et les instructions de fabrication.",
-                "it": "Carica un’immagine una sola volta, poi riutilizzala in prodotti, ingredienti, imballaggi e istruzioni di produzione.",
-                "nl": "Upload een afbeelding één keer en hergebruik deze daarna in producten, ingrediënten, verpakkingen en productie-instructies."
+                "de": "Einmal hochladen und Bilder sowie Dokumente im gesamten Arbeitsbereich wiederverwenden.",
+                "es": "Carga una vez y reutiliza imágenes y documentos en todo tu espacio de trabajo.",
+                "fr": "Importez une seule fois, puis réutilisez les images et documents dans tout votre espace de travail.",
+                "it": "Carica una sola volta, poi riutilizza immagini e documenti in tutto lo spazio di lavoro.",
+                "nl": "Upload één keer en hergebruik afbeeldingen en documenten in je hele werkruimte."
             }
         },
         {
@@ -4432,6 +4465,39 @@
                 "fr": "Nom d’affichage",
                 "it": "Nome visualizzato",
                 "nl": "Weergavenaam"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "documents.download",
+            "text": {
+                "de": "Herunterladen",
+                "es": "Descargar",
+                "fr": "Télécharger",
+                "it": "Scarica",
+                "nl": "Downloaden"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "documents.pdf",
+            "text": {
+                "de": "PDF-Dokument",
+                "es": "Documento PDF",
+                "fr": "Document PDF",
+                "it": "Documento PDF",
+                "nl": "PDF-document"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "documents.upload",
+            "text": {
+                "de": "PDF hochladen",
+                "es": "Subir PDF",
+                "fr": "Importer un PDF",
+                "it": "Carica PDF",
+                "nl": "PDF uploaden"
             }
         },
         {
@@ -4480,6 +4546,17 @@
         },
         {
             "group": "media_library",
+            "key": "filters.all_types",
+            "text": {
+                "de": "Alle Typen",
+                "es": "Todos los tipos",
+                "fr": "Tous les types",
+                "it": "Tutti i tipi",
+                "nl": "Alle typen"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "filters.aria_label",
             "text": {
                 "de": "Medienfilter",
@@ -4491,6 +4568,28 @@
         },
         {
             "group": "media_library",
+            "key": "filters.images",
+            "text": {
+                "de": "Bilder",
+                "es": "Imágenes",
+                "fr": "Images",
+                "it": "Immagini",
+                "nl": "Afbeeldingen"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "filters.pdfs",
+            "text": {
+                "de": "PDFs",
+                "es": "PDF",
+                "fr": "PDF",
+                "it": "PDF",
+                "nl": "PDF’s"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "filters.processing_status",
             "text": {
                 "de": "Verarbeitungsstatus",
@@ -4498,6 +4597,17 @@
                 "fr": "État du traitement",
                 "it": "Stato di elaborazione",
                 "nl": "Verwerkingsstatus"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "filters.type",
+            "text": {
+                "de": "Dateityp",
+                "es": "Tipo de archivo",
+                "fr": "Type de fichier",
+                "it": "Tipo di file",
+                "nl": "Bestandstype"
             }
         },
         {
@@ -4524,6 +4634,138 @@
         },
         {
             "group": "media_library",
+            "key": "labels.add",
+            "text": {
+                "de": "Hinzufügen",
+                "es": "Añadir",
+                "fr": "Ajouter",
+                "it": "Aggiungi",
+                "nl": "Toevoegen"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.apply_on_upload",
+            "text": {
+                "de": "Labels auf diese Dateien anwenden",
+                "es": "Aplicar etiquetas a estos archivos",
+                "fr": "Appliquer des étiquettes à ces fichiers",
+                "it": "Applica etichette a questi file",
+                "nl": "Labels op deze bestanden toepassen"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.asset_limit",
+            "text": {
+                "de": "Ein Medium kann höchstens :count Labels haben.",
+                "es": "Un archivo puede tener como máximo :count etiquetas.",
+                "fr": "Un média peut avoir au maximum :count étiquettes.",
+                "it": "Un contenuto multimediale può avere al massimo :count etichette.",
+                "nl": "Een mediabestand kan maximaal :count labels hebben."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.duplicate",
+            "text": {
+                "de": "Dieses Label ist bereits vorhanden.",
+                "es": "Esa etiqueta ya existe.",
+                "fr": "Cette étiquette existe déjà.",
+                "it": "Questa etichetta esiste già.",
+                "nl": "Dit label bestaat al."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.filter",
+            "text": {
+                "de": "Labels",
+                "es": "Etiquetas",
+                "fr": "Étiquettes",
+                "it": "Etichette",
+                "nl": "Labels"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.heading",
+            "text": {
+                "de": "Labels",
+                "es": "Etiquetas",
+                "fr": "Étiquettes",
+                "it": "Etichette",
+                "nl": "Labels"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.invalid",
+            "text": {
+                "de": "Ein oder mehrere Labels sind in diesem Arbeitsbereich nicht verfügbar.",
+                "es": "Una o varias etiquetas no están disponibles en este espacio de trabajo.",
+                "fr": "Une ou plusieurs étiquettes ne sont pas disponibles dans cet espace de travail.",
+                "it": "Una o più etichette non sono disponibili in questo spazio di lavoro.",
+                "nl": "Een of meer labels zijn niet beschikbaar in deze werkruimte."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.name_invalid",
+            "text": {
+                "de": "Geben Sie ein Label mit höchstens :count Zeichen ein.",
+                "es": "Introduce una etiqueta de no más de :count caracteres.",
+                "fr": "Saisissez une étiquette de :count caractères maximum.",
+                "it": "Inserisci un’etichetta di massimo :count caratteri.",
+                "nl": "Voer een label van maximaal :count tekens in."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.new_placeholder",
+            "text": {
+                "de": "Neues Label",
+                "es": "Nueva etiqueta",
+                "fr": "Nouvelle étiquette",
+                "it": "Nuova etichetta",
+                "nl": "Nieuw label"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.none",
+            "text": {
+                "de": "Labels sind optional. Fügen Sie nur eines hinzu, wenn es diesen Arbeitsbereich besser organisiert.",
+                "es": "Las etiquetas son opcionales. Añade una solo si ayuda a organizar este espacio de trabajo.",
+                "fr": "Les étiquettes sont facultatives. Ajoutez-en une uniquement si elle aide à organiser cet espace de travail.",
+                "it": "Le etichette sono facoltative. Aggiungine una solo se aiuta a organizzare questo spazio di lavoro.",
+                "nl": "Labels zijn optioneel. Voeg er alleen een toe als dit helpt om de werkruimte te organiseren."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.rate_limited",
+            "text": {
+                "de": "Warten Sie bitte :seconds Sekunden, bevor Sie ein weiteres Label erstellen.",
+                "es": "Espera :seconds segundos antes de crear otra etiqueta.",
+                "fr": "Veuillez patienter :seconds secondes avant de créer une autre étiquette.",
+                "it": "Attendi :seconds secondi prima di creare un’altra etichetta.",
+                "nl": "Wacht :seconds seconden voordat je nog een label maakt."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.save",
+            "text": {
+                "de": "Labels speichern",
+                "es": "Guardar etiquetas",
+                "fr": "Enregistrer les étiquettes",
+                "it": "Salva etichette",
+                "nl": "Labels opslaan"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "messages.focal_refreshing",
             "text": {
                 "de": "Der Fokuspunkt des quadratischen Ausschnitts wird aktualisiert.",
@@ -4531,6 +4773,17 @@
                 "fr": "Le point focal du recadrage carré est en cours d’actualisation.",
                 "it": "Il punto focale del ritaglio quadrato è in fase di aggiornamento.",
                 "nl": "Het brandpunt van de vierkante uitsnede wordt vernieuwd."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "messages.labels_updated",
+            "text": {
+                "de": "Labels aktualisiert.",
+                "es": "Etiquetas actualizadas.",
+                "fr": "Étiquettes mises à jour.",
+                "it": "Etichette aggiornate.",
+                "nl": "Labels bijgewerkt."
             }
         },
         {
@@ -4795,6 +5048,17 @@
                 "fr": "Fermer le sélecteur de médias",
                 "it": "Chiudi selettore multimediale",
                 "nl": "Mediakiezer sluiten"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "picker.document",
+            "text": {
+                "de": "PDF-Dokument",
+                "es": "Documento PDF",
+                "fr": "Document PDF",
+                "it": "Documento PDF",
+                "nl": "PDF-document"
             }
         },
         {
@@ -5107,6 +5371,50 @@
         },
         {
             "group": "media_library",
+            "key": "processing.failed",
+            "text": {
+                "de": "Die Datei konnte nicht verarbeitet werden. Sie können es erneut versuchen oder sie entfernen.",
+                "es": "No se pudo procesar el archivo. Puedes reintentarlo o eliminarlo.",
+                "fr": "Le fichier n’a pas pu être traité. Vous pouvez réessayer ou le retirer.",
+                "it": "Non è stato possibile elaborare il file. Puoi riprovare o rimuoverlo.",
+                "nl": "Het bestand kon niet worden verwerkt. Je kunt het opnieuw proberen of verwijderen."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "processing.invalid_pdf",
+            "text": {
+                "de": "Die hochgeladene PDF-Datei konnte nicht gelesen werden.",
+                "es": "No se pudo leer el PDF cargado.",
+                "fr": "Le PDF importé n’a pas pu être lu.",
+                "it": "Non è stato possibile leggere il PDF caricato.",
+                "nl": "De geüploade PDF kon niet worden gelezen."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "processing.pdf_page_limit",
+            "text": {
+                "de": "Wählen Sie eine PDF-Datei mit höchstens :count Seiten.",
+                "es": "Elige un PDF de no más de :count páginas.",
+                "fr": "Choisissez un PDF de :count pages maximum.",
+                "it": "Scegli un PDF con non più di :count pagine.",
+                "nl": "Kies een PDF met maximaal :count pagina’s."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "processing.preview_failed",
+            "text": {
+                "de": "Die PDF-Vorschau konnte nicht erstellt werden.",
+                "es": "No se pudo preparar la vista previa del PDF.",
+                "fr": "L’aperçu du PDF n’a pas pu être préparé.",
+                "it": "Non è stato possibile preparare l’anteprima del PDF.",
+                "nl": "De PDF-voorvertoning kon niet worden gemaakt."
+            }
+        },
+        {
+            "group": "media_library",
             "key": "processing_stages.converting",
             "text": {
                 "de": "wird konvertiert",
@@ -5129,6 +5437,17 @@
         },
         {
             "group": "media_library",
+            "key": "processing_stages.preparing_preview",
+            "text": {
+                "de": "Vorschau wird vorbereitet",
+                "es": "preparando vista previa",
+                "fr": "préparation de l’aperçu",
+                "it": "preparazione dell’anteprima",
+                "nl": "voorvertoning voorbereiden"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "processing_stages.queued",
             "text": {
                 "de": "in Warteschlange",
@@ -5136,6 +5455,17 @@
                 "fr": "en attente",
                 "it": "in coda",
                 "nl": "in wachtrij"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "processing_stages.storing_document",
+            "text": {
+                "de": "Dokument wird gespeichert",
+                "es": "guardando documento",
+                "fr": "enregistrement du document",
+                "it": "salvataggio del documento",
+                "nl": "document opslaan"
             }
         },
         {
@@ -5195,6 +5525,17 @@
         },
         {
             "group": "media_library",
+            "key": "roles.ingredient_document",
+            "text": {
+                "de": "Zutatendokument",
+                "es": "Documento del ingrediente",
+                "fr": "Document de l’ingrédient",
+                "it": "Documento dell’ingrediente",
+                "nl": "Ingrediëntdocument"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "roles.ingredient_icon_override",
             "text": {
                 "de": "Zutatensymbol",
@@ -5250,6 +5591,17 @@
         },
         {
             "group": "media_library",
+            "key": "roles.recipe_sop_document",
+            "text": {
+                "de": "Rezept-SOP-Dokument",
+                "es": "Documento PNT de la receta",
+                "fr": "Document SOP de la recette",
+                "it": "Documento SOP della ricetta",
+                "nl": "SOP-document van recept"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "save_name",
             "text": {
                 "de": "Namen speichern",
@@ -5285,11 +5637,11 @@
             "group": "media_library",
             "key": "selected_files",
             "text": {
-                "de": "{1} :count Bild ausgewählt|[2,*] :count Bilder ausgewählt",
-                "es": "{1} :count imagen seleccionada|[2,*] :count imágenes seleccionadas",
-                "fr": "{1} :count image sélectionnée|[2,*] :count images sélectionnées",
-                "it": "{1} :count immagine selezionata|[2,*] :count immagini selezionate",
-                "nl": "{1} :count afbeelding geselecteerd|[2,*] :count afbeeldingen geselecteerd"
+                "de": "{1} :count Datei ausgewählt|[2,*] :count Dateien ausgewählt",
+                "es": "{1} :count archivo seleccionado|[2,*] :count archivos seleccionados",
+                "fr": "{1} :count fichier sélectionné|[2,*] :count fichiers sélectionnés",
+                "it": "{1} :count file selezionato|[2,*] :count file selezionati",
+                "nl": "{1} :count bestand geselecteerd|[2,*] :count bestanden geselecteerd"
             }
         },
         {
@@ -5362,11 +5714,11 @@
             "group": "media_library",
             "key": "upload_selected",
             "text": {
-                "de": "Ausgewählte Bilder hochladen",
-                "es": "Subir imágenes seleccionadas",
-                "fr": "Importer les images sélectionnées",
-                "it": "Carica le immagini selezionate",
-                "nl": "Geselecteerde afbeeldingen uploaden"
+                "de": "Ausgewählte Dateien hochladen",
+                "es": "Subir archivos seleccionados",
+                "fr": "Importer les fichiers sélectionnés",
+                "it": "Carica i file selezionati",
+                "nl": "Geselecteerde bestanden uploaden"
             }
         },
         {
@@ -5569,6 +5921,17 @@
         },
         {
             "group": "media_library",
+            "key": "validation.selected_media_unavailable",
+            "text": {
+                "de": "Eine oder mehrere ausgewählte Dateien sind nicht verfügbar, werden noch verarbeitet oder haben den falschen Typ.",
+                "es": "Uno o varios archivos seleccionados no están disponibles, aún se están procesando o son del tipo incorrecto.",
+                "fr": "Un ou plusieurs fichiers sélectionnés sont indisponibles, encore en cours de traitement ou du mauvais type.",
+                "it": "Uno o più file selezionati non sono disponibili, sono ancora in elaborazione o sono del tipo errato.",
+                "nl": "Een of meer geselecteerde bestanden zijn niet beschikbaar, worden nog verwerkt of hebben het verkeerde type."
+            }
+        },
+        {
+            "group": "media_library",
             "key": "validation.upload_extension",
             "text": {
                 "de": "Wähle ein Bild im Format JPEG, PNG, WebP, HEIC oder HEIF aus.",
@@ -5591,13 +5954,24 @@
         },
         {
             "group": "media_library",
+            "key": "validation.upload_invalid_pdf",
+            "text": {
+                "de": "Wählen Sie ein gültiges PDF-Dokument.",
+                "es": "Elige un documento PDF válido.",
+                "fr": "Choisissez un document PDF valide.",
+                "it": "Scegli un documento PDF valido.",
+                "nl": "Kies een geldig PDF-document."
+            }
+        },
+        {
+            "group": "media_library",
             "key": "validation.upload_size",
             "text": {
-                "de": "Das Bild darf nicht größer als :max MB sein.",
-                "es": "La imagen no puede superar :max MB.",
-                "fr": "L’image ne doit pas dépasser :max Mo.",
-                "it": "L’immagine non può superare :max MB.",
-                "nl": "De afbeelding mag niet groter zijn dan :max MB."
+                "de": "Die Datei darf nicht größer als :max MB sein.",
+                "es": "El archivo no debe superar los :max MB.",
+                "fr": "Le fichier ne doit pas dépasser :max Mo.",
+                "it": "Il file non deve superare :max MB.",
+                "nl": "Het bestand mag niet groter zijn dan :max MB."
             }
         },
         {
@@ -5609,6 +5983,17 @@
                 "fr": "Impossible d’enregistrer l’image. Réessayez.",
                 "it": "Impossibile salvare l’immagine. Riprova.",
                 "nl": "De afbeelding kon niet worden opgeslagen. Probeer het opnieuw."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "validation.upload_type",
+            "text": {
+                "de": "Dieser Dateityp ist in dieser Auswahl nicht verfügbar.",
+                "es": "Este tipo de archivo no está disponible en este selector.",
+                "fr": "Ce type de fichier n’est pas disponible dans ce sélecteur.",
+                "it": "Questo tipo di file non è disponibile in questo selettore.",
+                "nl": "Dit bestandstype is niet beschikbaar in deze kiezer."
             }
         },
         {
@@ -6517,6 +6902,39 @@
                 "fr": "Retirez cet emballage de toutes les formules avant de le supprimer.",
                 "it": "Rimuovi questa confezione da tutte le formule prima di eliminarla.",
                 "nl": "Verwijder deze verpakking uit alle formules voordat je ze wist."
+            }
+        },
+        {
+            "group": "plans",
+            "key": "catalog.free-beta.description",
+            "text": {
+                "de": "Kostenloser Einführungsplan für registrierte Benutzer. Die Limits können von Administratoren angepasst werden.",
+                "es": "Plan de lanzamiento gratuito para usuarios registrados. Los administradores pueden ajustar los límites.",
+                "fr": "Offre de lancement gratuite pour les utilisateurs inscrits. Les administrateurs peuvent ajuster les limites.",
+                "it": "Piano di lancio gratuito per utenti registrati. Gli amministratori possono modificare i limiti.",
+                "nl": "Gratis lanceringsplan voor geregistreerde gebruikers. Beheerders kunnen de limieten aanpassen."
+            }
+        },
+        {
+            "group": "plans",
+            "key": "catalog.free-beta.name",
+            "text": {
+                "de": "Kostenlose Beta",
+                "es": "Beta gratuita",
+                "fr": "Bêta gratuite",
+                "it": "Beta gratuita",
+                "nl": "Gratis bèta"
+            }
+        },
+        {
+            "group": "plans",
+            "key": "catalog.free-beta.price_label",
+            "text": {
+                "de": "",
+                "es": "",
+                "fr": "",
+                "it": "",
+                "nl": ""
             }
         },
         {
@@ -9324,6 +9742,28 @@
                 "fr": "Description du produit",
                 "it": "Descrizione del prodotto",
                 "nl": "Productbeschrijving"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "instructions.documents_help",
+            "text": {
+                "de": "Hängen Sie bis zu 8 PDF-Verfahrensanweisungen, Checklisten oder Begleitdokumente an.",
+                "es": "Adjunta hasta 8 procedimientos, listas de comprobación o documentos de apoyo en PDF.",
+                "fr": "Joignez jusqu’à 8 procédures, listes de contrôle ou documents complémentaires au format PDF.",
+                "it": "Allega fino a 8 procedure, liste di controllo o documenti di supporto in PDF.",
+                "nl": "Voeg maximaal 8 PDF-procedures, checklijsten of ondersteunende documenten toe."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "instructions.documents_label",
+            "text": {
+                "de": "SOP- und Produktionsdokumente",
+                "es": "Documentos de PNT y producción",
+                "fr": "Documents de SOP et de production",
+                "it": "Documenti SOP e di produzione",
+                "nl": "SOP- en productiedocumenten"
             }
         },
         {

@@ -62,11 +62,21 @@ The Forge/PHP request limit therefore applies to each file, not to the combined 
 - Error messages use an alert region; status changes use a polite live region.
 - Controls retain usable touch targets and responsive wrapping.
 
+## Localization
+
+- Every new user-facing string is defined through Laravel translation keys.
+- Complete reviewed translations are provided for English, French, German, Spanish, Italian, and Dutch.
+- This includes chooser labels, selected-file counts, batch position, over-limit guidance, remove and retry labels, transfer failures, and accessibility labels.
+- Locale tests verify that the new keys do not fall back to English or expose raw translation keys.
+- The deterministic interface translation catalogue is regenerated so deployment imports the new translations authoritatively.
+
 ## Testing
 
 - Modal picker contract tests confirm single-file selection and branded control markup.
 - Media Library tests confirm `multiple`, five-file selection rules, removable rows, disabled over-limit submission, and branded progress.
 - JavaScript contract tests confirm sequential transfer order, continued processing after one transfer failure, and per-file progress state.
+- Localization tests confirm complete reviewed copy in every supported locale.
+- Translation catalogue tests confirm the new keys are included in the deterministic export.
 - Existing media authorization, upload validation, processing, consumer integration, and accessibility tests remain green.
 - The production frontend build must pass.
 
@@ -78,3 +88,4 @@ The Forge/PHP request limit therefore applies to each file, not to the combined 
 - Selecting six files clearly explains that one must be removed and prevents submission.
 - A batch transfers one file at a time and queues each valid image independently.
 - The interface uses Soapkraft’s established colors, spacing, focus, and progress patterns.
+- Every new interface message renders correctly in all six supported locales and is present in the durable catalogue.

@@ -56,10 +56,12 @@ class MediaAssetPickerMutationController extends Controller
                 'status' => $asset->status->value,
                 'type' => $asset->type->value,
                 'progress' => $asset->progress,
-                'thumbnail_url' => $asset->status === MediaAssetStatus::Ready && $asset->getFirstMedia('master') !== null
+                'thumbnail_url' => $asset->status === MediaAssetStatus::Ready
+                    && ($asset->type === MediaAssetType::Image || $asset->getFirstMedia('master') !== null)
                     ? route('media.show', [$asset, 'thumbnail'])
                     : null,
-                'master_url' => $asset->status === MediaAssetStatus::Ready && $asset->getFirstMedia('master') !== null
+                'master_url' => $asset->status === MediaAssetStatus::Ready
+                    && ($asset->type === MediaAssetType::Image || $asset->getFirstMedia('master') !== null)
                     ? route('media.show', [$asset, 'master'])
                     : null,
                 'download_url' => $asset->status === MediaAssetStatus::Ready && $asset->type === MediaAssetType::Pdf

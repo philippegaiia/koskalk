@@ -252,7 +252,7 @@ it('localizes Media Library validation errors for every supported locale', funct
         'media_library.validation.retry_source_missing' => ['The original upload is no longer available. Remove this image and upload it again.', []],
         'media_library.validation.upload_extension' => ['Choose a JPEG, PNG, WebP, HEIC, or HEIF image.', []],
         'media_library.validation.upload_invalid_image' => ['Choose a valid JPEG, PNG, WebP, HEIC, or HEIF image.', []],
-        'media_library.validation.upload_size' => ['The image must not be larger than 10 MB.', ['max' => 10]],
+        'media_library.validation.upload_size' => ['The file must not be larger than 10 MB.', ['max' => 10]],
         'media_library.validation.maximum_images' => ['Choose up to 3 images.', ['max' => 3]],
         'media_library.validation.selected_images_unavailable' => ['One or more selected images are unavailable or still processing.', []],
         'media_library.validation.workspace_unavailable' => ['The selected workspace is unavailable.', []],

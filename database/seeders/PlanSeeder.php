@@ -29,6 +29,7 @@ class PlanSeeder extends Seeder
             'production_batches' => 0,
             'saved_formula_history' => 0,
             'media_assets' => 200,
+            'media_labels' => 20,
         ] as $key => $value) {
             $plan->limits()->firstOrCreate(
                 ['key' => $key],

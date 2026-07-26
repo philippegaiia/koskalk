@@ -1,6 +1,13 @@
 <?php
 
 return [
+    'labels' => [
+        'asset_limit' => 'An asset can have at most :count labels.',
+        'duplicate' => 'That label already exists.',
+        'invalid' => 'One or more labels are not available in this workspace.',
+        'name_invalid' => 'Enter a label of no more than :count characters.',
+        'rate_limited' => 'Please wait :seconds seconds before creating another label.',
+    ],
     'title' => 'Media Library',
     'eyebrow' => 'Workspace media',
     'description' => 'Upload once, then reuse the same image in products, ingredients, packaging, and manufacturing instructions.',

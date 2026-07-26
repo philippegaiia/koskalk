@@ -1,11 +1,21 @@
 <div class="mx-auto w-full max-w-7xl space-y-6" @if ($hasProcessingAssets) wire:poll.5s.visible @endif>
     <section class="sk-card p-5 sm:p-6">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-            <div>
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div data-media-library-summary class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('media_library.eyebrow') }}</p>
                 <h3 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('media_library.title') }}</h3>
                 <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
                     {{ __('media_library.description') }}
+                </p>
+                <p class="mt-5 text-sm text-[var(--color-ink-soft)]">
+                    @if ($usage['limit'] === null)
+                        {{ __('media_library.quota.unlimited', ['used' => $usage['used']]) }}
+                    @else
+                        {{ __('media_library.quota.limited', ['used' => $usage['used'], 'limit' => $usage['limit']]) }}
+                        @if (! $usage['allowed'])
+                            · {{ __('media_library.uploads_blocked') }}
+                        @endif
+                    @endif
                 </p>
             </div>
 
@@ -60,10 +70,10 @@
                         class="w-full overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)]"
                     >
                         <template x-for="(entry, index) in files" x-bind:key="entry.id">
-                            <div class="border-b border-[var(--color-line)] px-3 py-2.5 last:border-b-0">
+                            <div class="border-b border-[var(--color-line)] px-3 py-2 last:border-b-0">
                                 <div class="flex items-center gap-3">
                                     <div class="min-w-0 flex-1">
-                                        <p class="truncate text-sm font-medium text-[var(--color-ink-strong)]" x-text="entry.name"></p>
+                                        <p data-media-library-selected-filename class="truncate text-xs font-medium leading-5 text-[var(--color-ink-strong)]" x-text="entry.name"></p>
                                         <p x-show="entry.error" x-text="entry.error" role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]"></p>
                                     </div>
                                     <span
@@ -143,17 +153,6 @@
                 </form>
             @endif
         </div>
-
-        <p class="mt-5 text-sm text-[var(--color-ink-soft)]">
-            @if ($usage['limit'] === null)
-                {{ __('media_library.quota.unlimited', ['used' => $usage['used']]) }}
-            @else
-                {{ __('media_library.quota.limited', ['used' => $usage['used'], 'limit' => $usage['limit']]) }}
-                @if (! $usage['allowed'])
-                    · {{ __('media_library.uploads_blocked') }}
-                @endif
-            @endif
-        </p>
     </section>
 
     <section class="overflow-hidden sk-card p-0">

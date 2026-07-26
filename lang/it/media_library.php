@@ -7,7 +7,15 @@ $translations = array_replace_recursive(require lang_path('en/media_library.php'
 ]);
 
 return array_replace_recursive($translations, [
-    'picker' => ['insert_from_media_library' => 'Inserisci dalla libreria multimediale', 'load_more' => 'Carica altro', 'polling_stopped' => 'Gli aggiornamenti di stato sono stati interrotti dopo ripetuti errori di connessione. Riprova il caricamento.'],
+    'choose_files' => 'Scegli immagini',
+    'selected_files' => '{1} :count immagine selezionata|[2,*] :count immagini selezionate',
+    'upload_selected' => 'Carica le immagini selezionate',
+    'batch_limit' => 'Massimo :max immagini per caricamento. Riduci la selezione di :count per continuare.',
+    'batch_position' => 'Caricamento :current di :total',
+    'remove_file' => 'Rimuovi :name',
+    'batch_file_failed' => 'Impossibile caricare :name. Riprova o rimuovi il file.',
+    'batch_quota' => 'Capacità multimediale rimanente del piano: :count.',
+    'picker' => ['insert_from_media_library' => 'Inserisci dalla libreria multimediale', 'choose_file' => 'Scegli immagine', 'no_file_selected' => 'Nessuna immagine selezionata', 'load_more' => 'Carica altro', 'polling_stopped' => 'Gli aggiornamenti di stato sono stati interrotti dopo ripetuti errori di connessione. Riprova il caricamento.'],
     'validation' => [
         'picker_ready_workspace' => 'Scegli un’immagine pronta da questo spazio di lavoro.',
         'procedure_images_unavailable' => 'Una o più immagini della procedura non sono disponibili, sono ancora in elaborazione o appartengono a un altro spazio di lavoro.',

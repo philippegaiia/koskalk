@@ -443,3 +443,28 @@ it('owns every media library key including the sidebar navigation key', function
             ->and($source->get('media_library', $key))->toBe($value);
     }
 });
+
+it('commits every localized media batch upload string', function () {
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $requiredKeys = [
+        'batch_file_failed',
+        'batch_limit',
+        'batch_position',
+        'batch_quota',
+        'choose_files',
+        'picker.choose_file',
+        'picker.no_file_selected',
+        'remove_file',
+        'selected_files',
+        'upload_selected',
+    ];
+
+    $rows = collect($catalogue['translations'])
+        ->where('group', 'media_library')
+        ->keyBy('key');
+
+    foreach ($requiredKeys as $key) {
+        expect($rows)->toHaveKey($key)
+            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
+    }
+});

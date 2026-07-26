@@ -102,8 +102,27 @@
                         @if ($canUpload)
                             <div data-media-picker-upload-form class="space-y-4">
                                 <div>
-                                    <label for="{{ $pickerId }}-upload" class="mb-2 block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('media_library.picker.image') }}</label>
-                                    <input id="{{ $pickerId }}-upload" x-ref="uploadInput" type="file" name="upload" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" class="block w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-sm text-[var(--color-ink-strong)] file:mr-3 file:rounded-md file:border-0 file:bg-[var(--color-accent-soft)] file:px-3 file:py-2 file:font-medium file:text-[var(--color-accent-strong)]" />
+                                    <span class="mb-2 block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('media_library.picker.image') }}</span>
+                                    <input
+                                        id="{{ $pickerId }}-upload"
+                                        x-ref="uploadInput"
+                                        x-on:change="selectUploadFile($event)"
+                                        data-media-picker-file-input
+                                        type="file"
+                                        name="upload"
+                                        accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                                        class="peer sr-only"
+                                    />
+                                    <div class="flex min-h-12 flex-wrap items-center gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-2">
+                                        <label
+                                            for="{{ $pickerId }}-upload"
+                                            data-media-picker-file-trigger
+                                            class="sk-btn cursor-pointer border border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)]"
+                                        >
+                                            {{ __('media_library.picker.choose_file') }}
+                                        </label>
+                                        <span class="min-w-0 flex-1 truncate text-sm text-[var(--color-ink-soft)]" x-text="uploadFilename || @js(__('media_library.picker.no_file_selected'))"></span>
+                                    </div>
                                 </div>
                                 <p x-show="uploadError" x-text="uploadError" role="alert" class="text-sm text-[var(--color-danger)]"></p>
                                 <div x-show="uploadSubmitting" class="space-y-2">
@@ -111,7 +130,16 @@
                                         <span>{{ __('media_library.uploading') }}</span>
                                         <span class="tabular-nums" x-text="`${uploadProgress}%`"></span>
                                     </div>
-                                    <progress max="100" x-bind:value="uploadProgress" class="h-2 w-full overflow-hidden rounded-full"></progress>
+                                    <div
+                                        data-media-picker-upload-progress-bar
+                                        role="progressbar"
+                                        aria-valuemin="0"
+                                        aria-valuemax="100"
+                                        x-bind:aria-valuenow="uploadProgress"
+                                        class="h-2 w-full overflow-hidden rounded-full bg-[var(--color-field-muted)]"
+                                    >
+                                        <div class="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-150" x-bind:style="`width: ${uploadProgress}%`"></div>
+                                    </div>
                                 </div>
                                 <button type="button" x-on:click="uploadNew()" x-bind:disabled="uploadSubmitting" class="sk-btn sk-btn-primary disabled:cursor-wait disabled:opacity-65">
                                     <span x-show="! uploadSubmitting">{{ __('media_library.upload') }}</span>

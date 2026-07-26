@@ -7,7 +7,15 @@ $translations = array_replace_recursive(require lang_path('en/media_library.php'
 ]);
 
 return array_replace_recursive($translations, [
-    'picker' => ['insert_from_media_library' => 'Aus Medienbibliothek einfügen', 'load_more' => 'Mehr laden', 'polling_stopped' => 'Statusaktualisierungen wurden nach wiederholten Verbindungsfehlern beendet. Versuchen Sie den Upload erneut.'],
+    'choose_files' => 'Bilder auswählen',
+    'selected_files' => '{1} :count Bild ausgewählt|[2,*] :count Bilder ausgewählt',
+    'upload_selected' => 'Ausgewählte Bilder hochladen',
+    'batch_limit' => 'Maximal :max Bilder pro Upload. Reduzieren Sie die Auswahl um :count, um fortzufahren.',
+    'batch_position' => 'Bild :current von :total wird hochgeladen',
+    'remove_file' => ':name entfernen',
+    'batch_file_failed' => ':name konnte nicht hochgeladen werden. Versuchen Sie es erneut oder entfernen Sie die Datei.',
+    'batch_quota' => 'Verbleibende Medienkapazität Ihres Tarifs: :count.',
+    'picker' => ['insert_from_media_library' => 'Aus Medienbibliothek einfügen', 'choose_file' => 'Bild auswählen', 'no_file_selected' => 'Kein Bild ausgewählt', 'load_more' => 'Mehr laden', 'polling_stopped' => 'Statusaktualisierungen wurden nach wiederholten Verbindungsfehlern beendet. Versuchen Sie den Upload erneut.'],
     'validation' => [
         'picker_ready_workspace' => 'Wählen Sie ein bereites Bild aus diesem Arbeitsbereich.',
         'procedure_images_unavailable' => 'Mindestens ein Verfahrensbild ist nicht verfügbar, wird noch verarbeitet oder gehört zu einem anderen Arbeitsbereich.',

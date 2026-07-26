@@ -25,6 +25,7 @@ export function createMediaAssetPicker(options) {
         uploadSubmitting: false,
         uploadProgress: 0,
         uploadError: null,
+        uploadFilename: '',
 
         init() {
             if (this.embedded) {
@@ -148,6 +149,18 @@ export function createMediaAssetPicker(options) {
             this.focusTab(this.activeTab === 'library' ? 'upload' : 'library');
         },
 
+        selectUploadFile(event) {
+            this.uploadFilename = event.target.files?.[0]?.name ?? '';
+        },
+
+        clearUploadFile() {
+            this.uploadFilename = '';
+
+            if (this.$refs.uploadInput) {
+                this.$refs.uploadInput.value = '';
+            }
+        },
+
         trackUpload(detail) {
             if (detail.statePath !== this.statePath) {
                 return;
@@ -194,7 +207,7 @@ export function createMediaAssetPicker(options) {
                             throw new Error(result.error);
                         }
 
-                        input.value = '';
+                        this.clearUploadFile();
                         this.trackUpload({
                             statePath: this.statePath,
                             assetId: result.asset_id,

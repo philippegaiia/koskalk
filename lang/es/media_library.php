@@ -7,7 +7,15 @@ $translations = array_replace_recursive(require lang_path('en/media_library.php'
 ]);
 
 return array_replace_recursive($translations, [
-    'picker' => ['insert_from_media_library' => 'Insertar desde la biblioteca multimedia', 'load_more' => 'Cargar más', 'polling_stopped' => 'Las actualizaciones de estado se detuvieron tras varios errores de conexión. Vuelve a intentar la subida.'],
+    'choose_files' => 'Elegir imágenes',
+    'selected_files' => '{1} :count imagen seleccionada|[2,*] :count imágenes seleccionadas',
+    'upload_selected' => 'Subir imágenes seleccionadas',
+    'batch_limit' => 'Máximo :max imágenes por carga. Reduce la selección en :count para continuar.',
+    'batch_position' => 'Subiendo :current de :total',
+    'remove_file' => 'Eliminar :name',
+    'batch_file_failed' => 'No se pudo subir :name. Inténtalo de nuevo o elimina el archivo.',
+    'batch_quota' => 'Capacidad multimedia restante de tu plan: :count.',
+    'picker' => ['insert_from_media_library' => 'Insertar desde la biblioteca multimedia', 'choose_file' => 'Elegir imagen', 'no_file_selected' => 'Ninguna imagen seleccionada', 'load_more' => 'Cargar más', 'polling_stopped' => 'Las actualizaciones de estado se detuvieron tras varios errores de conexión. Vuelve a intentar la subida.'],
     'validation' => [
         'picker_ready_workspace' => 'Elige una imagen lista de este espacio de trabajo.',
         'procedure_images_unavailable' => 'Una o varias imágenes del procedimiento no están disponibles, siguen procesándose o pertenecen a otro espacio de trabajo.',

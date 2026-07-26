@@ -252,9 +252,13 @@ it('renders a lazy paginated picker library contract without eager asset cards',
         ->assertSeeHtml('x-model="search"')
         ->assertSeeHtml('data-media-picker-assets-url')
         ->assertSeeHtml('data-media-picker-upload-form')
+        ->assertSeeHtml('data-media-picker-file-input')
+        ->assertSeeHtml('data-media-picker-file-trigger')
+        ->assertSeeHtml('x-on:change="selectUploadFile($event)"')
         ->assertSeeHtml('x-on:click="uploadNew()"')
         ->assertSeeHtml('x-for="asset in assets"')
         ->assertSeeHtml('loadMoreAssets()')
+        ->assertDontSeeHtml('data-media-picker-file-input multiple')
         ->assertDontSeeHtml('data-media-picker-server-asset');
 });
 

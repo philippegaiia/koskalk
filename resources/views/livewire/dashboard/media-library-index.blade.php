@@ -10,17 +10,135 @@
             </div>
 
             @if ($canUpdateMedia)
-                <form wire:submit="uploadAsset" class="flex flex-col gap-2 sm:items-end">
-                    <label class="text-sm font-medium text-[var(--color-ink-strong)]">
-                        <span class="sr-only">{{ __('media_library.choose_upload') }}</span>
-                        <input wire:model="upload" type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif" @disabled(! $usage['allowed']) @if (! $usage['allowed']) data-media-upload-disabled @endif class="block max-w-72 text-sm text-[var(--color-ink-soft)] file:mr-3 file:rounded-full file:border-0 file:bg-[var(--color-field-muted)] file:px-4 file:py-2.5 file:font-medium file:text-[var(--color-ink-strong)] disabled:cursor-not-allowed disabled:opacity-60" />
-                    </label>
+                <form
+                    x-data="mediaLibraryUploader({
+                        livewire: $wire,
+                        maxFiles: 5,
+                        remaining: @js($usage['remaining']),
+                        messages: {
+                            selectedFiles: @js(__('media_library.selected_files')),
+                            batchLimit: @js(__('media_library.batch_limit')),
+                            batchPosition: @js(__('media_library.batch_position')),
+                            batchQuota: @js(__('media_library.batch_quota')),
+                            uploadFailed: @js(__('media_library.batch_file_failed')),
+                            removeFile: @js(__('media_library.remove_file')),
+                        },
+                    })"
+                    x-on:submit.prevent="uploadBatch()"
+                    class="flex w-full max-w-md flex-col gap-3 lg:items-end"
+                >
+                    <input
+                        id="media-library-upload"
+                        x-ref="fileInput"
+                        x-on:change="selectFiles($event)"
+                        data-media-library-file-input
+                        type="file"
+                        multiple
+                        accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                        @disabled(! $usage['allowed'])
+                        @if (! $usage['allowed']) data-media-upload-disabled @endif
+                        class="peer sr-only"
+                    />
+                    <div class="flex w-full min-h-12 flex-wrap items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] p-2">
+                        <label
+                            for="media-library-upload"
+                            aria-disabled="{{ $usage['allowed'] ? 'false' : 'true' }}"
+                            class="sk-btn cursor-pointer border border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)] aria-disabled:cursor-not-allowed aria-disabled:opacity-60"
+                        >
+                            {{ __('media_library.choose_files') }}
+                        </label>
+                        <span
+                            class="min-w-0 flex-1 truncate text-sm text-[var(--color-ink-soft)]"
+                            x-text="files.length ? choiceMessage('selectedFiles', files.length) : @js(__('media_library.picker.no_file_selected'))"
+                        ></span>
+                    </div>
+
+                    <div
+                        x-cloak
+                        x-show="files.length"
+                        data-media-library-selected-files
+                        class="w-full overflow-hidden rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)]"
+                    >
+                        <template x-for="(entry, index) in files" x-bind:key="entry.id">
+                            <div class="border-b border-[var(--color-line)] px-3 py-2.5 last:border-b-0">
+                                <div class="flex items-center gap-3">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="truncate text-sm font-medium text-[var(--color-ink-strong)]" x-text="entry.name"></p>
+                                        <p x-show="entry.error" x-text="entry.error" role="alert" class="mt-1 text-xs text-[var(--color-danger-strong)]"></p>
+                                    </div>
+                                    <span
+                                        x-show="entry.status === 'uploading'"
+                                        class="text-xs tabular-nums text-[var(--color-ink-soft)]"
+                                        x-text="`${entry.progress}%`"
+                                    ></span>
+                                    <button
+                                        type="button"
+                                        data-media-library-remove-file
+                                        x-on:click="removeFile(index)"
+                                        x-bind:disabled="uploading"
+                                        x-bind:aria-label="message('removeFile', { name: entry.name })"
+                                        class="grid size-8 shrink-0 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
+                                    >
+                                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="1.8">
+                                            <path stroke-linecap="round" d="M6 6l12 12M18 6 6 18" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <p
+                        x-cloak
+                        x-show="overBatchLimit"
+                        data-media-library-batch-limit
+                        role="alert"
+                        class="w-full text-xs leading-5 text-[var(--color-danger-strong)]"
+                        x-text="message('batchLimit', { max: maxFiles, count: batchOverflow })"
+                    ></p>
+                    <p
+                        x-cloak
+                        x-show="overQuotaLimit"
+                        role="alert"
+                        class="w-full text-xs leading-5 text-[var(--color-danger-strong)]"
+                        x-text="message('batchQuota', { count: remaining })"
+                    ></p>
                     @error('upload')
-                        <p class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                        <p class="w-full text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                     @enderror
-                    <button type="submit" @disabled(! $usage['allowed']) wire:loading.attr="disabled" wire:target="uploadAsset,upload" class="sk-btn sk-btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-60">
-                        <span wire:loading.remove wire:target="uploadAsset">{{ __('media_library.upload') }}</span>
-                        <span wire:loading wire:target="uploadAsset">{{ __('media_library.uploading') }}</span>
+
+                    <div
+                        x-cloak
+                        x-show="uploading"
+                        data-media-library-batch-progress
+                        role="status"
+                        aria-live="polite"
+                        aria-atomic="true"
+                        class="w-full space-y-1.5"
+                    >
+                        <div class="flex items-center justify-between gap-3 text-xs text-[var(--color-ink-soft)]">
+                            <span class="inline-flex items-center gap-2">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4 motion-safe:animate-spin" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" d="M12 3a9 9 0 1 1-9 9" />
+                                </svg>
+                                <span x-text="message('batchPosition', { current: currentIndex + 1, total: files.length })"></span>
+                            </span>
+                            <span class="tabular-nums" x-text="`${currentProgress}%`"></span>
+                        </div>
+                        <div
+                            role="progressbar"
+                            aria-valuemin="0"
+                            aria-valuemax="100"
+                            x-bind:aria-valuenow="currentProgress"
+                            class="h-1.5 w-full overflow-hidden rounded-full bg-[var(--color-field-muted)]"
+                        >
+                            <div class="h-full rounded-full bg-[var(--color-accent)] transition-[width] duration-150" x-bind:style="`width: ${currentProgress}%`"></div>
+                        </div>
+                    </div>
+
+                    <button type="submit" x-bind:disabled="! canUpload" class="sk-btn sk-btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-60">
+                        <span x-show="! uploading">{{ __('media_library.upload_selected') }}</span>
+                        <span x-show="uploading">{{ __('media_library.uploading') }}</span>
                     </button>
                 </form>
             @endif

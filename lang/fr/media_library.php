@@ -7,7 +7,15 @@ $translations = array_replace_recursive(require lang_path('en/media_library.php'
 ]);
 
 return array_replace_recursive($translations, [
-    'picker' => ['insert_from_media_library' => 'Insérer depuis la médiathèque', 'load_more' => 'Charger plus', 'polling_stopped' => 'Les mises à jour d’état ont été arrêtées après plusieurs erreurs de connexion. Réessayez l’import.'],
+    'choose_files' => 'Choisir des images',
+    'selected_files' => '{1} :count image sélectionnée|[2,*] :count images sélectionnées',
+    'upload_selected' => 'Importer les images sélectionnées',
+    'batch_limit' => 'Limite de :max images par import. Réduisez la sélection de :count pour continuer.',
+    'batch_position' => 'Importation de :current sur :total',
+    'remove_file' => 'Retirer :name',
+    'batch_file_failed' => 'Impossible d’importer :name. Réessayez ou retirez le fichier.',
+    'batch_quota' => 'Capacité restante de votre forfait : :count médias.',
+    'picker' => ['insert_from_media_library' => 'Insérer depuis la médiathèque', 'choose_file' => 'Choisir une image', 'no_file_selected' => 'Aucune image sélectionnée', 'load_more' => 'Charger plus', 'polling_stopped' => 'Les mises à jour d’état ont été arrêtées après plusieurs erreurs de connexion. Réessayez l’import.'],
     'validation' => [
         'picker_ready_workspace' => 'Choisissez une image prête dans cet espace de travail.',
         'procedure_images_unavailable' => 'Une ou plusieurs images du mode opératoire sont indisponibles, encore en cours de traitement ou hors de cet espace de travail.',

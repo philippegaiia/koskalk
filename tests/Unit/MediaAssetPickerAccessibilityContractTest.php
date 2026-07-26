@@ -75,3 +75,47 @@ it('renders upload processing feedback as a polite atomic status region', functi
         ->toContain('aria-live="polite"')
         ->toContain('aria-atomic="true"');
 });
+
+it('uses the application accent color for upload progress', function () {
+    $pickerView = file_get_contents(
+        resource_path('views/forms/components/media-asset-picker.blade.php'),
+    );
+
+    expect($pickerView)
+        ->toContain('data-media-picker-upload-progress-bar')
+        ->toContain('bg-[var(--color-accent)]')
+        ->not->toContain('<progress');
+});
+
+it('tracks and clears the single modal upload filename', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+
+const moduleUrl = pathToFileURL(`${process.cwd()}/resources/js/media-asset-picker.js`).href;
+const { createMediaAssetPicker } = await import(moduleUrl);
+const picker = createMediaAssetPicker({
+    embedded: false,
+    assetsUrl: '/media',
+    livewire: {},
+    statePath: 'data.featured_media_asset_id',
+    state: null,
+    multiple: false,
+    maximumItems: 1,
+    preserveAspectRatio: false,
+    messages: {},
+});
+
+picker.$refs = { uploadInput: { value: 'selected' } };
+picker.selectUploadFile({ target: { files: [{ name: 'soap-front.png' }] } });
+assert.equal(picker.uploadFilename, 'soap-front.png');
+picker.clearUploadFile();
+assert.equal(picker.uploadFilename, '');
+assert.equal(picker.$refs.uploadInput.value, '');
+JS;
+
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});

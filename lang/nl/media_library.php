@@ -7,7 +7,15 @@ $translations = array_replace_recursive(require lang_path('en/media_library.php'
 ]);
 
 return array_replace_recursive($translations, [
-    'picker' => ['insert_from_media_library' => 'Invoegen uit mediabibliotheek', 'load_more' => 'Meer laden', 'polling_stopped' => 'Statusupdates zijn gestopt na herhaalde verbindingsfouten. Probeer de upload opnieuw.'],
+    'choose_files' => 'Afbeeldingen kiezen',
+    'selected_files' => '{1} :count afbeelding geselecteerd|[2,*] :count afbeeldingen geselecteerd',
+    'upload_selected' => 'Geselecteerde afbeeldingen uploaden',
+    'batch_limit' => 'Maximaal :max afbeeldingen per upload. Verminder de selectie met :count om door te gaan.',
+    'batch_position' => ':current van :total uploaden',
+    'remove_file' => ':name verwijderen',
+    'batch_file_failed' => ':name kon niet worden geüpload. Probeer opnieuw of verwijder het bestand.',
+    'batch_quota' => 'Resterende mediacapaciteit van je abonnement: :count.',
+    'picker' => ['insert_from_media_library' => 'Invoegen uit mediabibliotheek', 'choose_file' => 'Afbeelding kiezen', 'no_file_selected' => 'Geen afbeelding geselecteerd', 'load_more' => 'Meer laden', 'polling_stopped' => 'Statusupdates zijn gestopt na herhaalde verbindingsfouten. Probeer de upload opnieuw.'],
     'validation' => [
         'picker_ready_workspace' => 'Kies een gereed beeld uit deze werkruimte.',
         'procedure_images_unavailable' => 'Een of meer procedureafbeeldingen zijn niet beschikbaar, worden nog verwerkt of horen bij een andere werkruimte.',

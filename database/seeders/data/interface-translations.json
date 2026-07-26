@@ -4293,6 +4293,61 @@
         },
         {
             "group": "media_library",
+            "key": "batch_file_failed",
+            "text": {
+                "de": ":name konnte nicht hochgeladen werden. Versuchen Sie es erneut oder entfernen Sie die Datei.",
+                "es": "No se pudo subir :name. Inténtalo de nuevo o elimina el archivo.",
+                "fr": "Impossible d’importer :name. Réessayez ou retirez le fichier.",
+                "it": "Impossibile caricare :name. Riprova o rimuovi il file.",
+                "nl": ":name kon niet worden geüpload. Probeer opnieuw of verwijder het bestand."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "batch_limit",
+            "text": {
+                "de": "Maximal :max Bilder pro Upload. Reduzieren Sie die Auswahl um :count, um fortzufahren.",
+                "es": "Máximo :max imágenes por carga. Reduce la selección en :count para continuar.",
+                "fr": "Limite de :max images par import. Réduisez la sélection de :count pour continuer.",
+                "it": "Massimo :max immagini per caricamento. Riduci la selezione di :count per continuare.",
+                "nl": "Maximaal :max afbeeldingen per upload. Verminder de selectie met :count om door te gaan."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "batch_position",
+            "text": {
+                "de": "Bild :current von :total wird hochgeladen",
+                "es": "Subiendo :current de :total",
+                "fr": "Importation de :current sur :total",
+                "it": "Caricamento :current di :total",
+                "nl": ":current van :total uploaden"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "batch_quota",
+            "text": {
+                "de": "Verbleibende Medienkapazität Ihres Tarifs: :count.",
+                "es": "Capacidad multimedia restante de tu plan: :count.",
+                "fr": "Capacité restante de votre forfait : :count médias.",
+                "it": "Capacità multimediale rimanente del piano: :count.",
+                "nl": "Resterende mediacapaciteit van je abonnement: :count."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "choose_files",
+            "text": {
+                "de": "Bilder auswählen",
+                "es": "Elegir imágenes",
+                "fr": "Choisir des images",
+                "it": "Scegli immagini",
+                "nl": "Afbeeldingen kiezen"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "choose_upload",
             "text": {
                 "de": "Bild zum Hochladen auswählen",
@@ -4700,6 +4755,17 @@
         },
         {
             "group": "media_library",
+            "key": "picker.choose_file",
+            "text": {
+                "de": "Bild auswählen",
+                "es": "Elegir imagen",
+                "fr": "Choisir une image",
+                "it": "Scegli immagine",
+                "nl": "Afbeelding kiezen"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "picker.choose_multiple",
             "text": {
                 "de": "Bilder auswählen",
@@ -4828,6 +4894,17 @@
                 "fr": "Gérer la médiathèque",
                 "it": "Gestisci libreria multimediale",
                 "nl": "Mediabibliotheek beheren"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "picker.no_file_selected",
+            "text": {
+                "de": "Kein Bild ausgewählt",
+                "es": "Ninguna imagen seleccionada",
+                "fr": "Aucune image sélectionnée",
+                "it": "Nessuna immagine selezionata",
+                "nl": "Geen afbeelding geselecteerd"
             }
         },
         {
@@ -5096,6 +5173,17 @@
         },
         {
             "group": "media_library",
+            "key": "remove_file",
+            "text": {
+                "de": ":name entfernen",
+                "es": "Eliminar :name",
+                "fr": "Retirer :name",
+                "it": "Rimuovi :name",
+                "nl": ":name verwijderen"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "rename",
             "text": {
                 "de": "Umbenennen",
@@ -5195,6 +5283,17 @@
         },
         {
             "group": "media_library",
+            "key": "selected_files",
+            "text": {
+                "de": "{1} :count Bild ausgewählt|[2,*] :count Bilder ausgewählt",
+                "es": "{1} :count imagen seleccionada|[2,*] :count imágenes seleccionadas",
+                "fr": "{1} :count image sélectionnée|[2,*] :count images sélectionnées",
+                "it": "{1} :count immagine selezionata|[2,*] :count immagini selezionate",
+                "nl": "{1} :count afbeelding geselecteerd|[2,*] :count afbeeldingen geselecteerd"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "statuses.all",
             "text": {
                 "de": "Beliebiger Status",
@@ -5257,6 +5356,17 @@
                 "fr": "Importer une image",
                 "it": "Carica immagine",
                 "nl": "Afbeelding uploaden"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "upload_selected",
+            "text": {
+                "de": "Ausgewählte Bilder hochladen",
+                "es": "Subir imágenes seleccionadas",
+                "fr": "Importer les images sélectionnées",
+                "it": "Carica le immagini selezionate",
+                "nl": "Geselecteerde afbeeldingen uploaden"
             }
         },
         {

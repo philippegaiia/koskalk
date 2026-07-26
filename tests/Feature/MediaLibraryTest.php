@@ -167,7 +167,7 @@ it('hides rename controls and forbids rename actions for workspace viewers', fun
 
     Livewire::actingAs($viewer)
         ->test(MediaLibraryIndex::class)
-        ->assertDontSeeHtml('wire:submit="uploadAsset"')
+        ->assertDontSeeHtml('data-media-library-file-input')
         ->assertDontSee(__('media_library.upload'))
         ->assertDontSee(__('media_library.rename'))
         ->assertDontSee(__('media_library.crop.adjust'))
@@ -193,13 +193,13 @@ it('shows update and retry controls but no remove controls to workspace editors'
 
     Livewire::actingAs($editor)
         ->test(MediaLibraryIndex::class)
-        ->assertSeeHtml('wire:submit="uploadAsset"')
-        ->assertSee(__('media_library.upload'))
+        ->assertSeeHtml('data-media-library-file-input')
+        ->assertSee(__('media_library.upload_selected'))
         ->assertSeeHtml('data-media-settings-trigger')
         ->call('openAssetPanel', $readyAsset->id, 'settings')
         ->assertSee(__('media_library.crop.adjust'))
         ->assertSee(__('media_library.actions.retry'))
-        ->assertDontSee(__('media_library.actions.remove'));
+        ->assertDontSeeHtml('wire:click="remove(');
 });
 
 it('shows a validation error instead of a server error when pending storage is unavailable', function () {
@@ -363,6 +363,25 @@ it('disables uploads at the media asset quota while retaining existing assets', 
         ->assertSee('1 of 1 media assets used')
         ->assertSee('Existing assets remain available')
         ->assertSeeHtml('data-media-upload-disabled');
+});
+
+it('shows progress while the selected image is temporarily uploading', function () {
+    [$user] = mediaLibraryWorkspace();
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->assertSeeHtml('x-data="mediaLibraryUploader(')
+        ->assertSeeHtml('data-media-library-file-input')
+        ->assertSeeHtml('multiple')
+        ->assertSeeHtml('data-media-library-selected-files')
+        ->assertSeeHtml('data-media-library-remove-file')
+        ->assertSeeHtml('data-media-library-batch-limit')
+        ->assertSeeHtml('data-media-library-batch-progress')
+        ->assertSeeHtml('x-bind:disabled="! canUpload"')
+        ->assertSeeHtml('bg-[var(--color-accent)]')
+        ->assertDontSeeHtml('<progress')
+        ->assertSeeHtml('role="status"')
+        ->assertSeeHtml('animate-spin');
 });
 
 it('renders a dense responsive thumbnail grid', function () {
@@ -699,14 +718,55 @@ it('keeps a failed picker upload failed when retry cannot reserve quota', functi
     expect($failed->refresh()->status)->toBe(MediaAssetStatus::Failed);
 });
 
-it('provides localized media picker strings in every supported locale', function (string $locale) {
+it('provides localized media picker strings in every supported locale', function (string $locale, array $expected) {
     app()->setLocale($locale);
 
     expect(__('media_library.picker.library'))->not->toBe('Library')
         ->and(__('media_library.picker.upload_new'))->not->toBe('Upload new')
         ->and(__('media_library.picker.retry'))->not->toBe('Retry')
-        ->and(__('media_library.picker.search_label'))->not->toBe('Search media assets');
-})->with(['de', 'es', 'fr', 'it', 'nl']);
+        ->and(__('media_library.picker.search_label'))->not->toBe('Search media assets')
+        ->and(__('media_library.choose_files'))->toBe($expected['choose_files'])
+        ->and(__('media_library.upload_selected'))->toBe($expected['upload_selected'])
+        ->and(__('media_library.batch_position', ['current' => 2, 'total' => 5]))->toBe($expected['batch_position'])
+        ->and(__('media_library.picker.choose_file'))->toBe($expected['choose_file'])
+        ->and(__('media_library.picker.no_file_selected'))->toBe($expected['no_file_selected']);
+})->with([
+    'de' => ['de', [
+        'choose_files' => 'Bilder auswählen',
+        'upload_selected' => 'Ausgewählte Bilder hochladen',
+        'batch_position' => 'Bild 2 von 5 wird hochgeladen',
+        'choose_file' => 'Bild auswählen',
+        'no_file_selected' => 'Kein Bild ausgewählt',
+    ]],
+    'es' => ['es', [
+        'choose_files' => 'Elegir imágenes',
+        'upload_selected' => 'Subir imágenes seleccionadas',
+        'batch_position' => 'Subiendo 2 de 5',
+        'choose_file' => 'Elegir imagen',
+        'no_file_selected' => 'Ninguna imagen seleccionada',
+    ]],
+    'fr' => ['fr', [
+        'choose_files' => 'Choisir des images',
+        'upload_selected' => 'Importer les images sélectionnées',
+        'batch_position' => 'Importation de 2 sur 5',
+        'choose_file' => 'Choisir une image',
+        'no_file_selected' => 'Aucune image sélectionnée',
+    ]],
+    'it' => ['it', [
+        'choose_files' => 'Scegli immagini',
+        'upload_selected' => 'Carica le immagini selezionate',
+        'batch_position' => 'Caricamento 2 di 5',
+        'choose_file' => 'Scegli immagine',
+        'no_file_selected' => 'Nessuna immagine selezionata',
+    ]],
+    'nl' => ['nl', [
+        'choose_files' => 'Afbeeldingen kiezen',
+        'upload_selected' => 'Geselecteerde afbeeldingen uploaden',
+        'batch_position' => '2 van 5 uploaden',
+        'choose_file' => 'Afbeelding kiezen',
+        'no_file_selected' => 'Geen afbeelding geselecteerd',
+    ]],
+]);
 
 it('paginates and searches picker assets without disclosing other workspaces', function () {
     [$user, $workspace] = mediaLibraryWorkspace();

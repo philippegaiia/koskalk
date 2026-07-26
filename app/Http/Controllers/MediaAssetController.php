@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\MediaAssetStatus;
 use App\Models\MediaAsset;
 use App\Models\User;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -16,7 +15,7 @@ class MediaAssetController extends Controller
         Request $request,
         MediaAsset $mediaAsset,
         string $conversion,
-    ): StreamedResponse|RedirectResponse {
+    ): StreamedResponse {
         $user = $request->user();
 
         abort_unless(
@@ -48,10 +47,6 @@ class MediaAssetController extends Controller
         $disk = Storage::disk($diskName);
 
         abort_unless($disk->exists($path), 404);
-
-        if (config("filesystems.disks.{$diskName}.driver") !== 'local') {
-            return redirect()->away($media->getTemporaryUrl(now()->addMinutes(5), $conversionName));
-        }
 
         return $disk->response($path, null, [
             'Content-Disposition' => 'inline',

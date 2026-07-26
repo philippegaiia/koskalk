@@ -497,6 +497,42 @@ it('serves only allowlisted conversions to authorized workspace members', functi
         ->assertNotFound();
 });
 
+it('streams private remote media through the authorized application route', function () {
+    Storage::fake('r2_private');
+    config()->set('filesystems.disks.r2_private.driver', 's3');
+    config()->set('media.asset_disk', 'r2_private');
+    config()->set('media-library.disk_name', 'r2_private');
+    config()->set('media-library.conversions_disk_name', 'r2_private');
+    Storage::disk('r2_private')->buildTemporaryUrlsUsing(
+        fn (string $path): string => 'https://private-media.example.test/'.$path,
+    );
+
+    [$owner, $workspace] = mediaLibraryWorkspace();
+    $viewer = User::factory()->create([
+        'email_verified_at' => now(),
+        'active_workspace_id' => $workspace->id,
+    ]);
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $asset->addMedia(UploadedFile::fake()->image('master.webp'))
+        ->usingFileName('opaque.webp')
+        ->toMediaCollection('master', 'r2_private');
+    $media = $asset->getFirstMedia('master');
+    $expectedThumbnail = Storage::disk('r2_private')->get(
+        $media->getPathRelativeToRoot('thumbnail'),
+    );
+
+    $this->actingAs($viewer)
+        ->get(route('media.show', [$asset, 'thumbnail']))
+        ->assertOk()
+        ->assertHeader('Content-Type', 'image/webp')
+        ->assertHeader('X-Content-Type-Options', 'nosniff')
+        ->assertHeaderMissing('Location')
+        ->assertStreamedContent($expectedThumbnail);
+});
+
 it('reports processing status only to authorized workspace members', function () {
     [$user, $workspace] = mediaLibraryWorkspace();
     $asset = MediaAsset::factory()->create([

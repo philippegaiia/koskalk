@@ -57,6 +57,8 @@ class MediaLibraryIndex extends Component
     /** @var array<int, int|string> */
     public array $selectedLabelIds = [];
 
+    public ?int $labelToAssign = null;
+
     /** @var array<int, string> */
     public array $labelNames = [];
 
@@ -94,6 +96,7 @@ class MediaLibraryIndex extends Component
         $this->usageSearch = '';
         $this->displayNames[$asset->id] = $asset->displayName();
         $this->selectedLabelIds = $asset->labels()->pluck('media_labels.id')->all();
+        $this->labelToAssign = null;
         $this->labelNames = MediaLabel::query()
             ->where('workspace_id', $asset->workspace_id)
             ->pluck('name', 'id')
@@ -113,6 +116,7 @@ class MediaLibraryIndex extends Component
         $this->assetPanelTab = 'settings';
         $this->usageSearch = '';
         $this->selectedLabelIds = [];
+        $this->labelToAssign = null;
         $this->newLabelName = '';
     }
 
@@ -257,18 +261,39 @@ class MediaLibraryIndex extends Component
         }
     }
 
+    public function assignSelectedLabel(
+        CurrentAppUserResolver $resolver,
+        MediaLabelService $labels,
+    ): void {
+        if ($this->labelToAssign === null) {
+            return;
+        }
+
+        $this->syncSelectedLabels(
+            [...$this->selectedLabelIds, $this->labelToAssign],
+            $resolver,
+            $labels,
+        );
+        $this->labelToAssign = null;
+    }
+
+    public function removeSelectedLabel(
+        int $labelId,
+        CurrentAppUserResolver $resolver,
+        MediaLabelService $labels,
+    ): void {
+        $this->syncSelectedLabels(
+            $this->withoutId($this->selectedLabelIds, $labelId),
+            $resolver,
+            $labels,
+        );
+    }
+
     public function saveSelectedLabels(
         CurrentAppUserResolver $resolver,
         MediaLabelService $labels,
     ): void {
-        $user = $resolver->resolve();
-        $asset = $this->selectedAssetId === null
-            ? null
-            : $this->workspaceAsset($this->selectedAssetId, $user);
-        abort_unless($user instanceof User && $asset instanceof MediaAsset, 404);
-
-        $labels->sync($user, $asset, $this->selectedLabelIds);
-        $this->showAppNotification(__('media_library.messages.labels_updated'));
+        $this->syncSelectedLabels($this->selectedLabelIds, $resolver, $labels);
     }
 
     public function renameLabel(
@@ -476,6 +501,36 @@ class MediaLibraryIndex extends Component
             ])
             ->withCount('usages')
             ->find($this->selectedAssetId);
+    }
+
+    /**
+     * @param  array<int, int|string>  $labelIds
+     */
+    private function syncSelectedLabels(
+        array $labelIds,
+        CurrentAppUserResolver $resolver,
+        MediaLabelService $labels,
+    ): void {
+        $user = $resolver->resolve();
+        $asset = $this->selectedAssetId === null
+            ? null
+            : $this->workspaceAsset($this->selectedAssetId, $user);
+        abort_unless($user instanceof User && $asset instanceof MediaAsset, 404);
+
+        try {
+            $labels->sync($user, $asset, $labelIds);
+        } catch (ValidationException $exception) {
+            $this->addError('labelToAssign', $exception->validator->errors()->first('labels'));
+
+            return;
+        }
+
+        $this->resetErrorBag('labelToAssign');
+        $this->selectedLabelIds = $asset->labels()
+            ->orderBy('media_asset_label.created_at')
+            ->pluck('media_labels.id')
+            ->all();
+        $this->showAppNotification(__('media_library.messages.labels_updated'));
     }
 
     /**

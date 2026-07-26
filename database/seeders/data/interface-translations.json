@@ -4667,6 +4667,28 @@
         },
         {
             "group": "media_library",
+            "key": "labels.assign",
+            "text": {
+                "de": "Label hinzufügen",
+                "es": "Añadir etiqueta",
+                "fr": "Ajouter l’étiquette",
+                "it": "Aggiungi etichetta",
+                "nl": "Label toevoegen"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.choose",
+            "text": {
+                "de": "Label auswählen",
+                "es": "Elegir una etiqueta",
+                "fr": "Choisir une étiquette",
+                "it": "Scegli un’etichetta",
+                "nl": "Kies een label"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "labels.duplicate",
             "text": {
                 "de": "Dieses Label ist bereits vorhanden.",
@@ -4744,6 +4766,17 @@
         },
         {
             "group": "media_library",
+            "key": "labels.none_assigned",
+            "text": {
+                "de": "Keine Labels zugewiesen.",
+                "es": "No hay etiquetas asignadas.",
+                "fr": "Aucune étiquette attribuée.",
+                "it": "Nessuna etichetta assegnata.",
+                "nl": "Geen labels toegewezen."
+            }
+        },
+        {
+            "group": "media_library",
             "key": "labels.rate_limited",
             "text": {
                 "de": "Warten Sie bitte :seconds Sekunden, bevor Sie ein weiteres Label erstellen.",
@@ -4751,6 +4784,17 @@
                 "fr": "Veuillez patienter :seconds secondes avant de créer une autre étiquette.",
                 "it": "Attendi :seconds secondi prima di creare un’altra etichetta.",
                 "nl": "Wacht :seconds seconden voordat je nog een label maakt."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "labels.remove",
+            "text": {
+                "de": ":name entfernen",
+                "es": "Eliminar :name",
+                "fr": "Retirer :name",
+                "it": "Rimuovi :name",
+                "nl": ":name verwijderen"
             }
         },
         {

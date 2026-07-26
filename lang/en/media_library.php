@@ -4,7 +4,9 @@ return [
     'labels' => [
         'add' => 'Add',
         'apply_on_upload' => 'Apply labels to these files',
+        'assign' => 'Add label',
         'asset_limit' => 'An asset can have at most :count labels.',
+        'choose' => 'Choose a label',
         'duplicate' => 'That label already exists.',
         'filter' => 'Labels',
         'heading' => 'Labels',
@@ -12,7 +14,9 @@ return [
         'name_invalid' => 'Enter a label of no more than :count characters.',
         'new_placeholder' => 'New label',
         'none' => 'Labels are optional. Add one only when it helps organize this workspace.',
+        'none_assigned' => 'No labels assigned.',
         'rate_limited' => 'Please wait :seconds seconds before creating another label.',
+        'remove' => 'Remove :name',
         'save' => 'Save labels',
     ],
     'processing' => [

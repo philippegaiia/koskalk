@@ -151,6 +151,38 @@ it('creates and assigns labels from the asset inspector', function () {
         ->and($asset->fresh()->labels->sole()->is($label))->toBeTrue();
 });
 
+it('assigns and removes labels from the asset inspector select', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $assignedLabel = MediaLabel::factory()->create([
+        'workspace_id' => $workspace->id,
+        'name' => 'Ingredients',
+        'normalized_name' => 'ingredients',
+    ]);
+    $availableLabel = MediaLabel::factory()->create([
+        'workspace_id' => $workspace->id,
+        'name' => 'Certificates',
+        'normalized_name' => 'certificates',
+    ]);
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $asset->labels()->attach($assignedLabel);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->call('openAssetPanel', $asset->id, 'settings')
+        ->assertSeeHtml('data-media-assigned-labels')
+        ->assertSeeHtml('data-media-label-select')
+        ->set('labelToAssign', $availableLabel->id)
+        ->call('assignSelectedLabel')
+        ->assertSet('labelToAssign', null)
+        ->assertSet('selectedLabelIds', [$assignedLabel->id, $availableLabel->id])
+        ->call('removeSelectedLabel', $assignedLabel->id)
+        ->assertSet('selectedLabelIds', [$availableLabel->id])
+        ->assertHasNoErrors();
+
+    expect($asset->fresh()->labels()->pluck('media_labels.id')->all())
+        ->toBe([$availableLabel->id]);
+});
+
 it('renames an asset without changing its upload metadata or physical media filename', function () {
     Storage::fake('local');
     config()->set('media.asset_disk', 'local');

@@ -421,24 +421,64 @@
                                 </form>
 
                                 <section class="space-y-3 border-t border-[var(--color-line)] pt-4">
+                                    @php
+                                        $selectedPanelLabelIds = collect($selectedLabelIds)->map(static fn ($id): int => (int) $id);
+                                        $assignedPanelLabels = $labels->whereIn('id', $selectedPanelLabelIds);
+                                        $availablePanelLabels = $labels->whereNotIn('id', $selectedPanelLabelIds);
+                                    @endphp
+
                                     <div class="flex items-center justify-between gap-3">
                                         <h3 class="text-xs font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.labels.heading') }}</h3>
                                         <span class="text-[10px] text-[var(--color-ink-soft)]">{{ count($selectedLabelIds) }}/8</span>
                                     </div>
 
-                                    @if ($labels->isNotEmpty())
-                                        <div class="grid grid-cols-2 gap-2">
-                                            @foreach ($labels as $label)
-                                                <label class="flex min-w-0 items-center gap-2 text-xs text-[var(--color-ink-strong)]">
-                                                    <input wire:model="selectedLabelIds" type="checkbox" value="{{ $label->id }}" class="rounded border-[var(--color-line)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]" />
-                                                    <span class="truncate">{{ $label->name }}</span>
-                                                </label>
+                                    @if ($assignedPanelLabels->isNotEmpty())
+                                        <div data-media-assigned-labels class="flex flex-wrap gap-1.5">
+                                            @foreach ($assignedPanelLabels as $label)
+                                                <span wire:key="assigned-media-label-{{ $label->id }}" class="inline-flex min-w-0 items-center gap-1 rounded-full border border-[var(--color-line)] bg-[var(--color-accent-soft)] py-0.5 pl-2.5 pr-1 text-xs text-[var(--color-ink-strong)]">
+                                                    <span class="max-w-44 truncate">{{ $label->name }}</span>
+                                                    <button
+                                                        type="button"
+                                                        wire:click="removeSelectedLabel({{ $label->id }})"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="removeSelectedLabel({{ $label->id }})"
+                                                        aria-label="{{ __('media_library.labels.remove', ['name' => $label->name]) }}"
+                                                        class="grid size-6 shrink-0 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"
+                                                    >
+                                                        <span aria-hidden="true">&times;</span>
+                                                    </button>
+                                                </span>
                                             @endforeach
                                         </div>
-                                        <button type="button" wire:click="saveSelectedLabels" class="sk-btn px-3 py-2 text-xs">{{ __('media_library.labels.save') }}</button>
+                                    @elseif ($labels->isNotEmpty())
+                                        <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.labels.none_assigned') }}</p>
                                     @else
                                         <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.labels.none') }}</p>
                                     @endif
+
+                                    @if ($availablePanelLabels->isNotEmpty() && count($selectedLabelIds) < 8)
+                                        <form wire:submit="assignSelectedLabel" class="flex gap-2">
+                                            <label class="sr-only" for="media-label-select">{{ __('media_library.labels.choose') }}</label>
+                                            <select
+                                                id="media-label-select"
+                                                data-media-label-select
+                                                wire:model="labelToAssign"
+                                                required
+                                                class="min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-xs text-[var(--color-ink-strong)]"
+                                            >
+                                                <option value="">{{ __('media_library.labels.choose') }}</option>
+                                                @foreach ($availablePanelLabels as $label)
+                                                    <option value="{{ $label->id }}">{{ $label->name }}</option>
+                                                @endforeach
+                                            </select>
+                                            <button type="submit" class="sk-btn px-3 py-2 text-xs">{{ __('media_library.labels.assign') }}</button>
+                                        </form>
+                                    @elseif (count($selectedLabelIds) >= 8)
+                                        <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.labels.asset_limit', ['count' => 8]) }}</p>
+                                    @endif
+                                    @error('labelToAssign')
+                                        <p class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                                    @enderror
 
                                     <form wire:submit="createLabel" class="flex gap-2">
                                         <input wire:model="newLabelName" type="text" maxlength="30" placeholder="{{ __('media_library.labels.new_placeholder') }}" class="min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-xs text-[var(--color-ink-strong)]" />

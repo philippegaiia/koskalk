@@ -2,9 +2,11 @@
 
 use App\Jobs\NormalizeMediaAssetJob;
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\MediaLabel;
 use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\User;
@@ -60,9 +62,46 @@ it('creates workspace media assets with an opaque public id and processing state
 
     expect($asset->public_id)->toBeUuid()
         ->and($asset->status)->toBe(MediaAssetStatus::Processing)
+        ->and($asset->type)->toBe(MediaAssetType::Image)
         ->and($asset->workspace->is($workspace))->toBeTrue()
         ->and($asset->uploadedBy->is($uploader))->toBeTrue()
         ->and($asset->getRouteKeyName())->toBe('public_id');
+});
+
+it('stores pdf assets with an explicit media type', function () {
+    $asset = MediaAsset::factory()->pdf()->create();
+
+    expect($asset->type)->toBe(MediaAssetType::Pdf)
+        ->and($asset->original_mime_type)->toBe('application/pdf')
+        ->and($asset->original_filename)->toEndWith('.pdf');
+});
+
+it('attaches workspace labels to media assets without duplicate normalized names', function () {
+    $workspace = Workspace::factory()->create();
+    $creator = User::factory()->create();
+    $asset = MediaAsset::factory()->create(['workspace_id' => $workspace->id]);
+    $label = MediaLabel::factory()->create([
+        'workspace_id' => $workspace->id,
+        'created_by_user_id' => $creator->id,
+        'name' => 'Certificates',
+        'normalized_name' => 'certificates',
+    ]);
+
+    $asset->labels()->attach($label);
+
+    expect($asset->fresh()->labels)->toHaveCount(1)
+        ->and($label->fresh()->mediaAssets->sole()->is($asset))->toBeTrue()
+        ->and($workspace->fresh()->mediaLabels->sole()->is($label))->toBeTrue()
+        ->and($creator->fresh()->createdMediaLabels->sole()->is($label))->toBeTrue();
+
+    expect(fn () => MediaLabel::factory()->create([
+        'workspace_id' => $workspace->id,
+        'normalized_name' => 'certificates',
+    ]))->toThrow(QueryException::class);
+
+    $label->delete();
+
+    expect($asset->fresh()->labels)->toBeEmpty();
 });
 
 it('records reusable polymorphic usages with a role and prevents duplicate references', function () {

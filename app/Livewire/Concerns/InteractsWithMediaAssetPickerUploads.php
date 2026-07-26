@@ -19,7 +19,8 @@ trait InteractsWithMediaAssetPickerUploads
      */
     public function startMediaAssetPickerUpload(string $statePath, MediaAssetUploadService $uploads): array
     {
-        abort_unless($this->mediaAssetPickerForStatePath($statePath) instanceof MediaAssetPicker, 404);
+        $picker = $this->mediaAssetPickerForStatePath($statePath);
+        abort_unless($picker instanceof MediaAssetPicker, 404);
 
         $attachmentPath = "{$statePath}.mediaPickerUpload";
         $upload = data_get($this->componentFileAttachments, $attachmentPath);
@@ -34,7 +35,12 @@ trait InteractsWithMediaAssetPickerUploads
         abort_unless($user instanceof User && $workspace !== null, 403);
 
         try {
-            $asset = $uploads->start($user, $workspace, $upload);
+            $asset = $uploads->start(
+                $user,
+                $workspace,
+                $upload,
+                $picker->getAcceptedMediaAssetTypes(),
+            );
         } catch (ValidationException $exception) {
             return [
                 'error' => Arr::first(Arr::flatten($exception->errors()))

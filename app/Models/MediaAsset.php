@@ -3,12 +3,14 @@
 namespace App\Models;
 
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\Models\Concerns\HasPublicId;
 use Database\Factories\MediaAssetFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Image\Enums\Fit;
 use Spatie\MediaLibrary\HasMedia;
@@ -19,6 +21,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
     'workspace_id',
     'uploaded_by_user_id',
     'status',
+    'type',
     'original_filename',
     'display_name',
     'original_mime_type',
@@ -58,6 +61,11 @@ class MediaAsset extends Model implements HasMedia
         return $this->hasMany(MediaAssetUsage::class);
     }
 
+    public function labels(): BelongsToMany
+    {
+        return $this->belongsToMany(MediaLabel::class, 'media_asset_label')->withTimestamps();
+    }
+
     public function displayName(): string
     {
         return $this->display_name ?: $this->original_filename;
@@ -68,6 +76,11 @@ class MediaAsset extends Model implements HasMedia
         $this->addMediaCollection('master')
             ->useDisk(config('media.asset_disk'))
             ->acceptsMimeTypes(['image/webp'])
+            ->singleFile();
+
+        $this->addMediaCollection('document')
+            ->useDisk(config('media.asset_disk'))
+            ->acceptsMimeTypes(['application/pdf'])
             ->singleFile();
     }
 
@@ -103,6 +116,7 @@ class MediaAsset extends Model implements HasMedia
     {
         return [
             'status' => MediaAssetStatus::class,
+            'type' => MediaAssetType::class,
             'original_size' => 'integer',
             'width' => 'integer',
             'height' => 'integer',

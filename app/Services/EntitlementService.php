@@ -5,6 +5,7 @@ namespace App\Services;
 use App\MediaAssetStatus;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
+use App\Models\MediaLabel;
 use App\Models\Plan;
 use App\Models\PlanLimit;
 use App\Models\ProductionBatch;
@@ -41,6 +42,7 @@ class EntitlementService
                 limit: $limits['production_batches'] ?? null,
             ),
             'media_assets' => $this->mediaAssetUsage($workspace, $limits),
+            'media_labels' => $this->mediaLabelUsage($workspace, $limits),
         ];
     }
 
@@ -64,6 +66,17 @@ class EntitlementService
         $subscriber = $workspace?->owner ?? $user;
 
         return $this->mediaAssetUsage($workspace, $this->limitsFor($subscriber));
+    }
+
+    /**
+     * @return array{used: int, limit: int|null, remaining: int|null, allowed: bool}
+     */
+    public function mediaLabelUsageFor(User $user): array
+    {
+        $workspace = $this->companyWorkspaceFor($user);
+        $subscriber = $workspace?->owner ?? $user;
+
+        return $this->mediaLabelUsage($workspace, $this->limitsFor($subscriber));
     }
 
     public function savedFormulaHistoryLimitFor(User $user): int
@@ -203,6 +216,16 @@ class EntitlementService
         );
     }
 
+    public function assertCanCreateMediaLabelInWorkspace(Workspace $workspace): void
+    {
+        $subscriber = $this->subscriberForWorkspace($workspace);
+
+        $this->assertUsageAllows(
+            $this->mediaLabelUsage($workspace, $this->limitsFor($subscriber)),
+            'media labels',
+        );
+    }
+
     public function assertCanCreateProductionBatch(User $user): void
     {
         $usage = $this->usageFor($user)['production_batches'];
@@ -334,6 +357,22 @@ class EntitlementService
         return $this->usageLine(
             used: $used,
             limit: $limits['media_assets'] ?? null,
+        );
+    }
+
+    /**
+     * @param  array<string, int|null>  $limits
+     * @return array{used: int, limit: int|null, remaining: int|null, allowed: bool}
+     */
+    private function mediaLabelUsage(?Workspace $workspace, array $limits): array
+    {
+        $used = $workspace instanceof Workspace
+            ? MediaLabel::query()->where('workspace_id', $workspace->id)->count()
+            : 0;
+
+        return $this->usageLine(
+            used: $used,
+            limit: $limits['media_labels'] ?? null,
         );
     }
 

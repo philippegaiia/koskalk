@@ -3,16 +3,20 @@
 use App\Jobs\RegenerateMediaAssetConversionsJob;
 use App\Livewire\Dashboard\MediaLibraryIndex;
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\MediaAssetUsageRole;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\MediaLabel;
 use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\CurrentAppUserResolver;
+use App\Services\MediaAssetLibraryService;
 use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -76,6 +80,75 @@ it('searches filenames and filters used and unused assets', function () {
         ->set('usageFilter', 'used')
         ->assertSee('Lavender soap.jpg')
         ->assertDontSee('Citrus bottle.jpg');
+});
+
+it('keeps label controls hidden until the workspace creates its first label', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->assertDontSeeHtml('data-media-label-filter');
+
+    MediaLabel::factory()->create([
+        'workspace_id' => $workspace->id,
+        'name' => 'Certificates',
+        'normalized_name' => 'certificates',
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->assertSeeHtml('data-media-label-filter');
+});
+
+it('filters the library by media type and workspace labels', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $certificate = MediaLabel::factory()->create([
+        'workspace_id' => $workspace->id,
+        'name' => 'Certificates',
+        'normalized_name' => 'certificates',
+    ]);
+    $image = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'product.jpg',
+    ]);
+    $pdf = MediaAsset::factory()->pdf()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'coa.pdf',
+    ]);
+    $pdf->labels()->attach($certificate);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->set('typeFilter', MediaAssetType::Pdf->value)
+        ->assertSee('coa.pdf')
+        ->assertDontSee('product.jpg')
+        ->set('typeFilter', 'all')
+        ->set('labelFilter', [$certificate->id])
+        ->assertSee('coa.pdf')
+        ->assertDontSee('product.jpg')
+        ->assertSeeHtml('data-media-card-labels')
+        ->assertSeeHtml('data-media-pdf-placeholder');
+
+    expect($image->labels)->toBeEmpty();
+});
+
+it('creates and assigns labels from the asset inspector', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->call('openAssetPanel', $asset->id, 'settings')
+        ->set('newLabelName', '  COA  ')
+        ->call('createLabel')
+        ->assertHasNoErrors()
+        ->assertSet('newLabelName', '');
+
+    $label = MediaLabel::query()->where('workspace_id', $workspace->id)->sole();
+
+    expect($label->name)->toBe('COA')
+        ->and($asset->fresh()->labels->sole()->is($label))->toBeTrue();
 });
 
 it('renames an asset without changing its upload metadata or physical media filename', function () {
@@ -332,6 +405,8 @@ it('keeps gallery cards compact and renders the selected asset in an accessible 
         ->assertSeeHtml('x-trap.inert.noscroll')
         ->assertSeeHtml('x-on:keydown.escape.window')
         ->assertSeeHtml('data-media-panel-scroll')
+        ->assertSeeHtml('wire:loading.attr="disabled"')
+        ->assertSeeHtml('wire:target="remove('.$asset->id.')"')
         ->assertSee('Lavender process')
         ->assertSee('IMG_4831.HEIC')
         ->call('closeAssetPanel')
@@ -463,6 +538,25 @@ it('does not allow deleting an asset that is still in use', function () {
         ->assertForbidden();
 
     expect($asset->fresh())->not->toBeNull();
+});
+
+it('treats a repeated confirmed panel deletion as already completed', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $this->actingAs($user);
+
+    $stalePanel = new MediaLibraryIndex;
+    $stalePanel->selectedAssetId = $asset->id;
+
+    $asset->delete();
+
+    $stalePanel->remove(
+        $asset->id,
+        app(CurrentAppUserResolver::class),
+        app(MediaAssetLibraryService::class),
+    );
+
+    expect($stalePanel->selectedAssetId)->toBeNull();
 });
 
 it('updates the focal point and queues square conversion regeneration', function () {

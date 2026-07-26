@@ -53,6 +53,11 @@ class Workspace extends Model
         return $this->hasMany(MediaAsset::class);
     }
 
+    public function mediaLabels(): HasMany
+    {
+        return $this->hasMany(MediaLabel::class);
+    }
+
     public function brands(): HasMany
     {
         return $this->hasMany(Brand::class);

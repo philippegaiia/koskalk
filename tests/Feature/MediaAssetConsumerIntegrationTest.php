@@ -10,6 +10,7 @@ use App\Livewire\Dashboard\PackagingItemsIndex;
 use App\Livewire\Dashboard\RecipesIndex;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\MediaAssetUsageRole;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
@@ -59,6 +60,14 @@ it('uses the shared media picker instead of record-owned image uploads', functio
         ->toBeInstanceOf(MediaAssetPicker::class)
         ->and($recipeForm->getComponent('featured_media_asset_id'))
         ->toBeInstanceOf(MediaAssetPicker::class)
+        ->and($ingredientForm->getComponent('document_media_asset_ids'))
+        ->toBeInstanceOf(MediaAssetPicker::class)
+        ->and($ingredientForm->getComponent('document_media_asset_ids')->getAcceptedMediaAssetTypeValues())
+        ->toBe([MediaAssetType::Pdf->value])
+        ->and($recipeForm->getComponent('sop_document_media_asset_ids'))
+        ->toBeInstanceOf(MediaAssetPicker::class)
+        ->and($recipeForm->getComponent('sop_document_media_asset_ids')->getMaximumItems())
+        ->toBe(8)
         ->and($recipeForm->getComponent('featured_media_asset_id')->shouldPreserveAspectRatio())
         ->toBeFalse()
         ->and($recipeForm->getComponent('featured_media_asset_id')->isLive())
@@ -76,6 +85,82 @@ it('uses the shared media picker instead of record-owned image uploads', functio
         ->assertSee('Upload image')
         ->assertSee('Choose from Media Library')
         ->assertSeeHtml('data-media-picker-upload-form');
+});
+
+it('filters picker results by the component media type', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'product.jpg',
+    ]);
+    MediaAsset::factory()->pdf()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'certificate.pdf',
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('media.picker-assets', ['types' => 'pdf']))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.original_filename', 'certificate.pdf')
+        ->assertJsonPath('data.0.type', 'pdf');
+
+    $this->actingAs($user)
+        ->getJson(route('media.picker-assets', ['types' => 'image']))
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.original_filename', 'product.jpg');
+});
+
+it('enforces media types and limits for ingredient and sop document roles', function () {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $user->id]);
+    $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id]);
+    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id]);
+    $documents = MediaAsset::factory()->pdf()->ready()->count(8)->create(['workspace_id' => $workspace->id]);
+    $image = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $service = app(MediaAssetUsageService::class);
+
+    $service->syncMany(
+        $user,
+        $ingredient,
+        MediaAssetUsageRole::IngredientDocument,
+        $documents->pluck('id')->all(),
+        maximum: 8,
+        expectedType: MediaAssetType::Pdf,
+    );
+    $service->syncMany(
+        $user,
+        $recipe,
+        MediaAssetUsageRole::RecipeSopDocument,
+        [$documents->first()->id],
+        maximum: 8,
+        expectedType: MediaAssetType::Pdf,
+    );
+
+    expect($service->idsFor($ingredient, MediaAssetUsageRole::IngredientDocument))
+        ->toHaveCount(8)
+        ->and($service->idsFor($recipe, MediaAssetUsageRole::RecipeSopDocument))
+        ->toBe([$documents->first()->id]);
+
+    expect(fn () => $service->syncMany(
+        $user,
+        $ingredient,
+        MediaAssetUsageRole::IngredientDocument,
+        [$image->id],
+        maximum: 8,
+        expectedType: MediaAssetType::Pdf,
+    ))->toThrow(ValidationException::class);
+
+    expect(fn () => $service->syncMany(
+        $user,
+        $recipe,
+        MediaAssetUsageRole::RecipeSopDocument,
+        [...$documents->pluck('id')->all(), $image->id],
+        maximum: 8,
+        expectedType: MediaAssetType::Pdf,
+    ))->toThrow(ValidationException::class, '8 images');
 });
 
 it('keeps product descriptions text-only and removes direct rich editor uploads', function () {

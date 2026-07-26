@@ -86,6 +86,47 @@ it('loads account interface copy and status messages from the database', functio
         ->assertSessionHas('profile_status', 'Profil mis à jour.');
 });
 
+it('presents plan catalogue fields in the active locale with database fallbacks', function () {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+
+    foreach ([
+        'catalog.free-beta.name' => 'Bêta gratuite',
+        'catalog.free-beta.description' => 'Offre de lancement gratuite.',
+        'catalog.free-beta.price_label' => '',
+    ] as $key => $translation) {
+        InterfaceTranslation::query()->create([
+            'group' => 'plans',
+            'key' => $key,
+            'text' => ['fr' => $translation],
+        ]);
+    }
+
+    $plan = Plan::factory()
+        ->hasLimit('media_labels', 20)
+        ->create([
+            'slug' => 'free-beta',
+            'name' => 'Raw plan name',
+            'description' => 'Raw plan description',
+            'is_default' => true,
+        ]);
+    $user = User::factory()->create(['locale' => 'fr']);
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('account'))
+        ->assertSuccessful()
+        ->assertSeeText('Bêta gratuite')
+        ->assertSeeText('Offre de lancement gratuite.')
+        ->assertSeeText('0 / 20')
+        ->assertDontSeeText('Raw plan name')
+        ->assertDontSeeText('Raw plan description');
+});
+
 it('keeps every account string in the account translation group', function () {
     $copy = require lang_path('en/account.php');
 
@@ -109,6 +150,7 @@ it('keeps every account string in the account translation group', function () {
         'usage.ingredients',
         'usage.production_batches',
         'usage.media_assets',
+        'usage.media_labels',
         'usage.media_uploads_blocked',
         'usage.used',
         'usage.used_unlimited',

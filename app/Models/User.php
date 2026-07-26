@@ -74,6 +74,11 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return $this->hasMany(UserEntitlement::class);
     }
 
+    public function createdMediaLabels(): HasMany
+    {
+        return $this->hasMany(MediaLabel::class, 'created_by_user_id');
+    }
+
     public function recipes(): HasMany
     {
         return $this->hasMany(Recipe::class, 'owner_id')

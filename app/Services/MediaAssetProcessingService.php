@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\MediaAssetProcessingException;
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\Models\MediaAsset;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,6 +16,8 @@ use Throwable;
 
 class MediaAssetProcessingService
 {
+    public function __construct(private readonly PdfPreviewRenderer $pdfPreviewRenderer) {}
+
     public function process(MediaAsset $asset, string $processingToken): void
     {
         if (
@@ -33,6 +36,12 @@ class MediaAssetProcessingService
         $masterPath = null;
 
         try {
+            if ($asset->type === MediaAssetType::Pdf) {
+                $this->processPdf($asset, $sourcePath);
+
+                return;
+            }
+
             $this->assertCodecAvailable($asset);
             [$width, $height] = $this->dimensions($sourcePath);
             $this->assertPixelLimit($width, $height);
@@ -100,7 +109,7 @@ class MediaAssetProcessingService
             : 'processing_failed';
         $failureReason = $exception instanceof MediaAssetProcessingException
             ? $exception->getMessage()
-            : 'The image could not be processed. You can retry it or remove it.';
+            : __('media_library.processing.failed');
 
         $freshAsset->update([
             'status' => MediaAssetStatus::Failed,
@@ -108,6 +117,71 @@ class MediaAssetProcessingService
             'processing_stage' => null,
             'failure_code' => $failureCode,
             'failure_reason' => $failureReason,
+        ]);
+    }
+
+    private function processPdf(MediaAsset $asset, string $sourcePath): void
+    {
+        $pageCount = $this->pdfPreviewRenderer->pageCount($sourcePath);
+        $maxPages = (int) config('media.asset_uploads.pdf.max_pages', 50);
+
+        if ($pageCount !== null && $pageCount > $maxPages) {
+            throw new MediaAssetProcessingException(
+                __('media_library.processing.pdf_page_limit', ['count' => $maxPages]),
+                'pdf_page_limit_exceeded',
+            );
+        }
+
+        $asset->update([
+            'progress' => 25,
+            'processing_stage' => 'storing_document',
+        ]);
+
+        $asset->clearMediaCollection('document');
+        $asset->addMedia($sourcePath)
+            ->preservingOriginal()
+            ->usingName(pathinfo($asset->original_filename, PATHINFO_FILENAME))
+            ->usingFileName(Str::uuid().'.pdf')
+            ->toMediaCollection('document', config('media.asset_disk'));
+
+        $asset->update([
+            'progress' => 55,
+            'processing_stage' => 'preparing_preview',
+        ]);
+
+        $previewPath = $this->pdfPreviewRenderer->renderFirstPage($sourcePath);
+
+        try {
+            $asset->clearMediaCollection('master');
+
+            if ($previewPath !== null) {
+                [$width, $height] = $this->dimensions($previewPath);
+                $asset->update(['width' => $width, 'height' => $height]);
+
+                $asset->addMedia($previewPath)
+                    ->usingName(pathinfo($asset->original_filename, PATHINFO_FILENAME))
+                    ->usingFileName(Str::uuid().'.webp')
+                    ->toMediaCollection('master', config('media.asset_disk'));
+                $previewPath = null;
+
+                $this->assertConversionsGenerated($asset);
+            }
+        } finally {
+            if ($previewPath !== null) {
+                @unlink($previewPath);
+            }
+        }
+
+        Storage::disk($asset->pending_disk)->delete($asset->pending_path);
+
+        $asset->update([
+            'status' => MediaAssetStatus::Ready,
+            'pending_disk' => null,
+            'pending_path' => null,
+            'progress' => 100,
+            'processing_stage' => null,
+            'failure_code' => null,
+            'failure_reason' => null,
         ]);
     }
 

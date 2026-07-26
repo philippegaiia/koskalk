@@ -31,11 +31,13 @@ class ExportInterfaceTranslationCatalogue
         $ownedKeys = array_fill_keys(array_keys($this->englishSource->all()), true);
 
         $translations = InterfaceTranslation::query()
-            ->orderBy('group')
-            ->orderBy('key')
             ->get(['group', 'key', 'text'])
             ->filter(fn (InterfaceTranslation $translation): bool => isset(
                 $ownedKeys["{$translation->group}.{$translation->key}"],
+            ))
+            ->sort(fn (InterfaceTranslation $first, InterfaceTranslation $second): int => strcmp(
+                "{$first->group}.{$first->key}",
+                "{$second->group}.{$second->key}",
             ))
             ->values()
             ->map(function (InterfaceTranslation $translation): array {

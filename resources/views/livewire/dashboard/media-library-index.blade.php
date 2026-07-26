@@ -44,7 +44,7 @@
                         data-media-library-file-input
                         type="file"
                         multiple
-                        accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                        accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
                         @disabled(! $usage['allowed'])
                         @if (! $usage['allowed']) data-media-upload-disabled @endif
                         class="peer sr-only"
@@ -117,6 +117,22 @@
                         <p class="w-full text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                     @enderror
 
+                    @if ($labels->isNotEmpty())
+                        <details class="w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-sm">
+                            <summary class="cursor-pointer text-xs font-medium text-[var(--color-ink-soft)]">
+                                {{ __('media_library.labels.apply_on_upload') }}
+                            </summary>
+                            <div class="mt-2 grid grid-cols-2 gap-2">
+                                @foreach ($labels as $label)
+                                    <label class="flex items-center gap-2 text-xs text-[var(--color-ink-strong)]">
+                                        <input wire:model="uploadLabelIds" type="checkbox" value="{{ $label->id }}" class="rounded border-[var(--color-line)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]" />
+                                        <span class="truncate">{{ $label->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </details>
+                    @endif
+
                     <div
                         x-cloak
                         x-show="uploading"
@@ -170,6 +186,31 @@
                     <option value="ready">{{ __('media_library.statuses.ready') }}</option>
                     <option value="failed">{{ __('media_library.statuses.failed') }}</option>
                 </select>
+
+                <select wire:model.live="typeFilter" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm text-[var(--color-ink-soft)]" aria-label="{{ __('media_library.filters.type') }}">
+                    <option value="all">{{ __('media_library.filters.all_types') }}</option>
+                    <option value="image">{{ __('media_library.filters.images') }}</option>
+                    <option value="pdf">{{ __('media_library.filters.pdfs') }}</option>
+                </select>
+
+                @if ($labels->isNotEmpty())
+                    <details data-media-label-filter class="relative">
+                        <summary class="cursor-pointer list-none rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm text-[var(--color-ink-soft)]">
+                            {{ __('media_library.labels.filter') }}
+                            @if ($labelFilter !== [])
+                                <span class="ml-1 text-[var(--color-accent-strong)]">· {{ count($labelFilter) }}</span>
+                            @endif
+                        </summary>
+                        <div class="absolute left-0 z-20 mt-2 min-w-52 space-y-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-3 shadow-lg">
+                            @foreach ($labels as $label)
+                                <label class="flex items-center gap-2 text-xs text-[var(--color-ink-strong)]">
+                                    <input wire:model.live="labelFilter" type="checkbox" value="{{ $label->id }}" class="rounded border-[var(--color-line)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]" />
+                                    <span class="truncate">{{ $label->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </details>
+                @endif
             </div>
 
             <label class="sk-field min-w-64">
@@ -188,8 +229,17 @@
                 @foreach ($assets as $asset)
                     <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-panel)]">
                         <div class="relative grid aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
-                            @if ($asset->status === \App\MediaAssetStatus::Ready)
+                            @if ($asset->status === \App\MediaAssetStatus::Ready && $asset->getFirstMedia('master'))
                                 <img src="{{ route('media.show', [$asset, 'thumbnail']) }}" alt="" class="size-full object-cover" />
+                            @elseif ($asset->status === \App\MediaAssetStatus::Ready && $asset->type === \App\MediaAssetType::Pdf)
+                                <div data-media-pdf-placeholder class="grid size-full place-items-center p-6 text-center text-[var(--color-ink-soft)]">
+                                    <div>
+                                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="mx-auto size-12" stroke="currentColor" stroke-width="1.5">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 3h7l4 4v14H7zM14 3v5h5M9.5 15.5h5M9.5 12.5h5" />
+                                        </svg>
+                                        <p class="mt-2 text-xs font-semibold">{{ __('media_library.documents.pdf') }}</p>
+                                    </div>
+                                </div>
                             @else
                                 <div class="grid size-full place-items-center p-6 text-center">
                                     <div>
@@ -217,6 +267,19 @@
                                     {{ trans_choice('media_library.usage', $asset->usages_count, ['count' => $asset->usages_count]) }}
                                         <span aria-hidden="true">›</span>
                                     </button>
+                                    @if ($asset->type === \App\MediaAssetType::Pdf && $asset->status === \App\MediaAssetStatus::Ready)
+                                        <a href="{{ route('media.download', $asset) }}" class="ml-2 text-[11px] font-medium text-[var(--color-ink-soft)] underline decoration-current/40 underline-offset-2">
+                                            {{ __('media_library.documents.download') }}
+                                        </a>
+                                    @endif
+                                    @if ($asset->labels->isNotEmpty())
+                                        <p data-media-card-labels class="mt-1 truncate text-[10px] leading-4 text-[var(--color-ink-soft)]" title="{{ $asset->labels->pluck('name')->join(', ') }}">
+                                            {{ $asset->labels->take(2)->pluck('name')->join(' · ') }}
+                                            @if ($asset->labels->count() > 2)
+                                                · +{{ $asset->labels->count() - 2 }}
+                                            @endif
+                                        </p>
+                                    @endif
                                 </div>
 
                                 @if ($asset->status === \App\MediaAssetStatus::Ready && $canUpdateMedia)
@@ -295,7 +358,11 @@
                 class="flex h-full w-full flex-col border-l border-[var(--color-line)] bg-[var(--color-panel)] shadow-xl sm:max-w-[27.5rem]"
             >
                 <header class="flex items-center gap-3 border-b border-[var(--color-line)] px-4 py-3">
-                    <img src="{{ route('media.show', [$selectedAsset, 'thumbnail']) }}" alt="" class="size-12 shrink-0 rounded-lg object-cover" />
+                    @if ($selectedAsset->getFirstMedia('master'))
+                        <img src="{{ route('media.show', [$selectedAsset, 'thumbnail']) }}" alt="" class="size-12 shrink-0 rounded-lg object-cover" />
+                    @else
+                        <span class="grid size-12 shrink-0 place-items-center rounded-lg bg-[var(--color-field-muted)] text-xs font-semibold text-[var(--color-ink-soft)]">PDF</span>
+                    @endif
                     <div class="min-w-0 flex-1">
                         <h2 id="media-asset-panel-heading" class="truncate text-sm font-semibold text-[var(--color-ink-strong)]">{{ $selectedAsset->displayName() }}</h2>
                         <p class="mt-0.5 truncate text-[11px] text-[var(--color-ink-soft)]" title="{{ $selectedAsset->original_filename }}">
@@ -353,6 +420,40 @@
                                     @enderror
                                 </form>
 
+                                <section class="space-y-3 border-t border-[var(--color-line)] pt-4">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <h3 class="text-xs font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.labels.heading') }}</h3>
+                                        <span class="text-[10px] text-[var(--color-ink-soft)]">{{ count($selectedLabelIds) }}/8</span>
+                                    </div>
+
+                                    @if ($labels->isNotEmpty())
+                                        <div class="grid grid-cols-2 gap-2">
+                                            @foreach ($labels as $label)
+                                                <label class="flex min-w-0 items-center gap-2 text-xs text-[var(--color-ink-strong)]">
+                                                    <input wire:model="selectedLabelIds" type="checkbox" value="{{ $label->id }}" class="rounded border-[var(--color-line)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]" />
+                                                    <span class="truncate">{{ $label->name }}</span>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                        <button type="button" wire:click="saveSelectedLabels" class="sk-btn px-3 py-2 text-xs">{{ __('media_library.labels.save') }}</button>
+                                    @else
+                                        <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.labels.none') }}</p>
+                                    @endif
+
+                                    <form wire:submit="createLabel" class="flex gap-2">
+                                        <input wire:model="newLabelName" type="text" maxlength="30" placeholder="{{ __('media_library.labels.new_placeholder') }}" class="min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-xs text-[var(--color-ink-strong)]" />
+                                        <button type="submit" class="sk-btn px-3 py-2 text-xs">{{ __('media_library.labels.add') }}</button>
+                                    </form>
+                                    @error('newLabelName')
+                                        <p class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                                    @enderror
+                                </section>
+
+                                @if ($selectedAsset->type === \App\MediaAssetType::Pdf)
+                                    <section class="border-t border-[var(--color-line)] pt-4">
+                                        <a href="{{ route('media.download', $selectedAsset) }}" class="sk-btn sk-btn-primary">{{ __('media_library.documents.download') }}</a>
+                                    </section>
+                                @else
                                 <section x-data="{ focalX: {{ $selectedAsset->focal_x }}, focalY: {{ $selectedAsset->focal_y }} }" class="border-t border-[var(--color-line)] pt-4">
                                     <h3 class="text-xs font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.crop.adjust') }}</h3>
                                     <div class="mt-3 space-y-3">
@@ -383,6 +484,7 @@
                                         </button>
                                     </div>
                                 </section>
+                                @endif
                             </div>
                         @endif
                     @else
@@ -437,6 +539,8 @@
                         <button
                             type="button"
                             wire:click="remove({{ $selectedAsset->id }})"
+                            wire:loading.attr="disabled"
+                            wire:target="remove({{ $selectedAsset->id }})"
                             @if ($selectedAsset->usages_count === 0) wire:confirm="{{ __('media_library.panel.delete_confirm', ['name' => $selectedAsset->displayName()]) }}" @endif
                             @disabled($selectedAsset->usages_count > 0)
                             aria-label="{{ __('media_library.panel.delete') }}"

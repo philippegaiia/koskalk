@@ -17,6 +17,7 @@ export function createMediaAssetPicker(options) {
         multiple: options.multiple,
         maximumItems: options.maximumItems,
         preserveAspectRatio: options.preserveAspectRatio,
+        acceptedTypes: options.acceptedTypes ?? ['image'],
         messages: options.messages,
         pendingUpload: null,
         pollTimer: null,
@@ -71,6 +72,7 @@ export function createMediaAssetPicker(options) {
             try {
                 const url = new URL(this.assetsUrl, window.location.origin);
                 url.searchParams.set('page', this.assetsPage);
+                url.searchParams.set('types', this.acceptedTypes.join(','));
 
                 if (this.search.trim()) {
                     url.searchParams.set('search', this.search.trim());

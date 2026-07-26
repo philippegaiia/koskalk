@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\Models\MediaAsset;
 use App\Models\User;
 use App\Services\MediaAssetLibraryService;
@@ -22,12 +23,21 @@ class MediaAssetPickerMutationController extends Controller
         $request->validate([
             'search' => ['nullable', 'string', 'max:255'],
             'page' => ['nullable', 'integer', 'min:1'],
+            'types' => ['nullable', 'string', 'max:50'],
         ]);
 
         $search = mb_strtolower(trim($request->string('search')->toString()));
+        $requestedTypes = collect(explode(',', $request->string('types', MediaAssetType::Image->value)->toString()))
+            ->filter(fn (string $type): bool => MediaAssetType::tryFrom($type) !== null)
+            ->unique()
+            ->values();
+        abort_if($requestedTypes->isEmpty(), 422);
+
         $assets = MediaAsset::query()
             ->where('workspace_id', $workspace->id)
-            ->select(['id', 'public_id', 'display_name', 'original_filename', 'status', 'progress', 'created_at'])
+            ->whereIn('type', $requestedTypes)
+            ->with('media')
+            ->select(['id', 'public_id', 'display_name', 'original_filename', 'status', 'type', 'progress', 'created_at'])
             ->when($search !== '', function ($query) use ($search): void {
                 $term = '%'.$search.'%';
                 $query->where(function ($query) use ($term): void {
@@ -44,12 +54,18 @@ class MediaAssetPickerMutationController extends Controller
                 'display_name' => $asset->displayName(),
                 'original_filename' => $asset->original_filename,
                 'status' => $asset->status->value,
+                'type' => $asset->type->value,
                 'progress' => $asset->progress,
                 'thumbnail_url' => $asset->status === MediaAssetStatus::Ready
+                    && ($asset->type === MediaAssetType::Image || $asset->getFirstMedia('master') !== null)
                     ? route('media.show', [$asset, 'thumbnail'])
                     : null,
                 'master_url' => $asset->status === MediaAssetStatus::Ready
+                    && ($asset->type === MediaAssetType::Image || $asset->getFirstMedia('master') !== null)
                     ? route('media.show', [$asset, 'master'])
+                    : null,
+                'download_url' => $asset->status === MediaAssetStatus::Ready && $asset->type === MediaAssetType::Pdf
+                    ? route('media.download', $asset)
                     : null,
             ])->all(),
             'has_more' => $assets->hasMorePages(),

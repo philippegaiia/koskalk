@@ -13,14 +13,14 @@
         <p class="sk-eyebrow">Paddle checkout</p>
         <div class="mt-3 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-                <h3 id="billing-checkout-heading" class="text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $plan->name }}</h3>
-                @if ($plan->description)
-                    <p class="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $plan->description }}</p>
+                <h3 id="billing-checkout-heading" class="text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $planPresentation['name'] }}</h3>
+                @if ($planPresentation['description'])
+                    <p class="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $planPresentation['description'] }}</p>
                 @endif
             </div>
 
-            @if ($plan->price_label)
-                <p class="numeric rounded-lg bg-[var(--color-accent-soft)] px-3 py-2 text-sm font-semibold text-[var(--color-accent-strong)]">{{ $plan->price_label }}</p>
+            @if ($planPresentation['price_label'])
+                <p class="numeric rounded-lg bg-[var(--color-accent-soft)] px-3 py-2 text-sm font-semibold text-[var(--color-accent-strong)]">{{ $planPresentation['price_label'] }}</p>
             @endif
         </div>
 

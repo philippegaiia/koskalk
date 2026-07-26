@@ -2,17 +2,21 @@
 
 use App\Jobs\NormalizeMediaAssetJob;
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\MediaLabel;
 use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\EntitlementService;
+use App\Services\MediaLabelService;
 use App\WorkspaceMemberRole;
 use Database\Seeders\PlanSeeder;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Gate;
@@ -60,9 +64,46 @@ it('creates workspace media assets with an opaque public id and processing state
 
     expect($asset->public_id)->toBeUuid()
         ->and($asset->status)->toBe(MediaAssetStatus::Processing)
+        ->and($asset->type)->toBe(MediaAssetType::Image)
         ->and($asset->workspace->is($workspace))->toBeTrue()
         ->and($asset->uploadedBy->is($uploader))->toBeTrue()
         ->and($asset->getRouteKeyName())->toBe('public_id');
+});
+
+it('stores pdf assets with an explicit media type', function () {
+    $asset = MediaAsset::factory()->pdf()->create();
+
+    expect($asset->type)->toBe(MediaAssetType::Pdf)
+        ->and($asset->original_mime_type)->toBe('application/pdf')
+        ->and($asset->original_filename)->toEndWith('.pdf');
+});
+
+it('attaches workspace labels to media assets without duplicate normalized names', function () {
+    $workspace = Workspace::factory()->create();
+    $creator = User::factory()->create();
+    $asset = MediaAsset::factory()->create(['workspace_id' => $workspace->id]);
+    $label = MediaLabel::factory()->create([
+        'workspace_id' => $workspace->id,
+        'created_by_user_id' => $creator->id,
+        'name' => 'Certificates',
+        'normalized_name' => 'certificates',
+    ]);
+
+    $asset->labels()->attach($label);
+
+    expect($asset->fresh()->labels)->toHaveCount(1)
+        ->and($label->fresh()->mediaAssets->sole()->is($asset))->toBeTrue()
+        ->and($workspace->fresh()->mediaLabels->sole()->is($label))->toBeTrue()
+        ->and($creator->fresh()->createdMediaLabels->sole()->is($label))->toBeTrue();
+
+    expect(fn () => MediaLabel::factory()->create([
+        'workspace_id' => $workspace->id,
+        'normalized_name' => 'certificates',
+    ]))->toThrow(QueryException::class);
+
+    $label->delete();
+
+    expect($asset->fresh()->labels)->toBeEmpty();
 });
 
 it('records reusable polymorphic usages with a role and prevents duplicate references', function () {
@@ -193,5 +234,82 @@ it('seeds a 200 asset limit for the free plan', function () {
         ->with('limits')
         ->firstOrFail();
 
-    expect($plan->limits->pluck('value', 'key')->get('media_assets'))->toBe(200);
+    expect($plan->limits->pluck('value', 'key'))
+        ->get('media_assets')->toBe(200)
+        ->get('media_labels')->toBe(20);
+});
+
+it('lets workspace editors create and assign bounded labels', function () {
+    $owner = User::factory()->create();
+    $editor = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $editor->id,
+        'role' => WorkspaceMemberRole::Editor,
+    ]);
+    $plan = Plan::factory()->hasLimit('media_labels', 20)->create();
+    $owner->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $service = app(MediaLabelService::class);
+
+    $label = $service->create($editor, $workspace, '  Safety   Data  ');
+    $service->sync($editor, $asset, [$label->id]);
+
+    expect($label->name)->toBe('Safety Data')
+        ->and($label->normalized_name)->toBe('safety data')
+        ->and($asset->fresh()->labels->sole()->is($label))->toBeTrue();
+
+    expect(fn () => $service->create($editor, $workspace, 'SAFETY DATA'))
+        ->toThrow(ValidationException::class);
+});
+
+it('prevents viewers and outsiders from mutating workspace labels', function () {
+    $owner = User::factory()->create();
+    $viewer = User::factory()->create();
+    $outsider = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+    WorkspaceMember::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $viewer->id,
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+    $label = MediaLabel::factory()->create(['workspace_id' => $workspace->id]);
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $service = app(MediaLabelService::class);
+
+    expect(fn () => $service->create($viewer, $workspace, 'COA'))
+        ->toThrow(AuthorizationException::class)
+        ->and(fn () => $service->sync($outsider, $asset, [$label->id]))
+        ->toThrow(AuthorizationException::class);
+});
+
+it('enforces workspace and per-asset label limits', function () {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+    $plan = Plan::factory()->hasLimit('media_labels', 2)->create();
+    $owner->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+    $service = app(MediaLabelService::class);
+
+    $first = $service->create($owner, $workspace, 'One');
+    $second = $service->create($owner, $workspace, 'Two');
+
+    expect(fn () => $service->create($owner, $workspace, 'Three'))
+        ->toThrow(ValidationException::class, '2 media labels');
+
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $labels = MediaLabel::factory()->count(9)->create(['workspace_id' => $workspace->id]);
+
+    expect(fn () => $service->sync($owner, $asset, $labels->pluck('id')->all()))
+        ->toThrow(ValidationException::class, '8 labels')
+        ->and($first->workspace->is($workspace))->toBeTrue()
+        ->and($second->workspace->is($workspace))->toBeTrue();
 });

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\Models\MediaAsset;
 use App\Models\User;
 use App\Models\Workspace;
@@ -25,6 +26,7 @@ class MediaAssetFactory extends Factory
             'workspace_id' => Workspace::factory(),
             'uploaded_by_user_id' => User::factory(),
             'status' => MediaAssetStatus::Processing,
+            'type' => MediaAssetType::Image,
             'original_filename' => fake()->word().'.jpg',
             'original_mime_type' => 'image/jpeg',
             'original_size' => fake()->numberBetween(10_000, 2_000_000),
@@ -34,6 +36,15 @@ class MediaAssetFactory extends Factory
             'processing_stage' => 'queued',
             'processing_token' => (string) Str::uuid(),
         ];
+    }
+
+    public function pdf(): static
+    {
+        return $this->state(fn (): array => [
+            'type' => MediaAssetType::Pdf,
+            'original_filename' => fake()->word().'.pdf',
+            'original_mime_type' => 'application/pdf',
+        ]);
     }
 
     public function ready(): static

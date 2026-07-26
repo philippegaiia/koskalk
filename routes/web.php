@@ -9,6 +9,7 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\IngredientController;
 use App\Http\Controllers\LocalePreferenceController;
 use App\Http\Controllers\MediaAssetController;
+use App\Http\Controllers\MediaAssetDownloadController;
 use App\Http\Controllers\MediaAssetPickerMutationController;
 use App\Http\Controllers\MediaAssetStatusController;
 use App\Http\Controllers\MediaLibraryController;
@@ -62,6 +63,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::delete('/dashboard/media/{mediaAsset}', [MediaAssetPickerMutationController::class, 'remove'])
         ->middleware('throttle:20,1')
         ->name('media.remove');
+    Route::get('/dashboard/media/{mediaAsset}/download', MediaAssetDownloadController::class)
+        ->middleware('throttle:120,1')
+        ->name('media.download');
     Route::get('/dashboard/media/{mediaAsset}/{conversion}', MediaAssetController::class)
         ->middleware('throttle:240,1')
         ->name('media.show');

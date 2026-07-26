@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
@@ -21,6 +22,7 @@ class MediaAssetUsageService
         $roles = [
             MediaAssetUsageRole::RecipeFeatured,
             MediaAssetUsageRole::RecipeSop,
+            MediaAssetUsageRole::RecipeSopDocument,
         ];
         $sourceUsages = MediaAssetUsage::query()
             ->where('usable_type', $source->getMorphClass())
@@ -52,6 +54,7 @@ class MediaAssetUsageService
         Model $usable,
         MediaAssetUsageRole $role,
         int|string|null $mediaAssetId,
+        MediaAssetType $expectedType = MediaAssetType::Image,
     ): void {
         $this->syncMany(
             $user,
@@ -59,6 +62,7 @@ class MediaAssetUsageService
             $role,
             filled($mediaAssetId) ? [(int) $mediaAssetId] : [],
             maximum: 1,
+            expectedType: $expectedType,
         );
     }
 
@@ -71,6 +75,7 @@ class MediaAssetUsageService
         MediaAssetUsageRole $role,
         array $mediaAssetIds,
         int $maximum,
+        MediaAssetType $expectedType = MediaAssetType::Image,
     ): void {
         $ids = collect($mediaAssetIds)
             ->map(fn (int|string $id): int => (int) $id)
@@ -103,12 +108,13 @@ class MediaAssetUsageService
         $assets = MediaAsset::query()
             ->where('workspace_id', $workspace->id)
             ->where('status', MediaAssetStatus::Ready)
+            ->where('type', $expectedType)
             ->whereIn('id', $ids)
             ->get();
 
         if ($assets->count() !== $ids->count()) {
             throw ValidationException::withMessages([
-                'media' => __('media_library.validation.selected_images_unavailable'),
+                'media' => __('media_library.validation.selected_media_unavailable'),
             ]);
         }
 

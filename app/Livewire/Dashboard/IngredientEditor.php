@@ -6,6 +6,7 @@ use App\Forms\Components\MediaAssetPicker;
 use App\IngredientCategory;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
+use App\MediaAssetType;
 use App\MediaAssetUsageRole;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
@@ -92,6 +93,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $state['icon_media_asset_id'] = $ingredient instanceof Ingredient
             ? ($mediaAssetUsages->idsFor($ingredient, MediaAssetUsageRole::IngredientIconOverride)[0] ?? null)
             : null;
+        $state['document_media_asset_ids'] = $ingredient instanceof Ingredient
+            ? $mediaAssetUsages->idsFor($ingredient, MediaAssetUsageRole::IngredientDocument)
+            : [];
 
         $this->form->fill($state);
     }
@@ -118,12 +122,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $state = $this->mergeCustomCompositionState($this->form->getState());
         $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
         $iconMediaAssetId = $state['icon_media_asset_id'] ?? null;
-        unset($state['featured_media_asset_id'], $state['icon_media_asset_id']);
+        $documentMediaAssetIds = $state['document_media_asset_ids'] ?? [];
+        unset($state['featured_media_asset_id'], $state['icon_media_asset_id'], $state['document_media_asset_ids']);
         $state['public_id'] = $this->mediaPublicId;
         $currentIngredient = $this->currentIngredient();
 
         try {
-            $ingredient = DB::transaction(function () use ($currentIngredient, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService): Ingredient {
+            $ingredient = DB::transaction(function () use ($currentIngredient, $documentMediaAssetIds, $featuredMediaAssetId, $iconMediaAssetId, $mediaAssetUsages, $state, $user, $userIngredientAuthoringService): Ingredient {
                 $ingredient = $currentIngredient instanceof Ingredient
                     ? $userIngredientAuthoringService->update($currentIngredient, $state, $user)
                     : $userIngredientAuthoringService->create($state, $user);
@@ -139,6 +144,14 @@ class IngredientEditor extends Component implements HasActions, HasForms
                     $ingredient,
                     MediaAssetUsageRole::IngredientIconOverride,
                     $iconMediaAssetId,
+                );
+                $mediaAssetUsages->syncMany(
+                    $user,
+                    $ingredient,
+                    MediaAssetUsageRole::IngredientDocument,
+                    $documentMediaAssetIds,
+                    maximum: 8,
+                    expectedType: MediaAssetType::Pdf,
                 );
 
                 return $ingredient;
@@ -167,6 +180,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
         $refreshedState = $userIngredientAuthoringService->formData($ingredient);
         $refreshedState['featured_media_asset_id'] = $featuredMediaAssetId;
         $refreshedState['icon_media_asset_id'] = $iconMediaAssetId;
+        $refreshedState['document_media_asset_ids'] = $documentMediaAssetIds;
         $this->form->fill($refreshedState);
 
         if (! $wasEditing) {
@@ -369,6 +383,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label(__('ingredients.editor.media.icon'))
                                             ->helperText(__('ingredients.editor.media.icon_helper'))
                                             ->columnSpan(1),
+                                        MediaAssetPicker::make('document_media_asset_ids')
+                                            ->label(__('ingredients.editor.media.documents'))
+                                            ->helperText(__('ingredients.editor.media.documents_helper'))
+                                            ->documents()
+                                            ->multiple()
+                                            ->maxItems(8)
+                                            ->columnSpanFull(),
                                         Textarea::make('info_markdown')
                                             ->label(__('ingredients.editor.media.notes'))
                                             ->helperText(__('ingredients.editor.media.notes_helper'))

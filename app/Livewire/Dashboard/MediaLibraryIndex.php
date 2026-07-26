@@ -332,7 +332,14 @@ class MediaLibraryIndex extends Component
         $user = $resolver->resolve();
         $asset = $this->workspaceAsset($assetId, $user);
 
-        abort_unless($user instanceof User && $asset instanceof MediaAsset, 404);
+        abort_unless($user instanceof User, 404);
+
+        if (! $asset instanceof MediaAsset) {
+            abort_unless($this->selectedAssetId === $assetId, 404);
+            $this->closeAssetPanel();
+
+            return;
+        }
 
         $filename = $asset->original_filename;
         $library->remove($user, $asset);

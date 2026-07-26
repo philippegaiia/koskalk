@@ -539,6 +539,8 @@
                         <button
                             type="button"
                             wire:click="remove({{ $selectedAsset->id }})"
+                            wire:loading.attr="disabled"
+                            wire:target="remove({{ $selectedAsset->id }})"
                             @if ($selectedAsset->usages_count === 0) wire:confirm="{{ __('media_library.panel.delete_confirm', ['name' => $selectedAsset->displayName()]) }}" @endif
                             @disabled($selectedAsset->usages_count > 0)
                             aria-label="{{ __('media_library.panel.delete') }}"

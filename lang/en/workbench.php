@@ -41,6 +41,8 @@ return [
         'featured_help' => 'JPG, PNG or WebP up to 3 MB. Minimum dimensions: 300 px on the short side and 500 px on the long side. Keep the original proportions or crop the image after upload.',
         'procedure_label' => 'Manufacturing procedure',
         'procedure_help' => 'Record the process steps, temperatures, timings, checks and cautions used at the bench. Add up to eight procedure images with Insert from Media Library in the toolbar.',
+        'documents_label' => 'SOP and production documents',
+        'documents_help' => 'Attach up to 8 PDF procedures, checklists, or supporting documents.',
         'draft_text_help' => 'You can start writing now. Save the formula before attaching images.',
         'save_changes' => 'Save changes',
         'all_saved' => 'All changes saved',

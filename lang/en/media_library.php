@@ -24,7 +24,7 @@ return [
     'title' => 'Media Library',
     'eyebrow' => 'Workspace media',
     'description' => 'Upload once, then reuse images and documents across your workspace.',
-    'upload' => 'Upload file',
+    'upload' => 'Upload image',
     'uploading' => 'Uploading…',
     'choose_upload' => 'Choose an image to upload',
     'choose_files' => 'Choose files',
@@ -53,6 +53,7 @@ return [
         'upload_heading' => 'Upload to Media Library',
         'upload_description' => 'The picker stays open while the image is processed. It will be selected automatically when ready.',
         'image' => 'Image',
+        'document' => 'PDF document',
         'choose_file' => 'Choose image',
         'no_file_selected' => 'No image selected',
         'select_one' => 'Select one ready image.',
@@ -111,6 +112,7 @@ return [
     'documents' => [
         'download' => 'Download',
         'pdf' => 'PDF document',
+        'upload' => 'Upload PDF',
     ],
     'statuses' => [
         'all' => 'Any status',
@@ -123,6 +125,8 @@ return [
         'validating' => 'validating',
         'normalizing' => 'normalizing',
         'converting' => 'converting',
+        'storing_document' => 'storing document',
+        'preparing_preview' => 'preparing preview',
     ],
     'empty' => [
         'title' => 'No media found',
@@ -142,8 +146,10 @@ return [
     'roles' => [
         'recipe_featured' => 'Recipe featured',
         'recipe_sop' => 'Recipe instruction',
+        'recipe_sop_document' => 'Recipe SOP document',
         'ingredient_main' => 'Ingredient main',
         'ingredient_icon_override' => 'Ingredient icon',
+        'ingredient_document' => 'Ingredient document',
         'packaging_main' => 'Packaging main',
     ],
     'messages' => [
@@ -173,6 +179,7 @@ return [
         'upload_size' => 'The file must not be larger than :max MB.',
         'maximum_images' => 'Choose up to :max images.',
         'selected_images_unavailable' => 'One or more selected images are unavailable or still processing.',
+        'selected_media_unavailable' => 'One or more selected files are unavailable, still processing, or the wrong type.',
         'workspace_unavailable' => 'The selected workspace is unavailable.',
         'procedure_image_limit' => 'The manufacturing procedure may contain up to :max images.',
         'description_text_only' => 'The product description is text-only. Choose images from the Media Library.',

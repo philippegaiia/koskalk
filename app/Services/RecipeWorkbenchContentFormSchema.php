@@ -73,6 +73,16 @@ class RecipeWorkbenchContentFormSchema
                                     ->columnSpan([
                                         'lg' => 12,
                                     ]),
+                                MediaAssetPicker::make('sop_document_media_asset_ids')
+                                    ->label(__('workbench.instructions.documents_label'))
+                                    ->helperText(__('workbench.instructions.documents_help'))
+                                    ->documents()
+                                    ->multiple()
+                                    ->maxItems(8)
+                                    ->disabled(fn (?Recipe $record): bool => ! $record instanceof Recipe)
+                                    ->columnSpan([
+                                        'lg' => 12,
+                                    ]),
                             ]),
                     ]),
             ]);

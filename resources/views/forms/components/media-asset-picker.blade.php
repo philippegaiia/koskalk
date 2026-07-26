@@ -7,6 +7,8 @@
     $usage = $getMediaAssetUsage();
     $preserveAspectRatio = $shouldPreserveAspectRatio();
     $embedded = $isEmbedded();
+    $acceptedTypes = $getAcceptedMediaAssetTypeValues();
+    $acceptsDocuments = $acceptsDocuments();
     $pickerId = 'media-picker-'.$getId();
 @endphp
 
@@ -21,6 +23,7 @@
             maximumItems: @js($maximumItems),
             preserveAspectRatio: @js($preserveAspectRatio),
             embedded: @js($embedded),
+            acceptedTypes: @js($acceptedTypes),
             messages: {
                 refreshFailed: @js(__('media_library.picker.refresh_failed')),
                 uploadFailed: @js(__('media_library.picker.upload_failed')),
@@ -36,12 +39,14 @@
                 <div class="flex flex-wrap gap-3">
                     @foreach ($selectedAssets as $asset)
                         <div class="flex items-center gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] p-2 pr-3">
-                            @if ($preserveAspectRatio)
+                            @if ($asset->getFirstMedia('master') && $preserveAspectRatio)
                                 <span class="grid aspect-[4/3] w-32 shrink-0 place-items-center overflow-hidden rounded-lg bg-[var(--color-panel-strong)]">
                                     <img src="{{ route('media.show', [$asset, 'master']) }}" alt="" class="size-full object-contain" draggable="false" />
                                 </span>
-                            @else
+                            @elseif ($asset->getFirstMedia('master'))
                                 <img src="{{ route('media.show', [$asset, 'thumbnail']) }}" alt="" class="size-14 rounded-lg object-cover" draggable="false" />
+                            @else
+                                <span class="grid size-14 shrink-0 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-xs font-semibold text-[var(--color-ink-soft)]">PDF</span>
                             @endif
                             <div class="min-w-0"><span class="block max-w-52 truncate text-sm font-medium text-[var(--color-ink-strong)]">{{ $asset->displayName() }}</span>@if (filled($asset->display_name) && $asset->display_name !== $asset->original_filename)<span class="block max-w-52 truncate text-xs text-[var(--color-ink-soft)]">{{ $asset->original_filename }}</span>@endif</div>
                         </div>
@@ -90,7 +95,7 @@
                         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                             <template x-for="asset in assets" x-bind:key="asset.id">
                                 <button type="button" data-media-picker-asset x-bind:data-media-picker-status="asset.status" x-bind:data-media-picker-selectable="asset.status === 'ready' ? 'true' : 'false'" x-bind:disabled="asset.status !== 'ready'" x-on:click="select(asset.id)" x-bind:aria-pressed="selected(asset.id)" x-bind:class="selected(asset.id) ? 'border-[var(--color-accent)] ring-2 ring-[var(--color-accent)]/25' : 'border-[var(--color-line)]'" class="overflow-hidden rounded-xl border text-left disabled:cursor-not-allowed disabled:opacity-65">
-                                    <span x-bind:class="preserveAspectRatio ? 'aspect-[4/3]' : 'aspect-square'" class="grid place-items-center bg-[var(--color-panel-strong)]"><img x-show="asset.thumbnail_url" x-bind:src="preserveAspectRatio ? asset.master_url : asset.thumbnail_url" alt="" x-bind:class="preserveAspectRatio ? 'object-contain' : 'object-cover'" class="size-full" draggable="false" /><span x-show="! asset.thumbnail_url" class="text-xs text-[var(--color-ink-soft)]" x-text="asset.status === 'processing' ? `${asset.progress}%` : messages.processingFailed"></span></span>
+                                    <span x-bind:class="preserveAspectRatio ? 'aspect-[4/3]' : 'aspect-square'" class="grid place-items-center bg-[var(--color-panel-strong)]"><img x-show="asset.thumbnail_url" x-bind:src="preserveAspectRatio ? asset.master_url : asset.thumbnail_url" alt="" x-bind:class="preserveAspectRatio ? 'object-contain' : 'object-cover'" class="size-full" draggable="false" /><span x-show="! asset.thumbnail_url" class="text-xs font-semibold text-[var(--color-ink-soft)]" x-text="asset.status === 'processing' ? `${asset.progress}%` : (asset.type === 'pdf' && asset.status === 'ready' ? 'PDF' : messages.processingFailed)"></span></span>
                                     <span class="block truncate px-2 pt-2 text-sm font-medium" x-text="asset.display_name"></span>
                                     <span x-show="asset.display_name !== asset.original_filename" class="block truncate px-2 pb-2 text-xs text-[var(--color-ink-soft)]" x-text="asset.original_filename"></span>
                                 </button>
@@ -102,7 +107,7 @@
                         @if ($canUpload)
                             <div data-media-picker-upload-form class="space-y-4">
                                 <div>
-                                    <span class="mb-2 block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('media_library.picker.image') }}</span>
+                                    <span class="mb-2 block text-sm font-medium text-[var(--color-ink-strong)]">{{ $acceptsDocuments ? __('media_library.picker.document') : __('media_library.picker.image') }}</span>
                                     <input
                                         id="{{ $pickerId }}-upload"
                                         x-ref="uploadInput"
@@ -110,7 +115,7 @@
                                         data-media-picker-file-input
                                         type="file"
                                         name="upload"
-                                        accept=".jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif"
+                                        accept="{{ $acceptsDocuments ? '.pdf,application/pdf' : '.jpg,.jpeg,.png,.webp,.heic,.heif,image/jpeg,image/png,image/webp,image/heic,image/heif' }}"
                                         class="peer sr-only"
                                     />
                                     <div class="flex min-h-12 flex-wrap items-center gap-3 rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-2">
@@ -142,7 +147,7 @@
                                     </div>
                                 </div>
                                 <button type="button" x-on:click="uploadNew()" x-bind:disabled="uploadSubmitting" class="sk-btn sk-btn-primary disabled:cursor-wait disabled:opacity-65">
-                                    <span x-show="! uploadSubmitting">{{ __('media_library.upload') }}</span>
+                                    <span x-show="! uploadSubmitting">{{ $acceptsDocuments ? __('media_library.documents.upload') : __('media_library.upload') }}</span>
                                     <span x-show="uploadSubmitting">{{ __('media_library.picker.processing') }}</span>
                                 </button>
                             </div>

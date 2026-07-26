@@ -3,6 +3,7 @@
 namespace App\Livewire\Dashboard;
 
 use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
+use App\MediaAssetType;
 use App\MediaAssetUsageRole;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
@@ -479,7 +480,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             try {
                 $state = $this->form->getState();
                 $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
-                unset($state['featured_media_asset_id']);
+                $sopDocumentMediaAssetIds = $state['sop_document_media_asset_ids'] ?? [];
+                unset($state['featured_media_asset_id'], $state['sop_document_media_asset_ids']);
             } finally {
                 $this->clearPendingRichContentStateOnRecipeTargets($recipe);
             }
@@ -493,6 +495,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 $recipe,
                 $state,
                 $featuredMediaAssetId,
+            );
+            app(MediaAssetUsageService::class)->syncMany(
+                $user,
+                $updatedRecipe,
+                MediaAssetUsageRole::RecipeSopDocument,
+                $sopDocumentMediaAssetIds,
+                maximum: 8,
+                expectedType: MediaAssetType::Pdf,
             );
         } catch (ValidationException $exception) {
             throw $exception;
@@ -756,6 +766,8 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 abort_unless($user instanceof User, 403);
 
                 $featuredMediaAssetId = $state['featured_media_asset_id'] ?? null;
+                $sopDocumentMediaAssetIds = $state['sop_document_media_asset_ids'] ?? [];
+                unset($state['featured_media_asset_id'], $state['sop_document_media_asset_ids']);
 
                 if ($sopSourceRecipe instanceof Recipe && ! $sopSourceRecipe->is($recipe)) {
                     $state['manufacturing_instructions'] = app(RecipeSopSnapshotService::class)
@@ -775,6 +787,14 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                     $recipe,
                     MediaAssetUsageRole::RecipeFeatured,
                     $featuredMediaAssetId,
+                );
+                $mediaAssetUsages->syncMany(
+                    $user,
+                    $recipe,
+                    MediaAssetUsageRole::RecipeSopDocument,
+                    $sopDocumentMediaAssetIds,
+                    maximum: 8,
+                    expectedType: MediaAssetType::Pdf,
                 );
                 $payload['manufacturing_instructions'] = $state['manufacturing_instructions'] ?? null;
             });
@@ -824,6 +844,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             'featured_media_asset_id' => $recipe instanceof Recipe
                 ? ($this->mediaAssetUsageIds($recipe, MediaAssetUsageRole::RecipeFeatured)[0] ?? null)
                 : null,
+            'sop_document_media_asset_ids' => $recipe instanceof Recipe
+                ? $this->mediaAssetUsageIds($recipe, MediaAssetUsageRole::RecipeSopDocument)
+                : [],
         ];
     }
 

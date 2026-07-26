@@ -8,6 +8,7 @@ use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class MediaAssetDownloadController extends Controller
@@ -31,7 +32,11 @@ class MediaAssetDownloadController extends Controller
         $path = $document->getPathRelativeToRoot();
         abort_unless($disk->exists($path), 404);
 
-        return $disk->download($path, $mediaAsset->displayName(), [
+        $downloadName = Str::endsWith(Str::lower($mediaAsset->displayName()), '.pdf')
+            ? $mediaAsset->displayName()
+            : $mediaAsset->displayName().'.pdf';
+
+        return $disk->download($path, $downloadName, [
             'Content-Type' => 'application/pdf',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',

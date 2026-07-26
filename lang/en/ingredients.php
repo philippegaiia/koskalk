@@ -208,6 +208,8 @@ return [
             'image_helper' => 'Optional square image shown on the ingredient page and in your library.',
             'icon' => 'Ingredient icon',
             'icon_helper' => 'Optional compact image used in ingredient selectors. The main image is used when no icon is provided.',
+            'documents' => 'COA and technical documents',
+            'documents_helper' => 'Attach up to 8 PDF certificates, safety sheets, or technical data sheets.',
             'notes' => 'Notes',
             'notes_helper' => 'Add formulation guidance, supplier information, or anything else useful.',
         ],

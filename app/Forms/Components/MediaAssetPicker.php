@@ -2,6 +2,7 @@
 
 namespace App\Forms\Components;
 
+use App\MediaAssetType;
 use App\Models\MediaAsset;
 use App\Models\User;
 use App\Services\EntitlementService;
@@ -24,6 +25,9 @@ class MediaAssetPicker extends Field
     protected bool $shouldPreserveAspectRatio = false;
 
     protected bool $isEmbedded = false;
+
+    /** @var array<int, MediaAssetType> */
+    protected array $acceptedMediaAssetTypes = [MediaAssetType::Image];
 
     protected function setUp(): void
     {
@@ -97,6 +101,38 @@ class MediaAssetPicker extends Field
         return $this->isEmbedded;
     }
 
+    public function documents(): static
+    {
+        $this->acceptedMediaAssetTypes = [MediaAssetType::Pdf];
+        $this->fileAttachmentsAcceptedFileTypes(['application/pdf']);
+
+        return $this;
+    }
+
+    /**
+     * @return array<int, MediaAssetType>
+     */
+    public function getAcceptedMediaAssetTypes(): array
+    {
+        return $this->acceptedMediaAssetTypes;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function getAcceptedMediaAssetTypeValues(): array
+    {
+        return array_map(
+            fn (MediaAssetType $type): string => $type->value,
+            $this->acceptedMediaAssetTypes,
+        );
+    }
+
+    public function acceptsDocuments(): bool
+    {
+        return in_array(MediaAssetType::Pdf, $this->acceptedMediaAssetTypes, true);
+    }
+
     /**
      * @return Collection<int, MediaAsset>
      */
@@ -135,7 +171,9 @@ class MediaAssetPicker extends Field
         $assets = MediaAsset::query()
             ->where('workspace_id', $workspace->id)
             ->whereKey($selectedIds)
-            ->select(['id', 'public_id', 'display_name', 'original_filename', 'status'])
+            ->whereIn('type', $this->getAcceptedMediaAssetTypeValues())
+            ->with('media')
+            ->select(['id', 'public_id', 'display_name', 'original_filename', 'status', 'type'])
             ->get();
 
         $request->attributes->set($cacheKey, $assets);

@@ -4667,17 +4667,6 @@
         },
         {
             "group": "media_library",
-            "key": "labels.assign",
-            "text": {
-                "de": "Label hinzufügen",
-                "es": "Añadir etiqueta",
-                "fr": "Ajouter l’étiquette",
-                "it": "Aggiungi etichetta",
-                "nl": "Label toevoegen"
-            }
-        },
-        {
-            "group": "media_library",
             "key": "labels.choose",
             "text": {
                 "de": "Label auswählen",

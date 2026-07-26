@@ -457,22 +457,24 @@
                                     @endif
 
                                     @if ($availablePanelLabels->isNotEmpty() && count($selectedLabelIds) < 8)
-                                        <form wire:submit="assignSelectedLabel" class="flex gap-2">
+                                        <div>
                                             <label class="sr-only" for="media-label-select">{{ __('media_library.labels.choose') }}</label>
                                             <select
                                                 id="media-label-select"
                                                 data-media-label-select
                                                 wire:model="labelToAssign"
+                                                wire:change="assignSelectedLabel"
+                                                wire:loading.attr="disabled"
+                                                wire:target="assignSelectedLabel"
                                                 required
-                                                class="min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-xs text-[var(--color-ink-strong)]"
+                                                class="w-full rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-xs text-[var(--color-ink-strong)] disabled:cursor-wait disabled:opacity-60"
                                             >
                                                 <option value="">{{ __('media_library.labels.choose') }}</option>
                                                 @foreach ($availablePanelLabels as $label)
                                                     <option value="{{ $label->id }}">{{ $label->name }}</option>
                                                 @endforeach
                                             </select>
-                                            <button type="submit" class="sk-btn px-3 py-2 text-xs">{{ __('media_library.labels.assign') }}</button>
-                                        </form>
+                                        </div>
                                     @elseif (count($selectedLabelIds) >= 8)
                                         <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.labels.asset_limit', ['count' => 8]) }}</p>
                                     @endif

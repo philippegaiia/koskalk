@@ -171,6 +171,8 @@ it('assigns and removes labels from the asset inspector select', function () {
         ->call('openAssetPanel', $asset->id, 'settings')
         ->assertSeeHtml('data-media-assigned-labels')
         ->assertSeeHtml('data-media-label-select')
+        ->assertSeeHtml('wire:change="assignSelectedLabel"')
+        ->assertDontSee('Add label')
         ->set('labelToAssign', $availableLabel->id)
         ->call('assignSelectedLabel')
         ->assertSet('labelToAssign', null)

@@ -4,7 +4,6 @@ return [
     'labels' => [
         'add' => 'Add',
         'apply_on_upload' => 'Apply labels to these files',
-        'assign' => 'Add label',
         'asset_limit' => 'An asset can have at most :count labels.',
         'choose' => 'Choose a label',
         'duplicate' => 'That label already exists.',

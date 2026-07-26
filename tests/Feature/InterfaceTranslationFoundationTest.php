@@ -84,7 +84,7 @@ it('reads only application-owned English source strings from Laravel language fi
         ->toHaveKey('formula_documents.actions.print');
 });
 
-it('keeps non-English application translations exclusively in the database', function () {
+it('keeps non-English application locale files and translation-value seeders out of the codebase', function () {
     foreach (['fr', 'es', 'de', 'it', 'nl'] as $locale) {
         expect(lang_path("{$locale}/workbench.php"))->not->toBeFile();
     }

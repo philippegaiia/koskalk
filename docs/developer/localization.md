@@ -1,6 +1,6 @@
 # Localization
 
-Last updated: 2026-07-21
+Last updated: 2026-07-26
 
 ## Scope
 
@@ -18,9 +18,12 @@ The Filament admin remains English-only. It is the trusted editing interface for
 The implemented interface layer uses Laravel localization with `spatie/laravel-translation-loader`.
 
 - English source text remains version-controlled in `lang/en`.
-- Non-English application strings live only in `language_lines`; there are no parallel application-owned locale files or translation-value seeders.
+- Non-English application strings are loaded at runtime from `language_lines`; there are no parallel application-owned locale files or translation-value seeders.
 - `App\Services\Translations\EnglishTranslationSource` reads only the application-owned groups and key patterns declared in `config/interface-translations.php`.
 - `App\Services\Translations\SyncInterfaceTranslations` inserts missing translation keys into `language_lines` without overwriting translations.
+- `database/seeders/data/interface-translations.json` is the deterministic, version-controlled recovery catalogue for reviewed non-English values.
+- `translations:catalogue:export` writes the current application-owned `language_lines` values to that catalogue without IDs or timestamps.
+- `translations:catalogue:import` validates the complete catalogue before writing and requires an explicit conflict mode.
 - `App\Models\InterfaceTranslation` is the application model for Spatie language lines.
 - `supported_locales` controls which locales exist, their number-format locale, text direction, activation state, and display order.
 - The Filament `Languages` and `Interface Translations` resources provide the trusted editing workflow.
@@ -52,17 +55,25 @@ The locale seeder currently registers:
 
 Registering a locale is not the same as translating or publishing it. The application may eventually support ten or more languages, but languages should be activated only after their required interface and platform content has been reviewed.
 
-Run these commands during deployment when the related changes are present:
+During the current owner-only pre-launch phase, deploy with the repository catalogue as the authoritative source:
 
 ```shell
 php artisan migrate --force
-php artisan db:seed --class=Database\\Seeders\\SupportedLocaleSeeder --force
+php artisan db:seed --class='Database\Seeders\SupportedLocaleSeeder' --force
 php artisan translations:sync
+php artisan translations:catalogue:import --mode=authoritative --force --no-interaction
 ```
 
 `translations:sync` creates missing application-owned rows with empty translation maps. It never machine-translates text and never overwrites an existing translation. The command is additive by default. Pass `--prune` only when rows outside the ownership manifest should be removed, such as after retiring a group or cleaning an older database.
 
-`SupportedLocaleSeeder` registers locale metadata only. `DatabaseSeeder` does not insert non-English interface copy. Reviewed translations are database content: editing a locale value in Filament takes effect without a deployment, and later deployments must preserve it.
+Do not use `translations:sync --prune` in deployment, and do not run the complete `DatabaseSeeder` to deploy translations. `SupportedLocaleSeeder` registers locale metadata only. The explicit catalogue import is scoped to application-owned interface keys in `language_lines`; it does not write to users, products, ingredients, media, or other tables, and it never deletes a database row because that row is absent from the catalogue.
+
+The import conflict mode is mandatory:
+
+- `--mode=authoritative` replaces the complete non-English locale map for each matching catalogue row. It can create missing rows and update existing rows. In production it additionally requires `--force`. Use this mode only while the committed catalogue is authoritative.
+- `--mode=preserve-existing` creates missing rows and fills only locale values that are absent or blank. It preserves every non-blank database value. Use this mode after production editorial changes become authoritative.
+
+Both modes validate the format, registered locales, application ownership, duplicates, value types, deterministic ordering, and English placeholders before opening the write transaction. Neither mode imports English values; canonical English remains in `lang/en`.
 
 The development and review sequence for a new or changed key is:
 
@@ -70,13 +81,40 @@ The development and review sequence for a new or changed key is:
 2. Run `translations:sync` locally to create any missing database rows.
 3. Draft each missing locale from the English source, the complete key, nearby strings, and the task context. Codex can do this directly during the review task; no OpenAI API key or runtime translation integration is required.
 4. Save only blank values in the local `language_lines` table, review them in the rendered interface, and revise them there without changing source files.
-5. Deploy the English source and run `translations:sync` in production to create the same keys without overwriting existing content.
-6. Promote the reviewed database values through an explicit, one-time database content import when production does not already contain them. During the current owner-only pre-launch phase, the production `language_lines` rows may instead be replaced once by a complete reviewed baseline. Do not reset application or user data. After launch, imports must preserve non-blank production edits.
-7. Activate a locale only after its required interface and platform content is complete.
+5. Export the reviewed local state:
+
+   ```shell
+   php artisan translations:catalogue:export
+   ```
+
+6. Review and commit `database/seeders/data/interface-translations.json` with the related English keys.
+7. Deploy the English source, synchronize missing keys, and import the catalogue with the phase-appropriate explicit mode.
+8. Activate a locale only after its required interface and platform content is complete.
+
+The export is deterministic: rows are sorted by group and key, locale maps are sorted, Unicode and line breaks remain readable, placeholders are preserved, and database IDs and timestamps are excluded. A repeated export with unchanged values must produce no Git diff.
 
 Automatic drafting is a separate operation from synchronization. It must fill only blank locale values, preserve reviewed database text, preserve placeholders, and provide enough task context to avoid literal word-for-word translation. A translation-provider integration must not be hidden inside deployment seeding.
 
-The local and production databases are independent content stores. A deployment can add English source keys, but it cannot infer or recover reviewed non-English values from the Git branch. Before the first localization release, export or otherwise promote the reviewed `language_lines` content into production once. Since the current production application is owner-only and pre-launch, that initial promotion may cleanly replace the existing `language_lines` rows; it must not reset any other database content. After that baseline, production Filament edits are authoritative and normal deployments remain additive only.
+The local and production databases remain independent content stores. The catalogue is the recovery and promotion boundary between them. During pre-launch, local review followed by catalogue export is authoritative and every deployment uses `--mode=authoritative --force`. When production Filament edits become authoritative, first export or otherwise reconcile the final production state, then permanently change the deployment import to:
+
+```shell
+php artisan translations:catalogue:import --mode=preserve-existing --no-interaction
+```
+
+Do not keep authoritative replacement in the deployment script after production editors begin making non-blank changes that are not first reconciled into Git.
+
+## Fresh database recovery
+
+A fresh database can recover interface translations without running the complete application seeder:
+
+```shell
+php artisan migrate
+php artisan db:seed --class='Database\Seeders\SupportedLocaleSeeder'
+php artisan translations:sync
+php artisan translations:catalogue:import --mode=authoritative --no-interaction
+```
+
+This recreates application-owned rows from English keys and then applies the reviewed non-English catalogue. Rows intentionally absent from the catalogue are not deleted. English continues to load from `lang/en`.
 
 Adding another locale means adding or managing its `supported_locales` record, synchronizing keys, completing the translation review, and only then activating it. Do not seed guessed translations.
 

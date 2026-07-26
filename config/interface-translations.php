@@ -7,6 +7,7 @@ return [
         'formula_documents' => ['*'],
         'ingredients' => ['*'],
         'media' => ['*'],
+        'media_library' => ['*'],
         'navigation' => ['*'],
         'packaging' => ['*'],
         'products' => ['*'],

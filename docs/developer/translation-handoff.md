@@ -1,6 +1,6 @@
 # Translation Work Handoff
 
-Last updated: 2026-07-21
+Last updated: 2026-07-26
 
 ## Goal
 
@@ -14,8 +14,8 @@ Prepare Soapkraft's user-facing application for high-quality translation without
 
 Current working state:
 
-- Branch: `codex/database-interface-translations`
-- Local review site: `http://koskalk-translations.test`
+- Branch: `main`
+- Local review site: `http://koskalk.test`
 - The Ingredients index and Add/Edit Ingredient editor have approved English terminology and 222 interface keys: 95 for the index and 127 for the editor. The editor total includes its conditional Composition, Soap chemistry, Compliance, Soapkraft reference, custom validation, and carrier-oil saponification warning states. Contextual drafts for all five non-English locales are complete in the local `language_lines` database for rendered review.
 - The Packaging index and Add/Edit Packaging editor have approved English terminology and 60 interface keys: 40 for the index and 20 for the editor. Contextual drafts for all five non-English locales are complete in the local `language_lines` database for rendered review. Saved packaging names and notes remain user-authored content and are not translated. Laravel and Filament validation and upload messages stay in their framework translation files.
 - The Products index has approved product-first English terminology and 48 interface keys. Contextual drafts for all five non-English locales are complete in the local `language_lines` database for rendered review. `Product` is the complete saved item; its formula and packaging are parts of that product. Laravel routes and models may retain `recipe` internally, but that implementation term does not appear on this index.
@@ -25,6 +25,7 @@ Current working state:
 - Use `Workspace` consistently in user-facing copy. The current MVP is owner-only. The schema contains workspace membership and roles, but formula access is still enforced as owner-only in current policies and tests. Do not expose member invitations, workspace switching, or collaboration claims until that contradiction is explicitly resolved. Account owns personal settings; Settings owns display preferences and workspace defaults.
 - Ingredient display names, guidance, category taxonomy, and INCI cleanup are not part of that interface pass. Review the ingredient catalog before populating `ingredient_translations`.
 - The deployed application works, but its `language_lines` table was reported empty. `translations:sync` will create keys there; it will not copy reviewed local translations.
+- Reviewed local interface translations are now recoverable from `database/seeders/data/interface-translations.json`. The catalogue includes the complete Media Library group and its sidebar label for French, Spanish, German, Italian, and Dutch.
 
 ## Editorial rules
 
@@ -60,8 +61,10 @@ The longer Soapkraft-quality explanations should not become a large set of ordin
 - Add or rename English keys, then run `php artisan translations:sync`.
 - Keep non-English application strings only in `language_lines`. Do not create locale copies of application files or seed translation values during deployment.
 - Draft only blank locale values, preserve reviewed database edits and placeholders, and review translations in the rendered task before activation.
+- After local review, run `php artisan translations:catalogue:export`, review the deterministic diff, and commit the catalogue with the English source changes.
 - Contextual drafting is done in this development task and does not require an OpenAI API key or an in-application translation provider.
-- Before the first production localization release, explicitly promote the reviewed local `language_lines` values into production. Because production is currently pre-launch and used only by the owner, its interface-translation rows may be replaced once by a complete reviewed export instead of maintaining incremental imports. This applies only to `language_lines`, not to application or user data. After that baseline, ordinary deployments run `translations:sync` only for missing keys and preserve production edits.
+- During the current pre-launch phase, deploy with `translations:catalogue:import --mode=authoritative --force --no-interaction` after locale seeding and `translations:sync`. This applies only to application-owned `language_lines` rows and never deletes rows absent from the catalogue.
+- When non-blank production edits become authoritative, reconcile the final production values and switch deployment permanently to `translations:catalogue:import --mode=preserve-existing --no-interaction`.
 - Review both interface and relevant platform ingredient content before activating a locale.
 - Never activate incomplete translations.
 

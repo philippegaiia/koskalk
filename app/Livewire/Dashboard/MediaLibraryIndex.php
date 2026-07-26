@@ -4,9 +4,11 @@ namespace App\Livewire\Dashboard;
 
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\MediaLabel;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\UserPackagingItem;
@@ -16,6 +18,7 @@ use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
 use App\Services\MediaAssetLibraryService;
 use App\Services\MediaAssetUploadService;
+use App\Services\MediaLabelService;
 use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -42,6 +45,22 @@ class MediaLibraryIndex extends Component
     public string $statusFilter = 'all';
 
     public string $usageFilter = 'all';
+
+    public string $typeFilter = 'all';
+
+    /** @var array<int, int|string> */
+    public array $labelFilter = [];
+
+    /** @var array<int, int|string> */
+    public array $uploadLabelIds = [];
+
+    /** @var array<int, int|string> */
+    public array $selectedLabelIds = [];
+
+    /** @var array<int, string> */
+    public array $labelNames = [];
+
+    public string $newLabelName = '';
 
     public ?string $statusMessage = null;
 
@@ -74,6 +93,11 @@ class MediaLibraryIndex extends Component
         $this->assetPanelTab = $tab;
         $this->usageSearch = '';
         $this->displayNames[$asset->id] = $asset->displayName();
+        $this->selectedLabelIds = $asset->labels()->pluck('media_labels.id')->all();
+        $this->labelNames = MediaLabel::query()
+            ->where('workspace_id', $asset->workspace_id)
+            ->pluck('name', 'id')
+            ->all();
     }
 
     public function showAssetPanelTab(string $tab): void
@@ -88,6 +112,8 @@ class MediaLibraryIndex extends Component
         $this->selectedAssetId = null;
         $this->assetPanelTab = 'settings';
         $this->usageSearch = '';
+        $this->selectedLabelIds = [];
+        $this->newLabelName = '';
     }
 
     public function beginRename(int $assetId, CurrentAppUserResolver $resolver): void
@@ -161,9 +187,20 @@ class MediaLibraryIndex extends Component
         $this->resetPage();
     }
 
+    public function updatedTypeFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedLabelFilter(): void
+    {
+        $this->resetPage();
+    }
+
     public function uploadAsset(
         CurrentAppUserResolver $resolver,
         MediaAssetUploadService $uploads,
+        MediaLabelService $labels,
     ): void {
         $user = $resolver->resolve();
         $workspace = $user?->company();
@@ -174,12 +211,101 @@ class MediaLibraryIndex extends Component
             'upload' => ['required', 'file', 'max:10240'],
         ]);
 
-        $asset = $uploads->start($user, $workspace, $this->upload);
+        $asset = $uploads->start(
+            $user,
+            $workspace,
+            $this->upload,
+            [MediaAssetType::Image, MediaAssetType::Pdf],
+        );
+
+        if ($this->uploadLabelIds !== []) {
+            $labels->sync($user, $asset, $this->uploadLabelIds);
+        }
 
         $this->reset('upload');
         $this->showAppNotification(
             __('media_library.messages.upload_processing', ['name' => $asset->original_filename]),
         );
+    }
+
+    public function createLabel(
+        CurrentAppUserResolver $resolver,
+        MediaLabelService $labels,
+    ): void {
+        $user = $resolver->resolve();
+        $workspace = $user?->company();
+        abort_unless($user instanceof User && $workspace instanceof Workspace, 403);
+
+        try {
+            $label = $labels->create($user, $workspace, $this->newLabelName);
+        } catch (ValidationException $exception) {
+            $this->addError('newLabelName', $exception->validator->errors()->first('label'));
+
+            return;
+        }
+
+        $this->resetErrorBag('newLabelName');
+        $this->newLabelName = '';
+        $this->labelNames[$label->id] = $label->name;
+
+        if ($this->selectedAssetId !== null) {
+            $asset = $this->workspaceAsset($this->selectedAssetId, $user);
+            abort_unless($asset instanceof MediaAsset, 404);
+
+            $this->selectedLabelIds[] = $label->id;
+            $labels->sync($user, $asset, $this->selectedLabelIds);
+        }
+    }
+
+    public function saveSelectedLabels(
+        CurrentAppUserResolver $resolver,
+        MediaLabelService $labels,
+    ): void {
+        $user = $resolver->resolve();
+        $asset = $this->selectedAssetId === null
+            ? null
+            : $this->workspaceAsset($this->selectedAssetId, $user);
+        abort_unless($user instanceof User && $asset instanceof MediaAsset, 404);
+
+        $labels->sync($user, $asset, $this->selectedLabelIds);
+        $this->showAppNotification(__('media_library.messages.labels_updated'));
+    }
+
+    public function renameLabel(
+        int $labelId,
+        CurrentAppUserResolver $resolver,
+        MediaLabelService $labels,
+    ): void {
+        $user = $resolver->resolve();
+        $label = $this->workspaceLabel($labelId, $user);
+        abort_unless($user instanceof User && $label instanceof MediaLabel, 404);
+
+        try {
+            $renamed = $labels->rename($user, $label, $this->labelNames[$labelId] ?? '');
+        } catch (ValidationException $exception) {
+            $this->addError("labelNames.{$labelId}", $exception->validator->errors()->first('label'));
+
+            return;
+        }
+
+        $this->labelNames[$labelId] = $renamed->name;
+        $this->resetErrorBag("labelNames.{$labelId}");
+    }
+
+    public function deleteLabel(
+        int $labelId,
+        CurrentAppUserResolver $resolver,
+        MediaLabelService $labels,
+    ): void {
+        $user = $resolver->resolve();
+        $label = $this->workspaceLabel($labelId, $user);
+        abort_unless($user instanceof User && $label instanceof MediaLabel, 404);
+
+        $labels->delete($user, $label);
+        $this->selectedLabelIds = $this->withoutId($this->selectedLabelIds, $labelId);
+        $this->labelFilter = $this->withoutId($this->labelFilter, $labelId);
+        $this->uploadLabelIds = $this->withoutId($this->uploadLabelIds, $labelId);
+        unset($this->labelNames[$labelId]);
     }
 
     public function retry(
@@ -268,6 +394,12 @@ class MediaLibraryIndex extends Component
         $selectedAsset = $workspace instanceof Workspace
             ? $this->selectedAsset($workspace)
             : null;
+        $labels = $workspace instanceof Workspace
+            ? MediaLabel::query()
+                ->where('workspace_id', $workspace->id)
+                ->orderBy('normalized_name')
+                ->get()
+            : collect();
 
         return view('livewire.dashboard.media-library-index', [
             'assets' => $assets,
@@ -278,6 +410,7 @@ class MediaLibraryIndex extends Component
             'hasProcessingAssets' => $hasProcessingAssets,
             'selectedAsset' => $selectedAsset,
             'selectedUsageGroups' => $this->selectedUsageGroups($selectedAsset),
+            'labels' => $labels,
         ]);
     }
 
@@ -285,6 +418,7 @@ class MediaLibraryIndex extends Component
     {
         return MediaAsset::query()
             ->where('workspace_id', $workspace->id)
+            ->with(['labels', 'media'])
             ->withCount('usages')
             ->when(
                 filled($this->search),
@@ -304,6 +438,17 @@ class MediaLibraryIndex extends Component
             )
             ->when($this->usageFilter === 'used', fn ($query) => $query->has('usages'))
             ->when($this->usageFilter === 'unused', fn ($query) => $query->doesntHave('usages'))
+            ->when(
+                in_array($this->typeFilter, array_column(MediaAssetType::cases(), 'value'), true),
+                fn ($query) => $query->where('type', $this->typeFilter),
+            )
+            ->when(
+                $this->labelFilter !== [],
+                fn ($query) => $query->whereHas(
+                    'labels',
+                    fn ($query) => $query->whereKey($this->labelFilter),
+                ),
+            )
             ->latest()
             ->paginate(24);
     }
@@ -317,6 +462,8 @@ class MediaLibraryIndex extends Component
         return MediaAsset::query()
             ->where('workspace_id', $workspace->id)
             ->with([
+                'labels',
+                'media',
                 'usages' => fn ($query) => $query->latest(),
                 'usages.usable',
             ])
@@ -386,5 +533,28 @@ class MediaLibraryIndex extends Component
                 ->where('user_id', $user->id)
                 ->first()
                 ?->role;
+    }
+
+    private function workspaceLabel(int $labelId, ?User $user): ?MediaLabel
+    {
+        $workspace = $user?->company();
+
+        return $workspace instanceof Workspace
+            ? MediaLabel::query()
+                ->where('workspace_id', $workspace->id)
+                ->find($labelId)
+            : null;
+    }
+
+    /**
+     * @param  array<int, int|string>  $ids
+     * @return array<int, int|string>
+     */
+    private function withoutId(array $ids, int $removedId): array
+    {
+        return collect($ids)
+            ->reject(fn (int|string $id): bool => (int) $id === $removedId)
+            ->values()
+            ->all();
     }
 }

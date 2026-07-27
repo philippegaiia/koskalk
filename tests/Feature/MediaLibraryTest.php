@@ -127,7 +127,7 @@ it('filters the library by media type and workspace labels', function () {
         ->set('labelFilter', [$certificate->id])
         ->assertSee('coa.pdf')
         ->assertDontSee('product.jpg')
-        ->assertSeeHtml('data-media-card-labels')
+        ->assertDontSeeHtml('data-media-card-labels')
         ->assertSeeHtml('data-media-pdf-placeholder');
 
     expect($image->labels)->toBeEmpty();
@@ -426,8 +426,11 @@ it('keeps gallery cards compact and renders the selected asset in an accessible 
         ->test(MediaLibraryIndex::class)
         ->assertSet('selectedAssetId', null)
         ->assertSeeHtml('data-media-card')
+        ->assertSeeHtml('data-media-card-preview')
+        ->assertSeeHtml('w-full aspect-square')
         ->assertSeeHtml('data-media-card-name-row')
         ->assertSeeHtml('data-media-card-meta-row')
+        ->assertSeeHtml('items-center gap-3')
         ->assertSeeHtml('data-media-usage-link')
         ->assertSeeHtml('data-media-settings-trigger')
         ->assertDontSeeHtml('data-media-inline-details')
@@ -508,9 +511,12 @@ it('renders a dense responsive thumbnail grid', function () {
 
     Livewire::actingAs($user)
         ->test(MediaLibraryIndex::class)
+        ->assertSeeHtml('data-media-gallery-section')
+        ->assertSeeHtml('data-media-filter-toolbar')
         ->assertSeeHtml('data-media-gallery-grid')
         ->assertSeeHtml('grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6')
-        ->assertSeeHtml('gap-4 p-4 sm:gap-5 sm:p-6');
+        ->assertSeeHtml('gap-4 sm:gap-5')
+        ->assertDontSeeHtml('gap-4 p-4 sm:gap-5 sm:p-6');
 });
 
 it('polls only while the workspace has processing assets', function () {
@@ -533,7 +539,12 @@ it('exposes usage filters as an accessible pressed-button group', function () {
 
     Livewire::actingAs($user)
         ->test(MediaLibraryIndex::class)
-        ->assertSeeHtml('role="group"')
+        ->assertSeeHtml('data-media-filter-toolbar')
+        ->assertSeeHtml('data-media-usage-filter')
+        ->assertSeeHtml('aria-label="Usage"')
+        ->assertSee('Any usage')
+        ->assertSeeHtml('data-media-status-filter')
+        ->assertSeeHtml('data-media-type-filter')
         ->assertSeeHtml('aria-pressed="true"')
         ->set('usageFilter', 'used')
         ->assertSeeHtml('aria-pressed="true"');

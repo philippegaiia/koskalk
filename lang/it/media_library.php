@@ -7,6 +7,7 @@ $translations = array_replace_recursive(require lang_path('en/media_library.php'
 ]);
 
 return array_replace_recursive($translations, [
+    'filters' => ['usage' => 'Utilizzo', 'any_usage' => 'Qualsiasi utilizzo', 'all_types' => 'Qualsiasi tipo di file', 'images' => 'Immagini', 'pdfs' => 'PDF', 'type' => 'Tipo di file'],
     'choose_files' => 'Scegli immagini',
     'selected_files' => '{1} :count immagine selezionata|[2,*] :count immagini selezionate',
     'upload_selected' => 'Carica le immagini selezionate',

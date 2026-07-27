@@ -171,23 +171,32 @@
         </div>
     </section>
 
-    <section class="overflow-hidden sk-card p-0">
-        <div class="flex flex-col gap-4 border-b border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div role="group" class="flex flex-wrap gap-2" aria-label="{{ __('media_library.filters.aria_label') }}">
-                @foreach (['all', 'used', 'unused'] as $value)
-                    <button type="button" wire:click="$set('usageFilter', '{{ $value }}')" aria-pressed="{{ $usageFilter === $value ? 'true' : 'false' }}" class="{{ $usageFilter === $value ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)]' }} rounded-full border px-4 py-2 text-sm font-medium">
-                        {{ __('media_library.filters.'.$value) }}
-                    </button>
-                @endforeach
+    <section data-media-gallery-section class="space-y-4">
+        <div data-media-filter-toolbar class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div role="group" class="flex flex-wrap items-center gap-2" aria-label="{{ __('media_library.filters.aria_label') }}">
+                <div data-media-usage-filter role="group" class="flex items-center gap-2" aria-label="{{ __('media_library.filters.usage') }}">
+                    <span id="media-usage-filter-label" class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-soft)]">
+                        {{ __('media_library.filters.usage') }}
+                    </span>
+                    <div class="flex flex-wrap gap-1">
+                        @foreach (['all', 'used', 'unused'] as $value)
+                            <button type="button" wire:click="$set('usageFilter', '{{ $value }}')" aria-pressed="{{ $usageFilter === $value ? 'true' : 'false' }}" class="{{ $usageFilter === $value ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
+                                {{ $value === 'all' ? __('media_library.filters.any_usage') : __('media_library.filters.'.$value) }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
 
-                <select wire:model.live="statusFilter" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm text-[var(--color-ink-soft)]" aria-label="{{ __('media_library.filters.processing_status') }}">
+                <span aria-hidden="true" class="mx-1 hidden h-6 w-px bg-[var(--color-line)] sm:block"></span>
+
+                <select data-media-status-filter wire:model.live="statusFilter" class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs text-[var(--color-ink-soft)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" aria-label="{{ __('media_library.filters.processing_status') }}">
                     <option value="all">{{ __('media_library.statuses.all') }}</option>
                     <option value="processing">{{ __('media_library.statuses.processing') }}</option>
                     <option value="ready">{{ __('media_library.statuses.ready') }}</option>
                     <option value="failed">{{ __('media_library.statuses.failed') }}</option>
                 </select>
 
-                <select wire:model.live="typeFilter" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm text-[var(--color-ink-soft)]" aria-label="{{ __('media_library.filters.type') }}">
+                <select data-media-type-filter wire:model.live="typeFilter" class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs text-[var(--color-ink-soft)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" aria-label="{{ __('media_library.filters.type') }}">
                     <option value="all">{{ __('media_library.filters.all_types') }}</option>
                     <option value="image">{{ __('media_library.filters.images') }}</option>
                     <option value="pdf">{{ __('media_library.filters.pdfs') }}</option>
@@ -195,7 +204,7 @@
 
                 @if ($labels->isNotEmpty())
                     <details data-media-label-filter class="relative">
-                        <summary class="cursor-pointer list-none rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm text-[var(--color-ink-soft)]">
+                        <summary class="cursor-pointer list-none rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-xs text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
                             {{ __('media_library.labels.filter') }}
                             @if ($labelFilter !== [])
                                 <span class="ml-1 text-[var(--color-accent-strong)]">· {{ count($labelFilter) }}</span>
@@ -220,15 +229,15 @@
         </div>
 
         @if ($assets->isEmpty())
-            <div class="px-5 py-12 text-center">
+            <div class="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-12 text-center">
                 <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.empty.title') }}</h4>
                 <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('media_library.empty.description') }}</p>
             </div>
         @else
-            <div data-media-gallery-grid class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 p-4 sm:gap-5 sm:p-6">
+            <div data-media-gallery-grid class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
                 @foreach ($assets as $asset)
                     <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-panel)]">
-                        <div class="relative grid aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
+                        <div data-media-card-preview class="relative grid w-full aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
                             @if ($asset->status === \App\MediaAssetStatus::Ready && $asset->getFirstMedia('master'))
                                 <img src="{{ route('media.show', [$asset, 'thumbnail']) }}" alt="" class="size-full object-cover" />
                             @elseif ($asset->status === \App\MediaAssetStatus::Ready && $asset->type === \App\MediaAssetType::Pdf)
@@ -255,8 +264,8 @@
                                 <h4 data-media-display-name class="truncate text-[11px] font-medium leading-4 text-[var(--color-ink-strong)]" title="{{ $asset->displayName() }}">{{ $asset->displayName() }}</h4>
                             </div>
 
-                            <div data-media-card-meta-row class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-                                <div class="min-w-0 space-y-1">
+                            <div data-media-card-meta-row class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                                <div class="min-w-0">
                                     <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                         <button
                                             id="media-asset-usage-{{ $asset->id }}"
@@ -277,14 +286,6 @@
                                             </a>
                                         @endif
                                     </div>
-                                    @if ($asset->labels->isNotEmpty())
-                                        <p data-media-card-labels class="truncate text-[10px] leading-4 text-[var(--color-ink-soft)]" title="{{ $asset->labels->pluck('name')->join(', ') }}">
-                                            {{ $asset->labels->take(2)->pluck('name')->join(' · ') }}
-                                            @if ($asset->labels->count() > 2)
-                                                · +{{ $asset->labels->count() - 2 }}
-                                            @endif
-                                        </p>
-                                    @endif
                                 </div>
 
                                 @if ($asset->status === \App\MediaAssetStatus::Ready && $canUpdateMedia)
@@ -332,7 +333,7 @@
                 @endforeach
             </div>
 
-            <div class="border-t border-[var(--color-line)] px-5 py-4">
+            <div class="pt-2">
                 {{ $assets->links() }}
             </div>
         @endif

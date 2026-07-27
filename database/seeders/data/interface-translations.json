@@ -4414,6 +4414,28 @@
         },
         {
             "group": "media_library",
+            "key": "crop.instruction",
+            "text": {
+                "de": "Klicke oder ziehe auf den Bereich, der zentriert bleiben soll. Mit den Pfeiltasten kannst du feinjustieren.",
+                "es": "Haz clic o arrastra sobre la zona que debe quedar centrada. Usa las flechas para ajustar con precisión.",
+                "fr": "Cliquez ou faites glisser sur la zone à garder centrée. Utilisez les flèches pour affiner.",
+                "it": "Fai clic o trascina sulla zona da mantenere al centro. Usa le frecce per regolare con precisione.",
+                "nl": "Klik of sleep op het deel dat gecentreerd moet blijven. Gebruik de pijltjestoetsen voor fijnafstelling."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "crop.preview",
+            "text": {
+                "de": "Quadratische Vorschau",
+                "es": "Vista previa cuadrada",
+                "fr": "Aperçu carré",
+                "it": "Anteprima quadrata",
+                "nl": "Vierkant voorbeeld"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "crop.save",
             "text": {
                 "de": "Fokuspunkt speichern",

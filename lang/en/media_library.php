@@ -152,6 +152,8 @@ return [
     'crop' => [
         'adjust' => 'Adjust square crop',
         'horizontal' => 'Horizontal focal point',
+        'instruction' => 'Click or drag on the part to keep centered. Use the arrow keys for fine adjustment.',
+        'preview' => 'Square preview',
         'vertical' => 'Vertical focal point',
         'save' => 'Save focal point',
     ],

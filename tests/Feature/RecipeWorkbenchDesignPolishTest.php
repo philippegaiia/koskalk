@@ -1099,7 +1099,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
 
     expect($appStylesSource)
         ->toContain('[data-user-shell]')
-        ->toContain('--color-surface: oklch(97.2% 0.012 128)')
+        ->toContain('--color-surface: oklch(97.2% 0.010 128)')
         ->toContain('--color-panel: oklch(98.8% 0.006 85)')
         ->toContain('--color-accent: oklch(53.0% 0.090 55)')
         ->toContain('[data-user-shell] .sk-tone-analysis')

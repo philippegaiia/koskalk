@@ -506,6 +506,28 @@ it('keeps gallery cards compact and renders the selected asset in an accessible 
         ->assertDontSeeHtml('data-media-asset-panel');
 });
 
+it('makes the ready image preview the settings target with a quiet corner cue', function () {
+    $source = file_get_contents(resource_path('views/livewire/dashboard/media-library-index.blade.php'));
+    $previewPosition = strpos($source, 'data-media-card-preview');
+    $settingsPosition = strpos($source, 'data-media-settings-trigger');
+    $nameRowPosition = strpos($source, 'data-media-card-name-row');
+
+    expect($previewPosition)->toBeInt()
+        ->and($settingsPosition)->toBeInt()->toBeGreaterThan($previewPosition)->toBeLessThan($nameRowPosition)
+        ->and($source)
+        ->toContain('class="group absolute inset-0 z-10 cursor-pointer rounded-[var(--radius-md)]')
+        ->toContain('data-media-settings-cue')
+        ->toContain('class="pointer-events-none absolute right-0 top-0 grid h-7 w-9 place-items-center rounded-bl-lg bg-[var(--color-panel)]/85')
+        ->toContain('text-[9px] font-semibold tracking-[0.14em]')
+        ->toContain('•••')
+        ->toContain('wire:click="openAssetPanel({{ $asset->id }}, \'settings\')"')
+        ->toContain('data-media-card-meta-row class="min-w-0"')
+        ->not->toContain('d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M7 14v6"')
+        ->not->toContain('shadow-[0_2px_8px_rgba(60,50,30,0.16)]')
+        ->not->toContain('class="absolute right-2.5 top-2.5 z-10')
+        ->not->toContain('data-media-card-meta-row class="grid grid-cols-[minmax(0,1fr)_auto]');
+});
+
 it('does not disclose media panel details outside the active workspace', function () {
     [$owner, $workspace] = mediaLibraryWorkspace();
     [$outsider] = mediaLibraryWorkspace();
@@ -566,6 +588,17 @@ it('renders a dense responsive thumbnail grid', function () {
         ->assertSeeHtml('grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6')
         ->assertSeeHtml('gap-4 sm:gap-5')
         ->assertDontSeeHtml('gap-4 p-4 sm:gap-5 sm:p-6');
+});
+
+it('uses the shared borderless card surface for gallery chrome', function () {
+    $source = file_get_contents(resource_path('views/livewire/dashboard/media-library-index.blade.php'));
+
+    expect($source)
+        ->toContain('data-media-filter-toolbar class="flex flex-col gap-4 sk-card px-5 py-4')
+        ->toContain('class="sk-card px-5 py-12 text-center"')
+        ->toContain('data-media-card wire:key="media-asset-{{ $asset->id }}" class="sk-card overflow-hidden"')
+        ->not->toContain('data-media-filter-toolbar class="flex flex-col gap-4 rounded-[var(--radius-md)] border')
+        ->not->toContain('data-media-card wire:key="media-asset-{{ $asset->id }}" class="overflow-hidden rounded-[var(--radius-md)] border');
 });
 
 it('polls only while the workspace has processing assets', function () {
@@ -747,6 +780,28 @@ it('updates the focal point and queues square conversion regeneration', function
         ->focal_y->toBe(70.0);
 
     Queue::assertPushedOn('media', RegenerateMediaAssetConversionsJob::class);
+});
+
+it('previews the square crop locally and saves only the final focal point', function () {
+    $source = file_get_contents(resource_path('views/livewire/dashboard/media-library-index.blade.php'));
+
+    expect($source)
+        ->toContain('data-media-focal-editor')
+        ->toContain('data-media-focal-selector')
+        ->toContain('data-media-square-preview')
+        ->toContain('chooseFocalPoint(event)')
+        ->toContain('@pointerdown.prevent')
+        ->toContain('@pointermove.prevent')
+        ->toContain('@keydown.arrow-left.prevent')
+        ->toContain('@keydown.arrow-right.prevent')
+        ->toContain('@keydown.arrow-up.prevent')
+        ->toContain('@keydown.arrow-down.prevent')
+        ->toContain('x-bind:style="`object-position: ${focalX}% ${focalY}%`"')
+        ->toContain('wire:click="updateFocalPoint({{ $selectedAsset->id }}, focalX, focalY)"')
+        ->not->toContain('x-model.number="focalX" type="range"')
+        ->not->toContain('x-model.number="focalY" type="range"');
+
+    expect(substr_count($source, 'wire:click="updateFocalPoint('))->toBe(1);
 });
 
 it('serves only allowlisted conversions to authorized workspace members', function () {

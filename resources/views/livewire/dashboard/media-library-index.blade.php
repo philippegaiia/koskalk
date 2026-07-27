@@ -172,7 +172,7 @@
     </section>
 
     <section data-media-gallery-section class="space-y-4">
-        <div data-media-filter-toolbar class="flex flex-col gap-4 rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div data-media-filter-toolbar class="flex flex-col gap-4 sk-card px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div role="group" class="flex flex-wrap items-center gap-2" aria-label="{{ __('media_library.filters.aria_label') }}">
                 <div data-media-usage-filter role="group" class="flex items-center gap-2" aria-label="{{ __('media_library.filters.usage') }}">
                     <span id="media-usage-filter-label" class="text-[10px] font-semibold uppercase tracking-[0.08em] text-[var(--color-ink-soft)]">
@@ -229,14 +229,14 @@
         </div>
 
         @if ($assets->isEmpty())
-            <div class="rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-12 text-center">
+            <div class="sk-card px-5 py-12 text-center">
                 <h4 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.empty.title') }}</h4>
                 <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('media_library.empty.description') }}</p>
             </div>
         @else
             <div data-media-gallery-grid class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 sm:gap-5">
                 @foreach ($assets as $asset)
-                    <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-panel)]">
+                    <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="sk-card overflow-hidden">
                         <div data-media-card-preview class="relative grid w-full aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
                             @if ($asset->status === \App\MediaAssetStatus::Ready && $asset->getFirstMedia('master'))
                                 <img src="{{ route('media.show', [$asset, 'thumbnail']) }}" alt="" class="size-full object-cover" />
@@ -257,6 +257,29 @@
                                     </div>
                                 </div>
                             @endif
+
+                            @if ($asset->status === \App\MediaAssetStatus::Ready && $canUpdateMedia)
+                                <button
+                                    id="media-asset-settings-{{ $asset->id }}"
+                                    data-media-settings-trigger
+                                    type="button"
+                                    wire:click="openAssetPanel({{ $asset->id }}, 'settings')"
+                                    aria-label="{{ __('media_library.panel.settings_for', ['name' => $asset->displayName()]) }}"
+                                    title="{{ __('media_library.panel.settings') }}"
+                                    aria-haspopup="dialog"
+                                    aria-controls="media-asset-panel"
+                                    aria-expanded="{{ $selectedAsset?->is($asset) ? 'true' : 'false' }}"
+                                    class="group absolute inset-0 z-10 cursor-pointer rounded-[var(--radius-md)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)]"
+                                >
+                                    <span
+                                        data-media-settings-cue
+                                        aria-hidden="true"
+                                        class="pointer-events-none absolute right-0 top-0 grid h-7 w-9 place-items-center rounded-bl-lg bg-[var(--color-panel)]/85 pl-[0.14em] text-[9px] font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] transition-colors group-hover:bg-[var(--color-panel)]/95 group-hover:text-[var(--color-ink-strong)] group-focus-visible:bg-[var(--color-panel)]/95 group-focus-visible:text-[var(--color-ink-strong)]"
+                                    >
+                                        •••
+                                    </span>
+                                </button>
+                            @endif
                         </div>
 
                         <div class="space-y-2.5 p-3">
@@ -264,7 +287,7 @@
                                 <h4 data-media-display-name class="truncate text-[11px] font-medium leading-4 text-[var(--color-ink-strong)]" title="{{ $asset->displayName() }}">{{ $asset->displayName() }}</h4>
                             </div>
 
-                            <div data-media-card-meta-row class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+                            <div data-media-card-meta-row class="min-w-0">
                                 <div class="min-w-0">
                                     <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
                                         <button
@@ -287,25 +310,6 @@
                                         @endif
                                     </div>
                                 </div>
-
-                                @if ($asset->status === \App\MediaAssetStatus::Ready && $canUpdateMedia)
-                                    <button
-                                        id="media-asset-settings-{{ $asset->id }}"
-                                        data-media-settings-trigger
-                                        type="button"
-                                        wire:click="openAssetPanel({{ $asset->id }}, 'settings')"
-                                        aria-label="{{ __('media_library.panel.settings_for', ['name' => $asset->displayName()]) }}"
-                                        title="{{ __('media_library.panel.settings') }}"
-                                        aria-haspopup="dialog"
-                                        aria-controls="media-asset-panel"
-                                        aria-expanded="{{ $selectedAsset?->is($asset) ? 'true' : 'false' }}"
-                                        class="grid size-8 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-                                    >
-                                        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="1.8">
-                                            <path stroke-linecap="round" d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M7 14v6" />
-                                        </svg>
-                                    </button>
-                                @endif
                             </div>
 
                             @if ($asset->status === \App\MediaAssetStatus::Processing)
@@ -539,36 +543,90 @@
                                         <a href="{{ route('media.download', $selectedAsset) }}" class="sk-btn sk-btn-primary">{{ __('media_library.documents.download') }}</a>
                                     </section>
                                 @else
-                                <section data-media-panel-section x-data="{ focalX: {{ $selectedAsset->focal_x }}, focalY: {{ $selectedAsset->focal_y }} }" class="border-t border-[var(--color-line)] pt-5">
-                                    <h3 class="text-[11px] font-semibold tracking-[0.08em] text-[var(--color-ink-soft)] uppercase">{{ __('media_library.crop.adjust') }}</h3>
-                                    <div class="mt-3 space-y-3">
-                                        <div class="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-lg bg-[var(--color-field-muted)]">
-                                            <img src="{{ route('media.show', [$selectedAsset, 'master']) }}" alt="" class="size-full object-contain" />
-                                            <span
-                                                aria-hidden="true"
-                                                class="pointer-events-none absolute size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--color-field)] bg-[var(--color-active)] shadow"
-                                                x-bind:style="`left: ${focalX}%; top: ${focalY}%`"
-                                            ></span>
+                                    <section
+                                        data-media-panel-section
+                                        data-media-focal-editor
+                                        x-data="{
+                                            focalX: {{ $selectedAsset->focal_x }},
+                                            focalY: {{ $selectedAsset->focal_y }},
+                                            isDragging: false,
+                                            clampFocalPoint(value) {
+                                                return Math.min(100, Math.max(0, Math.round(value)));
+                                            },
+                                            chooseFocalPoint(event) {
+                                                const imageBounds = this.$refs.focalImage.getBoundingClientRect();
+
+                                                this.focalX = this.clampFocalPoint(((event.clientX - imageBounds.left) / imageBounds.width) * 100);
+                                                this.focalY = this.clampFocalPoint(((event.clientY - imageBounds.top) / imageBounds.height) * 100);
+                                            },
+                                        }"
+                                        class="border-t border-[var(--color-line)] pt-5"
+                                    >
+                                        <h3 class="text-[11px] font-semibold tracking-[0.08em] text-[var(--color-ink-soft)] uppercase">{{ __('media_library.crop.adjust') }}</h3>
+                                        <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.crop.instruction') }}</p>
+
+                                        <div class="mt-3 grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem] sm:items-start">
+                                            <div class="flex min-h-40 items-center justify-center overflow-hidden rounded-lg bg-[var(--color-field-muted)] p-2">
+                                                <button
+                                                    data-media-focal-selector
+                                                    x-ref="focalSelector"
+                                                    type="button"
+                                                    aria-label="{{ __('media_library.crop.instruction') }}"
+                                                    @pointerdown.prevent="
+                                                        isDragging = true;
+                                                        $el.setPointerCapture($event.pointerId);
+                                                        chooseFocalPoint($event);
+                                                    "
+                                                    @pointermove.prevent="if (isDragging) chooseFocalPoint($event)"
+                                                    @pointerup="
+                                                        isDragging = false;
+                                                        if ($el.hasPointerCapture($event.pointerId)) $el.releasePointerCapture($event.pointerId);
+                                                    "
+                                                    @pointercancel="isDragging = false"
+                                                    @keydown.arrow-left.prevent="focalX = clampFocalPoint(focalX - ($event.shiftKey ? 5 : 1))"
+                                                    @keydown.arrow-right.prevent="focalX = clampFocalPoint(focalX + ($event.shiftKey ? 5 : 1))"
+                                                    @keydown.arrow-up.prevent="focalY = clampFocalPoint(focalY - ($event.shiftKey ? 5 : 1))"
+                                                    @keydown.arrow-down.prevent="focalY = clampFocalPoint(focalY + ($event.shiftKey ? 5 : 1))"
+                                                    class="relative inline-grid max-w-full touch-none cursor-crosshair rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]"
+                                                >
+                                                    <img
+                                                        x-ref="focalImage"
+                                                        src="{{ route('media.show', [$selectedAsset, 'master']) }}"
+                                                        alt=""
+                                                        draggable="false"
+                                                        class="block max-h-64 max-w-full select-none"
+                                                    />
+                                                    <span
+                                                        aria-hidden="true"
+                                                        class="pointer-events-none absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--color-field)] bg-[var(--color-active)]"
+                                                        x-bind:style="`left: ${focalX}%; top: ${focalY}%`"
+                                                    ></span>
+                                                </button>
+                                            </div>
+
+                                            <div>
+                                                <p class="text-[10px] font-semibold tracking-[0.08em] text-[var(--color-ink-soft)] uppercase">{{ __('media_library.crop.preview') }}</p>
+                                                <div data-media-square-preview class="mt-1.5 aspect-square overflow-hidden rounded-lg bg-[var(--color-field-muted)]">
+                                                    <img
+                                                        src="{{ route('media.show', [$selectedAsset, 'master']) }}"
+                                                        alt=""
+                                                        class="size-full object-cover"
+                                                        x-bind:style="`object-position: ${focalX}% ${focalY}%`"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <label class="block text-xs font-medium text-[var(--color-ink-soft)]">
-                                            {{ __('media_library.crop.horizontal') }}
-                                            <input x-model.number="focalX" type="range" min="0" max="100" step="1" class="mt-1 w-full accent-[var(--color-active)]" />
-                                        </label>
-                                        <label class="block text-xs font-medium text-[var(--color-ink-soft)]">
-                                            {{ __('media_library.crop.vertical') }}
-                                            <input x-model.number="focalY" type="range" min="0" max="100" step="1" class="mt-1 w-full accent-[var(--color-active)]" />
-                                        </label>
+
                                         <button
                                             type="button"
                                             wire:click="updateFocalPoint({{ $selectedAsset->id }}, focalX, focalY)"
                                             wire:loading.attr="disabled"
                                             wire:target="updateFocalPoint"
-                                            class="sk-btn sk-btn-primary"
+                                            class="sk-btn sk-btn-primary mt-4"
                                         >
                                             {{ __('media_library.crop.save') }}
                                         </button>
-                                    </div>
-                                </section>
+                                    </section>
                                 @endif
                             </div>
                         @endif

@@ -500,6 +500,23 @@ it('commits every localized media batch upload string', function () {
     }
 });
 
+it('commits the localized direct square crop guidance', function () {
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $requiredKeys = [
+        'crop.instruction',
+        'crop.preview',
+    ];
+
+    $rows = collect($catalogue['translations'])
+        ->where('group', 'media_library')
+        ->keyBy('key');
+
+    foreach ($requiredKeys as $key) {
+        expect($rows)->toHaveKey($key)
+            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
+    }
+});
+
 it('commits every localized destructive media action string', function () {
     $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
     $requiredKeys = [

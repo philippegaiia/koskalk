@@ -32,8 +32,7 @@ class MediaAssetPolicy
 
     public function delete(User $user, MediaAsset $mediaAsset): bool
     {
-        return $this->canDeleteWorkspaceRecords($user, $mediaAsset->workspace_id)
-            && ! $mediaAsset->usages()->exists();
+        return $this->canDeleteWorkspaceRecords($user, $mediaAsset->workspace_id);
     }
 
     public function restore(User $user, MediaAsset $mediaAsset): bool

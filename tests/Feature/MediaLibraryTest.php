@@ -11,6 +11,7 @@ use App\Models\MediaAssetUsage;
 use App\Models\MediaLabel;
 use App\Models\Plan;
 use App\Models\Recipe;
+use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
@@ -414,6 +415,50 @@ it('shows usage details for recipes, ingredients, and packaging items', function
         ->assertSee('Amber jar');
 });
 
+it('shows recipe history references as one logical recipe usage', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $recipe = Recipe::factory()->create([
+        'workspace_id' => $workspace->id,
+        'owner_id' => $user->id,
+        'name' => 'Savon curcuma',
+    ]);
+    $currentVersion = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'workspace_id' => $workspace->id,
+        'owner_id' => $user->id,
+        'version_number' => 2,
+        'is_current' => true,
+    ]);
+    $historicalVersion = RecipeVersion::factory()->create([
+        'recipe_id' => $recipe->id,
+        'workspace_id' => $workspace->id,
+        'owner_id' => $user->id,
+        'version_number' => 1,
+        'is_current' => false,
+    ]);
+
+    foreach ([$recipe, $currentVersion, $historicalVersion] as $usable) {
+        MediaAssetUsage::factory()->create([
+            'media_asset_id' => $asset->id,
+            'usable_type' => $usable::class,
+            'usable_id' => $usable->id,
+            'role' => MediaAssetUsageRole::RecipeSop,
+        ]);
+    }
+
+    $component = Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->assertSee('1 usage')
+        ->assertDontSee('3 usages')
+        ->call('openAssetPanel', $asset->id, 'usage')
+        ->assertSee('Savon curcuma')
+        ->assertDontSee('Deleted item');
+
+    expect(substr_count($component->html(), 'Savon curcuma'))->toBe(1)
+        ->and($asset->usages()->count())->toBe(3);
+});
+
 it('keeps gallery cards compact and renders the selected asset in an accessible side panel', function () {
     [$user, $workspace] = mediaLibraryWorkspace();
     $asset = MediaAsset::factory()->ready()->create([
@@ -448,8 +493,12 @@ it('keeps gallery cards compact and renders the selected asset in an accessible 
         ->assertSeeHtml('x-trap.inert.noscroll')
         ->assertSeeHtml('x-on:keydown.escape.window')
         ->assertSeeHtml('data-media-panel-scroll')
+        ->assertSeeHtml('data-media-delete-action')
+        ->assertSeeHtml('wire:loading.remove')
+        ->assertSeeHtml('wire:loading.flex')
         ->assertSeeHtml('wire:loading.attr="disabled"')
         ->assertSeeHtml('wire:target="remove('.$asset->id.')"')
+        ->assertSee('Deleting…')
         ->assertSee('Lavender process')
         ->assertSee('IMG_4831.HEIC')
         ->call('closeAssetPanel')
@@ -574,22 +623,83 @@ it('shows processing progress and failed retry and remove actions', function () 
         ->assertSee('Remove');
 });
 
-it('does not allow deleting an asset that is still in use', function () {
+it('deletes an in-use asset everywhere with one explicit confirmation', function () {
     [$user, $workspace] = mediaLibraryWorkspace();
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
-    $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id]);
-    MediaAssetUsage::factory()->create([
-        'media_asset_id' => $asset->id,
-        'usable_type' => Recipe::class,
-        'usable_id' => $recipe->id,
+    $retainedAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
+    $targetIdentity = "media-asset:{$asset->public_id}";
+    $retainedIdentity = "media-asset:{$retainedAsset->public_id}";
+    $instructions = <<<HTML
+    <p>Mix thoroughly.</p>
+    <img data-id="{$targetIdentity}" src="/target.webp">
+    <img data-id="{$retainedIdentity}" src="/retained.webp">
+    HTML;
+    $recipe = Recipe::factory()->create([
+        'workspace_id' => $workspace->id,
+        'manufacturing_instructions' => $instructions,
     ]);
+    $versions = collect(range(1, 10))->map(
+        fn (int $versionNumber): RecipeVersion => RecipeVersion::factory()->create([
+            'recipe_id' => $recipe->id,
+            'workspace_id' => $workspace->id,
+            'manufacturing_instructions' => $instructions,
+            'is_current' => $versionNumber === 10,
+            'version_number' => $versionNumber,
+        ]),
+    );
+    $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id]);
+    $packagingItem = UserPackagingItem::query()->create([
+        'user_id' => $user->id,
+        'name' => 'Amber jar',
+        'unit_cost' => 1,
+        'currency' => 'EUR',
+    ]);
+
+    $usages = collect([
+        [$recipe, MediaAssetUsageRole::RecipeFeatured],
+        [$recipe, MediaAssetUsageRole::RecipeSop],
+        [$ingredient, MediaAssetUsageRole::IngredientMain],
+        [$packagingItem, MediaAssetUsageRole::PackagingMain],
+    ])->merge(
+        $versions->map(
+            fn (RecipeVersion $version): array => [$version, MediaAssetUsageRole::RecipeSop],
+        ),
+    );
+
+    foreach ($usages as [$usable, $role]) {
+        MediaAssetUsage::factory()->create([
+            'media_asset_id' => $asset->id,
+            'usable_type' => $usable::class,
+            'usable_id' => $usable->id,
+            'role' => $role,
+        ]);
+    }
 
     Livewire::actingAs($user)
         ->test(MediaLibraryIndex::class)
+        ->call('openAssetPanel', $asset->id, 'settings')
+        ->assertSee('Used in 1 recipe and 2 other items.')
+        ->assertSee('Deleting removes it everywhere, including recipe history.')
         ->call('remove', $asset->id)
-        ->assertForbidden();
+        ->assertSet('selectedAssetId', null);
 
-    expect($asset->fresh())->not->toBeNull();
+    expect($asset->fresh())->toBeNull()
+        ->and($retainedAsset->fresh())->not->toBeNull()
+        ->and(MediaAssetUsage::query()->where('media_asset_id', $asset->id)->exists())->toBeFalse()
+        ->and($recipe->fresh()->manufacturing_instructions)->not->toContain($targetIdentity)
+        ->and($recipe->fresh()->manufacturing_instructions)->toContain($retainedIdentity)
+        ->and($versions->every(
+            fn (RecipeVersion $version): bool => ! str_contains(
+                $version->fresh()->manufacturing_instructions,
+                $targetIdentity,
+            ),
+        ))->toBeTrue()
+        ->and($versions->every(
+            fn (RecipeVersion $version): bool => str_contains(
+                $version->fresh()->manufacturing_instructions,
+                $retainedIdentity,
+            ),
+        ))->toBeTrue();
 });
 
 it('treats a repeated confirmed panel deletion as already completed', function () {

@@ -499,3 +499,24 @@ it('commits every localized media batch upload string', function () {
             ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
     }
 });
+
+it('commits every localized destructive media action string', function () {
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $requiredKeys = [
+        'panel.deleting',
+        'panel.delete_everywhere_confirm',
+        'panel.delete_everywhere_warning',
+        'panel.delete_impact_join',
+        'panel.delete_impact_other',
+        'panel.delete_impact_recipes',
+        'panel.delete_in_use',
+    ];
+    $rows = collect($catalogue['translations'])
+        ->where('group', 'media_library')
+        ->keyBy('key');
+
+    foreach ($requiredKeys as $key) {
+        expect($rows)->toHaveKey($key)
+            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
+    }
+});

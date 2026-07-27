@@ -10,6 +10,7 @@ use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\MediaLabel;
 use App\Models\Recipe;
+use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
@@ -21,6 +22,7 @@ use App\Services\MediaAssetUploadService;
 use App\Services\MediaLabelService;
 use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -411,6 +413,7 @@ class MediaLibraryIndex extends Component
         $selectedAsset = $workspace instanceof Workspace
             ? $this->selectedAsset($workspace)
             : null;
+        $selectedDeletionImpact = $this->deletionImpact($selectedAsset);
         $labels = $workspace instanceof Workspace
             ? MediaLabel::query()
                 ->where('workspace_id', $workspace->id)
@@ -426,6 +429,11 @@ class MediaLibraryIndex extends Component
             'canDeleteMedia' => $canDeleteMedia,
             'hasProcessingAssets' => $hasProcessingAssets,
             'selectedAsset' => $selectedAsset,
+            'selectedLogicalUsageCount' => $selectedAsset instanceof MediaAsset
+                ? $this->logicalUsages($selectedAsset->usages)->count()
+                : 0,
+            'selectedDeletionImpact' => $selectedDeletionImpact,
+            'selectedDeletionImpactLabel' => $this->deletionImpactLabel($selectedDeletionImpact),
             'selectedUsageGroups' => $this->selectedUsageGroups($selectedAsset),
             'labels' => $labels,
         ]);
@@ -433,10 +441,13 @@ class MediaLibraryIndex extends Component
 
     private function assets(Workspace $workspace): LengthAwarePaginator
     {
-        return MediaAsset::query()
+        $assets = MediaAsset::query()
             ->where('workspace_id', $workspace->id)
-            ->with(['labels', 'media'])
-            ->withCount('usages')
+            ->with([
+                'labels',
+                'media',
+                'usages:id,media_asset_id,usable_type,usable_id,role',
+            ])
             ->when(
                 filled($this->search),
                 function ($query): void {
@@ -468,6 +479,10 @@ class MediaLibraryIndex extends Component
             )
             ->latest()
             ->paginate(24);
+
+        $this->setLogicalUsageCounts($assets->getCollection());
+
+        return $assets;
     }
 
     private function selectedAsset(Workspace $workspace): ?MediaAsset
@@ -482,7 +497,11 @@ class MediaLibraryIndex extends Component
                 'labels',
                 'media',
                 'usages' => fn ($query) => $query->latest(),
-                'usages.usable',
+                'usages.usable' => function (MorphTo $morphTo): void {
+                    $morphTo->morphWith([
+                        RecipeVersion::class => ['recipe'],
+                    ]);
+                },
             ])
             ->withCount('usages')
             ->find($this->selectedAssetId);
@@ -529,7 +548,7 @@ class MediaLibraryIndex extends Component
 
         $search = Str::lower(trim($this->usageSearch));
 
-        return $asset->usages
+        return $this->logicalUsages($asset->usages)
             ->filter(function (MediaAssetUsage $usage) use ($search): bool {
                 if ($search === '') {
                     return true;
@@ -548,6 +567,86 @@ class MediaLibraryIndex extends Component
             });
     }
 
+    /**
+     * @param  Collection<int, MediaAssetUsage>  $usages
+     * @return Collection<int, MediaAssetUsage>
+     */
+    private function logicalUsages(Collection $usages): Collection
+    {
+        return $usages
+            ->map(function (MediaAssetUsage $usage): ?MediaAssetUsage {
+                if ($usage->usable instanceof RecipeVersion) {
+                    if (! $usage->usable->recipe instanceof Recipe) {
+                        return null;
+                    }
+
+                    $usage = clone $usage;
+                    $usage->setRelation('usable', $usage->usable->recipe);
+                }
+
+                return $usage->usable instanceof Recipe
+                    || $usage->usable instanceof Ingredient
+                    || $usage->usable instanceof UserPackagingItem
+                        ? $usage
+                        : null;
+            })
+            ->filter()
+            ->unique(function (MediaAssetUsage $usage): string {
+                return implode(':', [
+                    $usage->usable::class,
+                    $usage->usable->getKey(),
+                    $usage->role->value,
+                ]);
+            })
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, MediaAsset>  $assets
+     */
+    private function setLogicalUsageCounts(Collection $assets): void
+    {
+        $recipeIdsByVersionId = RecipeVersion::withoutGlobalScopes()
+            ->whereKey(
+                $assets
+                    ->flatMap->usages
+                    ->where('usable_type', RecipeVersion::class)
+                    ->pluck('usable_id'),
+            )
+            ->pluck('recipe_id', 'id');
+
+        $assets->each(function (MediaAsset $asset) use ($recipeIdsByVersionId): void {
+            $count = $asset->usages
+                ->map(function (MediaAssetUsage $usage) use ($recipeIdsByVersionId): ?string {
+                    $usableType = $usage->usable_type;
+                    $usableId = $usage->usable_id;
+
+                    if ($usableType === RecipeVersion::class) {
+                        $usableType = Recipe::class;
+                        $usableId = $recipeIdsByVersionId->get($usableId);
+                    }
+
+                    if (
+                        $usableId === null
+                        || ! in_array($usableType, [
+                            Recipe::class,
+                            Ingredient::class,
+                            UserPackagingItem::class,
+                        ], true)
+                    ) {
+                        return null;
+                    }
+
+                    return implode(':', [$usableType, $usableId, $usage->role->value]);
+                })
+                ->filter()
+                ->unique()
+                ->count();
+
+            $asset->setAttribute('logical_usages_count', $count);
+        });
+    }
+
     private function usageTargetName(MediaAssetUsage $usage): string
     {
         return match (true) {
@@ -555,6 +654,68 @@ class MediaLibraryIndex extends Component
             $usage->usable instanceof Ingredient => $usage->usable->display_name,
             $usage->usable instanceof UserPackagingItem => $usage->usable->name,
             default => __('media_library.missing_target'),
+        };
+    }
+
+    /**
+     * @return array{recipes:int, other:int, total:int}
+     */
+    private function deletionImpact(?MediaAsset $asset): array
+    {
+        if (! $asset instanceof MediaAsset) {
+            return ['recipes' => 0, 'other' => 0, 'total' => 0];
+        }
+
+        $targets = $asset->usages
+            ->map(function (MediaAssetUsage $usage): Recipe|Ingredient|UserPackagingItem|null {
+                if ($usage->usable instanceof RecipeVersion) {
+                    return $usage->usable->recipe;
+                }
+
+                return $usage->usable instanceof Recipe
+                    || $usage->usable instanceof Ingredient
+                    || $usage->usable instanceof UserPackagingItem
+                        ? $usage->usable
+                        : null;
+            })
+            ->filter()
+            ->unique(fn (Recipe|Ingredient|UserPackagingItem $target): string => $target::class.':'.$target->getKey());
+        $recipeCount = $targets->filter(
+            fn (Recipe|Ingredient|UserPackagingItem $target): bool => $target instanceof Recipe,
+        )->count();
+        $otherCount = $targets->count() - $recipeCount;
+
+        return [
+            'recipes' => $recipeCount,
+            'other' => $otherCount,
+            'total' => $recipeCount + $otherCount,
+        ];
+    }
+
+    /**
+     * @param  array{recipes:int, other:int, total:int}  $impact
+     */
+    private function deletionImpactLabel(array $impact): string
+    {
+        $recipes = trans_choice(
+            'media_library.panel.delete_impact_recipes',
+            $impact['recipes'],
+            ['count' => $impact['recipes']],
+        );
+        $other = trans_choice(
+            'media_library.panel.delete_impact_other',
+            $impact['other'],
+            ['count' => $impact['other']],
+        );
+
+        return match (true) {
+            $impact['recipes'] > 0 && $impact['other'] > 0 => __(
+                'media_library.panel.delete_impact_join',
+                ['recipes' => $recipes, 'other' => $other],
+            ),
+            $impact['recipes'] > 0 => $recipes,
+            $impact['other'] > 0 => $other,
+            default => '',
         };
     }
 

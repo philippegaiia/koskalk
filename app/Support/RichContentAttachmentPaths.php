@@ -135,6 +135,23 @@ class RichContentAttachmentPaths
         return static::MEDIA_ASSET_IDENTITY_PREFIX.$publicId;
     }
 
+    public static function removeMediaAssetImages(?string $content, string $publicId): ?string
+    {
+        if ($content === null || $content === '') {
+            return $content;
+        }
+
+        $identity = static::mediaAssetIdentity($publicId);
+
+        return preg_replace_callback(
+            '/<img\b[^>]*>/i',
+            fn (array $matches): string => static::extractImageIdentities($matches[0])->contains($identity)
+                ? ''
+                : $matches[0],
+            $content,
+        ) ?? $content;
+    }
+
     /**
      * @return Collection<int, string>
      */

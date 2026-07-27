@@ -277,7 +277,7 @@
                                             aria-expanded="{{ $selectedAsset?->is($asset) ? 'true' : 'false' }}"
                                             class="text-[10px] font-medium text-[var(--color-accent-strong)] underline decoration-current/40 underline-offset-2 hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                                         >
-                                            {{ trans_choice('media_library.usage', $asset->usages_count, ['count' => $asset->usages_count]) }}
+                                            {{ trans_choice('media_library.usage', $asset->logical_usages_count, ['count' => $asset->logical_usages_count]) }}
                                             <span aria-hidden="true">›</span>
                                         </button>
                                         @if ($asset->type === \App\MediaAssetType::Pdf && $asset->status === \App\MediaAssetStatus::Ready)
@@ -405,7 +405,7 @@
                         aria-selected="{{ $assetPanelTab === 'usage' ? 'true' : 'false' }}"
                         class="{{ $assetPanelTab === 'usage' ? 'border-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-transparent text-[var(--color-ink-soft)]' }} border-b-2 px-2 py-3.5 text-xs font-semibold transition hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)]"
                     >
-                        {{ trans_choice('media_library.usage', $selectedAsset->usages_count, ['count' => $selectedAsset->usages_count]) }}
+                        {{ trans_choice('media_library.usage', $selectedLogicalUsageCount, ['count' => $selectedLogicalUsageCount]) }}
                     </button>
                 </div>
 
@@ -580,7 +580,7 @@
 
                         @if ($selectedUsageGroups->isEmpty())
                             <p class="py-10 text-center text-sm text-[var(--color-ink-soft)]">
-                                {{ $selectedAsset->usages_count === 0 ? __('media_library.panel.no_usages') : __('media_library.panel.no_matching_usages') }}
+                                {{ $selectedLogicalUsageCount === 0 ? __('media_library.panel.no_usages') : __('media_library.panel.no_matching_usages') }}
                             </p>
                         @else
                             <div class="mt-4 space-y-5">
@@ -616,26 +616,39 @@
 
                 @if ($canDeleteMedia && $selectedAsset->status === \App\MediaAssetStatus::Ready)
                     <footer class="flex items-center justify-between gap-3 border-t border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4">
-                        @if ($selectedAsset->usages_count > 0)
-                            <p class="text-[11px] leading-4 text-[var(--color-ink-soft)]">{{ __('media_library.detach_before_removing') }}</p>
+                        @if ($selectedDeletionImpact['total'] > 0)
+                            <div class="max-w-72 text-[11px] leading-4 text-[var(--color-ink-soft)]">
+                                <p>{{ __('media_library.panel.delete_in_use', ['impact' => $selectedDeletionImpactLabel]) }}</p>
+                                <p class="mt-1 text-[var(--color-danger-strong)]">{{ __('media_library.panel.delete_everywhere_warning') }}</p>
+                            </div>
                         @else
                             <span></span>
                         @endif
                         <button
+                            data-media-delete-action
                             type="button"
                             wire:click="remove({{ $selectedAsset->id }})"
                             wire:loading.attr="disabled"
                             wire:target="remove({{ $selectedAsset->id }})"
-                            @if ($selectedAsset->usages_count === 0) wire:confirm="{{ __('media_library.panel.delete_confirm', ['name' => $selectedAsset->displayName()]) }}" @endif
-                            @disabled($selectedAsset->usages_count > 0)
+                            wire:confirm="{{ $selectedDeletionImpact['total'] > 0
+                                ? __('media_library.panel.delete_everywhere_confirm', ['name' => $selectedAsset->displayName(), 'impact' => $selectedDeletionImpactLabel])
+                                : __('media_library.panel.delete_confirm', ['name' => $selectedAsset->displayName()]) }}"
                             aria-label="{{ __('media_library.panel.delete') }}"
-                            title="{{ $selectedAsset->usages_count > 0 ? __('media_library.detach_before_removing') : __('media_library.panel.delete') }}"
+                            title="{{ __('media_library.panel.delete') }}"
                             class="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger)] disabled:cursor-not-allowed disabled:opacity-45"
                         >
-                            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="1.8">
-                                <path stroke-linecap="round" d="M4 7h16m-10 4v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" />
-                            </svg>
-                            <span>{{ __('media_library.panel.delete') }}</span>
+                            <span wire:loading.remove wire:target="remove({{ $selectedAsset->id }})" class="inline-flex items-center gap-1.5">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="1.8">
+                                    <path stroke-linecap="round" d="M4 7h16m-10 4v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3" />
+                                </svg>
+                                <span>{{ __('media_library.panel.delete') }}</span>
+                            </span>
+                            <span wire:loading.flex wire:target="remove({{ $selectedAsset->id }})" role="status" class="items-center gap-1.5">
+                                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4 animate-spin motion-reduce:animate-none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" d="M12 3a9 9 0 1 1-8.49 6" />
+                                </svg>
+                                <span>{{ __('media_library.panel.deleting') }}</span>
+                            </span>
                         </button>
                     </footer>
                 @endif

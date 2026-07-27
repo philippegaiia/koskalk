@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class MediaAssetLibraryService
 {
+    public function __construct(private readonly MediaAssetReferencePurger $referencePurger) {}
+
     public function rename(User $user, MediaAsset $asset, string $displayName): void
     {
         Gate::forUser($user)->authorize('update', $asset);
@@ -50,9 +52,7 @@ class MediaAssetLibraryService
 
             Gate::forUser($user)->authorize('delete', $lockedAsset);
 
-            if ($lockedAsset->usages()->exists()) {
-                abort(403);
-            }
+            $this->referencePurger->purge($lockedAsset);
 
             if (filled($lockedAsset->pending_disk) && filled($lockedAsset->pending_path)) {
                 Storage::disk($lockedAsset->pending_disk)->delete($lockedAsset->pending_path);

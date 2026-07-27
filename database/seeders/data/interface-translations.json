@@ -4557,6 +4557,17 @@
         },
         {
             "group": "media_library",
+            "key": "filters.any_usage",
+            "text": {
+                "de": "Beliebige Verwendung",
+                "es": "Cualquier uso",
+                "fr": "Toute utilisation",
+                "it": "Qualsiasi utilizzo",
+                "nl": "Elk gebruik"
+            }
+        },
+        {
+            "group": "media_library",
             "key": "filters.aria_label",
             "text": {
                 "de": "Medienfilter",
@@ -4619,6 +4630,17 @@
                 "fr": "Inutilisés",
                 "it": "Inutilizzati",
                 "nl": "Ongebruikt"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "filters.usage",
+            "text": {
+                "de": "Verwendung",
+                "es": "Uso",
+                "fr": "Utilisation",
+                "it": "Utilizzo",
+                "nl": "Gebruik"
             }
         },
         {
@@ -4916,6 +4938,83 @@
                 "fr": "Supprimer « :name » ? Cette action est irréversible.",
                 "it": "Eliminare “:name”? Questa azione non può essere annullata.",
                 "nl": "‘:name’ verwijderen? Dit kan niet ongedaan worden gemaakt."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "panel.delete_everywhere_confirm",
+            "text": {
+                "de": "„:name“ überall löschen? Das Medium wird in :impact verwendet. Es wird aus aktuellen Inhalten und dem Rezeptverlauf entfernt. Dies kann nicht rückgängig gemacht werden.",
+                "es": "¿Eliminar «:name» de todas partes? Se utiliza en :impact. Se retirará del contenido actual y del historial de recetas. Esta acción no se puede deshacer.",
+                "fr": "Supprimer « :name » partout ? Ce média est utilisé dans :impact. Il sera retiré du contenu actuel et de l’historique des recettes. Cette action est irréversible.",
+                "it": "Eliminare “:name” ovunque? È utilizzato in :impact. Verrà rimosso dai contenuti attuali e dalla cronologia delle ricette. Questa azione non può essere annullata.",
+                "nl": "“:name” overal verwijderen? Het wordt gebruikt in :impact. Het wordt uit actuele inhoud en de receptgeschiedenis verwijderd. Dit kan niet ongedaan worden gemaakt."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "panel.delete_everywhere_warning",
+            "text": {
+                "de": "Beim Löschen wird das Medium überall entfernt, auch aus dem Rezeptverlauf.",
+                "es": "Al eliminarlo se retirará de todas partes, incluido el historial de recetas.",
+                "fr": "La suppression le retire partout, y compris de l’historique des recettes.",
+                "it": "L’eliminazione lo rimuove ovunque, inclusa la cronologia delle ricette.",
+                "nl": "Bij verwijderen verdwijnt het overal, ook uit de receptgeschiedenis."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "panel.delete_impact_join",
+            "text": {
+                "de": ":recipes und :other",
+                "es": ":recipes y :other",
+                "fr": ":recipes et :other",
+                "it": ":recipes e :other",
+                "nl": ":recipes en :other"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "panel.delete_impact_other",
+            "text": {
+                "de": "{1} :count weiteres Element|[2,*] :count weitere Elemente",
+                "es": "{1} :count otro elemento|[2,*] :count otros elementos",
+                "fr": "{1} :count autre élément|[2,*] :count autres éléments",
+                "it": "{1} :count altro elemento|[2,*] :count altri elementi",
+                "nl": "{1} :count ander item|[2,*] :count andere items"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "panel.delete_impact_recipes",
+            "text": {
+                "de": "{1} :count Rezept|[2,*] :count Rezepte",
+                "es": "{1} :count receta|[2,*] :count recetas",
+                "fr": "{1} :count recette|[2,*] :count recettes",
+                "it": "{1} :count ricetta|[2,*] :count ricette",
+                "nl": "{1} :count recept|[2,*] :count recepten"
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "panel.delete_in_use",
+            "text": {
+                "de": "Verwendet in :impact.",
+                "es": "Se utiliza en :impact.",
+                "fr": "Utilisé dans :impact.",
+                "it": "Utilizzato in :impact.",
+                "nl": "Gebruikt in :impact."
+            }
+        },
+        {
+            "group": "media_library",
+            "key": "panel.deleting",
+            "text": {
+                "de": "Wird gelöscht…",
+                "es": "Eliminando…",
+                "fr": "Suppression…",
+                "it": "Eliminazione…",
+                "nl": "Verwijderen…"
             }
         },
         {

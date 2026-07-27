@@ -131,46 +131,46 @@
             <p class="mt-6 text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('account.plan.usage_heading') }}</p>
 
             <div class="mt-3 space-y-4">
-                <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
+                <div class="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('account.usage.products') }}</p>
                         <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $usageLabel($recipeUsage) }}</p>
                     </div>
                     <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-field-muted)]">
-                        <div class="h-full rounded-full bg-[var(--color-accent)]" style="width: {{ $usagePercent($recipeUsage) }}%"></div>
+                        <div class="h-full rounded-full bg-[var(--color-active)]" style="width: {{ $usagePercent($recipeUsage) }}%"></div>
                     </div>
                     <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $remainingLabel($recipeUsage) }}</p>
                 </div>
 
-                <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
+                <div class="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('account.usage.ingredients') }}</p>
                         <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $usageLabel($ingredientUsage) }}</p>
                     </div>
                     <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-field-muted)]">
-                        <div class="h-full rounded-full bg-[var(--color-accent)]" style="width: {{ $usagePercent($ingredientUsage) }}%"></div>
+                        <div class="h-full rounded-full bg-[var(--color-active)]" style="width: {{ $usagePercent($ingredientUsage) }}%"></div>
                     </div>
                     <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $remainingLabel($ingredientUsage) }}</p>
                 </div>
 
-                <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
+                <div class="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('account.usage.production_batches') }}</p>
                         <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $usageLabel($productionBatchUsage) }}</p>
                     </div>
                     <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-field-muted)]">
-                        <div class="h-full rounded-full bg-[var(--color-accent)]" style="width: {{ $usagePercent($productionBatchUsage) }}%"></div>
+                        <div class="h-full rounded-full bg-[var(--color-active)]" style="width: {{ $usagePercent($productionBatchUsage) }}%"></div>
                     </div>
                     <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $remainingLabel($productionBatchUsage) }}</p>
                 </div>
 
-                <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
+                <div class="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('account.usage.media_assets') }}</p>
                         <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $usageLabel($mediaAssetUsage) }}</p>
                     </div>
                     <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-field-muted)]">
-                        <div class="h-full rounded-full bg-[var(--color-accent)]" style="width: {{ $usagePercent($mediaAssetUsage) }}%"></div>
+                        <div class="h-full rounded-full bg-[var(--color-active)]" style="width: {{ $usagePercent($mediaAssetUsage) }}%"></div>
                     </div>
                     <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $remainingLabel($mediaAssetUsage) }}</p>
                     @if (! $mediaAssetUsage['allowed'])
@@ -178,13 +178,13 @@
                     @endif
                 </div>
 
-                <div class="rounded-lg border border-[var(--color-line)] bg-white p-4">
+                <div class="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4">
                     <div class="flex items-center justify-between gap-3">
                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('account.usage.media_labels') }}</p>
                         <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">{{ $usageLabel($mediaLabelUsage) }}</p>
                     </div>
                     <div class="mt-3 h-2 overflow-hidden rounded-full bg-[var(--color-field-muted)]">
-                        <div class="h-full rounded-full bg-[var(--color-accent)]" style="width: {{ $usagePercent($mediaLabelUsage) }}%"></div>
+                        <div class="h-full rounded-full bg-[var(--color-active)]" style="width: {{ $usagePercent($mediaLabelUsage) }}%"></div>
                     </div>
                     <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $remainingLabel($mediaLabelUsage) }}</p>
                 </div>

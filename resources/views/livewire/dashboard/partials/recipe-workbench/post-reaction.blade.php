@@ -170,7 +170,7 @@
  </div>
 
  <template x-if="Math.abs(totalOilPercentage() - 100) > 0.01">
- <div class="rounded-[1.5rem] border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink-strong)]" role="alert">
+ <div class="rounded-[1.5rem] border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]" role="alert">
  {{ __('workbench.saponification.warning') }}
  </div>
  </template>

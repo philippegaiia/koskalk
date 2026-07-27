@@ -158,7 +158,7 @@
  :style="panelStyle"
  class="z-[90] max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-1 shadow-lg">
  <template x-for="phase in phaseOrder" :key="`${ingredient.id}-${phase.key}-add-option`">
- <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]">
+ <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-active-soft)]">
  <span class="truncate" x-text="t('cosmetic.add_to_phase', { phase: phase.name || humanizeKey(phase.key) })"></span>
  <span class="numeric text-[var(--color-ink-soft)]" x-text="`${format(cosmeticPhasePercentageTotal(phase.key), 1)}%`"></span>
  </button>

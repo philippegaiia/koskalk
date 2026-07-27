@@ -3478,7 +3478,9 @@ it('keeps formula visual states distinct and softly selected', function () {
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
 
     expect($reactionCore)
-        ->toContain('class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
+        ->toContain('data-formula-balance-status')
+        ->toContain('class="numeric font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
+        ->not->toContain('numeric rounded-full bg-white')
         ->and($formulaAnalysis)
         ->toContain('rounded-lg border px-4 py-3 text-sm')
         ->and($ingredientBrowser)
@@ -3491,6 +3493,90 @@ it('keeps formula visual states distinct and softly selected', function () {
         ->and($appStylesSource)
         ->toContain('.sk-workbench .sk-workbench-tab.is-active::before')
         ->toContain('background-color: transparent');
+});
+
+it('derives formula balance actions from the displayed two decimal total', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const source = fs.readFileSync('resources/js/recipe-workbench/sections/formula-section.js', 'utf8');
+const sectionSource = source
+    .slice(source.indexOf('export function createFormulaSection'))
+    .replace('export function createFormulaSection', 'function createFormulaSection');
+
+eval(`${sectionSource}\nglobalThis.createFormulaSection = createFormulaSection;`);
+
+const translations = {
+    'status.add_percentage': 'Add :amount%',
+    'status.balanced': 'Balanced',
+    'status.remove_percentage': 'Remove :amount%',
+};
+
+const readoutFor = (total) => {
+    const workbench = {
+        productFamilySlug: 'soap',
+        t(path, replacements = {}) {
+            return Object.entries(replacements).reduce(
+                (translated, [key, replacement]) => translated.replaceAll(`:${key}`, String(replacement)),
+                translations[path] ?? path,
+            );
+        },
+    };
+
+    Object.defineProperties(
+        workbench,
+        Object.getOwnPropertyDescriptors(globalThis.createFormulaSection()),
+    );
+    Object.defineProperties(workbench, {
+        totalOilPercentage: {
+            configurable: true,
+            value: () => total,
+        },
+        format: {
+            configurable: true,
+            value: (value, decimals = 2) => Number(value).toFixed(decimals),
+        },
+        number: {
+            configurable: true,
+            value: (value) => Number.parseFloat(String(value).replace(',', '.')),
+        },
+    });
+
+    return {
+        displayedTotal: workbench.format(total, 2),
+        canonicalBalanced: workbench.oilPercentageIsBalanced,
+        canSaveDraft: workbench.canSaveDraft,
+        canSaveRecipe: workbench.canSaveRecipe,
+        label: workbench.oilPercentageStatusLabel,
+    };
+};
+
+console.log(JSON.stringify([
+    readoutFor(99.994),
+    readoutFor(99.996),
+    readoutFor(100),
+    readoutFor(100.004),
+    readoutFor(100.006),
+]));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    expect(json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR))
+        ->toBe([
+            ['displayedTotal' => '99.99', 'canonicalBalanced' => false, 'canSaveDraft' => false, 'canSaveRecipe' => false, 'label' => 'Add 0.01%'],
+            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Balanced'],
+            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Balanced'],
+            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Balanced'],
+            ['displayedTotal' => '100.01', 'canonicalBalanced' => false, 'canSaveDraft' => false, 'canSaveRecipe' => false, 'label' => 'Remove 0.01%'],
+        ]);
 });
 
 it('keeps fatty acid chemistry compact with grouped profile first and collapsed details', function () {
@@ -3508,8 +3594,8 @@ it('keeps fatty acid chemistry compact with grouped profile first and collapsed 
         ->toContain('group/fatty-row relative')
         ->toContain('lg:group-hover/fatty-row:opacity-100')
         ->toContain('aria-hidden="true"', false)
-        ->toContain('bg-[var(--color-accent)]')
-        ->toContain('text-[var(--color-on-accent)]')
+        ->toContain('bg-[var(--color-active)]')
+        ->toContain('text-[var(--color-on-active)]')
         ->not->toContain(':title="segment.label"', false)
         ->toContain('backgroundColor: segment.softColor')
         ->toContain('color: segment.textColor')

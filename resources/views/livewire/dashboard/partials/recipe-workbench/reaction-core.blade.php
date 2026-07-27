@@ -2,15 +2,15 @@
  <div class="sk-section-header border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <h3 id="reaction-core-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.saponification.title') }}</h3>
- <div :class="oilPercentageIsBalanced ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-danger-soft)] bg-[var(--color-danger-soft)] text-[var(--color-danger-strong)]'" class="inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium transition">
- <span x-text="oilPercentageIsBalanced ? @js(__('workbench.saponification.balanced')) : @js(__('workbench.saponification.unbalanced'))"></span>
- <span class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"></span>
+ <div data-formula-balance-status aria-live="polite" :class="oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-danger-strong)]'" class="inline-flex items-baseline gap-2 text-sm font-medium transition-colors">
+ <span class="numeric font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"></span>
+ <span x-text="oilPercentageStatusLabel"></span>
  </div>
  </div>
  </div>
  <div class="p-5">
- <div class="relative sk-inset">
- <div class="overflow-hidden rounded-lg">
+ <div class="relative">
+ <div class="overflow-hidden rounded-lg border border-[var(--color-line)]">
 	 <div class="hidden touch-pan-x lg:grid lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-3 py-2.5 sk-formula-table-y"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.oil') }}</div>

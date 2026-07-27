@@ -151,7 +151,7 @@ it('creates and assigns labels from the asset inspector', function () {
         ->and($asset->fresh()->labels->sole()->is($label))->toBeTrue();
 });
 
-it('assigns and removes labels from the asset inspector select', function () {
+it('assigns several labels from a persistent asset inspector popover', function () {
     [$user, $workspace] = mediaLibraryWorkspace();
     $assignedLabel = MediaLabel::factory()->create([
         'workspace_id' => $workspace->id,
@@ -170,12 +170,12 @@ it('assigns and removes labels from the asset inspector select', function () {
         ->test(MediaLibraryIndex::class)
         ->call('openAssetPanel', $asset->id, 'settings')
         ->assertSeeHtml('data-media-assigned-labels')
-        ->assertSeeHtml('data-media-label-select')
-        ->assertSeeHtml('wire:change="assignSelectedLabel"')
-        ->assertDontSee('Add label')
-        ->set('labelToAssign', $availableLabel->id)
-        ->call('assignSelectedLabel')
-        ->assertSet('labelToAssign', null)
+        ->assertSeeHtml('data-media-label-popover')
+        ->assertSeeHtml('data-media-label-trigger')
+        ->assertSeeHtml('data-media-label-options')
+        ->assertSeeHtml('x-show="open"')
+        ->assertSeeHtml('wire:click="assignLabel('.$availableLabel->id.')"')
+        ->call('assignLabel', $availableLabel->id)
         ->assertSet('selectedLabelIds', [$assignedLabel->id, $availableLabel->id])
         ->call('removeSelectedLabel', $assignedLabel->id)
         ->assertSet('selectedLabelIds', [$availableLabel->id])
@@ -426,6 +426,8 @@ it('keeps gallery cards compact and renders the selected asset in an accessible 
         ->test(MediaLibraryIndex::class)
         ->assertSet('selectedAssetId', null)
         ->assertSeeHtml('data-media-card')
+        ->assertSeeHtml('data-media-card-name-row')
+        ->assertSeeHtml('data-media-card-meta-row')
         ->assertSeeHtml('data-media-usage-link')
         ->assertSeeHtml('data-media-settings-trigger')
         ->assertDontSeeHtml('data-media-inline-details')
@@ -434,6 +436,10 @@ it('keeps gallery cards compact and renders the selected asset in an accessible 
         ->assertSet('selectedAssetId', $asset->id)
         ->assertSet('assetPanelTab', 'settings')
         ->assertSeeHtml('data-media-asset-panel')
+        ->assertSeeHtml('data-media-panel-header')
+        ->assertSeeHtml('data-media-panel-section')
+        ->assertSeeHtml('border-[var(--color-active)]')
+        ->assertSeeHtml('text-[var(--color-danger-strong)]')
         ->assertSeeHtml('role="dialog"')
         ->assertSeeHtml('aria-modal="true"')
         ->assertSeeHtml('x-trap.inert.noscroll')
@@ -503,7 +509,8 @@ it('renders a dense responsive thumbnail grid', function () {
     Livewire::actingAs($user)
         ->test(MediaLibraryIndex::class)
         ->assertSeeHtml('data-media-gallery-grid')
-        ->assertSeeHtml('grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6');
+        ->assertSeeHtml('grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6')
+        ->assertSeeHtml('gap-4 p-4 sm:gap-5 sm:p-6');
 });
 
 it('polls only while the workspace has processing assets', function () {

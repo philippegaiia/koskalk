@@ -225,7 +225,7 @@
                 <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('media_library.empty.description') }}</p>
             </div>
         @else
-            <div data-media-gallery-grid class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 p-3 sm:gap-4 sm:p-5">
+            <div data-media-gallery-grid class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 p-4 sm:gap-5 sm:p-6">
                 @foreach ($assets as $asset)
                     <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="overflow-hidden rounded-[var(--radius-md)] border border-[var(--color-line)] bg-[var(--color-panel)]">
                         <div class="relative grid aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
@@ -250,30 +250,35 @@
                             @endif
                         </div>
 
-                        <div class="space-y-2 p-2.5">
-                            <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-                                <div class="min-w-0">
-                                    <h4 data-media-display-name class="truncate text-xs font-medium leading-5 text-[var(--color-ink-strong)]" title="{{ $asset->displayName() }}">{{ $asset->displayName() }}</h4>
-                                    <button
-                                        id="media-asset-usage-{{ $asset->id }}"
-                                        data-media-usage-link
-                                        type="button"
-                                        wire:click="openAssetPanel({{ $asset->id }}, 'usage')"
-                                        aria-haspopup="dialog"
-                                        aria-controls="media-asset-panel"
-                                        aria-expanded="{{ $selectedAsset?->is($asset) ? 'true' : 'false' }}"
-                                        class="mt-0.5 text-[11px] font-medium text-[var(--color-accent-strong)] underline decoration-current/40 underline-offset-2 hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-                                    >
-                                    {{ trans_choice('media_library.usage', $asset->usages_count, ['count' => $asset->usages_count]) }}
-                                        <span aria-hidden="true">›</span>
-                                    </button>
-                                    @if ($asset->type === \App\MediaAssetType::Pdf && $asset->status === \App\MediaAssetStatus::Ready)
-                                        <a href="{{ route('media.download', $asset) }}" class="ml-2 text-[11px] font-medium text-[var(--color-ink-soft)] underline decoration-current/40 underline-offset-2">
-                                            {{ __('media_library.documents.download') }}
-                                        </a>
-                                    @endif
+                        <div class="space-y-2.5 p-3">
+                            <div data-media-card-name-row class="min-w-0">
+                                <h4 data-media-display-name class="truncate text-[11px] font-medium leading-4 text-[var(--color-ink-strong)]" title="{{ $asset->displayName() }}">{{ $asset->displayName() }}</h4>
+                            </div>
+
+                            <div data-media-card-meta-row class="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+                                <div class="min-w-0 space-y-1">
+                                    <div class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                                        <button
+                                            id="media-asset-usage-{{ $asset->id }}"
+                                            data-media-usage-link
+                                            type="button"
+                                            wire:click="openAssetPanel({{ $asset->id }}, 'usage')"
+                                            aria-haspopup="dialog"
+                                            aria-controls="media-asset-panel"
+                                            aria-expanded="{{ $selectedAsset?->is($asset) ? 'true' : 'false' }}"
+                                            class="text-[10px] font-medium text-[var(--color-accent-strong)] underline decoration-current/40 underline-offset-2 hover:decoration-current focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                                        >
+                                            {{ trans_choice('media_library.usage', $asset->usages_count, ['count' => $asset->usages_count]) }}
+                                            <span aria-hidden="true">›</span>
+                                        </button>
+                                        @if ($asset->type === \App\MediaAssetType::Pdf && $asset->status === \App\MediaAssetStatus::Ready)
+                                            <a href="{{ route('media.download', $asset) }}" class="text-[10px] font-medium text-[var(--color-ink-soft)] underline decoration-current/40 underline-offset-2">
+                                                {{ __('media_library.documents.download') }}
+                                            </a>
+                                        @endif
+                                    </div>
                                     @if ($asset->labels->isNotEmpty())
-                                        <p data-media-card-labels class="mt-1 truncate text-[10px] leading-4 text-[var(--color-ink-soft)]" title="{{ $asset->labels->pluck('name')->join(', ') }}">
+                                        <p data-media-card-labels class="truncate text-[10px] leading-4 text-[var(--color-ink-soft)]" title="{{ $asset->labels->pluck('name')->join(', ') }}">
                                             {{ $asset->labels->take(2)->pluck('name')->join(' · ') }}
                                             @if ($asset->labels->count() > 2)
                                                 · +{{ $asset->labels->count() - 2 }}
@@ -293,7 +298,7 @@
                                         aria-haspopup="dialog"
                                         aria-controls="media-asset-panel"
                                         aria-expanded="{{ $selectedAsset?->is($asset) ? 'true' : 'false' }}"
-                                        class="grid size-9 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                                        class="grid size-8 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                                     >
                                         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="1.8">
                                             <path stroke-linecap="round" d="M4 7h10m4 0h2M4 17h2m4 0h10M14 4v6M7 14v6" />
@@ -355,13 +360,13 @@
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="media-asset-panel-heading"
-                class="flex h-full w-full flex-col border-l border-[var(--color-line)] bg-[var(--color-panel)] shadow-xl sm:max-w-[27.5rem]"
+                class="flex h-full w-full flex-col border-l border-[var(--color-line)] bg-[var(--color-panel)] shadow-xl sm:max-w-[29rem]"
             >
-                <header class="flex items-center gap-3 border-b border-[var(--color-line)] px-4 py-3">
+                <header data-media-panel-header class="flex items-center gap-3.5 border-b border-[var(--color-line)] px-5 py-4">
                     @if ($selectedAsset->getFirstMedia('master'))
-                        <img src="{{ route('media.show', [$selectedAsset, 'thumbnail']) }}" alt="" class="size-12 shrink-0 rounded-lg object-cover" />
+                        <img src="{{ route('media.show', [$selectedAsset, 'thumbnail']) }}" alt="" class="size-14 shrink-0 rounded-lg object-cover" />
                     @else
-                        <span class="grid size-12 shrink-0 place-items-center rounded-lg bg-[var(--color-field-muted)] text-xs font-semibold text-[var(--color-ink-soft)]">PDF</span>
+                        <span class="grid size-14 shrink-0 place-items-center rounded-lg bg-[var(--color-field-muted)] text-xs font-semibold text-[var(--color-ink-soft)]">PDF</span>
                     @endif
                     <div class="min-w-0 flex-1">
                         <h2 id="media-asset-panel-heading" class="truncate text-sm font-semibold text-[var(--color-ink-strong)]">{{ $selectedAsset->displayName() }}</h2>
@@ -374,7 +379,7 @@
                         type="button"
                         x-on:click="closePanel()"
                         aria-label="{{ __('media_library.panel.close') }}"
-                        class="grid size-9 shrink-0 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                        class="grid size-10 shrink-0 place-items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
                     >
                         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="size-4" stroke="currentColor" stroke-width="1.8">
                             <path stroke-linecap="round" d="m6 6 12 12M18 6 6 18" />
@@ -382,13 +387,13 @@
                     </button>
                 </header>
 
-                <div role="tablist" aria-label="{{ __('media_library.panel.tabs_label') }}" class="grid grid-cols-2 border-b border-[var(--color-line)] px-4">
+                <div role="tablist" aria-label="{{ __('media_library.panel.tabs_label') }}" class="grid grid-cols-2 border-b border-[var(--color-line)] px-5">
                     <button
                         type="button"
                         role="tab"
                         wire:click="showAssetPanelTab('settings')"
                         aria-selected="{{ $assetPanelTab === 'settings' ? 'true' : 'false' }}"
-                        class="{{ $assetPanelTab === 'settings' ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)]' : 'border-transparent text-[var(--color-ink-soft)]' }} border-b-2 px-2 py-3 text-xs font-semibold"
+                        class="{{ $assetPanelTab === 'settings' ? 'border-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-transparent text-[var(--color-ink-soft)]' }} border-b-2 px-2 py-3.5 text-xs font-semibold transition hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)]"
                     >
                         {{ __('media_library.panel.settings') }}
                     </button>
@@ -397,30 +402,30 @@
                         role="tab"
                         wire:click="showAssetPanelTab('usage')"
                         aria-selected="{{ $assetPanelTab === 'usage' ? 'true' : 'false' }}"
-                        class="{{ $assetPanelTab === 'usage' ? 'border-[var(--color-accent)] text-[var(--color-accent-strong)]' : 'border-transparent text-[var(--color-ink-soft)]' }} border-b-2 px-2 py-3 text-xs font-semibold"
+                        class="{{ $assetPanelTab === 'usage' ? 'border-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-transparent text-[var(--color-ink-soft)]' }} border-b-2 px-2 py-3.5 text-xs font-semibold transition hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)]"
                     >
                         {{ trans_choice('media_library.usage', $selectedAsset->usages_count, ['count' => $selectedAsset->usages_count]) }}
                     </button>
                 </div>
 
-                <div data-media-panel-scroll class="min-h-0 flex-1 overflow-y-auto p-4">
+                <div data-media-panel-scroll class="min-h-0 flex-1 overflow-y-auto p-5">
                     @if ($assetPanelTab === 'settings')
                         @if ($canUpdateMedia && $selectedAsset->status === \App\MediaAssetStatus::Ready)
-                            <div class="space-y-5">
-                                <form wire:submit="renameFromInput({{ $selectedAsset->id }})" class="space-y-2">
+                            <div class="space-y-6">
+                                <form data-media-panel-section wire:submit="renameFromInput({{ $selectedAsset->id }})" class="space-y-2.5">
                                     <label class="block text-xs font-medium text-[var(--color-ink-soft)]" for="display-name-{{ $selectedAsset->id }}">
                                         {{ __('media_library.display_name') }}
                                     </label>
                                     <div class="flex gap-2">
-                                        <input id="display-name-{{ $selectedAsset->id }}" wire:model="displayNames.{{ $selectedAsset->id }}" type="text" maxlength="255" required @if ($errors->has('displayNames.'.$selectedAsset->id)) aria-describedby="display-name-error-{{ $selectedAsset->id }}" @endif aria-invalid="{{ $errors->has('displayNames.'.$selectedAsset->id) ? 'true' : 'false' }}" class="min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
-                                        <button type="submit" class="sk-btn px-3 py-2 text-xs">{{ __('media_library.save_name') }}</button>
+                                        <input id="display-name-{{ $selectedAsset->id }}" wire:model="displayNames.{{ $selectedAsset->id }}" type="text" maxlength="255" required @if ($errors->has('displayNames.'.$selectedAsset->id)) aria-describedby="display-name-error-{{ $selectedAsset->id }}" @endif aria-invalid="{{ $errors->has('displayNames.'.$selectedAsset->id) ? 'true' : 'false' }}" class="min-w-0 flex-1 rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" />
+                                        <button type="submit" class="sk-btn sk-btn-outline px-3 text-xs">{{ __('media_library.save_name') }}</button>
                                     </div>
                                     @error('displayNames.'.$selectedAsset->id)
                                         <p id="display-name-error-{{ $selectedAsset->id }}" class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                                     @enderror
                                 </form>
 
-                                <section class="space-y-3 border-t border-[var(--color-line)] pt-4">
+                                <section data-media-panel-section class="space-y-3.5 border-t border-[var(--color-line)] pt-5">
                                     @php
                                         $selectedPanelLabelIds = collect($selectedLabelIds)->map(static fn ($id): int => (int) $id);
                                         $assignedPanelLabels = $labels->whereIn('id', $selectedPanelLabelIds);
@@ -428,14 +433,14 @@
                                     @endphp
 
                                     <div class="flex items-center justify-between gap-3">
-                                        <h3 class="text-xs font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.labels.heading') }}</h3>
+                                        <h3 class="text-[11px] font-semibold tracking-[0.08em] text-[var(--color-ink-soft)] uppercase">{{ __('media_library.labels.heading') }}</h3>
                                         <span class="text-[10px] text-[var(--color-ink-soft)]">{{ count($selectedLabelIds) }}/8</span>
                                     </div>
 
                                     @if ($assignedPanelLabels->isNotEmpty())
                                         <div data-media-assigned-labels class="flex flex-wrap gap-1.5">
                                             @foreach ($assignedPanelLabels as $label)
-                                                <span wire:key="assigned-media-label-{{ $label->id }}" class="inline-flex min-w-0 items-center gap-1 rounded-full border border-[var(--color-line)] bg-[var(--color-accent-soft)] py-0.5 pl-2.5 pr-1 text-xs text-[var(--color-ink-strong)]">
+                                                <span wire:key="assigned-media-label-{{ $label->id }}" class="inline-flex min-w-0 items-center gap-1 rounded-full border border-[var(--color-line)] bg-[var(--color-active-soft)] py-0.5 pl-2.5 pr-1 text-xs text-[var(--color-active-strong)]">
                                                     <span class="max-w-44 truncate">{{ $label->name }}</span>
                                                     <button
                                                         type="button"
@@ -443,7 +448,7 @@
                                                         wire:loading.attr="disabled"
                                                         wire:target="removeSelectedLabel({{ $label->id }})"
                                                         aria-label="{{ __('media_library.labels.remove', ['name' => $label->name]) }}"
-                                                        class="grid size-6 shrink-0 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-white/70 hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-accent)] disabled:opacity-50"
+                                                        class="grid size-6 shrink-0 place-items-center rounded-full text-[var(--color-active-strong)] transition hover:bg-[var(--color-field)] focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-[var(--color-active)] disabled:opacity-50"
                                                     >
                                                         <span aria-hidden="true">&times;</span>
                                                     </button>
@@ -457,34 +462,71 @@
                                     @endif
 
                                     @if ($availablePanelLabels->isNotEmpty() && count($selectedLabelIds) < 8)
-                                        <div>
-                                            <label class="sr-only" for="media-label-select">{{ __('media_library.labels.choose') }}</label>
-                                            <select
-                                                id="media-label-select"
-                                                data-media-label-select
-                                                wire:model="labelToAssign"
-                                                wire:change="assignSelectedLabel"
-                                                wire:loading.attr="disabled"
-                                                wire:target="assignSelectedLabel"
-                                                required
-                                                class="w-full rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-xs text-[var(--color-ink-strong)] disabled:cursor-wait disabled:opacity-60"
+                                        <div
+                                            data-media-label-popover
+                                            x-data="{ open: false }"
+                                            x-on:click.outside="open = false"
+                                            x-on:keydown.escape.prevent.stop="open = false; $refs.trigger.focus()"
+                                            class="relative"
+                                        >
+                                            <button
+                                                x-ref="trigger"
+                                                data-media-label-trigger
+                                                type="button"
+                                                x-on:click="open = ! open"
+                                                aria-haspopup="listbox"
+                                                aria-controls="media-label-options"
+                                                x-bind:aria-expanded="open.toString()"
+                                                class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border bg-[var(--color-field)] px-3 py-2 text-left text-xs text-[var(--color-ink-strong)] transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]"
+                                                x-bind:class="open ? 'border-[var(--color-active)]' : 'border-[var(--color-field-outline)] hover:border-[var(--color-line-strong)]'"
                                             >
-                                                <option value="">{{ __('media_library.labels.choose') }}</option>
+                                                <span>{{ __('media_library.labels.choose') }}</span>
+                                                <svg aria-hidden="true" viewBox="0 0 20 20" fill="none" class="size-4 shrink-0 text-[var(--color-ink-soft)] transition-transform duration-150" x-bind:class="{ 'rotate-180': open }" stroke="currentColor" stroke-width="1.8">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="m6 8 4 4 4-4" />
+                                                </svg>
+                                            </button>
+
+                                            <div
+                                                x-cloak
+                                                x-show="open"
+                                                x-transition:enter="transition ease-out duration-150"
+                                                x-transition:enter-start="opacity-0 -translate-y-1"
+                                                x-transition:enter-end="opacity-100 translate-y-0"
+                                                x-transition:leave="transition ease-in duration-100"
+                                                x-transition:leave-start="opacity-100"
+                                                x-transition:leave-end="opacity-0"
+                                                id="media-label-options"
+                                                data-media-label-options
+                                                role="listbox"
+                                                class="mt-1.5 max-h-52 overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1.5"
+                                            >
                                                 @foreach ($availablePanelLabels as $label)
-                                                    <option value="{{ $label->id }}">{{ $label->name }}</option>
+                                                    <button
+                                                        wire:key="available-media-label-{{ $label->id }}"
+                                                        type="button"
+                                                        role="option"
+                                                        aria-selected="false"
+                                                        wire:click="assignLabel({{ $label->id }})"
+                                                        wire:loading.attr="disabled"
+                                                        wire:target="assignLabel({{ $label->id }})"
+                                                        class="flex min-h-10 w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs text-[var(--color-ink-strong)] transition hover:bg-[var(--color-field-muted)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-active)] disabled:cursor-wait disabled:opacity-50"
+                                                    >
+                                                        <span class="truncate">{{ $label->name }}</span>
+                                                        <span aria-hidden="true" class="text-base leading-none text-[var(--color-active-strong)]">+</span>
+                                                    </button>
                                                 @endforeach
-                                            </select>
+                                            </div>
                                         </div>
                                     @elseif (count($selectedLabelIds) >= 8)
                                         <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.labels.asset_limit', ['count' => 8]) }}</p>
                                     @endif
-                                    @error('labelToAssign')
+                                    @error('selectedLabelIds')
                                         <p class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
                                     @enderror
 
                                     <form wire:submit="createLabel" class="flex gap-2">
-                                        <input wire:model="newLabelName" type="text" maxlength="30" placeholder="{{ __('media_library.labels.new_placeholder') }}" class="min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-xs text-[var(--color-ink-strong)]" />
-                                        <button type="submit" class="sk-btn px-3 py-2 text-xs">{{ __('media_library.labels.add') }}</button>
+                                        <input wire:model="newLabelName" type="text" maxlength="30" placeholder="{{ __('media_library.labels.new_placeholder') }}" class="min-w-0 flex-1 rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2.5 text-xs text-[var(--color-ink-strong)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" />
+                                        <button type="submit" class="sk-btn sk-btn-outline px-3 text-xs">{{ __('media_library.labels.add') }}</button>
                                     </form>
                                     @error('newLabelName')
                                         <p class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
@@ -492,28 +534,28 @@
                                 </section>
 
                                 @if ($selectedAsset->type === \App\MediaAssetType::Pdf)
-                                    <section class="border-t border-[var(--color-line)] pt-4">
+                                    <section data-media-panel-section class="border-t border-[var(--color-line)] pt-5">
                                         <a href="{{ route('media.download', $selectedAsset) }}" class="sk-btn sk-btn-primary">{{ __('media_library.documents.download') }}</a>
                                     </section>
                                 @else
-                                <section x-data="{ focalX: {{ $selectedAsset->focal_x }}, focalY: {{ $selectedAsset->focal_y }} }" class="border-t border-[var(--color-line)] pt-4">
-                                    <h3 class="text-xs font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.crop.adjust') }}</h3>
+                                <section data-media-panel-section x-data="{ focalX: {{ $selectedAsset->focal_x }}, focalY: {{ $selectedAsset->focal_y }} }" class="border-t border-[var(--color-line)] pt-5">
+                                    <h3 class="text-[11px] font-semibold tracking-[0.08em] text-[var(--color-ink-soft)] uppercase">{{ __('media_library.crop.adjust') }}</h3>
                                     <div class="mt-3 space-y-3">
                                         <div class="relative grid aspect-[4/3] place-items-center overflow-hidden rounded-lg bg-[var(--color-field-muted)]">
                                             <img src="{{ route('media.show', [$selectedAsset, 'master']) }}" alt="" class="size-full object-contain" />
                                             <span
                                                 aria-hidden="true"
-                                                class="pointer-events-none absolute size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-[var(--color-accent)] shadow"
+                                                class="pointer-events-none absolute size-5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[var(--color-field)] bg-[var(--color-active)] shadow"
                                                 x-bind:style="`left: ${focalX}%; top: ${focalY}%`"
                                             ></span>
                                         </div>
                                         <label class="block text-xs font-medium text-[var(--color-ink-soft)]">
                                             {{ __('media_library.crop.horizontal') }}
-                                            <input x-model.number="focalX" type="range" min="0" max="100" step="1" class="mt-1 w-full accent-[var(--color-accent)]" />
+                                            <input x-model.number="focalX" type="range" min="0" max="100" step="1" class="mt-1 w-full accent-[var(--color-active)]" />
                                         </label>
                                         <label class="block text-xs font-medium text-[var(--color-ink-soft)]">
                                             {{ __('media_library.crop.vertical') }}
-                                            <input x-model.number="focalY" type="range" min="0" max="100" step="1" class="mt-1 w-full accent-[var(--color-accent)]" />
+                                            <input x-model.number="focalY" type="range" min="0" max="100" step="1" class="mt-1 w-full accent-[var(--color-active)]" />
                                         </label>
                                         <button
                                             type="button"
@@ -532,7 +574,7 @@
                     @else
                         <label class="block">
                             <span class="sr-only">{{ __('media_library.panel.search_usage') }}</span>
-                            <input wire:model.live.debounce.250ms="usageSearch" type="search" placeholder="{{ __('media_library.panel.search_usage') }}" class="w-full rounded-lg border border-[var(--color-line)] bg-white px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
+                            <input wire:model.live.debounce.250ms="usageSearch" type="search" placeholder="{{ __('media_library.panel.search_usage') }}" class="w-full rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] focus:border-[var(--color-accent)] focus:ring-1 focus:ring-[var(--color-accent)]" />
                         </label>
 
                         @if ($selectedUsageGroups->isEmpty())
@@ -572,7 +614,7 @@
                 </div>
 
                 @if ($canDeleteMedia && $selectedAsset->status === \App\MediaAssetStatus::Ready)
-                    <footer class="flex items-center justify-between gap-3 border-t border-[var(--color-line)] px-4 py-3">
+                    <footer class="flex items-center justify-between gap-3 border-t border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4">
                         @if ($selectedAsset->usages_count > 0)
                             <p class="text-[11px] leading-4 text-[var(--color-ink-soft)]">{{ __('media_library.detach_before_removing') }}</p>
                         @else

@@ -261,6 +261,8 @@ return [
         'empty' => 'Add oils with fatty-acid data to see the blended profile.',
     ],
     'status' => [
+        'add_percentage' => 'Add :amount%',
+        'balanced' => 'Balanced',
         'title' => 'Formula status',
         'oils' => 'Oils',
         'lye_water' => 'Lye and water',
@@ -280,6 +282,7 @@ return [
         'saved_detail' => 'Current changes are saved.',
         'saving_detail' => 'Saving current changes.',
         'balanced_remaining' => ':amount% still needs balancing.',
+        'remove_percentage' => 'Remove :amount%',
         'negative_superfat_warning' => 'A negative superfat leaves excess lye. This can cause irritation or burns unless the product is correctly neutralized and tested. Continue?',
     ],
 ];

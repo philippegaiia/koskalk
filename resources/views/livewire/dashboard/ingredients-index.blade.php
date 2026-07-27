@@ -48,7 +48,7 @@
                                     role="radio"
                                     aria-checked="{{ $ownershipFilter === $filterValue ? 'true' : 'false' }}"
                                     wire:click="setOwnershipFilter('{{ $filterValue }}')"
-                                    class="{{ $ownershipFilter === $filterValue ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]' : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-4 py-2 text-sm font-medium transition"
+                                    class="{{ $ownershipFilter === $filterValue ? 'border-[var(--color-active)] bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-4 py-2 text-sm font-medium transition"
                                 >
                                     {{ $filterValue === 'mine' ? $filterLabel.' ('.$privateIngredientUsage['used'].')' : $filterLabel }}
                                 </button>
@@ -156,7 +156,7 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="{{ $isMine ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]' }} inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium">
+                                        <span class="{{ $isMine ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]' }} inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium">
                                             {{ $isMine ? __('ingredients.table.source.yours') : __('ingredients.table.source.soapkraft') }}
                                         </span>
                                     </td>

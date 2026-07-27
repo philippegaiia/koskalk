@@ -30,7 +30,7 @@
         @livewireStyles
         @stack('head')
     </head>
-    <body class="min-h-dvh bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
+    <body data-user-shell class="min-h-dvh bg-[var(--color-surface)] text-[var(--color-ink)] antialiased">
         @php($appShellUser = auth()->user())
 
         <div

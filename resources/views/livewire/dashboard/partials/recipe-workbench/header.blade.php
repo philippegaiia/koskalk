@@ -80,7 +80,7 @@
                             </div>
                         </div>
 
-                        <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-accent-soft)] hover:text-[var(--color-ink-strong)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
+                        <button type="button" x-show="hasSavedRecipe" x-cloak @click="duplicateFormula()" :disabled="!canDuplicateFormula || isSaving" :class="!canDuplicateFormula || isSaving ? 'cursor-not-allowed text-[var(--color-ink-soft)]' : 'text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] hover:text-[var(--color-ink-strong)]'" class="mt-1 flex w-full rounded-md px-3 py-2.5 text-left text-sm font-medium transition">
                             {{ __('workbench.header.duplicate_product') }}
                         </button>
                     </div>

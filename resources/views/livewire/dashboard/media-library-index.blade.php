@@ -180,7 +180,7 @@
                     </span>
                     <div class="flex flex-wrap gap-1">
                         @foreach (['all', 'used', 'unused'] as $value)
-                            <button type="button" wire:click="$set('usageFilter', '{{ $value }}')" aria-pressed="{{ $usageFilter === $value ? 'true' : 'false' }}" class="{{ $usageFilter === $value ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">
+                            <button type="button" wire:click="$set('usageFilter', '{{ $value }}')" aria-pressed="{{ $usageFilter === $value ? 'true' : 'false' }}" class="{{ $usageFilter === $value ? 'border-[var(--color-active)] bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)] hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-3 py-2 text-xs font-medium transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)]">
                                 {{ $value === 'all' ? __('media_library.filters.any_usage') : __('media_library.filters.'.$value) }}
                             </button>
                         @endforeach

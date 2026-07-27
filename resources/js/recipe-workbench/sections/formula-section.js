@@ -436,17 +436,25 @@ export function createFormulaSection() {
         },
 
         get oilPercentageIsBalanced() {
-            return Math.abs(this.totalOilPercentage() - 100) <= 0.01;
+            return this.oilPercentageReadoutTotal === 100;
+        },
+
+        get oilPercentageReadoutTotal() {
+            return this.number(this.format(this.totalOilPercentage(), 2));
         },
 
         get oilPercentageStatusLabel() {
-            if (this.isCosmeticFormula) {
-                return this.oilPercentageIsBalanced
-                    ? this.t('cosmetic.formula_balanced')
-                    : this.t('cosmetic.formula_unbalanced');
+            const total = this.oilPercentageReadoutTotal;
+
+            if (this.oilPercentageIsBalanced) {
+                return this.t('status.balanced');
             }
 
-            return this.oilPercentageIsBalanced ? this.t('saponification.balanced') : this.t('saponification.unbalanced');
+            const amount = this.format(Math.abs(100 - total), 2);
+
+            return total < 100
+                ? this.t('status.add_percentage', { amount })
+                : this.t('status.remove_percentage', { amount });
         },
 
         get canSaveDraft() {

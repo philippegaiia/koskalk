@@ -502,7 +502,8 @@ it('keeps cosmetic phase editing calm and guarded', function () {
     $formulaSource = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
 
     expect($cosmeticFormula)
-        ->toContain('border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]')
+        ->toContain("oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-warning-strong)]'")
+        ->not->toContain('border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]')
         ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('document.activeElement !== $el')

@@ -191,7 +191,7 @@
  <span class="text-[var(--color-ink-soft)]">{{ __('workbench.costing.summary.packaging') }}</span>
  <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="packagingCostTotal !== null ? `${costingCurrency} ${format(packagingCostTotal, 2)}` : t('costing.summary.enter_finished_units')"></span>
  </div>
- <div class="flex items-center justify-between rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
+ <div class="flex items-center justify-between rounded-lg border border-[var(--color-line-strong)] bg-[var(--color-panel-strong)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-strong)]">{{ __('workbench.costing.summary.total_batch_cost') }}</span>
  <span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="totalBatchCost !== null ? `${costingCurrency} ${format(totalBatchCost, 2)}` : t('costing.summary.enter_finished_units')"></span>
  </div>
@@ -203,7 +203,7 @@
  </section>
 
  <template x-if="!hasSavedRecipe">
- <div class="rounded-[1.5rem] border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-3 text-sm text-[var(--color-ink-strong)]">
+ <div class="rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-panel-strong)] px-4 py-3 text-sm text-[var(--color-ink-strong)]">
  {{ __('workbench.costing.messages.save_product') }}
  </div>
  </template>

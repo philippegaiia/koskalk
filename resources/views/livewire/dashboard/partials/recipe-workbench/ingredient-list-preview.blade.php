@@ -16,7 +16,7 @@
  <span class="rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="activeIngredientListVariant.label"></span>
  </template>
  <template x-if="drySoapOutputListText">
- <button type="button" @click="copyGeneratedIngredientList()" class="rounded-full border border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-white">
+ <button type="button" @click="copyGeneratedIngredientList()" class="rounded-full border border-[var(--color-line-strong)] bg-[var(--color-panel)] px-4 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel-strong)]">
  Copy list
  </button>
  </template>
@@ -33,8 +33,8 @@
  type="button"
  @click="selectIngredientListVariant(variant.key)"
  :class="activeIngredientListVariantKey === variant.key
- ? 'border-[var(--color-line-strong)] bg-[var(--color-accent-soft)] text-[var(--color-ink-strong)]'
- : 'border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'"
+ ? 'border-[var(--color-active)] bg-[var(--color-active-soft)] text-[var(--color-active-strong)]'
+ : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)]'"
  class="rounded-full border px-4 py-2 text-xs font-medium transition"
  x-text="variant.label"
  ></button>

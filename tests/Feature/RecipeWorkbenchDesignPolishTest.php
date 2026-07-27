@@ -192,6 +192,43 @@ it('hardens compact workbench controls for touch and keyboard use', function () 
         ->toContain('@keydown.escape.prevent.stop="open = false"');
 });
 
+it('uses quiet actionable formula balance readouts and flat formula ledgers', function () {
+    $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
+    $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
+    $formulaSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
+    $translationSource = file_get_contents(lang_path('en/workbench.php'));
+
+    expect($cosmeticFormula)
+        ->toContain('data-formula-balance-status')
+        ->toContain("oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-warning-strong)]'")
+        ->toContain('class="inline-flex items-baseline gap-2 text-sm font-medium transition-colors"')
+        ->toContain('class="numeric font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
+        ->toContain('<span x-text="oilPercentageStatusLabel"></span>')
+        ->not->toContain('rounded-full border px-4 py-2')
+        ->not->toContain('numeric rounded-full bg-white')
+        ->not->toContain(':data-cosmetic-phase-key="phase.key" class="overflow-hidden transition-shadow duration-300 sk-inset"')
+        ->not->toContain('<div class="overflow-hidden sk-inset">')
+        ->and($reactionCore)
+        ->toContain('data-formula-balance-status')
+        ->toContain("oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-danger-strong)]'")
+        ->toContain('class="inline-flex items-baseline gap-2 text-sm font-medium transition-colors"')
+        ->toContain('class="numeric font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"')
+        ->toContain('<span x-text="oilPercentageStatusLabel"></span>')
+        ->not->toContain('rounded-full border px-4 py-2')
+        ->not->toContain('numeric rounded-full bg-white')
+        ->not->toContain('<div class="relative sk-inset">')
+        ->and($formulaSectionSource)
+        ->toContain('get oilPercentageIsBalanced()')
+        ->toContain("return this.t('status.balanced');")
+        ->toContain('return total < 100')
+        ->toContain("? this.t('status.add_percentage', { amount })")
+        ->toContain(": this.t('status.remove_percentage', { amount });")
+        ->and($translationSource)
+        ->toContain("'add_percentage' => 'Add :amount%'")
+        ->toContain("'remove_percentage' => 'Remove :amount%'")
+        ->toContain("'balanced' => 'Balanced'");
+});
+
 it('presents batch totals as one compact neutral summary grid', function () {
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
@@ -253,8 +290,9 @@ it('keeps soap qualities compact and presents comments as discreet formula notes
         ->toContain('Bar &amp; cure', false)
         ->toContain('Lather &amp; feel', false)
         ->toContain('inline-flex items-center gap-2')
-        ->toContain('rounded-lg border border-b-2 border-[var(--color-line)] bg-white/35 px-3.5 py-2')
-        ->toContain("'border-b-[var(--color-accent)] text-[var(--color-accent)]'")
+        ->toContain('rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2')
+        ->toContain("'border-b-[var(--color-active)] text-[var(--color-active-strong)]'")
+        ->not->toContain("'border-b-[var(--color-accent)] text-[var(--color-accent)]'")
         ->toContain('class="sk-quality-disclosure grid size-9 shrink-0 place-items-center rounded-full border', false)
         ->not->toContain('gap-6 border-b border-[var(--color-line)]')
         ->not->toContain('rounded-[1.15rem] border border-[var(--color-line)] bg-[var(--color-field)] p-1')
@@ -962,6 +1000,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
     $formulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings')->render();
     $costingTab = view('livewire.dashboard.partials.recipe-workbench.costing-tab')->render();
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+    $ingredientBrowserSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
     $reactionCore = view('livewire.dashboard.partials.recipe-workbench.reaction-core')->render();
     $postReaction = view('livewire.dashboard.partials.recipe-workbench.post-reaction')->render();
     $cosmeticFormula = view('livewire.dashboard.partials.recipe-workbench.cosmetic-formula')->render();
@@ -972,6 +1011,8 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
     $formulaDropTargets = implode("\n", [$reactionCore, $postReaction, $cosmeticFormula]);
 
     expect($themeSource)
+        ->toContain('--color-surface: oklch(96.4% 0.016 128)')
+        ->toContain('--color-panel: oklch(98.5% 0.006 85)')
         ->toContain('--color-forest: oklch(25.5% 0.030 155)')
         ->toContain('--color-accent: oklch(55.5% 0.112 55)')
         ->toContain('--color-on-accent: oklch(98.0% 0.006 85)')
@@ -988,6 +1029,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->toContain('--sk-tone: var(--color-active)')
         ->toContain('.sk-tone-materials')
         ->toContain('.sk-tone-analysis')
+        ->toContain('.sk-tone-summary')
         ->toContain('--color-sidebar-active')
         ->not->toContain('margin: 0.75rem 0.75rem 0')
         ->not->toContain('border-radius: 0.85rem')
@@ -1024,17 +1066,21 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->and($costingTab)
         ->toContain('bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm')
         ->toContain('bg-[var(--color-control)] text-[var(--color-ink-soft)]')
+        ->not->toContain('bg-[var(--color-accent-soft)]')
         ->not->toContain('focus:outline-2')
         ->not->toContain('outline-[var(--color-field-outline)]')
         ->and($ingredientBrowser)
         ->toContain('sk-tone-catalog')
         ->toContain('text-[var(--color-on-accent)]')
         ->not->toContain('focus-visible:outline-2')
+        ->and($ingredientBrowserSource)
+        ->toContain('hover:bg-[var(--color-active-soft)]')
         ->and($reactionCore)
         ->toContain('sk-tone-chemistry')
         ->and($postReaction)
         ->toContain('sk-tone-summary')
         ->not->toContain('sk-tone-materials')
+        ->not->toContain('bg-[var(--color-accent-soft)]')
         ->and($formulaDropTargets)
         ->toContain('bg-[var(--color-active-soft)]')
         ->toContain('text-[var(--color-active-strong)]')
@@ -1043,11 +1089,44 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->not->toContain("isDropTarget(phase.key) ? 'bg-[var(--color-accent-soft)]")
         ->and($formulaAnalysis)
         ->toContain('sk-tone-analysis')
+        ->toContain('border-b-[var(--color-active)] text-[var(--color-active-strong)]')
         ->and($fattyAcidProfile)
         ->toContain('sk-tone-analysis')
+        ->toContain('bg-[var(--color-active)]')
         ->and($appShellSource)
         ->toContain('bg-[var(--color-sidebar-active)]')
         ->toContain('ring-[var(--color-sidebar-active-ring)]');
+
+    expect($appStylesSource)
+        ->toContain('[data-user-shell]')
+        ->toContain('--color-surface: oklch(97.2% 0.012 128)')
+        ->toContain('--color-panel: oklch(98.8% 0.006 85)')
+        ->toContain('--color-accent: oklch(53.0% 0.090 55)')
+        ->toContain('[data-user-shell] .sk-tone-analysis')
+        ->toContain('--sk-tone: var(--color-active)')
+        ->and($appShellSource)
+        ->toContain('<body data-user-shell');
+});
+
+it('reserves copper for actions and uses botanical green for selected user states', function () {
+    $ingredientsIndexSource = file_get_contents(resource_path('views/livewire/dashboard/ingredients-index.blade.php'));
+    $mediaLibrarySource = file_get_contents(resource_path('views/livewire/dashboard/media-library-index.blade.php'));
+    $accountSource = file_get_contents(resource_path('views/account/show.blade.php'));
+    $appStylesSource = file_get_contents(resource_path('css/app.css'));
+
+    expect($ingredientsIndexSource)
+        ->toContain("'border-[var(--color-active)] bg-[var(--color-active-soft)] text-[var(--color-active-strong)]'")
+        ->toContain("\$isMine ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]'")
+        ->not->toContain("\$isMine ? 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'")
+        ->and($mediaLibrarySource)
+        ->toContain("\$usageFilter === \$value ? 'border-[var(--color-active)] bg-[var(--color-active-soft)] text-[var(--color-active-strong)]'")
+        ->not->toContain("\$usageFilter === \$value ? 'border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]'")
+        ->and($accountSource)
+        ->toContain('rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4')
+        ->toContain('h-full rounded-full bg-[var(--color-active)]')
+        ->not->toContain('h-full rounded-full bg-[var(--color-accent)]')
+        ->and($appStylesSource)
+        ->toContain(".sk-btn-outline {\n        border: 1px solid var(--color-line);\n        background: var(--color-panel);");
 });
 
 it('collapses formula settings into a setup summary for soap and cosmetic benches', function () {

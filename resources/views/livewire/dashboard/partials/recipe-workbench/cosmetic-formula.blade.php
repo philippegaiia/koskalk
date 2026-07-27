@@ -5,16 +5,16 @@
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.cosmetic.title') }}</h3>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.cosmetic.instruction') }}</p>
  </div>
- <div :class="oilPercentageIsBalanced ? 'border-[var(--color-success-soft)] bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="inline-flex items-center gap-3 rounded-full border px-4 py-2 text-sm font-medium transition">
+ <div data-formula-balance-status aria-live="polite" :class="oilPercentageIsBalanced ? 'text-[var(--color-success-strong)]' : 'text-[var(--color-warning-strong)]'" class="inline-flex items-baseline gap-2 text-sm font-medium transition-colors">
+ <span class="numeric font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"></span>
  <span x-text="oilPercentageStatusLabel"></span>
- <span class="numeric rounded-full bg-white px-3 py-1 text-sm font-semibold" x-text="`${format(totalOilPercentage(), 2)}%`"></span>
  </div>
  </div>
  </div>
 
  <div class="space-y-5 p-5">
  <template x-for="phase in phaseOrder" :key="phase.key">
- <div :id="`cosmetic-phase-${phase.key}`" :data-cosmetic-phase-key="phase.key" class="overflow-hidden transition-shadow duration-300 sk-inset">
+ <div :id="`cosmetic-phase-${phase.key}`" :data-cosmetic-phase-key="phase.key" class="transition-shadow duration-300">
  <div class="border-b border-[var(--color-line)] px-4 py-3">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div class="min-w-0 flex-1">
@@ -168,7 +168,7 @@
  </div>
  </template>
 
-	 <div class="overflow-hidden sk-inset">
+	 <div>
 	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0">
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.cosmetic.formula_total') }}</div>
@@ -179,7 +179,7 @@
 	 </div>
 
 	 <div class="flex flex-wrap items-center gap-3">
-	 <button type="button" @click="addCosmeticPhase()" class="rounded-full border border-[var(--color-line-strong)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-accent-soft)]">
+	 <button type="button" @click="addCosmeticPhase()" class="rounded-full border border-[var(--color-line-strong)] bg-[var(--color-panel)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel-strong)]">
 	 {{ __('workbench.cosmetic.add_phase') }}
 	 </button>
 	 </div>

@@ -13,6 +13,23 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
+@layer base {
+    [data-user-shell] {
+        --color-surface: oklch(97.2% 0.012 128);
+        --color-panel: oklch(98.8% 0.006 85);
+
+        --color-accent: oklch(53.0% 0.090 55);
+        --color-accent-hover: oklch(45.5% 0.095 53);
+        --color-accent-soft: oklch(95.0% 0.024 65);
+        --color-accent-strong: oklch(40.5% 0.090 50);
+
+        --color-chemistry: oklch(57.0% 0.105 55);
+        --color-chemistry-soft: oklch(95.8% 0.024 75);
+        --color-chemistry-strong: oklch(43.5% 0.092 52);
+
+        --color-info-soft: oklch(96.5% 0.012 230);
+    }
+}
 
 @layer utilities {
     .numeric {
@@ -34,6 +51,12 @@
 }
 
 @layer components {
+    [data-user-shell] .sk-tone-analysis {
+        --sk-tone: var(--color-active);
+        --sk-tone-soft: var(--color-active-soft);
+        --sk-tone-strong: var(--color-active-strong);
+    }
+
     .sk-card {
         border-radius: 0.875rem;
         background: var(--color-panel);
@@ -171,7 +194,7 @@
 
     .sk-btn-outline {
         border: 1px solid var(--color-line);
-        background: white;
+        background: var(--color-panel);
         color: var(--color-ink-soft);
     }
 

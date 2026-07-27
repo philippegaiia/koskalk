@@ -10609,6 +10609,17 @@
         },
         {
             "group": "workbench",
+            "key": "status.add_percentage",
+            "text": {
+                "de": ":amount% hinzufügen",
+                "es": "Añadir :amount%",
+                "fr": "Ajouter :amount %",
+                "it": "Aggiungi :amount%",
+                "nl": "Voeg :amount% toe"
+            }
+        },
+        {
+            "group": "workbench",
             "key": "status.amounts_calculated",
             "text": {
                 "de": "Mengen berechnet.",
@@ -10616,6 +10627,17 @@
                 "fr": "Quantités calculées.",
                 "it": "Quantità calcolate.",
                 "nl": "Hoeveelheden berekend."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "status.balanced",
+            "text": {
+                "de": "Ausgeglichen",
+                "es": "Equilibrado",
+                "fr": "Équilibré",
+                "it": "Bilanciato",
+                "nl": "In balans"
             }
         },
         {
@@ -10715,6 +10737,17 @@
                 "fr": "Prêt à enregistrer.",
                 "it": "Pronto per il salvataggio.",
                 "nl": "Klaar om op te slaan."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "status.remove_percentage",
+            "text": {
+                "de": ":amount% entfernen",
+                "es": "Quitar :amount%",
+                "fr": "Retirer :amount %",
+                "it": "Rimuovi :amount%",
+                "nl": "Verwijder :amount%"
             }
         },
         {

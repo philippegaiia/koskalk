@@ -7,6 +7,7 @@ use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use App\Services\SupplierListingPricePresentation;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Livewire\Component;
@@ -51,8 +52,10 @@ class SupplierListingIndex extends Component
         $this->resetPage();
     }
 
-    public function render(ProductionBenchAccess $access): View
-    {
+    public function render(
+        ProductionBenchAccess $access,
+        SupplierListingPricePresentation $pricePresentation,
+    ): View {
         $workspace = $this->workspace();
         $search = trim($this->search);
         $searchTerm = '%'.Str::lower($search).'%';
@@ -81,7 +84,10 @@ class SupplierListingIndex extends Component
         return view('livewire.production-bench.purchasing.supplier-listing-index', [
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
-            'listings' => $listings,
+            'listingRows' => $listings->through(fn (SupplierListing $listing): array => [
+                'listing' => $listing,
+                'price' => $pricePresentation->present($listing, $workspace),
+            ]),
             'suppliers' => Supplier::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(['id', 'name']),
             'workspace' => $workspace,
         ]);

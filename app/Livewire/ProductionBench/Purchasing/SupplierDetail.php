@@ -12,6 +12,7 @@ use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
+use App\Services\SupplierListingPricePresentation;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
@@ -88,13 +89,23 @@ class SupplierDetail extends Component
             ->firstOrFail();
 
         $this->fillSupplierForm();
+        $this->priceUnit = $this->defaultPriceUnit();
     }
 
     public function updatedListingSubjectType(): void
     {
         $this->listingSubjectId = null;
         $this->netUnit = $this->listingSubjectType === 'packaging' ? 'count' : 'kg';
-        $this->priceUnit = $this->listingSubjectType === 'packaging' ? 'count' : 'kg';
+        $this->priceUnit = $this->priceBasis === ListingPriceBasis::TotalPurchaseFormat->value
+            ? ''
+            : $this->defaultPriceUnit();
+    }
+
+    public function updatedPriceBasis(): void
+    {
+        $this->priceUnit = $this->priceBasis === ListingPriceBasis::TotalPurchaseFormat->value
+            ? ''
+            : $this->defaultPriceUnit();
     }
 
     public function saveSupplier(SaveSupplier $saveSupplier): void
@@ -146,7 +157,9 @@ class SupplierDetail extends Component
                     'net_unit' => $this->netUnit,
                     'price_basis' => ListingPriceBasis::from($this->priceBasis),
                     'price_amount' => $this->priceAmount,
-                    'price_unit' => filled($this->priceUnit) ? $this->priceUnit : null,
+                    'price_unit' => $this->priceBasis === ListingPriceBasis::TotalPurchaseFormat->value
+                        ? null
+                        : (filled($this->priceUnit) ? $this->priceUnit : null),
                     'supplier_sku' => $this->supplierSku,
                     'supplier_name' => $this->supplierName,
                     'minimum_packs' => $this->minimumPacks,
@@ -170,6 +183,7 @@ class SupplierDetail extends Component
     public function render(
         ProductionBenchAccess $access,
         SupplierListingPriceCalculator $priceCalculator,
+        SupplierListingPricePresentation $pricePresentation,
     ): View {
         $workspace = $this->workspace();
 
@@ -178,10 +192,14 @@ class SupplierDetail extends Component
             'isReadOnly' => $access->isReadOnly($workspace),
             'ingredients' => $this->accessibleIngredients()->orderBy('display_name')->get(),
             'packagingItems' => $this->packagingItems()->orderBy('name')->get(),
-            'listings' => $this->supplier->listings()
+            'listingRows' => $this->supplier->listings()
                 ->with(['ingredient.translations', 'packagingItem'])
                 ->latest('id')
-                ->get(),
+                ->get()
+                ->map(fn ($listing): array => [
+                    'listing' => $listing,
+                    'price' => $pricePresentation->present($listing, $workspace),
+                ]),
             'pricePreview' => $this->pricePreview($priceCalculator),
             'workspace' => $workspace,
         ]);
@@ -249,7 +267,7 @@ class SupplierDetail extends Component
         $this->listingSubjectType = 'ingredient';
         $this->netUnit = 'kg';
         $this->priceBasis = ListingPriceBasis::PerUnit->value;
-        $this->priceUnit = 'kg';
+        $this->priceUnit = $this->defaultPriceUnit();
         $this->minimumPacks = 1;
         $this->listingIsActive = true;
     }
@@ -314,6 +332,13 @@ class SupplierDetail extends Component
             'minimum_packs' => 'minimumPacks',
             default => $field,
         };
+    }
+
+    private function defaultPriceUnit(): string
+    {
+        return $this->listingSubjectType === 'packaging'
+            ? 'count'
+            : $this->workspace()->mass_display_system->priceUnit()->value;
     }
 
     private function user(): User

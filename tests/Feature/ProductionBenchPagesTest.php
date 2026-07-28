@@ -58,11 +58,13 @@ it('renders opening stock and purchasing workspaces', function (): void {
 
     $this->actingAs($user)
         ->get(route('production-bench.purchasing'))
+        ->assertRedirectToRoute('production-bench.purchasing.suppliers');
+
+    $this->actingAs($user)
+        ->get(route('production-bench.purchasing.suppliers'))
         ->assertOk()
         ->assertSee('Suppliers')
-        ->assertSee('Listings')
-        ->assertSee('Purchase orders')
-        ->assertSee('Receive delivery');
+        ->assertDontSee('Receive delivery');
 
     Livewire::test(InventoryIndex::class)->assertOk();
     Livewire::test(PurchasingIndex::class)->assertOk();

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\MassUnit;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\RegulatoryRegime;
@@ -13,6 +14,7 @@ class RecipeWorkbenchPayloadNormalizer
     public function __construct(
         private readonly RecipeNormalizationService $recipeNormalizationService,
         private readonly RecipeWorkbenchPhaseBlueprints $recipeWorkbenchPhaseBlueprints,
+        private readonly MassConverter $massConverter,
     ) {}
 
     /**
@@ -21,6 +23,7 @@ class RecipeWorkbenchPayloadNormalizer
      *     name: string,
      *     oil_weight: float,
      *     oil_unit: string,
+     *     mass_grams: string,
      *     manufacturing_mode: string,
      *     exposure_mode: string,
      *     regulatory_regime: string,
@@ -41,6 +44,7 @@ class RecipeWorkbenchPayloadNormalizer
 
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
         $phasePayload = $this->phasePayload($payload);
+        $massUnit = $this->normalizeMassUnit($payload['oil_unit'] ?? 'g');
 
         try {
             $normalizedRecipe = $this->recipeNormalizationService->normalizeSoapRecipe(
@@ -66,7 +70,8 @@ class RecipeWorkbenchPayloadNormalizer
             'name' => $name !== '' ? $name : 'Untitled Soap Formula',
             'product_type_id' => null,
             'oil_weight' => $normalizedRecipe['oil_weight'],
-            'oil_unit' => in_array($payload['oil_unit'] ?? 'g', ['g', 'oz', 'lb'], true) ? $payload['oil_unit'] : 'g',
+            'oil_unit' => $massUnit->value,
+            'mass_grams' => $this->massConverter->toGrams($normalizedRecipe['oil_weight'], $massUnit),
             'manufacturing_mode' => $this->normalizeManufacturingMode($payload['manufacturing_mode'] ?? 'saponify_in_formula'),
             'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'rinse_off'),
             'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu'),
@@ -94,7 +99,8 @@ class RecipeWorkbenchPayloadNormalizer
                 'dual_lye_koh_percentage' => $this->boundedPercentage($payload['dual_lye_koh_percentage'] ?? 40),
                 'superfat' => (float) ($payload['superfat'] ?? 5),
                 'oil_weight' => $normalizedRecipe['oil_weight'],
-                'oil_unit' => in_array($payload['oil_unit'] ?? 'g', ['g', 'oz', 'lb'], true) ? $payload['oil_unit'] : 'g',
+                'oil_unit' => $massUnit->value,
+                'mass_grams' => $this->massConverter->toGrams($normalizedRecipe['oil_weight'], $massUnit),
                 'totals' => $normalizedRecipe['totals'],
             ],
             'phases' => array_map(function (array $phase): array {
@@ -121,6 +127,7 @@ class RecipeWorkbenchPayloadNormalizer
      *     product_type_id: int|null,
      *     oil_weight: float,
      *     oil_unit: string,
+     *     mass_grams: string,
      *     manufacturing_mode: string,
      *     exposure_mode: string,
      *     regulatory_regime: string,
@@ -137,6 +144,7 @@ class RecipeWorkbenchPayloadNormalizer
     {
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
         $totalBatchWeight = $this->positiveWeight($payload['oil_weight'] ?? 0, 'total batch weight');
+        $massUnit = $this->normalizeMassUnit($payload['oil_unit'] ?? 'g');
         $phases = $this->cosmeticPhasePayload($payload);
 
         $normalizedPhases = [];
@@ -214,7 +222,8 @@ class RecipeWorkbenchPayloadNormalizer
             'name' => $name !== '' ? $name : 'Untitled Cosmetic Formula',
             'product_type_id' => $this->productTypeId($payload, $productFamily),
             'oil_weight' => round($totalBatchWeight, 4),
-            'oil_unit' => in_array($payload['oil_unit'] ?? 'g', ['g', 'oz', 'lb'], true) ? $payload['oil_unit'] : 'g',
+            'oil_unit' => $massUnit->value,
+            'mass_grams' => $this->massConverter->toGrams($totalBatchWeight, $massUnit),
             'manufacturing_mode' => 'blend_only',
             'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'leave_on'),
             'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu'),
@@ -231,7 +240,8 @@ class RecipeWorkbenchPayloadNormalizer
             'calculation_context' => [
                 'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
                 'oil_weight' => round($totalBatchWeight, 4),
-                'oil_unit' => in_array($payload['oil_unit'] ?? 'g', ['g', 'oz', 'lb'], true) ? $payload['oil_unit'] : 'g',
+                'oil_unit' => $massUnit->value,
+                'mass_grams' => $this->massConverter->toGrams($totalBatchWeight, $massUnit),
                 'formula_total_percentage' => $formulaPercentage,
                 'formula_weight' => $formulaWeight,
                 'calculation_basis' => 'total_formula',
@@ -480,6 +490,15 @@ class RecipeWorkbenchPayloadNormalizer
         return in_array($value, ['rinse_off', 'leave_on'], true)
             ? $value
             : 'rinse_off';
+    }
+
+    private function normalizeMassUnit(mixed $value): MassUnit
+    {
+        try {
+            return MassUnit::fromInput($value);
+        } catch (InvalidArgumentException) {
+            return MassUnit::Gram;
+        }
     }
 
     private function nullableTrimmedText(mixed $value): ?string

@@ -23,6 +23,26 @@ use Symfony\Component\Process\Process;
 
 uses(RefreshDatabase::class);
 
+it('accepts kilograms and persists canonical total formula mass', function (): void {
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'name' => 'Cosmetic',
+        'slug' => 'cosmetic',
+        'calculation_basis' => 'total_formula',
+    ]);
+    $ingredient = cosmeticIngredient('Water', 'AQUA');
+    $payload = cosmeticDraftPayload(null, [
+        'phase_a' => [cosmeticPayloadRow($ingredient, 100, 1)],
+    ]);
+    $payload['oil_unit'] = 'kg';
+    $payload['oil_weight'] = 1;
+
+    $version = app(RecipeWorkbenchService::class)->save($user, $cosmeticFamily, $payload);
+
+    expect($version->batch_unit)->toBe('kg')
+        ->and($version->batch_mass_grams)->toBe('1000.000000000');
+});
+
 it('opens new cosmetic formulas directly in the workbench with an editable product category', function () {
     $user = User::factory()->create();
     $cosmeticFamily = ProductFamily::factory()->create([

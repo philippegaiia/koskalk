@@ -1,5 +1,6 @@
 <?php
 
+use App\MassDisplaySystem;
 use App\Models\InterfaceTranslation;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
@@ -18,6 +19,33 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
+
+it('uses the workspace mass system to choose the initial formula unit', function (): void {
+    $productFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $user = User::factory()->create();
+
+    Workspace::factory()->for($user, 'owner')->create([
+        'mass_display_system' => MassDisplaySystem::UsCustomary,
+    ]);
+
+    mock(RecipeWorkbenchService::class, function ($mock): void {
+        $mock->shouldReceive('currentVersionPayloadUsingCatalog')->andReturn(null);
+        $mock->shouldReceive('packagingCatalogPayload')->andReturn([]);
+        $mock->shouldReceive('phaseBlueprints')->andReturn([]);
+    });
+    mock(RecipeWorkbenchIngredientCatalogBuilder::class, fn ($mock) => $mock->shouldReceive('build')->andReturn([]));
+    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
+        $mock->shouldReceive('categories')->andReturn([]);
+        $mock->shouldReceive('defaultCategoryId')->andReturn(null);
+    });
+
+    $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, $user);
+
+    expect($payload['preferredMassUnit'])->toBe('lb');
+});
 
 it('includes active allergen and substance rule counts for each regime', function () {
     $productFamily = ProductFamily::factory()->create([

@@ -1,0 +1,267 @@
+<?php
+
+use App\Actions\Purchasing\SaveSupplier;
+use App\Actions\Purchasing\SaveSupplierListing;
+use App\ListingPriceBasis;
+use App\Models\Ingredient;
+use App\Models\Supplier;
+use App\Models\SupplierListing;
+use App\Models\User;
+use App\Models\UserIngredientPrice;
+use App\Models\UserPackagingItem;
+use App\Models\Workspace;
+use App\OwnerType;
+use App\Services\ProductionBenchAccess;
+use App\Visibility;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
+
+uses(RefreshDatabase::class);
+
+it('creates and updates a workspace supplier with normalized optional fields', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $action = app(SaveSupplier::class);
+
+    $supplier = $action->handle($owner, $workspace, [
+        'name' => '  Northern Oils  ',
+        'address_line_1' => '  12 Market Street ',
+        'address_line_2' => ' ',
+        'city' => ' Leeds ',
+        'region' => ' Yorkshire ',
+        'postal_code' => ' LS1 1AA ',
+        'country_code' => 'gb',
+        'website' => 'https://northern-oils.example',
+        'contact_name' => ' Sam Buyer ',
+        'email' => 'sam@northern-oils.example',
+        'phone' => ' ',
+        'default_currency' => 'gbp',
+        'notes' => ' ',
+        'is_active' => true,
+    ]);
+
+    expect($supplier->name)->toBe('Northern Oils')
+        ->and($supplier->address_line_2)->toBeNull()
+        ->and($supplier->phone)->toBeNull()
+        ->and($supplier->country_code)->toBe('GB')
+        ->and($supplier->default_currency)->toBe('GBP');
+
+    $updated = $action->handle($owner, $workspace, [
+        'name' => 'Northern Oils Europe',
+        'default_currency' => 'eur',
+        'is_active' => false,
+    ], $supplier);
+
+    expect($updated->is($supplier))->toBeTrue()
+        ->and($updated->name)->toBe('Northern Oils Europe')
+        ->and($updated->default_currency)->toBe('EUR')
+        ->and($updated->is_active)->toBeFalse();
+});
+
+it('prevents updating a supplier from another workspace', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $otherWorkspace = Workspace::factory()->create();
+    $foreignSupplier = Supplier::factory()->for($otherWorkspace)->create();
+
+    expect(fn (): Supplier => app(SaveSupplier::class)->handle($owner, $workspace, [
+        'name' => 'Attempted update',
+        'default_currency' => 'EUR',
+        'is_active' => true,
+    ], $foreignSupplier))->toThrow(ValidationException::class);
+});
+
+it('saves a per-unit mass listing without updating user ingredient price memory', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $ingredient = Ingredient::factory()->create();
+
+    $listing = app(SaveSupplierListing::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        subject: $ingredient,
+        attributes: listingAttributes([
+            'purchase_format' => '200 kg drum',
+            'net_quantity' => '200',
+            'net_unit' => 'kg',
+            'price_basis' => ListingPriceBasis::PerUnit,
+            'price_amount' => '4.20',
+            'price_unit' => 'kg',
+        ]),
+    );
+
+    expect($listing->ingredient_id)->toBe($ingredient->id)
+        ->and($listing->user_packaging_item_id)->toBeNull()
+        ->and($listing->canonical_quantity_per_purchase_format)->toBe('200000.000000000')
+        ->and($listing->price_basis)->toBe(ListingPriceBasis::PerUnit)
+        ->and($listing->price_amount)->toBe('4.200000000')
+        ->and($listing->price_unit)->toBe('kg')
+        ->and($listing->total_price)->toBe('840.000000000')
+        ->and(UserIngredientPrice::query()->count())->toBe(0);
+});
+
+it('updates a count listing using total purchase-format pricing', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $packaging = UserPackagingItem::factory()->for($owner)->create();
+
+    $listing = app(SaveSupplierListing::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        subject: $packaging,
+        attributes: listingAttributes([
+            'purchase_format' => 'Carton of 500 bottles',
+            'net_quantity' => '500',
+            'net_unit' => 'count',
+            'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'price_amount' => '100',
+            'price_unit' => null,
+        ]),
+    );
+
+    $updated = app(SaveSupplierListing::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        subject: $packaging,
+        attributes: listingAttributes([
+            'purchase_format' => 'Carton of 500 bottles',
+            'net_quantity' => '500',
+            'net_unit' => 'count',
+            'price_basis' => ListingPriceBasis::PerUnit,
+            'price_amount' => '0.18',
+            'price_unit' => 'count',
+        ]),
+        listing: $listing,
+    );
+
+    expect($updated->is($listing))->toBeTrue()
+        ->and($updated->canonical_quantity_per_purchase_format)->toBe('500.000000000')
+        ->and($updated->price_basis)->toBe(ListingPriceBasis::PerUnit)
+        ->and($updated->price_unit)->toBe('count')
+        ->and($updated->total_price)->toBe('90.000000000');
+});
+
+it('accepts public and workspace-shared ingredients but rejects inaccessible private ingredients', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $public = Ingredient::factory()->create();
+    $shared = Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $private = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => User::factory()->create()->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $action = app(SaveSupplierListing::class);
+    $attributes = listingAttributes();
+
+    expect($action->handle($owner, $workspace, $supplier, $public, $attributes))->toBeInstanceOf(SupplierListing::class)
+        ->and($action->handle($owner, $workspace, $supplier, $shared, $attributes))->toBeInstanceOf(SupplierListing::class);
+
+    expect(fn (): SupplierListing => $action->handle($owner, $workspace, $supplier, $private, $attributes))
+        ->toThrow(ValidationException::class);
+});
+
+it('rejects packaging owned by anyone other than the workspace owner', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $foreignPackaging = UserPackagingItem::factory()->create();
+
+    expect(fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+        $owner,
+        $workspace,
+        $supplier,
+        $foreignPackaging,
+        listingAttributes([
+            'net_quantity' => '500',
+            'net_unit' => 'count',
+            'price_amount' => '100',
+            'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'price_unit' => null,
+        ]),
+    ))->toThrow(ValidationException::class);
+});
+
+it('rejects a listing supplier from another workspace', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $foreignSupplier = Supplier::factory()->create();
+    $ingredient = Ingredient::factory()->create();
+
+    expect(fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+        $owner,
+        $workspace,
+        $foreignSupplier,
+        $ingredient,
+        listingAttributes(),
+    ))->toThrow(ValidationException::class);
+});
+
+it('requires the listing subject to exist', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $missingIngredient = Ingredient::factory()->make();
+
+    expect(fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+        $owner,
+        $workspace,
+        $supplier,
+        $missingIngredient,
+        listingAttributes(),
+    ))->toThrow(ValidationException::class);
+});
+
+it('blocks supplier and listing changes when production bench is read-only', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    app(ProductionBenchAccess::class)->cancel($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+
+    expect(fn (): Supplier => app(SaveSupplier::class)->handle($owner, $workspace, [
+        'name' => 'Blocked',
+        'default_currency' => 'EUR',
+        'is_active' => true,
+    ]))->toThrow(ValidationException::class)
+        ->and(fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+            $owner,
+            $workspace,
+            $supplier,
+            $ingredient,
+            listingAttributes(),
+        ))->toThrow(ValidationException::class);
+});
+
+/** @return array{0: User, 1: Workspace} */
+function activePurchasingWorkspace(): array
+{
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+
+    return [$owner, $workspace];
+}
+
+/** @param array<string, mixed> $overrides */
+function listingAttributes(array $overrides = []): array
+{
+    return [
+        'purchase_format' => '5 kg pail',
+        'net_quantity' => '5',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+        'price_amount' => '50',
+        'price_unit' => null,
+        'supplier_sku' => 'SKU-5',
+        'supplier_name' => null,
+        'container' => 'pail',
+        'minimum_packs' => 1,
+        'notes' => null,
+        'is_active' => true,
+        ...$overrides,
+    ];
+}

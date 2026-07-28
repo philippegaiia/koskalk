@@ -7,8 +7,10 @@ use App\MediaAssetUsageRole;
 use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Services\MediaStorage;
+use Database\Factories\UserPackagingItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,6 +47,9 @@ use Illuminate\Support\Carbon;
  */
 class UserPackagingItem extends Model
 {
+    /** @use HasFactory<UserPackagingItemFactory> */
+    use HasFactory;
+
     use HasMediaAssetUsages;
     use HasPublicId;
 

@@ -4,7 +4,7 @@ return [
     'page' => [
         'eyebrow' => 'Ingredients',
         'heading' => 'Manage ingredients for formulas and costing.',
-        'intro' => 'Soapkraft ingredients come from the Soapkraft library. Add your own price per kg, duplicate one to create an editable copy, or create a private ingredient from scratch.',
+        'intro' => 'Soapkraft ingredients come from the Soapkraft library. Add your own costing price, duplicate one to create an editable copy, or create a private ingredient from scratch.',
     ],
     'catalog' => [
         'heading' => 'Ingredient catalog',
@@ -67,10 +67,10 @@ return [
         'descending' => 'Desc',
     ],
     'price' => [
-        'column' => 'Your price / kg (:currency)',
+        'column' => 'Your price / :unit (:currency)',
     ],
     'accessibility' => [
-        'price' => 'Price per kg for :ingredient',
+        'price' => 'Price per :unit for :ingredient',
         'edit' => 'Edit :ingredient',
         'delete' => 'Delete :ingredient',
         'view' => 'View :ingredient',

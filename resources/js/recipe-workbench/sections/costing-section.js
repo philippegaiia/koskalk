@@ -5,7 +5,7 @@ import {
 } from '../bridge';
 import { nonNegativeNumber, number, parseDecimalInput, roundTo } from '../utils';
 import { formatDecimalInput } from '../number-format';
-import { MASS_UNITS, convertMass } from '../mass';
+import { MASS_UNITS, convertMass, convertMassPrice } from '../mass';
 
 const SYSTEM_PHASE_TRANSLATION_KEYS = {
     saponified_oils: 'costing.phases.saponification',
@@ -17,6 +17,9 @@ const costingMassUnits = typeof MASS_UNITS === 'undefined' ? ['g', 'kg', 'oz', '
 const convertCostingMass = typeof convertMass === 'undefined'
     ? (value) => Number(value) || 0
     : convertMass;
+const convertCostingPrice = typeof convertMassPrice === 'undefined'
+    ? (value) => Number(value) || 0
+    : convertMassPrice;
 
 /**
  * Costing stays derived from the live formula rows, but it keeps its own
@@ -99,7 +102,11 @@ export function createCostingSection(payload) {
                     this.costingSignature(row.ingredient_id, row.phaseKey, row.position),
                 );
 
-                nextPricesByRowId[row.rowId] = persistedPrice ?? row.defaultPricePerKg ?? null;
+                const canonicalPrice = persistedPrice ?? row.defaultPricePerKg ?? null;
+
+                nextPricesByRowId[row.rowId] = canonicalPrice === null
+                    ? null
+                    : this.displayPriceFromPerKg(canonicalPrice);
             });
 
             this.costingPriceByRowId = nextPricesByRowId;
@@ -121,11 +128,16 @@ export function createCostingSection(payload) {
                 : convertCostingMass(this.oilWeight, this.oilUnit, this.costingBaseOilUnit);
         },
 
+        get costingPriceUnit() {
+            return ['oz', 'lb'].includes(this.costingBaseOilUnit) ? 'lb' : 'kg';
+        },
+
         changeCostingUnit(nextUnit) {
             if (!costingMassUnits.includes(nextUnit) || nextUnit === this.costingBaseOilUnit) {
                 return;
             }
 
+            const previousPriceUnit = this.costingPriceUnit;
             const overrideWeight = number(this.costingOilWeight);
 
             if (overrideWeight > 0) {
@@ -137,6 +149,18 @@ export function createCostingSection(payload) {
             }
 
             this.costingOilUnit = nextUnit;
+
+            if (previousPriceUnit !== this.costingPriceUnit) {
+                this.costingPriceByRowId = Object.fromEntries(
+                    Object.entries(this.costingPriceByRowId).map(([rowId, price]) => [
+                        rowId,
+                        price === null
+                            ? null
+                            : convertCostingPrice(price, previousPriceUnit, this.costingPriceUnit),
+                    ]),
+                );
+            }
+
             this.scheduleCostingSave();
         },
 
@@ -160,7 +184,22 @@ export function createCostingSection(payload) {
         },
 
         costingPriceForRow(row) {
-            return this.costingPriceByRowId[row.rowId] ?? row.defaultPricePerKg ?? null;
+            return this.costingPriceByRowId[row.rowId]
+                ?? (row.defaultPricePerKg === null
+                    ? null
+                    : this.displayPriceFromPerKg(row.defaultPricePerKg));
+        },
+
+        displayPriceFromPerKg(pricePerKilogram) {
+            return convertCostingPrice(pricePerKilogram, 'kg', this.costingPriceUnit);
+        },
+
+        canonicalPricePerKg(row) {
+            const displayedPrice = this.costingPriceForRow(row);
+
+            return displayedPrice === null
+                ? null
+                : convertCostingPrice(displayedPrice, this.costingPriceUnit, 'kg');
         },
 
         costingPhaseLabel(phaseKey) {
@@ -173,6 +212,22 @@ export function createCostingSection(payload) {
             const translationKey = SYSTEM_PHASE_TRANSLATION_KEYS[phaseKey];
 
             return translationKey ? this.t(translationKey) : (authoredPhaseName ?? phaseKey);
+        },
+
+        updateCostingOilWeight(event) {
+            const rawValue = `${event.target.value ?? ''}`.trim();
+
+            if (rawValue === '') {
+                this.costingOilWeight = null;
+                event.target.value = '';
+                this.scheduleCostingSave();
+
+                return;
+            }
+
+            this.costingOilWeight = Math.max(0, parseDecimalInput(rawValue));
+            event.target.value = this.format(this.costingOilWeight, 2);
+            this.scheduleCostingSave();
         },
 
         updateCostingPrice(row, value) {
@@ -193,13 +248,19 @@ export function createCostingSection(payload) {
         },
 
         lineCostForRow(row) {
-            const pricePerKg = number(this.costingPriceForRow(row));
+            const displayedPrice = number(this.costingPriceForRow(row));
 
-            if (pricePerKg <= 0) {
+            if (displayedPrice <= 0) {
                 return 0;
             }
 
-            return this.weightInKg(row.weight, row.weightUnit) * pricePerKg;
+            const quantityInPriceUnit = convertCostingMass(
+                row.weight,
+                row.weightUnit,
+                this.costingPriceUnit,
+            );
+
+            return quantityInPriceUnit * displayedPrice;
         },
 
         get ingredientCostTotal() {

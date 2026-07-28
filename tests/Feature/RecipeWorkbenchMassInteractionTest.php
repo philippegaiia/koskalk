@@ -79,7 +79,7 @@ it('converts the costing override without changing the calculated cost', functio
     $script = <<<'JS'
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import { convertMass } from './resources/js/recipe-workbench/mass.js';
+import { convertMass, convertMassPrice } from './resources/js/recipe-workbench/mass.js';
 
 const nonNegativeNumber = (value) => Math.max(0, Number(value) || 0);
 const number = (value) => Number(value) || 0;
@@ -128,10 +128,15 @@ state.changeCostingUnit('lb');
 
 assert.equal(state.costingOilUnit, 'lb');
 assert.equal(state.costingOilWeight, 2.204622622);
+assert.equal(state.costingPriceUnit, 'lb');
+assert.equal(state.costingPriceForRow(state.costingFormulaRows[0]), 4.5359237);
+assert.equal(state.canonicalPricePerKg(state.costingFormulaRows[0]), 10);
 assert.ok(Math.abs(state.totalBatchCost - initialCost) < 0.000001);
 
 state.changeCostingUnit('kg');
 assert.equal(state.costingOilWeight, 1);
+assert.equal(state.costingPriceUnit, 'kg');
+assert.equal(state.costingPriceForRow(state.costingFormulaRows[0]), 10);
 assert.equal(state.totalBatchCost, initialCost);
 JS;
 
@@ -154,4 +159,15 @@ it('uses costing conversion actions for all four mass units', function (): void 
             "changeCostingUnit('oz')",
             "changeCostingUnit('lb')",
         );
+});
+
+it('renders the active costing price basis instead of a fixed kilogram label', function (): void {
+    $source = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php'));
+
+    expect($source)->toContain(
+        "t('costing.ingredients.price', { unit: costingPriceUnit })",
+        "t('costing.accessibility.price_for', { item: row.name, unit: costingPriceUnit })",
+        'format(costingOilWeight, 2)',
+        'format(costingPriceForRow(row), 2)',
+    );
 });

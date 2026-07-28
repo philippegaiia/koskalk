@@ -23,6 +23,14 @@ enum MassDisplaySystem: string
         };
     }
 
+    public function priceUnit(): MassUnit
+    {
+        return match ($this) {
+            self::Metric => MassUnit::Kilogram,
+            self::UsCustomary => MassUnit::Pound,
+        };
+    }
+
     private function normalizedQuantity(string|int|float $quantity): string
     {
         $normalized = is_float($quantity)

@@ -3,6 +3,8 @@
 namespace App\Livewire\Dashboard;
 
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\MassDisplaySystem;
+use App\MassUnit;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\OwnerType;
@@ -11,6 +13,7 @@ use App\Services\EntitlementService;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\IngredientFormulaUsageService;
 use App\Services\MediaStorage;
+use App\Services\PriceBasisConverter;
 use App\Services\UserIngredientPriceMemory;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
@@ -37,6 +40,9 @@ class IngredientsIndex extends Component
     #[Locked]
     public string $currentNumberLocale = 'en_US';
 
+    #[Locked]
+    public string $currentPriceUnit = MassUnit::Kilogram->value;
+
     public string $ownershipFilter = 'all';
 
     public string $search = '';
@@ -58,12 +64,21 @@ class IngredientsIndex extends Component
 
     public ?int $expandedUsageIngredientId = null;
 
+    private PriceBasisConverter $priceBasisConverter;
+
+    public function boot(PriceBasisConverter $priceBasisConverter): void
+    {
+        $this->priceBasisConverter = $priceBasisConverter;
+    }
+
     public function mount(CurrentAppUserResolver $resolver): void
     {
         $user = $resolver->resolve();
+        $massDisplaySystem = $user?->company()?->mass_display_system ?? MassDisplaySystem::Metric;
 
         $this->currentCurrency = $user?->defaultCurrency();
         $this->currentNumberLocale = NumberLocale::resolve($user?->number_locale);
+        $this->currentPriceUnit = $massDisplaySystem->priceUnit()->value;
     }
 
     public function updatingSearch(): void
@@ -120,6 +135,7 @@ class IngredientsIndex extends Component
             'formulaUsageByIngredient' => $formulaUsageByIngredient,
             'priceLabel' => __('ingredients.price.column', [
                 'currency' => $this->currentCurrency ?? config('currency.default', 'EUR'),
+                'unit' => $this->currentPriceUnit,
             ]),
             'pendingDeleteIngredient' => $pendingDeleteIngredient,
             'pendingDeleteImpact' => $pendingDeleteImpact,
@@ -195,7 +211,16 @@ class IngredientsIndex extends Component
             return;
         }
 
-        app(UserIngredientPriceMemory::class)->remember($user, $ingredient->id, $normalizedValue);
+        $canonicalPricePerKilogram = $this->priceBasisConverter->toPerKilogram(
+            $normalizedValue,
+            $this->currentPriceUnit,
+        );
+
+        app(UserIngredientPriceMemory::class)->remember(
+            $user,
+            $ingredient->id,
+            (float) $canonicalPricePerKilogram,
+        );
     }
 
     public function confirmDelete(int $id): void
@@ -377,7 +402,12 @@ class IngredientsIndex extends Component
             return null;
         }
 
-        return NumberLocale::formatDecimal($value, 2, $this->currentNumberLocale);
+        $displayPrice = $this->priceBasisConverter->fromPerKilogram(
+            $value,
+            $this->currentPriceUnit,
+        );
+
+        return NumberLocale::formatDecimal($displayPrice, 2, $this->currentNumberLocale);
     }
 
     private function ingredients(?User $user): LengthAwarePaginator

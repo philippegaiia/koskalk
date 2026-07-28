@@ -70,7 +70,7 @@ export function serializeCosting(state) {
             ingredient_id: row.ingredient_id,
             phase_key: row.phaseKey,
             position: row.position,
-            price_per_kg: state.costingPriceForRow(row),
+            price_per_kg: state.canonicalPricePerKg(row),
         })),
         packaging_items: state.packagingCostRows.map((row) => ({
             user_packaging_item_id: row.user_packaging_item_id ?? null,

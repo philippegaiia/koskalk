@@ -168,7 +168,7 @@
                                                 type="text"
                                                 inputmode="decimal"
                                                 class="sk-input numeric"
-                                                aria-label="{{ __('ingredients.accessibility.price', ['ingredient' => $displayName]) }}"
+                                                aria-label="{{ __('ingredients.accessibility.price', ['ingredient' => $displayName, 'unit' => $currentPriceUnit]) }}"
                                             />
                                             @error('price_'.$ingredient->id)
                                                 <p class="mt-1 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>

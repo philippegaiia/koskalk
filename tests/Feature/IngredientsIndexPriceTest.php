@@ -2,6 +2,7 @@
 
 use App\IngredientCategory;
 use App\Livewire\Dashboard\IngredientsIndex;
+use App\MassDisplaySystem;
 use App\Models\Ingredient;
 use App\Models\Plan;
 use App\Models\User;
@@ -84,6 +85,42 @@ it('shows the ingredient price column in the users current default currency', fu
 
     Livewire::test(IngredientsIndex::class)
         ->assertSee('Your price / kg (GBP)');
+});
+
+it('displays and edits ingredient prices per pound for a US customary workspace', function (): void {
+    $user = User::factory()->create(['number_locale' => 'en_US']);
+    Workspace::factory()->for($user, 'owner')->create([
+        'default_currency' => 'USD',
+        'mass_display_system' => MassDisplaySystem::UsCustomary,
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Olive Oil',
+        'category' => IngredientCategory::CarrierOil,
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+
+    UserIngredientPrice::query()->create([
+        'user_id' => $user->id,
+        'ingredient_id' => $ingredient->id,
+        'price_per_kg' => 11.0231,
+        'currency' => 'USD',
+        'last_used_at' => now(),
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->assertSet('currentPriceUnit', 'lb')
+        ->assertSee('Your price / lb (USD)')
+        ->assertSeeHtml('value="5.00"')
+        ->call('updateIngredientPrice', $ingredient->id, '6.00');
+
+    expect(UserIngredientPrice::query()
+        ->where('user_id', $user->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->value('price_per_kg'))->toBe('13.2277');
 });
 
 it('renders inline ingredient prices with the users saved English number format', function () {

@@ -49,10 +49,12 @@ it('uses the approved workspace settings copy', function () {
         ->assertSee('Default currency')
         ->assertSee('Used by default for costing and pricing in this workspace.')
         ->assertSee('Search currencies')
-        ->assertSee('Formula mass display')
+        ->assertSee('Measurement system')
         ->assertSee('Metric')
+        ->assertSee('g and kg · prices per kg')
         ->assertSee('US customary')
-        ->assertSee('Sets the starting unit for new formulas. You can still convert any formula between g, kg, oz, and lb.')
+        ->assertSee('oz and lb · prices per lb')
+        ->assertSee('Sets the starting unit for new formulas and the ingredient price basis. You can still convert any formula between g, kg, oz, and lb.')
         ->assertSee('Save workspace settings')
         ->assertDontSee('Company');
 });

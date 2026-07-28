@@ -31,6 +31,20 @@ export function convertMass(value, fromUnit, toUnit) {
     return roundMass((quantity * GRAMS_PER_UNIT[fromUnit]) / GRAMS_PER_UNIT[toUnit]);
 }
 
+export function convertMassPrice(value, fromUnit, toUnit) {
+    if (!MASS_UNITS.includes(fromUnit) || !MASS_UNITS.includes(toUnit)) {
+        return roundMass(value);
+    }
+
+    const price = Number(value);
+
+    if (!Number.isFinite(price) || price < 0) {
+        return 0;
+    }
+
+    return roundMass((price * GRAMS_PER_UNIT[toUnit]) / GRAMS_PER_UNIT[fromUnit]);
+}
+
 export function preferredMassUnit(grams, displaySystem) {
     const quantity = Math.max(0, Number(grams) || 0);
 

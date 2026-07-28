@@ -490,7 +490,8 @@ it('starts cosmetic formulas at a 100 gram batch by default in shared state', fu
     expect($componentSource)
         ->toContain("payload.translations?.header?.new_cosmetic ?? 'New cosmetic product'")
         ->toContain("payload.translations?.header?.new_soap ?? 'New soap'")
-        ->toContain('oilWeight: isCosmeticFormula ? 100 : 1000')
+        ->toContain('const defaultMassGrams = isCosmeticFormula ? 100 : 1000')
+        ->toContain("oilWeight: convertWorkbenchMass(defaultMassGrams, 'g', initialMassUnit)")
         ->toContain("manufacturingMode: isCosmeticFormula ? 'blend_only' : 'saponify_in_formula'")
         ->toContain("exposureMode: isCosmeticFormula ? 'leave_on' : 'rinse_off'");
 });

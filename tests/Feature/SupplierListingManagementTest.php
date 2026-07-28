@@ -60,13 +60,24 @@ it('creates and updates a workspace supplier with normalized optional fields', f
 it('prevents updating a supplier from another workspace', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
     $otherWorkspace = Workspace::factory()->create();
-    $foreignSupplier = Supplier::factory()->for($otherWorkspace)->create();
+    $foreignSupplier = Supplier::factory()->for($otherWorkspace)->create([
+        'name' => 'Foreign Supplier',
+    ]);
 
-    expect(fn (): Supplier => app(SaveSupplier::class)->handle($owner, $workspace, [
-        'name' => 'Attempted update',
-        'default_currency' => 'EUR',
-        'is_active' => true,
-    ], $foreignSupplier))->toThrow(ValidationException::class);
+    $exception = captureValidationException(
+        fn (): Supplier => app(SaveSupplier::class)->handle($owner, $workspace, [
+            'name' => 'Attempted update',
+            'default_currency' => 'EUR',
+            'is_active' => true,
+        ], $foreignSupplier),
+    );
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception?->errors())->toBe([
+            'supplier' => ['The supplier does not belong to this workspace.'],
+        ])
+        ->and(Supplier::query()->count())->toBe(1)
+        ->and($foreignSupplier->fresh()?->name)->toBe('Foreign Supplier');
 });
 
 it('creates a supplier without an optional country code', function (): void {
@@ -139,6 +150,30 @@ it('saves a per-unit mass listing without updating user ingredient price memory'
         ->and($rememberedPrice->fresh()?->currency)->toBe('GBP')
         ->and($rememberedPrice->fresh()?->last_used_at?->toDateTimeString())->toBe('2026-07-20 10:30:00')
         ->and(UserIngredientPrice::query()->count())->toBe(1);
+});
+
+it('persists the same normalized mass quantity used to calculate listing prices', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+
+    $listing = app(SaveSupplierListing::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        subject: $ingredient,
+        attributes: listingAttributes([
+            'net_quantity' => '1.0000000006',
+            'net_unit' => 'lb',
+            'price_basis' => ListingPriceBasis::PerUnit,
+            'price_amount' => '2',
+            'price_unit' => 'lb',
+        ]),
+    );
+
+    expect($listing->net_quantity)->toBe('1.000000001')
+        ->and($listing->canonical_quantity_per_purchase_format)->toBe('453.592370454')
+        ->and($listing->total_price)->toBe('2.000000002');
 });
 
 it('allows listing price units to be omitted when a convention supplies them', function (): void {
@@ -232,7 +267,7 @@ it('accepts public and workspace-shared ingredients but rejects inaccessible pri
     expect($action->handle($owner, $workspace, $supplier, $public, $attributes))->toBeInstanceOf(SupplierListing::class)
         ->and($action->handle($owner, $workspace, $supplier, $shared, $attributes))->toBeInstanceOf(SupplierListing::class);
 
-    $exception = captureSupplierListingValidation(
+    $exception = captureValidationException(
         fn (): SupplierListing => $action->handle($owner, $workspace, $supplier, $private, $attributes),
     );
 
@@ -254,7 +289,7 @@ it('rejects a private ingredient owned by another accessible workspace', functio
         'visibility' => Visibility::Private,
     ]);
 
-    $exception = captureSupplierListingValidation(
+    $exception = captureValidationException(
         fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
             $owner,
             $workspace,
@@ -275,7 +310,7 @@ it('rejects packaging owned by anyone other than the workspace owner', function 
     $supplier = Supplier::factory()->for($workspace)->create();
     $foreignPackaging = UserPackagingItem::factory()->create();
 
-    $exception = captureSupplierListingValidation(
+    $exception = captureValidationException(
         fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
             $owner,
             $workspace,
@@ -298,16 +333,27 @@ it('rejects packaging owned by anyone other than the workspace owner', function 
 
 it('rejects a listing supplier from another workspace', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
-    $foreignSupplier = Supplier::factory()->create();
+    $foreignSupplier = Supplier::factory()->create([
+        'name' => 'Foreign Supplier',
+    ]);
     $ingredient = Ingredient::factory()->create();
 
-    expect(fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
-        $owner,
-        $workspace,
-        $foreignSupplier,
-        $ingredient,
-        listingAttributes(),
-    ))->toThrow(ValidationException::class);
+    $exception = captureValidationException(
+        fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+            $owner,
+            $workspace,
+            $foreignSupplier,
+            $ingredient,
+            listingAttributes(),
+        ),
+    );
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception?->errors())->toBe([
+            'supplier' => ['The supplier does not belong to this workspace.'],
+        ])
+        ->and(SupplierListing::query()->count())->toBe(0)
+        ->and($foreignSupplier->fresh()?->name)->toBe('Foreign Supplier');
 });
 
 it('requires the listing subject to exist', function (): void {
@@ -315,7 +361,7 @@ it('requires the listing subject to exist', function (): void {
     $supplier = Supplier::factory()->for($workspace)->create();
     $missingIngredient = Ingredient::factory()->make();
 
-    $exception = captureSupplierListingValidation(
+    $exception = captureValidationException(
         fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
             $owner,
             $workspace,
@@ -336,18 +382,34 @@ it('blocks supplier and listing changes when production bench is read-only', fun
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create();
 
-    expect(fn (): Supplier => app(SaveSupplier::class)->handle($owner, $workspace, [
-        'name' => 'Blocked',
-        'default_currency' => 'EUR',
-        'is_active' => true,
-    ]))->toThrow(ValidationException::class)
-        ->and(fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+    $supplierException = captureValidationException(
+        fn (): Supplier => app(SaveSupplier::class)->handle($owner, $workspace, [
+            'name' => 'Blocked',
+            'default_currency' => 'EUR',
+            'is_active' => true,
+        ]),
+    );
+    $listingException = captureValidationException(
+        fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
             $owner,
             $workspace,
             $supplier,
             $ingredient,
             listingAttributes(),
-        ))->toThrow(ValidationException::class);
+        ),
+    );
+
+    expect($supplierException)->toBeInstanceOf(ValidationException::class)
+        ->and($supplierException?->errors())->toBe([
+            'production_bench' => ['Production Bench is read-only while the add-on is cancelled.'],
+        ])
+        ->and($listingException)->toBeInstanceOf(ValidationException::class)
+        ->and($listingException?->errors())->toBe([
+            'production_bench' => ['Production Bench is read-only while the add-on is cancelled.'],
+        ])
+        ->and(Supplier::query()->count())->toBe(1)
+        ->and(SupplierListing::query()->count())->toBe(0)
+        ->and($supplier->fresh()?->name)->toBe($supplier->name);
 });
 
 /** @return array{0: User, 1: Workspace} */
@@ -380,7 +442,7 @@ function listingAttributes(array $overrides = []): array
     ];
 }
 
-function captureSupplierListingValidation(Closure $operation): ?ValidationException
+function captureValidationException(Closure $operation): ?ValidationException
 {
     try {
         $operation();

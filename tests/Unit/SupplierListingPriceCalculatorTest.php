@@ -55,6 +55,50 @@ it('preserves exact customary mass conversions without using rounded display pri
     ]);
 });
 
+it('calculates mass prices from the quantity normalized to storage precision', function (
+    string $unit,
+    string $canonicalQuantity,
+): void {
+    $prices = app(SupplierListingPriceCalculator::class)->forMass(
+        netQuantity: '1.0000000006',
+        netUnit: $unit,
+        basis: ListingPriceBasis::PerUnit,
+        enteredPrice: '2',
+        priceUnit: $unit,
+    );
+
+    expect($prices['canonical_quantity'])->toBe($canonicalQuantity)
+        ->and($prices['total_price'])->toBe('2.000000002');
+})->with([
+    'grams' => ['g', '1.000000001'],
+    'kilograms' => ['kg', '1000.000001000'],
+    'pounds' => ['lb', '453.592370454'],
+    'ounces' => ['oz', '28.349523153'],
+]);
+
+it('accepts a mass quantity at the decimal 20 scale 9 storage boundary', function (): void {
+    expect(app(SupplierListingPriceCalculator::class)
+        ->normalizeMassQuantity('99999999999.9999999994'))
+        ->toBe('99999999999.999999999');
+});
+
+it('rejects mass quantities that round to zero before conversion', function (string $unit): void {
+    expectStorageDecimalValidation(
+        fn (): array => app(SupplierListingPriceCalculator::class)->forMass(
+            netQuantity: '0.0000000004',
+            netUnit: $unit,
+            basis: ListingPriceBasis::TotalPurchaseFormat,
+            enteredPrice: '1',
+            priceUnit: null,
+        ),
+        'net_quantity',
+    );
+})->with([
+    'kilograms' => ['kg'],
+    'pounds' => ['lb'],
+    'ounces' => ['oz'],
+]);
+
 it('normalizes count listing prices per item and per purchase format', function (): void {
     $calculator = app(SupplierListingPriceCalculator::class);
 

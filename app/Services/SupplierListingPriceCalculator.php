@@ -34,7 +34,7 @@ class SupplierListingPriceCalculator
         string $enteredPrice,
         ?string $priceUnit,
     ): array {
-        $quantity = $this->positiveDecimal($netQuantity, 'net_quantity');
+        $quantity = $this->normalizeMassQuantity($netQuantity);
         $price = $this->storageDecimal(
             $this->positiveDecimal($enteredPrice, 'price_amount'),
             'price_amount',
@@ -99,6 +99,14 @@ class SupplierListingPriceCalculator
             'price_per_kg' => $pricePerKg,
             'total_price' => $totalPrice,
         ];
+    }
+
+    public function normalizeMassQuantity(string $netQuantity): string
+    {
+        return $this->storageDecimal(
+            $this->positiveDecimal($netQuantity, 'net_quantity'),
+            'net_quantity',
+        );
     }
 
     /**

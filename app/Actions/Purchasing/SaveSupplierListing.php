@@ -67,6 +67,13 @@ class SaveSupplierListing
             }
 
             $data = $this->validatedAttributes($attributes, $currentSupplier, $currentSubject);
+
+            if ($currentSubject instanceof Ingredient) {
+                $data['net_quantity'] = $this->priceCalculator->normalizeMassQuantity(
+                    $data['net_quantity'],
+                );
+            }
+
             $prices = $currentSubject instanceof Ingredient
                 ? $this->priceCalculator->forMass(
                     $data['net_quantity'],

@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
     'user_id',
     'oil_weight_for_costing',
     'oil_unit_for_costing',
+    'oil_mass_grams_for_costing',
     'units_produced',
     'currency',
 ])]
@@ -29,6 +30,7 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property string|null $oil_weight_for_costing
  * @property string $oil_unit_for_costing
+ * @property string|null $oil_mass_grams_for_costing
  * @property int|null $units_produced
  * @property string $currency
  * @property Carbon|null $created_at
@@ -68,6 +70,7 @@ class RecipeVersionCosting extends Model
     {
         return [
             'oil_weight_for_costing' => 'decimal:3',
+            'oil_mass_grams_for_costing' => 'decimal:9',
             'units_produced' => 'integer',
         ];
     }

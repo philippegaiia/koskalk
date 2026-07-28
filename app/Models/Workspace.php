@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\MassDisplaySystem;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
 use App\WorkspaceMemberRole;
@@ -13,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country'])]
+#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system'])]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
@@ -86,5 +87,12 @@ class Workspace extends Model
         return $role instanceof WorkspaceMemberRole
             ? $role
             : ($role === null ? null : WorkspaceMemberRole::from($role));
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'mass_display_system' => MassDisplaySystem::class,
+        ];
     }
 }

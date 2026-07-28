@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\MassDisplaySystem;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -25,6 +26,7 @@ class WorkspaceFactory extends Factory
             'owner_user_id' => User::factory(),
             'name' => $name,
             'slug' => Str::slug($name).'-'.fake()->unique()->numberBetween(100, 999),
+            'mass_display_system' => MassDisplaySystem::Metric,
         ];
     }
 }

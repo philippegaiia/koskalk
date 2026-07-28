@@ -31,6 +31,7 @@ class RecipeVersionFactory extends Factory
             'name' => fake()->words(3, true),
             'batch_size' => 1000,
             'batch_unit' => 'g',
+            'batch_mass_grams' => '1000.000000000',
             'manufacturing_mode' => 'saponify_in_formula',
             'exposure_mode' => 'rinse_off',
             'regulatory_regime' => 'eu',

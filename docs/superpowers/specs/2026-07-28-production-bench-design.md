@@ -286,12 +286,16 @@ The receiver confirms:
 
 - number of packs received;
 - actual received canonical mass or count;
-- supplier lot number for ingredients;
+- supplier batch/lot number for ingredients when provided;
 - optional expiry or best-before date;
 - receipt date;
 - optional note and documents.
 
-Ingredient lot identity is mandatory. If a supplier provides no lot number, Soapkraft generates a clearly marked internal receipt lot identifier rather than leaving traceability empty.
+Every received ingredient lot gets a unique, system-generated Soapkraft internal lot code. The supplier batch/lot number is stored separately as a non-unique external reference.
+
+Each delivery creates its own internal receipt lot, even when several deliveries carry the same supplier batch number. This preserves receipt date, received quantity, price, documents, and stock history per delivery while allowing Soapkraft to group and trace all internal lots that came from the same supplier batch.
+
+If the supplier provides no batch number, the internal lot code still gives the receipt a complete operational identity. The missing supplier reference remains explicit rather than being replaced with invented supplier data.
 
 The actual receipt quantity may differ from the listing expectation. Stock uses the actual quantity.
 
@@ -308,6 +312,8 @@ The existing private media library supports typed attachments:
 
 A CoA, SDS, specification, or certificate for a received material attaches to the specific received lot. Batch-specific certificates do not attach only to the supplier or generic ingredient.
 
+When the same supplier batch arrives in several deliveries, the same private media asset may be associated with each related internal lot without duplicating the uploaded file.
+
 ## Stock Model
 
 ### Lots
@@ -317,7 +323,9 @@ Stock is lot-based. A lot identifies:
 - the workspace;
 - ingredient, packaging item, manufactured intermediate, or finished product;
 - origin type and source record;
-- supplier or manufactured lot number;
+- unique Soapkraft internal lot code;
+- nullable, non-unique supplier batch/lot number;
+- manufactured output lot number when applicable;
 - canonical unit kind;
 - receipt or manufacture date;
 - optional expiry/best-before date;
@@ -629,8 +637,8 @@ Forward:
 Users can search by:
 
 - production batch/run number;
-- finished or intermediate lot;
-- supplier lot;
+- Soapkraft internal ingredient, intermediate, or finished lot;
+- supplier batch/lot number;
 - ingredient;
 - product;
 - purchase order or receipt reference.
@@ -816,13 +824,14 @@ Important relational rules:
 - a supplier listing directly references exactly one existing ingredient or packaging item;
 - an order line snapshots listing economics and pack quantity;
 - a receipt line references its order line when applicable;
-- a stock lot has exactly one stock subject and one origin;
+- a stock lot has exactly one stock subject, one origin, and one unique internal lot code;
+- a supplier batch/lot number may be shared by several receipt lots;
 - movements reference a lot and source document;
 - reservations reference a released lot and production run;
 - a production run references one published formula version;
 - a completed run references one Basic `ProductionBatch`;
 - a run has exactly one output lot;
-- a received ingredient lot has a supplier/internal lot identifier.
+- every received ingredient lot has a unique internal lot code, while its supplier batch/lot reference is nullable and non-unique.
 
 Stock positions are derived from movements and reservations. A projection/cache table is optional for performance, but it is never an independent source of truth.
 
@@ -845,7 +854,8 @@ Stock positions are derived from movements and reservations. A projection/cache 
 - create several listings for one ingredient and supplier;
 - order multiple supplier packs;
 - partial receipts;
-- several supplier lots for one order line;
+- several distinct supplier batches for one order line;
+- several deliveries with distinct internal lots and the same supplier batch number;
 - actual received mass differs from expected mass;
 - receipt documents and lot-specific CoAs remain private;
 - listing edits do not change posted orders or received lots;

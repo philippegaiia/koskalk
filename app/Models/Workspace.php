@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system'])]
 class Workspace extends Model
@@ -62,6 +63,11 @@ class Workspace extends Model
     public function brands(): HasMany
     {
         return $this->hasMany(Brand::class);
+    }
+
+    public function productionEntitlement(): HasOne
+    {
+        return $this->hasOne(WorkspaceProductionEntitlement::class);
     }
 
     public function hasMember(User $user): bool

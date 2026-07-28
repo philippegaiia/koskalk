@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\ListingPriceBasis;
 use App\Models\Concerns\HasPublicId;
 use App\StockUnitKind;
 use Database\Factories\SupplierListingFactory;
@@ -12,8 +13,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'workspace_id', 'supplier_id', 'ingredient_id', 'user_packaging_item_id', 'supplier_sku',
-    'supplier_name', 'pack_description', 'container', 'unit_kind', 'canonical_quantity_per_pack',
-    'commercial_quantity', 'commercial_unit', 'pack_price', 'currency', 'minimum_packs', 'notes', 'is_active',
+    'supplier_name', 'purchase_format', 'container', 'unit_kind', 'canonical_quantity_per_purchase_format',
+    'net_quantity', 'net_unit', 'price_basis', 'price_amount', 'price_unit', 'price_recorded_at', 'total_price',
+    'currency', 'minimum_packs', 'notes', 'is_active',
 ])]
 class SupplierListing extends Model
 {
@@ -46,9 +48,12 @@ class SupplierListing extends Model
     {
         return [
             'unit_kind' => StockUnitKind::class,
-            'canonical_quantity_per_pack' => 'decimal:9',
-            'commercial_quantity' => 'decimal:9',
-            'pack_price' => 'decimal:9',
+            'canonical_quantity_per_purchase_format' => 'decimal:9',
+            'net_quantity' => 'decimal:9',
+            'price_basis' => ListingPriceBasis::class,
+            'price_amount' => 'decimal:9',
+            'price_recorded_at' => 'datetime',
+            'total_price' => 'decimal:9',
             'minimum_packs' => 'integer',
             'is_active' => 'boolean',
         ];

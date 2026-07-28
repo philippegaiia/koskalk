@@ -64,14 +64,14 @@ class CreatePurchaseOrder
                     'ingredient_id' => $listing->ingredient_id,
                     'user_packaging_item_id' => $listing->user_packaging_item_id,
                     'supplier_sku' => $listing->supplier_sku,
-                    'listing_name' => $listing->pack_description,
+                    'listing_name' => $listing->purchase_format,
                     'unit_kind' => $listing->unit_kind,
                     'ordered_packs' => $packs,
-                    'canonical_quantity_per_pack' => $listing->canonical_quantity_per_pack,
-                    'pack_price' => $listing->pack_price,
+                    'canonical_quantity_per_pack' => $listing->canonical_quantity_per_purchase_format,
+                    'pack_price' => $listing->total_price,
                     'currency' => $listing->currency,
-                    'expected_quantity' => bcmul($listing->canonical_quantity_per_pack, (string) $packs, 9),
-                    'expected_cost' => bcmul($listing->pack_price, (string) $packs, 9),
+                    'expected_quantity' => bcmul($listing->canonical_quantity_per_purchase_format, (string) $packs, 9),
+                    'expected_cost' => bcmul($listing->total_price, (string) $packs, 9),
                 ]);
             }
 

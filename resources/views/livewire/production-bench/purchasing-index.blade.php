@@ -58,7 +58,7 @@
                     <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]"><tr><th class="px-5 py-3">Soapkraft item</th><th class="px-4 py-3">Supplier</th><th class="px-4 py-3">Pack</th><th class="px-4 py-3 text-right">Net content</th><th class="px-5 py-3 text-right">Pack price</th></tr></thead>
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @forelse($listings as $listing)
-                            <tr><td class="px-5 py-4 font-medium">{{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</td><td class="px-4 py-4">{{ $listing->supplier->name }}</td><td class="px-4 py-4">{{ $listing->pack_description }} @if($listing->supplier_sku)<span class="font-mono text-xs text-[var(--color-ink-soft)]">· {{ $listing->supplier_sku }}</span>@endif</td><td class="px-4 py-4 text-right font-mono">{{ number_format((float)$listing->commercial_quantity, 2) }} {{ $listing->commercial_unit }}</td><td class="px-5 py-4 text-right font-mono">{{ number_format((float)$listing->pack_price, 2) }} {{ $listing->currency }}</td></tr>
+                            <tr><td class="px-5 py-4 font-medium">{{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</td><td class="px-4 py-4">{{ $listing->supplier->name }}</td><td class="px-4 py-4">{{ $listing->purchase_format }} @if($listing->supplier_sku)<span class="font-mono text-xs text-[var(--color-ink-soft)]">· {{ $listing->supplier_sku }}</span>@endif</td><td class="px-4 py-4 text-right font-mono">{{ number_format((float)$listing->net_quantity, 2) }} {{ $listing->net_unit }}</td><td class="px-5 py-4 text-right font-mono">{{ number_format((float)$listing->total_price, 2) }} {{ $listing->currency }}</td></tr>
                         @empty
                             <tr><td colspan="5" class="px-6 py-10 text-center text-[var(--color-ink-soft)]">No listings yet.</td></tr>
                         @endforelse
@@ -72,7 +72,7 @@
                 <p class="sk-eyebrow">Purchase orders</p>
                 <h2 class="mt-2 text-xl font-semibold">Plan whole supplier packs</h2>
                 <form wire:submit="createOrder" class="mt-5 grid gap-3 sm:grid-cols-[1fr_7rem_auto]">
-                    <select wire:model="orderListingId" required @disabled($isReadOnly) class="sk-input"><option value="">Choose a listing…</option>@foreach($listings as $listing)<option value="{{ $listing->id }}">{{ $listing->supplier->name }} · {{ $listing->pack_description }} · {{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</option>@endforeach</select>
+                    <select wire:model="orderListingId" required @disabled($isReadOnly) class="sk-input"><option value="">Choose a listing…</option>@foreach($listings as $listing)<option value="{{ $listing->id }}">{{ $listing->supplier->name }} · {{ $listing->purchase_format }} · {{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</option>@endforeach</select>
                     <input wire:model="orderPacks" type="number" min="1" required @disabled($isReadOnly) class="sk-input font-mono">
                     <button type="submit" @disabled($isReadOnly) class="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40">Create draft</button>
                 </form>

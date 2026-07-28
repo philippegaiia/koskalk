@@ -30,10 +30,10 @@ it('snapshots pack listings and posts partial receipts as distinct lots', functi
         ->for($ingredient)
         ->create([
             'supplier_sku' => 'OO-5',
-            'pack_description' => '5 kg pail',
+            'purchase_format' => '5 kg pail',
             'unit_kind' => StockUnitKind::Mass,
-            'canonical_quantity_per_pack' => '5000',
-            'pack_price' => '50',
+            'canonical_quantity_per_purchase_format' => '5000',
+            'total_price' => '50',
             'currency' => 'EUR',
         ]);
     SupplierListing::factory()
@@ -42,10 +42,10 @@ it('snapshots pack listings and posts partial receipts as distinct lots', functi
         ->for($ingredient)
         ->create([
             'supplier_sku' => 'OO-20',
-            'pack_description' => '20 kg drum',
+            'purchase_format' => '20 kg drum',
             'unit_kind' => StockUnitKind::Mass,
-            'canonical_quantity_per_pack' => '20000',
-            'pack_price' => '175',
+            'canonical_quantity_per_purchase_format' => '20000',
+            'total_price' => '175',
         ]);
 
     $order = app(CreatePurchaseOrder::class)->handle(
@@ -64,7 +64,7 @@ it('snapshots pack listings and posts partial receipts as distinct lots', functi
         ->and($line->expected_quantity)->toBe('15000.000000000')
         ->and($line->expected_cost)->toBe('150.000000000');
 
-    $fiveKg->update(['pack_price' => '65', 'canonical_quantity_per_pack' => '5100']);
+    $fiveKg->update(['total_price' => '65', 'canonical_quantity_per_purchase_format' => '5100']);
     expect($line->refresh()->pack_price)->toBe('50.000000000')
         ->and($line->canonical_quantity_per_pack)->toBe('5000.000000000');
 

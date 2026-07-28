@@ -8,6 +8,7 @@ use App\Actions\Purchasing\CreatePurchaseOrder;
 use App\Actions\Purchasing\PlacePurchaseOrder;
 use App\Actions\Purchasing\ReceivePurchaseOrder;
 use App\Actions\Purchasing\ReverseGoodsReceipt;
+use App\ListingPriceBasis;
 use App\MediaAssetType;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
@@ -145,14 +146,16 @@ class PurchasingIndex extends Component
             'ingredient_id' => $isMass ? $subject->id : null,
             'user_packaging_item_id' => $isMass ? null : $subject->id,
             'supplier_sku' => filled($this->listingSku) ? $this->listingSku : null,
-            'pack_description' => $this->listingDescription,
+            'purchase_format' => $this->listingDescription,
             'unit_kind' => $isMass ? StockUnitKind::Mass : StockUnitKind::Count,
-            'canonical_quantity_per_pack' => $isMass
+            'canonical_quantity_per_purchase_format' => $isMass
                 ? $converter->toGrams($this->listingQuantity, $this->listingUnit)
                 : bcadd($this->listingQuantity, '0', 9),
-            'commercial_quantity' => $this->listingQuantity,
-            'commercial_unit' => $this->listingUnit,
-            'pack_price' => $this->listingPackPrice,
+            'net_quantity' => $this->listingQuantity,
+            'net_unit' => $this->listingUnit,
+            'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'price_amount' => $this->listingPackPrice,
+            'total_price' => $this->listingPackPrice,
             'currency' => $workspace->default_currency,
             'minimum_packs' => 1,
             'is_active' => true,

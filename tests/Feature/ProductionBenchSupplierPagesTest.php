@@ -457,6 +457,12 @@ it('eager loads translated supplier detail materials', function (): void {
         'locale' => 'fr',
         'display_name' => 'Huile d’olive',
     ]);
+    $secondIngredient = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
+    IngredientTranslation::factory()->create([
+        'ingredient_id' => $secondIngredient->id,
+        'locale' => 'fr',
+        'display_name' => 'Huile de coco',
+    ]);
     $foreignWorkspace = Workspace::factory()->create();
     $foreignIngredient = Ingredient::factory()->create([
         'owner_type' => 'workspace',
@@ -470,22 +476,25 @@ it('eager loads translated supplier detail materials', function (): void {
         'display_name' => 'Huile étrangère',
     ]);
     SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($secondIngredient)->create();
 
     $wasPreventingLazyLoading = Model::preventsLazyLoading();
     Model::preventLazyLoading();
 
     try {
         Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-            ->set('listingSubjectSearch', 'Huile d’olive')
+            ->set('listingSubjectSearch', 'Huile')
             ->assertSee('Huile d’olive')
+            ->assertSee('Huile de coco')
             ->assertDontSee('Huile étrangère');
     } finally {
         Model::preventLazyLoading($wasPreventingLazyLoading);
     }
 
     Livewire::test(SupplierListingIndex::class)
-        ->set('search', 'Huile d’olive')
+        ->set('search', 'Huile')
         ->assertSee('Huile d’olive')
+        ->assertSee('Huile de coco')
         ->assertDontSee('Huile étrangère');
 });
 
@@ -607,6 +616,14 @@ it('presents currency-bearing supplier listing prices in metric and US customary
         'net_quantity' => '1',
         'net_unit' => 'kg',
         'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+        'price_amount' => '1.004999999',
+        'price_unit' => null,
+    ]);
+    $largeDecimalBoundaryListing = createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
+        'purchase_format' => 'Large amount drum',
+        'net_quantity' => '1',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
         'price_amount' => '24757471.004999999',
         'price_unit' => null,
     ]);
@@ -637,8 +654,12 @@ it('presents currency-bearing supplier listing prices in metric and US customary
         'derived_price' => 'EUR 0.18 / item',
         'total_price' => 'EUR 90.00 total',
     ])->and($pricePresentation->present($decimalBoundaryListing, $workspace))->toMatchArray([
+        'entered_price' => 'EUR 1.00',
+        'derived_price' => 'EUR 1.00 / kg',
+        'total_price' => 'EUR 1.00 total',
+    ])->and($pricePresentation->present($largeDecimalBoundaryListing, $workspace))->toMatchArray([
         'entered_price' => 'EUR 24757471.00',
-        'derived_price' => 'EUR 24757471.01 / kg',
+        'derived_price' => 'EUR 24757471.00 / kg',
         'total_price' => 'EUR 24757471.00 total',
     ])->and($pricePresentation->present($centBoundaryListing, $workspace))->toMatchArray([
         'entered_price' => 'EUR 1.01',

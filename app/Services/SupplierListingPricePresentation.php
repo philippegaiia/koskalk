@@ -32,9 +32,9 @@ class SupplierListingPricePresentation
             );
             $displayUnit = $workspace->mass_display_system->priceUnit()->value;
             $pricePerDisplayUnit = bcmul(
-                $prices['price_per_canonical_unit'],
+                bcdiv($prices['total_price'], $prices['canonical_quantity'], 18),
                 $this->massConverter->toGrams('1', $displayUnit),
-                9,
+                18,
             );
 
             return $this->formatted(

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('website')->nullable();
         });
 
-        Schema::table('supplier_listings', function (Blueprint $table) {
+        Schema::table('supplier_listings', function (Blueprint $table): void {
             $table->renameColumn('pack_description', 'purchase_format');
             $table->renameColumn('canonical_quantity_per_pack', 'canonical_quantity_per_purchase_format');
             $table->renameColumn('commercial_quantity', 'net_quantity');
@@ -45,7 +45,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('supplier_listings', function (Blueprint $table) {
+        Schema::table('supplier_listings', function (Blueprint $table): void {
             $table->dropColumn(['price_basis', 'price_amount', 'price_unit', 'price_recorded_at']);
             $table->renameColumn('purchase_format', 'pack_description');
             $table->renameColumn('canonical_quantity_per_purchase_format', 'canonical_quantity_per_pack');

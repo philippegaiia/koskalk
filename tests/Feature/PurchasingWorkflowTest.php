@@ -45,6 +45,7 @@ it('snapshots pack listings and posts partial receipts as distinct lots', functi
             'purchase_format' => '20 kg drum',
             'unit_kind' => StockUnitKind::Mass,
             'canonical_quantity_per_purchase_format' => '20000',
+            'price_amount' => '175',
             'total_price' => '175',
         ]);
 

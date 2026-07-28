@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\GoodsReceiptStatus;
 use App\Models\Ingredient;
+use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
+use App\PurchaseOrderStatus;
 use App\StockLotStatus;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -53,22 +56,60 @@ class StockPositionService
             }
         }
 
-        return $this->positions($physical, $quarantined, $available);
+        $incoming = $this->incomingForSubject($workspace, $subject);
+
+        return $this->positions($physical, $quarantined, $available, $incoming);
     }
 
     /**
      * @return array{physical: string, quarantined: string, reserved: string, available: string, incoming: string, forecast: string}
      */
-    private function positions(string $physical, string $quarantined, string $available): array
-    {
+    private function positions(
+        string $physical,
+        string $quarantined,
+        string $available,
+        string $incoming = '0.000000000',
+    ): array {
         return [
             'physical' => $physical,
             'quarantined' => $quarantined,
             'reserved' => $this->zero(),
             'available' => $available,
-            'incoming' => $this->zero(),
-            'forecast' => $available,
+            'incoming' => $incoming,
+            'forecast' => bcadd($available, $incoming, 9),
         ];
+    }
+
+    private function incomingForSubject(Workspace $workspace, Ingredient|UserPackagingItem $subject): string
+    {
+        $lines = PurchaseOrderLine::query()
+            ->whereHas('purchaseOrder', fn (Builder $query): Builder => $query
+                ->where('workspace_id', $workspace->id)
+                ->whereIn('status', [PurchaseOrderStatus::Ordered, PurchaseOrderStatus::PartiallyReceived]))
+            ->when(
+                $subject instanceof Ingredient,
+                fn (Builder $query): Builder => $query->where('ingredient_id', $subject->id),
+                fn (Builder $query): Builder => $query->where('user_packaging_item_id', $subject->id),
+            )
+            ->withSum([
+                'receiptLines as posted_packs_received' => fn (Builder $query): Builder => $query
+                    ->whereHas('goodsReceipt', fn (Builder $receiptQuery): Builder => $receiptQuery
+                        ->where('status', GoodsReceiptStatus::Posted)),
+            ], 'packs_received')
+            ->get();
+
+        $incoming = $this->zero();
+
+        foreach ($lines as $line) {
+            $remainingPacks = $line->ordered_packs - (int) ($line->posted_packs_received ?? 0);
+            $incoming = bcadd(
+                $incoming,
+                bcmul($line->canonical_quantity_per_pack, (string) max(0, $remainingPacks), 9),
+                9,
+            );
+        }
+
+        return $incoming;
     }
 
     private function decimal(string $quantity): string

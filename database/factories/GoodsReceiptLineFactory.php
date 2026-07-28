@@ -1,0 +1,36 @@
+<?php
+
+namespace Database\Factories;
+
+use App\Models\GoodsReceipt;
+use App\Models\GoodsReceiptLine;
+use App\Models\PurchaseOrderLine;
+use App\Models\StockLot;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends Factory<GoodsReceiptLine>
+ */
+class GoodsReceiptLineFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'goods_receipt_id' => GoodsReceipt::factory(),
+            'purchase_order_line_id' => PurchaseOrderLine::factory(),
+            'stock_lot_id' => StockLot::factory(),
+            'packs_received' => 1,
+            'actual_quantity' => '5000',
+            'original_quantity' => '5',
+            'original_unit' => 'kg',
+            'historical_total_cost' => '50',
+            'supplier_batch_number' => null,
+            'expires_at' => null,
+        ];
+    }
+}

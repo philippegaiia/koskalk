@@ -167,9 +167,10 @@ class SaveSupplierListing
         $validated['price_basis'] = $basis;
         $validated['price_recorded_at'] ??= now();
         $validated['net_unit'] = strtolower($validated['net_unit']);
-        $validated['price_unit'] = $validated['price_unit'] === null
+        $priceUnit = $validated['price_unit'] ?? null;
+        $validated['price_unit'] = $priceUnit === null
             ? null
-            : strtolower($validated['price_unit']);
+            : strtolower($priceUnit);
 
         if ($subject instanceof UserPackagingItem) {
             if ($validated['net_unit'] !== 'count') {

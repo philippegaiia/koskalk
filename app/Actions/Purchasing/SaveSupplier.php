@@ -84,9 +84,10 @@ class SaveSupplier
                 'is_active' => true,
             ];
         $data = $this->normalizeStrings([...$current, ...$attributes]);
-        $data['country_code'] = $data['country_code'] === null
+        $countryCode = $data['country_code'] ?? null;
+        $data['country_code'] = $countryCode === null
             ? null
-            : strtoupper($data['country_code']);
+            : strtoupper($countryCode);
         $data['default_currency'] = strtoupper((string) ($data['default_currency'] ?? ''));
 
         return Validator::make($data, [

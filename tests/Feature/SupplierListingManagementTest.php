@@ -69,10 +69,29 @@ it('prevents updating a supplier from another workspace', function (): void {
     ], $foreignSupplier))->toThrow(ValidationException::class);
 });
 
+it('creates a supplier without an optional country code', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+
+    $supplier = app(SaveSupplier::class)->handle($owner, $workspace, [
+        'name' => 'Country-free supplier',
+        'default_currency' => 'EUR',
+        'is_active' => true,
+    ]);
+
+    expect($supplier->country_code)->toBeNull();
+});
+
 it('saves a per-unit mass listing without updating user ingredient price memory', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
     $ingredient = Ingredient::factory()->create();
+    $rememberedPrice = UserIngredientPrice::query()->create([
+        'user_id' => $owner->id,
+        'ingredient_id' => $ingredient->id,
+        'price_per_kg' => '8.7500',
+        'currency' => 'GBP',
+        'last_used_at' => '2026-07-20 10:30:00',
+    ]);
 
     $listing = app(SaveSupplierListing::class)->handle(
         actor: $owner,
@@ -96,7 +115,56 @@ it('saves a per-unit mass listing without updating user ingredient price memory'
         ->and($listing->price_amount)->toBe('4.200000000')
         ->and($listing->price_unit)->toBe('kg')
         ->and($listing->total_price)->toBe('840.000000000')
-        ->and(UserIngredientPrice::query()->count())->toBe(0);
+        ->and($rememberedPrice->fresh()?->price_per_kg)->toBe('8.7500')
+        ->and($rememberedPrice->fresh()?->currency)->toBe('GBP')
+        ->and($rememberedPrice->fresh()?->last_used_at?->toDateTimeString())->toBe('2026-07-20 10:30:00')
+        ->and(UserIngredientPrice::query()->count())->toBe(1);
+
+    app(SaveSupplierListing::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        subject: $ingredient,
+        attributes: listingAttributes([
+            'purchase_format' => '200 kg drum',
+            'net_quantity' => '200',
+            'net_unit' => 'kg',
+            'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'price_amount' => '900',
+        ]),
+        listing: $listing,
+    );
+
+    expect($rememberedPrice->fresh()?->price_per_kg)->toBe('8.7500')
+        ->and($rememberedPrice->fresh()?->currency)->toBe('GBP')
+        ->and($rememberedPrice->fresh()?->last_used_at?->toDateTimeString())->toBe('2026-07-20 10:30:00')
+        ->and(UserIngredientPrice::query()->count())->toBe(1);
+});
+
+it('allows listing price units to be omitted when a convention supplies them', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $packaging = UserPackagingItem::factory()->for($owner)->create();
+    $action = app(SaveSupplierListing::class);
+    $totalMassAttributes = listingAttributes([
+        'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+        'price_amount' => '100',
+    ]);
+    $countPerUnitAttributes = listingAttributes([
+        'net_quantity' => '500',
+        'net_unit' => 'count',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '0.18',
+    ]);
+    unset($totalMassAttributes['price_unit'], $countPerUnitAttributes['price_unit']);
+
+    $totalMass = $action->handle($owner, $workspace, $supplier, $ingredient, $totalMassAttributes);
+    $countPerUnit = $action->handle($owner, $workspace, $supplier, $packaging, $countPerUnitAttributes);
+
+    expect($totalMass->price_unit)->toBeNull()
+        ->and($countPerUnit->price_unit)->toBe('count')
+        ->and($countPerUnit->total_price)->toBe('90.000000000');
 });
 
 it('updates a count listing using total purchase-format pricing', function (): void {

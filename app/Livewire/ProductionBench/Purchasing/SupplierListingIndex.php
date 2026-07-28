@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
+use App\Models\Ingredient;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
@@ -9,6 +10,7 @@ use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPricePresentation;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -62,6 +64,7 @@ class SupplierListingIndex extends Component
         $workspace = $this->workspace();
         $search = trim($this->search);
         $searchTerm = '%'.Str::lower($search).'%';
+        $translationLocales = Ingredient::translationLocaleCandidates();
         $listings = SupplierListing::query()
             ->where('workspace_id', $workspace->id)
             ->with(['supplier', 'ingredient.translations', 'packagingItem'])
@@ -70,14 +73,26 @@ class SupplierListingIndex extends Component
             ->when($this->materialType === 'packaging', fn ($query) => $query->whereNotNull('user_packaging_item_id'))
             ->when($this->status === 'active', fn ($query) => $query->where('is_active', true))
             ->when($this->status === 'inactive', fn ($query) => $query->where('is_active', false))
-            ->when($search !== '', function ($query) use ($searchTerm): void {
-                $query->where(function ($searchQuery) use ($searchTerm): void {
+            ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales): void {
+                $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales): void {
                     $searchQuery
                         ->whereRaw('LOWER(supplier_sku) LIKE ?', [$searchTerm])
                         ->orWhereRaw('LOWER(supplier_name) LIKE ?', [$searchTerm])
                         ->orWhereRaw('LOWER(purchase_format) LIKE ?', [$searchTerm])
                         ->orWhereHas('supplier', fn ($supplierQuery) => $supplierQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
-                        ->orWhereHas('ingredient', fn ($ingredientQuery) => $ingredientQuery->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]))
+                        ->orWhereHas('ingredient', function (Builder $ingredientQuery) use ($searchTerm, $translationLocales): void {
+                            $ingredientQuery->where(function (Builder $ingredientNameQuery) use ($searchTerm, $translationLocales): void {
+                                $ingredientNameQuery->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+
+                                if ($translationLocales !== []) {
+                                    $ingredientNameQuery->orWhereHas('translations', function (Builder $translationQuery) use ($searchTerm, $translationLocales): void {
+                                        $translationQuery
+                                            ->whereIn('locale', $translationLocales)
+                                            ->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+                                    });
+                                }
+                            });
+                        })
                         ->orWhereHas('packagingItem', fn ($packagingQuery) => $packagingQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
                 });
             })

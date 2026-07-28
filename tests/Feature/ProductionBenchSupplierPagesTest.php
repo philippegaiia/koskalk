@@ -16,6 +16,7 @@ use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPricePresentation;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -434,6 +435,10 @@ it('paginates supplier detail listings and keeps selected searched subjects visi
         ->assertDontSee('Page listing 0')
         ->call('gotoPage', 2, 'supplier-listings')
         ->assertSee('Page listing 0')
+        ->set('perPage', 50)
+        ->assertSet('perPage', 50)
+        ->set('perPage', -1)
+        ->assertSet('perPage', 25)
         ->set('listingSubjectId', $selectedIngredient->id)
         ->set('listingSubjectSearch', 'Search result')
         ->assertSee('Selected outside result')
@@ -452,11 +457,36 @@ it('eager loads translated supplier detail materials', function (): void {
         'locale' => 'fr',
         'display_name' => 'Huile d’olive',
     ]);
+    $foreignWorkspace = Workspace::factory()->create();
+    $foreignIngredient = Ingredient::factory()->create([
+        'owner_type' => 'workspace',
+        'owner_id' => $foreignWorkspace->id,
+        'workspace_id' => $foreignWorkspace->id,
+        'visibility' => 'private',
+    ]);
+    IngredientTranslation::factory()->create([
+        'ingredient_id' => $foreignIngredient->id,
+        'locale' => 'fr',
+        'display_name' => 'Huile étrangère',
+    ]);
     SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
 
-    Livewire::withoutLazyLoading()
-        ->test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->assertSee('Huile d’olive');
+    $wasPreventingLazyLoading = Model::preventsLazyLoading();
+    Model::preventLazyLoading();
+
+    try {
+        Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+            ->set('listingSubjectSearch', 'Huile d’olive')
+            ->assertSee('Huile d’olive')
+            ->assertDontSee('Huile étrangère');
+    } finally {
+        Model::preventLazyLoading($wasPreventingLazyLoading);
+    }
+
+    Livewire::test(SupplierListingIndex::class)
+        ->set('search', 'Huile d’olive')
+        ->assertSee('Huile d’olive')
+        ->assertDontSee('Huile étrangère');
 });
 
 it('defaults supplier detail listings to active and identifies inactive listings in all states', function (): void {
@@ -572,6 +602,22 @@ it('presents currency-bearing supplier listing prices in metric and US customary
         'price_amount' => '0.18',
         'price_unit' => 'count',
     ]);
+    $decimalBoundaryListing = createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
+        'purchase_format' => 'Large decimal drum',
+        'net_quantity' => '1',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+        'price_amount' => '24757471.004999999',
+        'price_unit' => null,
+    ]);
+    $centBoundaryListing = createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
+        'purchase_format' => 'Cent boundary drum',
+        'net_quantity' => '1',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+        'price_amount' => '1.005000000',
+        'price_unit' => null,
+    ]);
     $pricePresentation = app(SupplierListingPricePresentation::class);
 
     expect($pricePresentation->present($totalMassListing, $workspace))->toMatchArray([
@@ -590,6 +636,14 @@ it('presents currency-bearing supplier listing prices in metric and US customary
         'entered_price' => 'EUR 90.00',
         'derived_price' => 'EUR 0.18 / item',
         'total_price' => 'EUR 90.00 total',
+    ])->and($pricePresentation->present($decimalBoundaryListing, $workspace))->toMatchArray([
+        'entered_price' => 'EUR 24757471.00',
+        'derived_price' => 'EUR 24757471.01 / kg',
+        'total_price' => 'EUR 24757471.00 total',
+    ])->and($pricePresentation->present($centBoundaryListing, $workspace))->toMatchArray([
+        'entered_price' => 'EUR 1.01',
+        'derived_price' => 'EUR 1.01 / kg',
+        'total_price' => 'EUR 1.01 total',
     ]);
 
     [, $usWorkspace] = activeSupplierPagesWorkspace(MassDisplaySystem::UsCustomary);

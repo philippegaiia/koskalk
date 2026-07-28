@@ -4,6 +4,7 @@ namespace App\Livewire\ProductionBench\Purchasing;
 
 use App\Actions\Purchasing\SaveSupplier;
 use App\Actions\Purchasing\SaveSupplierListing;
+use App\DecimalStringFormatter;
 use App\ListingPriceBasis;
 use App\Models\Ingredient;
 use App\Models\Supplier;
@@ -26,6 +27,8 @@ class SupplierDetail extends Component
     use WithPagination;
 
     private const int SubjectSearchLimit = 50;
+
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
 
     public string|Supplier $supplier;
 
@@ -64,6 +67,8 @@ class SupplierDetail extends Component
     public string $listingSubjectSearch = '';
 
     public string $listingStatus = 'active';
+
+    public int $perPage = 25;
 
     public string $supplierSku = '';
 
@@ -121,6 +126,12 @@ class SupplierDetail extends Component
 
     public function updatedListingStatus(): void
     {
+        $this->resetPage('supplier-listings');
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->perPage = $this->normalizedPerPage();
         $this->resetPage('supplier-listings');
     }
 
@@ -198,6 +209,7 @@ class SupplierDetail extends Component
     }
 
     public function render(
+        DecimalStringFormatter $decimalStringFormatter,
         ProductionBenchAccess $access,
         MassConverter $massConverter,
         SupplierListingPriceCalculator $priceCalculator,
@@ -214,12 +226,12 @@ class SupplierDetail extends Component
                 ->with(['ingredient.translations', 'packagingItem'])
                 ->when($this->listingStatus === 'active', fn (Builder $query) => $query->where('is_active', true))
                 ->latest('id')
-                ->paginate(25, ['*'], 'supplier-listings')
+                ->paginate($this->normalizedPerPage(), ['*'], 'supplier-listings')
                 ->through(fn ($listing): array => [
                     'listing' => $listing,
                     'price' => $pricePresentation->present($listing, $workspace),
                 ]),
-            'pricePreview' => $this->pricePreview($priceCalculator, $massConverter),
+            'pricePreview' => $this->pricePreview($decimalStringFormatter, $priceCalculator, $massConverter),
             'workspace' => $workspace,
         ]);
     }
@@ -317,6 +329,7 @@ class SupplierDetail extends Component
 
     /** @return array{total_price: string, unit_price: string, unit_label: string}|null */
     private function pricePreview(
+        DecimalStringFormatter $decimalStringFormatter,
         SupplierListingPriceCalculator $priceCalculator,
         MassConverter $massConverter,
     ): ?array {
@@ -337,10 +350,10 @@ class SupplierDetail extends Component
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
 
         return [
-            'total_price' => $prices['total_price'],
-            'unit_price' => $this->listingSubjectType === 'ingredient'
+            'total_price' => $decimalStringFormatter->toFixed($prices['total_price']),
+            'unit_price' => $decimalStringFormatter->toFixed($this->listingSubjectType === 'ingredient'
                 ? bcmul($prices['price_per_canonical_unit'], $massConverter->toGrams('1', $displayUnit), 9)
-                : $prices['price_per_item'],
+                : $prices['price_per_item']),
             'unit_label' => $this->listingSubjectType === 'ingredient' ? $displayUnit : 'item',
         ];
     }
@@ -367,13 +380,18 @@ class SupplierDetail extends Component
             : $this->workspace()->mass_display_system->priceUnit()->value;
     }
 
+    private function normalizedPerPage(): int
+    {
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
+    }
+
     /** @return Collection<int, Ingredient> */
     private function availableIngredients(): Collection
     {
         $ingredients = $this->accessibleIngredients()
             ->with('translations')
             ->when(filled($this->listingSubjectSearch), function (Builder $query): void {
-                $query->whereRaw('LOWER(display_name) LIKE ?', ['%'.mb_strtolower(trim($this->listingSubjectSearch)).'%']);
+                $this->applyIngredientSearch($query, $this->listingSubjectSearch);
             })
             ->orderBy('display_name')
             ->limit(self::SubjectSearchLimit)
@@ -416,6 +434,24 @@ class SupplierDetail extends Component
         }
 
         return $packagingItems;
+    }
+
+    private function applyIngredientSearch(Builder $query, string $search): void
+    {
+        $searchTerm = '%'.mb_strtolower(trim($search)).'%';
+        $translationLocales = Ingredient::translationLocaleCandidates();
+
+        $query->where(function (Builder $ingredientQuery) use ($searchTerm, $translationLocales): void {
+            $ingredientQuery->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+
+            if ($translationLocales !== []) {
+                $ingredientQuery->orWhereHas('translations', function (Builder $translationQuery) use ($searchTerm, $translationLocales): void {
+                    $translationQuery
+                        ->whereIn('locale', $translationLocales)
+                        ->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+                });
+            }
+        });
     }
 
     private function user(): User

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\DecimalStringFormatter;
 use App\ListingPriceBasis;
 use App\Models\SupplierListing;
 use App\Models\Workspace;
@@ -9,6 +10,7 @@ use App\Models\Workspace;
 class SupplierListingPricePresentation
 {
     public function __construct(
+        private readonly DecimalStringFormatter $decimalStringFormatter,
         private readonly MassConverter $massConverter,
         private readonly SupplierListingPriceCalculator $priceCalculator,
     ) {}
@@ -85,7 +87,7 @@ class SupplierListingPricePresentation
 
     private function formatAmount(string $amount): string
     {
-        return number_format((float) $amount, 2);
+        return $this->decimalStringFormatter->toFixed($amount);
     }
 
     private function currencyAmount(string $currency, string $amount): string

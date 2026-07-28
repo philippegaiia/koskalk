@@ -77,7 +77,7 @@
                     <aside class="rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 md:col-span-2 xl:col-span-3">
                         <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-soft)]">Price preview</p>
                         <p class="numeric mt-1 text-sm text-[var(--color-ink-strong)]">
-                            {{ $supplier->default_currency }} {{ number_format((float) $pricePreview['unit_price'], 2) }} / {{ $pricePreview['unit_label'] }} · {{ $supplier->default_currency }} {{ number_format((float) $pricePreview['total_price'], 2) }} total
+                            {{ $supplier->default_currency }} {{ $pricePreview['unit_price'] }} / {{ $pricePreview['unit_label'] }} · {{ $supplier->default_currency }} {{ $pricePreview['total_price'] }} total
                         </p>
                     </aside>
                 @endif

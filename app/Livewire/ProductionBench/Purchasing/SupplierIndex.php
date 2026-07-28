@@ -16,6 +16,8 @@ class SupplierIndex extends Component
 {
     use WithPagination;
 
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
+
     public string $search = '';
 
     public string $status = 'active';
@@ -74,6 +76,7 @@ class SupplierIndex extends Component
 
     public function updatedPerPage(): void
     {
+        $this->perPage = $this->normalizedPerPage();
         $this->resetPage();
     }
 
@@ -115,7 +118,7 @@ class SupplierIndex extends Component
             ->when($this->status === 'inactive', fn ($query) => $query->where('is_active', false))
             ->when($this->sort === 'name', fn ($query) => $query->orderBy('name')->orderByDesc('id'))
             ->when($this->sort !== 'name', fn ($query) => $query->latest('id'))
-            ->paginate($this->perPage);
+            ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.purchasing.supplier-index', [
             'isBenchActive' => $access->isActive($workspace),
@@ -154,6 +157,11 @@ class SupplierIndex extends Component
         ]);
         $this->defaultCurrency = $this->workspace()->default_currency;
         $this->isActive = true;
+    }
+
+    private function normalizedPerPage(): int
+    {
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
     }
 
     private function user(): User

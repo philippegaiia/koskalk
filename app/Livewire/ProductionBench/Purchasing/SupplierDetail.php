@@ -10,16 +10,23 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
+use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\Services\SupplierListingPricePresentation;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class SupplierDetail extends Component
 {
+    use WithPagination;
+
+    private const int SubjectSearchLimit = 50;
+
     public string|Supplier $supplier;
 
     public string $name = '';
@@ -53,6 +60,10 @@ class SupplierDetail extends Component
     public string $listingSubjectType = 'ingredient';
 
     public ?int $listingSubjectId = null;
+
+    public string $listingSubjectSearch = '';
+
+    public string $listingStatus = 'active';
 
     public string $supplierSku = '';
 
@@ -106,6 +117,11 @@ class SupplierDetail extends Component
         $this->priceUnit = $this->priceBasis === ListingPriceBasis::TotalPurchaseFormat->value
             ? ''
             : $this->defaultPriceUnit();
+    }
+
+    public function updatedListingStatus(): void
+    {
+        $this->resetPage('supplier-listings');
     }
 
     public function saveSupplier(SaveSupplier $saveSupplier): void
@@ -177,11 +193,13 @@ class SupplierDetail extends Component
         }
 
         $this->resetListingForm();
+        $this->resetPage('supplier-listings');
         $this->listingSavedMessage = 'Supplier listing saved.';
     }
 
     public function render(
         ProductionBenchAccess $access,
+        MassConverter $massConverter,
         SupplierListingPriceCalculator $priceCalculator,
         SupplierListingPricePresentation $pricePresentation,
     ): View {
@@ -190,17 +208,18 @@ class SupplierDetail extends Component
         return view('livewire.production-bench.purchasing.supplier-detail', [
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
-            'ingredients' => $this->accessibleIngredients()->orderBy('display_name')->get(),
-            'packagingItems' => $this->packagingItems()->orderBy('name')->get(),
+            'ingredients' => $this->availableIngredients(),
+            'packagingItems' => $this->availablePackagingItems(),
             'listingRows' => $this->supplier->listings()
                 ->with(['ingredient.translations', 'packagingItem'])
+                ->when($this->listingStatus === 'active', fn (Builder $query) => $query->where('is_active', true))
                 ->latest('id')
-                ->get()
-                ->map(fn ($listing): array => [
+                ->paginate(25, ['*'], 'supplier-listings')
+                ->through(fn ($listing): array => [
                     'listing' => $listing,
                     'price' => $pricePresentation->present($listing, $workspace),
                 ]),
-            'pricePreview' => $this->pricePreview($priceCalculator),
+            'pricePreview' => $this->pricePreview($priceCalculator, $massConverter),
             'workspace' => $workspace,
         ]);
     }
@@ -262,7 +281,7 @@ class SupplierDetail extends Component
     {
         $this->reset([
             'listingSubjectId', 'supplierSku', 'supplierName', 'purchaseFormat', 'netQuantity', 'priceAmount',
-            'listingNotes',
+            'listingNotes', 'listingSubjectSearch',
         ]);
         $this->listingSubjectType = 'ingredient';
         $this->netUnit = 'kg';
@@ -297,8 +316,10 @@ class SupplierDetail extends Component
     }
 
     /** @return array{total_price: string, unit_price: string, unit_label: string}|null */
-    private function pricePreview(SupplierListingPriceCalculator $priceCalculator): ?array
-    {
+    private function pricePreview(
+        SupplierListingPriceCalculator $priceCalculator,
+        MassConverter $massConverter,
+    ): ?array {
         if ($this->netQuantity === '' || $this->priceAmount === '') {
             return null;
         }
@@ -312,10 +333,15 @@ class SupplierDetail extends Component
             return null;
         }
 
+        $workspace = $this->workspace();
+        $displayUnit = $workspace->mass_display_system->priceUnit()->value;
+
         return [
             'total_price' => $prices['total_price'],
-            'unit_price' => $this->listingSubjectType === 'ingredient' ? $prices['price_per_kg'] : $prices['price_per_item'],
-            'unit_label' => $this->listingSubjectType === 'ingredient' ? 'kg' : 'item',
+            'unit_price' => $this->listingSubjectType === 'ingredient'
+                ? bcmul($prices['price_per_canonical_unit'], $massConverter->toGrams('1', $displayUnit), 9)
+                : $prices['price_per_item'],
+            'unit_label' => $this->listingSubjectType === 'ingredient' ? $displayUnit : 'item',
         ];
     }
 
@@ -339,6 +365,57 @@ class SupplierDetail extends Component
         return $this->listingSubjectType === 'packaging'
             ? 'count'
             : $this->workspace()->mass_display_system->priceUnit()->value;
+    }
+
+    /** @return Collection<int, Ingredient> */
+    private function availableIngredients(): Collection
+    {
+        $ingredients = $this->accessibleIngredients()
+            ->with('translations')
+            ->when(filled($this->listingSubjectSearch), function (Builder $query): void {
+                $query->whereRaw('LOWER(display_name) LIKE ?', ['%'.mb_strtolower(trim($this->listingSubjectSearch)).'%']);
+            })
+            ->orderBy('display_name')
+            ->limit(self::SubjectSearchLimit)
+            ->get();
+
+        if ($this->listingSubjectType !== 'ingredient' || $this->listingSubjectId === null || $ingredients->contains('id', $this->listingSubjectId)) {
+            return $ingredients;
+        }
+
+        $selectedIngredient = $this->accessibleIngredients()
+            ->with('translations')
+            ->find($this->listingSubjectId);
+
+        if ($selectedIngredient instanceof Ingredient) {
+            $ingredients->prepend($selectedIngredient);
+        }
+
+        return $ingredients;
+    }
+
+    /** @return Collection<int, UserPackagingItem> */
+    private function availablePackagingItems(): Collection
+    {
+        $packagingItems = $this->packagingItems()
+            ->when(filled($this->listingSubjectSearch), function (Builder $query): void {
+                $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower(trim($this->listingSubjectSearch)).'%']);
+            })
+            ->orderBy('name')
+            ->limit(self::SubjectSearchLimit)
+            ->get();
+
+        if ($this->listingSubjectType !== 'packaging' || $this->listingSubjectId === null || $packagingItems->contains('id', $this->listingSubjectId)) {
+            return $packagingItems;
+        }
+
+        $selectedPackagingItem = $this->packagingItems()->find($this->listingSubjectId);
+
+        if ($selectedPackagingItem instanceof UserPackagingItem) {
+            $packagingItems->prepend($selectedPackagingItem);
+        }
+
+        return $packagingItems;
     }
 
     private function user(): User

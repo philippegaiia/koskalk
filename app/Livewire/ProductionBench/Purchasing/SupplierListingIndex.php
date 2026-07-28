@@ -17,6 +17,8 @@ class SupplierListingIndex extends Component
 {
     use WithPagination;
 
+    private const array ALLOWED_PER_PAGE = [25, 50, 100];
+
     public string $search = '';
 
     public ?int $supplierId = null;
@@ -49,6 +51,7 @@ class SupplierListingIndex extends Component
 
     public function updatedPerPage(): void
     {
+        $this->perPage = $this->normalizedPerPage();
         $this->resetPage();
     }
 
@@ -79,7 +82,7 @@ class SupplierListingIndex extends Component
                 });
             })
             ->latest('id')
-            ->paginate($this->perPage);
+            ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.purchasing.supplier-listing-index', [
             'isBenchActive' => $access->isActive($workspace),
@@ -96,6 +99,11 @@ class SupplierListingIndex extends Component
     private function user(): User
     {
         return auth()->user() ?? abort(401);
+    }
+
+    private function normalizedPerPage(): int
+    {
+        return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
     }
 
     private function workspace(): Workspace

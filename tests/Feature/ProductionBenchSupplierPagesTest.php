@@ -7,8 +7,10 @@ use App\Livewire\ProductionBench\Purchasing\SupplierIndex;
 use App\Livewire\ProductionBench\Purchasing\SupplierListingIndex;
 use App\MassDisplaySystem;
 use App\Models\Ingredient;
+use App\Models\IngredientTranslation;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
@@ -243,6 +245,24 @@ it('shows entered and derived prices for total and per-unit supplier listings', 
         ->assertSee('840.00');
 });
 
+it('uses the workspace price unit for the live supplier listing preview', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace(MassDisplaySystem::UsCustomary);
+    $this->actingAs($owner);
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $ingredient = Ingredient::factory()->create();
+
+    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+        ->set([
+            'listingSubjectId' => $ingredient->id,
+            'netQuantity' => '200',
+            'netUnit' => 'kg',
+            'priceBasis' => ListingPriceBasis::PerUnit->value,
+            'priceAmount' => '2',
+            'priceUnit' => 'lb',
+        ])
+        ->assertSee('EUR 2.00 / lb · EUR 881.85 total');
+});
+
 it('keeps supplier and listing records inside the current workspace', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $foreignWorkspace = Workspace::factory()->create();
@@ -376,6 +396,106 @@ it('filters supplier listings by supplier and material type and paginates suppli
         ->assertSee('Paged supplier 0');
 });
 
+it('bounds manipulated supplier and listing page sizes', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+
+    Supplier::factory()->count(30)->for($workspace)->create();
+    SupplierListing::factory()->count(30)->for($workspace)->for($supplier)->for($ingredient)->create();
+
+    Livewire::test(SupplierIndex::class)
+        ->set('status', 'all')
+        ->set('perPage', 1000)
+        ->assertSet('perPage', 25)
+        ->assertViewHas('suppliers', fn ($suppliers): bool => $suppliers->count() === 25);
+
+    Livewire::test(SupplierListingIndex::class)
+        ->set('perPage', -1)
+        ->assertSet('perPage', 25)
+        ->assertViewHas('listingRows', fn ($listings): bool => $listings->count() === 25);
+});
+
+it('paginates supplier detail listings and keeps selected searched subjects visible', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $listingIngredient = Ingredient::factory()->create();
+    $selectedIngredient = Ingredient::factory()->create(['display_name' => 'Selected outside result']);
+    $searchResult = Ingredient::factory()->create(['display_name' => 'Search result oil']);
+    SupplierListing::factory()->count(30)->for($workspace)->for($supplier)->for($listingIngredient)
+        ->sequence(fn ($sequence) => ['purchase_format' => 'Page listing '.$sequence->index])
+        ->create();
+    Ingredient::factory()->count(55)->create();
+
+    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+        ->assertSee('Page listing 29')
+        ->assertDontSee('Page listing 0')
+        ->call('gotoPage', 2, 'supplier-listings')
+        ->assertSee('Page listing 0')
+        ->set('listingSubjectId', $selectedIngredient->id)
+        ->set('listingSubjectSearch', 'Search result')
+        ->assertSee('Selected outside result')
+        ->assertSee('Search result oil');
+});
+
+it('eager loads translated supplier detail materials', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+    app()->setLocale('fr');
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    IngredientTranslation::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'locale' => 'fr',
+        'display_name' => 'Huile d’olive',
+    ]);
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+
+    Livewire::withoutLazyLoading()
+        ->test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+        ->assertSee('Huile d’olive');
+});
+
+it('defaults supplier detail listings to active and identifies inactive listings in all states', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create(['purchase_format' => 'Active drum', 'is_active' => true]);
+    SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create(['purchase_format' => 'Inactive drum', 'is_active' => false]);
+
+    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+        ->assertSee('Active drum')
+        ->assertDontSee('Inactive drum')
+        ->set('listingStatus', 'all')
+        ->assertSee('Inactive drum')
+        ->assertSee('Inactive');
+});
+
+it('labels purchasing filters and marks the local supplier navigation as current', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+    $supplier = Supplier::factory()->for($workspace)->create();
+
+    $this->get(route('production-bench.purchasing.suppliers'))
+        ->assertSee('Search suppliers')
+        ->assertSee('Supplier state')
+        ->assertSee('Supplier sort')
+        ->assertSeeHtml('aria-current="page"');
+
+    $this->get(route('production-bench.purchasing.listings'))
+        ->assertSee('Search supplier listings')
+        ->assertSee('Filter by supplier')
+        ->assertSee('Material type')
+        ->assertSee('Listing state');
+
+    $this->get(route('production-bench.purchasing.supplier', $supplier))
+        ->assertSeeHtml('aria-current="page"');
+});
+
 /** @return array{0: User, 1: Workspace} */
 function activeSupplierPagesWorkspace(MassDisplaySystem $massDisplaySystem = MassDisplaySystem::Metric): array
 {
@@ -413,12 +533,12 @@ function createSupplierPageListing(
     );
 }
 
-it('presents a listing price directly', function (): void {
+it('presents currency-bearing supplier listing prices in metric and US customary workspaces', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create();
     $packaging = UserPackagingItem::factory()->for($owner)->create();
-    $listing = createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
+    $totalMassListing = createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
         'purchase_format' => 'Drum',
         'net_quantity' => '200',
         'net_unit' => 'kg',
@@ -427,7 +547,7 @@ it('presents a listing price directly', function (): void {
         'price_unit' => null,
     ]);
 
-    $packagingListing = createSupplierPageListing($owner, $workspace, $supplier, $packaging, [
+    $totalPackagingListing = createSupplierPageListing($owner, $workspace, $supplier, $packaging, [
         'purchase_format' => 'Carton',
         'net_quantity' => '500',
         'net_unit' => 'count',
@@ -436,6 +556,47 @@ it('presents a listing price directly', function (): void {
         'price_unit' => null,
     ]);
 
-    expect(app(SupplierListingPricePresentation::class)->present($listing, $workspace))->toBeArray()
-        ->and(app(SupplierListingPricePresentation::class)->present($packagingListing, $workspace))->toBeArray();
+    $perMassListing = createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
+        'purchase_format' => 'Pail',
+        'net_quantity' => '200',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '4.20',
+        'price_unit' => 'kg',
+    ]);
+    $perPackagingListing = createSupplierPageListing($owner, $workspace, $supplier, $packaging, [
+        'purchase_format' => 'Tray',
+        'net_quantity' => '500',
+        'net_unit' => 'count',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '0.18',
+        'price_unit' => 'count',
+    ]);
+    $pricePresentation = app(SupplierListingPricePresentation::class);
+
+    expect($pricePresentation->present($totalMassListing, $workspace))->toMatchArray([
+        'entered_price' => 'EUR 900.00',
+        'derived_price' => 'EUR 4.50 / kg',
+        'total_price' => 'EUR 900.00 total',
+    ])->and($pricePresentation->present($perMassListing, $workspace))->toMatchArray([
+        'entered_price' => 'EUR 4.20 / kg',
+        'derived_price' => 'EUR 840.00 total',
+        'total_price' => 'EUR 840.00 total',
+    ])->and($pricePresentation->present($perPackagingListing, $workspace))->toMatchArray([
+        'entered_price' => 'EUR 0.18 / item',
+        'derived_price' => 'EUR 90.00 total',
+        'total_price' => 'EUR 90.00 total',
+    ])->and($pricePresentation->present($totalPackagingListing, $workspace))->toMatchArray([
+        'entered_price' => 'EUR 90.00',
+        'derived_price' => 'EUR 0.18 / item',
+        'total_price' => 'EUR 90.00 total',
+    ]);
+
+    [, $usWorkspace] = activeSupplierPagesWorkspace(MassDisplaySystem::UsCustomary);
+
+    expect($pricePresentation->present($totalMassListing, $usWorkspace))->toMatchArray([
+        'entered_price' => 'EUR 900.00',
+        'derived_price' => 'EUR 2.04 / lb',
+        'total_price' => 'EUR 900.00 total',
+    ]);
 });

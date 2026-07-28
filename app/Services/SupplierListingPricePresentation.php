@@ -38,8 +38,8 @@ class SupplierListingPricePresentation
             return $this->formatted(
                 $listing,
                 $currency,
-                $this->formatAmount($pricePerDisplayUnit).' / '.$displayUnit,
-                $this->formatAmount($prices['total_price']).' '.$currency,
+                $this->currencyAmount($currency, $pricePerDisplayUnit).' / '.$displayUnit,
+                $this->currencyAmount($currency, $prices['total_price']).' total',
             );
         }
 
@@ -52,8 +52,8 @@ class SupplierListingPricePresentation
         return $this->formatted(
             $listing,
             $currency,
-            $this->formatAmount($prices['price_per_item']).' / item',
-            $this->formatAmount($prices['total_price']).' '.$currency,
+            $this->currencyAmount($currency, $prices['price_per_item']).' / item',
+            $this->currencyAmount($currency, $prices['total_price']).' total',
         );
     }
 
@@ -69,7 +69,7 @@ class SupplierListingPricePresentation
         if ($listing->price_basis === ListingPriceBasis::TotalPurchaseFormat) {
             return [
                 'basis_label' => 'Total purchase-format price',
-                'entered_price' => $this->formatAmount($listing->price_amount).' '.$currency,
+                'entered_price' => $this->currencyAmount($currency, $listing->price_amount),
                 'derived_price' => $unitPrice,
                 'total_price' => $totalPrice,
             ];
@@ -77,7 +77,7 @@ class SupplierListingPricePresentation
 
         return [
             'basis_label' => 'Price per unit of measure',
-            'entered_price' => $this->formatAmount($listing->price_amount).' / '.$listing->price_unit,
+            'entered_price' => $this->currencyAmount($currency, $listing->price_amount).' / '.($listing->ingredient_id !== null ? $listing->price_unit : 'item'),
             'derived_price' => $totalPrice,
             'total_price' => $totalPrice,
         ];
@@ -86,5 +86,10 @@ class SupplierListingPricePresentation
     private function formatAmount(string $amount): string
     {
         return number_format((float) $amount, 2);
+    }
+
+    private function currencyAmount(string $currency, string $amount): string
+    {
+        return $currency.' '.$this->formatAmount($amount);
     }
 }

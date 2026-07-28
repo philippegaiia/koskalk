@@ -145,4 +145,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         });
 
     Route::view('/dashboard/settings', 'settings')->name('settings');
+
+    Route::prefix('/dashboard/production-bench')
+        ->name('production-bench.')
+        ->group(function (): void {
+            Route::view('/', 'production-bench.home')->name('home');
+            Route::view('/inventory', 'production-bench.inventory')->name('inventory');
+            Route::view('/purchasing', 'production-bench.purchasing')->name('purchasing');
+        });
 });

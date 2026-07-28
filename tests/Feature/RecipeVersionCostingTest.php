@@ -223,6 +223,72 @@ it('saves formula costing separately while updating the user price memory', func
             ->value('price_per_kg'))->toBe('8.9123');
 });
 
+it('stores costing mass canonically and derives its displayed quantity', function (): void {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->saveCosting($user, $recipe, [
+        'oil_weight_for_costing' => 1,
+        'oil_unit_for_costing' => 'kg',
+        'units_produced' => 8,
+        'currency' => 'EUR',
+        'items' => [],
+        'packaging_items' => [],
+    ]);
+
+    $costing = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $draftVersion->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect($costing->oil_mass_grams_for_costing)->toBe('1000.000000000');
+
+    $costing->forceFill([
+        'oil_weight_for_costing' => 2.205,
+        'oil_unit_for_costing' => 'lb',
+    ])->save();
+
+    $payload = $service->costingPayload($recipe, $user);
+
+    expect($payload['settings']['oilUnitForCosting'])->toBe('lb')
+        ->and($payload['settings']['oilWeightForCosting'])->toBe(2.204622622);
+});
+
+it('defaults new costing from canonical formula mass in the formula display unit', function (): void {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = makeSharedCarrierOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, soapDraftPayload($ingredient));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $draftVersion->forceFill([
+        'batch_size' => 2.205,
+        'batch_unit' => 'lb',
+        'batch_mass_grams' => 1000,
+    ])->save();
+
+    $payload = $service->costingPayload($recipe, $user);
+    $costing = RecipeVersionCosting::query()
+        ->where('recipe_version_id', $draftVersion->id)
+        ->where('user_id', $user->id)
+        ->firstOrFail();
+
+    expect($payload['settings']['oilUnitForCosting'])->toBe('lb')
+        ->and($payload['settings']['oilWeightForCosting'])->toBe(2.204622622)
+        ->and($costing->oil_mass_grams_for_costing)->toBe('1000.000000000');
+});
+
 it('keeps the user ingredient price currency when costing updates the remembered amount', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

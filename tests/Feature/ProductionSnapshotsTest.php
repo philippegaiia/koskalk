@@ -264,6 +264,26 @@ it('prices production ingredient quantities using the saved batch unit', functio
         ->and($batch->cost_per_unit)->toBe('2.2680');
 });
 
+it('defaults a production preview from canonical formula mass', function (): void {
+    [$user, $recipe, $version] = productionSnapshotSoapRecipe();
+
+    $version->forceFill([
+        'batch_size' => 2.205,
+        'batch_unit' => 'lb',
+        'batch_mass_grams' => 1000,
+    ])->save();
+
+    $preview = app(ProductionSnapshotService::class)->preview(
+        $recipe,
+        $version->fresh(),
+        $user,
+        [],
+    );
+
+    expect($preview['batch_basis_unit'])->toBe('lb')
+        ->and($preview['batch_basis_value'])->toBe(2.204622622);
+});
+
 it('costs duplicate planned packaging rows independently', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     $packagingItem = UserPackagingItem::query()->create([

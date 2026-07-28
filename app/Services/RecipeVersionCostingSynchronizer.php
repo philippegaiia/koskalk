@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\MassUnit;
 use App\Models\Recipe;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -35,6 +36,7 @@ class RecipeVersionCostingSynchronizer
         private readonly UserIngredientPriceMemory $userIngredientPriceMemory,
         private readonly LiveCostingPricePropagationService $liveCostingPricePropagationService,
         private readonly CurrencyCatalog $currencyCatalog,
+        private readonly MassConverter $massConverter,
     ) {}
 
     /**
@@ -81,7 +83,7 @@ class RecipeVersionCostingSynchronizer
         return [
             'settings' => [
                 'id' => $costing->id,
-                'oilWeightForCosting' => $costing->oil_weight_for_costing === null ? null : (float) $costing->oil_weight_for_costing,
+                'oilWeightForCosting' => $this->costingDisplayMass($costing),
                 'oilUnitForCosting' => $costing->oil_unit_for_costing,
                 'unitsProduced' => $costing->units_produced,
                 'currency' => $costing->currency,
@@ -123,10 +125,15 @@ class RecipeVersionCostingSynchronizer
     {
         return DB::transaction(function () use ($payload, $recipeVersion, $user): array {
             $costing = $this->ensureCosting($recipeVersion, $user);
+            $oilUnit = $this->normalizeOilUnit($payload['oil_unit_for_costing'] ?? $costing->oil_unit_for_costing);
+            $oilWeight = $this->nullableFloat($payload['oil_weight_for_costing'] ?? null);
 
             $costing->fill([
-                'oil_weight_for_costing' => $this->nullableFloat($payload['oil_weight_for_costing'] ?? null),
-                'oil_unit_for_costing' => $this->normalizeOilUnit($payload['oil_unit_for_costing'] ?? $costing->oil_unit_for_costing),
+                'oil_weight_for_costing' => $oilWeight,
+                'oil_unit_for_costing' => $oilUnit,
+                'oil_mass_grams_for_costing' => $oilWeight === null
+                    ? null
+                    : $this->massConverter->toGrams($payload['oil_weight_for_costing'], $oilUnit),
                 'units_produced' => $this->nullableInt($payload['units_produced'] ?? null),
                 'currency' => $this->normalizeCurrency($payload['currency'] ?? $costing->currency),
             ]);
@@ -173,6 +180,7 @@ class RecipeVersionCostingSynchronizer
             $targetCosting->fill([
                 'oil_weight_for_costing' => $sourceCosting->oil_weight_for_costing,
                 'oil_unit_for_costing' => $sourceCosting->oil_unit_for_costing,
+                'oil_mass_grams_for_costing' => $sourceCosting->oil_mass_grams_for_costing,
                 'units_produced' => $sourceCosting->units_produced,
                 'currency' => $sourceCosting->currency,
             ]);
@@ -315,14 +323,20 @@ class RecipeVersionCostingSynchronizer
     public function ensureCosting(RecipeVersion $recipeVersion, User $user): RecipeVersionCosting
     {
         return DB::transaction(function () use ($recipeVersion, $user): RecipeVersionCosting {
+            $oilUnit = $this->normalizeOilUnit($recipeVersion->batch_unit);
+            $canonicalMass = $this->formulaCanonicalMass($recipeVersion, $oilUnit);
+
             $costing = RecipeVersionCosting::query()->firstOrCreate(
                 [
                     'recipe_version_id' => $recipeVersion->id,
                     'user_id' => $user->id,
                 ],
                 [
-                    'oil_weight_for_costing' => $recipeVersion->batch_size,
-                    'oil_unit_for_costing' => $recipeVersion->batch_unit,
+                    'oil_weight_for_costing' => $canonicalMass === null
+                        ? $recipeVersion->batch_size
+                        : $this->massConverter->fromGrams($canonicalMass, $oilUnit),
+                    'oil_unit_for_costing' => $oilUnit,
+                    'oil_mass_grams_for_costing' => $canonicalMass,
                     'currency' => $user->defaultCurrency(),
                 ],
             );
@@ -648,8 +662,34 @@ class RecipeVersionCostingSynchronizer
     /** Normalize an oil unit to one of the allowed values, defaulting to grams. */
     private function normalizeOilUnit(mixed $value): string
     {
-        return in_array($value, ['g', 'kg', 'oz', 'lb'], true)
-            ? $value
-            : 'g';
+        return MassUnit::tryFrom(is_string($value) ? $value : '')?->value
+            ?? MassUnit::Gram->value;
+    }
+
+    private function costingDisplayMass(RecipeVersionCosting $costing): ?float
+    {
+        if ($costing->oil_mass_grams_for_costing !== null) {
+            return (float) $this->massConverter->fromGrams(
+                $costing->oil_mass_grams_for_costing,
+                $costing->oil_unit_for_costing,
+            );
+        }
+
+        return $costing->oil_weight_for_costing === null
+            ? null
+            : (float) $costing->oil_weight_for_costing;
+    }
+
+    private function formulaCanonicalMass(RecipeVersion $recipeVersion, string $unit): ?string
+    {
+        if ($recipeVersion->batch_mass_grams !== null) {
+            return $recipeVersion->batch_mass_grams;
+        }
+
+        if (! is_numeric($recipeVersion->batch_size)) {
+            return null;
+        }
+
+        return $this->massConverter->toGrams($recipeVersion->batch_size, $unit);
     }
 }

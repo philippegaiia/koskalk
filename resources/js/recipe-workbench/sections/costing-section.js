@@ -5,6 +5,7 @@ import {
 } from '../bridge';
 import { nonNegativeNumber, number, parseDecimalInput, roundTo } from '../utils';
 import { formatDecimalInput } from '../number-format';
+import { MASS_UNITS, convertMass } from '../mass';
 
 const SYSTEM_PHASE_TRANSLATION_KEYS = {
     saponified_oils: 'costing.phases.saponification',
@@ -12,12 +13,10 @@ const SYSTEM_PHASE_TRANSLATION_KEYS = {
     fragrance: 'costing.phases.fragrance',
 };
 
-const WEIGHT_FACTORS_IN_KG = {
-    g: 0.001,
-    kg: 1,
-    oz: 0.028349523125,
-    lb: 0.45359237,
-};
+const costingMassUnits = typeof MASS_UNITS === 'undefined' ? ['g', 'kg', 'oz', 'lb'] : MASS_UNITS;
+const convertCostingMass = typeof convertMass === 'undefined'
+    ? (value) => Number(value) || 0
+    : convertMass;
 
 /**
  * Costing stays derived from the live formula rows, but it keeps its own
@@ -111,13 +110,34 @@ export function createCostingSection(payload) {
         },
 
         get costingBaseOilUnit() {
-            return ['g', 'kg', 'oz', 'lb'].includes(this.costingOilUnit) ? this.costingOilUnit : this.oilUnit;
+            return costingMassUnits.includes(this.costingOilUnit) ? this.costingOilUnit : this.oilUnit;
         },
 
         get costingBaseOilWeight() {
             const overrideWeight = number(this.costingOilWeight);
 
-            return overrideWeight > 0 ? overrideWeight : number(this.oilWeight);
+            return overrideWeight > 0
+                ? overrideWeight
+                : convertCostingMass(this.oilWeight, this.oilUnit, this.costingBaseOilUnit);
+        },
+
+        changeCostingUnit(nextUnit) {
+            if (!costingMassUnits.includes(nextUnit) || nextUnit === this.costingBaseOilUnit) {
+                return;
+            }
+
+            const overrideWeight = number(this.costingOilWeight);
+
+            if (overrideWeight > 0) {
+                this.costingOilWeight = convertCostingMass(
+                    overrideWeight,
+                    this.costingBaseOilUnit,
+                    nextUnit,
+                );
+            }
+
+            this.costingOilUnit = nextUnit;
+            this.scheduleCostingSave();
         },
 
         get costingFormulaRows() {
@@ -169,7 +189,7 @@ export function createCostingSection(payload) {
         },
 
         weightInKg(weight, unit = this.costingBaseOilUnit) {
-            return nonNegativeNumber(weight) * (WEIGHT_FACTORS_IN_KG[unit] ?? WEIGHT_FACTORS_IN_KG.g);
+            return convertCostingMass(nonNegativeNumber(weight), unit, 'kg');
         },
 
         lineCostForRow(row) {

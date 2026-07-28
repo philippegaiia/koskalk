@@ -16,6 +16,7 @@ class RecipeVersionCostPreviewBuilder
 {
     public function __construct(
         private readonly RecipeVersionCostingSynchronizer $costingSynchronizer,
+        private readonly MassConverter $massConverter,
     ) {}
 
     /**
@@ -171,7 +172,9 @@ class RecipeVersionCostPreviewBuilder
                         'quantity' => $quantity,
                         'unit' => $unit,
                         'price_per_kg' => $pricePerKg,
-                        'line_cost' => $pricePerKg === null ? 0.0 : round($this->quantityToKilograms($quantity, $unit) * $pricePerKg, 4),
+                        'line_cost' => $pricePerKg === null
+                            ? 0.0
+                            : round((float) $this->massConverter->convert($quantity, $unit, 'kg') * $pricePerKg, 4),
                         'is_unpriced' => $pricePerKg === null,
                     ];
                 }))
@@ -260,16 +263,6 @@ class RecipeVersionCostPreviewBuilder
     private function packagingKey(?int $packagingItemId, string $name): string
     {
         return ($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
-    }
-
-    private function quantityToKilograms(float $quantity, string $unit): float
-    {
-        return match ($unit) {
-            'kg' => $quantity,
-            'oz' => $quantity * 0.028349523125,
-            'lb' => $quantity * 0.45359237,
-            default => $quantity / 1000,
-        };
     }
 
     /**

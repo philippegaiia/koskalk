@@ -234,10 +234,13 @@ A quotation request contains:
 
 The request may be issued without prices. Soapkraft provides:
 
-- **Download PDF**
+- **Print / save PDF**
 - **Copy for email**
 
-The email action copies a subject and a plain-text summary. V1 does not send email.
+The first action opens a dedicated print layout and uses the browser's native
+print/save-as-PDF capability, consistent with Soapkraft's existing printable
+documents. It does not require a new server-side PDF dependency. The email action
+copies a subject and a plain-text summary. V1 does not send email.
 
 When issued, the request receives its own reference and an immutable document
 snapshot. Later conversion does not erase what was sent to the supplier.
@@ -271,7 +274,7 @@ applicable price.
 
 Soapkraft provides the same two outputs:
 
-- **Download PDF**
+- **Print / save PDF**
 - **Copy for email**
 
 The purchase-order output includes supplier and delivery addresses, line
@@ -537,7 +540,7 @@ Required responsibilities include:
 - reverse a receipt through compensating movements;
 - post a stock adjustment.
 
-Price normalization and unit conversion are shared domain services. PDF and
+Price normalization and unit conversion are shared domain services. Printable and
 email-copy formatting read immutable document snapshots, not mutable supplier
 listings.
 
@@ -619,7 +622,7 @@ Tests must cover the focused views and primary journeys:
 - find and filter supplier listings;
 - create and issue a quotation request;
 - record prices and convert the same lines to a purchase order;
-- generate PDF and copy-for-email content from snapshots;
+- generate print/save-PDF and copy-for-email content from snapshots;
 - issue a purchase order without repeating line entry;
 - partially and fully receive an order;
 - create a direct receipt;
@@ -647,7 +650,7 @@ The redesign is acceptable when a user can:
 2. add several purchase formats for the same existing ingredient;
 3. request a quotation without prices;
 4. enter the returned price once and reuse the same lines in a purchase order;
-5. produce a printable PDF or pasteable email version of the RFQ and PO;
+5. print or save the RFQ and PO as PDF, or copy a pasteable email version;
 6. receive sealed mass containers without pretending to weigh them;
 7. record a visible packaging shortage;
 8. retain both an internal lot and the supplier's batch number;

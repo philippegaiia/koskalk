@@ -21,6 +21,14 @@ return [
         'default_currency' => 'Default currency',
         'currency_search' => 'Search currencies',
         'currency_help' => 'Used by default for costing and pricing in this workspace.',
+        'mass_display' => 'Formula mass display',
+        'mass_display_help' => 'Sets the starting unit for new formulas. You can still convert any formula between g, kg, oz, and lb.',
+        'mass_systems' => [
+            'metric' => 'Metric',
+            'metric_example' => 'g and kg',
+            'us_customary' => 'US customary',
+            'us_customary_example' => 'oz and lb',
+        ],
     ],
     'actions' => [
         'save_preferences' => 'Save preferences',

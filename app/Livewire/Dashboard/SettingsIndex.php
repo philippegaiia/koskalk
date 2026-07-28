@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\MassDisplaySystem;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
@@ -31,6 +32,8 @@ class SettingsIndex extends Component
     public string $workspaceName = '';
 
     public string $workspaceCurrency = 'EUR';
+
+    public string $workspaceMassDisplaySystem = MassDisplaySystem::Metric->value;
 
     public string $preferencesStatus = '';
 
@@ -65,6 +68,8 @@ class SettingsIndex extends Component
             $this->workspaceId = $workspace->id;
             $this->workspaceName = $workspace->name;
             $this->workspaceCurrency = $workspace->default_currency ?? 'EUR';
+            $this->workspaceMassDisplaySystem = $workspace->mass_display_system?->value
+                ?? MassDisplaySystem::Metric->value;
         }
     }
 
@@ -131,6 +136,7 @@ class SettingsIndex extends Component
         $this->validate([
             'workspaceName' => ['required', 'string', 'max:255'],
             'workspaceCurrency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
+            'workspaceMassDisplaySystem' => ['required', Rule::enum(MassDisplaySystem::class)],
         ]);
 
         /** @var User $user */
@@ -146,6 +152,7 @@ class SettingsIndex extends Component
             $workspace->fill([
                 'name' => $this->workspaceName,
                 'default_currency' => $this->workspaceCurrency,
+                'mass_display_system' => $this->workspaceMassDisplaySystem,
             ]);
             $workspace->save();
         } else {
@@ -154,6 +161,7 @@ class SettingsIndex extends Component
                 'name' => $this->workspaceName,
                 'slug' => Str::slug($this->workspaceName.'-'.Str::random(6)),
                 'default_currency' => $this->workspaceCurrency,
+                'mass_display_system' => $this->workspaceMassDisplaySystem,
             ]);
 
             $workspace->members()->create([
@@ -192,6 +200,7 @@ class SettingsIndex extends Component
             'numberLocale' => __('number_formats.label'),
             'workspaceName' => __('settings.workspace.name'),
             'workspaceCurrency' => __('settings.workspace.default_currency'),
+            'workspaceMassDisplaySystem' => __('settings.workspace.mass_display'),
         ];
     }
 }

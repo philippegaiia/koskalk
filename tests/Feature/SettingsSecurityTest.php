@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Dashboard\SettingsIndex;
+use App\MassDisplaySystem;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
@@ -101,6 +102,28 @@ it('accepts only current selectable currencies for workspace settings', function
         ->assertSet('workspaceStatus', 'success');
 
     expect($user->company()?->refresh()->default_currency)->toBe('EUR');
+});
+
+it('accepts only supported workspace mass display systems', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create([
+        'name' => 'Soap Studio',
+        'mass_display_system' => MassDisplaySystem::Metric,
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(SettingsIndex::class)
+        ->assertSet('workspaceMassDisplaySystem', MassDisplaySystem::Metric->value)
+        ->set('workspaceMassDisplaySystem', 'imperial-ish')
+        ->call('saveWorkspace')
+        ->assertHasErrors(['workspaceMassDisplaySystem'])
+        ->set('workspaceMassDisplaySystem', MassDisplaySystem::UsCustomary->value)
+        ->call('saveWorkspace')
+        ->assertHasNoErrors()
+        ->assertSet('workspaceStatus', 'success');
+
+    expect($workspace->refresh()->mass_display_system)->toBe(MassDisplaySystem::UsCustomary);
 });
 
 it('denies workspace settings changes to non-owner members', function () {

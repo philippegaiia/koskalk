@@ -9,6 +9,7 @@ use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
+use App\OwnerType;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\StockUnitKind;
@@ -124,8 +125,23 @@ class SaveSupplierListing
         Workspace $workspace,
         Ingredient|UserPackagingItem $subject,
     ): void {
-        if ($subject instanceof Ingredient && ! $subject->isAccessibleBy($actor)) {
-            $this->invalid('ingredient', 'The ingredient is not accessible in this workspace.');
+        if ($subject instanceof Ingredient) {
+            $ingredientWorkspaceId = $subject->tenantWorkspaceId();
+
+            if ($ingredientWorkspaceId === null && $subject->tenantOwnerType() === OwnerType::Workspace) {
+                $ingredientWorkspaceId = $subject->tenantOwnerId();
+            }
+
+            if (
+                ! $subject->isAccessibleBy($actor)
+                || (
+                    ! $subject->isPublicCatalog()
+                    && $ingredientWorkspaceId !== null
+                    && $ingredientWorkspaceId !== $workspace->id
+                )
+            ) {
+                $this->invalid('subject', 'The ingredient is not accessible in this workspace.');
+            }
         }
 
         if ($subject instanceof UserPackagingItem && $subject->user_id !== $workspace->owner_user_id) {

@@ -232,8 +232,42 @@ it('accepts public and workspace-shared ingredients but rejects inaccessible pri
     expect($action->handle($owner, $workspace, $supplier, $public, $attributes))->toBeInstanceOf(SupplierListing::class)
         ->and($action->handle($owner, $workspace, $supplier, $shared, $attributes))->toBeInstanceOf(SupplierListing::class);
 
-    expect(fn (): SupplierListing => $action->handle($owner, $workspace, $supplier, $private, $attributes))
-        ->toThrow(ValidationException::class);
+    $exception = captureSupplierListingValidation(
+        fn (): SupplierListing => $action->handle($owner, $workspace, $supplier, $private, $attributes),
+    );
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception?->errors())->toHaveKey('subject')
+        ->and(SupplierListing::query()->count())->toBe(2);
+});
+
+it('rejects a private ingredient owned by another accessible workspace', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $otherWorkspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $foreignPrivateIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $otherWorkspace->id,
+        'workspace_id' => $otherWorkspace->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $exception = captureSupplierListingValidation(
+        fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+            $owner,
+            $workspace,
+            $supplier,
+            $foreignPrivateIngredient,
+            listingAttributes(),
+        ),
+    );
+
+    expect($foreignPrivateIngredient->isAccessibleBy($owner))->toBeTrue()
+        ->and($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception?->errors())->toHaveKey('subject')
+        ->and(SupplierListing::query()->count())->toBe(0);
 });
 
 it('rejects packaging owned by anyone other than the workspace owner', function (): void {
@@ -241,19 +275,25 @@ it('rejects packaging owned by anyone other than the workspace owner', function 
     $supplier = Supplier::factory()->for($workspace)->create();
     $foreignPackaging = UserPackagingItem::factory()->create();
 
-    expect(fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
-        $owner,
-        $workspace,
-        $supplier,
-        $foreignPackaging,
-        listingAttributes([
-            'net_quantity' => '500',
-            'net_unit' => 'count',
-            'price_amount' => '100',
-            'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
-            'price_unit' => null,
-        ]),
-    ))->toThrow(ValidationException::class);
+    $exception = captureSupplierListingValidation(
+        fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+            $owner,
+            $workspace,
+            $supplier,
+            $foreignPackaging,
+            listingAttributes([
+                'net_quantity' => '500',
+                'net_unit' => 'count',
+                'price_amount' => '100',
+                'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+                'price_unit' => null,
+            ]),
+        ),
+    );
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception?->errors())->toHaveKey('packaging_item')
+        ->and(SupplierListing::query()->count())->toBe(0);
 });
 
 it('rejects a listing supplier from another workspace', function (): void {
@@ -275,13 +315,19 @@ it('requires the listing subject to exist', function (): void {
     $supplier = Supplier::factory()->for($workspace)->create();
     $missingIngredient = Ingredient::factory()->make();
 
-    expect(fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
-        $owner,
-        $workspace,
-        $supplier,
-        $missingIngredient,
-        listingAttributes(),
-    ))->toThrow(ValidationException::class);
+    $exception = captureSupplierListingValidation(
+        fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+            $owner,
+            $workspace,
+            $supplier,
+            $missingIngredient,
+            listingAttributes(),
+        ),
+    );
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception?->errors())->toHaveKey('subject')
+        ->and(SupplierListing::query()->count())->toBe(0);
 });
 
 it('blocks supplier and listing changes when production bench is read-only', function (): void {
@@ -332,4 +378,15 @@ function listingAttributes(array $overrides = []): array
         'is_active' => true,
         ...$overrides,
     ];
+}
+
+function captureSupplierListingValidation(Closure $operation): ?ValidationException
+{
+    try {
+        $operation();
+    } catch (ValidationException $exception) {
+        return $exception;
+    }
+
+    return null;
 }

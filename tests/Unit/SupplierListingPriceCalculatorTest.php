@@ -71,6 +71,18 @@ it('normalizes count listing prices per item and per purchase format', function 
     ]);
 });
 
+it('accepts values at the decimal 20 scale 9 storage boundary', function (): void {
+    $prices = app(SupplierListingPriceCalculator::class)->forCount(
+        '99999999999',
+        ListingPriceBasis::TotalPurchaseFormat,
+        '99999999999.999999999',
+    );
+
+    expect($prices['canonical_quantity'])->toBe('99999999999.000000000')
+        ->and($prices['price_per_item'])->toBe('1.000000000')
+        ->and($prices['total_price'])->toBe('99999999999.999999999');
+});
+
 it('rejects invalid listing quantities, prices, and mass price units', function (
     string $quantity,
     ListingPriceBasis $basis,
@@ -100,3 +112,82 @@ it('rejects fractional, zero, and negative counts', function (string $quantity):
         enteredPrice: '1',
     ))->toThrow(ValidationException::class);
 })->with(['500.5', '0', '-3']);
+
+it('rejects mass values that cannot be stored as positive decimal 20 scale 9 values', function (
+    string $quantity,
+    ListingPriceBasis $basis,
+    string $price,
+    ?string $priceUnit,
+    string $field,
+): void {
+    expectStorageDecimalValidation(
+        fn (): array => app(SupplierListingPriceCalculator::class)->forMass(
+            netQuantity: $quantity,
+            netUnit: 'g',
+            basis: $basis,
+            enteredPrice: $price,
+            priceUnit: $priceUnit,
+        ),
+        $field,
+    );
+})->with([
+    'quantity rounds to zero' => [
+        '0.0000000001', ListingPriceBasis::TotalPurchaseFormat, '1', null, 'net_quantity',
+    ],
+    'price rounds to zero' => [
+        '1', ListingPriceBasis::TotalPurchaseFormat, '0.0000000001', null, 'price_amount',
+    ],
+    'quantity exceeds eleven integer digits' => [
+        '100000000000', ListingPriceBasis::TotalPurchaseFormat, '1', null, 'net_quantity',
+    ],
+    'price exceeds eleven integer digits' => [
+        '1', ListingPriceBasis::TotalPurchaseFormat, '100000000000', null, 'price_amount',
+    ],
+    'derived canonical price rounds to zero' => [
+        '99999999999', ListingPriceBasis::TotalPurchaseFormat, '0.000000001', null, 'price_per_canonical_unit',
+    ],
+    'derived kilogram price exceeds storage' => [
+        '1', ListingPriceBasis::PerUnit, '99999999999', 'g', 'price_per_kg',
+    ],
+    'derived total exceeds storage' => [
+        '99999999999', ListingPriceBasis::PerUnit, '2', 'g', 'total_price',
+    ],
+]);
+
+it('rejects count values whose canonical, per-item, or total values cannot be stored', function (
+    string $quantity,
+    ListingPriceBasis $basis,
+    string $price,
+    string $field,
+): void {
+    expectStorageDecimalValidation(
+        fn (): array => app(SupplierListingPriceCalculator::class)->forCount($quantity, $basis, $price),
+        $field,
+    );
+})->with([
+    'canonical count exceeds storage' => [
+        '100000000000', ListingPriceBasis::PerUnit, '1', 'net_quantity',
+    ],
+    'per-item total price rounds to zero' => [
+        '99999999999', ListingPriceBasis::TotalPurchaseFormat, '0.000000001', 'price_per_item',
+    ],
+    'count-derived total exceeds storage' => [
+        '99999999999', ListingPriceBasis::PerUnit, '2', 'total_price',
+    ],
+]);
+
+function expectStorageDecimalValidation(Closure $operation, string $field): void
+{
+    try {
+        $operation();
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey($field)
+            ->and($exception->errors()[$field])->toBe([
+                'The value must fit a positive DECIMAL(20,9) amount.',
+            ]);
+
+        return;
+    }
+
+    test()->fail("Expected a validation error for {$field}.");
+}

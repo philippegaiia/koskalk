@@ -4,10 +4,15 @@ use App\Livewire\ProductionBench\HomeIndex;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\PurchasingIndex;
 use App\Models\Ingredient;
+use App\Models\Supplier;
+use App\Models\SupplierListing;
 use App\Models\User;
+use App\Models\UserPackagingItem;
 use App\Models\Workspace;
+use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -111,5 +116,42 @@ it('renders opening stock and purchasing workspaces', function (): void {
         ->assertDontSee('Receive delivery');
 
     Livewire::test(InventoryIndex::class)->assertOk();
-    Livewire::test(PurchasingIndex::class)->assertOk();
+    Livewire::test(PurchasingIndex::class)
+        ->assertOk()
+        ->assertDontSeeHtml('<h1')
+        ->assertDontSeeHtml('class="flex flex-wrap gap-3"');
+});
+
+it('uses unit-of-measure wording for legacy packaging listing validation', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $packaging = UserPackagingItem::factory()->for($user)->create();
+    $this->actingAs($user);
+
+    $component = Livewire::test(PurchasingIndex::class)
+        ->set('listingSupplierId', $supplier->id)
+        ->set('listingSubjectType', 'packaging')
+        ->set('listingSubjectId', $packaging->id)
+        ->set('listingDescription', 'Carton')
+        ->set('listingQuantity', '1.5')
+        ->set('listingPackPrice', '10');
+
+    $validationException = null;
+
+    try {
+        $component->instance()->createListing(
+            app(ProductionBenchAccess::class),
+            app(MassConverter::class),
+        );
+    } catch (ValidationException $exception) {
+        $validationException = $exception;
+    }
+
+    expect($validationException)->toBeInstanceOf(ValidationException::class)
+        ->and($validationException?->errors())->toBe([
+            'listingQuantity' => ['Packaging quantity must be a whole number.'],
+        ])
+        ->and(SupplierListing::query()->count())->toBe(0);
 });

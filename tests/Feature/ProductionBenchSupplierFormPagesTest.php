@@ -23,8 +23,10 @@ it('protects dedicated supplier form routes', function (): void {
 it('shows the focused new supplier form to active workspaces', function (): void {
     [$owner, $workspace] = supplierFormWorkspace();
 
-    $this->actingAs($owner)
-        ->get(route('production-bench.purchasing.suppliers.create'))
+    $response = $this->actingAs($owner)
+        ->get(route('production-bench.purchasing.suppliers.create'));
+
+    $response
         ->assertOk()
         ->assertSee('New supplier')
         ->assertSee('Supplier')
@@ -40,7 +42,8 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertSee('A-Z, 0-9, - or _, max 16.')
         ->assertDontSee('Up to 16 letters, numbers, hyphens, or underscores.');
 
-    expect($workspace->exists)->toBeTrue()
+    expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
+        ->and($workspace->exists)->toBeTrue()
         ->and(Supplier::query()->where('workspace_id', $workspace->id)->count())->toBe(0);
 });
 
@@ -107,14 +110,17 @@ it('edits a workspace supplier without changing its public id', function (): voi
     $publicId = $supplier->public_id;
     $this->actingAs($owner);
 
-    $this->get(route('production-bench.purchasing.suppliers.edit', $supplier))
+    $response = $this->get(route('production-bench.purchasing.suppliers.edit', $supplier));
+
+    $response
         ->assertOk()
         ->assertSee('Edit supplier')
         ->assertSee('OLD_CODE')
         ->assertSee('Old name')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.supplier', $supplier).'"');
 
-    expect($supplier->fresh())
+    expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
+        ->and($supplier->fresh())
         ->code->toBe('OLD_CODE')
         ->name->toBe('Old name')
         ->city->toBe('Lyon');

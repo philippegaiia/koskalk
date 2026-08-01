@@ -2,14 +2,13 @@
     <x-production-bench.navigation />
     <x-production-bench.purchasing-navigation />
 
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <header>
         <div>
             @if ($lockedSupplier)
                 <p class="sk-eyebrow">{{ $lockedSupplier->code }} · {{ $lockedSupplier->name }}</p>
             @endif
             <h1 @class(['mt-2' => $lockedSupplier, 'text-3xl font-semibold text-[var(--color-ink-strong)]'])>New supplier listing</h1>
         </div>
-        <a href="{{ $lockedSupplier ? route('production-bench.purchasing.supplier', $lockedSupplier) : route('production-bench.purchasing.listings') }}" wire:navigate class="text-sm font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]">Cancel</a>
     </header>
 
     <form wire:submit="save" class="space-y-4">

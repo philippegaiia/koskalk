@@ -2,12 +2,9 @@
     <x-production-bench.navigation />
     <x-production-bench.purchasing-navigation />
 
-    <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <p class="sk-eyebrow">{{ $supplier->code }}</p>
-            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">Edit supplier</h1>
-        </div>
-        <a href="{{ route('production-bench.purchasing.supplier', $supplier) }}" wire:navigate class="text-sm font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]">Cancel</a>
+    <header>
+        <p class="sk-eyebrow">{{ $supplier->code }}</p>
+        <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">Edit supplier</h1>
     </header>
 
     <form wire:submit="save" class="space-y-4">

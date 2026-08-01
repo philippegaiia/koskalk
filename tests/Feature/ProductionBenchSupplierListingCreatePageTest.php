@@ -35,8 +35,10 @@ it('shows a focused global listing form with searchable catalog selectors', func
     Ingredient::factory()->create(['display_name' => 'Olive oil']);
     UserPackagingItem::factory()->for($owner)->create(['name' => 'Amber bottle']);
 
-    $this->actingAs($owner)
-        ->get('/dashboard/production-bench/purchasing/listings/new')
+    $response = $this->actingAs($owner)
+        ->get('/dashboard/production-bench/purchasing/listings/new');
+
+    $response
         ->assertOk()
         ->assertSee('New supplier listing')
         ->assertSee('Supplier')
@@ -52,6 +54,8 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertDontSee('Enter quantity and price.')
         ->assertDontSee('Number of purchase formats.')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.listings').'"');
+
+    expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1);
 
     $component = Livewire::test(SupplierListingCreate::class);
 

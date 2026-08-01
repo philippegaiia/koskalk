@@ -131,7 +131,7 @@ class PurchasingIndex extends Component
         ])->validate();
 
         if (! $isMass && preg_match('/^[1-9]\d*$/', $this->listingQuantity) !== 1) {
-            throw ValidationException::withMessages(['listingQuantity' => 'Packaging must use a whole count per pack.']);
+            throw ValidationException::withMessages(['listingQuantity' => 'Packaging quantity must be a whole number.']);
         }
 
         SupplierListing::query()->create([

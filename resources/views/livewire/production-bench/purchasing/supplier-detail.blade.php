@@ -4,12 +4,12 @@
 
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
-            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Production Bench is not active.</h1>
+            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Inactive</h1>
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">Production Bench</a>
         </section>
     @else
         @if ($isReadOnly)
-            <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">Read-only. Resume Production Bench to make changes.</p>
+            <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">Read-only. Resume to edit.</p>
         @endif
 
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -27,10 +27,9 @@
 
         <section class="grid gap-4 lg:grid-cols-3">
             <article class="sk-card p-5">
-                <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">Supplier</h2>
+                <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">Details</h2>
                 <dl class="mt-4 space-y-3 text-sm">
-                    <div><dt class="text-[var(--color-ink-soft)]">Code</dt><dd class="numeric mt-1 font-medium">{{ $supplier->code }}</dd></div>
-                    <div><dt class="text-[var(--color-ink-soft)]">State</dt><dd class="mt-1">{{ $supplier->is_active ? 'Active' : 'Inactive' }}</dd></div>
+                    <div><dt class="text-[var(--color-ink-soft)]">Status</dt><dd class="mt-1">{{ $supplier->is_active ? 'Active' : 'Inactive' }}</dd></div>
                     <div><dt class="text-[var(--color-ink-soft)]">Currency</dt><dd class="numeric mt-1">{{ $supplier->default_currency }}</dd></div>
                 </dl>
             </article>
@@ -61,12 +60,12 @@
 
         <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
             <div class="flex flex-col gap-3 border-b border-[var(--color-line)] p-5 sm:flex-row sm:items-end sm:justify-between">
-                <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">Supplier listings</h2>
-                <label class="space-y-1"><span class="text-sm font-medium">Listing state</span><select wire:model.live="listingStatus" class="sk-input"><option value="active">Active</option><option value="all">All states</option><option value="inactive">Inactive</option></select></label>
+                <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">Listings</h2>
+                <label class="space-y-1"><span class="text-sm font-medium">Status</span><select wire:model.live="listingStatus" class="sk-input"><option value="active">Active</option><option value="all">All</option><option value="inactive">Inactive</option></select></label>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[820px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]"><tr><th class="px-5 py-3">Material</th><th class="px-4 py-3">Purchase format</th><th class="px-4 py-3 text-right">Net quantity</th><th class="px-5 py-3 text-right">Price</th><th class="px-5 py-3">State</th></tr></thead>
+                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]"><tr><th class="px-5 py-3">Material</th><th class="px-4 py-3">Purchase format</th><th class="px-4 py-3 text-right">Net quantity</th><th class="px-5 py-3 text-right">Price</th><th class="px-5 py-3">Status</th></tr></thead>
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @forelse ($listingRows as $row)
                             @php($listing = $row['listing'])
@@ -78,7 +77,7 @@
                                 <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $listing->is_active ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' }}">{{ $listing->is_active ? 'Active' : 'Inactive' }}</span></td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">No supplier listings.</td></tr>
+                            <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">No listings.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

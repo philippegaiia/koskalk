@@ -92,7 +92,7 @@ class SupplierEdit extends Component implements HasForms
     {
         return [
             Section::make('Supplier')->columns(['md' => 2])->schema([
-                TextInput::make('code')->label('Code')->helperText('Up to 16 letters, numbers, hyphens, or underscores.')->required()->maxLength(16)->regex('/^[A-Za-z0-9_-]+$/')->mutateStateForValidationUsing(fn (?string $state): string => Str::upper(trim((string) $state)))->dehydrateStateUsing(fn (?string $state): string => Str::upper(trim((string) $state))),
+                TextInput::make('code')->label('Code')->helperText('A-Z, 0-9, - or _, max 16.')->required()->maxLength(16)->regex('/^[A-Za-z0-9_-]+$/')->mutateStateForValidationUsing(fn (?string $state): string => Str::upper(trim((string) $state)))->dehydrateStateUsing(fn (?string $state): string => Str::upper(trim((string) $state))),
                 TextInput::make('name')->label('Name')->required()->maxLength(255)->autocomplete('organization'),
                 Select::make('default_currency')->label('Currency')->options($this->currencyOptions())->searchable()->required(),
                 Toggle::make('is_active')->label('Active'),

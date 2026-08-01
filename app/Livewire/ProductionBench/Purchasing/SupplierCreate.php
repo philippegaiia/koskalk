@@ -84,7 +84,7 @@ class SupplierCreate extends Component implements HasForms
                 ->schema([
                     TextInput::make('code')
                         ->label('Code')
-                        ->helperText('Up to 16 letters, numbers, hyphens, or underscores.')
+                        ->helperText('A-Z, 0-9, - or _, max 16.')
                         ->required()
                         ->maxLength(16)
                         ->regex('/^[A-Za-z0-9_-]+$/')

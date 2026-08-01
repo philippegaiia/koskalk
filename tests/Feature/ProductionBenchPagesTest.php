@@ -20,6 +20,12 @@ it('uses factual production bench copy', function (): void {
     $this->actingAs($user)
         ->get(route('production-bench.home'))
         ->assertOk()
+        ->assertSee('Active')
+        ->assertSee('Quarantined')
+        ->assertSee('Incoming')
+        ->assertDontSee('Bench is active')
+        ->assertDontSee('lots waiting for release')
+        ->assertDontSee('orders still incoming')
         ->assertDontSee('Optional professional workspace')
         ->assertDontSee('Production without the ERP headache.')
         ->assertDontSee('Ready when your production grows')
@@ -28,6 +34,9 @@ it('uses factual production bench copy', function (): void {
     $this->get(route('production-bench.inventory'))
         ->assertOk()
         ->assertSee('Inventory')
+        ->assertSee('Physical includes quarantined stock.')
+        ->assertSee('Negative balances are allowed.')
+        ->assertDontSee('what production can actually use')
         ->assertDontSee('What is here, and what is usable.');
 });
 
@@ -42,6 +51,13 @@ it('exposes the production bench as a separate authenticated workspace', functio
         ->assertOk()
         ->assertSee('Production Bench')
         ->assertSee('Activate Production Bench');
+
+    $this->get(route('production-bench.inventory'))
+        ->assertOk()
+        ->assertSee('Inactive')
+        ->assertSee('Production Bench')
+        ->assertDontSee('Activate the bench to start inventory.')
+        ->assertDontSee('Go to Production Bench home');
 });
 
 it('activates and later preserves a read only bench', function (): void {
@@ -51,13 +67,19 @@ it('activates and later preserves a read only bench', function (): void {
 
     Livewire::test(HomeIndex::class)
         ->call('activate')
-        ->assertSee('Bench is active');
+        ->assertSee('Active')
+        ->assertDontSee('Bench is active');
 
     expect(app(ProductionBenchAccess::class)->isActive($workspace))->toBeTrue();
 
     Livewire::test(HomeIndex::class)
         ->call('cancel')
         ->assertSee('Read-only');
+
+    Livewire::test(InventoryIndex::class)
+        ->assertSee('Read-only. Resume to edit.')
+        ->assertDontSee('all stock history is preserved')
+        ->assertDontSee('Resume the Production Bench to post changes.');
 
     expect(app(ProductionBenchAccess::class)->isReadOnly($workspace))->toBeTrue();
 });
@@ -72,8 +94,11 @@ it('renders opening stock and purchasing workspaces', function (): void {
         ->get(route('production-bench.inventory'))
         ->assertOk()
         ->assertSee('Opening stock')
+        ->assertSee('Stock positions')
         ->assertSee('Physical')
-        ->assertSee('Available');
+        ->assertSee('Available')
+        ->assertDontSee('Add a lot already on your shelves')
+        ->assertDontSee('No lots yet. Add the stock already on your shelves above.');
 
     $this->actingAs($user)
         ->get(route('production-bench.purchasing'))

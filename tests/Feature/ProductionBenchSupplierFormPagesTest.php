@@ -36,7 +36,9 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertSeeHtml('class="fi-section')
         ->assertSeeHtml('wire:model="data.code"')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers').'"')
-        ->assertSeeHtml('maxlength="16"');
+        ->assertSeeHtml('maxlength="16"')
+        ->assertSee('A-Z, 0-9, - or _, max 16.')
+        ->assertDontSee('Up to 16 letters, numbers, hyphens, or underscores.');
 
     expect($workspace->exists)->toBeTrue()
         ->and(Supplier::query()->where('workspace_id', $workspace->id)->count())->toBe(0);

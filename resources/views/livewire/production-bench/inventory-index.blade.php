@@ -3,25 +3,24 @@
 
     @if (! $isActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
-            <h1 class="font-serif text-3xl text-[var(--color-ink-strong)]">Activate the bench to start inventory.</h1>
-            <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">Go to Production Bench home</a>
+            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Inactive</h1>
+            <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">Production Bench</a>
         </section>
     @else
         @if ($isReadOnly)
-            <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">Read-only: all stock history is preserved. Resume the Production Bench to post changes.</p>
+            <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">Read-only. Resume to edit.</p>
         @endif
 
         <header>
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Inventory</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">Physical includes quarantined stock. Available is what production can actually use. Negative balances are allowed and can be corrected after a drum or bottle is measured.</p>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">Physical includes quarantined stock. Available excludes quarantined and reserved stock. Negative balances are allowed.</p>
         </header>
 
         <section class="sk-card overflow-hidden">
             <div class="border-b border-[var(--color-line)] p-6">
-                <p class="sk-eyebrow">Opening stock</p>
-                <h2 class="mt-2 text-xl font-semibold text-[var(--color-ink-strong)]">Add a lot already on your shelves</h2>
+                <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">Opening stock</h2>
                 @if ($savedLotCode)
-                    <p role="status" class="mt-3 text-sm font-medium text-[var(--color-success-strong)]">Created internal lot <span class="font-mono">{{ $savedLotCode }}</span></p>
+                    <p role="status" class="mt-3 text-sm font-medium text-[var(--color-success-strong)]">Lot <span class="font-mono">{{ $savedLotCode }}</span> created.</p>
                 @endif
             </div>
 
@@ -60,7 +59,7 @@
                 </label>
 
                 <label class="space-y-2">
-                    <span class="text-sm font-medium">Initial state</span>
+                    <span class="text-sm font-medium">Status</span>
                     <select wire:model="status" @disabled($isReadOnly) class="sk-input w-full">
                         <option value="released">Released · available</option>
                         <option value="quarantined">Quarantined · unavailable</option>
@@ -84,37 +83,37 @@
 
                 <label class="flex items-start gap-3 md:col-span-2">
                     <input wire:model="provenanceComplete" type="checkbox" @disabled($isReadOnly) class="mt-1">
-                    <span><span class="block text-sm font-medium">Provenance is complete</span><span class="text-xs text-[var(--color-ink-soft)]">Leave unchecked when the original supplier or batch is unknown.</span></span>
+                    <span><span class="block text-sm font-medium">Provenance complete</span><span class="text-xs text-[var(--color-ink-soft)]">Supplier and batch are known.</span></span>
                 </label>
 
                 <label class="space-y-2 md:col-span-2">
                     <span class="text-sm font-medium">Notes</span>
-                    <input wire:model="notes" @disabled($isReadOnly) placeholder="Anything useful for later traceability" class="sk-input w-full">
+                    <input wire:model="notes" @disabled($isReadOnly) class="sk-input w-full">
                 </label>
 
                 <div class="md:col-span-2 xl:col-span-4">
-                    <button type="submit" @disabled($isReadOnly) class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40">Post opening lot</button>
+                    <button type="submit" @disabled($isReadOnly) class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40">Add lot</button>
                 </div>
             </form>
         </section>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
             <div class="flex items-end justify-between gap-4 border-b border-[var(--color-line)] p-6">
-                <div><p class="sk-eyebrow">Lot ledger</p><h2 class="mt-2 text-xl font-semibold">Stock positions</h2></div>
+                <h2 class="text-xl font-semibold">Stock positions</h2>
                 <p class="text-xs text-[var(--color-ink-muted)]">Mass shown in {{ $displayUnit }}</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[980px] text-left text-sm">
                     <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
                         <tr>
-                            <th class="px-5 py-3">Item / lot</th><th class="px-4 py-3">State</th><th class="px-4 py-3 text-right">Physical</th><th class="px-4 py-3 text-right">Quarantined</th><th class="px-4 py-3 text-right">Reserved</th><th class="px-4 py-3 text-right">Available</th><th class="px-4 py-3 text-right">Incoming</th><th class="px-4 py-3 text-right">Forecast</th><th class="px-5 py-3"></th>
+                            <th class="px-5 py-3">Item / lot</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Physical</th><th class="px-4 py-3 text-right">Quarantined</th><th class="px-4 py-3 text-right">Reserved</th><th class="px-4 py-3 text-right">Available</th><th class="px-4 py-3 text-right">Incoming</th><th class="px-4 py-3 text-right">Forecast</th><th class="px-5 py-3"></th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @forelse ($lots as $row)
                             @php($lot = $row['lot'])
                             <tr>
-                                <td class="px-5 py-4"><p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p><p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · supplier {{ $lot->supplier_batch_number }} @endif</p></td>
+                                <td class="px-5 py-4"><p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p><p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p></td>
                                 <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $lot->status->value === 'released' ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' }}">{{ ucfirst($lot->status->value) }}</span></td>
                                 @foreach (['physical', 'quarantined', 'reserved', 'available', 'incoming', 'forecast'] as $position)
                                     <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions'][$position] }}</td>
@@ -126,7 +125,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="px-6 py-12 text-center text-[var(--color-ink-soft)]">No lots yet. Add the stock already on your shelves above.</td></tr>
+                            <tr><td colspan="9" class="px-6 py-12 text-center text-[var(--color-ink-soft)]">No lots.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

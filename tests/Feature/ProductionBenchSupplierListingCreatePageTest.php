@@ -42,11 +42,15 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertSee('Supplier')
         ->assertSee('Purchase format')
         ->assertSee('Pricing')
+        ->assertSee('Calculated price')
+        ->assertSee('Purchase formats per order.')
         ->assertSee('Save supplier listing')
         ->assertSeeHtml('class="fi-section')
         ->assertSee('data.supplier_id', escape: false)
         ->assertSeeHtml('inputmode="decimal"')
         ->assertDontSee('Select an existing Soapkraft ingredient.')
+        ->assertDontSee('Enter quantity and price.')
+        ->assertDontSee('Number of purchase formats.')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.listings').'"');
 
     $component = Livewire::test(SupplierListingCreate::class);

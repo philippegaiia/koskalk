@@ -104,6 +104,8 @@ it('keeps supplier and listing browse pages operational and free of future featu
 
     foreach ($pages as $page) {
         $page
+            ->assertDontSee('Production Bench is not active.')
+            ->assertDontSee('Resume Production Bench to make changes.')
             ->assertDontSee('Manage suppliers')
             ->assertDontSee('manage suppliers')
             ->assertDontSee('The supplier you buy from')
@@ -256,12 +258,18 @@ it('lets read-only workspaces browse without allowing supplier mutations', funct
 
     Livewire::test(SupplierIndex::class)
         ->assertSee('Visible supplier')
-        ->assertSee('Read-only. Resume Production Bench to make changes.')
+        ->assertSee('Read-only. Resume to edit.')
+        ->assertDontSee('Resume Production Bench to make changes.')
         ->assertDontSee('Add supplier');
 
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
         ->assertSee('Visible supplier')
         ->assertDontSee('Edit supplier')
+        ->assertDontSee('Add listing');
+
+    Livewire::test(SupplierListingIndex::class)
+        ->assertSee('Read-only. Resume to edit.')
+        ->assertDontSee('Resume Production Bench to make changes.')
         ->assertDontSee('Add listing');
 });
 
@@ -273,14 +281,16 @@ it('shows neutral inactive and read-only supplier states', function (): void {
 
     $this->get(route('production-bench.purchasing.suppliers'))
         ->assertOk()
-        ->assertSee('Production Bench is not active.')
+        ->assertSee('Inactive')
+        ->assertSee('Production Bench')
+        ->assertDontSee('Production Bench is not active.')
         ->assertDontSee('manage suppliers');
 
     app(ProductionBenchAccess::class)->activate($owner, $workspace);
     app(ProductionBenchAccess::class)->cancel($owner, $workspace);
 
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->assertSee('Read-only. Resume Production Bench to make changes.')
+        ->assertSee('Read-only. Resume to edit.')
         ->assertDontSee('Add listing');
 });
 
@@ -464,16 +474,23 @@ it('labels purchasing filters and marks the local supplier navigation as current
     $supplier = Supplier::factory()->for($workspace)->create();
 
     $this->get(route('production-bench.purchasing.suppliers'))
-        ->assertSee('Search suppliers')
-        ->assertSee('Supplier state')
-        ->assertSee('Supplier sort')
+        ->assertSee('Search')
+        ->assertSee('Status')
+        ->assertSee('Sort')
+        ->assertDontSee('Search suppliers')
+        ->assertDontSee('Supplier state')
+        ->assertDontSee('Supplier sort')
         ->assertSeeHtml('aria-current="page"');
 
     $this->get(route('production-bench.purchasing.listings'))
-        ->assertSee('Search supplier listings')
-        ->assertSee('Filter by supplier')
-        ->assertSee('Material type')
-        ->assertSee('Listing state');
+        ->assertSee('Search')
+        ->assertSee('Supplier')
+        ->assertSee('Type')
+        ->assertSee('Status')
+        ->assertDontSee('Search supplier listings')
+        ->assertDontSee('Filter by supplier')
+        ->assertDontSee('Material type')
+        ->assertDontSee('Listing state');
 
     $this->get(route('production-bench.purchasing.supplier', $supplier))
         ->assertSeeHtml('aria-current="page"');

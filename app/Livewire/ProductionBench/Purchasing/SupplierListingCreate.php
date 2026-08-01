@@ -262,7 +262,7 @@ class SupplierListingCreate extends Component implements HasForms
                 Section::make('Ordering')
                     ->columns(['md' => 2])
                     ->schema([
-                        TextInput::make('minimum_packs')->label('Minimum order')->helperText('Number of purchase formats.')->integer()->minValue(1)->required(),
+                        TextInput::make('minimum_packs')->label('Minimum order')->helperText('Purchase formats per order.')->integer()->minValue(1)->required(),
                         Toggle::make('is_active')->label('Active')->default(true),
                         Textarea::make('notes')->label('Notes')->rows(4)->columnSpanFull(),
                     ]),
@@ -542,7 +542,7 @@ class SupplierListingCreate extends Component implements HasForms
     {
         $preview = $this->pricePreview();
 
-        return $preview === null ? 'Enter quantity and price.' : $preview['unit'].' · '.$preview['total'];
+        return $preview === null ? '—' : $preview['unit'].' · '.$preview['total'];
     }
 
     /** @return array{unit: string, total: string}|null */

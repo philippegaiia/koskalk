@@ -20,7 +20,7 @@
             <div class="flex flex-wrap gap-3">
                 @if ($isBenchActive)
                     <a href="{{ route('production-bench.purchasing.suppliers.edit', $supplier) }}" wire:navigate class="rounded-full border border-[var(--color-line-strong)] px-5 py-2.5 text-center text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel-strong)]">Edit supplier</a>
-                    <a href="{{ route('production-bench.purchasing.listings', ['supplierId' => $supplier->id]) }}" wire:navigate class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">Add listing</a>
+                    <a href="{{ route('production-bench.purchasing.suppliers.listings.create', $supplier) }}" wire:navigate class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">Add listing</a>
                 @endif
             </div>
         </header>

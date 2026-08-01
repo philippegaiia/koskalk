@@ -33,9 +33,11 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertSee('Notes')
         ->assertSee('Save supplier')
         ->assertSee('Cancel')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers').'"')
         ->assertSeeHtml('maxlength="16"');
 
-    expect($workspace->exists)->toBeTrue();
+    expect($workspace->exists)->toBeTrue()
+        ->and(Supplier::query()->where('workspace_id', $workspace->id)->count())->toBe(0);
 });
 
 it('creates a supplier with structured fields and opens its detail page', function (): void {
@@ -106,7 +108,13 @@ it('edits a workspace supplier without changing its public id', function (): voi
         ->assertOk()
         ->assertSee('Edit supplier')
         ->assertSee('OLD_CODE')
-        ->assertSee('Old name');
+        ->assertSee('Old name')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.supplier', $supplier).'"');
+
+    expect($supplier->fresh())
+        ->code->toBe('OLD_CODE')
+        ->name->toBe('Old name')
+        ->city->toBe('Lyon');
 
     Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
         ->set('code', 'new-code')

@@ -79,9 +79,14 @@ it('keeps supplier mutations out of the index and detail pages', function (): vo
         ->assertSee('12 Market Road')
         ->assertSee('Edit supplier')
         ->assertSee('Add listing')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.listings.create', $supplier).'"')
         ->assertDontSee('Save supplier')
         ->assertDontSeeHtml('wire:submit="saveSupplier"')
         ->assertDontSeeHtml('wire:submit="saveListing"');
+
+    Livewire::test(SupplierListingIndex::class)
+        ->assertSee('Add listing')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.listings.create').'"');
 });
 
 it('shows mass and packaging supplier listings on the supplier detail page', function (): void {
@@ -247,7 +252,7 @@ it('shows neutral inactive and read-only supplier states', function (): void {
 it('searches and filters focused supplier records', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $this->actingAs($owner);
-    $activeSupplier = Supplier::factory()->for($workspace)->create(['name' => 'Active Oils', 'is_active' => true]);
+    $activeSupplier = Supplier::factory()->for($workspace)->create(['code' => 'OLVEA_01', 'name' => 'Active Oils', 'is_active' => true]);
     $inactiveSupplier = Supplier::factory()->for($workspace)->create(['name' => 'Inactive Oils', 'is_active' => false]);
     $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
     SupplierListing::factory()->for($workspace)->for($activeSupplier)->for($ingredient)->create(['purchase_format' => 'Tin']);
@@ -255,6 +260,11 @@ it('searches and filters focused supplier records', function (): void {
     Livewire::test(SupplierIndex::class)
         ->set('search', 'active')
         ->set('status', 'active')
+        ->assertSee('Active Oils')
+        ->assertDontSee('Inactive Oils');
+
+    Livewire::test(SupplierIndex::class)
+        ->set('search', 'olvea_01')
         ->assertSee('Active Oils')
         ->assertDontSee('Inactive Oils');
 

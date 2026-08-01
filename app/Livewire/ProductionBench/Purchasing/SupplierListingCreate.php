@@ -87,7 +87,7 @@ class SupplierListingCreate extends Component
     {
         $this->assertPageIsWritable($access);
         $workspace = $this->workspace();
-        $this->currency = $workspace->default_currency;
+        $this->currency = $this->newListingCurrency();
         $this->netUnit = $workspace->mass_display_system->priceUnit()->value;
         $this->priceUnit = $workspace->mass_display_system->priceUnit()->value;
 
@@ -102,7 +102,7 @@ class SupplierListingCreate extends Component
         $lockedSupplier = $this->workspaceSupplierByPublicId($supplierPublicId);
         $this->lockedSupplierPublicId = $lockedSupplier->public_id;
         $this->supplierId = $lockedSupplier->id;
-        $this->currency = $lockedSupplier->default_currency;
+        $this->currency = $this->newListingCurrency($lockedSupplier);
         $this->ingredientOptions = $this->loadIngredientOptions();
     }
 
@@ -117,7 +117,7 @@ class SupplierListingCreate extends Component
         $supplier = $this->workspaceSupplierById($this->supplierId);
 
         if ($supplier instanceof Supplier) {
-            $this->currency = $supplier->default_currency;
+            $this->currency = $this->newListingCurrency($supplier);
         }
     }
 
@@ -514,6 +514,17 @@ class SupplierListingCreate extends Component
     private function normalizedSearch(string $search): string
     {
         return Str::limit(trim($search), 100, '');
+    }
+
+    private function newListingCurrency(?Supplier $supplier = null): string
+    {
+        foreach ([$supplier?->default_currency, $this->workspace()->default_currency] as $currency) {
+            if (is_string($currency) && $this->currencyCatalog->isSelectable($currency)) {
+                return Str::upper($currency);
+            }
+        }
+
+        return '';
     }
 
     private function ingredientIsAvailable(Ingredient $ingredient): bool

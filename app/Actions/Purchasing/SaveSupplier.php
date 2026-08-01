@@ -98,6 +98,11 @@ class SaveSupplier
             : strtoupper($countryCode);
         $data['default_currency'] = strtoupper((string) ($data['default_currency'] ?? ''));
         $data['code'] = Str::upper((string) ($data['code'] ?? ''));
+        $allowedCurrencies = $this->currencyCatalog->selectableCodes();
+
+        if ($supplier instanceof Supplier && $this->currencyCatalog->isKnown($supplier->default_currency)) {
+            $allowedCurrencies[] = Str::upper($supplier->default_currency);
+        }
 
         return Validator::make($data, [
             'code' => [
@@ -132,7 +137,7 @@ class SaveSupplier
             'contact_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
-            'default_currency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
+            'default_currency' => ['required', 'string', 'size:3', Rule::in(array_unique($allowedCurrencies))],
             'notes' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
         ])->validate();

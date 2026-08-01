@@ -121,11 +121,17 @@ class SupplierEdit extends Component
     /** @return array<string, array<int, mixed>> */
     private function rules(): array
     {
+        $allowedCurrencies = $this->currencyCatalog->selectableCodes();
+
+        if ($this->supplier instanceof Supplier && $this->currencyCatalog->isKnown($this->supplier->default_currency)) {
+            $allowedCurrencies[] = Str::upper($this->supplier->default_currency);
+        }
+
         return [
             'code' => ['required', 'string', 'max:16', 'regex:/^[A-Z0-9_-]+$/'],
             'name' => ['required', 'string', 'max:255'],
             'isActive' => ['required', 'boolean'],
-            'defaultCurrency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
+            'defaultCurrency' => ['required', 'string', 'size:3', Rule::in(array_unique($allowedCurrencies))],
             'contactName' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],

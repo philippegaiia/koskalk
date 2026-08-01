@@ -117,6 +117,43 @@ it('rejects unsupported supplier currencies and non-http websites at the action 
     expect(Supplier::query()->count())->toBe(0);
 });
 
+it('preserves only the unchanged historical currency exception when updating a supplier', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create([
+        'default_currency' => 'HRK',
+        'city' => 'Zagreb',
+    ]);
+    $action = app(SaveSupplier::class);
+
+    $updated = $action->handle($owner, $workspace, ['city' => 'Split'], $supplier);
+
+    expect($updated->default_currency)->toBe('HRK')
+        ->and($updated->city)->toBe('Split');
+
+    $replacementException = captureValidationException(
+        fn (): Supplier => $action->handle($owner, $workspace, [
+            'default_currency' => 'ZWL',
+        ], $supplier),
+    );
+    $newHistoricalException = captureValidationException(
+        fn (): Supplier => $action->handle($owner, $workspace, [
+            'code' => 'HISTORICAL',
+            'name' => 'Historical currency supplier',
+            'default_currency' => 'HRK',
+            'is_active' => true,
+        ]),
+    );
+    $invalidPersistedSupplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'ZZZ']);
+    $invalidPersistedException = captureValidationException(
+        fn (): Supplier => $action->handle($owner, $workspace, ['city' => 'Paris'], $invalidPersistedSupplier),
+    );
+
+    expect($replacementException)->toBeInstanceOf(ValidationException::class)
+        ->and($newHistoricalException)->toBeInstanceOf(ValidationException::class)
+        ->and($invalidPersistedException)->toBeInstanceOf(ValidationException::class)
+        ->and($supplier->fresh()?->default_currency)->toBe('HRK');
+});
+
 it('rejects unsupported listing currencies at the action boundary', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
@@ -135,6 +172,60 @@ it('rejects unsupported listing currencies at the action boundary', function ():
     expect($exception)->toBeInstanceOf(ValidationException::class)
         ->and($exception?->errors())->toHaveKey('currency')
         ->and(SupplierListing::query()->count())->toBe(0);
+});
+
+it('preserves only the unchanged historical currency exception when updating a listing', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $ingredient = Ingredient::factory()->create();
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create(['currency' => 'HRK']);
+    $action = app(SaveSupplierListing::class);
+
+    $updated = $action->handle(
+        $owner,
+        $workspace,
+        $supplier,
+        $ingredient,
+        listingAttributes(['notes' => 'Updated note']),
+        $listing,
+    );
+
+    expect($updated->currency)->toBe('HRK')
+        ->and($updated->notes)->toBe('Updated note');
+
+    $replacementException = captureValidationException(
+        fn (): SupplierListing => $action->handle(
+            $owner,
+            $workspace,
+            $supplier,
+            $ingredient,
+            listingAttributes(['currency' => 'ZWL']),
+            $listing,
+        ),
+    );
+    $invalidPersistedListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create(['currency' => 'ZZZ']);
+    $invalidPersistedException = captureValidationException(
+        fn (): SupplierListing => $action->handle(
+            $owner,
+            $workspace,
+            $supplier,
+            $ingredient,
+            listingAttributes(['notes' => 'Must not save']),
+            $invalidPersistedListing,
+        ),
+    );
+
+    expect($replacementException)->toBeInstanceOf(ValidationException::class)
+        ->and($invalidPersistedException)->toBeInstanceOf(ValidationException::class)
+        ->and($listing->fresh()?->currency)->toBe('HRK');
 });
 
 it('saves a per-unit mass listing without updating user ingredient price memory', function (): void {

@@ -69,7 +69,7 @@ class SaveSupplierListing
                 $this->invalid('subject', 'A supplier listing cannot be moved to a different subject.');
             }
 
-            $data = $this->validatedAttributes($attributes, $currentSupplier, $currentSubject);
+            $data = $this->validatedAttributes($attributes, $currentSupplier, $currentSubject, $currentListing);
 
             if ($currentSubject instanceof Ingredient) {
                 $data['net_quantity'] = $this->priceCalculator->normalizeMassQuantity(
@@ -164,9 +164,15 @@ class SaveSupplierListing
         array $attributes,
         Supplier $supplier,
         Ingredient|UserPackagingItem $subject,
+        ?SupplierListing $listing,
     ): array {
         $data = $this->normalizeStrings($attributes);
-        $data['currency'] = strtoupper((string) ($data['currency'] ?? $supplier->default_currency));
+        $data['currency'] = strtoupper((string) ($data['currency'] ?? $listing?->currency ?? $supplier->default_currency));
+        $allowedCurrencies = $this->currencyCatalog->selectableCodes();
+
+        if ($listing instanceof SupplierListing && $this->currencyCatalog->isKnown($listing->currency)) {
+            $allowedCurrencies[] = strtoupper($listing->currency);
+        }
 
         $validated = Validator::make($data, [
             'purchase_format' => ['required', 'string', 'max:255'],
@@ -180,7 +186,7 @@ class SaveSupplierListing
             'minimum_packs' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
-            'currency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
+            'currency' => ['required', 'string', 'size:3', Rule::in(array_unique($allowedCurrencies))],
             'price_recorded_at' => ['nullable', 'date'],
         ])->validate();
 

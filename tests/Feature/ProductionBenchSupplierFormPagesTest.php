@@ -179,6 +179,37 @@ it('rejects unsupported currencies and non-http supplier websites', function ():
         ->and($supplier->fresh()?->website)->not->toBe('smb://files.example/supplier');
 });
 
+it('preserves an unchanged historical currency while editing other supplier fields', function (): void {
+    [$owner, $workspace] = supplierFormWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create([
+        'default_currency' => 'HRK',
+        'city' => 'Zagreb',
+    ]);
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
+        ->assertSet('defaultCurrency', 'HRK')
+        ->set('city', 'Split')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($supplier->fresh()?->default_currency)->toBe('HRK')
+        ->and($supplier->fresh()?->city)->toBe('Split');
+});
+
+it('does not let a historical supplier currency be replaced by another unavailable code', function (): void {
+    [$owner, $workspace] = supplierFormWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'HRK']);
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
+        ->set('defaultCurrency', 'ZWL')
+        ->call('save')
+        ->assertHasErrors(['defaultCurrency']);
+
+    expect($supplier->fresh()?->default_currency)->toBe('HRK');
+});
+
 it('does not open supplier mutation pages for inactive or read-only workspaces', function (): void {
     $inactiveOwner = User::factory()->create();
     $inactiveWorkspace = Workspace::factory()->for($inactiveOwner, 'owner')->create();

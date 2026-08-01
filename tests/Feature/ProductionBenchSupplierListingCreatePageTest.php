@@ -204,6 +204,29 @@ it('rejects a currency outside the maintained catalog', function (): void {
     expect(SupplierListing::query()->count())->toBe(0);
 });
 
+it('does not preselect a historical supplier currency for a new listing', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'HRK']);
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class)
+        ->assertSet('currency', 'EUR')
+        ->set('supplierId', $supplier->id)
+        ->assertSet('currency', 'EUR');
+
+    Livewire::test(SupplierListingCreate::class, ['supplier' => $supplier->public_id])
+        ->assertSet('currency', 'EUR');
+
+    $historicalOwner = User::factory()->create();
+    $historicalWorkspace = Workspace::factory()->for($historicalOwner, 'owner')->create(['default_currency' => 'HRK']);
+    $historicalSupplier = Supplier::factory()->for($historicalWorkspace)->create(['default_currency' => 'HRK']);
+    app(ProductionBenchAccess::class)->activate($historicalOwner, $historicalWorkspace);
+    $this->actingAs($historicalOwner);
+
+    Livewire::test(SupplierListingCreate::class, ['supplier' => $historicalSupplier->public_id])
+        ->assertSet('currency', '');
+});
+
 it('bounds server-side catalog searches and retains selected rows', function (): void {
     [$owner, $workspace] = listingCreateWorkspace();
     $suppliers = Supplier::factory()->count(30)->for($workspace)->sequence(
@@ -212,10 +235,10 @@ it('bounds server-side catalog searches and retains selected rows', function ():
             'name' => sprintf('Supplier %02d', $sequence->index + 1),
         ],
     )->create();
-    Ingredient::factory()->count(30)->sequence(
+    $ingredients = Ingredient::factory()->count(30)->sequence(
         fn ($sequence): array => ['display_name' => sprintf('Ingredient %02d', $sequence->index + 1)],
     )->create();
-    UserPackagingItem::factory()->count(30)->for($owner)->sequence(
+    $packagingItems = UserPackagingItem::factory()->count(30)->for($owner)->sequence(
         fn ($sequence): array => ['name' => sprintf('Packaging %02d', $sequence->index + 1)],
     )->create();
     $selectedSupplier = $suppliers->last();
@@ -251,10 +274,24 @@ it('bounds server-side catalog searches and retains selected rows', function ():
             fn (string $sql): bool => Str::contains($sql, 'user_packaging_items'),
         ))->toBeFalse();
 
+    $component
+        ->set('ingredientId', $ingredients->last()->id)
+        ->call('searchIngredientOptions', 'no matching ingredient');
+
+    expect(collect($component->get('ingredientOptions'))->pluck('id')->all())
+        ->toBe([$ingredients->last()->id]);
+
     $component->set('materialType', 'packaging');
 
     expect($component->get('ingredientOptions'))->toBe([])
         ->and($component->get('packagingOptions'))->toHaveCount(20);
+
+    $component
+        ->set('packagingItemId', $packagingItems->last()->id)
+        ->call('searchPackagingOptions', 'no matching packaging item');
+
+    expect(collect($component->get('packagingOptions'))->pluck('id')->all())
+        ->toBe([$packagingItems->last()->id]);
 });
 
 it('does not requery supplier or material catalogs for price preview updates', function (): void {

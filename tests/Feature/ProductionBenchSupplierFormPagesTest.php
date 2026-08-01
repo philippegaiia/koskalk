@@ -1,0 +1,194 @@
+<?php
+
+use App\Livewire\ProductionBench\Purchasing\SupplierCreate;
+use App\Livewire\ProductionBench\Purchasing\SupplierEdit;
+use App\Models\Supplier;
+use App\Models\User;
+use App\Models\Workspace;
+use App\Services\ProductionBenchAccess;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
+
+it('protects dedicated supplier form routes', function (): void {
+    $supplier = Supplier::factory()->create();
+
+    $this->get(route('production-bench.purchasing.suppliers.create'))
+        ->assertRedirect(route('login'));
+    $this->get(route('production-bench.purchasing.suppliers.edit', $supplier))
+        ->assertRedirect(route('login'));
+});
+
+it('shows the focused new supplier form to active workspaces', function (): void {
+    [$owner, $workspace] = supplierFormWorkspace();
+
+    $this->actingAs($owner)
+        ->get(route('production-bench.purchasing.suppliers.create'))
+        ->assertOk()
+        ->assertSee('New supplier')
+        ->assertSee('Supplier')
+        ->assertSee('Main contact')
+        ->assertSee('Address')
+        ->assertSee('Notes')
+        ->assertSee('Save supplier')
+        ->assertSee('Cancel')
+        ->assertSeeHtml('maxlength="16"');
+
+    expect($workspace->exists)->toBeTrue();
+});
+
+it('creates a supplier with structured fields and opens its detail page', function (): void {
+    [$owner, $workspace] = supplierFormWorkspace();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierCreate::class)
+        ->set([
+            'code' => ' oil_fr_01 ',
+            'name' => 'French Oils',
+            'isActive' => true,
+            'defaultCurrency' => 'eur',
+            'contactName' => 'Marie Dupont',
+            'email' => 'marie@french-oils.example',
+            'phone' => '+33 1 22 33 44 55',
+            'website' => 'https://french-oils.example',
+            'addressLine1' => '12 rue des Huiles',
+            'addressLine2' => 'Bâtiment B',
+            'city' => 'Marseille',
+            'region' => 'Provence',
+            'postalCode' => '13001',
+            'countryCode' => 'fr',
+            'notes' => 'Main oil supplier.',
+        ])
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $supplier = Supplier::query()
+        ->where('workspace_id', $workspace->id)
+        ->where('code', 'OIL_FR_01')
+        ->firstOrFail();
+
+    expect($supplier)->toMatchArray([
+        'name' => 'French Oils',
+        'contact_name' => 'Marie Dupont',
+        'email' => 'marie@french-oils.example',
+        'phone' => '+33 1 22 33 44 55',
+        'website' => 'https://french-oils.example',
+        'address_line_1' => '12 rue des Huiles',
+        'address_line_2' => 'Bâtiment B',
+        'city' => 'Marseille',
+        'region' => 'Provence',
+        'postal_code' => '13001',
+        'country_code' => 'FR',
+        'default_currency' => 'EUR',
+        'notes' => 'Main oil supplier.',
+        'is_active' => true,
+    ]);
+
+    Livewire::test(SupplierCreate::class)
+        ->set('code', 'SECOND')
+        ->set('name', 'Second supplier')
+        ->call('save')
+        ->assertRedirect(route('production-bench.purchasing.supplier', Supplier::query()->where('code', 'SECOND')->firstOrFail()));
+});
+
+it('edits a workspace supplier without changing its public id', function (): void {
+    [$owner, $workspace] = supplierFormWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create([
+        'code' => 'OLD_CODE',
+        'name' => 'Old name',
+        'city' => 'Lyon',
+    ]);
+    $publicId = $supplier->public_id;
+    $this->actingAs($owner);
+
+    $this->get(route('production-bench.purchasing.suppliers.edit', $supplier))
+        ->assertOk()
+        ->assertSee('Edit supplier')
+        ->assertSee('OLD_CODE')
+        ->assertSee('Old name');
+
+    Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
+        ->set('code', 'new-code')
+        ->set('name', 'New name')
+        ->set('city', 'Paris')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('production-bench.purchasing.supplier', $supplier));
+
+    expect($supplier->fresh())
+        ->public_id->toBe($publicId)
+        ->code->toBe('NEW-CODE')
+        ->name->toBe('New name')
+        ->city->toBe('Paris');
+});
+
+it('keeps supplier form routes inside the current workspace', function (): void {
+    [$owner] = supplierFormWorkspace();
+    $foreignWorkspace = Workspace::factory()->create();
+    $foreignSupplier = Supplier::factory()->for($foreignWorkspace)->create();
+
+    $this->actingAs($owner)
+        ->get(route('production-bench.purchasing.suppliers.edit', $foreignSupplier))
+        ->assertNotFound();
+});
+
+it('rejects invalid supplier form values on their fields', function (): void {
+    [$owner] = supplierFormWorkspace();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierCreate::class)
+        ->set('code', 'invalid code that is too long')
+        ->set('name', '')
+        ->set('email', 'not-an-email')
+        ->set('website', 'not-a-url')
+        ->set('countryCode', 'France')
+        ->call('save')
+        ->assertHasErrors(['code', 'name', 'email', 'website', 'countryCode']);
+});
+
+it('does not open supplier mutation pages for inactive or read-only workspaces', function (): void {
+    $inactiveOwner = User::factory()->create();
+    $inactiveWorkspace = Workspace::factory()->for($inactiveOwner, 'owner')->create();
+    $inactiveSupplier = Supplier::factory()->for($inactiveWorkspace)->create();
+
+    $this->actingAs($inactiveOwner)
+        ->get(route('production-bench.purchasing.suppliers.create'))
+        ->assertForbidden();
+    $this->get(route('production-bench.purchasing.suppliers.edit', $inactiveSupplier))
+        ->assertForbidden();
+
+    [$readOnlyOwner, $readOnlyWorkspace] = supplierFormWorkspace();
+    $readOnlySupplier = Supplier::factory()->for($readOnlyWorkspace)->create();
+    app(ProductionBenchAccess::class)->cancel($readOnlyOwner, $readOnlyWorkspace);
+
+    $this->actingAs($readOnlyOwner)
+        ->get(route('production-bench.purchasing.suppliers.create'))
+        ->assertForbidden();
+    $this->get(route('production-bench.purchasing.suppliers.edit', $readOnlySupplier))
+        ->assertForbidden();
+});
+
+it('blocks a supplier save when the workspace becomes read only', function (): void {
+    [$owner, $workspace] = supplierFormWorkspace();
+    $this->actingAs($owner);
+    $component = Livewire::test(SupplierCreate::class)
+        ->set('code', 'BLOCKED')
+        ->set('name', 'Blocked supplier');
+
+    app(ProductionBenchAccess::class)->cancel($owner, $workspace);
+
+    $component->call('save')->assertHasErrors('production_bench');
+
+    expect(Supplier::query()->where('workspace_id', $workspace->id)->where('code', 'BLOCKED')->exists())->toBeFalse();
+});
+
+/** @return array{0: User, 1: Workspace} */
+function supplierFormWorkspace(): array
+{
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+
+    return [$owner, $workspace];
+}

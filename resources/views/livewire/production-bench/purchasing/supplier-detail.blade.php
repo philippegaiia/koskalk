@@ -4,93 +4,65 @@
 
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
-            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Activate the bench to manage suppliers.</h1>
-            <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">Go to Production Bench home</a>
+            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Production Bench is not active.</h1>
+            <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">Production Bench</a>
         </section>
     @else
         @if ($isReadOnly)
-            <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">Read-only: supplier and listing history remain available. Resume Production Bench to make changes.</p>
+            <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">Read-only. Resume Production Bench to make changes.</p>
         @endif
 
-        <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-                <p class="sk-eyebrow">Supplier</p>
+                <p class="numeric sk-eyebrow">{{ $supplier->code }}</p>
                 <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $supplier->name }}</h1>
-                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Contact, purchasing settings, and current supplier listings.</p>
             </div>
-            <a href="#add-listing" class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] @if ($isReadOnly) pointer-events-none opacity-40 @endif">Add supplier listing</a>
+            <div class="flex flex-wrap gap-3">
+                @if ($isBenchActive)
+                    <a href="{{ route('production-bench.purchasing.suppliers.edit', $supplier) }}" wire:navigate class="rounded-full border border-[var(--color-line-strong)] px-5 py-2.5 text-center text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel-strong)]">Edit supplier</a>
+                    <a href="{{ route('production-bench.purchasing.listings', ['supplierId' => $supplier->id]) }}" wire:navigate class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">Add listing</a>
+                @endif
+            </div>
         </header>
 
-        <section class="sk-card overflow-hidden">
-            <div class="border-b border-[var(--color-line)] p-5">
-                <p class="sk-eyebrow">Identity and contact</p>
-                <h2 class="mt-1 text-xl font-semibold">Supplier details</h2>
-                @if ($supplierSavedMessage)
-                    <p role="status" class="mt-2 text-sm font-medium text-[var(--color-success-strong)]">{{ $supplierSavedMessage }}</p>
-                @endif
-            </div>
-            <form wire:submit="saveSupplier" class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-                <label class="space-y-2"><span class="text-sm font-medium">Supplier code</span><input wire:model="code" required maxlength="16" @disabled($isReadOnly) class="sk-input w-full uppercase">@error('code') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror</label>
-                <label class="space-y-2 xl:col-span-2"><span class="text-sm font-medium">Supplier name</span><input wire:model="name" required @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="flex items-end gap-3"><input wire:model="isActive" type="checkbox" @disabled($isReadOnly) class="mb-1"><span><span class="block text-sm font-medium">Active supplier</span><span class="text-xs text-[var(--color-ink-soft)]">Available for new listings</span></span></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Main contact</span><input wire:model="contactName" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Email</span><input wire:model="email" type="email" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Phone</span><input wire:model="phone" type="tel" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Address line 1</span><input wire:model="addressLine1" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Address line 2</span><input wire:model="addressLine2" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">City</span><input wire:model="city" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Region</span><input wire:model="region" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Postal code</span><input wire:model="postalCode" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Country</span><input wire:model="countryCode" maxlength="2" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Website</span><input wire:model="website" type="url" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Currency</span><input wire:model="defaultCurrency" maxlength="3" required @disabled($isReadOnly) class="sk-input w-full uppercase"></label>
-                <label class="space-y-2 md:col-span-2 xl:col-span-3"><span class="text-sm font-medium">Notes</span><textarea wire:model="notes" rows="2" @disabled($isReadOnly) class="sk-input w-full"></textarea></label>
-                @error('production_bench') <p class="md:col-span-2 xl:col-span-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
-                <div class="md:col-span-2 xl:col-span-3"><button type="submit" @disabled($isReadOnly) class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40">Save supplier details</button></div>
-            </form>
+        <section class="grid gap-4 lg:grid-cols-3">
+            <article class="sk-card p-5">
+                <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">Supplier</h2>
+                <dl class="mt-4 space-y-3 text-sm">
+                    <div><dt class="text-[var(--color-ink-soft)]">Code</dt><dd class="numeric mt-1 font-medium">{{ $supplier->code }}</dd></div>
+                    <div><dt class="text-[var(--color-ink-soft)]">State</dt><dd class="mt-1">{{ $supplier->is_active ? 'Active' : 'Inactive' }}</dd></div>
+                    <div><dt class="text-[var(--color-ink-soft)]">Currency</dt><dd class="numeric mt-1">{{ $supplier->default_currency }}</dd></div>
+                </dl>
+            </article>
+            <article class="sk-card p-5">
+                <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">Main contact</h2>
+                <dl class="mt-4 space-y-3 text-sm">
+                    <div><dt class="text-[var(--color-ink-soft)]">Name</dt><dd class="mt-1">{{ $supplier->contact_name ?: '—' }}</dd></div>
+                    <div><dt class="text-[var(--color-ink-soft)]">Email</dt><dd class="mt-1">@if ($supplier->email)<a href="mailto:{{ $supplier->email }}" class="text-[var(--color-accent-strong)]">{{ $supplier->email }}</a>@else — @endif</dd></div>
+                    <div><dt class="text-[var(--color-ink-soft)]">Telephone</dt><dd class="mt-1">{{ $supplier->phone ?: '—' }}</dd></div>
+                    <div><dt class="text-[var(--color-ink-soft)]">Website</dt><dd class="mt-1 break-all">@if ($supplier->website)<a href="{{ $supplier->website }}" class="text-[var(--color-accent-strong)]">{{ $supplier->website }}</a>@else — @endif</dd></div>
+                </dl>
+            </article>
+            <article class="sk-card p-5">
+                <h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">Address</h2>
+                <address class="mt-4 text-sm not-italic leading-6">
+                    @forelse (collect([$supplier->address_line_1, $supplier->address_line_2, $supplier->city, $supplier->region, $supplier->postal_code, $supplier->country_code])->filter() as $addressPart)
+                        <span class="block">{{ $addressPart }}</span>
+                    @empty
+                        <span class="text-[var(--color-ink-soft)]">—</span>
+                    @endforelse
+                </address>
+            </article>
         </section>
 
-        <section id="add-listing" class="sk-card overflow-hidden">
-            <div class="border-b border-[var(--color-line)] p-5">
-                <p class="sk-eyebrow">Current supplier listings</p>
-                <h2 class="mt-1 text-xl font-semibold">Add supplier listing</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">This listing is automatically linked to {{ $supplier->name }}.</p>
-                @if ($listingSavedMessage)
-                    <p role="status" class="mt-2 text-sm font-medium text-[var(--color-success-strong)]">{{ $listingSavedMessage }}</p>
-                @endif
-            </div>
-            <form wire:submit="saveListing" class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
-                <label class="space-y-2"><span class="text-sm font-medium">Material type</span><select wire:model.live="listingSubjectType" @disabled($isReadOnly) class="sk-input w-full"><option value="ingredient">Ingredient</option><option value="packaging">Packaging</option></select></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Search available materials</span><input wire:model.live.debounce.300ms="listingSubjectSearch" type="search" @disabled($isReadOnly) placeholder="Name…" class="sk-input w-full"></label>
-                <label class="space-y-2 xl:col-span-1"><span class="text-sm font-medium">{{ $listingSubjectType === 'ingredient' ? 'Ingredient' : 'Packaging item' }}</span><select wire:model="listingSubjectId" required @disabled($isReadOnly) class="sk-input w-full"><option value="">Choose…</option>@foreach ($listingSubjectType === 'ingredient' ? $ingredients : $packagingItems as $subject)<option value="{{ $subject->id }}">{{ $listingSubjectType === 'ingredient' ? $subject->localizedDisplayName() : $subject->name }}</option>@endforeach</select>@error('listingSubjectId') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror</label>
-                <label class="space-y-2"><span class="text-sm font-medium">Supplier SKU</span><input wire:model="supplierSku" @disabled($isReadOnly) class="sk-input w-full"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Supplier name</span><input wire:model="supplierName" @disabled($isReadOnly) class="sk-input w-full" placeholder="Their item name"></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Purchase format</span><input wire:model="purchaseFormat" required @disabled($isReadOnly) class="sk-input w-full" placeholder="Drum">@error('purchaseFormat') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror</label>
-                <label class="space-y-2"><span class="text-sm font-medium">Net quantity</span><input wire:model.live="netQuantity" inputmode="decimal" required @disabled($isReadOnly) class="numeric sk-input w-full">@error('netQuantity') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror</label>
-                <label class="space-y-2"><span class="text-sm font-medium">Unit of measure</span><select wire:model.live="netUnit" @disabled($isReadOnly || $listingSubjectType === 'packaging') class="sk-input w-full">@if ($listingSubjectType === 'ingredient')<option value="g">g</option><option value="kg">kg</option><option value="oz">oz</option><option value="lb">lb</option>@else<option value="count">count</option>@endif</select></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Pricing basis</span><select wire:model.live="priceBasis" @disabled($isReadOnly) class="sk-input w-full"><option value="per_unit">Price per unit of measure</option><option value="total_purchase_format">Total purchase-format price</option></select></label>
-                <label class="space-y-2"><span class="text-sm font-medium">Price amount</span><input wire:model.live="priceAmount" inputmode="decimal" required @disabled($isReadOnly) class="numeric sk-input w-full">@error('priceAmount') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror</label>
-                <label class="space-y-2"><span class="text-sm font-medium">Price unit</span><select wire:model.live="priceUnit" @disabled($isReadOnly || $priceBasis === 'total_purchase_format') class="sk-input w-full">@if ($listingSubjectType === 'ingredient')<option value="g">g</option><option value="kg">kg</option><option value="oz">oz</option><option value="lb">lb</option>@else<option value="count">item</option>@endif</select>@error('priceUnit') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror</label>
-                <label class="space-y-2"><span class="text-sm font-medium">Minimum order</span><input wire:model="minimumPacks" type="number" min="1" required @disabled($isReadOnly) class="numeric sk-input w-full"></label>
-                <label class="flex items-end gap-3"><input wire:model="listingIsActive" type="checkbox" @disabled($isReadOnly) class="mb-1"><span class="text-sm font-medium">Active listing</span></label>
-                <label class="space-y-2 md:col-span-2 xl:col-span-3"><span class="text-sm font-medium">Notes</span><textarea wire:model="listingNotes" rows="2" @disabled($isReadOnly) class="sk-input w-full"></textarea></label>
-                @if ($pricePreview)
-                    <aside class="rounded-lg bg-[var(--color-panel-strong)] px-4 py-3 md:col-span-2 xl:col-span-3">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-soft)]">Price preview</p>
-                        <p class="numeric mt-1 text-sm text-[var(--color-ink-strong)]">
-                            {{ $supplier->default_currency }} {{ $pricePreview['unit_price'] }} / {{ $pricePreview['unit_label'] }} · {{ $supplier->default_currency }} {{ $pricePreview['total_price'] }} total
-                        </p>
-                    </aside>
-                @endif
-                @error('production_bench') <p class="md:col-span-2 xl:col-span-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
-                <div class="md:col-span-2 xl:col-span-3"><button type="submit" @disabled($isReadOnly) class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40">Save supplier listing</button></div>
-            </form>
-        </section>
+        @if ($supplier->notes)
+            <section class="sk-card p-5"><h2 class="text-lg font-semibold text-[var(--color-ink-strong)]">Notes</h2><p class="mt-4 whitespace-pre-line text-sm leading-6">{{ $supplier->notes }}</p></section>
+        @endif
 
         <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
             <div class="flex flex-col gap-3 border-b border-[var(--color-line)] p-5 sm:flex-row sm:items-end sm:justify-between">
-                <div><p class="sk-eyebrow">Current supplier listings</p><h2 class="mt-1 text-xl font-semibold">Available purchase formats</h2></div>
-                <label class="space-y-1"><span class="text-sm font-medium">Listing state</span><select wire:model.live="listingStatus" class="sk-input"><option value="active">Active</option><option value="all">All states</option></select></label>
+                <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">Supplier listings</h2>
+                <label class="space-y-1"><span class="text-sm font-medium">Listing state</span><select wire:model.live="listingStatus" class="sk-input"><option value="active">Active</option><option value="all">All states</option><option value="inactive">Inactive</option></select></label>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[820px] text-left text-sm">
@@ -106,14 +78,12 @@
                                 <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $listing->is_active ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' }}">{{ $listing->is_active ? 'Active' : 'Inactive' }}</span></td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">No supplier listings match this view.</td></tr>
+                            <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">No supplier listings.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
             <x-table-pagination :paginator="$listingRows" per-page-label="Supplier listings per page" />
         </section>
-
-        <section class="grid gap-4 md:grid-cols-3"><article class="sk-card p-5"><p class="sk-eyebrow">Quotation requests</p><p class="mt-2 text-sm text-[var(--color-ink-soft)]">No quotation requests yet. This area is coming later.</p></article><article class="sk-card p-5"><p class="sk-eyebrow">Open purchase orders</p><p class="mt-2 text-sm text-[var(--color-ink-soft)]">No purchase orders are shown here yet.</p></article><article class="sk-card p-5"><p class="sk-eyebrow">Recent receipts</p><p class="mt-2 text-sm text-[var(--color-ink-soft)]">Receipt history will appear here in a later step.</p></article></section>
     @endif
 </div>

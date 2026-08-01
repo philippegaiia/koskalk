@@ -2,7 +2,6 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
-use App\Actions\Purchasing\SaveSupplier;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
@@ -26,41 +25,6 @@ class SupplierIndex extends Component
 
     public int $perPage = 25;
 
-    public string $name = '';
-
-    public string $code = '';
-
-    public string $addressLine1 = '';
-
-    public string $addressLine2 = '';
-
-    public string $city = '';
-
-    public string $region = '';
-
-    public string $postalCode = '';
-
-    public string $countryCode = '';
-
-    public string $website = '';
-
-    public string $contactName = '';
-
-    public string $email = '';
-
-    public string $phone = '';
-
-    public string $defaultCurrency = '';
-
-    public string $notes = '';
-
-    public bool $isActive = true;
-
-    public function mount(): void
-    {
-        $this->defaultCurrency = $this->workspace()->default_currency;
-    }
-
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -79,25 +43,6 @@ class SupplierIndex extends Component
     public function updatedPerPage(): void
     {
         $this->perPage = $this->normalizedPerPage();
-        $this->resetPage();
-    }
-
-    public function saveSupplier(SaveSupplier $saveSupplier): void
-    {
-        $this->code = Str::upper(trim($this->code));
-
-        $this->validate([
-            'code' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9_-]+$/'],
-            'name' => ['required', 'string', 'max:255'],
-            'countryCode' => ['nullable', 'alpha:ascii', 'size:2'],
-            'website' => ['nullable', 'url', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'defaultCurrency' => ['required', 'alpha:ascii', 'size:3'],
-        ]);
-
-        $saveSupplier->handle($this->user(), $this->workspace(), $this->supplierAttributes());
-
-        $this->resetSupplierForm();
         $this->resetPage();
     }
 
@@ -130,40 +75,7 @@ class SupplierIndex extends Component
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'suppliers' => $suppliers,
-            'workspace' => $workspace,
         ]);
-    }
-
-    /** @return array<string, mixed> */
-    private function supplierAttributes(): array
-    {
-        return [
-            'code' => $this->code,
-            'name' => $this->name,
-            'address_line_1' => $this->addressLine1,
-            'address_line_2' => $this->addressLine2,
-            'city' => $this->city,
-            'region' => $this->region,
-            'postal_code' => $this->postalCode,
-            'country_code' => $this->countryCode,
-            'website' => $this->website,
-            'contact_name' => $this->contactName,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'default_currency' => $this->defaultCurrency,
-            'notes' => $this->notes,
-            'is_active' => $this->isActive,
-        ];
-    }
-
-    private function resetSupplierForm(): void
-    {
-        $this->reset([
-            'name', 'code', 'addressLine1', 'addressLine2', 'city', 'region', 'postalCode', 'countryCode',
-            'website', 'contactName', 'email', 'phone', 'notes',
-        ]);
-        $this->defaultCurrency = $this->workspace()->default_currency;
-        $this->isActive = true;
     }
 
     private function normalizedPerPage(): int

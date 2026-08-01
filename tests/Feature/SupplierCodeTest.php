@@ -1,8 +1,8 @@
 <?php
 
 use App\Actions\Purchasing\SaveSupplier;
-use App\Livewire\ProductionBench\Purchasing\SupplierDetail;
-use App\Livewire\ProductionBench\Purchasing\SupplierIndex;
+use App\Livewire\ProductionBench\Purchasing\SupplierCreate;
+use App\Livewire\ProductionBench\Purchasing\SupplierEdit;
 use App\Livewire\ProductionBench\PurchasingIndex;
 use App\Models\Supplier;
 use App\Models\User;
@@ -216,13 +216,13 @@ it('normalizes a supplier code through the focused creation form', function (): 
     [$owner, $workspace] = activeSupplierCodeWorkspace();
     $this->actingAs($owner);
 
-    Livewire::test(SupplierIndex::class)
+    Livewire::test(SupplierCreate::class)
         ->set([
             'code' => ' oleva_01 ',
             'name' => 'Northern Oils',
             'defaultCurrency' => 'EUR',
         ])
-        ->call('saveSupplier')
+        ->call('save')
         ->assertHasNoErrors();
 
     expect(Supplier::query()
@@ -236,9 +236,9 @@ it('normalizes a supplier code through the focused edit form', function (): void
     $supplier = Supplier::factory()->for($workspace)->create(['code' => 'OLEVA_01']);
     $this->actingAs($owner);
 
-    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+    Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
         ->set('code', ' oleva_01 ')
-        ->call('saveSupplier')
+        ->call('save')
         ->assertHasNoErrors();
 
     expect($supplier->fresh()?->code)->toBe('OLEVA_01');

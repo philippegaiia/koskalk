@@ -3,7 +3,7 @@
         'production-bench.purchasing.suppliers' => 'Suppliers',
         'production-bench.purchasing.listings' => 'Supplier listings',
     ] as $routeName => $label)
-        @php($isCurrent = request()->routeIs($routeName) || ($routeName === 'production-bench.purchasing.suppliers' && request()->routeIs('production-bench.purchasing.supplier')))
+        @php($isCurrent = request()->routeIs($routeName) || ($routeName === 'production-bench.purchasing.suppliers' && request()->routeIs('production-bench.purchasing.supplier', 'production-bench.purchasing.suppliers.create', 'production-bench.purchasing.suppliers.edit')))
         <a
             href="{{ route($routeName) }}"
             wire:navigate
@@ -18,7 +18,4 @@
         >{{ $label }}</a>
     @endforeach
 
-    @foreach (['Quotation requests', 'Purchase orders', 'Receipts'] as $label)
-        <span class="cursor-not-allowed rounded-lg px-3 py-2 text-sm text-[var(--color-ink-muted)]" aria-disabled="true" title="Coming later">{{ $label }} <span class="text-xs">Coming later</span></span>
-    @endforeach
 </nav>

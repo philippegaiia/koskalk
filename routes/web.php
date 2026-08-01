@@ -153,6 +153,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/inventory', 'production-bench.inventory')->name('inventory');
             Route::redirect('/purchasing', '/dashboard/production-bench/purchasing/suppliers')->name('purchasing');
             Route::view('/purchasing/suppliers', 'production-bench.purchasing.suppliers')->name('purchasing.suppliers');
+            Route::view('/purchasing/suppliers/new', 'production-bench.purchasing.supplier-create')->name('purchasing.suppliers.create');
+            Route::view('/purchasing/suppliers/{supplier}/edit', 'production-bench.purchasing.supplier-edit')->name('purchasing.suppliers.edit');
             Route::view('/purchasing/suppliers/{supplier}', 'production-bench.purchasing.supplier')->name('purchasing.supplier');
             Route::view('/purchasing/listings', 'production-bench.purchasing.listings')->name('purchasing.listings');
         });

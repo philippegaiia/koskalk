@@ -45,155 +45,92 @@ it('protects focused purchasing pages and renders each job separately', function
         ->assertDontSee('Commercial pack')
         ->assertDontSee('UOM')
         ->assertDontSee('quarantine')
-        ->assertSee('Coming later')
-        ->assertSeeHtml('aria-disabled="true"')
+        ->assertDontSee('Coming later')
+        ->assertDontSee('Quotation requests')
+        ->assertDontSee('Purchase orders')
+        ->assertDontSee('Receipts')
         ->assertDontSeeHtml('href="'.route('production-bench.purchasing.suppliers').'/quotation-requests"')
         ->assertDontSeeHtml('href="'.route('production-bench.purchasing.suppliers').'/purchase-orders"')
         ->assertDontSeeHtml('href="'.route('production-bench.purchasing.suppliers').'/receipts"');
 });
 
-it('creates and edits a supplier with structured details', function (): void {
+it('keeps supplier mutations out of the index and detail pages', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create([
+        'code' => 'NORTHERN_01',
+        'name' => 'Northern Oils',
+        'address_line_1' => '12 Market Road',
+        'city' => 'Leeds',
+        'country_code' => 'GB',
+        'contact_name' => 'Mira Smith',
+    ]);
     $this->actingAs($owner);
 
     Livewire::test(SupplierIndex::class)
-        ->set([
-            'code' => 'NORTHERN_01',
-            'name' => 'Northern Oils',
-            'addressLine1' => '12 Market Road',
-            'city' => 'Leeds',
-            'countryCode' => 'gb',
-            'website' => 'https://northern-oils.example',
-            'contactName' => 'Mira Smith',
-            'email' => 'mira@northern-oils.example',
-            'phone' => '+44 113 555 0100',
-            'defaultCurrency' => 'GBP',
-            'notes' => 'Call before dispatch.',
-        ])
-        ->call('saveSupplier')
-        ->assertHasNoErrors()
-        ->assertSee('Northern Oils');
-
-    $supplier = Supplier::query()->where('workspace_id', $workspace->id)->firstOrFail();
-
-    expect($supplier->country_code)->toBe('GB')
-        ->and($supplier->contact_name)->toBe('Mira Smith');
+        ->assertSee('NORTHERN_01')
+        ->assertSee('Northern Oils')
+        ->assertSee('Add supplier')
+        ->assertDontSee('Save supplier')
+        ->assertDontSeeHtml('wire:submit="saveSupplier"');
 
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set('city', 'York')
-        ->call('saveSupplier')
-        ->assertHasNoErrors()
-        ->assertSee('Supplier details saved');
-
-    expect($supplier->fresh()?->city)->toBe('York');
+        ->assertSee('NORTHERN_01')
+        ->assertSee('Mira Smith')
+        ->assertSee('12 Market Road')
+        ->assertSee('Edit supplier')
+        ->assertSee('Add listing')
+        ->assertDontSee('Save supplier')
+        ->assertDontSeeHtml('wire:submit="saveSupplier"')
+        ->assertDontSeeHtml('wire:submit="saveListing"');
 });
 
-it('creates mass and packaging supplier listings from the supplier detail page', function (): void {
+it('shows mass and packaging supplier listings on the supplier detail page', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $this->actingAs($owner);
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
     $packaging = UserPackagingItem::factory()->for($owner)->create(['name' => 'Amber bottle']);
 
+    createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
+        'purchase_format' => 'Drum',
+        'net_quantity' => '200',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '4.20',
+        'price_unit' => 'kg',
+    ]);
+    createSupplierPageListing($owner, $workspace, $supplier, $packaging, [
+        'purchase_format' => 'Carton',
+        'net_quantity' => '500',
+        'net_unit' => 'count',
+        'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+        'price_amount' => '90',
+        'price_unit' => null,
+    ]);
+
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set([
-            'listingSubjectType' => 'ingredient',
-            'listingSubjectId' => $ingredient->id,
-            'purchaseFormat' => 'Drum',
-            'netQuantity' => '200',
-            'netUnit' => 'kg',
-            'priceBasis' => ListingPriceBasis::PerUnit->value,
-            'priceAmount' => '4.20',
-            'priceUnit' => 'kg',
-        ])
-        ->call('saveListing')
-        ->assertHasNoErrors()
+        ->assertSee('Coconut oil')
         ->assertSee('200 kg')
         ->assertSee('Drum')
-        ->assertSee('840.00');
-
-    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set([
-            'listingSubjectType' => 'ingredient',
-            'listingSubjectId' => $ingredient->id,
-            'purchaseFormat' => 'Pail',
-            'netQuantity' => '25',
-            'netUnit' => 'kg',
-            'priceBasis' => ListingPriceBasis::TotalPurchaseFormat->value,
-            'priceAmount' => '125',
-            'priceUnit' => '',
-        ])
-        ->call('saveListing')
-        ->assertHasNoErrors()
-        ->assertSee('Pail');
-
-    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set([
-            'listingSubjectType' => 'packaging',
-            'listingSubjectId' => $packaging->id,
-            'purchaseFormat' => 'Carton',
-            'netQuantity' => '500',
-            'netUnit' => 'count',
-            'priceBasis' => ListingPriceBasis::TotalPurchaseFormat->value,
-            'priceAmount' => '90',
-            'priceUnit' => '',
-        ])
-        ->call('saveListing')
-        ->assertHasNoErrors()
+        ->assertSee('840.00')
+        ->assertSee('Amber bottle')
         ->assertSee('500 count')
+        ->assertSee('Carton')
         ->assertSee('90.00');
 
-    expect(SupplierListing::query()->where('supplier_id', $supplier->id)->count())->toBe(3);
+    expect(SupplierListing::query()->where('supplier_id', $supplier->id)->count())->toBe(2);
 });
 
-it('clears stale price units for total purchase-format pricing and restores valid defaults', function (): void {
+it('does not expose supplier listing creation controls on the detail page', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $this->actingAs($owner);
     $supplier = Supplier::factory()->for($workspace)->create();
-    $ingredient = Ingredient::factory()->create();
-    $packaging = UserPackagingItem::factory()->for($owner)->create();
 
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set([
-            'listingSubjectType' => 'ingredient',
-            'listingSubjectId' => $ingredient->id,
-            'purchaseFormat' => 'Total drum',
-            'netQuantity' => '200',
-            'netUnit' => 'kg',
-            'priceAmount' => '900',
-        ])
-        ->set('priceBasis', ListingPriceBasis::TotalPurchaseFormat->value)
-        ->assertSet('priceUnit', '')
-        ->call('saveListing')
-        ->assertHasNoErrors()
-        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
-        ->assertSet('priceUnit', 'kg');
-
-    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set([
-            'listingSubjectType' => 'packaging',
-            'listingSubjectId' => $packaging->id,
-            'purchaseFormat' => 'Total carton',
-            'netQuantity' => '500',
-            'netUnit' => 'count',
-            'priceAmount' => '90',
-        ])
-        ->set('priceBasis', ListingPriceBasis::TotalPurchaseFormat->value)
-        ->assertSet('priceUnit', '')
-        ->call('saveListing')
-        ->assertHasNoErrors();
-
-    expect(SupplierListing::query()->where('supplier_id', $supplier->id)->pluck('price_unit')->all())->toBe([null, null]);
-
-    [$usOwner, $usWorkspace] = activeSupplierPagesWorkspace(MassDisplaySystem::UsCustomary);
-    $usSupplier = Supplier::factory()->for($usWorkspace)->create();
-    $this->actingAs($usOwner);
-
-    Livewire::test(SupplierDetail::class, ['supplier' => $usSupplier->public_id])
-        ->set('priceBasis', ListingPriceBasis::TotalPurchaseFormat->value)
-        ->assertSet('priceUnit', '')
-        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
-        ->assertSet('priceUnit', 'lb');
+        ->assertSee('Add listing')
+        ->assertDontSee('Material type')
+        ->assertDontSee('Price preview')
+        ->assertDontSee('Save supplier listing');
 });
 
 it('shows entered and derived prices for total and per-unit supplier listings', function (): void {
@@ -247,51 +184,28 @@ it('shows entered and derived prices for total and per-unit supplier listings', 
         ->assertSee('840.00');
 });
 
-it('uses the workspace price unit for the live supplier listing preview', function (): void {
+it('does not expose the former live supplier listing preview', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace(MassDisplaySystem::UsCustomary);
     $this->actingAs($owner);
     $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
-    $ingredient = Ingredient::factory()->create();
 
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set([
-            'listingSubjectId' => $ingredient->id,
-            'netQuantity' => '200',
-            'netUnit' => 'kg',
-            'priceBasis' => ListingPriceBasis::PerUnit->value,
-            'priceAmount' => '2',
-            'priceUnit' => 'lb',
-        ])
-        ->assertSee('EUR 2.00 / lb · EUR 881.85 total');
+        ->assertDontSee('Price preview')
+        ->assertDontSee('Price unit')
+        ->assertDontSee('Pricing basis');
 });
 
 it('keeps supplier and listing records inside the current workspace', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $foreignWorkspace = Workspace::factory()->create();
     $foreignSupplier = Supplier::factory()->for($foreignWorkspace)->create();
-    $foreignIngredient = Ingredient::factory()->create([
-        'owner_type' => 'workspace',
-        'owner_id' => $foreignWorkspace->id,
-        'workspace_id' => $foreignWorkspace->id,
-        'visibility' => 'private',
-    ]);
     $supplier = Supplier::factory()->for($workspace)->create();
     $this->actingAs($owner);
 
     $this->get(route('production-bench.purchasing.supplier', $foreignSupplier))->assertNotFound();
 
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set([
-            'listingSubjectType' => 'ingredient',
-            'listingSubjectId' => $foreignIngredient->id,
-            'purchaseFormat' => 'Drum',
-            'netQuantity' => '20',
-            'netUnit' => 'kg',
-            'priceBasis' => ListingPriceBasis::TotalPurchaseFormat->value,
-            'priceAmount' => '50',
-        ])
-        ->call('saveListing')
-        ->assertHasErrors('listingSubjectId');
+        ->assertSet('supplier.public_id', $supplier->public_id);
 });
 
 it('lets read-only workspaces browse without allowing supplier mutations', function (): void {
@@ -302,42 +216,32 @@ it('lets read-only workspaces browse without allowing supplier mutations', funct
 
     Livewire::test(SupplierIndex::class)
         ->assertSee('Visible supplier')
-        ->set('code', 'BLOCKED_01')
-        ->set('name', 'Blocked supplier')
-        ->call('saveSupplier')
-        ->assertHasErrors('production_bench');
+        ->assertSee('Read-only. Resume Production Bench to make changes.')
+        ->assertDontSee('Add supplier');
 
-    expect(Supplier::query()->where('name', 'Blocked supplier')->exists())->toBeFalse();
+    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+        ->assertSee('Visible supplier')
+        ->assertDontSee('Edit supplier')
+        ->assertDontSee('Add listing');
 });
 
-it('shows activation guidance for inactive benches and rejects read-only listing mutations', function (): void {
+it('shows neutral inactive and read-only supplier states', function (): void {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $supplier = Supplier::factory()->for($workspace)->create();
-    $ingredient = Ingredient::factory()->create();
     $this->actingAs($owner);
 
     $this->get(route('production-bench.purchasing.suppliers'))
         ->assertOk()
-        ->assertSee('Activate the bench');
+        ->assertSee('Production Bench is not active.')
+        ->assertDontSee('manage suppliers');
 
     app(ProductionBenchAccess::class)->activate($owner, $workspace);
     app(ProductionBenchAccess::class)->cancel($owner, $workspace);
 
     Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-        ->set([
-            'listingSubjectId' => $ingredient->id,
-            'purchaseFormat' => 'Blocked drum',
-            'netQuantity' => '20',
-            'netUnit' => 'kg',
-            'priceBasis' => ListingPriceBasis::PerUnit->value,
-            'priceAmount' => '4',
-            'priceUnit' => 'kg',
-        ])
-        ->call('saveListing')
-        ->assertHasErrors('production_bench');
-
-    expect(SupplierListing::query()->where('purchase_format', 'Blocked drum')->exists())->toBeFalse();
+        ->assertSee('Read-only. Resume Production Bench to make changes.')
+        ->assertDontSee('Add listing');
 });
 
 it('searches and filters focused supplier records', function (): void {
@@ -420,13 +324,11 @@ it('bounds manipulated supplier and listing page sizes', function (): void {
         ->assertViewHas('listingRows', fn ($listings): bool => $listings->count() === 25);
 });
 
-it('paginates supplier detail listings and keeps selected searched subjects visible', function (): void {
+it('paginates supplier detail listings with bounded page sizes', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $this->actingAs($owner);
     $supplier = Supplier::factory()->for($workspace)->create();
     $listingIngredient = Ingredient::factory()->create();
-    $selectedIngredient = Ingredient::factory()->create(['display_name' => 'Selected outside result']);
-    $searchResult = Ingredient::factory()->create(['display_name' => 'Search result oil']);
     SupplierListing::factory()->count(30)->for($workspace)->for($supplier)->for($listingIngredient)
         ->sequence(fn ($sequence) => ['purchase_format' => 'Page listing '.$sequence->index])
         ->create();
@@ -440,11 +342,7 @@ it('paginates supplier detail listings and keeps selected searched subjects visi
         ->set('perPage', 50)
         ->assertSet('perPage', 50)
         ->set('perPage', -1)
-        ->assertSet('perPage', 25)
-        ->set('listingSubjectId', $selectedIngredient->id)
-        ->set('listingSubjectSearch', 'Search result')
-        ->assertSee('Selected outside result')
-        ->assertSee('Search result oil');
+        ->assertSet('perPage', 25);
 });
 
 it('eager loads translated supplier detail materials', function (): void {
@@ -485,7 +383,6 @@ it('eager loads translated supplier detail materials', function (): void {
 
     try {
         Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
-            ->set('listingSubjectSearch', 'Huile')
             ->assertSee('Huile d’olive')
             ->assertSee('Huile de coco')
             ->assertDontSee('Huile étrangère');

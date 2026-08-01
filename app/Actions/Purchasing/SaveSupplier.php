@@ -5,16 +5,21 @@ namespace App\Actions\Purchasing;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\CurrencyCatalog;
 use App\Services\ProductionBenchAccess;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class SaveSupplier
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(
+        private readonly ProductionBenchAccess $access,
+        private readonly CurrencyCatalog $currencyCatalog,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -123,11 +128,11 @@ class SaveSupplier
             'region' => ['nullable', 'string', 'max:255'],
             'postal_code' => ['nullable', 'string', 'max:32'],
             'country_code' => ['nullable', 'alpha:ascii', 'size:2'],
-            'website' => ['nullable', 'url', 'max:255'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
             'contact_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
-            'default_currency' => ['required', 'alpha:ascii', 'size:3'],
+            'default_currency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
             'notes' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
         ])->validate();

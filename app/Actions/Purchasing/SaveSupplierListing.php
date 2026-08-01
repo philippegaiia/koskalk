@@ -10,11 +10,13 @@ use App\Models\User;
 use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
+use App\Services\CurrencyCatalog;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\StockUnitKind;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class SaveSupplierListing
@@ -22,6 +24,7 @@ class SaveSupplierListing
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly SupplierListingPriceCalculator $priceCalculator,
+        private readonly CurrencyCatalog $currencyCatalog,
     ) {}
 
     /**
@@ -177,7 +180,7 @@ class SaveSupplierListing
             'minimum_packs' => ['required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
-            'currency' => ['required', 'alpha:ascii', 'size:3'],
+            'currency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
             'price_recorded_at' => ['nullable', 'date'],
         ])->validate();
 

@@ -39,6 +39,41 @@ it('supports string identifiers and replacing options in the shared search combo
         ->not->toContain('Number(option.id)');
 });
 
+it('emits search terms for bounded server-side catalogs', function () {
+    $script = <<<'JS'
+import { createSearchCombobox } from './resources/js/search-combobox.js';
+
+const events = [];
+const state = createSearchCombobox({
+    id: 'supplier',
+    options: [],
+    retainSelection: true,
+    allowEmpty: false,
+});
+
+state.$dispatch = (name, detail) => events.push({ name, detail });
+state.query = 'olive';
+state.handleInput();
+
+console.log(JSON.stringify(events));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $events = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($events)->toContain([
+        'name' => 'search-combobox-query',
+        'detail' => ['comboboxId' => 'supplier', 'query' => 'olive'],
+    ]);
+});
+
 it('selects string-valued options and refreshes a dynamic catalog', function () {
     $script = <<<'JS'
 import { createSearchCombobox } from './resources/js/search-combobox.js';

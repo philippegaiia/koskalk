@@ -5,14 +5,18 @@ namespace App\Livewire\ProductionBench\Purchasing;
 use App\Actions\Purchasing\SaveSupplier;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\CurrencyCatalog;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class SupplierCreate extends Component
 {
+    private CurrencyCatalog $currencyCatalog;
+
     public string $code = '';
 
     public string $name = '';
@@ -42,6 +46,11 @@ class SupplierCreate extends Component
     public string $countryCode = '';
 
     public string $notes = '';
+
+    public function boot(CurrencyCatalog $currencyCatalog): void
+    {
+        $this->currencyCatalog = $currencyCatalog;
+    }
 
     public function mount(ProductionBenchAccess $access): void
     {
@@ -74,18 +83,18 @@ class SupplierCreate extends Component
         return view('livewire.production-bench.purchasing.supplier-create');
     }
 
-    /** @return array<string, array<int, string>> */
+    /** @return array<string, array<int, mixed>> */
     private function rules(): array
     {
         return [
             'code' => ['required', 'string', 'max:16', 'regex:/^[A-Z0-9_-]+$/'],
             'name' => ['required', 'string', 'max:255'],
             'isActive' => ['required', 'boolean'],
-            'defaultCurrency' => ['required', 'alpha:ascii', 'size:3'],
+            'defaultCurrency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
             'contactName' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
-            'website' => ['nullable', 'url', 'max:255'],
+            'website' => ['nullable', 'url:http,https', 'max:255'],
             'addressLine1' => ['nullable', 'string', 'max:255'],
             'addressLine2' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:255'],

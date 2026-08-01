@@ -155,6 +155,30 @@ it('rejects invalid supplier form values on their fields', function (): void {
         ->assertHasErrors(['code', 'name', 'email', 'website', 'countryCode']);
 });
 
+it('rejects unsupported currencies and non-http supplier websites', function (): void {
+    [$owner, $workspace] = supplierFormWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierCreate::class)
+        ->set('code', 'UNSAFE')
+        ->set('name', 'Unsafe supplier')
+        ->set('defaultCurrency', 'ZZZ')
+        ->set('website', 'data:text/html,unsafe')
+        ->call('save')
+        ->assertHasErrors(['defaultCurrency', 'website']);
+
+    Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
+        ->set('defaultCurrency', 'ZZZ')
+        ->set('website', 'smb://files.example/supplier')
+        ->call('save')
+        ->assertHasErrors(['defaultCurrency', 'website']);
+
+    expect(Supplier::query()->where('code', 'UNSAFE')->exists())->toBeFalse()
+        ->and($supplier->fresh()?->default_currency)->not->toBe('ZZZ')
+        ->and($supplier->fresh()?->website)->not->toBe('smb://files.example/supplier');
+});
+
 it('does not open supplier mutation pages for inactive or read-only workspaces', function (): void {
     $inactiveOwner = User::factory()->create();
     $inactiveWorkspace = Workspace::factory()->for($inactiveOwner, 'owner')->create();

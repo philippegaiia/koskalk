@@ -94,6 +94,49 @@ it('creates a supplier without an optional country code', function (): void {
     expect($supplier->country_code)->toBeNull();
 });
 
+it('rejects unsupported supplier currencies and non-http websites at the action boundary', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+
+    foreach ([
+        ['default_currency' => 'ZZZ', 'website' => 'https://supplier.example'],
+        ['default_currency' => 'EUR', 'website' => 'data:text/html,unsafe'],
+        ['default_currency' => 'EUR', 'website' => 'smb://files.example/supplier'],
+    ] as $attributes) {
+        $exception = captureValidationException(
+            fn (): Supplier => app(SaveSupplier::class)->handle($owner, $workspace, [
+                'code' => 'BOUNDARY',
+                'name' => 'Boundary supplier',
+                'is_active' => true,
+                ...$attributes,
+            ]),
+        );
+
+        expect($exception)->toBeInstanceOf(ValidationException::class);
+    }
+
+    expect(Supplier::query()->count())->toBe(0);
+});
+
+it('rejects unsupported listing currencies at the action boundary', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+
+    $exception = captureValidationException(
+        fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+            $owner,
+            $workspace,
+            $supplier,
+            $ingredient,
+            listingAttributes(['currency' => 'ZZZ']),
+        ),
+    );
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception?->errors())->toHaveKey('currency')
+        ->and(SupplierListing::query()->count())->toBe(0);
+});
+
 it('saves a per-unit mass listing without updating user ingredient price memory', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);

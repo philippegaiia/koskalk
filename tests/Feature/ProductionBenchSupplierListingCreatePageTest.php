@@ -12,7 +12,10 @@ use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\ProductionBenchAccess;
 use App\Visibility;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -177,6 +180,104 @@ it('uses the workspace mass basis for listing defaults and previews total prices
         ->set('priceUnit', '')
         ->set('currency', 'USD')
         ->assertSee('USD 2.50 / lb');
+});
+
+it('rejects a currency outside the maintained catalog', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class)
+        ->set('supplierId', $supplier->id)
+        ->set('ingredientId', $ingredient->id)
+        ->set('purchaseFormat', 'Drum')
+        ->set('netQuantity', '1')
+        ->set('netUnit', 'kg')
+        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
+        ->set('priceAmount', '1')
+        ->set('priceUnit', 'kg')
+        ->set('currency', 'ZZZ')
+        ->call('save')
+        ->assertHasErrors(['currency']);
+
+    expect(SupplierListing::query()->count())->toBe(0);
+});
+
+it('bounds server-side catalog searches and retains selected rows', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $suppliers = Supplier::factory()->count(30)->for($workspace)->sequence(
+        fn ($sequence): array => [
+            'code' => sprintf('SUP-%02d', $sequence->index + 1),
+            'name' => sprintf('Supplier %02d', $sequence->index + 1),
+        ],
+    )->create();
+    Ingredient::factory()->count(30)->sequence(
+        fn ($sequence): array => ['display_name' => sprintf('Ingredient %02d', $sequence->index + 1)],
+    )->create();
+    UserPackagingItem::factory()->count(30)->for($owner)->sequence(
+        fn ($sequence): array => ['name' => sprintf('Packaging %02d', $sequence->index + 1)],
+    )->create();
+    $selectedSupplier = $suppliers->last();
+    $this->actingAs($owner);
+
+    $component = Livewire::test(SupplierListingCreate::class);
+
+    expect($component->get('supplierOptions'))->toHaveCount(20)
+        ->and($component->get('ingredientOptions'))->toHaveCount(20)
+        ->and($component->get('packagingOptions'))->toBe([]);
+
+    $component
+        ->set('supplierId', $selectedSupplier->id)
+        ->call('searchSupplierOptions', 'no matching supplier');
+
+    expect($component->get('supplierOptions'))
+        ->toHaveCount(1)
+        ->and(collect($component->get('supplierOptions'))->pluck('id')->all())
+        ->toContain($selectedSupplier->id);
+
+    $catalogQueries = [];
+    DB::listen(function (QueryExecuted $query) use (&$catalogQueries): void {
+        $catalogQueries[] = $query->sql;
+    });
+
+    $component->call('searchIngredientOptions', 'Ingredient');
+
+    expect(collect($catalogQueries)->contains(
+        fn (string $sql): bool => Str::contains($sql, 'from "ingredients"')
+            && Str::contains($sql, 'limit 20'),
+    ))->toBeTrue()
+        ->and(collect($catalogQueries)->contains(
+            fn (string $sql): bool => Str::contains($sql, 'user_packaging_items'),
+        ))->toBeFalse();
+
+    $component->set('materialType', 'packaging');
+
+    expect($component->get('ingredientOptions'))->toBe([])
+        ->and($component->get('packagingOptions'))->toHaveCount(20);
+});
+
+it('does not requery supplier or material catalogs for price preview updates', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    Supplier::factory()->count(3)->for($workspace)->create();
+    Ingredient::factory()->count(3)->create();
+    UserPackagingItem::factory()->count(3)->for($owner)->create();
+    $this->actingAs($owner);
+
+    $component = Livewire::test(SupplierListingCreate::class);
+    $selectorQueries = [];
+
+    DB::listen(function (QueryExecuted $query) use (&$selectorQueries): void {
+        if (Str::contains($query->sql, ['suppliers', 'ingredients', 'ingredient_translations', 'user_packaging_items'])) {
+            $selectorQueries[] = $query->sql;
+        }
+    });
+
+    $component
+        ->set('netQuantity', '2')
+        ->set('priceAmount', '4.25');
+
+    expect($selectorQueries)->toBe([]);
 });
 
 it('keeps supplier and material selection inside the current workspace', function (): void {

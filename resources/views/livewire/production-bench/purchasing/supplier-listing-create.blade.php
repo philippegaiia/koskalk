@@ -27,6 +27,8 @@
                         :selected-id="$supplierId"
                         placeholder="Search suppliers"
                         :allow-empty="false"
+                        x-on:search-combobox-query.debounce.300ms="$wire.searchSupplierOptions(String($event.detail.query))"
+                        x-on:supplier-listing-supplier-options-updated.window="replaceOptions($event.detail.options)"
                         x-on:search-combobox-selected="$wire.set('supplierId', Number($event.detail.id))"
                         x-on:search-combobox-cleared="$wire.set('supplierId', null)"
                     />
@@ -53,6 +55,8 @@
                         :selected-id="$packagingItemId"
                         placeholder="Search packaging items"
                         :allow-empty="false"
+                        x-on:search-combobox-query.debounce.300ms="$wire.searchPackagingOptions(String($event.detail.query))"
+                        x-on:supplier-listing-packaging-options-updated.window="replaceOptions($event.detail.options)"
                         x-on:search-combobox-selected="$wire.set('packagingItemId', Number($event.detail.id))"
                         x-on:search-combobox-cleared="$wire.set('packagingItemId', null)"
                     />
@@ -65,6 +69,8 @@
                         :selected-id="$ingredientId"
                         placeholder="Search ingredients"
                         :allow-empty="false"
+                        x-on:search-combobox-query.debounce.300ms="$wire.searchIngredientOptions(String($event.detail.query))"
+                        x-on:supplier-listing-ingredient-options-updated.window="replaceOptions($event.detail.options)"
                         x-on:search-combobox-selected="$wire.set('ingredientId', Number($event.detail.id))"
                         x-on:search-combobox-cleared="$wire.set('ingredientId', null)"
                     />

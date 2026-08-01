@@ -15,7 +15,10 @@ use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
+use App\Visibility;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +27,10 @@ use Livewire\Component;
 
 class SupplierListingCreate extends Component
 {
+    private const OptionLimit = 20;
+
+    private CurrencyCatalog $currencyCatalog;
+
     public ?int $supplierId = null;
 
     #[Locked]
@@ -59,6 +66,23 @@ class SupplierListingCreate extends Component
 
     public string $notes = '';
 
+    /** @var list<array{id: int, label: string}> */
+    #[Locked]
+    public array $supplierOptions = [];
+
+    /** @var list<array{id: int, label: string}> */
+    #[Locked]
+    public array $ingredientOptions = [];
+
+    /** @var list<array{id: int, label: string}> */
+    #[Locked]
+    public array $packagingOptions = [];
+
+    public function boot(CurrencyCatalog $currencyCatalog): void
+    {
+        $this->currencyCatalog = $currencyCatalog;
+    }
+
     public function mount(ProductionBenchAccess $access, string|Supplier|null $supplier = null): void
     {
         $this->assertPageIsWritable($access);
@@ -68,6 +92,9 @@ class SupplierListingCreate extends Component
         $this->priceUnit = $workspace->mass_display_system->priceUnit()->value;
 
         if ($supplier === null) {
+            $this->supplierOptions = $this->loadSupplierOptions();
+            $this->ingredientOptions = $this->loadIngredientOptions();
+
             return;
         }
 
@@ -76,6 +103,7 @@ class SupplierListingCreate extends Component
         $this->lockedSupplierPublicId = $lockedSupplier->public_id;
         $this->supplierId = $lockedSupplier->id;
         $this->currency = $lockedSupplier->default_currency;
+        $this->ingredientOptions = $this->loadIngredientOptions();
     }
 
     public function updatedSupplierId(): void
@@ -99,6 +127,8 @@ class SupplierListingCreate extends Component
         $this->packagingItemId = null;
 
         if ($this->materialType === 'packaging') {
+            $this->ingredientOptions = [];
+            $this->packagingOptions = $this->loadPackagingOptions();
             $this->netUnit = 'count';
             $this->priceUnit = $this->priceBasis === ListingPriceBasis::PerUnit->value ? 'count' : '';
 
@@ -106,6 +136,8 @@ class SupplierListingCreate extends Component
         }
 
         $displayUnit = $this->workspace()->mass_display_system->priceUnit()->value;
+        $this->packagingOptions = [];
+        $this->ingredientOptions = $this->loadIngredientOptions();
         $this->netUnit = $displayUnit;
         $this->priceUnit = $this->priceBasis === ListingPriceBasis::PerUnit->value ? $displayUnit : '';
     }
@@ -121,6 +153,45 @@ class SupplierListingCreate extends Component
         $this->priceUnit = $this->materialType === 'packaging'
             ? 'count'
             : $this->workspace()->mass_display_system->priceUnit()->value;
+    }
+
+    public function searchSupplierOptions(string $search = ''): void
+    {
+        if ($this->lockedSupplierPublicId !== null) {
+            $this->skipRender();
+
+            return;
+        }
+
+        $this->supplierOptions = $this->loadSupplierOptions($search);
+        $this->dispatch('supplier-listing-supplier-options-updated', options: $this->supplierOptions);
+        $this->skipRender();
+    }
+
+    public function searchIngredientOptions(string $search = ''): void
+    {
+        if ($this->materialType !== 'ingredient') {
+            $this->skipRender();
+
+            return;
+        }
+
+        $this->ingredientOptions = $this->loadIngredientOptions($search);
+        $this->dispatch('supplier-listing-ingredient-options-updated', options: $this->ingredientOptions);
+        $this->skipRender();
+    }
+
+    public function searchPackagingOptions(string $search = ''): void
+    {
+        if ($this->materialType !== 'packaging') {
+            $this->skipRender();
+
+            return;
+        }
+
+        $this->packagingOptions = $this->loadPackagingOptions($search);
+        $this->dispatch('supplier-listing-packaging-options-updated', options: $this->packagingOptions);
+        $this->skipRender();
     }
 
     public function save(SaveSupplierListing $saveSupplierListing): void
@@ -166,7 +237,6 @@ class SupplierListingCreate extends Component
     }
 
     public function render(
-        CurrencyCatalog $currencyCatalog,
         DecimalStringFormatter $decimalStringFormatter,
         MassConverter $massConverter,
         SupplierListingPriceCalculator $priceCalculator,
@@ -177,15 +247,15 @@ class SupplierListingCreate extends Component
             : $this->workspaceSupplierByPublicId($this->lockedSupplierPublicId);
 
         return view('livewire.production-bench.purchasing.supplier-listing-create', [
-            'currencyOptions' => collect($currencyCatalog->options(app()->getLocale(), [$this->currency]))
+            'currencyOptions' => collect($this->currencyCatalog->options(app()->getLocale(), [$this->currency]))
                 ->map(fn (string $name, string $code): array => ['id' => $code, 'label' => $code.' — '.$name])
                 ->values()
                 ->all(),
-            'ingredientOptions' => $this->ingredientOptions(),
+            'ingredientOptions' => $this->ingredientOptions,
             'lockedSupplier' => $lockedSupplier,
-            'packagingOptions' => $this->packagingOptions(),
+            'packagingOptions' => $this->packagingOptions,
             'pricePreview' => $this->pricePreview($priceCalculator, $massConverter, $decimalStringFormatter),
-            'supplierOptions' => $this->supplierOptions(),
+            'supplierOptions' => $this->supplierOptions,
             'workspace' => $workspace,
         ]);
     }
@@ -206,7 +276,7 @@ class SupplierListingCreate extends Component
             'priceBasis' => ['required', Rule::enum(ListingPriceBasis::class)],
             'priceAmount' => ['required', 'string', 'max:255'],
             'priceUnit' => [Rule::requiredIf($this->priceBasis === ListingPriceBasis::PerUnit->value), 'nullable', Rule::in($this->materialType === 'packaging' ? ['count'] : ['g', 'kg', 'oz', 'lb'])],
-            'currency' => ['required', 'alpha:ascii', 'size:3'],
+            'currency' => ['required', 'string', 'size:3', Rule::in($this->currencyCatalog->selectableCodes())],
             'minimumPacks' => ['required', 'integer', 'min:1'],
             'isActive' => ['required', 'boolean'],
             'notes' => ['nullable', 'string'],
@@ -293,49 +363,157 @@ class SupplierListingCreate extends Component
     }
 
     /** @return list<array{id: int, label: string}> */
-    private function supplierOptions(): array
+    private function loadSupplierOptions(string $search = ''): array
     {
-        return Supplier::query()
+        $search = $this->normalizedSearch($search);
+        $options = Supplier::query()
             ->where('workspace_id', $this->workspace()->id)
+            ->when($search !== '', fn (Builder $query): Builder => $query->where(
+                fn (Builder $searchQuery): Builder => $searchQuery
+                    ->whereLike('code', "%{$search}%")
+                    ->orWhereLike('name', "%{$search}%"),
+            ))
             ->orderBy('name')
+            ->limit(self::OptionLimit)
             ->get(['id', 'code', 'name'])
-            ->map(fn (Supplier $supplier): array => [
-                'id' => $supplier->id,
-                'label' => $supplier->code.' · '.$supplier->name,
-            ])
-            ->all();
+            ->map(fn (Supplier $supplier): array => $this->supplierOption($supplier));
+
+        return $this->retainSelectedOption(
+            $options,
+            $this->supplierId,
+            fn (int $id): ?array => ($supplier = Supplier::query()
+                ->where('workspace_id', $this->workspace()->id)
+                ->find($id)) instanceof Supplier
+                    ? $this->supplierOption($supplier)
+                    : null,
+        );
     }
 
     /** @return list<array{id: int, label: string}> */
-    private function ingredientOptions(): array
+    private function loadIngredientOptions(string $search = ''): array
     {
-        return Ingredient::query()
-            ->with('translations')
-            ->where('is_active', true)
-            ->accessibleTo($this->user())
+        $search = $this->normalizedSearch($search);
+        $options = $this->availableIngredientQuery()
+            ->when($search !== '', fn (Builder $query): Builder => $query->where(
+                fn (Builder $searchQuery): Builder => $searchQuery
+                    ->whereLike('display_name', "%{$search}%")
+                    ->orWhereLike('source_key', "%{$search}%")
+                    ->orWhereLike('inci_name', "%{$search}%")
+                    ->orWhereHas('translations', fn (Builder $translationQuery): Builder => $translationQuery
+                        ->whereLike('display_name', "%{$search}%")),
+            ))
             ->orderBy('display_name')
+            ->limit(self::OptionLimit)
             ->get()
-            ->filter(fn (Ingredient $ingredient): bool => $this->ingredientIsAvailable($ingredient))
-            ->map(fn (Ingredient $ingredient): array => [
-                'id' => $ingredient->id,
-                'label' => $ingredient->localizedDisplayName(),
-            ])
-            ->values()
-            ->all();
+            ->map(fn (Ingredient $ingredient): array => $this->ingredientOption($ingredient));
+
+        return $this->retainSelectedOption(
+            $options,
+            $this->ingredientId,
+            fn (int $id): ?array => ($ingredient = $this->availableIngredientQuery()->find($id)) instanceof Ingredient
+                    ? $this->ingredientOption($ingredient)
+                    : null,
+        );
     }
 
     /** @return list<array{id: int, label: string}> */
-    private function packagingOptions(): array
+    private function loadPackagingOptions(string $search = ''): array
     {
-        return UserPackagingItem::query()
+        $search = $this->normalizedSearch($search);
+        $options = UserPackagingItem::query()
             ->where('user_id', $this->workspace()->owner_user_id)
+            ->when($search !== '', fn (Builder $query): Builder => $query->whereLike('name', "%{$search}%"))
             ->orderBy('name')
+            ->limit(self::OptionLimit)
             ->get(['id', 'name'])
-            ->map(fn (UserPackagingItem $packagingItem): array => [
-                'id' => $packagingItem->id,
-                'label' => $packagingItem->name,
-            ])
-            ->all();
+            ->map(fn (UserPackagingItem $packagingItem): array => $this->packagingOption($packagingItem));
+
+        return $this->retainSelectedOption(
+            $options,
+            $this->packagingItemId,
+            fn (int $id): ?array => ($packagingItem = UserPackagingItem::query()
+                ->where('user_id', $this->workspace()->owner_user_id)
+                ->find($id)) instanceof UserPackagingItem
+                    ? $this->packagingOption($packagingItem)
+                    : null,
+        );
+    }
+
+    private function availableIngredientQuery(): Builder
+    {
+        $user = $this->user();
+        $workspace = $this->workspace();
+        $localeCandidates = Ingredient::translationLocaleCandidates();
+
+        return Ingredient::query()
+            ->with(['translations' => fn ($query) => $query->whereIn('locale', $localeCandidates)])
+            ->where('is_active', true)
+            ->accessibleTo($user)
+            ->where(function (Builder $query) use ($user, $workspace): void {
+                $query->where('visibility', Visibility::Public->value)
+                    ->orWhereNull('owner_type')
+                    ->orWhere(function (Builder $ownedQuery) use ($user): void {
+                        $ownedQuery
+                            ->where('owner_type', OwnerType::User->value)
+                            ->where('owner_id', $user->id);
+                    })
+                    ->orWhere('workspace_id', $workspace->id)
+                    ->orWhere(function (Builder $workspaceQuery) use ($workspace): void {
+                        $workspaceQuery
+                            ->where('owner_type', OwnerType::Workspace->value)
+                            ->where('owner_id', $workspace->id);
+                    });
+            });
+    }
+
+    /** @return array{id: int, label: string} */
+    private function supplierOption(Supplier $supplier): array
+    {
+        return [
+            'id' => $supplier->id,
+            'label' => $supplier->code.' · '.$supplier->name,
+        ];
+    }
+
+    /** @return array{id: int, label: string} */
+    private function ingredientOption(Ingredient $ingredient): array
+    {
+        return [
+            'id' => $ingredient->id,
+            'label' => $ingredient->localizedDisplayName() ?? $ingredient->display_name ?? $ingredient->source_key,
+        ];
+    }
+
+    /** @return array{id: int, label: string} */
+    private function packagingOption(UserPackagingItem $packagingItem): array
+    {
+        return [
+            'id' => $packagingItem->id,
+            'label' => $packagingItem->name,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, array{id: int, label: string}>  $options
+     * @param  callable(int): (array{id: int, label: string}|null)  $resolveSelected
+     * @return list<array{id: int, label: string}>
+     */
+    private function retainSelectedOption(Collection $options, ?int $selectedId, callable $resolveSelected): array
+    {
+        if ($selectedId !== null && ! $options->contains('id', $selectedId)) {
+            $selected = $resolveSelected($selectedId);
+
+            if ($selected !== null) {
+                $options->prepend($selected);
+            }
+        }
+
+        return $options->take(self::OptionLimit)->values()->all();
+    }
+
+    private function normalizedSearch(string $search): string
+    {
+        return Str::limit(trim($search), 100, '');
     }
 
     private function ingredientIsAvailable(Ingredient $ingredient): bool

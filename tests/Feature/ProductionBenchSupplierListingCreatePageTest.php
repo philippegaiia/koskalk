@@ -40,17 +40,21 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertOk()
         ->assertSee('New supplier listing')
         ->assertSee('Supplier')
-        ->assertSee('OLVEA · Olvea')
-        ->assertSee('Olive oil')
         ->assertSee('Purchase format')
         ->assertSee('Pricing')
         ->assertSee('Save supplier listing')
-        ->assertSeeHtml('role="combobox"')
+        ->assertSeeHtml('class="fi-section')
+        ->assertSee('data.supplier_id', escape: false)
+        ->assertDontSee('Select an existing Soapkraft ingredient.')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.listings').'"');
 
-    Livewire::test(SupplierListingCreate::class)
-        ->set('materialType', 'packaging')
-        ->assertSee('Amber bottle');
+    $component = Livewire::test(SupplierListingCreate::class);
+
+    expect($component->instance()->supplierSearchResults('Olvea'))->toBe([$supplier->id => 'OLVEA · Olvea'])
+        ->and($component->instance()->ingredientSearchResults('Olive'))->toHaveCount(1);
+
+    $component->set('data.material_type', 'packaging');
+    expect($component->instance()->packagingSearchResults('Amber'))->toHaveCount(1);
 
     expect(SupplierListing::query()->count())->toBe(0);
 });
@@ -61,16 +65,16 @@ it('requires a supplier on the global listing form', function (): void {
     $this->actingAs($owner);
 
     Livewire::test(SupplierListingCreate::class)
-        ->set('materialType', 'ingredient')
-        ->set('ingredientId', $ingredient->id)
-        ->set('purchaseFormat', '200 kg drum')
-        ->set('netQuantity', '200')
-        ->set('netUnit', 'kg')
-        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
-        ->set('priceAmount', '4.20')
-        ->set('priceUnit', 'kg')
+        ->set('data.material_type', 'ingredient')
+        ->set('data.ingredient_id', $ingredient->id)
+        ->set('data.purchase_format', '200 kg drum')
+        ->set('data.net_quantity', '200')
+        ->set('data.net_unit', 'kg')
+        ->set('data.price_basis', ListingPriceBasis::PerUnit->value)
+        ->set('data.price_amount', '4.20')
+        ->set('data.price_unit', 'kg')
         ->call('save')
-        ->assertHasErrors(['supplierId' => 'required']);
+        ->assertHasErrors(['data.supplier_id' => 'required']);
 
     expect(SupplierListing::query()->count())->toBe(0);
 });
@@ -81,17 +85,17 @@ it('reports all required listing fields together', function (): void {
     $this->actingAs($owner);
 
     Livewire::test(SupplierListingCreate::class)
-        ->set('supplierId', $supplier->id)
-        ->set('ingredientId', null)
-        ->set('purchaseFormat', '')
-        ->set('netQuantity', '')
-        ->set('priceAmount', '')
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.ingredient_id', null)
+        ->set('data.purchase_format', '')
+        ->set('data.net_quantity', '')
+        ->set('data.price_amount', '')
         ->call('save')
         ->assertHasErrors([
-            'ingredientId' => 'required_if',
-            'purchaseFormat' => 'required',
-            'netQuantity' => 'required',
-            'priceAmount' => 'required',
+            'data.ingredient_id',
+            'data.purchase_format' => 'required',
+            'data.net_quantity' => 'required',
+            'data.price_amount' => 'required',
         ]);
 
     expect(SupplierListing::query()->count())->toBe(0);
@@ -104,20 +108,20 @@ it('creates an exact-price mass listing globally and returns to the listings ind
     $this->actingAs($owner);
 
     Livewire::test(SupplierListingCreate::class)
-        ->set('supplierId', $supplier->id)
-        ->set('materialType', 'ingredient')
-        ->set('ingredientId', $ingredient->id)
-        ->set('supplierSku', 'OO-200')
-        ->set('supplierName', 'Extra virgin olive oil')
-        ->set('purchaseFormat', '200 kg drum')
-        ->set('netQuantity', '200')
-        ->set('netUnit', 'kg')
-        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
-        ->set('priceAmount', '4.20')
-        ->set('priceUnit', 'kg')
-        ->set('currency', 'EUR')
-        ->set('minimumPacks', 2)
-        ->set('notes', 'Food grade')
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.material_type', 'ingredient')
+        ->set('data.ingredient_id', $ingredient->id)
+        ->set('data.supplier_sku', 'OO-200')
+        ->set('data.supplier_name', 'Extra virgin olive oil')
+        ->set('data.purchase_format', '200 kg drum')
+        ->set('data.net_quantity', '200')
+        ->set('data.net_unit', 'kg')
+        ->set('data.price_basis', ListingPriceBasis::PerUnit->value)
+        ->set('data.price_amount', '4.20')
+        ->set('data.price_unit', 'kg')
+        ->set('data.currency', 'EUR')
+        ->set('data.minimum_packs', 2)
+        ->set('data.notes', 'Food grade')
         ->assertSee('EUR 840.00 total')
         ->call('save')
         ->assertHasNoErrors()
@@ -154,20 +158,19 @@ it('locks supplier context and returns scoped packaging listings to supplier det
         ->assertOk()
         ->assertSee('BOTTLES')
         ->assertSee('Bottle House')
-        ->assertSee('Supplier selected')
-        ->assertDontSeeHtml('id="supplier-listing-supplier-search"')
+        ->assertSeeHtml('disabled')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.supplier', $supplier).'"');
 
     Livewire::test(SupplierListingCreate::class, ['supplier' => $supplier->public_id])
-        ->assertSet('supplierId', $supplier->id)
-        ->set('supplierId', Supplier::factory()->for($workspace)->create()->id)
-        ->set('materialType', 'packaging')
-        ->set('packagingItemId', $packaging->id)
-        ->set('purchaseFormat', 'Carton of 500')
-        ->set('netQuantity', '500')
-        ->set('priceBasis', ListingPriceBasis::TotalPurchaseFormat->value)
-        ->set('priceAmount', '90')
-        ->set('currency', 'EUR')
+        ->assertSet('data.supplier_id', $supplier->id)
+        ->set('data.supplier_id', Supplier::factory()->for($workspace)->create()->id)
+        ->set('data.material_type', 'packaging')
+        ->set('data.packaging_item_id', $packaging->id)
+        ->set('data.purchase_format', 'Carton of 500')
+        ->set('data.net_quantity', '500')
+        ->set('data.price_basis', ListingPriceBasis::TotalPurchaseFormat->value)
+        ->set('data.price_amount', '90')
+        ->set('data.currency', 'EUR')
         ->assertSee('EUR 0.18 / item')
         ->call('save')
         ->assertHasNoErrors()
@@ -189,18 +192,18 @@ it('uses the workspace mass basis for listing defaults and previews total prices
     $this->actingAs($owner);
 
     Livewire::test(SupplierListingCreate::class)
-        ->assertSet('netUnit', 'lb')
-        ->assertSet('priceUnit', 'lb')
-        ->set('supplierId', $supplier->id)
-        ->set('materialType', 'ingredient')
-        ->set('ingredientId', $ingredient->id)
-        ->set('purchaseFormat', '50 lb pail')
-        ->set('netQuantity', '50')
-        ->set('netUnit', 'lb')
-        ->set('priceBasis', ListingPriceBasis::TotalPurchaseFormat->value)
-        ->set('priceAmount', '125')
-        ->set('priceUnit', '')
-        ->set('currency', 'USD')
+        ->assertSet('data.net_unit', 'lb')
+        ->assertSet('data.price_unit', 'lb')
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.material_type', 'ingredient')
+        ->set('data.ingredient_id', $ingredient->id)
+        ->set('data.purchase_format', '50 lb pail')
+        ->set('data.net_quantity', '50')
+        ->set('data.net_unit', 'lb')
+        ->set('data.price_basis', ListingPriceBasis::TotalPurchaseFormat->value)
+        ->set('data.price_amount', '125')
+        ->set('data.price_unit', '')
+        ->set('data.currency', 'USD')
         ->assertSee('USD 2.50 / lb');
 });
 
@@ -211,17 +214,17 @@ it('rejects a currency outside the maintained catalog', function (): void {
     $this->actingAs($owner);
 
     Livewire::test(SupplierListingCreate::class)
-        ->set('supplierId', $supplier->id)
-        ->set('ingredientId', $ingredient->id)
-        ->set('purchaseFormat', 'Drum')
-        ->set('netQuantity', '1')
-        ->set('netUnit', 'kg')
-        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
-        ->set('priceAmount', '1')
-        ->set('priceUnit', 'kg')
-        ->set('currency', 'ZZZ')
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.ingredient_id', $ingredient->id)
+        ->set('data.purchase_format', 'Drum')
+        ->set('data.net_quantity', '1')
+        ->set('data.net_unit', 'kg')
+        ->set('data.price_basis', ListingPriceBasis::PerUnit->value)
+        ->set('data.price_amount', '1')
+        ->set('data.price_unit', 'kg')
+        ->set('data.currency', 'ZZZ')
         ->call('save')
-        ->assertHasErrors(['currency']);
+        ->assertHasErrors(['data.currency']);
 
     expect(SupplierListing::query()->count())->toBe(0);
 });
@@ -232,12 +235,12 @@ it('does not preselect a historical supplier currency for a new listing', functi
     $this->actingAs($owner);
 
     Livewire::test(SupplierListingCreate::class)
-        ->assertSet('currency', 'EUR')
-        ->set('supplierId', $supplier->id)
-        ->assertSet('currency', 'EUR');
+        ->assertSet('data.currency', 'EUR')
+        ->set('data.supplier_id', $supplier->id)
+        ->assertSet('data.currency', 'EUR');
 
     Livewire::test(SupplierListingCreate::class, ['supplier' => $supplier->public_id])
-        ->assertSet('currency', 'EUR');
+        ->assertSet('data.currency', 'EUR');
 
     $historicalOwner = User::factory()->create();
     $historicalWorkspace = Workspace::factory()->for($historicalOwner, 'owner')->create(['default_currency' => 'HRK']);
@@ -246,12 +249,9 @@ it('does not preselect a historical supplier currency for a new listing', functi
     $this->actingAs($historicalOwner);
 
     Livewire::test(SupplierListingCreate::class, ['supplier' => $historicalSupplier->public_id])
-        ->assertSet('currency', '')
-        ->assertViewHas('currencyOptions', fn (array $options): bool => collect($options)->every(
-            fn (array $option): bool => filled($option['id']) && filled($option['label']),
-        ))
+        ->assertSet('data.currency', '')
         ->call('save')
-        ->assertHasErrors(['currency' => 'required']);
+        ->assertHasErrors(['data.currency' => 'required']);
 });
 
 it('bounds server-side catalog searches and retains selected rows', function (): void {
@@ -273,25 +273,22 @@ it('bounds server-side catalog searches and retains selected rows', function ():
 
     $component = Livewire::test(SupplierListingCreate::class);
 
-    expect($component->get('supplierOptions'))->toHaveCount(20)
-        ->and($component->get('ingredientOptions'))->toHaveCount(20)
-        ->and($component->get('packagingOptions'))->toBe([]);
+    expect($component->instance()->supplierSearchResults(''))->toHaveCount(20)
+        ->and($component->instance()->ingredientSearchResults(''))->toHaveCount(20)
+        ->and($component->instance()->packagingSearchResults(''))->toBe([]);
 
     $component
-        ->set('supplierId', $selectedSupplier->id)
-        ->call('searchSupplierOptions', 'no matching supplier');
+        ->set('data.supplier_id', $selectedSupplier->id);
 
-    expect($component->get('supplierOptions'))
-        ->toHaveCount(1)
-        ->and(collect($component->get('supplierOptions'))->pluck('id')->all())
-        ->toContain($selectedSupplier->id);
+    expect($component->instance()->supplierSearchResults('no matching supplier'))->toBe([])
+        ->and($component->instance()->supplierOptionLabel($selectedSupplier->id))->toBe($selectedSupplier->code.' · '.$selectedSupplier->name);
 
     $catalogQueries = [];
     DB::listen(function (QueryExecuted $query) use (&$catalogQueries): void {
         $catalogQueries[] = $query->sql;
     });
 
-    $component->call('searchIngredientOptions', 'Ingredient');
+    $component->instance()->ingredientSearchResults('Ingredient');
 
     expect(collect($catalogQueries)->contains(
         fn (string $sql): bool => Str::contains($sql, 'from "ingredients"')
@@ -302,23 +299,21 @@ it('bounds server-side catalog searches and retains selected rows', function ():
         ))->toBeFalse();
 
     $component
-        ->set('ingredientId', $ingredients->last()->id)
-        ->call('searchIngredientOptions', 'no matching ingredient');
+        ->set('data.ingredient_id', $ingredients->last()->id);
 
-    expect(collect($component->get('ingredientOptions'))->pluck('id')->all())
-        ->toBe([$ingredients->last()->id]);
+    expect($component->instance()->ingredientSearchResults('no matching ingredient'))->toBe([])
+        ->and($component->instance()->ingredientOptionLabel($ingredients->last()->id))->toBe('Ingredient 30');
 
-    $component->set('materialType', 'packaging');
+    $component->set('data.material_type', 'packaging');
 
-    expect($component->get('ingredientOptions'))->toBe([])
-        ->and($component->get('packagingOptions'))->toHaveCount(20);
+    expect($component->instance()->ingredientSearchResults(''))->toBe([])
+        ->and($component->instance()->packagingSearchResults(''))->toHaveCount(20);
 
     $component
-        ->set('packagingItemId', $packagingItems->last()->id)
-        ->call('searchPackagingOptions', 'no matching packaging item');
+        ->set('data.packaging_item_id', $packagingItems->last()->id);
 
-    expect(collect($component->get('packagingOptions'))->pluck('id')->all())
-        ->toBe([$packagingItems->last()->id]);
+    expect($component->instance()->packagingSearchResults('no matching packaging item'))->toBe([])
+        ->and($component->instance()->packagingOptionLabel($packagingItems->last()->id))->toBe('Packaging 30');
 });
 
 it('does not requery supplier or material catalogs for price preview updates', function (): void {
@@ -338,8 +333,8 @@ it('does not requery supplier or material catalogs for price preview updates', f
     });
 
     $component
-        ->set('netQuantity', '2')
-        ->set('priceAmount', '4.25');
+        ->set('data.net_quantity', '2')
+        ->set('data.price_amount', '4.25');
 
     expect($selectorQueries)->toBe([]);
 });
@@ -366,28 +361,28 @@ it('keeps supplier and material selection inside the current workspace', functio
         ->assertDontSee('Foreign Supplier')
         ->assertDontSee('Foreign oil')
         ->assertDontSee('Foreign bottle')
-        ->set('supplierId', $foreignSupplier->id)
-        ->set('materialType', 'ingredient')
-        ->set('ingredientId', $foreignIngredient->id)
-        ->set('purchaseFormat', 'Drum')
-        ->set('netQuantity', '1')
-        ->set('netUnit', 'kg')
-        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
-        ->set('priceAmount', '1')
-        ->set('priceUnit', 'kg')
+        ->set('data.supplier_id', $foreignSupplier->id)
+        ->set('data.material_type', 'ingredient')
+        ->set('data.ingredient_id', $foreignIngredient->id)
+        ->set('data.purchase_format', 'Drum')
+        ->set('data.net_quantity', '1')
+        ->set('data.net_unit', 'kg')
+        ->set('data.price_basis', ListingPriceBasis::PerUnit->value)
+        ->set('data.price_amount', '1')
+        ->set('data.price_unit', 'kg')
         ->call('save')
-        ->assertHasErrors('supplierId');
+        ->assertHasErrors('data.supplier_id');
 
     Livewire::test(SupplierListingCreate::class)
-        ->set('supplierId', $supplier->id)
-        ->set('materialType', 'packaging')
-        ->set('packagingItemId', $foreignPackaging->id)
-        ->set('purchaseFormat', 'Carton')
-        ->set('netQuantity', '1')
-        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
-        ->set('priceAmount', '1')
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.material_type', 'packaging')
+        ->set('data.packaging_item_id', $foreignPackaging->id)
+        ->set('data.purchase_format', 'Carton')
+        ->set('data.net_quantity', '1')
+        ->set('data.price_basis', ListingPriceBasis::PerUnit->value)
+        ->set('data.price_amount', '1')
         ->call('save')
-        ->assertHasErrors('packagingItemId');
+        ->assertHasErrors('data.packaging_item_id');
 
     expect(SupplierListing::query()->count())->toBe(0);
 });
@@ -408,20 +403,20 @@ it('rejects inactive and read-only listing pages and blocks a later save', funct
     $ingredient = Ingredient::factory()->create();
     $this->actingAs($owner);
     $component = Livewire::test(SupplierListingCreate::class)
-        ->set('supplierId', $supplier->id)
-        ->set('materialType', 'ingredient')
-        ->set('ingredientId', $ingredient->id)
-        ->set('purchaseFormat', 'Drum')
-        ->set('netQuantity', '1')
-        ->set('netUnit', 'kg')
-        ->set('priceBasis', ListingPriceBasis::PerUnit->value)
-        ->set('priceAmount', '1')
-        ->set('priceUnit', 'kg');
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.material_type', 'ingredient')
+        ->set('data.ingredient_id', $ingredient->id)
+        ->set('data.purchase_format', 'Drum')
+        ->set('data.net_quantity', '1')
+        ->set('data.net_unit', 'kg')
+        ->set('data.price_basis', ListingPriceBasis::PerUnit->value)
+        ->set('data.price_amount', '1')
+        ->set('data.price_unit', 'kg');
 
     app(ProductionBenchAccess::class)->cancel($owner, $workspace);
 
     $this->get('/dashboard/production-bench/purchasing/listings/new')->assertForbidden();
-    $component->call('save')->assertHasErrors('production_bench');
+    $component->call('save')->assertHasErrors('data.production_bench');
 
     expect(SupplierListing::query()->count())->toBe(0);
 });

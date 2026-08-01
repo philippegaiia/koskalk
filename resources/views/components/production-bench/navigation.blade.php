@@ -14,5 +14,4 @@
             ])
         >{{ $label }}</a>
     @endforeach
-    <span class="whitespace-nowrap px-4 py-3 text-sm text-[var(--color-ink-muted)]">Production runs · next checkpoint</span>
 </nav>

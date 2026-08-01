@@ -12,8 +12,7 @@
         @endif
 
         <header>
-            <p class="sk-eyebrow">Inventory</p>
-            <h1 class="mt-2 font-serif text-4xl text-[var(--color-ink-strong)]">What is here, and what is usable.</h1>
+            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Inventory</h1>
             <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">Physical includes quarantined stock. Available is what production can actually use. Negative balances are allowed and can be corrected after a drum or bottle is measured.</p>
         </header>
 

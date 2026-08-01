@@ -12,6 +12,25 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
+it('uses factual production bench copy', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user)
+        ->get(route('production-bench.home'))
+        ->assertOk()
+        ->assertDontSee('Optional professional workspace')
+        ->assertDontSee('Production without the ERP headache.')
+        ->assertDontSee('Ready when your production grows')
+        ->assertDontSee('next checkpoint');
+
+    $this->get(route('production-bench.inventory'))
+        ->assertOk()
+        ->assertSee('Inventory')
+        ->assertDontSee('What is here, and what is usable.');
+});
+
 it('exposes the production bench as a separate authenticated workspace', function (): void {
     $this->get('/dashboard/production-bench')->assertRedirect('/login');
 

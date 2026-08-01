@@ -8,47 +8,31 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrencyCatalog;
 use App\Services\ProductionBenchAccess;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
-class SupplierEdit extends Component
+class SupplierEdit extends Component implements HasForms
 {
+    use InteractsWithForms;
+    use RestrictsFileUploadsToSchemaComponents;
+
     private CurrencyCatalog $currencyCatalog;
 
     public string|Supplier $supplier;
 
-    public string $code = '';
-
-    public string $name = '';
-
-    public bool $isActive = true;
-
-    public string $defaultCurrency = '';
-
-    public string $contactName = '';
-
-    public string $email = '';
-
-    public string $phone = '';
-
-    public string $website = '';
-
-    public string $addressLine1 = '';
-
-    public string $addressLine2 = '';
-
-    public string $city = '';
-
-    public string $region = '';
-
-    public string $postalCode = '';
-
-    public string $countryCode = '';
-
-    public string $notes = '';
+    /** @var array<string, mixed> */
+    public array $data = [];
 
     public function boot(CurrencyCatalog $currencyCatalog): void
     {
@@ -64,25 +48,23 @@ class SupplierEdit extends Component
             ->firstOrFail();
 
         $this->assertPageIsWritable($access);
-        $this->fillForm();
+        $this->form->fill($this->supplier->only([
+            'code', 'name', 'is_active', 'default_currency', 'contact_name', 'email', 'phone', 'website',
+            'address_line_1', 'address_line_2', 'city', 'region', 'postal_code', 'country_code', 'notes',
+        ]));
     }
 
     public function save(SaveSupplier $saveSupplier): void
     {
-        $this->normalizeCodes();
-        $this->validate($this->rules());
-
         if (! $this->supplier instanceof Supplier) {
             abort(404);
         }
 
+        /** @var array<string, mixed> $state */
+        $state = $this->form->getState();
+
         try {
-            $this->supplier = $saveSupplier->handle(
-                $this->user(),
-                $this->workspace(),
-                $this->supplierAttributes(),
-                $this->supplier,
-            );
+            $this->supplier = $saveSupplier->handle($this->user(), $this->workspace(), $state, $this->supplier);
         } catch (ValidationException $exception) {
             $this->surfaceValidationErrors($exception);
 
@@ -92,110 +74,66 @@ class SupplierEdit extends Component
         $this->redirectRoute('production-bench.purchasing.supplier', ['supplier' => $this->supplier], navigate: true);
     }
 
+    public function form(Schema $schema): Schema
+    {
+        return $schema
+            ->components($this->formComponents())
+            ->statePath('data')
+            ->model($this->supplier instanceof Supplier ? $this->supplier : Supplier::class);
+    }
+
     public function render(): View
     {
         return view('livewire.production-bench.purchasing.supplier-edit');
     }
 
-    private function fillForm(): void
+    /** @return array<int, Section> */
+    private function formComponents(): array
     {
-        $this->fill([
-            'code' => $this->supplier->code,
-            'name' => $this->supplier->name,
-            'isActive' => $this->supplier->is_active,
-            'defaultCurrency' => $this->supplier->default_currency,
-            'contactName' => $this->supplier->contact_name ?? '',
-            'email' => $this->supplier->email ?? '',
-            'phone' => $this->supplier->phone ?? '',
-            'website' => $this->supplier->website ?? '',
-            'addressLine1' => $this->supplier->address_line_1 ?? '',
-            'addressLine2' => $this->supplier->address_line_2 ?? '',
-            'city' => $this->supplier->city ?? '',
-            'region' => $this->supplier->region ?? '',
-            'postalCode' => $this->supplier->postal_code ?? '',
-            'countryCode' => $this->supplier->country_code ?? '',
-            'notes' => $this->supplier->notes ?? '',
-        ]);
-    }
-
-    /** @return array<string, array<int, mixed>> */
-    private function rules(): array
-    {
-        $allowedCurrencies = $this->currencyCatalog->selectableCodes();
-
-        if ($this->supplier instanceof Supplier && $this->currencyCatalog->isKnown($this->supplier->default_currency)) {
-            $allowedCurrencies[] = Str::upper($this->supplier->default_currency);
-        }
-
         return [
-            'code' => ['required', 'string', 'max:16', 'regex:/^[A-Z0-9_-]+$/'],
-            'name' => ['required', 'string', 'max:255'],
-            'isActive' => ['required', 'boolean'],
-            'defaultCurrency' => ['required', 'string', 'size:3', Rule::in(array_unique($allowedCurrencies))],
-            'contactName' => ['nullable', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:255'],
-            'website' => ['nullable', 'url:http,https', 'max:255'],
-            'addressLine1' => ['nullable', 'string', 'max:255'],
-            'addressLine2' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'region' => ['nullable', 'string', 'max:255'],
-            'postalCode' => ['nullable', 'string', 'max:32'],
-            'countryCode' => ['nullable', 'alpha:ascii', 'size:2'],
-            'notes' => ['nullable', 'string'],
+            Section::make('Supplier')->columns(['md' => 2])->schema([
+                TextInput::make('code')->label('Code')->helperText('Up to 16 letters, numbers, hyphens, or underscores.')->required()->maxLength(16)->regex('/^[A-Za-z0-9_-]+$/')->mutateStateForValidationUsing(fn (?string $state): string => Str::upper(trim((string) $state)))->dehydrateStateUsing(fn (?string $state): string => Str::upper(trim((string) $state))),
+                TextInput::make('name')->label('Name')->required()->maxLength(255)->autocomplete('organization'),
+                Select::make('default_currency')->label('Currency')->options($this->currencyOptions())->searchable()->required(),
+                Toggle::make('is_active')->label('Active'),
+            ]),
+            Section::make('Main contact')->columns(['md' => 2])->schema([
+                TextInput::make('contact_name')->label('Name')->maxLength(255)->autocomplete('name'),
+                TextInput::make('email')->label('Email')->email()->maxLength(255)->autocomplete('email'),
+                TextInput::make('phone')->label('Telephone')->tel()->maxLength(255)->autocomplete('tel'),
+                TextInput::make('website')->label('Website')->url()->rules(['url:http,https'])->maxLength(255)->autocomplete('url')->placeholder('https://'),
+            ]),
+            Section::make('Address')->columns(['md' => 2])->schema([
+                TextInput::make('address_line_1')->label('Address line 1')->maxLength(255)->autocomplete('address-line1')->columnSpanFull(),
+                TextInput::make('address_line_2')->label('Address line 2')->maxLength(255)->autocomplete('address-line2')->columnSpanFull(),
+                TextInput::make('city')->label('City')->maxLength(255)->autocomplete('address-level2'),
+                TextInput::make('region')->label('Region')->maxLength(255)->autocomplete('address-level1'),
+                TextInput::make('postal_code')->label('Postal code')->maxLength(32)->autocomplete('postal-code'),
+                TextInput::make('country_code')->label('Country code')->length(2)->alpha()->autocomplete('country')->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Str::upper(trim((string) $state)) : null),
+            ]),
+            Section::make('Notes')->schema([
+                Textarea::make('notes')->hiddenLabel()->rows(4),
+            ]),
         ];
     }
 
-    /** @return array<string, mixed> */
-    private function supplierAttributes(): array
+    /** @return array<string, string> */
+    private function currencyOptions(): array
     {
-        return [
-            'code' => $this->code,
-            'name' => $this->name,
-            'is_active' => $this->isActive,
-            'default_currency' => $this->defaultCurrency,
-            'contact_name' => $this->contactName,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'website' => $this->website,
-            'address_line_1' => $this->addressLine1,
-            'address_line_2' => $this->addressLine2,
-            'city' => $this->city,
-            'region' => $this->region,
-            'postal_code' => $this->postalCode,
-            'country_code' => $this->countryCode,
-            'notes' => $this->notes,
-        ];
-    }
+        $includeCodes = $this->supplier instanceof Supplier ? [$this->supplier->default_currency] : [];
 
-    private function normalizeCodes(): void
-    {
-        $this->code = Str::upper(trim($this->code));
-        $this->countryCode = Str::upper(trim($this->countryCode));
-        $this->defaultCurrency = Str::upper(trim($this->defaultCurrency));
+        return collect($this->currencyCatalog->options(app()->getLocale(), $includeCodes))
+            ->mapWithKeys(fn (string $name, string $code): array => [$code => $code.' · '.$name])
+            ->all();
     }
 
     private function surfaceValidationErrors(ValidationException $exception): void
     {
         foreach ($exception->errors() as $field => $messages) {
             foreach ($messages as $message) {
-                $this->addError($this->formField($field), $message);
+                $this->addError('data.'.$field, $message);
             }
         }
-    }
-
-    private function formField(string $field): string
-    {
-        return match ($field) {
-            'is_active' => 'isActive',
-            'default_currency' => 'defaultCurrency',
-            'contact_name' => 'contactName',
-            'address_line_1' => 'addressLine1',
-            'address_line_2' => 'addressLine2',
-            'postal_code' => 'postalCode',
-            'country_code' => 'countryCode',
-            default => $field,
-        };
     }
 
     private function assertPageIsWritable(ProductionBenchAccess $access): void

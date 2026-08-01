@@ -217,10 +217,10 @@ it('normalizes a supplier code through the focused creation form', function (): 
     $this->actingAs($owner);
 
     Livewire::test(SupplierCreate::class)
-        ->set([
+        ->fillForm([
             'code' => ' oleva_01 ',
             'name' => 'Northern Oils',
-            'defaultCurrency' => 'EUR',
+            'default_currency' => 'EUR',
         ])
         ->call('save')
         ->assertHasNoErrors();
@@ -237,7 +237,7 @@ it('normalizes a supplier code through the focused edit form', function (): void
     $this->actingAs($owner);
 
     Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
-        ->set('code', ' oleva_01 ')
+        ->fillForm(['code' => ' oleva_01 '])
         ->call('save')
         ->assertHasNoErrors();
 

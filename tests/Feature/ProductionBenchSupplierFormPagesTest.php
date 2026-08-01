@@ -33,6 +33,8 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertSee('Notes')
         ->assertSee('Save supplier')
         ->assertSee('Cancel')
+        ->assertSeeHtml('class="fi-section')
+        ->assertSeeHtml('wire:model="data.code"')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers').'"')
         ->assertSeeHtml('maxlength="16"');
 
@@ -45,21 +47,21 @@ it('creates a supplier with structured fields and opens its detail page', functi
     $this->actingAs($owner);
 
     Livewire::test(SupplierCreate::class)
-        ->set([
+        ->fillForm([
             'code' => ' oil_fr_01 ',
             'name' => 'French Oils',
-            'isActive' => true,
-            'defaultCurrency' => 'eur',
-            'contactName' => 'Marie Dupont',
+            'is_active' => true,
+            'default_currency' => 'EUR',
+            'contact_name' => 'Marie Dupont',
             'email' => 'marie@french-oils.example',
             'phone' => '+33 1 22 33 44 55',
             'website' => 'https://french-oils.example',
-            'addressLine1' => '12 rue des Huiles',
-            'addressLine2' => 'Bâtiment B',
+            'address_line_1' => '12 rue des Huiles',
+            'address_line_2' => 'Bâtiment B',
             'city' => 'Marseille',
             'region' => 'Provence',
-            'postalCode' => '13001',
-            'countryCode' => 'fr',
+            'postal_code' => '13001',
+            'country_code' => 'fr',
             'notes' => 'Main oil supplier.',
         ])
         ->call('save')
@@ -88,8 +90,7 @@ it('creates a supplier with structured fields and opens its detail page', functi
     ]);
 
     Livewire::test(SupplierCreate::class)
-        ->set('code', 'SECOND')
-        ->set('name', 'Second supplier')
+        ->fillForm(['code' => 'SECOND', 'name' => 'Second supplier'])
         ->call('save')
         ->assertRedirect(route('production-bench.purchasing.supplier', Supplier::query()->where('code', 'SECOND')->firstOrFail()));
 });
@@ -117,9 +118,7 @@ it('edits a workspace supplier without changing its public id', function (): voi
         ->city->toBe('Lyon');
 
     Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
-        ->set('code', 'new-code')
-        ->set('name', 'New name')
-        ->set('city', 'Paris')
+        ->fillForm(['code' => 'new-code', 'name' => 'New name', 'city' => 'Paris'])
         ->call('save')
         ->assertHasNoErrors()
         ->assertRedirect(route('production-bench.purchasing.supplier', $supplier));
@@ -146,13 +145,15 @@ it('rejects invalid supplier form values on their fields', function (): void {
     $this->actingAs($owner);
 
     Livewire::test(SupplierCreate::class)
-        ->set('code', 'invalid code that is too long')
-        ->set('name', '')
-        ->set('email', 'not-an-email')
-        ->set('website', 'not-a-url')
-        ->set('countryCode', 'France')
+        ->fillForm([
+            'code' => 'invalid code that is too long',
+            'name' => '',
+            'email' => 'not-an-email',
+            'website' => 'not-a-url',
+            'country_code' => 'France',
+        ])
         ->call('save')
-        ->assertHasErrors(['code', 'name', 'email', 'website', 'countryCode']);
+        ->assertHasFormErrors(['code', 'name', 'email', 'website', 'country_code']);
 });
 
 it('rejects unsupported currencies and non-http supplier websites', function (): void {
@@ -161,18 +162,14 @@ it('rejects unsupported currencies and non-http supplier websites', function ():
     $this->actingAs($owner);
 
     Livewire::test(SupplierCreate::class)
-        ->set('code', 'UNSAFE')
-        ->set('name', 'Unsafe supplier')
-        ->set('defaultCurrency', 'ZZZ')
-        ->set('website', 'data:text/html,unsafe')
+        ->fillForm(['code' => 'UNSAFE', 'name' => 'Unsafe supplier', 'default_currency' => 'ZZZ', 'website' => 'data:text/html,unsafe'])
         ->call('save')
-        ->assertHasErrors(['defaultCurrency', 'website']);
+        ->assertHasFormErrors(['default_currency', 'website']);
 
     Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
-        ->set('defaultCurrency', 'ZZZ')
-        ->set('website', 'smb://files.example/supplier')
+        ->fillForm(['default_currency' => 'ZZZ', 'website' => 'smb://files.example/supplier'])
         ->call('save')
-        ->assertHasErrors(['defaultCurrency', 'website']);
+        ->assertHasFormErrors(['default_currency', 'website']);
 
     expect(Supplier::query()->where('code', 'UNSAFE')->exists())->toBeFalse()
         ->and($supplier->fresh()?->default_currency)->not->toBe('ZZZ')
@@ -188,8 +185,8 @@ it('preserves an unchanged historical currency while editing other supplier fiel
     $this->actingAs($owner);
 
     Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
-        ->assertSet('defaultCurrency', 'HRK')
-        ->set('city', 'Split')
+        ->assertFormSet(['default_currency' => 'HRK'])
+        ->fillForm(['city' => 'Split'])
         ->call('save')
         ->assertHasNoErrors();
 
@@ -203,9 +200,9 @@ it('does not let a historical supplier currency be replaced by another unavailab
     $this->actingAs($owner);
 
     Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
-        ->set('defaultCurrency', 'ZWL')
+        ->fillForm(['default_currency' => 'ZWL'])
         ->call('save')
-        ->assertHasErrors(['defaultCurrency']);
+        ->assertHasFormErrors(['default_currency']);
 
     expect($supplier->fresh()?->default_currency)->toBe('HRK');
 });
@@ -236,12 +233,11 @@ it('blocks a supplier save when the workspace becomes read only', function (): v
     [$owner, $workspace] = supplierFormWorkspace();
     $this->actingAs($owner);
     $component = Livewire::test(SupplierCreate::class)
-        ->set('code', 'BLOCKED')
-        ->set('name', 'Blocked supplier');
+        ->fillForm(['code' => 'BLOCKED', 'name' => 'Blocked supplier']);
 
     app(ProductionBenchAccess::class)->cancel($owner, $workspace);
 
-    $component->call('save')->assertHasErrors('production_bench');
+    $component->call('save')->assertHasErrors('data.production_bench');
 
     expect(Supplier::query()->where('workspace_id', $workspace->id)->where('code', 'BLOCKED')->exists())->toBeFalse();
 });

@@ -18,7 +18,6 @@ use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\Support\LocalizedDecimalInput;
 use App\Visibility;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -26,6 +25,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -50,6 +50,18 @@ class SupplierListingCreate extends Component implements HasForms
     #[Locked]
     public ?string $lockedSupplierPublicId = null;
 
+    /** @var array<int, string> */
+    #[Locked]
+    public array $supplierOptionLabels = [];
+
+    /** @var array<int, string> */
+    #[Locked]
+    public array $ingredientOptionLabels = [];
+
+    /** @var array<int, string> */
+    #[Locked]
+    public array $packagingOptionLabels = [];
+
     /** @var array<string, mixed> */
     public array $data = [];
 
@@ -68,6 +80,7 @@ class SupplierListingCreate extends Component implements HasForms
             $supplierPublicId = $supplier instanceof Supplier ? $supplier->public_id : $supplier;
             $lockedSupplier = $this->workspaceSupplierByPublicId($supplierPublicId);
             $this->lockedSupplierPublicId = $lockedSupplier->public_id;
+            $this->supplierOptionLabels[$lockedSupplier->id] = $this->supplierLabel($lockedSupplier);
         }
 
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
@@ -140,6 +153,7 @@ class SupplierListingCreate extends Component implements HasForms
                             $supplier = $this->workspaceSupplierById(is_numeric($state) ? (int) $state : null);
 
                             if ($supplier instanceof Supplier) {
+                                $this->supplierOptionLabels[$supplier->id] = $this->supplierLabel($supplier);
                                 $set('currency', $this->newListingCurrency($supplier));
                             }
                         }),
@@ -168,6 +182,7 @@ class SupplierListingCreate extends Component implements HasForms
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => $this->ingredientSearchResults($search))
                             ->getOptionLabelUsing(fn (mixed $value): ?string => $this->ingredientOptionLabel((int) $value))
+                            ->afterStateUpdated(fn (mixed $state): ?string => is_numeric($state) ? $this->ingredientOptionLabel((int) $state) : null)
                             ->required(fn (Get $get): bool => $get('material_type') === 'ingredient')
                             ->visible(fn (Get $get): bool => $get('material_type') === 'ingredient')
                             ->columnSpanFull(),
@@ -176,6 +191,7 @@ class SupplierListingCreate extends Component implements HasForms
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => $this->packagingSearchResults($search))
                             ->getOptionLabelUsing(fn (mixed $value): ?string => $this->packagingOptionLabel((int) $value))
+                            ->afterStateUpdated(fn (mixed $state): ?string => is_numeric($state) ? $this->packagingOptionLabel((int) $state) : null)
                             ->required(fn (Get $get): bool => $get('material_type') === 'packaging')
                             ->visible(fn (Get $get): bool => $get('material_type') === 'packaging')
                             ->columnSpanFull(),
@@ -238,9 +254,9 @@ class SupplierListingCreate extends Component implements HasForms
                             ->searchable()
                             ->required()
                             ->live(),
-                        Placeholder::make('price_preview')
+                        TextEntry::make('price_preview')
                             ->label('Calculated price')
-                            ->content(fn (): string => $this->pricePreviewText())
+                            ->state(fn (): string => $this->pricePreviewText())
                             ->columnSpanFull(),
                     ]),
                 Section::make('Ordering')
@@ -265,7 +281,7 @@ class SupplierListingCreate extends Component implements HasForms
     /** @return array<int, string> */
     public function supplierSearchResults(string $search): array
     {
-        return Supplier::query()
+        $results = Supplier::query()
             ->where('workspace_id', $this->workspace()->id)
             ->when($this->normalizedSearch($search) !== '', function (Builder $query) use ($search): void {
                 $search = $this->normalizedSearch($search);
@@ -276,6 +292,10 @@ class SupplierListingCreate extends Component implements HasForms
             ->get(['id', 'code', 'name'])
             ->mapWithKeys(fn (Supplier $supplier): array => [$supplier->id => $this->supplierLabel($supplier)])
             ->all();
+
+        $this->supplierOptionLabels = array_replace($this->supplierOptionLabels, $results);
+
+        return $results;
     }
 
     /** @return array<int, string> */
@@ -287,7 +307,7 @@ class SupplierListingCreate extends Component implements HasForms
 
         $search = $this->normalizedSearch($search);
 
-        return $this->availableIngredientQuery()
+        $results = $this->availableIngredientQuery()
             ->when($search !== '', fn (Builder $query): Builder => $query->where(fn (Builder $nested): Builder => $nested
                 ->whereLike('display_name', "%{$search}%")
                 ->orWhereLike('source_key', "%{$search}%")
@@ -298,6 +318,10 @@ class SupplierListingCreate extends Component implements HasForms
             ->get()
             ->mapWithKeys(fn (Ingredient $ingredient): array => [$ingredient->id => $this->ingredientLabel($ingredient)])
             ->all();
+
+        $this->ingredientOptionLabels = array_replace($this->ingredientOptionLabels, $results);
+
+        return $results;
     }
 
     /** @return array<int, string> */
@@ -309,7 +333,7 @@ class SupplierListingCreate extends Component implements HasForms
 
         $search = $this->normalizedSearch($search);
 
-        return UserPackagingItem::query()
+        $results = UserPackagingItem::query()
             ->where('user_id', $this->workspace()->owner_user_id)
             ->when($search !== '', fn (Builder $query): Builder => $query->whereLike('name', "%{$search}%"))
             ->orderBy('name')
@@ -317,27 +341,57 @@ class SupplierListingCreate extends Component implements HasForms
             ->get(['id', 'name'])
             ->mapWithKeys(fn (UserPackagingItem $item): array => [$item->id => $item->name])
             ->all();
+
+        $this->packagingOptionLabels = array_replace($this->packagingOptionLabels, $results);
+
+        return $results;
     }
 
     public function supplierOptionLabel(int $id): ?string
     {
+        if (isset($this->supplierOptionLabels[$id])) {
+            return $this->supplierOptionLabels[$id];
+        }
+
         $supplier = $this->workspaceSupplierById($id);
 
-        return $supplier instanceof Supplier ? $this->supplierLabel($supplier) : null;
+        if (! $supplier instanceof Supplier) {
+            return null;
+        }
+
+        return $this->supplierOptionLabels[$id] = $this->supplierLabel($supplier);
     }
 
     public function ingredientOptionLabel(int $id): ?string
     {
+        if (isset($this->ingredientOptionLabels[$id])) {
+            return $this->ingredientOptionLabels[$id];
+        }
+
         $ingredient = $this->availableIngredientQuery()->find($id);
 
-        return $ingredient instanceof Ingredient ? $this->ingredientLabel($ingredient) : null;
+        if (! $ingredient instanceof Ingredient) {
+            return null;
+        }
+
+        return $this->ingredientOptionLabels[$id] = $this->ingredientLabel($ingredient);
     }
 
     public function packagingOptionLabel(int $id): ?string
     {
-        return UserPackagingItem::query()
+        if (isset($this->packagingOptionLabels[$id])) {
+            return $this->packagingOptionLabels[$id];
+        }
+
+        $label = UserPackagingItem::query()
             ->where('user_id', $this->workspace()->owner_user_id)
             ->find($id)?->name;
+
+        if ($label === null) {
+            return null;
+        }
+
+        return $this->packagingOptionLabels[$id] = $label;
     }
 
     /** @param array<string, mixed> $state */

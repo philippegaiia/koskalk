@@ -185,7 +185,7 @@ it('preserves an unchanged historical currency while editing other supplier fiel
     $this->actingAs($owner);
 
     Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
-        ->assertFormSet(['default_currency' => 'HRK'])
+        ->assertSchemaStateSet(['default_currency' => 'HRK'])
         ->fillForm(['city' => 'Split'])
         ->call('save')
         ->assertHasNoErrors();

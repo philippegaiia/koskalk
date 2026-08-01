@@ -350,12 +350,16 @@ it('bounds server-side catalog searches and retains selected rows', function ():
 
 it('does not requery supplier or material catalogs for price preview updates', function (): void {
     [$owner, $workspace] = listingCreateWorkspace();
-    Supplier::factory()->count(3)->for($workspace)->create();
-    Ingredient::factory()->count(3)->create();
+    $supplier = Supplier::factory()->for($workspace)->create(['code' => 'SELECTED', 'name' => 'Selected supplier']);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Selected ingredient']);
+    Supplier::factory()->count(2)->for($workspace)->create();
+    Ingredient::factory()->count(2)->create();
     UserPackagingItem::factory()->count(3)->for($owner)->create();
     $this->actingAs($owner);
 
-    $component = Livewire::test(SupplierListingCreate::class);
+    $component = Livewire::test(SupplierListingCreate::class)
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.ingredient_id', $ingredient->id);
     $selectorQueries = [];
 
     DB::listen(function (QueryExecuted $query) use (&$selectorQueries): void {
@@ -366,7 +370,9 @@ it('does not requery supplier or material catalogs for price preview updates', f
 
     $component
         ->set('data.net_quantity', '2')
-        ->set('data.price_amount', '4.25');
+        ->set('data.price_amount', '4.25')
+        ->assertSee('SELECTED · Selected supplier')
+        ->assertSee('Selected ingredient');
 
     expect($selectorQueries)->toBe([]);
 });

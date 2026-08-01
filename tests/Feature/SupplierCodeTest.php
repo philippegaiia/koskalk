@@ -1,6 +1,9 @@
 <?php
 
 use App\Actions\Purchasing\SaveSupplier;
+use App\Livewire\ProductionBench\Purchasing\SupplierDetail;
+use App\Livewire\ProductionBench\Purchasing\SupplierIndex;
+use App\Livewire\ProductionBench\PurchasingIndex;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
@@ -12,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -188,6 +192,56 @@ it('enforces case-insensitive workspace uniqueness at the database level', funct
         'created_at' => now(),
         'updated_at' => now(),
     ]))->toThrow(QueryException::class);
+});
+
+it('creates a supplier with a code through the legacy purchasing component', function (): void {
+    [$owner, $workspace] = activeSupplierCodeWorkspace();
+    $this->actingAs($owner);
+
+    Livewire::test(PurchasingIndex::class)
+        ->set([
+            'supplierCode' => ' olema_01 ',
+            'supplierName' => 'Legacy oils',
+        ])
+        ->call('createSupplier')
+        ->assertHasNoErrors();
+
+    expect(Supplier::query()
+        ->where('workspace_id', $workspace->id)
+        ->sole()
+        ->code)->toBe('OLEMA_01');
+});
+
+it('normalizes a supplier code through the focused creation form', function (): void {
+    [$owner, $workspace] = activeSupplierCodeWorkspace();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierIndex::class)
+        ->set([
+            'code' => ' oleva_01 ',
+            'name' => 'Northern Oils',
+            'defaultCurrency' => 'EUR',
+        ])
+        ->call('saveSupplier')
+        ->assertHasNoErrors();
+
+    expect(Supplier::query()
+        ->where('workspace_id', $workspace->id)
+        ->sole()
+        ->code)->toBe('OLEVA_01');
+});
+
+it('normalizes a supplier code through the focused edit form', function (): void {
+    [$owner, $workspace] = activeSupplierCodeWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['code' => 'OLEVA_01']);
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id])
+        ->set('code', ' oleva_01 ')
+        ->call('saveSupplier')
+        ->assertHasNoErrors();
+
+    expect($supplier->fresh()?->code)->toBe('OLEVA_01');
 });
 
 /** @return array<string, mixed> */

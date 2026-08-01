@@ -18,6 +18,7 @@ use App\Services\SupplierListingPricePresentation;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -139,6 +140,8 @@ class SupplierDetail extends Component
 
     public function saveSupplier(SaveSupplier $saveSupplier): void
     {
+        $this->code = Str::upper(trim($this->code));
+
         $this->validate($this->supplierRules());
 
         $this->supplier = $saveSupplier->handle(

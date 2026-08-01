@@ -8,6 +8,7 @@ use App\Actions\Purchasing\CreatePurchaseOrder;
 use App\Actions\Purchasing\PlacePurchaseOrder;
 use App\Actions\Purchasing\ReceivePurchaseOrder;
 use App\Actions\Purchasing\ReverseGoodsReceipt;
+use App\Actions\Purchasing\SaveSupplier;
 use App\ListingPriceBasis;
 use App\MediaAssetType;
 use App\Models\GoodsReceipt;
@@ -39,6 +40,8 @@ class PurchasingIndex extends Component
     use WithFileUploads;
 
     public string $supplierName = '';
+
+    public string $supplierCode = '';
 
     public string $supplierEmail = '';
 
@@ -84,28 +87,19 @@ class PurchasingIndex extends Component
 
     public string $documentNote = '';
 
-    public function createSupplier(ProductionBenchAccess $access): void
+    public function createSupplier(SaveSupplier $saveSupplier): void
     {
         $workspace = $this->workspace();
-        $access->assertWritable($this->user(), $workspace);
-        $data = Validator::make([
+        $supplier = $saveSupplier->handle($this->user(), $workspace, [
+            'code' => $this->supplierCode,
             'name' => $this->supplierName,
             'email' => $this->supplierEmail,
-        ], [
-            'name' => ['required', 'string', 'max:160'],
-            'email' => ['nullable', 'email', 'max:255'],
-        ])->validate();
-
-        $supplier = Supplier::query()->create([
-            'workspace_id' => $workspace->id,
-            'name' => $data['name'],
-            'email' => filled($data['email']) ? $data['email'] : null,
             'default_currency' => $workspace->default_currency,
             'is_active' => true,
         ]);
 
         $this->listingSupplierId = $supplier->id;
-        $this->reset('supplierName', 'supplierEmail');
+        $this->reset('supplierCode', 'supplierName', 'supplierEmail');
     }
 
     public function updatedListingSubjectType(): void

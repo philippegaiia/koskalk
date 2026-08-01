@@ -84,6 +84,8 @@ class SupplierIndex extends Component
 
     public function saveSupplier(SaveSupplier $saveSupplier): void
     {
+        $this->code = Str::upper(trim($this->code));
+
         $this->validate([
             'code' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9_-]+$/'],
             'name' => ['required', 'string', 'max:255'],

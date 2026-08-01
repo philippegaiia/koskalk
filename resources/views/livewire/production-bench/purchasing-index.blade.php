@@ -21,7 +21,8 @@
             <section class="sk-card p-6">
                 <p class="sk-eyebrow">Suppliers</p>
                 <h2 class="mt-2 text-xl font-semibold">Who you buy from</h2>
-                <form wire:submit="createSupplier" class="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+                <form wire:submit="createSupplier" class="mt-5 grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto]">
+                    <input wire:model="supplierCode" required maxlength="16" @disabled($isReadOnly) placeholder="Supplier code" class="sk-input uppercase">
                     <input wire:model="supplierName" required @disabled($isReadOnly) placeholder="Supplier name" class="sk-input">
                     <input wire:model="supplierEmail" type="email" @disabled($isReadOnly) placeholder="Email · optional" class="sk-input">
                     <button type="submit" @disabled($isReadOnly) class="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-white disabled:opacity-40">Add supplier</button>

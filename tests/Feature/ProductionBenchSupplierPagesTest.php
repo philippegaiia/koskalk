@@ -70,6 +70,7 @@ it('keeps supplier mutations out of the index and detail pages', function (): vo
         ->assertSee('NORTHERN_01')
         ->assertSee('Northern Oils')
         ->assertSee('Add supplier')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.create').'"')
         ->assertDontSee('Save supplier')
         ->assertDontSeeHtml('wire:submit="saveSupplier"');
 
@@ -78,6 +79,7 @@ it('keeps supplier mutations out of the index and detail pages', function (): vo
         ->assertSee('Mira Smith')
         ->assertSee('12 Market Road')
         ->assertSee('Edit supplier')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.edit', $supplier).'"')
         ->assertSee('Add listing')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.listings.create', $supplier).'"')
         ->assertDontSee('Save supplier')
@@ -87,6 +89,39 @@ it('keeps supplier mutations out of the index and detail pages', function (): vo
     Livewire::test(SupplierListingIndex::class)
         ->assertSee('Add listing')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.listings.create').'"');
+});
+
+it('keeps supplier and listing browse pages operational and free of future feature copy', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $this->actingAs($owner);
+
+    $pages = [
+        Livewire::test(SupplierIndex::class),
+        Livewire::test(SupplierDetail::class, ['supplier' => $supplier->public_id]),
+        Livewire::test(SupplierListingIndex::class),
+    ];
+
+    foreach ($pages as $page) {
+        $page
+            ->assertDontSee('Manage suppliers')
+            ->assertDontSee('manage suppliers')
+            ->assertDontSee('The supplier you buy from')
+            ->assertDontSee('the supplier you buy from')
+            ->assertDontSee('Coming later')
+            ->assertDontSee('coming later')
+            ->assertDontSee('Quotation requests')
+            ->assertDontSee('Purchase orders')
+            ->assertDontSee('Receipts');
+    }
+
+    $pages[0]
+        ->assertDontSeeHtml('wire:submit="save"')
+        ->assertDontSeeHtml('wire:submit="saveSupplier"');
+    $pages[1]
+        ->assertDontSeeHtml('wire:submit="save"')
+        ->assertDontSeeHtml('wire:submit="saveSupplier"')
+        ->assertDontSeeHtml('wire:submit="saveListing"');
 });
 
 it('shows mass and packaging supplier listings on the supplier detail page', function (): void {

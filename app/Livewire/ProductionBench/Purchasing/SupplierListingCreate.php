@@ -247,7 +247,10 @@ class SupplierListingCreate extends Component
             : $this->workspaceSupplierByPublicId($this->lockedSupplierPublicId);
 
         return view('livewire.production-bench.purchasing.supplier-listing-create', [
-            'currencyOptions' => collect($this->currencyCatalog->options(app()->getLocale(), [$this->currency]))
+            'currencyOptions' => collect($this->currencyCatalog->options(
+                app()->getLocale(),
+                $this->currency === '' ? [] : [$this->currency],
+            ))
                 ->map(fn (string $name, string $code): array => ['id' => $code, 'label' => $code.' — '.$name])
                 ->values()
                 ->all(),

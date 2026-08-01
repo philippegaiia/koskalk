@@ -75,6 +75,28 @@ it('requires a supplier on the global listing form', function (): void {
     expect(SupplierListing::query()->count())->toBe(0);
 });
 
+it('reports all required listing fields together', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class)
+        ->set('supplierId', $supplier->id)
+        ->set('ingredientId', null)
+        ->set('purchaseFormat', '')
+        ->set('netQuantity', '')
+        ->set('priceAmount', '')
+        ->call('save')
+        ->assertHasErrors([
+            'ingredientId' => 'required_if',
+            'purchaseFormat' => 'required',
+            'netQuantity' => 'required',
+            'priceAmount' => 'required',
+        ]);
+
+    expect(SupplierListing::query()->count())->toBe(0);
+});
+
 it('creates an exact-price mass listing globally and returns to the listings index', function (): void {
     [$owner, $workspace] = listingCreateWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
@@ -224,7 +246,12 @@ it('does not preselect a historical supplier currency for a new listing', functi
     $this->actingAs($historicalOwner);
 
     Livewire::test(SupplierListingCreate::class, ['supplier' => $historicalSupplier->public_id])
-        ->assertSet('currency', '');
+        ->assertSet('currency', '')
+        ->assertViewHas('currencyOptions', fn (array $options): bool => collect($options)->every(
+            fn (array $option): bool => filled($option['id']) && filled($option['label']),
+        ))
+        ->call('save')
+        ->assertHasErrors(['currency' => 'required']);
 });
 
 it('bounds server-side catalog searches and retains selected rows', function (): void {

@@ -1,6 +1,4 @@
-<div class="mx-auto max-w-7xl space-y-8">
-    <x-production-bench.navigation />
-
+<x-production-bench.page>
     @if (! $isActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Inactive</h1>
@@ -132,4 +130,4 @@
             </div>
         </section>
     @endif
-</div>
+</x-production-bench.page>

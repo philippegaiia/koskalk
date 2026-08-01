@@ -1,7 +1,4 @@
-<div class="mx-auto max-w-7xl space-y-8">
-    <x-production-bench.navigation />
-    <x-production-bench.purchasing-navigation />
-
+<x-production-bench.page purchasing>
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Inactive</h1>
@@ -19,10 +16,8 @@
             @endif
         </header>
         <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
-            <div class="grid gap-3 border-b border-[var(--color-line)] p-5 md:grid-cols-2 xl:grid-cols-4">
-                <label class="space-y-1 md:col-span-2"><span class="text-sm font-medium">Search</span><input wire:model.live.debounce.300ms="search" type="search" class="sk-input w-full"></label>
-                <label class="space-y-1"><span class="text-sm font-medium">Supplier</span><select wire:model.live="supplierId" class="sk-input w-full"><option value="">All</option>@foreach ($suppliers as $supplier)<option value="{{ $supplier->id }}">{{ $supplier->name }}</option>@endforeach</select></label>
-                <div class="grid grid-cols-2 gap-2"><label class="space-y-1"><span class="text-sm font-medium">Type</span><select wire:model.live="materialType" class="sk-input w-full"><option value="all">All</option><option value="ingredient">Ingredients</option><option value="packaging">Packaging</option></select></label><label class="space-y-1"><span class="text-sm font-medium">Status</span><select wire:model.live="status" class="sk-input w-full"><option value="active">Active</option><option value="all">All</option><option value="inactive">Inactive</option></select></label></div>
+            <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
+                {{ $this->filtersForm }}
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[920px] text-left text-sm">
@@ -47,4 +42,4 @@
             <x-table-pagination :paginator="$listingRows" per-page-label="Supplier listings per page" />
         </section>
     @endif
-</div>
+</x-production-bench.page>

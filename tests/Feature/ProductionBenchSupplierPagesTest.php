@@ -218,7 +218,7 @@ it('shows entered and derived prices for total and per-unit supplier listings', 
         ->assertSee('840.00');
 
     Livewire::test(SupplierListingIndex::class)
-        ->set('status', 'all')
+        ->fillForm(['status' => 'all'], 'filtersForm')
         ->assertSee('Total purchase-format price')
         ->assertSee('4.50 / kg')
         ->assertSee('0.18 / item')
@@ -303,25 +303,77 @@ it('searches and filters focused supplier records', function (): void {
     SupplierListing::factory()->for($workspace)->for($activeSupplier)->for($ingredient)->create(['purchase_format' => 'Tin']);
 
     Livewire::test(SupplierIndex::class)
-        ->set('search', 'active')
-        ->set('status', 'active')
+        ->fillForm(['search' => 'active', 'status' => 'active'], 'filtersForm')
         ->assertSee('Active Oils')
         ->assertDontSee('Inactive Oils');
 
     Livewire::test(SupplierIndex::class)
-        ->set('search', 'olvea_01')
+        ->fillForm(['search' => 'olvea_01'], 'filtersForm')
         ->assertSee('Active Oils')
         ->assertDontSee('Inactive Oils');
 
     Livewire::test(SupplierIndex::class)
-        ->set('status', 'all')
+        ->fillForm(['status' => 'all'], 'filtersForm')
         ->assertSee('Active Oils')
         ->assertSee('Inactive Oils');
 
     Livewire::test(SupplierListingIndex::class)
-        ->set('search', 'Tin')
+        ->fillForm(['search' => 'Tin'], 'filtersForm')
         ->assertSee('Olive oil')
         ->assertSee('Active Oils');
+});
+
+it('renders supplier index filters with the shared Filament field system', function (): void {
+    [$owner] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierIndex::class)
+        ->assertSeeHtml('fi-input-wrp')
+        ->assertDontSeeHtml('wire:model.live.debounce.300ms="search"')
+        ->fillForm(['search' => 'oil', 'status' => 'all', 'sort' => 'name'], 'filtersForm')
+        ->assertSchemaStateSet(['search' => 'oil', 'status' => 'all', 'sort' => 'name'], 'filtersForm');
+
+    Livewire::test(SupplierListingIndex::class)
+        ->assertSeeHtml('fi-input-wrp')
+        ->assertDontSeeHtml('wire:model.live.debounce.300ms="search"')
+        ->fillForm(['search' => 'drum', 'material_type' => 'ingredient', 'status' => 'all'], 'filtersForm')
+        ->assertSchemaStateSet(['search' => 'drum', 'material_type' => 'ingredient', 'status' => 'all'], 'filtersForm');
+});
+
+it('resets index pagination when Filament filters change', function (): void {
+    [$owner] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierIndex::class)
+        ->call('gotoPage', 2)
+        ->assertSet('paginators.page', 2)
+        ->fillForm(['search' => 'oil'], 'filtersForm')
+        ->assertSet('paginators.page', 1);
+
+    Livewire::test(SupplierListingIndex::class)
+        ->call('gotoPage', 2)
+        ->assertSet('paginators.page', 2)
+        ->fillForm(['status' => 'all'], 'filtersForm')
+        ->assertSet('paginators.page', 1);
+});
+
+it('bounds supplier filter search to the current workspace and resolves selected labels', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $foreignWorkspace = Workspace::factory()->create();
+    Supplier::factory()->count(25)->for($workspace)->sequence(fn ($sequence) => [
+        'code' => 'LOCAL_'.$sequence->index,
+        'name' => 'Local supplier '.$sequence->index,
+    ])->create();
+    $selected = Supplier::factory()->for($workspace)->create(['code' => 'CHOSEN', 'name' => 'Chosen supplier']);
+    $foreign = Supplier::factory()->for($foreignWorkspace)->create(['code' => 'FOREIGN', 'name' => 'Foreign supplier']);
+    $this->actingAs($owner);
+
+    $component = Livewire::test(SupplierListingIndex::class);
+    $results = $component->instance()->supplierFilterSearchResults('supplier');
+
+    expect($results)->toHaveCount(20)
+        ->and($component->instance()->supplierFilterOptionLabel($selected->id))->toBe('CHOSEN · Chosen supplier')
+        ->and($component->instance()->supplierFilterOptionLabel($foreign->id))->toBeNull();
 });
 
 it('filters supplier listings by supplier and material type and paginates supplier records', function (): void {
@@ -344,14 +396,13 @@ it('filters supplier listings by supplier and material type and paginates suppli
     Supplier::factory()->count(26)->for($workspace)->sequence(fn ($sequence) => ['name' => 'Paged supplier '.$sequence->index])->create();
 
     Livewire::test(SupplierListingIndex::class)
-        ->set('supplierId', $supplier->id)
-        ->set('materialType', 'ingredient')
+        ->fillForm(['supplier_id' => $supplier->id, 'material_type' => 'ingredient'], 'filtersForm')
         ->assertSee('Ingredient tin')
         ->assertDontSee('Packaging carton')
         ->assertDontSee('Other tin');
 
     Livewire::test(SupplierIndex::class)
-        ->set('status', 'all')
+        ->fillForm(['status' => 'all'], 'filtersForm')
         ->assertSee('Paged supplier 25')
         ->assertDontSee('Paged supplier 0')
         ->call('gotoPage', 2)
@@ -368,7 +419,7 @@ it('bounds manipulated supplier and listing page sizes', function (): void {
     SupplierListing::factory()->count(30)->for($workspace)->for($supplier)->for($ingredient)->create();
 
     Livewire::test(SupplierIndex::class)
-        ->set('status', 'all')
+        ->fillForm(['status' => 'all'], 'filtersForm')
         ->set('perPage', 1000)
         ->assertSet('perPage', 25)
         ->assertViewHas('suppliers', fn ($suppliers): bool => $suppliers->count() === 25);
@@ -446,7 +497,7 @@ it('eager loads translated supplier detail materials', function (): void {
     }
 
     Livewire::test(SupplierListingIndex::class)
-        ->set('search', 'Huile')
+        ->fillForm(['search' => 'Huile'], 'filtersForm')
         ->assertSee('Huile d’olive')
         ->assertSee('Huile de coco')
         ->assertDontSee('Huile étrangère');

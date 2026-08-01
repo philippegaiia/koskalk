@@ -1,7 +1,4 @@
-<div class="mx-auto w-full max-w-5xl space-y-6">
-    <x-production-bench.navigation />
-    <x-production-bench.purchasing-navigation />
-
+<x-production-bench.page purchasing compact>
     <header>
         <p class="sk-eyebrow">{{ $supplier->code }}</p>
         <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">Edit supplier</h1>
@@ -16,4 +13,4 @@
             <a href="{{ route('production-bench.purchasing.supplier', $supplier) }}" wire:navigate class="text-sm font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]">Cancel</a>
         </div>
     </form>
-</div>
+</x-production-bench.page>

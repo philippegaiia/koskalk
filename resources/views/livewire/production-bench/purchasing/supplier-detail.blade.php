@@ -1,7 +1,4 @@
-<div class="mx-auto max-w-7xl space-y-8">
-    <x-production-bench.navigation />
-    <x-production-bench.purchasing-navigation />
-
+<x-production-bench.page purchasing>
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Inactive</h1>
@@ -85,4 +82,4 @@
             <x-table-pagination :paginator="$listingRows" per-page-label="Supplier listings per page" />
         </section>
     @endif
-</div>
+</x-production-bench.page>

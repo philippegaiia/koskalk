@@ -9,46 +9,87 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPricePresentation;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class SupplierListingIndex extends Component
+class SupplierListingIndex extends Component implements HasForms
 {
+    use InteractsWithForms;
+    use RestrictsFileUploadsToSchemaComponents;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [25, 50, 100];
 
-    public string $search = '';
+    private const int OPTION_LIMIT = 20;
 
-    public ?int $supplierId = null;
-
-    public string $materialType = 'all';
-
-    public string $status = 'active';
+    /** @var array<string, mixed> */
+    public array $filters = [];
 
     public int $perPage = 25;
 
-    public function updatedSearch(): void
+    public function mount(): void
     {
-        $this->resetPage();
+        $this->filtersForm->fill([
+            'search' => '',
+            'supplier_id' => null,
+            'material_type' => 'all',
+            'status' => 'active',
+        ]);
     }
 
-    public function updatedSupplierId(): void
+    public function filtersForm(Schema $schema): Schema
     {
-        $this->resetPage();
-    }
-
-    public function updatedMaterialType(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatedStatus(): void
-    {
-        $this->resetPage();
+        return $schema
+            ->components([
+                Grid::make(['md' => 2, 'xl' => 4])
+                    ->schema([
+                        TextInput::make('search')
+                            ->label('Search')
+                            ->type('search')
+                            ->live(debounce: 300)
+                            ->afterStateUpdated(fn () => $this->resetPage())
+                            ->columnSpan(['md' => 2]),
+                        Select::make('supplier_id')
+                            ->label('Supplier')
+                            ->placeholder('All')
+                            ->searchable()
+                            ->getSearchResultsUsing(fn (string $search): array => $this->supplierFilterSearchResults($search))
+                            ->getOptionLabelUsing(fn (mixed $value): ?string => $this->supplierFilterOptionLabel(is_numeric($value) ? (int) $value : null))
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->resetPage()),
+                        Select::make('material_type')
+                            ->label('Type')
+                            ->options([
+                                'all' => 'All',
+                                'ingredient' => 'Ingredients',
+                                'packaging' => 'Packaging',
+                            ])
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->resetPage()),
+                        Select::make('status')
+                            ->label('Status')
+                            ->options([
+                                'active' => 'Active',
+                                'all' => 'All',
+                                'inactive' => 'Inactive',
+                            ])
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->resetPage()),
+                    ]),
+            ])
+            ->statePath('filters');
     }
 
     public function updatedPerPage(): void
@@ -62,17 +103,26 @@ class SupplierListingIndex extends Component
         SupplierListingPricePresentation $pricePresentation,
     ): View {
         $workspace = $this->workspace();
-        $search = trim($this->search);
+        $search = trim((string) ($this->filters['search'] ?? ''));
+        $supplierId = is_numeric($this->filters['supplier_id'] ?? null)
+            ? (int) $this->filters['supplier_id']
+            : null;
+        $materialType = in_array($this->filters['material_type'] ?? null, ['all', 'ingredient', 'packaging'], true)
+            ? $this->filters['material_type']
+            : 'all';
+        $status = in_array($this->filters['status'] ?? null, ['active', 'all', 'inactive'], true)
+            ? $this->filters['status']
+            : 'active';
         $searchTerm = '%'.Str::lower($search).'%';
         $translationLocales = Ingredient::translationLocaleCandidates();
         $listings = SupplierListing::query()
             ->where('workspace_id', $workspace->id)
             ->with(['supplier', 'ingredient.translations', 'packagingItem'])
-            ->when($this->supplierId, fn ($query) => $query->where('supplier_id', $this->supplierId))
-            ->when($this->materialType === 'ingredient', fn ($query) => $query->whereNotNull('ingredient_id'))
-            ->when($this->materialType === 'packaging', fn ($query) => $query->whereNotNull('user_packaging_item_id'))
-            ->when($this->status === 'active', fn ($query) => $query->where('is_active', true))
-            ->when($this->status === 'inactive', fn ($query) => $query->where('is_active', false))
+            ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
+            ->when($materialType === 'ingredient', fn ($query) => $query->whereNotNull('ingredient_id'))
+            ->when($materialType === 'packaging', fn ($query) => $query->whereNotNull('user_packaging_item_id'))
+            ->when($status === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($status === 'inactive', fn ($query) => $query->where('is_active', false))
             ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales): void {
                 $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales): void {
                     $searchQuery
@@ -106,9 +156,40 @@ class SupplierListingIndex extends Component
                 'listing' => $listing,
                 'price' => $pricePresentation->present($listing, $workspace),
             ]),
-            'suppliers' => Supplier::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(['id', 'name']),
             'workspace' => $workspace,
         ]);
+    }
+
+    /** @return array<int, string> */
+    public function supplierFilterSearchResults(string $search): array
+    {
+        $search = trim($search);
+
+        return Supplier::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->when($search !== '', fn (Builder $query): Builder => $query->where(
+                fn (Builder $nested): Builder => $nested
+                    ->whereLike('code', "%{$search}%")
+                    ->orWhereLike('name', "%{$search}%"),
+            ))
+            ->orderBy('name')
+            ->limit(self::OPTION_LIMIT)
+            ->get(['id', 'code', 'name'])
+            ->mapWithKeys(fn (Supplier $supplier): array => [$supplier->id => $this->supplierFilterLabel($supplier)])
+            ->all();
+    }
+
+    public function supplierFilterOptionLabel(?int $supplierId): ?string
+    {
+        if ($supplierId === null) {
+            return null;
+        }
+
+        $supplier = Supplier::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->find($supplierId, ['id', 'code', 'name']);
+
+        return $supplier instanceof Supplier ? $this->supplierFilterLabel($supplier) : null;
     }
 
     private function user(): User
@@ -119,6 +200,11 @@ class SupplierListingIndex extends Component
     private function normalizedPerPage(): int
     {
         return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
+    }
+
+    private function supplierFilterLabel(Supplier $supplier): string
+    {
+        return $supplier->code.' · '.$supplier->name;
     }
 
     private function workspace(): Workspace

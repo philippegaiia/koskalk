@@ -6,38 +6,73 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
 
-class SupplierIndex extends Component
+class SupplierIndex extends Component implements HasForms
 {
+    use InteractsWithForms;
+    use RestrictsFileUploadsToSchemaComponents;
     use WithPagination;
 
     private const array ALLOWED_PER_PAGE = [25, 50, 100];
 
-    public string $search = '';
-
-    public string $status = 'active';
-
-    public string $sort = 'newest';
+    /** @var array<string, mixed> */
+    public array $filters = [];
 
     public int $perPage = 25;
 
-    public function updatedSearch(): void
+    public function mount(): void
     {
-        $this->resetPage();
+        $this->filtersForm->fill([
+            'search' => '',
+            'status' => 'active',
+            'sort' => 'newest',
+        ]);
     }
 
-    public function updatedStatus(): void
+    public function filtersForm(Schema $schema): Schema
     {
-        $this->resetPage();
-    }
-
-    public function updatedSort(): void
-    {
-        $this->resetPage();
+        return $schema
+            ->components([
+                Grid::make(['md' => 3])
+                    ->schema([
+                        TextInput::make('search')
+                            ->label('Search')
+                            ->type('search')
+                            ->live(debounce: 300)
+                            ->afterStateUpdated(fn () => $this->resetPage()),
+                        Select::make('status')
+                            ->label('Status')
+                            ->options([
+                                'active' => 'Active',
+                                'all' => 'All',
+                                'inactive' => 'Inactive',
+                            ])
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->resetPage()),
+                        Select::make('sort')
+                            ->label('Sort')
+                            ->options([
+                                'newest' => 'Newest',
+                                'name' => 'Name',
+                            ])
+                            ->native(false)
+                            ->live()
+                            ->afterStateUpdated(fn () => $this->resetPage()),
+                    ]),
+            ])
+            ->statePath('filters');
     }
 
     public function updatedPerPage(): void
@@ -49,7 +84,13 @@ class SupplierIndex extends Component
     public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
-        $search = trim($this->search);
+        $search = trim((string) ($this->filters['search'] ?? ''));
+        $status = in_array($this->filters['status'] ?? null, ['active', 'all', 'inactive'], true)
+            ? $this->filters['status']
+            : 'active';
+        $sort = in_array($this->filters['sort'] ?? null, ['newest', 'name'], true)
+            ? $this->filters['sort']
+            : 'newest';
         $searchTerm = '%'.Str::lower($search).'%';
         $suppliers = Supplier::query()
             ->where('workspace_id', $workspace->id)
@@ -65,10 +106,10 @@ class SupplierIndex extends Component
                         ->orWhereRaw('LOWER(country_code) LIKE ?', [$searchTerm]);
                 });
             })
-            ->when($this->status === 'active', fn ($query) => $query->where('is_active', true))
-            ->when($this->status === 'inactive', fn ($query) => $query->where('is_active', false))
-            ->when($this->sort === 'name', fn ($query) => $query->orderBy('name')->orderByDesc('id'))
-            ->when($this->sort !== 'name', fn ($query) => $query->latest('id'))
+            ->when($status === 'active', fn ($query) => $query->where('is_active', true))
+            ->when($status === 'inactive', fn ($query) => $query->where('is_active', false))
+            ->when($sort === 'name', fn ($query) => $query->orderBy('name')->orderByDesc('id'))
+            ->when($sort !== 'name', fn ($query) => $query->latest('id'))
             ->paginate($this->normalizedPerPage());
 
         return view('livewire.production-bench.purchasing.supplier-index', [

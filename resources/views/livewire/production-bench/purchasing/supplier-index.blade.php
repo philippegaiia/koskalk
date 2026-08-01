@@ -1,7 +1,4 @@
-<div class="mx-auto max-w-7xl space-y-8">
-    <x-production-bench.navigation />
-    <x-production-bench.purchasing-navigation />
-
+<x-production-bench.page purchasing>
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Inactive</h1>
@@ -20,10 +17,8 @@
         </header>
 
         <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
-            <div class="grid gap-3 border-b border-[var(--color-line)] p-5 md:grid-cols-3">
-                <label class="space-y-1"><span class="text-sm font-medium">Search</span><input wire:model.live.debounce.300ms="search" type="search" class="sk-input w-full"></label>
-                <label class="space-y-1"><span class="text-sm font-medium">Status</span><select wire:model.live="status" class="sk-input w-full"><option value="active">Active</option><option value="all">All</option><option value="inactive">Inactive</option></select></label>
-                <label class="space-y-1"><span class="text-sm font-medium">Sort</span><select wire:model.live="sort" class="sk-input w-full"><option value="newest">Newest</option><option value="name">Name</option></select></label>
+            <div data-production-bench-filters class="border-b border-[var(--color-line)] p-4">
+                {{ $this->filtersForm }}
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[860px] text-left text-sm">
@@ -47,4 +42,4 @@
             <x-table-pagination :paginator="$suppliers" per-page-label="Suppliers per page" />
         </section>
     @endif
-</div>
+</x-production-bench.page>

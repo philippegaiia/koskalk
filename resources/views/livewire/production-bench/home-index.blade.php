@@ -1,6 +1,4 @@
-<div class="mx-auto max-w-6xl space-y-8">
-    <x-production-bench.navigation />
-
+<x-production-bench.page>
     <header class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
         <div>
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Production Bench</h1>
@@ -32,4 +30,4 @@
             </a>
         </section>
     @endif
-</div>
+</x-production-bench.page>

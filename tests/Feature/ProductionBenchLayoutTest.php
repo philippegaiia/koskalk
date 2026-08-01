@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
@@ -11,6 +12,7 @@ it('uses one stable page shell across production bench routes', function (): voi
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create();
     $this->actingAs($user);
 
     foreach ([
@@ -20,8 +22,15 @@ it('uses one stable page shell across production bench routes', function (): voi
         'production-bench.purchasing.listings',
         'production-bench.purchasing.suppliers.create',
         'production-bench.purchasing.listings.create',
-    ] as $routeName) {
-        $this->get(route($routeName))
+        'production-bench.purchasing.supplier' => ['supplier' => $supplier],
+        'production-bench.purchasing.suppliers.edit' => ['supplier' => $supplier],
+    ] as $routeName => $parameters) {
+        if (is_int($routeName)) {
+            $routeName = $parameters;
+            $parameters = [];
+        }
+
+        $this->get(route($routeName, $parameters))
             ->assertOk()
             ->assertSeeHtml('data-production-bench-page')
             ->assertSeeHtml('max-w-7xl');

@@ -58,7 +58,7 @@ class SupplierListingIndex extends Component implements HasForms
                             ->type('search')
                             ->live(debounce: 300)
                             ->afterStateUpdated(fn () => $this->resetPage())
-                            ->columnSpan(['md' => 2]),
+                            ->columnSpan(['md' => 2, 'xl' => 1]),
                         Select::make('supplier_id')
                             ->label('Supplier')
                             ->placeholder('All')

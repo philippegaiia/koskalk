@@ -340,6 +340,20 @@ it('renders supplier index filters with the shared Filament field system', funct
         ->assertSchemaStateSet(['search' => 'drum', 'material_type' => 'ingredient', 'status' => 'all'], 'filtersForm');
 });
 
+it('keeps all listing filters on one desktop row', function (): void {
+    [$owner] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+
+    $component = Livewire::test(SupplierListingIndex::class);
+    $fields = $component->instance()->filtersForm->getFlatComponents(withHidden: true);
+
+    expect($fields['search']->getColumnSpan())
+        ->toMatchArray(['md' => 2, 'xl' => 1])
+        ->and($fields['supplier_id']->getColumnSpan('xl'))->toBeNull()
+        ->and($fields['material_type']->getColumnSpan('xl'))->toBeNull()
+        ->and($fields['status']->getColumnSpan('xl'))->toBeNull();
+});
+
 it('resets index pagination when Filament filters change', function (): void {
     [$owner] = activeSupplierPagesWorkspace();
     $this->actingAs($owner);

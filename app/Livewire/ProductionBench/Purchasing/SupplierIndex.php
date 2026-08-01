@@ -28,6 +28,8 @@ class SupplierIndex extends Component
 
     public string $name = '';
 
+    public string $code = '';
+
     public string $addressLine1 = '';
 
     public string $addressLine2 = '';
@@ -83,6 +85,7 @@ class SupplierIndex extends Component
     public function saveSupplier(SaveSupplier $saveSupplier): void
     {
         $this->validate([
+            'code' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9_-]+$/'],
             'name' => ['required', 'string', 'max:255'],
             'countryCode' => ['nullable', 'alpha:ascii', 'size:2'],
             'website' => ['nullable', 'url', 'max:255'],
@@ -107,7 +110,8 @@ class SupplierIndex extends Component
             ->when($search !== '', function ($query) use ($searchTerm): void {
                 $query->where(function ($searchQuery) use ($searchTerm): void {
                     $searchQuery
-                        ->whereRaw('LOWER(name) LIKE ?', [$searchTerm])
+                        ->whereRaw('LOWER(code) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(name) LIKE ?', [$searchTerm])
                         ->orWhereRaw('LOWER(contact_name) LIKE ?', [$searchTerm])
                         ->orWhereRaw('LOWER(email) LIKE ?', [$searchTerm])
                         ->orWhereRaw('LOWER(city) LIKE ?', [$searchTerm])
@@ -132,6 +136,7 @@ class SupplierIndex extends Component
     private function supplierAttributes(): array
     {
         return [
+            'code' => $this->code,
             'name' => $this->name,
             'address_line_1' => $this->addressLine1,
             'address_line_2' => $this->addressLine2,
@@ -152,7 +157,7 @@ class SupplierIndex extends Component
     private function resetSupplierForm(): void
     {
         $this->reset([
-            'name', 'addressLine1', 'addressLine2', 'city', 'region', 'postalCode', 'countryCode',
+            'name', 'code', 'addressLine1', 'addressLine2', 'city', 'region', 'postalCode', 'countryCode',
             'website', 'contactName', 'email', 'phone', 'notes',
         ]);
         $this->defaultCurrency = $this->workspace()->default_currency;

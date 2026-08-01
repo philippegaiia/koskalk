@@ -58,6 +58,7 @@ it('creates and edits a supplier with structured details', function (): void {
 
     Livewire::test(SupplierIndex::class)
         ->set([
+            'code' => 'NORTHERN_01',
             'name' => 'Northern Oils',
             'addressLine1' => '12 Market Road',
             'city' => 'Leeds',
@@ -301,6 +302,7 @@ it('lets read-only workspaces browse without allowing supplier mutations', funct
 
     Livewire::test(SupplierIndex::class)
         ->assertSee('Visible supplier')
+        ->set('code', 'BLOCKED_01')
         ->set('name', 'Blocked supplier')
         ->call('saveSupplier')
         ->assertHasErrors('production_bench');

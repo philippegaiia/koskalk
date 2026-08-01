@@ -6,8 +6,10 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class SaveSupplier
@@ -64,6 +66,7 @@ class SaveSupplier
     {
         $current = $supplier instanceof Supplier
             ? $supplier->only([
+                'code',
                 'name',
                 'address_line_1',
                 'address_line_2',
@@ -89,8 +92,30 @@ class SaveSupplier
             ? null
             : strtoupper($countryCode);
         $data['default_currency'] = strtoupper((string) ($data['default_currency'] ?? ''));
+        $data['code'] = Str::upper((string) ($data['code'] ?? ''));
 
         return Validator::make($data, [
+            'code' => [
+                'required',
+                'string',
+                'max:16',
+                'regex:/^[A-Z0-9_-]+$/',
+                function (string $attribute, mixed $value, Closure $fail) use ($supplier, $workspace): void {
+                    if ($value === null) {
+                        return;
+                    }
+
+                    $duplicateExists = Supplier::query()
+                        ->where('workspace_id', $workspace->id)
+                        ->whereRaw('LOWER(code) = ?', [Str::lower((string) $value)])
+                        ->when($supplier instanceof Supplier, fn ($query) => $query->whereKeyNot($supplier->id))
+                        ->exists();
+
+                    if ($duplicateExists) {
+                        $fail('The code has already been taken.');
+                    }
+                },
+            ],
             'name' => ['required', 'string', 'max:255'],
             'address_line_1' => ['nullable', 'string', 'max:255'],
             'address_line_2' => ['nullable', 'string', 'max:255'],

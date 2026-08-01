@@ -23,6 +23,7 @@ it('creates and updates a workspace supplier with normalized optional fields', f
     $action = app(SaveSupplier::class);
 
     $supplier = $action->handle($owner, $workspace, [
+        'code' => 'NORTHERN_01',
         'name' => '  Northern Oils  ',
         'address_line_1' => '  12 Market Street ',
         'address_line_2' => ' ',
@@ -84,6 +85,7 @@ it('creates a supplier without an optional country code', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
 
     $supplier = app(SaveSupplier::class)->handle($owner, $workspace, [
+        'code' => 'COUNTRY_FREE',
         'name' => 'Country-free supplier',
         'default_currency' => 'EUR',
         'is_active' => true,

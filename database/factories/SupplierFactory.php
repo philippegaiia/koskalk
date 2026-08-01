@@ -20,6 +20,7 @@ class SupplierFactory extends Factory
     {
         return [
             'workspace_id' => Workspace::factory(),
+            'code' => fake()->unique()->bothify('SUP-#####'),
             'name' => fake()->company(),
             'contact_name' => fake()->name(),
             'email' => fake()->companyEmail(),

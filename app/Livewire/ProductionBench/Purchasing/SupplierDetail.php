@@ -34,6 +34,8 @@ class SupplierDetail extends Component
 
     public string $name = '';
 
+    public string $code = '';
+
     public string $addressLine1 = '';
 
     public string $addressLine2 = '';
@@ -240,6 +242,7 @@ class SupplierDetail extends Component
     private function supplierRules(): array
     {
         return [
+            'code' => ['required', 'string', 'max:16', 'regex:/^[A-Za-z0-9_-]+$/'],
             'name' => ['required', 'string', 'max:255'],
             'countryCode' => ['nullable', 'alpha:ascii', 'size:2'],
             'website' => ['nullable', 'url', 'max:255'],
@@ -252,6 +255,7 @@ class SupplierDetail extends Component
     private function supplierAttributes(): array
     {
         return [
+            'code' => $this->code,
             'name' => $this->name,
             'address_line_1' => $this->addressLine1,
             'address_line_2' => $this->addressLine2,
@@ -272,6 +276,7 @@ class SupplierDetail extends Component
     private function fillSupplierForm(): void
     {
         $this->fill([
+            'code' => $this->supplier->code,
             'name' => $this->supplier->name,
             'addressLine1' => $this->supplier->address_line_1 ?? '',
             'addressLine2' => $this->supplier->address_line_2 ?? '',

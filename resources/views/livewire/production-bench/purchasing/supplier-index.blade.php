@@ -27,6 +27,7 @@
                 <h2 class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">Add supplier</h2>
             </div>
             <form wire:submit="saveSupplier" class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+                <label class="space-y-2"><span class="text-sm font-medium">Supplier code</span><input wire:model="code" required maxlength="16" @disabled($isReadOnly) class="sk-input w-full uppercase">@error('code') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror</label>
                 <label class="space-y-2 xl:col-span-2"><span class="text-sm font-medium">Supplier name</span><input wire:model="name" required @disabled($isReadOnly) class="sk-input w-full" autocomplete="organization">@error('name') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror</label>
                 <label class="flex items-end gap-3"><input wire:model="isActive" type="checkbox" @disabled($isReadOnly) class="mb-1"><span><span class="block text-sm font-medium">Active supplier</span><span class="text-xs text-[var(--color-ink-soft)]">Available for new listings</span></span></label>
                 <label class="space-y-2"><span class="text-sm font-medium">Main contact</span><input wire:model="contactName" @disabled($isReadOnly) class="sk-input w-full" autocomplete="name"></label>

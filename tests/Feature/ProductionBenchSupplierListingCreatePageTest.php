@@ -45,6 +45,7 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertSee('Save supplier listing')
         ->assertSeeHtml('class="fi-section')
         ->assertSee('data.supplier_id', escape: false)
+        ->assertSeeHtml('inputmode="decimal"')
         ->assertDontSee('Select an existing Soapkraft ingredient.')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.listings').'"');
 
@@ -146,6 +147,37 @@ it('creates an exact-price mass listing globally and returns to the listings ind
         'notes' => 'Food grade',
         'is_active' => true,
     ]);
+});
+
+it('accepts localized decimal quantities and prices', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $this->actingAs($owner);
+    app()->setLocale('fr');
+
+    Livewire::test(SupplierListingCreate::class)
+        ->fillForm([
+            'supplier_id' => $supplier->id,
+            'material_type' => 'ingredient',
+            'ingredient_id' => $ingredient->id,
+            'purchase_format' => '200 kg drum',
+            'net_quantity' => '200,00',
+            'net_unit' => 'kg',
+            'price_basis' => ListingPriceBasis::PerUnit->value,
+            'price_amount' => '4,20',
+            'price_unit' => 'kg',
+            'currency' => 'EUR',
+        ])
+        ->assertSee('EUR 840.00 total')
+        ->call('save')
+        ->assertHasNoFormErrors()
+        ->assertRedirect(route('production-bench.purchasing.listings'));
+
+    expect(SupplierListing::query()->sole())
+        ->net_quantity->toBe('200.000000000')
+        ->price_amount->toBe('4.200000000')
+        ->total_price->toBe('840.000000000');
 });
 
 it('locks supplier context and returns scoped packaging listings to supplier detail', function (): void {

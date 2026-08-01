@@ -16,6 +16,7 @@ use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
+use App\Support\LocalizedDecimalInput;
 use App\Visibility;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
@@ -185,7 +186,13 @@ class SupplierListingCreate extends Component implements HasForms
                         TextInput::make('supplier_sku')->label('Supplier SKU')->maxLength(255),
                         TextInput::make('supplier_name')->label('Supplier item name')->maxLength(255),
                         TextInput::make('purchase_format')->label('Purchase format')->placeholder('200 kg drum')->required()->maxLength(255)->columnSpanFull(),
-                        TextInput::make('net_quantity')->label('Net quantity')->required()->maxLength(255)->live(onBlur: true),
+                        LocalizedDecimalInput::make('net_quantity')
+                            ->label('Net quantity')
+                            ->required()
+                            ->minValue('0.000000001')
+                            ->mutateStateForValidationUsing(fn (mixed $state): mixed => $this->normalizedLocalizedDecimal($state))
+                            ->dehydrateStateUsing(fn (mixed $state): mixed => $this->normalizedLocalizedDecimal($state))
+                            ->live(onBlur: true),
                         Select::make('net_unit')
                             ->label('Unit of measure')
                             ->options(fn (Get $get): array => $get('material_type') === 'packaging' ? ['count' => 'count'] : $this->massUnitOptions())
@@ -210,7 +217,13 @@ class SupplierListingCreate extends Component implements HasForms
                                 $set('price_unit', $state === ListingPriceBasis::PerUnit->value ? $get('net_unit') : null);
                             })
                             ->columnSpanFull(),
-                        TextInput::make('price_amount')->label('Price')->required()->maxLength(255)->live(onBlur: true),
+                        LocalizedDecimalInput::make('price_amount')
+                            ->label('Price')
+                            ->required()
+                            ->minValue('0.000000001')
+                            ->mutateStateForValidationUsing(fn (mixed $state): mixed => $this->normalizedLocalizedDecimal($state))
+                            ->dehydrateStateUsing(fn (mixed $state): mixed => $this->normalizedLocalizedDecimal($state))
+                            ->live(onBlur: true),
                         Select::make('price_unit')
                             ->label('Price unit')
                             ->options(fn (Get $get): array => $get('material_type') === 'packaging' ? ['count' => 'count'] : $this->massUnitOptions())
@@ -378,10 +391,10 @@ class SupplierListingCreate extends Component implements HasForms
             'supplier_name' => $state['supplier_name'] ?? null,
             'purchase_format' => $state['purchase_format'],
             'container' => null,
-            'net_quantity' => $state['net_quantity'],
+            'net_quantity' => (string) $state['net_quantity'],
             'net_unit' => $isPackaging ? 'count' : $state['net_unit'],
             'price_basis' => $basis,
-            'price_amount' => $state['price_amount'],
+            'price_amount' => (string) $state['price_amount'],
             'price_unit' => $basis === ListingPriceBasis::TotalPurchaseFormat ? null : ($isPackaging ? 'count' : $state['price_unit']),
             'currency' => Str::upper(trim((string) $state['currency'])),
             'minimum_packs' => $state['minimum_packs'],
@@ -481,8 +494,8 @@ class SupplierListingCreate extends Component implements HasForms
     /** @return array{unit: string, total: string}|null */
     private function pricePreview(): ?array
     {
-        $quantity = (string) ($this->data['net_quantity'] ?? '');
-        $amount = (string) ($this->data['price_amount'] ?? '');
+        $quantity = (string) ($this->normalizedLocalizedDecimal($this->data['net_quantity'] ?? '') ?? '');
+        $amount = (string) ($this->normalizedLocalizedDecimal($this->data['price_amount'] ?? '') ?? '');
         $basis = ListingPriceBasis::tryFrom((string) ($this->data['price_basis'] ?? ''));
 
         if ($quantity === '' || $amount === '' || ! $basis instanceof ListingPriceBasis) {
@@ -540,6 +553,33 @@ class SupplierListingCreate extends Component implements HasForms
                 $this->addError('data.'.$formField, $message);
             }
         }
+    }
+
+    private function normalizedLocalizedDecimal(mixed $state): mixed
+    {
+        if (blank($state)) {
+            return null;
+        }
+
+        $normalized = preg_replace('/[\s\x{00a0}\x{202f}]/u', '', trim((string) $state));
+
+        if (! is_string($normalized) || $normalized === '') {
+            return $state;
+        }
+
+        $commaPosition = strrpos($normalized, ',');
+        $dotPosition = strrpos($normalized, '.');
+
+        if ($commaPosition !== false && $dotPosition !== false) {
+            $decimalSeparator = $commaPosition > $dotPosition ? ',' : '.';
+            $groupingSeparator = $decimalSeparator === ',' ? '.' : ',';
+            $normalized = str_replace($groupingSeparator, '', $normalized);
+            $normalized = str_replace($decimalSeparator, '.', $normalized);
+        } elseif ($commaPosition !== false) {
+            $normalized = str_replace(',', '.', $normalized);
+        }
+
+        return is_numeric($normalized) ? $normalized : $state;
     }
 
     private function assertPageIsWritable(ProductionBenchAccess $access): void

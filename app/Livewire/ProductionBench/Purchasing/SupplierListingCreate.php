@@ -18,6 +18,7 @@ use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\Support\LocalizedDecimalInput;
+use App\Support\NumberLocale;
 use App\Visibility;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
@@ -30,6 +31,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Components\View as SchemaView;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
@@ -46,6 +48,8 @@ class SupplierListingCreate extends Component implements HasForms
 
     private const OptionLimit = 20;
 
+    private const InitialOptionLimit = 10;
+
     private CurrencyCatalog $currencyCatalog;
 
     #[Locked]
@@ -57,6 +61,10 @@ class SupplierListingCreate extends Component implements HasForms
     /** @var array<int, string> */
     #[Locked]
     public array $supplierOptionLabels = [];
+
+    /** @var array<int, string> */
+    #[Locked]
+    public array $supplierOptionPublicIds = [];
 
     /** @var array<int, string> */
     #[Locked]
@@ -93,6 +101,7 @@ class SupplierListingCreate extends Component implements HasForms
             $lockedSupplier = $this->workspaceSupplierByPublicId($supplierPublicId);
             $this->lockedSupplierPublicId = $lockedSupplier->public_id;
             $this->supplierOptionLabels[$lockedSupplier->id] = $this->supplierLabel($lockedSupplier);
+            $this->supplierOptionPublicIds[$lockedSupplier->id] = $lockedSupplier->public_id;
         } else {
             $this->supplierSearchResults('');
         }
@@ -125,6 +134,9 @@ class SupplierListingCreate extends Component implements HasForms
             $this->packagingOptionLabels[$packagingItem->id] = $packagingItem->name;
         }
 
+        $this->ingredientOptionLabels = array_replace($this->initialIngredientOptions(), $this->ingredientOptionLabels);
+        $this->packagingOptionLabels = array_replace($this->initialPackagingOptions(), $this->packagingOptionLabels);
+
         $unit = $materialType === 'packaging' ? 'count' : $displayUnit;
         $this->form->fill([
             'supplier_id' => $lockedSupplier?->id,
@@ -134,10 +146,13 @@ class SupplierListingCreate extends Component implements HasForms
             'supplier_sku' => $editingListing?->supplier_sku,
             'supplier_item_name' => $editingListing?->supplier_item_name,
             'purchase_format' => $editingListing?->purchase_format,
-            'net_quantity' => $editingListing?->net_quantity,
+            'net_quantity' => $this->editableDecimal(
+                $editingListing?->net_quantity,
+                minimumDecimals: $materialType === 'packaging' ? 0 : 2,
+            ),
             'net_unit' => $editingListing?->net_unit ?? $unit,
             'price_basis' => $editingListing?->price_basis->value ?? ListingPriceBasis::PerUnit->value,
-            'price_amount' => $editingListing?->price_amount,
+            'price_amount' => $this->editableDecimal($editingListing?->price_amount),
             'price_unit' => $editingListing?->price_unit ?? $unit,
             'currency' => $editingListing?->currency ?? $this->newListingCurrency($lockedSupplier),
             'minimum_packs' => $editingListing?->minimum_packs ?? 1,
@@ -234,6 +249,7 @@ class SupplierListingCreate extends Component implements HasForms
                             ->columnSpanFull(),
                         Select::make('ingredient_id')
                             ->label('Ingredient')
+                            ->options(fn (): array => $this->ingredientOptions())
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => $this->ingredientSearchResults($search))
                             ->getOptionLabelUsing(fn (mixed $value): ?string => $this->ingredientOptionLabel((int) $value))
@@ -242,9 +258,11 @@ class SupplierListingCreate extends Component implements HasForms
                             ->disabled($this->isEditing())
                             ->dehydrated()
                             ->visible(fn (Get $get): bool => $get('material_type') === 'ingredient')
+                            ->helperText('Recent items shown. Type to search all.')
                             ->columnSpanFull(),
                         Select::make('packaging_item_id')
                             ->label('Packaging item')
+                            ->options(fn (): array => $this->packagingOptions())
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => $this->packagingSearchResults($search))
                             ->getOptionLabelUsing(fn (mixed $value): ?string => $this->packagingOptionLabel((int) $value))
@@ -253,6 +271,10 @@ class SupplierListingCreate extends Component implements HasForms
                             ->disabled($this->isEditing())
                             ->dehydrated()
                             ->visible(fn (Get $get): bool => $get('material_type') === 'packaging')
+                            ->helperText('Recent items shown. Type to search all.')
+                            ->columnSpanFull(),
+                        SchemaView::make('livewire.production-bench.purchasing.catalog-item-create-link')
+                            ->visible(fn (): bool => ! $this->isEditing())
                             ->columnSpanFull(),
                     ]),
                 Section::make('Purchase format')
@@ -352,7 +374,7 @@ class SupplierListingCreate extends Component implements HasForms
     /** @return array<int, string> */
     public function supplierSearchResults(string $search): array
     {
-        $results = Supplier::query()
+        $suppliers = Supplier::query()
             ->where('workspace_id', $this->workspace()->id)
             ->when($this->normalizedSearch($search) !== '', function (Builder $query) use ($search): void {
                 $search = $this->normalizedSearch($search);
@@ -360,11 +382,16 @@ class SupplierListingCreate extends Component implements HasForms
             })
             ->orderBy('name')
             ->limit(self::OptionLimit)
-            ->get(['id', 'code', 'name'])
+            ->get(['id', 'public_id', 'code', 'name']);
+        $results = $suppliers
             ->mapWithKeys(fn (Supplier $supplier): array => [$supplier->id => $this->supplierLabel($supplier)])
             ->all();
 
         $this->supplierOptionLabels = array_replace($this->supplierOptionLabels, $results);
+        $this->supplierOptionPublicIds = array_replace(
+            $this->supplierOptionPublicIds,
+            $suppliers->mapWithKeys(fn (Supplier $supplier): array => [$supplier->id => $supplier->public_id])->all(),
+        );
 
         return $results;
     }
@@ -600,6 +627,76 @@ class SupplierListingCreate extends Component implements HasForms
         return $this->supplierOptionLabels;
     }
 
+    /** @return array<int, string> */
+    private function ingredientOptions(): array
+    {
+        return $this->ingredientOptionLabels;
+    }
+
+    /** @return array<int, string> */
+    private function packagingOptions(): array
+    {
+        return $this->packagingOptionLabels;
+    }
+
+    /** @return array<int, string> */
+    private function initialIngredientOptions(): array
+    {
+        $lastListingAt = SupplierListing::query()
+            ->select('updated_at')
+            ->whereColumn('supplier_listings.ingredient_id', 'ingredients.id')
+            ->where('supplier_listings.workspace_id', $this->workspace()->id)
+            ->latest('updated_at')
+            ->limit(1);
+
+        return $this->availableIngredientQuery()
+            ->select('ingredients.*')
+            ->addSelect(['last_listing_at' => $lastListingAt])
+            ->orderByRaw('last_listing_at IS NULL')
+            ->orderByDesc('last_listing_at')
+            ->orderByDesc('ingredients.created_at')
+            ->orderByDesc('ingredients.id')
+            ->limit(self::InitialOptionLimit)
+            ->get()
+            ->mapWithKeys(fn (Ingredient $ingredient): array => [$ingredient->id => $this->ingredientLabel($ingredient)])
+            ->all();
+    }
+
+    /** @return array<int, string> */
+    private function initialPackagingOptions(): array
+    {
+        $lastListingAt = SupplierListing::query()
+            ->select('updated_at')
+            ->whereColumn('supplier_listings.packaging_item_id', 'packaging_items.id')
+            ->where('supplier_listings.workspace_id', $this->workspace()->id)
+            ->latest('updated_at')
+            ->limit(1);
+
+        return PackagingItem::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->select('packaging_items.*')
+            ->addSelect(['last_listing_at' => $lastListingAt])
+            ->orderByRaw('last_listing_at IS NULL')
+            ->orderByDesc('last_listing_at')
+            ->orderByDesc('packaging_items.created_at')
+            ->orderByDesc('packaging_items.id')
+            ->limit(self::InitialOptionLimit)
+            ->get()
+            ->mapWithKeys(fn (PackagingItem $item): array => [$item->id => $item->name])
+            ->all();
+    }
+
+    public function catalogCreationSupplierPublicId(): ?string
+    {
+        if ($this->lockedSupplierPublicId !== null) {
+            return $this->lockedSupplierPublicId;
+        }
+
+        $supplierId = $this->data['supplier_id'] ?? null;
+
+        return is_numeric($supplierId) ? ($this->supplierOptionPublicIds[(int) $supplierId] ?? null) : null;
+    }
+
     private function supplierLabel(Supplier $supplier): string
     {
         return $supplier->code.' · '.$supplier->name;
@@ -736,6 +833,20 @@ class SupplierListingCreate extends Component implements HasForms
         }
 
         return is_numeric($normalized) ? $normalized : $state;
+    }
+
+    private function editableDecimal(?string $value, int $minimumDecimals = 2): ?string
+    {
+        if ($value === null) {
+            return $value;
+        }
+
+        return NumberLocale::formatAdaptiveDecimal(
+            $value,
+            minimumDecimals: $minimumDecimals,
+            maximumDecimals: 9,
+            locale: $this->user()->number_locale,
+        );
     }
 
     private function assertPageIsWritable(ProductionBenchAccess $access): void

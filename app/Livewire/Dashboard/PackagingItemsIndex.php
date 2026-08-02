@@ -212,7 +212,7 @@ class PackagingItemsIndex extends Component
 
     public function formattedUnitCost(mixed $value): string
     {
-        return NumberLocale::formatDecimal($value, 2, $this->currentNumberLocale);
+        return NumberLocale::formatAdaptiveDecimal($value, 2, 4, $this->currentNumberLocale);
     }
 
     private function items(): LengthAwarePaginator

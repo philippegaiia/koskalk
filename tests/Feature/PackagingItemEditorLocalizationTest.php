@@ -167,3 +167,22 @@ it('keeps every packaging editor string in the packaging translation group', fun
         'editor.status.saved',
     ]);
 });
+
+it('loads a sub-cent packaging price without hiding meaningful precision', function () {
+    $user = User::factory()->create(['number_locale' => 'en_US']);
+    $packaging = createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Small label',
+        'unit_cost' => 0.035,
+        'currency' => 'EUR',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(PackagingItemEditor::class, ['packagingItem' => $packaging])
+        ->assertSet('data.unit_cost', '0.035')
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($packaging->fresh()->unit_cost)->toBe('0.035000000000');
+});

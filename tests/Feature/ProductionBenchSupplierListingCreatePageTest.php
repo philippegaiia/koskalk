@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\ProductionBenchAccess;
+use App\StockUnitKind;
 use App\Visibility;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,6 +47,10 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertSee('Purchase format')
         ->assertSee('Pricing')
         ->assertSee('Calculated price')
+        ->assertSee('Recent items shown. Type to search all.')
+        ->assertSee('Ingredient not in the catalogue?')
+        ->assertSee('Create ingredient')
+        ->assertDontSee('Packaging item not in the catalogue?')
         ->assertSee('Purchase formats per order.')
         ->assertSee('Save supplier listing')
         ->assertSeeHtml('data-production-bench-save-bar')
@@ -62,12 +67,24 @@ it('shows a focused global listing form with searchable catalog selectors', func
     expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
         ->and(substr_count($response->getContent(), 'fi-compact'))->toBe(5);
 
-    $component = Livewire::test(SupplierListingCreate::class);
+    expect(strpos($response->getContent(), 'Catalog item'))
+        ->toBeLessThan(strpos($response->getContent(), 'Ingredient not in the catalogue?'))
+        ->and(strpos($response->getContent(), 'Ingredient not in the catalogue?'))
+        ->toBeLessThan(strpos($response->getContent(), 'Purchase format'));
+
+    $component = Livewire::test(SupplierListingCreate::class)
+        ->assertSee('Ingredient not in the catalogue?')
+        ->assertDontSee('Packaging item not in the catalogue?');
 
     expect($component->instance()->supplierSearchResults('Olvea'))->toBe([$supplier->id => 'OLVEA · Olvea'])
         ->and($component->instance()->ingredientSearchResults('Olive'))->toHaveCount(1);
 
-    $component->set('data.material_type', 'packaging');
+    $component
+        ->set('data.material_type', 'packaging')
+        ->assertSee('Packaging item not in the catalogue?')
+        ->assertSee('Create packaging item')
+        ->assertDontSee('Ingredient not in the catalogue?');
+
     expect($component->instance()->packagingSearchResults('Amber'))->toHaveCount(1);
 
     expect(SupplierListing::query()->count())->toBe(0);
@@ -171,7 +188,7 @@ it('opens an existing workspace listing in the edit form', function (): void {
         'net_quantity' => '200',
         'net_unit' => 'kg',
         'price_basis' => ListingPriceBasis::PerUnit,
-        'price_amount' => '4.20',
+        'price_amount' => '4',
         'price_unit' => 'kg',
         'is_active' => true,
     ]);
@@ -186,6 +203,8 @@ it('opens an existing workspace listing in the edit form', function (): void {
         ->assertSeeHtml('data-production-bench-save-bar')
         ->assertSeeHtml('fixed bottom-0 left-0 right-0')
         ->assertSeeHtml('pb-24')
+        ->assertDontSee('Ingredient not in the catalogue?')
+        ->assertDontSee('Packaging item not in the catalogue?')
         ->assertSee('OLVEA · Olvea');
 
     $this->get('/dashboard/production-bench/purchasing/listings')
@@ -213,6 +232,8 @@ it('updates an existing supplier listing without changing its supplier or materi
     $this->actingAs($owner);
 
     Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+        ->assertSet('data.net_quantity', '200.00')
+        ->assertSet('data.price_amount', '4.20')
         ->assertSet('data.supplier_id', $supplier->id)
         ->assertSet('data.ingredient_id', $ingredient->id)
         ->set('data.purchase_format', '190 kg drum')
@@ -229,6 +250,36 @@ it('updates an existing supplier listing without changing its supplier or materi
         ->net_quantity->toBe('190.000000000')
         ->price_amount->toBe('4.650000000')
         ->notes->toBe('Updated quotation');
+});
+
+it('keeps meaningful sub-cent precision when formatting a listing for editing', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $packaging = PackagingItem::factory()->for($workspace)->create();
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->create([
+        'ingredient_id' => null,
+        'packaging_item_id' => $packaging->id,
+        'unit_kind' => StockUnitKind::Count,
+        'canonical_quantity_per_purchase_format' => '12',
+        'net_quantity' => '12',
+        'net_unit' => 'count',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '0.035',
+        'price_unit' => 'count',
+        'total_price' => '0.42',
+    ]);
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+        ->assertSet('data.net_quantity', '12')
+        ->assertSet('data.price_amount', '0.035')
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($listing->fresh())
+        ->net_quantity->toBe('12.000000000')
+        ->price_amount->toBe('0.035000000')
+        ->and($packaging->fresh()->currentPrice?->price_per_canonical_unit)->toBe('0.035000000000');
 });
 
 it('accepts localized decimal quantities and prices', function (): void {
@@ -387,7 +438,9 @@ it('bounds server-side catalog searches and retains selected rows', function ():
 
     $component = Livewire::test(SupplierListingCreate::class);
 
-    expect($component->instance()->supplierSearchResults(''))->toHaveCount(20)
+    expect($component->get('ingredientOptionLabels'))->toHaveCount(10)
+        ->and($component->get('packagingOptionLabels'))->toHaveCount(10)
+        ->and($component->instance()->supplierSearchResults(''))->toHaveCount(20)
         ->and($component->instance()->ingredientSearchResults(''))->toHaveCount(20)
         ->and($component->instance()->packagingSearchResults(''))->toBe([]);
 

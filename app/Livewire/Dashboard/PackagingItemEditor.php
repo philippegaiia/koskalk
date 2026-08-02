@@ -14,6 +14,7 @@ use App\Services\CurrentAppUserResolver;
 use App\Services\MediaAssetUsageService;
 use App\Services\PackagingItemAuthoringService;
 use App\Support\LocalizedDecimalInput;
+use App\Support\NumberLocale;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Select;
@@ -80,6 +81,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         $state = $packagingItem instanceof PackagingItem
             ? $authoringService->formData($packagingItem)
             : $authoringService->blankState();
+        $state['unit_cost'] = $this->formattedUnitCost($packagingItem?->unit_cost);
         $state['featured_media_asset_id'] = $packagingItem instanceof PackagingItem
             ? ($mediaAssetUsages->idsFor($packagingItem, MediaAssetUsageRole::PackagingMain)[0] ?? null)
             : null;
@@ -136,6 +138,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         $this->showAppNotification($statusMessage);
 
         $refreshedState = $authoringService->formData($packagingItem);
+        $refreshedState['unit_cost'] = $this->formattedUnitCost($packagingItem->unit_cost);
         $refreshedState['featured_media_asset_id'] = $featuredMediaAssetId;
         $this->form->fill($refreshedState);
 
@@ -224,6 +227,20 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     private function isEditing(): bool
     {
         return $this->packagingItemId !== null;
+    }
+
+    private function formattedUnitCost(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return NumberLocale::formatAdaptiveDecimal(
+            $value,
+            minimumDecimals: 2,
+            maximumDecimals: 4,
+            locale: $this->currentUser()?->number_locale,
+        );
     }
 
     private function validReturnSupplierPublicId(mixed $supplierPublicId): ?string

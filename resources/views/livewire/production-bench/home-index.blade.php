@@ -19,14 +19,14 @@
     </header>
 
     @if ($isActive || $isReadOnly)
-        <section class="grid gap-px overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-line)] md:grid-cols-2">
-            <a href="{{ route('production-bench.inventory') }}" wire:navigate class="bg-[var(--color-panel)] p-6 transition hover:bg-[var(--color-panel-muted)]">
+        <section class="grid gap-4 md:grid-cols-2">
+            <a href="{{ route('production-bench.inventory') }}" wire:navigate class="sk-card p-5 transition hover:shadow-lg">
                 <p class="sk-eyebrow">Quarantined</p>
-                <p class="mt-4 font-mono text-3xl text-[var(--color-ink-strong)]">{{ $quarantinedLots }}</p>
+                <p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $quarantinedLots }}</p>
             </a>
-            <a href="{{ route('production-bench.purchasing') }}" wire:navigate class="bg-[var(--color-panel)] p-6 transition hover:bg-[var(--color-panel-muted)]">
+            <a href="{{ route('production-bench.purchasing') }}" wire:navigate class="sk-card p-5 transition hover:shadow-lg">
                 <p class="sk-eyebrow">Incoming</p>
-                <p class="mt-4 font-mono text-3xl text-[var(--color-ink-strong)]">{{ $incomingOrders }}</p>
+                <p class="mt-4 font-mono text-4xl text-[var(--color-ink-strong)]">{{ $incomingOrders }}</p>
             </a>
         </section>
     @endif

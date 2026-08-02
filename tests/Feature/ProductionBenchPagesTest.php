@@ -22,12 +22,15 @@ it('uses factual production bench copy', function (): void {
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
 
-    $this->actingAs($user)
-        ->get(route('production-bench.home'))
+    $response = $this->actingAs($user)
+        ->get(route('production-bench.home'));
+
+    $response
         ->assertOk()
         ->assertSee('Active')
         ->assertSee('Quarantined')
         ->assertSee('Incoming')
+        ->assertSeeHtml('class="grid gap-4 md:grid-cols-2"')
         ->assertDontSee('Bench is active')
         ->assertDontSee('lots waiting for release')
         ->assertDontSee('orders still incoming')
@@ -35,6 +38,9 @@ it('uses factual production bench copy', function (): void {
         ->assertDontSee('Production without the ERP headache.')
         ->assertDontSee('Ready when your production grows')
         ->assertDontSee('next checkpoint');
+
+    expect(substr_count($response->getContent(), 'sk-card p-5 transition hover:shadow-lg'))->toBe(2)
+        ->and($response->getContent())->not->toContain('grid gap-px overflow-hidden rounded-2xl');
 
     $this->get(route('production-bench.inventory'))
         ->assertOk()

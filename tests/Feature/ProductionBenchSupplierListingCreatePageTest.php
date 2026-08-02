@@ -483,6 +483,31 @@ it('bounds server-side catalog searches and retains selected rows', function ():
         ->and($component->instance()->packagingOptionLabel($packagingItems->last()->id))->toBe('Packaging 30');
 });
 
+it('uses postgres-compatible ordering for recent catalogue items', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    Supplier::factory()->for($workspace)->create();
+    Ingredient::factory()->create();
+    PackagingItem::factory()->for($workspace)->create();
+    $this->actingAs($owner);
+    $recentItemQueries = [];
+
+    DB::listen(function (QueryExecuted $query) use (&$recentItemQueries): void {
+        if (Str::contains($query->sql, 'last_listing_at')) {
+            $recentItemQueries[] = $query->sql;
+        }
+    });
+
+    Livewire::test(SupplierListingCreate::class);
+
+    expect($recentItemQueries)->toHaveCount(2);
+
+    foreach ($recentItemQueries as $query) {
+        expect($query)
+            ->not->toContain('last_listing_at IS NULL')
+            ->toContain('"last_listing_at" DESC NULLS LAST');
+    }
+});
+
 it('does not requery supplier or material catalogs for price preview updates', function (): void {
     [$owner, $workspace] = listingCreateWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['code' => 'SELECTED', 'name' => 'Selected supplier']);

@@ -29,7 +29,11 @@ it('uses the approved task-focused copy on the add packaging page', function () 
         ->assertSeeText('Add packaging')
         ->assertSeeText('Add packaging to your library.')
         ->assertSeeText('Save the name, unit price, image, and notes once, then reuse this packaging in your products and costing.')
-        ->assertSeeText('Back to packaging')
+        ->assertSeeText('Cancel')
+        ->assertSeeHtml('data-workflow-action-bar')
+        ->assertSeeHtml('data-packaging-save-bar')
+        ->assertSeeHtml('class="sk-btn sk-btn-ghost"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary"')
         ->assertSeeText('Packaging details')
         ->assertSeeText('Add the information you need to identify and cost this packaging.')
         ->assertSeeText('Name')
@@ -61,6 +65,11 @@ it('uses the approved edit packaging copy', function () {
         ->assertSeeText('Edit packaging details.')
         ->assertSeeText('Update the details used in your products and costing.')
         ->assertSeeText('Save changes')
+        ->assertSeeText('Cancel')
+        ->assertSeeHtml('data-workflow-action-bar')
+        ->assertSeeHtml('data-packaging-save-bar')
+        ->assertSeeHtml('class="sk-btn sk-btn-ghost"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary"')
         ->assertDontSeeText('Refine the packaging record and keep it ready for costing.')
         ->assertDontSeeText('Save packaging item');
 });
@@ -74,6 +83,7 @@ it('loads packaging editor interface copy from the database', function () {
         'editor.create.page_title' => 'Ajouter un emballage',
         'editor.create.heading' => 'Ajoutez un emballage à votre bibliothèque.',
         'editor.create.intro' => 'Enregistrez une fois son nom, son prix unitaire, son image et vos notes, puis réutilisez cet emballage dans vos produits et vos coûts.',
+        'actions.cancel' => 'Annuler',
         'editor.actions.back' => 'Retour aux emballages',
         'editor.actions.create' => 'Ajouter l’emballage',
         'editor.form.section' => 'Détails de l’emballage',
@@ -99,7 +109,7 @@ it('loads packaging editor interface copy from the database', function () {
         ->assertSeeText('Ajouter un emballage')
         ->assertSeeText('Ajoutez un emballage à votre bibliothèque.')
         ->assertSeeText('Enregistrez une fois son nom, son prix unitaire, son image et vos notes, puis réutilisez cet emballage dans vos produits et vos coûts.')
-        ->assertSeeText('Retour aux emballages')
+        ->assertSeeText('Annuler')
         ->assertSeeText('Détails de l’emballage')
         ->assertSee('placeholder="p. ex. boîte kraft pour savon de 100 g"', false)
         ->assertSeeText('Prix unitaire (EUR)')

@@ -1194,9 +1194,10 @@ it('keeps one compact non-obstructing create action visible in the ingredient ed
 
     expect($saveAction['submit_count'])->toBe(1)
         ->and($saveAction['label'])->toBe('Add ingredient')
-        ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-10')
-        ->not->toContain('sticky', 'z-30', 'border-t', 'bg-[var(--color-surface)]')
-        ->and($saveAction['button_classes'])->toContain('pointer-events-auto', 'sk-btn', 'sk-btn-primary')
+        ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-30')
+        ->not->toContain('z-10')
+        ->and($saveAction['button_classes'])->toContain('sk-btn', 'sk-btn-primary')
+        ->not->toContain('pointer-events-auto')
         ->not->toContain('w-full');
 });
 
@@ -1212,9 +1213,10 @@ it('keeps one compact non-obstructing save action visible in the ingredient edit
 
     expect($saveAction['submit_count'])->toBe(1)
         ->and($saveAction['label'])->toBe('Save changes')
-        ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-10')
-        ->not->toContain('sticky', 'z-30', 'border-t', 'bg-[var(--color-surface)]')
-        ->and($saveAction['button_classes'])->toContain('pointer-events-auto', 'sk-btn', 'sk-btn-primary')
+        ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-30')
+        ->not->toContain('z-10')
+        ->and($saveAction['button_classes'])->toContain('sk-btn', 'sk-btn-primary')
+        ->not->toContain('pointer-events-auto')
         ->not->toContain('w-full');
 });
 

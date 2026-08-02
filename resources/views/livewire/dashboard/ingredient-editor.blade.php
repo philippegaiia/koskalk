@@ -81,21 +81,19 @@
  {{ $this->form }}
 
  @unless ($isPlatformIngredient)
- <div
- data-ingredient-save-bar
- class="pointer-events-none fixed bottom-0 left-0 right-0 z-10 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] lg:left-[var(--app-sidebar-width,0rem)]"
- >
- <div class="mx-auto flex max-w-5xl justify-end">
+ <x-workflow-action-bar data-ingredient-save-bar>
+ <a href="{{ route('ingredients.index') }}" wire:navigate class="sk-btn sk-btn-ghost">
+ {{ __('ingredients.actions.cancel') }}
+ </a>
  <button
  type="submit"
  wire:loading.attr="disabled"
  wire:target="save"
- class="pointer-events-auto sk-btn sk-btn-primary shadow-[0_8px_20px_rgba(60,50,30,0.16)]"
+ class="sk-btn sk-btn-primary"
  >
  {{ $ingredient ? __('ingredients.editor.actions.save') : __('ingredients.editor.actions.create') }}
  </button>
- </div>
- </div>
+ </x-workflow-action-bar>
  @endunless
  </form>
 

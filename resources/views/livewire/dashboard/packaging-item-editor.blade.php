@@ -10,22 +10,20 @@
  </p>
  </div>
 
- <div class="flex flex-col gap-3 sm:flex-row">
- <a href="{{ route('packaging-items.index') }}" wire:navigate class="inline-flex justify-center rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
- {{ __('packaging.editor.actions.back') }}
- </a>
- </div>
- </div>
+</div>
  </section>
 
- <form wire:submit="save" class="space-y-4">
+ <form wire:submit="save" class="space-y-4 pb-24">
  {{ $this->form }}
 
- <div class="flex justify-end">
- <button type="submit" class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)]">
+ <x-workflow-action-bar data-packaging-save-bar>
+ <a href="{{ route('packaging-items.index') }}" wire:navigate class="sk-btn sk-btn-ghost">
+ {{ __('packaging.actions.cancel') }}
+ </a>
+ <button type="submit" wire:loading.attr="disabled" wire:target="save" class="sk-btn sk-btn-primary">
  {{ $packagingItem ? __('packaging.editor.actions.save') : __('packaging.editor.actions.create') }}
  </button>
- </div>
+ </x-workflow-action-bar>
  </form>
 
  <x-filament-actions::modals />

@@ -84,6 +84,8 @@ class SupplierListingCreate extends Component implements HasForms
             $lockedSupplier = $this->workspaceSupplierByPublicId($supplierPublicId);
             $this->lockedSupplierPublicId = $lockedSupplier->public_id;
             $this->supplierOptionLabels[$lockedSupplier->id] = $this->supplierLabel($lockedSupplier);
+        } else {
+            $this->supplierSearchResults('');
         }
 
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
@@ -171,7 +173,7 @@ class SupplierListingCreate extends Component implements HasForms
                 Section::make('Supplier')->schema([
                     Select::make('supplier_id')
                         ->label('Supplier')
-                        ->options(fn (): array => $this->lockedSupplierOptions())
+                        ->options(fn (): array => $this->supplierOptions())
                         ->searchable()
                         ->getSearchResultsUsing(fn (string $search): array => $this->supplierSearchResults($search))
                         ->getOptionLabelUsing(fn (mixed $value): ?string => $this->supplierOptionLabel((int) $value))
@@ -529,15 +531,9 @@ class SupplierListingCreate extends Component implements HasForms
     }
 
     /** @return array<int, string> */
-    private function lockedSupplierOptions(): array
+    private function supplierOptions(): array
     {
-        if ($this->lockedSupplierPublicId === null) {
-            return [];
-        }
-
-        $supplier = $this->workspaceSupplierByPublicId($this->lockedSupplierPublicId);
-
-        return [$supplier->id => $this->supplierLabel($supplier)];
+        return $this->supplierOptionLabels;
     }
 
     private function supplierLabel(Supplier $supplier): string

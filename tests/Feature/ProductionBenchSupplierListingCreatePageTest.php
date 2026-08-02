@@ -42,6 +42,7 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertOk()
         ->assertSee('New supplier listing')
         ->assertSee('Supplier')
+        ->assertSee('OLVEA · Olvea')
         ->assertSee('Purchase format')
         ->assertSee('Pricing')
         ->assertSee('Calculated price')

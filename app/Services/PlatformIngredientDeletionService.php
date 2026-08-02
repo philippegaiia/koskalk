@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
 use App\Models\ProductionBatchIngredient;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -76,7 +76,7 @@ class PlatformIngredientDeletionService
      *     formula_items: int,
      *     costing_items: int,
      *     composite_ingredients: int,
-     *     user_price_memories: int,
+     *     current_prices: int,
      *     production_batch_ingredients: int
      * }
      */
@@ -88,7 +88,7 @@ class PlatformIngredientDeletionService
             'composite_ingredients' => IngredientComponent::query()
                 ->where('component_ingredient_id', $ingredient->id)
                 ->count(),
-            'user_price_memories' => UserIngredientPrice::query()->whereBelongsTo($ingredient)->count(),
+            'current_prices' => CurrentMaterialPrice::query()->whereBelongsTo($ingredient)->count(),
             'production_batch_ingredients' => ProductionBatchIngredient::query()->whereBelongsTo($ingredient)->count(),
         ];
     }
@@ -98,7 +98,7 @@ class PlatformIngredientDeletionService
      *     formula_items: int,
      *     costing_items: int,
      *     composite_ingredients: int,
-     *     user_price_memories: int,
+     *     current_prices: int,
      *     production_batch_ingredients: int
      * }  $dependencies
      */
@@ -108,7 +108,7 @@ class PlatformIngredientDeletionService
             'formula_items' => 'formula item|formula items',
             'costing_items' => 'costing item|costing items',
             'composite_ingredients' => 'composite ingredient|composite ingredients',
-            'user_price_memories' => 'user price memory|user price memories',
+            'current_prices' => 'current workspace price|current workspace prices',
             'production_batch_ingredients' => 'production batch ingredient|production batch ingredients',
         ];
         $usages = [];

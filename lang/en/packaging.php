@@ -1,6 +1,18 @@
 <?php
 
 return [
+    'categories' => [
+        'box' => 'Box',
+        'jar' => 'Jar',
+        'bottle' => 'Bottle',
+        'lid' => 'Lid',
+        'cap' => 'Cap',
+        'label' => 'Label',
+        'tube' => 'Tube',
+        'pump' => 'Pump',
+        'shipping' => 'Shipping packaging',
+        'other' => 'Other packaging',
+    ],
     'page' => [
         'title' => 'Packaging',
         'heading' => 'Manage packaging for your recipes and costing.',
@@ -92,6 +104,7 @@ return [
                 'placeholder' => 'e.g. 100 g kraft soap box',
             ],
             'unit_price' => 'Unit price (:currency)',
+            'category' => 'Category',
             'image' => [
                 'label' => 'Packaging image',
                 'helper' => 'Optional square image shown in your packaging library and selectors.',

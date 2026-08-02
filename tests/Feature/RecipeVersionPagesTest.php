@@ -15,7 +15,6 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
@@ -688,7 +687,7 @@ it('prefills production units and priced packaging cost on the saved formula pag
     $ingredient = Ingredient::query()
         ->where('display_name', 'Olive Oil')
         ->firstOrFail();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Soap box',
         'unit_cost' => 0.06,
@@ -696,7 +695,7 @@ it('prefills production units and priced packaging cost on the saved formula pag
     ]);
 
     $currentFormula->packagingItems()->create([
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'components_per_unit' => 1,
         'position' => 1,
@@ -721,7 +720,7 @@ it('prefills production units and priced packaging cost on the saved formula pag
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'unit_cost' => 0.06,
         'quantity' => 1,

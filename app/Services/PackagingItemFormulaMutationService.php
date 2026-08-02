@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\PackagingItem;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +30,7 @@ class PackagingItemFormulaMutationService
      *     inaccessible_blocked_count: int
      * }
      */
-    public function impact(User $user, UserPackagingItem $packagingItem): array
+    public function impact(User $user, PackagingItem $packagingItem): array
     {
         $affectedRecipes = Recipe::withoutGlobalScopes()
             ->whereHas('versions', function (Builder $versionQuery) use ($packagingItem): void {
@@ -39,9 +39,9 @@ class PackagingItemFormulaMutationService
                     ->where(function (Builder $usageQuery) use ($packagingItem): void {
                         $usageQuery
                             ->whereHas('packagingItems', fn (Builder $itemQuery): Builder => $itemQuery
-                                ->where('user_packaging_item_id', $packagingItem->id))
+                                ->where('packaging_item_id', $packagingItem->id))
                             ->orWhereHas('costings.packagingItems', fn (Builder $itemQuery): Builder => $itemQuery
-                                ->where('user_packaging_item_id', $packagingItem->id));
+                                ->where('packaging_item_id', $packagingItem->id));
                     });
             })
             ->orderBy('name')
@@ -70,17 +70,20 @@ class PackagingItemFormulaMutationService
         ];
     }
 
-    public function removeEverywhereAndDelete(User $user, UserPackagingItem $packagingItem): void
+    public function removeEverywhereAndDelete(User $user, PackagingItem $packagingItem): void
     {
         $this->transaction->run(function () use ($user, $packagingItem): void {
-            $lockedPackagingItem = UserPackagingItem::query()
+            $lockedPackagingItem = PackagingItem::query()
                 ->whereKey($packagingItem->getKey())
                 ->lockForUpdate()
                 ->first();
 
-            if (! $lockedPackagingItem instanceof UserPackagingItem || $lockedPackagingItem->user_id !== $user->id) {
+            if (
+                ! $lockedPackagingItem instanceof PackagingItem
+                || ! $lockedPackagingItem->workspace->hasMember($user)
+            ) {
                 throw ValidationException::withMessages([
-                    'packaging_item' => 'Only your own packaging items can be removed and deleted.',
+                    'packaging_item' => 'The packaging item is not available in the active workspace.',
                 ]);
             }
 
@@ -98,7 +101,7 @@ class PackagingItemFormulaMutationService
                 ->concat(
                     RecipeVersionCosting::query()
                         ->whereHas('packagingItems', fn (Builder $itemQuery): Builder => $itemQuery
-                            ->where('user_packaging_item_id', $lockedPackagingItem->id))
+                            ->where('packaging_item_id', $lockedPackagingItem->id))
                         ->pluck('recipe_version_id'),
                 )
                 ->map(fn (mixed $versionId): int => (int) $versionId)
@@ -151,6 +154,8 @@ class PackagingItemFormulaMutationService
                     report($exception);
                 }
             });
+
+            $lockedPackagingItem->currentPrice()->delete();
 
             if ($lockedPackagingItem->delete() !== true) {
                 throw new RuntimeException('The packaging item could not be deleted.');

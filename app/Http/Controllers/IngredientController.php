@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\MaterialPriceSource;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
+use App\Services\CurrentMaterialPriceService;
 use App\Services\UserIngredientAuthoringService;
-use App\Services\UserIngredientPriceMemory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -42,7 +43,7 @@ class IngredientController extends Controller
         ]);
     }
 
-    public function updatePrice(Request $request, UserIngredientPriceMemory $priceMemory): JsonResponse
+    public function updatePrice(Request $request, CurrentMaterialPriceService $currentMaterialPriceService): JsonResponse
     {
         $user = $request->user();
 
@@ -56,10 +57,20 @@ class IngredientController extends Controller
         ]);
 
         $ingredient = Ingredient::query()->findOrFail($validated['ingredient_id']);
+        $workspace = $user->company();
 
-        abort_unless($this->canUpdatePrice($ingredient, $user), 404);
+        abort_unless($workspace !== null && $this->canUpdatePrice($ingredient, $user), 404);
 
-        $priceMemory->remember($user, $ingredient->id, (float) $validated['price_per_kg']);
+        $currentMaterialPriceService->rememberIngredient(
+            workspace: $workspace,
+            ingredient: $ingredient,
+            pricePerMassUnit: (string) $validated['price_per_kg'],
+            massUnit: 'kg',
+            currency: $user->defaultCurrency(),
+            source: MaterialPriceSource::ManualCosting,
+            sourceId: null,
+            actor: $user,
+        );
 
         return response()->json(['ok' => true]);
     }

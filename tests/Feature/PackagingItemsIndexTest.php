@@ -2,17 +2,17 @@
 
 use App\Livewire\Dashboard\PackagingItemEditor;
 use App\Livewire\Dashboard\PackagingItemsIndex;
+use App\Models\PackagingItem;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\MediaStorage;
-use App\Services\UserPackagingItemAuthoringService;
+use App\Services\PackagingItemAuthoringService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -30,7 +30,7 @@ beforeEach(function () {
 it('lets a signed-in user open the packaging items page and see saved items', function () {
     $user = User::factory()->create();
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Tube 50 g',
         'unit_cost' => 0.1200,
@@ -57,7 +57,7 @@ it('renders compact accessible pagination for the packaging catalog', function (
     $user = User::factory()->create();
 
     foreach (range(1, 26) as $number) {
-        UserPackagingItem::query()->create([
+        createPackagingItemForWorkspace([
             'user_id' => $user->id,
             'name' => "Packaging item {$number}",
             'unit_cost' => 0.12,
@@ -89,7 +89,7 @@ it('shows packaging prices in the users current default currency', function () {
         'default_currency' => 'GBP',
     ]);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Tube 50 g',
         'unit_cost' => 0.1200,
@@ -108,7 +108,7 @@ it('shows packaging prices in the users current default currency', function () {
 it('renders inline packaging prices with the users saved number format', function (string $numberLocale, string $formattedPrice) {
     $user = User::factory()->create(['number_locale' => $numberLocale]);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Format test box',
         'unit_cost' => 0.1000,
@@ -161,7 +161,7 @@ it('does not allow editing another users packaging item', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
 
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $otherUser->id,
         'name' => 'Other user box',
         'unit_cost' => 0.22,
@@ -194,7 +194,7 @@ it('creates a packaging item from the dedicated editor', function () {
         ->assertHasNoErrors()
         ->assertRedirect(route('packaging-items.edit', $mediaPublicId));
 
-    expect(UserPackagingItem::query()->where('user_id', $user->id)->first())
+    expect(PackagingItem::query()->where('workspace_id', $user->company()?->id)->first())
         ->not->toBeNull()
         ->name->toBe('Kraft soap box')
         ->currency->toBe('GBP');
@@ -202,8 +202,9 @@ it('creates a packaging item from the dedicated editor', function () {
 
 it('stores the packaging image path through the packaging authoring service', function () {
     $user = User::factory()->create();
+    Workspace::factory()->for($user, 'owner')->create();
 
-    $packagingItem = app(UserPackagingItemAuthoringService::class)->create([
+    $packagingItem = app(PackagingItemAuthoringService::class)->create([
         'name' => 'Picture Box',
         'unit_cost' => 0.36,
         'notes' => 'With square image',
@@ -215,7 +216,7 @@ it('stores the packaging image path through the packaging authoring service', fu
         ->featured_image_path->toBe('packaging/featured-images/picture-box.webp')
         ->featured_image_original_name->toBe('Picture box portrait.webp');
 
-    $updated = app(UserPackagingItemAuthoringService::class)->update($packagingItem, [
+    $updated = app(PackagingItemAuthoringService::class)->update($packagingItem, [
         'name' => 'Picture Box',
         'unit_cost' => 0.36,
         'notes' => 'With portrait image',
@@ -225,7 +226,7 @@ it('stores the packaging image path through the packaging authoring service', fu
 
     expect($updated->fresh()->featured_image_original_name)->toBe('Picture box portrait 2.webp');
 
-    $cleared = app(UserPackagingItemAuthoringService::class)->update($updated, [
+    $cleared = app(PackagingItemAuthoringService::class)->update($updated, [
         'name' => 'Picture Box',
         'unit_cost' => 0.36,
         'notes' => 'No image',
@@ -242,7 +243,7 @@ it('only shows the signed-in users packaging items in the packaging table and su
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Alpha Box',
         'unit_cost' => 0.1000,
@@ -250,7 +251,7 @@ it('only shows the signed-in users packaging items in the packaging table and su
         'notes' => 'First alpha entry',
     ]);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Alpha Box',
         'unit_cost' => 0.2000,
@@ -258,7 +259,7 @@ it('only shows the signed-in users packaging items in the packaging table and su
         'notes' => 'Second alpha entry',
     ]);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Beta Box',
         'unit_cost' => 0.3000,
@@ -266,7 +267,7 @@ it('only shows the signed-in users packaging items in the packaging table and su
         'notes' => 'Beta entry',
     ]);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $otherUser->id,
         'name' => 'Alpha Box',
         'unit_cost' => 0.4000,
@@ -289,7 +290,7 @@ it('only shows the signed-in users packaging items in the packaging table and su
 it('updates a packaging item unit price from the catalog table', function () {
     $user = User::factory()->create();
 
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Bottle label',
         'unit_cost' => 0.1200,
@@ -312,7 +313,7 @@ it('updates the packaging item currency to the current default currency when edi
         'default_currency' => 'GBP',
     ]);
 
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Bottle label',
         'unit_cost' => 0.1200,
@@ -331,7 +332,7 @@ it('updates the packaging item currency to the current default currency when edi
 it('keeps the packaging catalog unit price required when editing inline', function () {
     $user = User::factory()->create();
 
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Bottle label',
         'unit_cost' => 0.1200,
@@ -357,7 +358,7 @@ it('shows only the signed-in user packaging items on the page', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Front sticker',
         'unit_cost' => 0.03,
@@ -365,7 +366,7 @@ it('shows only the signed-in user packaging items on the page', function () {
         'notes' => null,
     ]);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $otherUser->id,
         'name' => 'Hidden competitor box',
         'unit_cost' => 0.99,
@@ -383,7 +384,7 @@ it('shows only the signed-in user packaging items on the page', function () {
 it('allows deleting an unused packaging item from the catalog table', function () {
     $user = User::factory()->create();
 
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Delete me',
         'unit_cost' => 0.12,
@@ -396,13 +397,13 @@ it('allows deleting an unused packaging item from the catalog table', function (
     Livewire::test(PackagingItemsIndex::class)
         ->call('deletePackagingItem', $packagingItem->id);
 
-    expect(UserPackagingItem::query()->find($packagingItem->id))->toBeNull();
+    expect(PackagingItem::query()->find($packagingItem->id))->toBeNull();
 });
 
 it('prevents direct deletion of a packaging item that is already used in costing', function () {
     $user = User::factory()->create();
 
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Locked Box',
         'unit_cost' => 0.55,
@@ -434,7 +435,7 @@ it('prevents direct deletion of a packaging item that is already used in costing
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => $packagingItem->name,
         'unit_cost' => $packagingItem->unit_cost,
         'quantity' => 1,
@@ -448,12 +449,12 @@ it('prevents direct deletion of a packaging item that is already used in costing
         ->call('deletePackagingItem', $packagingItem->id)
         ->assertHasErrors(['packaging_item']);
 
-    expect(UserPackagingItem::query()->find($packagingItem->id))->not->toBeNull();
+    expect(PackagingItem::query()->find($packagingItem->id))->not->toBeNull();
 });
 
 it('warns before deleting packaging used by a formula', function () {
     $user = User::factory()->create();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Formula box',
         'unit_cost' => 0.55,
@@ -474,7 +475,7 @@ it('warns before deleting packaging used by a formula', function () {
     ]);
     RecipeVersionPackagingItem::query()->create([
         'recipe_version_id' => $recipeVersion->id,
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => $packagingItem->name,
         'components_per_unit' => 1,
         'position' => 1,
@@ -495,7 +496,7 @@ it('warns before deleting packaging used by a formula', function () {
 
 it('removes packaging from every saved formula version and costing before deleting it', function () {
     $user = User::factory()->create();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Retired box',
         'unit_cost' => 0.55,
@@ -519,7 +520,7 @@ it('removes packaging from every saved formula version and costing before deleti
     foreach ($recipeVersions as $recipeVersion) {
         RecipeVersionPackagingItem::query()->create([
             'recipe_version_id' => $recipeVersion->id,
-            'user_packaging_item_id' => $packagingItem->id,
+            'packaging_item_id' => $packagingItem->id,
             'name' => $packagingItem->name,
             'components_per_unit' => 1,
             'position' => 1,
@@ -536,7 +537,7 @@ it('removes packaging from every saved formula version and costing before deleti
 
         RecipeVersionCostingPackagingItem::query()->create([
             'recipe_version_costing_id' => $costing->id,
-            'user_packaging_item_id' => $packagingItem->id,
+            'packaging_item_id' => $packagingItem->id,
             'name' => $packagingItem->name,
             'unit_cost' => $packagingItem->unit_cost,
             'quantity' => 1,
@@ -556,7 +557,7 @@ it('removes packaging from every saved formula version and costing before deleti
                 && $payload['type'] === 'success',
         );
 
-    expect(UserPackagingItem::query()->find($packagingItem->id))->toBeNull()
-        ->and(RecipeVersionPackagingItem::query()->where('user_packaging_item_id', $packagingItem->id)->exists())->toBeFalse()
-        ->and(RecipeVersionCostingPackagingItem::query()->where('user_packaging_item_id', $packagingItem->id)->exists())->toBeFalse();
+    expect(PackagingItem::query()->find($packagingItem->id))->toBeNull()
+        ->and(RecipeVersionPackagingItem::query()->where('packaging_item_id', $packagingItem->id)->exists())->toBeFalse()
+        ->and(RecipeVersionCostingPackagingItem::query()->where('packaging_item_id', $packagingItem->id)->exists())->toBeFalse();
 });

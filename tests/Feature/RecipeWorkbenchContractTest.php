@@ -198,6 +198,78 @@ it('returns the saved version through the workbench payload and snapshot contrac
         ->and($snapshot['labeling'])->toHaveKeys(['default_variant_key', 'final_label_text', 'list_variants']);
 });
 
+it('persists canonical soap mass and restores the selected display unit from it', function (): void {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchCarrierOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $version = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
+        'name' => 'One kilogram soap',
+        'oil_unit' => 'kg',
+        'oil_weight' => 1,
+    ]));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+
+    expect($version->fresh()?->batch_mass_grams)->toBe('1000.000000000');
+
+    $version->update([
+        'batch_size' => 999,
+        'calculation_context' => [
+            ...($version->calculation_context ?? []),
+            'oil_weight' => 999,
+            'oil_unit' => 'kg',
+        ],
+    ]);
+
+    $payload = $service->currentVersionPayload($recipe);
+
+    expect($payload['oilUnit'])->toBe('kg')
+        ->and($payload['oilWeight'])->toBe(1.0);
+});
+
+it('restores legacy formula display mass when canonical grams are unavailable', function (): void {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $oil = recipeWorkbenchCarrierOil();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $oil->id,
+        'koh_sap_value' => 0.188,
+    ]);
+
+    $service = app(RecipeWorkbenchService::class);
+    $version = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+
+    $version->update([
+        'batch_size' => 16,
+        'batch_unit' => 'oz',
+        'batch_mass_grams' => null,
+        'calculation_context' => [
+            ...($version->calculation_context ?? []),
+            'oil_weight' => 16,
+            'oil_unit' => 'oz',
+        ],
+    ]);
+
+    $payload = $service->currentVersionPayload($recipe);
+
+    expect($payload['oilUnit'])->toBe('oz')
+        ->and($payload['oilWeight'])->toBe(16.0);
+});
+
 it('persists editable final ingredient lists and reports when their formula basis is outdated', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([

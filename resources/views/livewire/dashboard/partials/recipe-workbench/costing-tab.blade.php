@@ -16,8 +16,9 @@
  <label class="sk-inset p-4">
  <span class="sk-eyebrow" x-text="isCosmeticFormula ? t('costing.settings.batch_quantity') : t('costing.settings.oil_quantity')"></span>
  <input
- x-model="costingOilWeight"
- @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
+ :value="costingOilWeight === null || costingOilWeight === '' ? '' : format(costingOilWeight, 2)"
+ @change="updateCostingOilWeight($event)"
+ @blur="$event.target.value = costingOilWeight === null || costingOilWeight === '' ? '' : format(costingOilWeight, 2)"
  type="text"
  inputmode="decimal"
  class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition"
@@ -27,10 +28,10 @@
  <div class="sk-inset p-4">
  <span class="sk-eyebrow">{{ __('workbench.costing.settings.unit') }}</span>
  <div class="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="{{ __('workbench.costing.settings.weight_unit') }}">
- <button type="button" role="radio" :aria-checked="costingOilUnit === 'g'" @click="costingOilUnit = 'g'; scheduleCostingSave()" :class="costingOilUnit === 'g' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.costing.settings.units.g') }}</button>
- <button type="button" role="radio" :aria-checked="costingOilUnit === 'kg'" @click="costingOilUnit = 'kg'; scheduleCostingSave()" :class="costingOilUnit === 'kg' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.costing.settings.units.kg') }}</button>
- <button type="button" role="radio" :aria-checked="costingOilUnit === 'oz'" @click="costingOilUnit = 'oz'; scheduleCostingSave()" :class="costingOilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.costing.settings.units.oz') }}</button>
- <button type="button" role="radio" :aria-checked="costingOilUnit === 'lb'" @click="costingOilUnit = 'lb'; scheduleCostingSave()" :class="costingOilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.costing.settings.units.lb') }}</button>
+ <button type="button" role="radio" :aria-checked="costingOilUnit === 'g'" @click="changeCostingUnit('g')" :class="costingOilUnit === 'g' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.costing.settings.units.g') }}</button>
+ <button type="button" role="radio" :aria-checked="costingOilUnit === 'kg'" @click="changeCostingUnit('kg')" :class="costingOilUnit === 'kg' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.costing.settings.units.kg') }}</button>
+ <button type="button" role="radio" :aria-checked="costingOilUnit === 'oz'" @click="changeCostingUnit('oz')" :class="costingOilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.costing.settings.units.oz') }}</button>
+ <button type="button" role="radio" :aria-checked="costingOilUnit === 'lb'" @click="changeCostingUnit('lb')" :class="costingOilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">{{ __('workbench.costing.settings.units.lb') }}</button>
  </div>
  </div>
 
@@ -80,7 +81,7 @@
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.ingredient') }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.percentage') }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="t('costing.ingredients.weight', { unit: costingBaseOilUnit })"></div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.price') }}</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="t('costing.ingredients.price', { unit: costingPriceUnit })">{{ __('workbench.costing.ingredients.price', ['unit' => 'kg']) }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.line_cost') }}</div>
  </div>
 
@@ -95,12 +96,12 @@
  <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)}`"></div>
  <div class="flex items-center bg-white px-3 py-3">
  <input
- :value="costingPriceForRow(row) ?? ''"
+ :value="costingPriceForRow(row) === null ? '' : format(costingPriceForRow(row), 2)"
  @change="updateCostingPrice(row, $event.target.value)"
- @blur="updateCostingPrice(row, $event.target.value)"
+ @blur="$event.target.value = costingPriceForRow(row) === null ? '' : format(costingPriceForRow(row), 2)"
  type="text"
  inputmode="decimal"
- :aria-label="t('costing.accessibility.price_for', { item: row.name })"
+ :aria-label="t('costing.accessibility.price_for', { item: row.name, unit: costingPriceUnit })"
  class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition"
  />
  </div>

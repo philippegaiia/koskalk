@@ -4,7 +4,7 @@ return [
     'page' => [
         'eyebrow' => 'Ingredients',
         'heading' => 'Manage ingredients for formulas and costing.',
-        'intro' => 'Soapkraft ingredients come from the Soapkraft library. Add your own price per kg, duplicate one to create an editable copy, or create a private ingredient from scratch.',
+        'intro' => 'Soapkraft ingredients come from the Soapkraft library. Add your own costing price, duplicate one to create an editable copy, or create a private ingredient from scratch.',
     ],
     'catalog' => [
         'heading' => 'Ingredient catalog',
@@ -67,10 +67,10 @@ return [
         'descending' => 'Desc',
     ],
     'price' => [
-        'column' => 'Your price / kg (:currency)',
+        'column' => 'Your price / :unit (:currency)',
     ],
     'accessibility' => [
-        'price' => 'Price per kg for :ingredient',
+        'price' => 'Price per :unit for :ingredient',
         'edit' => 'Edit :ingredient',
         'delete' => 'Delete :ingredient',
         'view' => 'View :ingredient',
@@ -186,12 +186,11 @@ return [
             ],
             'category' => 'Category',
             'inci' => 'INCI',
+            'notes' => 'Notes',
         ],
         'supplier' => [
-            'section' => 'Supplier details',
-            'description' => 'Add supplier and regulatory references when they are available.',
-            'name' => 'Supplier',
-            'reference' => 'Supplier reference',
+            'section' => 'Identifiers and functions',
+            'description' => 'Identifiers and formula functions.',
             'cas_number' => 'CAS number',
             'cas_placeholder' => 'e.g. 8007-02-1',
             'ec_number' => 'EC / EINECS number',

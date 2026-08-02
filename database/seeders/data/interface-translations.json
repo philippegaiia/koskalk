@@ -1864,11 +1864,11 @@
             "group": "ingredients",
             "key": "accessibility.price",
             "text": {
-                "de": "Preis pro kg für :ingredient",
-                "es": "Precio por kg de :ingredient",
-                "fr": "Prix au kg de :ingredient",
-                "it": "Prezzo al kg di :ingredient",
-                "nl": "Prijs per kg voor :ingredient"
+                "de": "Preis pro :unit für :ingredient",
+                "es": "Precio por :unit de :ingredient",
+                "fr": "Prix par :unit pour :ingredient",
+                "it": "Prezzo per :unit di :ingredient",
+                "nl": "Prijs per :unit voor :ingredient"
             }
         },
         {
@@ -3402,17 +3402,6 @@
         },
         {
             "group": "ingredients",
-            "key": "editor.supplier.name",
-            "text": {
-                "de": "Lieferant",
-                "es": "Proveedor",
-                "fr": "Fournisseur",
-                "it": "Fornitore",
-                "nl": "Leverancier"
-            }
-        },
-        {
-            "group": "ingredients",
             "key": "editor.supplier.organic",
             "text": {
                 "de": "Bio-zertifiziert",
@@ -3431,17 +3420,6 @@
                 "fr": "Activez cette option lorsque l’ingrédient est certifié biologique.",
                 "it": "Attiva questa opzione quando l’ingrediente è certificato biologico.",
                 "nl": "Schakel dit in wanneer het ingrediënt biologisch gecertificeerd is."
-            }
-        },
-        {
-            "group": "ingredients",
-            "key": "editor.supplier.reference",
-            "text": {
-                "de": "Lieferantenreferenz",
-                "es": "Referencia del proveedor",
-                "fr": "Référence fournisseur",
-                "it": "Riferimento del fornitore",
-                "nl": "Leveranciersreferentie"
             }
         },
         {
@@ -3679,22 +3657,22 @@
             "group": "ingredients",
             "key": "page.intro",
             "text": {
-                "de": "Soapkraft-Zutaten stammen aus der Soapkraft-Bibliothek. Hinterlege deinen Preis pro kg, dupliziere eine Zutat als bearbeitbare Kopie oder erstelle eine eigene Zutat von Grund auf.",
-                "es": "Los ingredientes Soapkraft proceden de la biblioteca de Soapkraft. Añade tu precio por kg, duplica uno para crear una copia editable o crea tu propio ingrediente desde cero.",
-                "fr": "Les ingrédients Soapkraft proviennent de la bibliothèque Soapkraft. Ajoutez votre prix au kg, dupliquez un ingrédient pour obtenir une copie modifiable ou créez votre propre ingrédient.",
-                "it": "Gli ingredienti Soapkraft provengono dalla libreria Soapkraft. Aggiungi il tuo prezzo al kg, duplicane uno per creare una copia modificabile oppure crea un ingrediente da zero.",
-                "nl": "Soapkraft-ingrediënten komen uit de Soapkraft-bibliotheek. Voeg je eigen prijs per kg toe, dupliceer een ingrediënt als bewerkbare kopie of maak zelf een nieuw ingrediënt aan."
+                "de": "Soapkraft-Zutaten stammen aus der Soapkraft-Bibliothek. Hinterlege deinen Kalkulationspreis, dupliziere eine Zutat als bearbeitbare Kopie oder erstelle eine eigene Zutat von Grund auf.",
+                "es": "Los ingredientes Soapkraft proceden de la biblioteca de Soapkraft. Añade tu precio de coste, duplica uno para crear una copia editable o crea tu propio ingrediente desde cero.",
+                "fr": "Les ingrédients Soapkraft proviennent de la bibliothèque Soapkraft. Ajoutez votre prix de revient, dupliquez un ingrédient pour obtenir une copie modifiable ou créez votre propre ingrédient.",
+                "it": "Gli ingredienti Soapkraft provengono dalla libreria Soapkraft. Aggiungi il tuo prezzo di costo, duplicane uno per creare una copia modificabile oppure crea un ingrediente da zero.",
+                "nl": "Soapkraft-ingrediënten komen uit de Soapkraft-bibliotheek. Voeg je eigen kostprijs toe, dupliceer een ingrediënt als bewerkbare kopie of maak zelf een nieuw ingrediënt aan."
             }
         },
         {
             "group": "ingredients",
             "key": "price.column",
             "text": {
-                "de": "Dein Preis / kg (:currency)",
-                "es": "Tu precio / kg (:currency)",
-                "fr": "Votre prix / kg (:currency)",
-                "it": "Il tuo prezzo / kg (:currency)",
-                "nl": "Jouw prijs / kg (:currency)"
+                "de": "Dein Preis / :unit (:currency)",
+                "es": "Tu precio / :unit (:currency)",
+                "fr": "Votre prix / :unit (:currency)",
+                "it": "Il tuo prezzo / :unit (:currency)",
+                "nl": "Jouw prijs / :unit (:currency)"
             }
         },
         {
@@ -8901,11 +8879,11 @@
             "group": "workbench",
             "key": "costing.accessibility.price_for",
             "text": {
-                "de": "Kilogrammpreis für :item",
-                "es": "Precio por kilogramo de :item",
-                "fr": "Prix au kilogramme pour :item",
-                "it": "Prezzo al chilogrammo per :item",
-                "nl": "Prijs per kilogram voor :item"
+                "de": "Preis pro :unit für :item",
+                "es": "Precio por :unit de :item",
+                "fr": "Prix par :unit pour :item",
+                "it": "Prezzo per :unit di :item",
+                "nl": "Prijs per :unit voor :item"
             }
         },
         {
@@ -8989,11 +8967,11 @@
             "group": "workbench",
             "key": "costing.ingredients.price",
             "text": {
-                "de": "Dein Preis / kg",
-                "es": "Tu precio / kg",
-                "fr": "Votre prix / kg",
-                "it": "Il tuo prezzo / kg",
-                "nl": "Jouw prijs / kg"
+                "de": "Dein Preis / :unit",
+                "es": "Tu precio / :unit",
+                "fr": "Votre prix / :unit",
+                "it": "Il tuo prezzo / :unit",
+                "nl": "Jouw prijs / :unit"
             }
         },
         {
@@ -9352,11 +9330,11 @@
             "group": "workbench",
             "key": "costing.settings.price_help",
             "text": {
-                "de": "Zutatenpreise werden pro Kilogramm gespeichert und hier standardmäßig wiederverwendet.",
-                "es": "Los precios de los ingredientes se guardan por kilogramo y se reutilizan aquí como valor predeterminado.",
-                "fr": "Les prix des ingrédients sont enregistrés au kilogramme et réutilisés ici par défaut.",
-                "it": "I prezzi degli ingredienti sono salvati al chilogrammo e riutilizzati qui come valore predefinito.",
-                "nl": "Ingrediëntprijzen worden per kilogram opgeslagen en hier standaard hergebruikt."
+                "de": "Zutatenpreise folgen der aktiven metrischen oder US-amerikanischen Kalkulationsbasis.",
+                "es": "Los precios de los ingredientes siguen la base de cálculo métrica o estadounidense activa.",
+                "fr": "Les prix des ingrédients suivent la base de calcul métrique ou américaine active.",
+                "it": "I prezzi degli ingredienti seguono la base di calcolo metrica o statunitense attiva.",
+                "nl": "Ingrediëntprijzen volgen de actieve metrische of Amerikaanse kostengrondslag."
             }
         },
         {

@@ -13,6 +13,7 @@ class ProductionSnapshotService
 {
     public function __construct(
         private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
+        private readonly MassConverter $massConverter,
     ) {}
 
     /**
@@ -22,6 +23,7 @@ class ProductionSnapshotService
     public function preview(Recipe $recipe, RecipeVersion $version, User $user, array $input): array
     {
         $batchBasisValue = $this->positiveFloat($input['batch_basis'] ?? null)
+            ?? $this->canonicalFormulaDisplayMass($version)
             ?? $this->positiveFloat($version->batch_size)
             ?? 0.0;
         $unitsProduced = $this->positiveInt($input['units_produced'] ?? null);
@@ -98,7 +100,7 @@ class ProductionSnapshotService
 
             foreach ($preview['packaging_rows'] as $row) {
                 $batch->packagingItems()->create([
-                    'user_packaging_item_id' => $row['user_packaging_item_id'],
+                    'packaging_item_id' => $row['packaging_item_id'],
                     'position' => $row['position'],
                     'name' => $row['name'],
                     'components_per_unit' => $row['components_per_unit'],
@@ -168,5 +170,17 @@ class ProductionSnapshotService
         $string = trim((string) $value);
 
         return $string === '' ? null : $string;
+    }
+
+    private function canonicalFormulaDisplayMass(RecipeVersion $version): ?float
+    {
+        if ($version->batch_mass_grams === null) {
+            return null;
+        }
+
+        return (float) $this->massConverter->fromGrams(
+            $version->batch_mass_grams,
+            $version->batch_unit ?: 'g',
+        );
     }
 }

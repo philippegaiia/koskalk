@@ -3,10 +3,10 @@
 namespace App\Services;
 
 use App\IngredientCategory;
+use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
 
 class RecipeWorkbenchIngredientCatalogBuilder
 {
@@ -19,8 +19,9 @@ class RecipeWorkbenchIngredientCatalogBuilder
         $isCosmetic = $productFamily?->slug === 'cosmetic'
             || $productFamily?->calculation_basis === 'total_formula';
         $defaultPricesByIngredient = $user instanceof User
-            ? UserIngredientPrice::query()
-                ->where('user_id', $user->id)
+            ? CurrentMaterialPrice::query()
+                ->where('workspace_id', $user->company()?->id)
+                ->whereNotNull('ingredient_id')
                 ->get()
                 ->keyBy('ingredient_id')
             : collect();
@@ -74,7 +75,9 @@ class RecipeWorkbenchIngredientCatalogBuilder
                     'can_add_to_saponified_oils' => in_array('saponified_oils', $availablePhases, true),
                     'can_add_to_additives' => in_array('additives', $availablePhases, true),
                     'can_add_to_fragrance' => in_array('fragrance', $availablePhases, true),
-                    'default_price_per_kg' => $defaultPrice?->price_per_kg === null ? null : (float) $defaultPrice->price_per_kg,
+                    'default_price_per_kg' => $defaultPrice?->price_per_canonical_unit === null
+                        ? null
+                        : (float) bcmul($defaultPrice->price_per_canonical_unit, '1000', 12),
                 ];
             })
             ->sortBy('name')

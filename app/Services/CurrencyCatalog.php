@@ -91,4 +91,9 @@ class CurrencyCatalog
     {
         return in_array(strtoupper($code), $this->selectableCodes(), true);
     }
+
+    public function isKnown(string $code): bool
+    {
+        return Currencies::exists(strtoupper(trim($code)));
+    }
 }

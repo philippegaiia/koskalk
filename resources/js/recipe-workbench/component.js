@@ -25,11 +25,17 @@ import {
 } from './snapshot';
 import { humanizeKey as humanizeText } from './utils';
 import { resolveNumberLocale } from './number-format';
+import { MASS_UNITS, convertMass } from './mass';
 import { createFormulaSection } from './sections/formula-section';
 import { createPackagingSection } from './sections/packaging-section';
 import { createCostingSection } from './sections/costing-section';
 import { createPresentationSection } from './sections/presentation-section';
 import { createVersionSection } from './sections/version-section';
+
+const workbenchMassUnits = typeof MASS_UNITS === 'undefined' ? ['g', 'kg', 'oz', 'lb'] : MASS_UNITS;
+const convertWorkbenchMass = typeof convertMass === 'undefined'
+    ? (value) => Number(value) || 0
+    : convertMass;
 
 /**
  * We compose the Alpine object from descriptor-preserving sections so getters
@@ -147,6 +153,10 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         : defaultPhaseBlueprints(productFamilySlug);
     const numberLocaleOptions = payload.numberLocaleOptions ?? {};
     const numberLocale = resolvedNumberLocale(payload.numberLocale, numberLocaleOptions);
+    const defaultMassGrams = isCosmeticFormula ? 100 : 1000;
+    const initialMassUnit = workbenchMassUnits.includes(payload.preferredMassUnit)
+        ? payload.preferredMassUnit
+        : 'g';
 
     return {
         translations: payload.translations ?? {},
@@ -175,8 +185,8 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         formulaName: isCosmeticFormula
             ? (payload.translations?.header?.new_cosmetic ?? 'New cosmetic product')
             : (payload.translations?.header?.new_soap ?? 'New soap'),
-        oilUnit: 'g',
-        oilWeight: isCosmeticFormula ? 100 : 1000,
+        oilUnit: initialMassUnit,
+        oilWeight: convertWorkbenchMass(defaultMassGrams, 'g', initialMassUnit),
         manufacturingMode: isCosmeticFormula ? 'blend_only' : 'saponify_in_formula',
         exposureMode: isCosmeticFormula ? 'leave_on' : 'rinse_off',
         regulatoryRegime: 'eu',
@@ -229,7 +239,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         costingPriceByRowId: {},
         packagingPlanRows: (payload.packagingItems ?? []).map((row) => ({
             id: row.id ?? `packaging-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            user_packaging_item_id: row.user_packaging_item_id ?? null,
+            packaging_item_id: row.packaging_item_id ?? null,
             name: row.name ?? '',
             components_per_unit: row.components_per_unit ?? 1,
             notes: row.notes ?? '',
@@ -324,6 +334,18 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
 
         toggleFormulaSettings() {
             this.isFormulaSettingsOpen = !this.isFormulaSettingsOpen;
+        },
+
+        changeOilUnit(nextUnit) {
+            if (!workbenchMassUnits.includes(nextUnit) || nextUnit === this.oilUnit) {
+                return;
+            }
+
+            const nextWeight = convertWorkbenchMass(this.oilWeight, this.oilUnit, nextUnit);
+
+            this.oilWeight = nextWeight;
+            this.oilUnit = nextUnit;
+            this.scheduleCalculationPreview();
         },
 
         persistFormulaDiagnosticsPreference(isOpen) {

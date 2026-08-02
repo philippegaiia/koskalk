@@ -3,6 +3,7 @@
 use App\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
@@ -15,16 +16,14 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
+use App\Services\PackagingItemAuthoringService;
 use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
-use App\Services\UserIngredientPriceMemory;
-use App\Services\UserPackagingItemAuthoringService;
 use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -159,7 +158,7 @@ it('preserves production snapshots when the source recipe is deleted', function 
 
 it('builds numeric production cost preview rows from live costing data', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Soap box',
         'unit_cost' => 0.25,
@@ -167,7 +166,7 @@ it('builds numeric production cost preview rows from live costing data', functio
     ]);
 
     $version->packagingItems()->create([
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'components_per_unit' => 1,
         'position' => 1,
@@ -192,7 +191,7 @@ it('builds numeric production cost preview rows from live costing data', functio
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'unit_cost' => 0.25,
         'quantity' => 1,
@@ -219,7 +218,7 @@ it('builds numeric production cost preview rows from live costing data', functio
         ->and($preview['ingredient_rows'][0]['quantity'])->toBe(1500.0)
         ->and($preview['ingredient_rows'][0]['unit'])->toBe('g')
         ->and($preview['ingredient_rows'][0]['line_cost'])->toBe(12.75)
-        ->and($preview['packaging_rows'][0]['user_packaging_item_id'])->toBe($packagingItem->id)
+        ->and($preview['packaging_rows'][0]['packaging_item_id'])->toBe($packagingItem->id)
         ->and($preview['packaging_rows'][0]['components_per_unit'])->toBe(1.0)
         ->and($preview['packaging_rows'][0]['line_cost'])->toBe(3.0);
 });
@@ -264,9 +263,29 @@ it('prices production ingredient quantities using the saved batch unit', functio
         ->and($batch->cost_per_unit)->toBe('2.2680');
 });
 
+it('defaults a production preview from canonical formula mass', function (): void {
+    [$user, $recipe, $version] = productionSnapshotSoapRecipe();
+
+    $version->forceFill([
+        'batch_size' => 2.205,
+        'batch_unit' => 'lb',
+        'batch_mass_grams' => 1000,
+    ])->save();
+
+    $preview = app(ProductionSnapshotService::class)->preview(
+        $recipe,
+        $version->fresh(),
+        $user,
+        [],
+    );
+
+    expect($preview['batch_basis_unit'])->toBe('lb')
+        ->and($preview['batch_basis_value'])->toBe(2.204622622);
+});
+
 it('costs duplicate planned packaging rows independently', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Soap box',
         'unit_cost' => 0.25,
@@ -275,13 +294,13 @@ it('costs duplicate planned packaging rows independently', function (): void {
 
     $version->packagingItems()->createMany([
         [
-            'user_packaging_item_id' => $packagingItem->id,
+            'packaging_item_id' => $packagingItem->id,
             'name' => 'Soap box',
             'components_per_unit' => 1,
             'position' => 1,
         ],
         [
-            'user_packaging_item_id' => $packagingItem->id,
+            'packaging_item_id' => $packagingItem->id,
             'name' => 'Soap box',
             'components_per_unit' => 2,
             'position' => 2,
@@ -307,7 +326,7 @@ it('costs duplicate planned packaging rows independently', function (): void {
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'unit_cost' => 0.31,
         'quantity' => 1,
@@ -315,7 +334,7 @@ it('costs duplicate planned packaging rows independently', function (): void {
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'unit_cost' => 0.72,
         'quantity' => 2,
@@ -488,8 +507,8 @@ it('keeps production snapshots frozen after live price propagation', function ()
         'ingredient_lot_numbers' => [],
     ]);
 
-    app(UserIngredientPriceMemory::class)->remember($user, $ingredient->id, 12.75);
-    app(UserPackagingItemAuthoringService::class)->updateUnitCost($costingRows['packaging_item'], $user, 0.89);
+    rememberIngredientPriceForWorkspace($user, $ingredient, 12.75);
+    app(PackagingItemAuthoringService::class)->updateUnitCost($costingRows['packaging_item'], $user, 0.89);
 
     $recordedBatch = $batch->fresh(['ingredients', 'packagingItems']);
     $liveCosting = RecipeVersionCosting::query()
@@ -513,7 +532,7 @@ it('keeps production snapshots frozen after live price propagation', function ()
             ->value('price_per_kg'))->toBe('12.7500')
         ->and(RecipeVersionCostingPackagingItem::query()
             ->where('recipe_version_costing_id', $liveCosting->id)
-            ->where('user_packaging_item_id', $costingRows['packaging_item']->id)
+            ->where('packaging_item_id', $costingRows['packaging_item']->id)
             ->value('unit_cost'))->toBe('0.8900');
 });
 
@@ -929,7 +948,7 @@ it('does not record production snapshots with unpriced packaging rows', function
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
 
     $version->packagingItems()->create([
-        'user_packaging_item_id' => null,
+        'packaging_item_id' => null,
         'name' => 'Unpriced wrap',
         'components_per_unit' => 2,
         'position' => 1,
@@ -986,7 +1005,7 @@ it('marks packaging plan rows without source prices as unpriced in production co
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
 
     $version->packagingItems()->create([
-        'user_packaging_item_id' => null,
+        'packaging_item_id' => null,
         'name' => 'Unpriced wrap',
         'components_per_unit' => 2,
         'position' => 1,
@@ -1032,7 +1051,7 @@ it('keeps unpriced packaging rows unpriced across repeated production cost previ
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
 
     $version->packagingItems()->create([
-        'user_packaging_item_id' => null,
+        'packaging_item_id' => null,
         'name' => 'Unpriced wrap',
         'components_per_unit' => 2,
         'position' => 1,
@@ -1084,7 +1103,7 @@ it('preserves deliberately saved zero cost unlinked packaging rows across repeat
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
 
     $version->packagingItems()->create([
-        'user_packaging_item_id' => null,
+        'packaging_item_id' => null,
         'name' => 'Free insert',
         'components_per_unit' => 1,
         'position' => 1,
@@ -1109,7 +1128,7 @@ it('preserves deliberately saved zero cost unlinked packaging rows across repeat
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
-        'user_packaging_item_id' => null,
+        'packaging_item_id' => null,
         'name' => 'Free insert',
         'unit_cost' => 0,
         'quantity' => 1,
@@ -1184,7 +1203,7 @@ it('does not mutate existing costing rows when building saved formula view data'
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
 
     $version->packagingItems()->create([
-        'user_packaging_item_id' => null,
+        'packaging_item_id' => null,
         'name' => 'Free insert',
         'components_per_unit' => 1,
         'position' => 1,
@@ -1209,7 +1228,7 @@ it('does not mutate existing costing rows when building saved formula view data'
 
     $packagingCostingItem = RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
-        'user_packaging_item_id' => null,
+        'packaging_item_id' => null,
         'name' => 'Free insert',
         'unit_cost' => 0,
         'quantity' => 1,
@@ -1284,10 +1303,10 @@ function productionSnapshotIngredient(): Ingredient
     return $ingredient;
 }
 
-/** @return array{packaging_item: UserPackagingItem, costing_item: RecipeVersionCostingItem, packaging_costing_item: RecipeVersionCostingPackagingItem} */
+/** @return array{packaging_item: PackagingItem, costing_item: RecipeVersionCostingItem, packaging_costing_item: RecipeVersionCostingPackagingItem} */
 function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ingredient $ingredient, float $ingredientPrice, float $packagingPrice): array
 {
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Soap box',
         'unit_cost' => $packagingPrice,
@@ -1300,7 +1319,7 @@ function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ing
         ->firstOrFail();
 
     $currentVersion->packagingItems()->create([
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'components_per_unit' => 1,
         'position' => 1,
@@ -1325,7 +1344,7 @@ function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ing
 
     $packagingCostingItem = RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'name' => 'Soap box',
         'unit_cost' => $packagingPrice,
         'quantity' => 1,

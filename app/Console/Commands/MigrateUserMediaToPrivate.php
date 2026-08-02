@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Ingredient;
-use App\Models\UserPackagingItem;
+use App\Models\PackagingItem;
 use App\Services\MediaStorage;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
@@ -68,9 +68,9 @@ class MigrateUserMediaToPrivate extends Command
                 }
             });
 
-        UserPackagingItem::query()
+        PackagingItem::query()
             ->orderBy('id')
-            ->each(function (UserPackagingItem $packagingItem) use (&$mappings): void {
+            ->each(function (PackagingItem $packagingItem) use (&$mappings): void {
                 $source = $packagingItem->featured_image_path;
 
                 if (! is_string($source) || blank($source) || MediaStorage::isPackagingItemPath($packagingItem, $source)) {
@@ -150,7 +150,7 @@ class MigrateUserMediaToPrivate extends Command
                 $ingredient->featured_image_path,
                 $ingredient->icon_image_path,
             ])
-            ->merge(UserPackagingItem::query()->pluck('featured_image_path'))
+            ->merge(PackagingItem::query()->pluck('featured_image_path'))
             ->filter()
             ->unique();
         $pathsToDelete = collect($mappings)

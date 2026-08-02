@@ -2,9 +2,9 @@
 
 use App\Casts\OriginalFilename;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\ProductType;
 use App\Models\Recipe;
-use App\Models\UserPackagingItem;
 
 it('round trips a harmless Unicode filename on a recipe', function () {
     $recipe = new Recipe;
@@ -25,7 +25,7 @@ it('sanitizes mapped original filename attributes through each model', function 
     'recipe featured image' => [Recipe::class, 'featured_image_original_name'],
     'ingredient featured image' => [Ingredient::class, 'featured_image_original_name'],
     'ingredient icon image' => [Ingredient::class, 'icon_image_original_name'],
-    'packaging item featured image' => [UserPackagingItem::class, 'featured_image_original_name'],
+    'packaging item featured image' => [PackagingItem::class, 'featured_image_original_name'],
     'product type fallback image' => [ProductType::class, 'fallback_image_original_name'],
 ]);
 

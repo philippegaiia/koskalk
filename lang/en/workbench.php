@@ -191,7 +191,7 @@ return [
             'currency' => 'Currency',
             'currency_label' => 'Costing currency',
             'currency_placeholder' => 'Search currencies',
-            'price_help' => 'Ingredient prices are stored per kilogram and reused here as your default.',
+            'price_help' => 'Ingredient prices follow the active metric or US customary costing basis.',
             'units' => [
                 'g' => 'g',
                 'kg' => 'kg',
@@ -211,7 +211,7 @@ return [
             'ingredient' => 'Ingredient',
             'percentage' => '%',
             'weight' => 'Weight (:unit)',
-            'price' => 'Your price / kg',
+            'price' => 'Your price / :unit',
             'line_cost' => 'Line cost',
             'subtotal' => 'Ingredient subtotal',
             'empty' => 'Add ingredients on the Formula tab to start costing them here.',
@@ -235,7 +235,7 @@ return [
             'enter_finished_units' => 'Enter finished units',
         ],
         'accessibility' => [
-            'price_for' => 'Price per kilogram for :item',
+            'price_for' => 'Price per :unit for :item',
             'unit_price_for' => 'Unit price for :item',
         ],
         'phases' => [

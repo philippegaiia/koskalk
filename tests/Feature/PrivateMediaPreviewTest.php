@@ -10,7 +10,6 @@ use App\Models\MediaAsset;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\MediaAssetUsageService;
@@ -89,7 +88,7 @@ it('hydrates a packaging image from the private media library', function () {
         'workspace_id' => $workspace->id,
         'original_filename' => 'Amber carton.webp',
     ]);
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $owner->id,
         'name' => 'Private carton',
         'unit_cost' => 1.25,

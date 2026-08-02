@@ -1,11 +1,12 @@
 <?php
 
+use App\Livewire\Dashboard\PackagingItemsIndex;
 use App\Models\InterfaceTranslation;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -13,10 +14,32 @@ beforeEach(function () {
     $this->seed(SupportedLocaleSeeder::class);
 });
 
+it('shows two decimals normally and preserves meaningful sub-cent packaging prices', function () {
+    $user = User::factory()->create(['number_locale' => 'en_US']);
+    createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Bottle',
+        'unit_cost' => 1,
+        'currency' => 'EUR',
+    ]);
+    createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Small label',
+        'unit_cost' => 0.035,
+        'currency' => 'EUR',
+    ]);
+
+    $this->actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->assertSee('value="1.00"', false)
+        ->assertSee('value="0.035"', false);
+});
+
 it('uses the approved packaging library copy and an unlabeled thumbnail column', function () {
     $user = User::factory()->create();
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Kraft soap box',
         'unit_cost' => 0.42,
@@ -44,7 +67,7 @@ it('loads packaging index interface copy from the database', function () {
 
     $user = User::factory()->create(['locale' => 'fr']);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Boîte kraft',
         'unit_cost' => 0.42,

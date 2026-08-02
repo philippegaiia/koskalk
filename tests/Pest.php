@@ -1,5 +1,13 @@
 <?php
 
+use App\MaterialPriceSource;
+use App\Models\CurrentMaterialPrice;
+use App\Models\Ingredient;
+use App\Models\PackagingItem;
+use App\Models\User;
+use App\Models\Workspace;
+use App\PackagingCategory;
+use App\Services\CurrentMaterialPriceService;
 use Tests\TestCase;
 
 /*
@@ -43,7 +51,71 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+/** @param array<string, mixed> $attributes */
+function createPackagingItemForWorkspace(array $attributes): PackagingItem
 {
-    // ..
+    $userId = $attributes['created_by_user_id'] ?? $attributes['user_id'] ?? null;
+    $user = is_numeric($userId) ? User::query()->findOrFail((int) $userId) : null;
+    $workspaceId = $attributes['workspace_id'] ?? ($user instanceof User
+        ? Workspace::withoutGlobalScopes()->where('owner_user_id', $user->id)->value('id')
+        : null);
+    $workspace = is_numeric($workspaceId)
+        ? Workspace::withoutGlobalScopes()->findOrFail((int) $workspaceId)
+        : null;
+
+    if (! $workspace instanceof Workspace && $user instanceof User) {
+        $workspace = Workspace::factory()->for($user, 'owner')->create();
+    }
+
+    if (! $workspace instanceof Workspace) {
+        $workspace = Workspace::factory()->create();
+    }
+
+    $actor = $user ?? $workspace->owner;
+    $price = $attributes['unit_cost'] ?? null;
+    $currency = (string) ($attributes['currency'] ?? $workspace->default_currency ?? 'EUR');
+    unset($attributes['user_id'], $attributes['unit_cost'], $attributes['currency']);
+
+    $packagingItem = PackagingItem::query()->create([
+        'workspace_id' => $workspace->id,
+        'created_by_user_id' => $actor?->id,
+        'category' => PackagingCategory::Other,
+        'is_active' => true,
+        ...$attributes,
+    ]);
+
+    if ($price !== null && $actor instanceof User) {
+        app(CurrentMaterialPriceService::class)->rememberPackaging(
+            workspace: $workspace,
+            packagingItem: $packagingItem,
+            pricePerItem: (string) $price,
+            currency: $currency,
+            source: MaterialPriceSource::ManualCosting,
+            sourceId: null,
+            actor: $actor,
+        );
+    }
+
+    return $packagingItem->load('currentPrice');
+}
+
+function rememberIngredientPriceForWorkspace(
+    User $user,
+    Ingredient $ingredient,
+    string $pricePerKilogram,
+    ?string $currency = null,
+): CurrentMaterialPrice {
+    $workspace = Workspace::withoutGlobalScopes()->where('owner_user_id', $user->id)->first()
+        ?? Workspace::factory()->for($user, 'owner')->create();
+
+    return app(CurrentMaterialPriceService::class)->rememberIngredient(
+        workspace: $workspace,
+        ingredient: $ingredient,
+        pricePerMassUnit: $pricePerKilogram,
+        massUnit: 'kg',
+        currency: $currency ?? $workspace->default_currency ?? 'EUR',
+        source: MaterialPriceSource::ManualCosting,
+        sourceId: null,
+        actor: $user,
+    );
 }

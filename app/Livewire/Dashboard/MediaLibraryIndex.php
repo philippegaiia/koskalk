@@ -9,10 +9,10 @@ use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\MediaLabel;
+use App\Models\PackagingItem;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\CurrentAppUserResolver;
@@ -562,7 +562,7 @@ class MediaLibraryIndex extends Component
             ->groupBy(fn (MediaAssetUsage $usage): string => match (true) {
                 $usage->usable instanceof Recipe => 'recipes',
                 $usage->usable instanceof Ingredient => 'ingredients',
-                $usage->usable instanceof UserPackagingItem => 'packaging',
+                $usage->usable instanceof PackagingItem => 'packaging',
                 default => 'other',
             });
     }
@@ -586,7 +586,7 @@ class MediaLibraryIndex extends Component
 
                 return $usage->usable instanceof Recipe
                     || $usage->usable instanceof Ingredient
-                    || $usage->usable instanceof UserPackagingItem
+                    || $usage->usable instanceof PackagingItem
                         ? $usage
                         : null;
             })
@@ -631,7 +631,7 @@ class MediaLibraryIndex extends Component
                         || ! in_array($usableType, [
                             Recipe::class,
                             Ingredient::class,
-                            UserPackagingItem::class,
+                            PackagingItem::class,
                         ], true)
                     ) {
                         return null;
@@ -652,7 +652,7 @@ class MediaLibraryIndex extends Component
         return match (true) {
             $usage->usable instanceof Recipe => $usage->usable->name,
             $usage->usable instanceof Ingredient => $usage->usable->display_name,
-            $usage->usable instanceof UserPackagingItem => $usage->usable->name,
+            $usage->usable instanceof PackagingItem => $usage->usable->name,
             default => __('media_library.missing_target'),
         };
     }
@@ -667,21 +667,21 @@ class MediaLibraryIndex extends Component
         }
 
         $targets = $asset->usages
-            ->map(function (MediaAssetUsage $usage): Recipe|Ingredient|UserPackagingItem|null {
+            ->map(function (MediaAssetUsage $usage): Recipe|Ingredient|PackagingItem|null {
                 if ($usage->usable instanceof RecipeVersion) {
                     return $usage->usable->recipe;
                 }
 
                 return $usage->usable instanceof Recipe
                     || $usage->usable instanceof Ingredient
-                    || $usage->usable instanceof UserPackagingItem
+                    || $usage->usable instanceof PackagingItem
                         ? $usage->usable
                         : null;
             })
             ->filter()
-            ->unique(fn (Recipe|Ingredient|UserPackagingItem $target): string => $target::class.':'.$target->getKey());
+            ->unique(fn (Recipe|Ingredient|PackagingItem $target): string => $target::class.':'.$target->getKey());
         $recipeCount = $targets->filter(
-            fn (Recipe|Ingredient|UserPackagingItem $target): bool => $target instanceof Recipe,
+            fn (Recipe|Ingredient|PackagingItem $target): bool => $target instanceof Recipe,
         )->count();
         $otherCount = $targets->count() - $recipeCount;
 

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\MassDisplaySystem;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
 use App\WorkspaceMemberRole;
@@ -12,8 +13,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country'])]
+#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system'])]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
@@ -63,6 +65,21 @@ class Workspace extends Model
         return $this->hasMany(Brand::class);
     }
 
+    public function packagingItems(): HasMany
+    {
+        return $this->hasMany(PackagingItem::class);
+    }
+
+    public function currentMaterialPrices(): HasMany
+    {
+        return $this->hasMany(CurrentMaterialPrice::class);
+    }
+
+    public function productionEntitlement(): HasOne
+    {
+        return $this->hasOne(WorkspaceProductionEntitlement::class);
+    }
+
     public function hasMember(User $user): bool
     {
         return $this->owner_user_id === $user->id
@@ -86,5 +103,12 @@ class Workspace extends Model
         return $role instanceof WorkspaceMemberRole
             ? $role
             : ($role === null ? null : WorkspaceMemberRole::from($role));
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'mass_display_system' => MassDisplaySystem::class,
+        ];
     }
 }

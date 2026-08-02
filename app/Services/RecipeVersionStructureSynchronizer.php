@@ -2,12 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\PackagingItem;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\OwnerType;
 
 class RecipeVersionStructureSynchronizer
@@ -70,10 +70,10 @@ class RecipeVersionStructureSynchronizer
             ->where('recipe_version_id', $recipeVersion->id)
             ->delete();
 
-        $linkedPackagingItems = UserPackagingItem::query()
-            ->where('user_id', $user->id)
+        $linkedPackagingItems = PackagingItem::query()
+            ->where('workspace_id', $recipeVersion->workspace_id)
             ->whereIn('id', collect($packagingItems)
-                ->pluck('user_packaging_item_id')
+                ->pluck('packaging_item_id')
                 ->filter(fn (mixed $id): bool => is_numeric($id))
                 ->map(fn (mixed $id): int => (int) $id)
                 ->all())
@@ -81,13 +81,13 @@ class RecipeVersionStructureSynchronizer
             ->keyBy('id');
 
         foreach ($packagingItems as $index => $packagingItemPayload) {
-            $linkedPackagingItemId = isset($packagingItemPayload['user_packaging_item_id'])
-                && $linkedPackagingItems->has((int) $packagingItemPayload['user_packaging_item_id'])
-                    ? (int) $packagingItemPayload['user_packaging_item_id']
+            $linkedPackagingItemId = isset($packagingItemPayload['packaging_item_id'])
+                && $linkedPackagingItems->has((int) $packagingItemPayload['packaging_item_id'])
+                    ? (int) $packagingItemPayload['packaging_item_id']
                     : null;
 
             $packagingItem = new RecipeVersionPackagingItem([
-                'user_packaging_item_id' => $linkedPackagingItemId,
+                'packaging_item_id' => $linkedPackagingItemId,
                 'name' => trim((string) ($packagingItemPayload['name'] ?? '')),
                 'components_per_unit' => (float) ($packagingItemPayload['components_per_unit'] ?? 1),
                 'notes' => $packagingItemPayload['notes'] ?? null,

@@ -16,6 +16,7 @@ class RecipeVersionCostPreviewBuilder
 {
     public function __construct(
         private readonly RecipeVersionCostingSynchronizer $costingSynchronizer,
+        private readonly MassConverter $massConverter,
     ) {}
 
     /**
@@ -171,7 +172,9 @@ class RecipeVersionCostPreviewBuilder
                         'quantity' => $quantity,
                         'unit' => $unit,
                         'price_per_kg' => $pricePerKg,
-                        'line_cost' => $pricePerKg === null ? 0.0 : round($this->quantityToKilograms($quantity, $unit) * $pricePerKg, 4),
+                        'line_cost' => $pricePerKg === null
+                            ? 0.0
+                            : round((float) $this->massConverter->convert($quantity, $unit, 'kg') * $pricePerKg, 4),
                         'is_unpriced' => $pricePerKg === null,
                     ];
                 }))
@@ -193,14 +196,14 @@ class RecipeVersionCostPreviewBuilder
             ->toBase()
             ->map(function (RecipeVersionPackagingItem $item) use ($costingRowsByKey, &$costingRowOccurrences, $existingRowsByKey, &$existingRowOccurrences, $unitsProduced): array {
                 $key = $this->packagingKey(
-                    $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                    $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                     $item->name,
                 );
                 $costingItem = $this->nextPackagingCostingRow($costingRowsByKey, $key, $costingRowOccurrences);
                 $existingCostingItem = $this->nextPackagingCostingRow($existingRowsByKey, $key, $existingRowOccurrences);
 
                 return $this->packagingRow(
-                    packagingItemId: $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                    packagingItemId: $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                     position: (int) $item->position,
                     name: $item->name,
                     componentsPerUnit: $costingItem?->quantity === null ? (float) $item->components_per_unit : (float) $costingItem->quantity,
@@ -216,18 +219,18 @@ class RecipeVersionCostPreviewBuilder
         $plannedKeys = $version->packagingItems
             ->toBase()
             ->map(fn (RecipeVersionPackagingItem $item): string => $this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             ));
 
         $legacyRows = ($existingCosting?->packagingItems ?? collect())
             ->reject(fn (RecipeVersionCostingPackagingItem $item): bool => $plannedKeys->contains($this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             )))
             ->values()
             ->map(fn (RecipeVersionCostingPackagingItem $item, int $index): array => $this->packagingRow(
-                packagingItemId: $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                packagingItemId: $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 position: $version->packagingItems->count() + $index + 1,
                 name: $item->name,
                 componentsPerUnit: (float) $item->quantity,
@@ -246,7 +249,7 @@ class RecipeVersionCostPreviewBuilder
         $costPerFinishedUnit = $unitCost === null ? 0.0 : round($unitCost * $componentsPerUnit, 4);
 
         return [
-            'user_packaging_item_id' => $packagingItemId,
+            'packaging_item_id' => $packagingItemId,
             'position' => $position,
             'name' => $name,
             'components_per_unit' => $componentsPerUnit,
@@ -262,16 +265,6 @@ class RecipeVersionCostPreviewBuilder
         return ($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
     }
 
-    private function quantityToKilograms(float $quantity, string $unit): float
-    {
-        return match ($unit) {
-            'kg' => $quantity,
-            'oz' => $quantity * 0.028349523125,
-            'lb' => $quantity * 0.45359237,
-            default => $quantity / 1000,
-        };
-    }
-
     /**
      * @param  Collection<int, RecipeVersionCostingPackagingItem>  $items
      * @return Collection<string, Collection<int, RecipeVersionCostingPackagingItem>>
@@ -280,7 +273,7 @@ class RecipeVersionCostPreviewBuilder
     {
         return $items
             ->groupBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             ))
             ->map(fn (Collection $rows): Collection => $rows->values());
@@ -331,7 +324,7 @@ class RecipeVersionCostPreviewBuilder
     private function deleteGeneratedMissingPackagingRows(RecipeVersion $version, RecipeVersionCosting $costing, ?RecipeVersionCosting $existingCosting): void
     {
         $existingKeys = ($existingCosting?->packagingItems ?? collect())->map(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-            $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+            $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
             $item->name,
         ));
 
@@ -339,7 +332,7 @@ class RecipeVersionCostPreviewBuilder
             ->filter(fn (RecipeVersionPackagingItem $item): bool => $item->packagingItem?->unit_cost === null)
             ->each(function (RecipeVersionPackagingItem $item) use ($costing, $existingKeys): void {
                 $key = $this->packagingKey(
-                    $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                    $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                     $item->name,
                 );
 
@@ -351,9 +344,9 @@ class RecipeVersionCostPreviewBuilder
                     ->where('name', $item->name)
                     ->where('unit_cost', 0)
                     ->when(
-                        $item->user_packaging_item_id === null,
-                        fn ($query) => $query->whereNull('user_packaging_item_id'),
-                        fn ($query) => $query->where('user_packaging_item_id', $item->user_packaging_item_id),
+                        $item->packaging_item_id === null,
+                        fn ($query) => $query->whereNull('packaging_item_id'),
+                        fn ($query) => $query->where('packaging_item_id', $item->packaging_item_id),
                     )
                     ->delete();
             });
@@ -368,29 +361,29 @@ class RecipeVersionCostPreviewBuilder
         $plannedKeys = $version->packagingItems
             ->toBase()
             ->map(fn (RecipeVersionPackagingItem $item): string => $this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             ));
 
         $currentKeys = $costing->packagingItems
             ->toBase()
             ->map(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             ));
 
         $existingCosting->packagingItems
             ->reject(fn (RecipeVersionCostingPackagingItem $item): bool => $plannedKeys->contains($this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             )))
             ->reject(fn (RecipeVersionCostingPackagingItem $item): bool => $currentKeys->contains($this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             )))
             ->each(function (RecipeVersionCostingPackagingItem $item) use ($costing): void {
                 $costing->packagingItems()->create([
-                    'user_packaging_item_id' => $item->user_packaging_item_id,
+                    'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'unit_cost' => $item->unit_cost,
                     'quantity' => $item->quantity,

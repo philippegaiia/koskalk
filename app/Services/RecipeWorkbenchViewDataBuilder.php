@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\MassDisplaySystem;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
@@ -30,6 +31,8 @@ class RecipeWorkbenchViewDataBuilder
         $savedDraft = $this->recipeWorkbenchService->currentVersionPayloadUsingCatalog($recipe, $ingredients);
         $defaultCurrency = $user?->defaultCurrency() ?? 'EUR';
         $productType ??= $recipe?->productType;
+        $defaultMassGrams = $productFamily->calculation_basis === 'total_formula' ? '100' : '1000';
+        $massDisplaySystem = $user?->company()?->mass_display_system ?? MassDisplaySystem::Metric;
 
         return [
             'productFamily' => [
@@ -57,6 +60,7 @@ class RecipeWorkbenchViewDataBuilder
             'currencies' => $this->currencyCatalog->options(app()->getLocale(), [$defaultCurrency]),
             'numberLocale' => $user instanceof User ? NumberLocale::resolve($user->number_locale) : null,
             'numberLocaleOptions' => NumberLocale::options(),
+            'preferredMassUnit' => $massDisplaySystem->preferredUnit($defaultMassGrams)->value,
             'canPersist' => $user instanceof User,
             'translations' => $this->translations(),
         ];

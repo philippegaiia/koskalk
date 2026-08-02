@@ -21,6 +21,13 @@ it('offers current legal tender while retaining historical display fallbacks', f
         ->and($catalog->name('ZZZ', 'en'))->toBe('ZZZ');
 });
 
+it('distinguishes known historical currencies from arbitrary codes', function () {
+    $catalog = app(CurrencyCatalog::class);
+
+    expect($catalog->isKnown('HRK'))->toBeTrue()
+        ->and($catalog->isKnown('ZZZ'))->toBeFalse();
+});
+
 it('can include a stored historical currency in localized choices', function () {
     $options = app(CurrencyCatalog::class)->options('de', ['HRK']);
 

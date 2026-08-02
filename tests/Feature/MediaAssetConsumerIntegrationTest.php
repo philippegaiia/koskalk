@@ -20,12 +20,11 @@ use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Services\MediaAssetUsageService;
+use App\Services\PackagingItemAuthoringService;
 use App\Services\RecipeSopSnapshotService;
 use App\Services\UserIngredientAuthoringService;
-use App\Services\UserPackagingItemAuthoringService;
 use Filament\Forms\Components\RichEditor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -521,7 +520,7 @@ it('synchronizes one reusable asset per consumer role without increasing quota',
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
     $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id]);
     $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id]);
-    $packaging = UserPackagingItem::query()->create([
+    $packaging = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Amber jar',
         'unit_cost' => 1,
@@ -610,7 +609,7 @@ it('uses the intended conversions for catalog, index, and icon consumers', funct
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
     $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id]);
     $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id]);
-    $packaging = UserPackagingItem::query()->create([
+    $packaging = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Tin',
         'unit_cost' => 1,
@@ -650,7 +649,7 @@ it('removes usage rows when a consumer is deleted but retains the shared asset',
     $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id]);
     $version = RecipeVersion::factory()->create(['recipe_id' => $recipe->id]);
     $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id]);
-    $packaging = UserPackagingItem::query()->create(['user_id' => $user->id, 'name' => 'Jar', 'unit_cost' => 1, 'currency' => 'EUR']);
+    $packaging = createPackagingItemForWorkspace(['user_id' => $user->id, 'name' => 'Jar', 'unit_cost' => 1, 'currency' => 'EUR']);
     $service = app(MediaAssetUsageService::class);
 
     $service->syncSingle($user, $recipe, MediaAssetUsageRole::RecipeFeatured, $asset->id);
@@ -659,6 +658,7 @@ it('removes usage rows when a consumer is deleted but retains the shared asset',
     $service->syncSingle($user, $packaging, MediaAssetUsageRole::PackagingMain, $asset->id);
 
     $ingredient->delete();
+    $packaging->currentPrice()->delete();
     $packaging->delete();
     $recipe->delete();
 
@@ -672,7 +672,7 @@ it('rolls back ingredient and packaging edits when a selected asset is outside t
     $validAsset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
     $outsideAsset = MediaAsset::factory()->ready()->create();
     $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id, 'display_name' => 'Original ingredient']);
-    $packaging = UserPackagingItem::query()->create(['user_id' => $user->id, 'name' => 'Original jar', 'unit_cost' => 1, 'currency' => 'EUR']);
+    $packaging = createPackagingItemForWorkspace(['user_id' => $user->id, 'name' => 'Original jar', 'unit_cost' => 1, 'currency' => 'EUR']);
     $usages = app(MediaAssetUsageService::class);
     $usages->syncSingle($user, $ingredient, MediaAssetUsageRole::IngredientMain, $validAsset->id);
     $usages->syncSingle($user, $packaging, MediaAssetUsageRole::PackagingMain, $validAsset->id);
@@ -705,7 +705,7 @@ it('preserves legacy paths when authoring updates do not submit retired upload f
         'featured_image_path' => 'ingredients/legacy-feature.webp',
         'icon_image_path' => 'ingredients/legacy-icon.webp',
     ]);
-    $packaging = UserPackagingItem::query()->create([
+    $packaging = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Legacy tin',
         'unit_cost' => 1,
@@ -725,7 +725,7 @@ it('preserves legacy paths when authoring updates do not submit retired upload f
             ->all(),
         'name' => 'Updated legacy ingredient',
     ], $user);
-    app(UserPackagingItemAuthoringService::class)->update($packaging, [
+    app(PackagingItemAuthoringService::class)->update($packaging, [
         'name' => 'Updated legacy tin',
         'unit_cost' => 1,
         'notes' => null,
@@ -745,7 +745,7 @@ it('renders media-backed index lists without query growth per record', function 
 
     foreach (range(1, 6) as $index) {
         $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id, 'display_name' => "Ingredient {$index}"]);
-        $packaging = UserPackagingItem::query()->create(['user_id' => $user->id, 'name' => "Packaging {$index}", 'unit_cost' => 1, 'currency' => 'EUR']);
+        $packaging = createPackagingItemForWorkspace(['user_id' => $user->id, 'name' => "Packaging {$index}", 'unit_cost' => 1, 'currency' => 'EUR']);
         $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'owner_id' => $user->id, 'product_family_id' => $family->id]);
         $usages->syncSingle($user, $ingredient, MediaAssetUsageRole::IngredientMain, $asset->id);
         $usages->syncSingle($user, $packaging, MediaAssetUsageRole::PackagingMain, $asset->id);

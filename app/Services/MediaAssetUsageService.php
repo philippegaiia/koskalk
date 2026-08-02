@@ -7,9 +7,9 @@ use App\MediaAssetType;
 use App\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
+use App\Models\PackagingItem;
 use App\Models\Recipe;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -156,7 +156,7 @@ class MediaAssetUsageService
 
     private function workspaceFor(User $user, Model $usable): Workspace
     {
-        $workspaceId = $usable instanceof UserPackagingItem
+        $workspaceId = $usable instanceof PackagingItem
             ? $user->company()?->id
             : $usable->getAttribute('workspace_id');
         $workspace = filled($workspaceId)

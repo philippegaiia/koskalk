@@ -6,14 +6,18 @@ use App\Forms\Components\MediaAssetPicker;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
 use App\MediaAssetUsageRole;
+use App\Models\PackagingItem;
+use App\Models\Supplier;
 use App\Models\User;
-use App\Models\UserPackagingItem;
+use App\PackagingCategory;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaAssetUsageService;
-use App\Services\UserPackagingItemAuthoringService;
+use App\Services\PackagingItemAuthoringService;
 use App\Support\LocalizedDecimalInput;
+use App\Support\NumberLocale;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -42,6 +46,12 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     #[Locked]
     public string $mediaPublicId;
 
+    #[Locked]
+    public ?string $returnTo = null;
+
+    #[Locked]
+    public ?string $returnSupplierPublicId = null;
+
     /**
      * @var array<string, mixed>
      */
@@ -52,17 +62,27 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     public string $statusType = 'idle';
 
     public function mount(
-        ?UserPackagingItem $packagingItem,
-        UserPackagingItemAuthoringService $authoringService,
+        ?PackagingItem $packagingItem,
+        PackagingItemAuthoringService $authoringService,
         MediaAssetUsageService $mediaAssetUsages,
     ): void {
+        if ($packagingItem?->exists !== true) {
+            $packagingItem = null;
+        }
+
         $this->packagingItemId = $packagingItem?->id;
         $this->mediaPublicId = (string) ($packagingItem?->public_id ?? Str::uuid());
 
-        $state = $packagingItem instanceof UserPackagingItem
+        if ($packagingItem === null && request()->query('return_to') === 'supplier_listing') {
+            $this->returnTo = 'supplier_listing';
+            $this->returnSupplierPublicId = $this->validReturnSupplierPublicId(request()->query('supplier'));
+        }
+
+        $state = $packagingItem instanceof PackagingItem
             ? $authoringService->formData($packagingItem)
             : $authoringService->blankState();
-        $state['featured_media_asset_id'] = $packagingItem instanceof UserPackagingItem
+        $state['unit_cost'] = $this->formattedUnitCost($packagingItem?->unit_cost);
+        $state['featured_media_asset_id'] = $packagingItem instanceof PackagingItem
             ? ($mediaAssetUsages->idsFor($packagingItem, MediaAssetUsageRole::PackagingMain)[0] ?? null)
             : null;
 
@@ -70,7 +90,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     }
 
     public function save(
-        UserPackagingItemAuthoringService $authoringService,
+        PackagingItemAuthoringService $authoringService,
         MediaAssetUsageService $mediaAssetUsages,
     ) {
         $user = $this->currentUser();
@@ -93,8 +113,8 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         $currentPackagingItem = $this->currentPackagingItem();
 
         try {
-            $packagingItem = DB::transaction(function () use ($authoringService, $currentPackagingItem, $featuredMediaAssetId, $mediaAssetUsages, $state, $user): UserPackagingItem {
-                $packagingItem = $currentPackagingItem instanceof UserPackagingItem
+            $packagingItem = DB::transaction(function () use ($authoringService, $currentPackagingItem, $featuredMediaAssetId, $mediaAssetUsages, $state, $user): PackagingItem {
+                $packagingItem = $currentPackagingItem instanceof PackagingItem
                     ? $authoringService->update($currentPackagingItem, $state, $user)
                     : $authoringService->create($state, $user);
 
@@ -118,11 +138,20 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         $this->showAppNotification($statusMessage);
 
         $refreshedState = $authoringService->formData($packagingItem);
+        $refreshedState['unit_cost'] = $this->formattedUnitCost($packagingItem->unit_cost);
         $refreshedState['featured_media_asset_id'] = $featuredMediaAssetId;
         $this->form->fill($refreshedState);
 
         if (! $wasEditing) {
             session()->flash('status', $statusMessage);
+
+            if ($this->returnTo === 'supplier_listing') {
+                return redirect()->route('production-bench.purchasing.listings.create', array_filter([
+                    'material_type' => 'packaging',
+                    'packaging_item' => $packagingItem->public_id,
+                    'supplier' => $this->returnSupplierPublicId,
+                ]));
+            }
 
             return redirect()->route('packaging-items.edit', $packagingItem);
         }
@@ -145,6 +174,10 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                             ->placeholder(__('packaging.editor.form.name.placeholder'))
                             ->required()
                             ->maxLength(255),
+                        Select::make('category')
+                            ->label(__('packaging.editor.form.category'))
+                            ->options(PackagingCategory::class)
+                            ->required(),
                         LocalizedDecimalInput::make('unit_cost')
                             ->label(fn (): string => __('packaging.editor.form.unit_price', [
                                 'currency' => $this->currentUser()?->defaultCurrency() ?? 'EUR',
@@ -163,7 +196,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
                     ]),
             ])
             ->statePath('data')
-            ->model($this->currentPackagingItem() ?? UserPackagingItem::class);
+            ->model($this->currentPackagingItem() ?? PackagingItem::class);
     }
 
     public function render(): View
@@ -173,7 +206,7 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
         ]);
     }
 
-    private function currentPackagingItem(): ?UserPackagingItem
+    private function currentPackagingItem(): ?PackagingItem
     {
         $user = $this->currentUser();
 
@@ -181,8 +214,8 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
             return null;
         }
 
-        return UserPackagingItem::query()
-            ->where('user_id', $user->id)
+        return PackagingItem::query()
+            ->where('workspace_id', $user->company()?->id)
             ->find($this->packagingItemId);
     }
 
@@ -194,5 +227,33 @@ class PackagingItemEditor extends Component implements HasActions, HasForms
     private function isEditing(): bool
     {
         return $this->packagingItemId !== null;
+    }
+
+    private function formattedUnitCost(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        return NumberLocale::formatAdaptiveDecimal(
+            $value,
+            minimumDecimals: 2,
+            maximumDecimals: 4,
+            locale: $this->currentUser()?->number_locale,
+        );
+    }
+
+    private function validReturnSupplierPublicId(mixed $supplierPublicId): ?string
+    {
+        $workspaceId = $this->currentUser()?->company()?->id;
+
+        if (! is_string($supplierPublicId) || $workspaceId === null) {
+            return null;
+        }
+
+        return Supplier::query()
+            ->where('workspace_id', $workspaceId)
+            ->where('public_id', $supplierPublicId)
+            ->value('public_id');
     }
 }

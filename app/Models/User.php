@@ -54,14 +54,9 @@ class User extends Authenticatable implements FilamentUser, MustVerifyEmail
         return $this->hasMany(WorkspaceMember::class);
     }
 
-    public function ingredientPrices(): HasMany
-    {
-        return $this->hasMany(UserIngredientPrice::class);
-    }
-
     public function packagingItems(): HasMany
     {
-        return $this->hasMany(UserPackagingItem::class);
+        return $this->hasMany(PackagingItem::class, 'created_by_user_id');
     }
 
     public function recipeVersionCostings(): HasMany

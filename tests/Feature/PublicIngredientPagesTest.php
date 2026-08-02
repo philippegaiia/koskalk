@@ -1159,11 +1159,11 @@ it('renders the public ingredient create page for signed in users', function () 
         ->assertDontSeeText('Create the ingredient now, then enrich it on the next screen.')
         ->assertSee('Details')
         ->assertSeeText('Ingredient details')
-        ->assertSeeText('Supplier details')
+        ->assertSeeText('Identifiers and functions')
         ->assertSeeText('Images and notes')
         ->assertSee('CAS number')
         ->assertSee('EC / EINECS number')
-        ->assertSee('Certified organic')
+        ->assertDontSee('Certified organic')
         ->assertDontSee('Allergens')
         ->assertDontSee('IFRA guidance');
 });

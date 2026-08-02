@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'production_batch_id',
-    'user_packaging_item_id',
+    'packaging_item_id',
     'position',
     'name',
     'components_per_unit',
@@ -30,7 +30,7 @@ class ProductionBatchPackagingItem extends Model
 
     public function packagingItem(): BelongsTo
     {
-        return $this->belongsTo(UserPackagingItem::class, 'user_packaging_item_id');
+        return $this->belongsTo(PackagingItem::class, 'packaging_item_id');
     }
 
     protected function casts(): array

@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\DecimalStringFormatter;
+
 class NumberLocale
 {
     /**
@@ -41,6 +43,40 @@ class NumberLocale
     public static function formatDecimal(mixed $value, int $decimals = 2, ?string $locale = null): string
     {
         $formatted = number_format((float) $value, $decimals, '.', '');
+
+        return self::usesDecimalComma(self::resolve($locale))
+            ? str_replace('.', ',', $formatted)
+            : $formatted;
+    }
+
+    public static function formatAdaptiveDecimal(
+        mixed $value,
+        int $minimumDecimals = 2,
+        int $maximumDecimals = 4,
+        ?string $locale = null,
+    ): string {
+        if ($minimumDecimals < 0 || $maximumDecimals < $minimumDecimals) {
+            throw new \InvalidArgumentException('Decimal limits must be positive and ordered.');
+        }
+
+        $normalized = trim((string) $value);
+
+        if (preg_match('/^-?\d+(?:\.\d+)?$/', $normalized) !== 1) {
+            if (! is_numeric($normalized)) {
+                throw new \InvalidArgumentException('The value must be numeric.');
+            }
+
+            $normalized = number_format((float) $normalized, $maximumDecimals, '.', '');
+        }
+
+        $fixed = (new DecimalStringFormatter)->toFixed($normalized, $maximumDecimals);
+        [$integer, $fraction] = array_pad(explode('.', $fixed, 2), 2, '');
+
+        while (strlen($fraction) > $minimumDecimals && str_ends_with($fraction, '0')) {
+            $fraction = substr($fraction, 0, -1);
+        }
+
+        $formatted = $integer.($fraction === '' ? '' : '.'.$fraction);
 
         return self::usesDecimalComma(self::resolve($locale))
             ? str_replace('.', ',', $formatted)

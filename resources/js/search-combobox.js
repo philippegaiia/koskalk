@@ -52,6 +52,11 @@ export function createSearchCombobox(config) {
         },
 
         handleInput() {
+            this.$dispatch('search-combobox-query', {
+                comboboxId: config.id,
+                query: this.query,
+            });
+
             if (!this.allowEmpty) {
                 this.activeIndex = -1;
                 this.open = true;

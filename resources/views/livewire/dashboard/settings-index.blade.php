@@ -127,6 +127,40 @@
                     @enderror
                     <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('settings.workspace.currency_help') }}</p>
                 </div>
+
+                <fieldset class="sk-inset p-4 md:col-span-2">
+                    <legend class="sk-eyebrow">{{ __('settings.workspace.mass_display') }}</legend>
+                    <div class="mt-3 grid gap-2 sm:grid-cols-2">
+                        <label class="cursor-pointer">
+                            <input
+                                wire:model="workspaceMassDisplaySystem"
+                                type="radio"
+                                value="metric"
+                                class="peer sr-only"
+                            >
+                            <span class="flex min-h-16 items-center justify-between gap-4 rounded-lg bg-[var(--color-field)] px-4 py-3 outline outline-1 outline-[var(--color-field-outline)] transition hover:bg-[var(--color-panel)] peer-checked:bg-[var(--color-accent-soft)] peer-checked:text-[var(--color-accent-strong)] peer-checked:outline-[var(--color-accent)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)]">
+                                <span class="text-sm font-medium">{{ __('settings.workspace.mass_systems.metric') }}</span>
+                                <span class="font-mono text-xs text-[var(--color-ink-soft)]">{{ __('settings.workspace.mass_systems.metric_example') }}</span>
+                            </span>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input
+                                wire:model="workspaceMassDisplaySystem"
+                                type="radio"
+                                value="us_customary"
+                                class="peer sr-only"
+                            >
+                            <span class="flex min-h-16 items-center justify-between gap-4 rounded-lg bg-[var(--color-field)] px-4 py-3 outline outline-1 outline-[var(--color-field-outline)] transition hover:bg-[var(--color-panel)] peer-checked:bg-[var(--color-accent-soft)] peer-checked:text-[var(--color-accent-strong)] peer-checked:outline-[var(--color-accent)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)]">
+                                <span class="text-sm font-medium">{{ __('settings.workspace.mass_systems.us_customary') }}</span>
+                                <span class="font-mono text-xs text-[var(--color-ink-soft)]">{{ __('settings.workspace.mass_systems.us_customary_example') }}</span>
+                            </span>
+                        </label>
+                    </div>
+                    @error('workspaceMassDisplaySystem')
+                        <p class="mt-2 text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                    @enderror
+                    <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('settings.workspace.mass_display_help') }}</p>
+                </fieldset>
             </div>
 
             <div class="flex justify-end">

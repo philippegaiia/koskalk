@@ -77,6 +77,7 @@ class RecipeVersionRecordService
         $recipeVersion->name = $normalizedPayload['name'];
         $recipeVersion->batch_size = $normalizedPayload['oil_weight'];
         $recipeVersion->batch_unit = $normalizedPayload['oil_unit'];
+        $recipeVersion->batch_mass_grams = $normalizedPayload['mass_grams'];
         $recipeVersion->manufacturing_mode = $normalizedPayload['manufacturing_mode'];
         $recipeVersion->manufacturing_instructions = $normalizedPayload['manufacturing_instructions'] ?? null;
         $recipeVersion->exposure_mode = $normalizedPayload['exposure_mode'];

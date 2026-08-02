@@ -46,7 +46,7 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->set('data.inci_name', 'ILLITE')
         ->set('data.cas_number', '1332-58-7')
         ->set('data.ec_number', '310-194-1')
-        ->set('data.is_organic', true)
+        ->set('data.notes', 'Fine cosmetic-grade green clay')
         ->call('save');
 
     $workspace = $user->refresh()->company();
@@ -62,7 +62,7 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->and($ingredient->inci_name)->toBe('ILLITE')
         ->and($ingredient->cas_number)->toBe('1332-58-7')
         ->and($ingredient->ec_number)->toBe('310-194-1')
-        ->and($ingredient->is_organic)->toBeTrue()
+        ->and($ingredient->notes)->toBe('Fine cosmetic-grade green clay')
         ->and($ingredient->is_active)->toBeTrue();
 });
 
@@ -623,8 +623,6 @@ it('creates missing composite components as private ingredients before they are 
         'name' => 'Calendula Flowers',
         'category' => IngredientCategory::Additive->value,
         'inci_name' => 'CALENDULA OFFICINALIS FLOWER',
-        'supplier_name' => 'Local supplier',
-        'supplier_reference' => 'CAL-001',
     ], $user);
 
     $macerate = $service->create([

@@ -3,11 +3,12 @@
 namespace App\Livewire\Dashboard;
 
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Models\CurrentMaterialPrice;
+use App\Models\PackagingItem;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Services\CurrentAppUserResolver;
+use App\Services\PackagingItemAuthoringService;
 use App\Services\PackagingItemFormulaMutationService;
-use App\Services\UserPackagingItemAuthoringService;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -87,12 +88,12 @@ class PackagingItemsIndex extends Component
 
         $packagingItem = $this->ownedPackagingItem($id, $user);
 
-        if (! $packagingItem instanceof UserPackagingItem) {
+        if (! $packagingItem instanceof PackagingItem) {
             return;
         }
 
         try {
-            app(UserPackagingItemAuthoringService::class)->updateUnitCost(
+            app(PackagingItemAuthoringService::class)->updateUnitCost(
                 $packagingItem,
                 $user,
                 NumberLocale::parseDecimalInput($value),
@@ -106,7 +107,7 @@ class PackagingItemsIndex extends Component
     {
         $user = $this->currentUser();
 
-        if (! $user instanceof User || ! $this->ownedPackagingItem($id, $user) instanceof UserPackagingItem) {
+        if (! $user instanceof User || ! $this->ownedPackagingItem($id, $user) instanceof PackagingItem) {
             $this->cancelDelete();
 
             return;
@@ -134,7 +135,7 @@ class PackagingItemsIndex extends Component
 
         $packagingItem = $this->ownedPackagingItem($id, $user);
 
-        if (! $packagingItem instanceof UserPackagingItem) {
+        if (! $packagingItem instanceof PackagingItem) {
             return;
         }
 
@@ -144,7 +145,7 @@ class PackagingItemsIndex extends Component
             return;
         }
 
-        if (! app(UserPackagingItemAuthoringService::class)->delete($packagingItem, $user)) {
+        if (! app(PackagingItemAuthoringService::class)->delete($packagingItem, $user)) {
             $this->addError('packaging_item', __('packaging.validation.in_use'));
 
             return;
@@ -164,7 +165,7 @@ class PackagingItemsIndex extends Component
 
         $packagingItem = $this->ownedPackagingItem($this->pendingDeleteId, $user);
 
-        if (! $packagingItem instanceof UserPackagingItem) {
+        if (! $packagingItem instanceof PackagingItem) {
             $this->pendingDeleteId = null;
 
             return;
@@ -203,7 +204,7 @@ class PackagingItemsIndex extends Component
                 'currency' => $this->currentCurrency ?? config('currency.default', 'EUR'),
             ]),
             'pendingDeleteItem' => $pendingDeleteItem,
-            'pendingDeleteImpact' => $pendingDeleteItem instanceof UserPackagingItem && $currentUser instanceof User
+            'pendingDeleteImpact' => $pendingDeleteItem instanceof PackagingItem && $currentUser instanceof User
                 ? $packagingItemFormulaMutationService->impact($currentUser, $pendingDeleteItem)
                 : null,
         ]);
@@ -211,7 +212,7 @@ class PackagingItemsIndex extends Component
 
     public function formattedUnitCost(mixed $value): string
     {
-        return NumberLocale::formatDecimal($value, 2, $this->currentNumberLocale);
+        return NumberLocale::formatAdaptiveDecimal($value, 2, 4, $this->currentNumberLocale);
     }
 
     private function items(): LengthAwarePaginator
@@ -220,19 +221,26 @@ class PackagingItemsIndex extends Component
         $perPage = $this->normalizedPerPage();
 
         if (! $user instanceof User) {
-            return UserPackagingItem::query()->whereRaw('1 = 0')->paginate($perPage);
+            return PackagingItem::query()->whereRaw('1 = 0')->paginate($perPage);
         }
 
-        return UserPackagingItem::query()
-            ->select(['id', 'public_id', 'user_id', 'name', 'unit_cost', 'currency', 'notes', 'featured_image_path', 'created_at', 'updated_at'])
-            ->where('user_id', $user->id)
+        return PackagingItem::query()
+            ->select(['id', 'public_id', 'workspace_id', 'created_by_user_id', 'name', 'category', 'notes', 'is_active', 'featured_image_path', 'created_at', 'updated_at'])
+            ->where('workspace_id', $user->company()?->id)
             ->withCount('costingItems')
-            ->with('mediaAssetUsages.mediaAsset')
+            ->with(['currentPrice', 'mediaAssetUsages.mediaAsset'])
             ->when($this->search !== '', fn (Builder $query): Builder => $query
                 ->where(fn (Builder $where): Builder => $where
                     ->where('name', 'like', '%'.$this->search.'%')
                     ->orWhere('notes', 'like', '%'.$this->search.'%')))
-            ->when($this->sortField === 'unit_cost', fn (Builder $query): Builder => $query->orderBy('unit_cost', $this->sortDirection)->orderBy('id'))
+            ->when($this->sortField === 'unit_cost', fn (Builder $query): Builder => $query
+                ->orderBy(
+                    CurrentMaterialPrice::query()
+                        ->select('price_per_canonical_unit')
+                        ->whereColumn('packaging_item_id', 'packaging_items.id'),
+                    $this->sortDirection,
+                )
+                ->orderBy('id'))
             ->when($this->sortField === 'name', fn (Builder $query): Builder => $query->orderBy('name', $this->sortDirection)->orderBy('id', $this->sortDirection))
             ->paginate($perPage);
     }
@@ -242,9 +250,9 @@ class PackagingItemsIndex extends Component
         return in_array($this->perPage, self::ALLOWED_PER_PAGE, true) ? $this->perPage : 25;
     }
 
-    private function ownedPackagingItem(int $id, User $user): ?UserPackagingItem
+    private function ownedPackagingItem(int $id, User $user): ?PackagingItem
     {
-        return UserPackagingItem::query()->where('user_id', $user->id)->find($id);
+        return PackagingItem::query()->where('workspace_id', $user->company()?->id)->find($id);
     }
 
     private function finishDeletion(string $message): void

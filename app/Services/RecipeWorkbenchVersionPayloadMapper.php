@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\MassUnit;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -10,6 +11,8 @@ use App\Models\RegulatoryRegime;
 
 class RecipeWorkbenchVersionPayloadMapper
 {
+    public function __construct(private readonly MassConverter $massConverter) {}
+
     /**
      * @param  array<int, array<string, mixed>>  $phaseBlueprints
      * @param  array<string, mixed>  $catalogReview
@@ -60,6 +63,10 @@ class RecipeWorkbenchVersionPayloadMapper
         $calculationContext = $version->calculation_context ?? [];
         $lyeType = $calculationContext['lye_type'] ?? 'naoh';
         $waterMode = $waterSettings['mode'] ?? 'percent_of_oils';
+        $displayUnit = $this->displayUnit($calculationContext['oil_unit'] ?? $version->batch_unit);
+        $displayWeight = $version->batch_mass_grams === null
+            ? (float) ($calculationContext['oil_weight'] ?? $version->batch_size)
+            : (float) $this->massConverter->fromGrams($version->batch_mass_grams, $displayUnit);
 
         return [
             'recipe' => [
@@ -70,8 +77,8 @@ class RecipeWorkbenchVersionPayloadMapper
             ],
             'productTypeId' => $version->recipe?->product_type_id,
             'formulaName' => $version->name,
-            'oilUnit' => (string) ($calculationContext['oil_unit'] ?? $version->batch_unit),
-            'oilWeight' => (float) ($calculationContext['oil_weight'] ?? $version->batch_size),
+            'oilUnit' => $displayUnit->value,
+            'oilWeight' => $displayWeight,
             'manufacturingMode' => in_array($version->manufacturing_mode, ['saponify_in_formula', 'blend_only'], true)
                 ? $version->manufacturing_mode
                 : 'saponify_in_formula',
@@ -104,7 +111,7 @@ class RecipeWorkbenchVersionPayloadMapper
                 ->sortBy('position')
                 ->map(fn (RecipeVersionPackagingItem $item): array => [
                     'id' => 'saved-packaging-'.$item->id,
-                    'user_packaging_item_id' => $item->user_packaging_item_id,
+                    'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'components_per_unit' => (float) $item->components_per_unit,
                     'notes' => $item->notes,
@@ -113,6 +120,15 @@ class RecipeWorkbenchVersionPayloadMapper
                 ->all(),
             'catalogReview' => $catalogReview,
         ];
+    }
+
+    private function displayUnit(mixed $value): MassUnit
+    {
+        try {
+            return MassUnit::fromInput($value);
+        } catch (\InvalidArgumentException) {
+            return MassUnit::Gram;
+        }
     }
 
     /**

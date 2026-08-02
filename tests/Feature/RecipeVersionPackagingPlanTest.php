@@ -7,7 +7,6 @@ use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +24,7 @@ it('stores packaging rows as recipe version structure', function () {
         'recipe_id' => $recipe->id,
         'owner_id' => $user->id,
     ]);
-    $catalogItem = UserPackagingItem::query()->create([
+    $catalogItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Amber jar',
         'unit_cost' => 0.62,
@@ -33,7 +32,7 @@ it('stores packaging rows as recipe version structure', function () {
     ]);
 
     $row = $version->packagingItems()->create([
-        'user_packaging_item_id' => $catalogItem->id,
+        'packaging_item_id' => $catalogItem->id,
         'name' => 'Amber jar',
         'components_per_unit' => 1,
         'notes' => '100 ml',
@@ -55,7 +54,7 @@ it('saves and publishes packaging rows with the recipe version', function () {
         'name' => 'Soap',
     ]);
     $ingredient = packagingPlanIngredient();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Soap box',
         'unit_cost' => 0.42,
@@ -65,7 +64,7 @@ it('saves and publishes packaging rows with the recipe version', function () {
     $payload = packagingPlanDraftPayload($ingredient, 'Boxed soap') + [
         'packaging_items' => [
             [
-                'user_packaging_item_id' => $packagingItem->id,
+                'packaging_item_id' => $packagingItem->id,
                 'name' => 'Soap box',
                 'components_per_unit' => 1,
                 'notes' => 'Sleeve box',
@@ -100,7 +99,7 @@ it('includes packaging rows in the workbench payload', function () {
         'name' => 'Soap',
     ]);
     $ingredient = packagingPlanIngredient();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Wrap label',
         'unit_cost' => 0.08,
@@ -110,7 +109,7 @@ it('includes packaging rows in the workbench payload', function () {
     $draft = app(RecipeWorkbenchService::class)->save($user, $soapFamily, packagingPlanDraftPayload($ingredient, 'Wrapped soap') + [
         'packaging_items' => [
             [
-                'user_packaging_item_id' => $packagingItem->id,
+                'packaging_item_id' => $packagingItem->id,
                 'name' => 'Wrap label',
                 'components_per_unit' => 2,
                 'notes' => 'Front and back',
@@ -122,7 +121,7 @@ it('includes packaging rows in the workbench payload', function () {
     $payload = app(RecipeWorkbenchService::class)->currentVersionPayload($recipe);
 
     expect($payload['packagingItems'])->toHaveCount(1)
-        ->and($payload['packagingItems'][0]['user_packaging_item_id'])->toBe($packagingItem->id)
+        ->and($payload['packagingItems'][0]['packaging_item_id'])->toBe($packagingItem->id)
         ->and($payload['packagingItems'][0]['name'])->toBe('Wrap label')
         ->and($payload['packagingItems'][0]['components_per_unit'])->toBe(2.0)
         ->and($payload['packagingItems'][0]['notes'])->toBe('Front and back');
@@ -160,7 +159,7 @@ it('shows packaging and batch use controls on the reference formula page', funct
         'name' => 'Soap',
     ]);
     $ingredient = packagingPlanIngredient();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Soap box',
         'unit_cost' => 0.42,
@@ -169,7 +168,7 @@ it('shows packaging and batch use controls on the reference formula page', funct
     $payload = packagingPlanDraftPayload($ingredient, 'Boxed soap') + [
         'packaging_items' => [
             [
-                'user_packaging_item_id' => $packagingItem->id,
+                'packaging_item_id' => $packagingItem->id,
                 'name' => 'Soap box',
                 'components_per_unit' => 1,
                 'notes' => 'Sleeve box',

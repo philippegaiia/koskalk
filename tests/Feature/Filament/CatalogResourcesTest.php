@@ -213,7 +213,7 @@ it('lists user ingredients anonymously in a separate read only admin resource', 
     $userIngredient = Ingredient::factory()->create([
         'display_name' => 'Maker Apricot Oil',
         'inci_name' => null,
-        'supplier_name' => 'Anonymous Supplier',
+        'notes' => 'Private catalogue note',
         'owner_type' => OwnerType::User,
         'owner_id' => $ingredientOwner->id,
         'visibility' => Visibility::Private,
@@ -232,7 +232,7 @@ it('lists user ingredients anonymously in a separate read only admin resource', 
         ->assertSeeText('User Ingredients')
         ->assertSeeText($userIngredient->display_name)
         ->assertSeeText('Not provided')
-        ->assertSeeText('Anonymous Supplier')
+        ->assertSeeText('Private catalogue note')
         ->assertDontSeeText($platformIngredient->display_name)
         ->assertDontSeeText($ingredientOwner->name)
         ->assertDontSeeText($ingredientOwner->email)

@@ -9,7 +9,7 @@ use Illuminate\Support\Carbon;
 
 #[Fillable([
     'recipe_version_id',
-    'user_packaging_item_id',
+    'packaging_item_id',
     'name',
     'components_per_unit',
     'notes',
@@ -23,7 +23,7 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int $recipe_version_id
- * @property int|null $user_packaging_item_id
+ * @property int|null $packaging_item_id
  * @property string $name
  * @property string $components_per_unit
  * @property string|null $notes
@@ -31,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read RecipeVersion $recipeVersion
- * @property-read UserPackagingItem|null $packagingItem
+ * @property-read PackagingItem|null $packagingItem
  */
 class RecipeVersionPackagingItem extends Model
 {
@@ -42,7 +42,7 @@ class RecipeVersionPackagingItem extends Model
 
     public function packagingItem(): BelongsTo
     {
-        return $this->belongsTo(UserPackagingItem::class, 'user_packaging_item_id');
+        return $this->belongsTo(PackagingItem::class, 'packaging_item_id');
     }
 
     protected function casts(): array

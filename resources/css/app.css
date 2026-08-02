@@ -14,6 +14,10 @@
 @source '../**/*.js';
 
 @layer base {
+    html {
+        scrollbar-gutter: stable;
+    }
+
     [data-user-shell] {
         --color-surface: oklch(97.2% 0.010 128);
         --color-panel: oklch(98.8% 0.006 85);

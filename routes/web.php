@@ -145,4 +145,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         });
 
     Route::view('/dashboard/settings', 'settings')->name('settings');
+
+    Route::prefix('/dashboard/production-bench')
+        ->name('production-bench.')
+        ->group(function (): void {
+            Route::view('/', 'production-bench.home')->name('home');
+            Route::view('/inventory', 'production-bench.inventory')->name('inventory');
+            Route::redirect('/purchasing', '/dashboard/production-bench/purchasing/suppliers')->name('purchasing');
+            Route::view('/purchasing/suppliers', 'production-bench.purchasing.suppliers')->name('purchasing.suppliers');
+            Route::view('/purchasing/suppliers/new', 'production-bench.purchasing.supplier-create')->name('purchasing.suppliers.create');
+            Route::view('/purchasing/suppliers/{supplier}/listings/new', 'production-bench.purchasing.supplier-listing-create')->name('purchasing.suppliers.listings.create');
+            Route::view('/purchasing/suppliers/{supplier}/edit', 'production-bench.purchasing.supplier-edit')->name('purchasing.suppliers.edit');
+            Route::view('/purchasing/suppliers/{supplier}', 'production-bench.purchasing.supplier')->name('purchasing.supplier');
+            Route::view('/purchasing/listings/new', 'production-bench.purchasing.supplier-listing-create')->name('purchasing.listings.create');
+            Route::view('/purchasing/listings/{listing}/edit', 'production-bench.purchasing.supplier-listing-create')->name('purchasing.listings.edit');
+            Route::view('/purchasing/listings', 'production-bench.purchasing.listings')->name('purchasing.listings');
+        });
 });

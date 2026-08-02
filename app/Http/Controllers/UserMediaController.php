@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Services\MediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -34,13 +34,13 @@ class UserMediaController extends Controller
 
     public function packagingItem(string $packagingItem, string $path, Request $request): StreamedResponse
     {
-        $packagingItem = UserPackagingItem::query()->where('public_id', $packagingItem)->firstOrFail();
+        $packagingItem = PackagingItem::query()->where('public_id', $packagingItem)->firstOrFail();
         $user = $request->user();
         $normalizedPath = ltrim($path, '/');
 
         abort_unless(
             $user instanceof User
-            && $packagingItem->user_id === $user->id
+            && $packagingItem->workspace->hasMember($user)
             && MediaStorage::isPackagingItemPath($packagingItem, $normalizedPath)
             && $normalizedPath === $packagingItem->featured_image_path,
             404,

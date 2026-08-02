@@ -15,7 +15,7 @@
             <div class="flex flex-wrap items-center gap-3 lg:justify-end">
                 @include('livewire.dashboard.partials.duplicate-ingredient-modal')
 
-                <a href="{{ route('dashboard') }}" wire:navigate class="inline-flex min-h-11 items-center justify-center whitespace-nowrap rounded-full border border-[var(--color-line)] px-5 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">
+                <a href="{{ route('dashboard') }}" wire:navigate class="sk-btn sk-btn-outline">
                     {{ __('ingredients.actions.back_to_dashboard') }}
                 </a>
             </div>

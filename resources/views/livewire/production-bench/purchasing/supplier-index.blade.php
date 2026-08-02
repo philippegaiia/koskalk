@@ -12,7 +12,7 @@
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.navigation.suppliers') }}</h1>
             @if ($isBenchActive)
-                <a href="{{ route('production-bench.purchasing.suppliers.create') }}" wire:navigate class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ __('production_bench.supplier.add') }}</a>
+                <a href="{{ route('production-bench.purchasing.suppliers.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.supplier.add') }}</a>
             @endif
         </header>
 

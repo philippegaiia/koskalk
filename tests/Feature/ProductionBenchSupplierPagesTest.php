@@ -80,6 +80,7 @@ it('keeps supplier mutations out of the index and detail pages', function (): vo
         ->assertSee('Northern Oils')
         ->assertSee('Add supplier')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.create').'"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary"')
         ->assertSee('Edit')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.edit', $supplier).'"')
         ->assertDontSee('Save supplier')
@@ -91,8 +92,10 @@ it('keeps supplier mutations out of the index and detail pages', function (): vo
         ->assertSee('12 Market Road')
         ->assertSee('Edit supplier')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.edit', $supplier).'"')
+        ->assertSeeHtml('class="sk-btn sk-btn-outline"')
         ->assertSee('Add listing')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.listings.create', $supplier).'"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary"')
         ->assertDontSee('Save supplier')
         ->assertDontSeeHtml('wire:submit="saveSupplier"')
         ->assertDontSeeHtml('wire:submit="saveListing"');

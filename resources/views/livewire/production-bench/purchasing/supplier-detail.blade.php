@@ -16,8 +16,8 @@
             </div>
             <div class="flex flex-wrap gap-3">
                 @if ($isBenchActive)
-                    <a href="{{ route('production-bench.purchasing.suppliers.edit', $supplier) }}" wire:navigate class="rounded-full border border-[var(--color-line-strong)] px-5 py-2.5 text-center text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel-strong)]">{{ __('production_bench.supplier.edit') }}</a>
-                    <a href="{{ route('production-bench.purchasing.suppliers.listings.create', $supplier) }}" wire:navigate class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">{{ __('production_bench.listing.add') }}</a>
+                    <a href="{{ route('production-bench.purchasing.suppliers.edit', $supplier) }}" wire:navigate class="sk-btn sk-btn-outline">{{ __('production_bench.supplier.edit') }}</a>
+                    <a href="{{ route('production-bench.purchasing.suppliers.listings.create', $supplier) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.listing.add') }}</a>
                 @endif
             </div>
         </header>

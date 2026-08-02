@@ -10,8 +10,10 @@ The first pass covers:
 
 - Supplier create and edit
 - Supplier listing create and edit
+- Supplier and supplier-listing browse-page actions
 - Ingredient create and edit
 - Packaging item create and edit
+- Ingredient and packaging library header actions
 
 Other workflow actions can migrate to the same pattern when their views are next changed. Pills remain appropriate for filters, statuses, segmented controls, and compact selectors.
 

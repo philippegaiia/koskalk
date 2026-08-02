@@ -7,7 +7,7 @@
     ])->values()->all();
 @endphp
 
-<div x-show="activeWorkbenchTab === 'packaging'" role="tabpanel" aria-labelledby="tab-packaging" id="panel-packaging" class="space-y-6">
+<div x-show="activeWorkbenchTab === 'packaging'" role="tabpanel" aria-labelledby="tab-packaging" id="panel-packaging" class="space-y-6 pb-24">
  <section class="overflow-hidden sk-card">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-4">
@@ -32,7 +32,7 @@
  x-on:search-combobox-selected="selectPackagingCatalogItem(packagingCatalog.find((item) => String(item.id) === String($event.detail.id)))"
  />
  </template>
- <button type="button" @click="openPackagingCatalogModal()" class="rounded-full bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
+ <button type="button" @click="openPackagingCatalogModal()" class="sk-btn sk-btn-primary">
  {{ __('workbench.packaging.plan.create') }}
  </button>
  </div>
@@ -80,4 +80,10 @@
  </div>
  </template>
  </section>
+
+    <x-workflow-action-bar max-width="max-w-7xl" data-packaging-plan-save-bar>
+ <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" class="sk-btn sk-btn-primary">
+ <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
+ </button>
+ </x-workflow-action-bar>
 </div>

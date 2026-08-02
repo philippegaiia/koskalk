@@ -1,4 +1,4 @@
-<div x-show="activeWorkbenchTab === 'costing'" role="tabpanel" aria-labelledby="tab-costing" id="panel-costing" class="space-y-6">
+<div x-show="activeWorkbenchTab === 'costing'" role="tabpanel" aria-labelledby="tab-costing" id="panel-costing" class="space-y-6 pb-24">
  <section class="sk-card p-5">
  <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
  <div>
@@ -208,4 +208,13 @@
  {{ __('workbench.costing.messages.save_product') }}
  </div>
  </template>
+
+    <x-workflow-action-bar max-width="max-w-7xl" data-costing-save-bar>
+ <x-slot:leading>
+ <p class="text-sm text-[var(--color-ink-soft)]" role="status" x-text="costingSaveMessage || t('costing.settings.saved_automatically')"></p>
+ </x-slot:leading>
+ <button type="button" @click="persistCosting()" :disabled="!hasCurrentFormula || isSavingCosting" class="sk-btn sk-btn-primary">
+ <span x-text="isSavingCosting ? t('header.saving') : t('header.save')"></span>
+ </button>
+ </x-workflow-action-bar>
 </div>

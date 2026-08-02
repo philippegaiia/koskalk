@@ -1,6 +1,9 @@
-@php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
+@php
+    $isCosmeticWorkbench = $isCosmeticWorkbench ?? false;
+    $isPublicCalculator = $isPublicCalculator ?? false;
+@endphp
 
-<div x-show="activeWorkbenchTab === 'output'" x-cloak role="tabpanel" aria-labelledby="tab-output" id="panel-output" class="space-y-6">
+<div x-show="activeWorkbenchTab === 'output'" x-cloak role="tabpanel" aria-labelledby="tab-output" id="panel-output" class="space-y-6 pb-24">
 @if ($isCosmeticWorkbench)
  <section class="sk-card p-5">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -270,4 +273,15 @@
      </p>
  </template>
 @endif
+
+ @unless ($isPublicCalculator)
+        <x-workflow-action-bar max-width="max-w-7xl" data-output-save-bar>
+ <x-slot:leading>
+ <p x-show="saveMessage" class="text-sm text-[var(--color-ink-soft)]" role="status" x-text="saveMessage"></p>
+ </x-slot:leading>
+ <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" class="sk-btn sk-btn-primary">
+ <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
+ </button>
+ </x-workflow-action-bar>
+ @endunless
 </div>

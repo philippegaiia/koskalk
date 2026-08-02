@@ -20,7 +20,7 @@
      save: () => $wire.saveRecipeContent(),
  })"
  @submit.prevent="save()"
- class="space-y-6 pb-6 pt-5"
+ class="space-y-6 pb-24 pt-5"
  >
  @if (! $workbench['recipe'])
  <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('workbench.instructions.draft_text_help') }}</p>
@@ -28,29 +28,21 @@
 
  {{ $this->form }}
 
- <div class="sticky bottom-3 z-30">
- <section id="instructions-media-save-bar" data-instructions-save-bar class="flex flex-col gap-3 rounded-[1rem] border border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3 shadow-[0_-8px_24px_rgba(60,50,30,0.10)] sm:flex-row sm:items-center sm:justify-between">
- <p
- class="text-sm text-[var(--color-ink-soft)]"
- :class="state === 'failed' ? 'text-[var(--color-danger)]' : 'text-[var(--color-ink-soft)]'"
- role="status"
- aria-live="polite"
- aria-atomic="true"
- x-text="statusText"
- >
- </p>
+    <x-workflow-action-bar max-width="max-w-7xl" data-instructions-save-bar>
+ <x-slot:leading>
+ <p class="text-sm text-[var(--color-ink-soft)]" :class="state === 'failed' ? 'text-[var(--color-danger)]' : 'text-[var(--color-ink-soft)]'" role="status" aria-live="polite" aria-atomic="true" x-text="statusText"></p>
+ </x-slot:leading>
 
  @if ($workbench['recipe'])
- <button type="submit" :disabled="saveDisabled" class="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)] disabled:cursor-wait disabled:opacity-70">
+ <button type="submit" :disabled="saveDisabled" class="sk-btn sk-btn-primary">
  <span x-show="state !== 'saving'">{{ __('workbench.instructions.save_changes') }}</span>
  <span x-show="state === 'saving'" x-cloak>{{ __('workbench.instructions.saving') }}</span>
  </button>
  @else
- <button type="button" disabled class="cursor-not-allowed rounded-full bg-[var(--color-field-muted)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)]">
+ <button type="button" disabled class="sk-btn sk-btn-primary">
  {{ __('workbench.instructions.save_changes') }}
  </button>
  @endif
- </section>
- </div>
+ </x-workflow-action-bar>
  </form>
 </section>

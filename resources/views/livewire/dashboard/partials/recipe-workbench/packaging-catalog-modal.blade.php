@@ -14,7 +14,7 @@
  <h3 id="packaging-catalog-heading" class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.packaging.modal.title') }}</h3>
  <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.packaging.modal.help') }}</p>
  </div>
- <button type="button" @click="closePackagingCatalogModal()" class="rounded-full border border-[var(--color-line)] px-3 py-2 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">{{ __('workbench.packaging.modal.cancel') }}</button>
+ <button type="button" @click="closePackagingCatalogModal()" class="sk-btn sk-btn-ghost">{{ __('workbench.packaging.modal.cancel') }}</button>
  </div>
 
  <div class="mt-5 grid gap-3">
@@ -39,9 +39,9 @@
  </template>
 
  <div class="mt-5 flex flex-wrap justify-end gap-2">
- <button type="button" @click="closePackagingCatalogModal()" class="rounded-full border border-[var(--color-line)] px-4 py-2.5 text-sm font-medium text-[var(--color-ink-soft)] transition hover:bg-[var(--color-panel)]">{{ __('workbench.packaging.modal.cancel') }}</button>
- <button type="button" @click="savePackagingCatalogItemOnly()" class="rounded-full border border-[var(--color-line)] bg-white px-4 py-2.5 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">{{ __('workbench.packaging.modal.save_to_library') }}</button>
- <button type="button" @click="savePackagingCatalogItemAndAdd()" class="rounded-full bg-[var(--color-accent)] px-4 py-2.5 text-sm font-medium text-[var(--color-on-accent)] transition hover:bg-[var(--color-accent-hover)]">
+ <button type="button" @click="closePackagingCatalogModal()" class="sk-btn sk-btn-ghost">{{ __('workbench.packaging.modal.cancel') }}</button>
+ <button type="button" @click="savePackagingCatalogItemOnly()" class="sk-btn sk-btn-outline">{{ __('workbench.packaging.modal.save_to_library') }}</button>
+ <button type="button" @click="savePackagingCatalogItemAndAdd()" class="sk-btn sk-btn-primary">
  {{ __('workbench.packaging.modal.save_and_add') }}
  </button>
  </div>

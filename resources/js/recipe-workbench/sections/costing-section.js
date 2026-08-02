@@ -333,12 +333,12 @@ export function createCostingSection(payload) {
                 return;
             }
 
-            await persistCosting(this, ++this.costingSaveSeq);
-
             if (this.costingSaveTimer) {
                 clearTimeout(this.costingSaveTimer);
                 this.costingSaveTimer = null;
             }
+
+            await persistCosting(this, ++this.costingSaveSeq);
         },
 
         resetPackagingCatalogForm() {

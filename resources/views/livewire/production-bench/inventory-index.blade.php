@@ -77,7 +77,7 @@
                 </label>
 
                 <div class="md:col-span-2 xl:col-span-4">
-                    <button type="submit" @disabled($isReadOnly) class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white disabled:opacity-40">{{ __('production_bench.inventory.add_lot') }}</button>
+                    <button type="submit" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.inventory.add_lot') }}</button>
                 </div>
             </form>
         </section>

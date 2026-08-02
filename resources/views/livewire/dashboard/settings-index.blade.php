@@ -75,7 +75,7 @@
                     wire:click="savePreferences"
                     wire:loading.attr="disabled"
                     type="button"
-                    class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+                    class="sk-btn sk-btn-primary"
                 >{{ __('settings.actions.save_preferences') }}</button>
             </div>
         </section>
@@ -168,7 +168,7 @@
                     wire:click="saveWorkspace"
                     wire:loading.attr="disabled"
                     type="button"
-                    class="rounded-full bg-[var(--color-accent)] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--color-accent-hover)] disabled:opacity-50"
+                    class="sk-btn sk-btn-primary"
                 >{{ __('settings.actions.save_workspace') }}</button>
             </div>
         </section>

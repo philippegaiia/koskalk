@@ -56,7 +56,8 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertDontSee('Number of purchase formats.')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.listings').'"');
 
-    expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1);
+    expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'fi-compact'))->toBe(5);
 
     $component = Livewire::test(SupplierListingCreate::class);
 

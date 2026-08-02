@@ -91,19 +91,19 @@ class SupplierEdit extends Component implements HasForms
     private function formComponents(): array
     {
         return [
-            Section::make('Supplier')->columns(['md' => 2])->schema([
+            Section::make('Supplier')->compact()->columns(['md' => 2])->schema([
                 TextInput::make('code')->label('Code')->helperText('A-Z, 0-9, - or _, max 16.')->required()->maxLength(16)->regex('/^[A-Za-z0-9_-]+$/')->mutateStateForValidationUsing(fn (?string $state): string => Str::upper(trim((string) $state)))->dehydrateStateUsing(fn (?string $state): string => Str::upper(trim((string) $state))),
                 TextInput::make('name')->label('Name')->required()->maxLength(255)->autocomplete('organization'),
                 Select::make('default_currency')->label('Currency')->options($this->currencyOptions())->searchable()->required(),
                 Toggle::make('is_active')->label('Active'),
             ]),
-            Section::make('Main contact')->columns(['md' => 2])->schema([
+            Section::make('Main contact')->compact()->columns(['md' => 2])->schema([
                 TextInput::make('contact_name')->label('Name')->maxLength(255)->autocomplete('name'),
                 TextInput::make('email')->label('Email')->email()->maxLength(255)->autocomplete('email'),
                 TextInput::make('phone')->label('Telephone')->tel()->maxLength(255)->autocomplete('tel'),
                 TextInput::make('website')->label('Website')->url()->rules(['url:http,https'])->maxLength(255)->autocomplete('url')->placeholder('https://'),
             ]),
-            Section::make('Address')->columns(['md' => 2])->schema([
+            Section::make('Address')->compact()->columns(['md' => 2])->schema([
                 TextInput::make('address_line_1')->label('Address line 1')->maxLength(255)->autocomplete('address-line1')->columnSpanFull(),
                 TextInput::make('address_line_2')->label('Address line 2')->maxLength(255)->autocomplete('address-line2')->columnSpanFull(),
                 TextInput::make('city')->label('City')->maxLength(255)->autocomplete('address-level2'),
@@ -111,7 +111,7 @@ class SupplierEdit extends Component implements HasForms
                 TextInput::make('postal_code')->label('Postal code')->maxLength(32)->autocomplete('postal-code'),
                 TextInput::make('country_code')->label('Country code')->length(2)->alpha()->autocomplete('country')->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Str::upper(trim((string) $state)) : null),
             ]),
-            Section::make('Notes')->schema([
+            Section::make('Notes')->compact()->schema([
                 Textarea::make('notes')->hiddenLabel()->rows(4),
             ]),
         ];

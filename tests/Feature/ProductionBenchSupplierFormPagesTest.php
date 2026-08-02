@@ -43,6 +43,7 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertDontSee('Up to 16 letters, numbers, hyphens, or underscores.');
 
     expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'fi-compact'))->toBe(4)
         ->and($workspace->exists)->toBeTrue()
         ->and(Supplier::query()->where('workspace_id', $workspace->id)->count())->toBe(0);
 });
@@ -120,6 +121,7 @@ it('edits a workspace supplier without changing its public id', function (): voi
         ->assertSeeHtml('href="'.route('production-bench.purchasing.supplier', $supplier).'"');
 
     expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
+        ->and(substr_count($response->getContent(), 'fi-compact'))->toBe(4)
         ->and($supplier->fresh())
         ->code->toBe('OLD_CODE')
         ->name->toBe('Old name')

@@ -51,3 +51,11 @@ it('reserves the document scrollbar gutter', function (): void {
 
     expect($stylesheet)->toContain('scrollbar-gutter: stable');
 });
+
+it('keeps compact production bench pages vertically compact', function (): void {
+    $page = file_get_contents(resource_path('views/components/production-bench/page.blade.php'));
+
+    expect($page)
+        ->toContain("'space-y-6' => \$compact")
+        ->toContain("'space-y-8' => ! \$compact");
+});

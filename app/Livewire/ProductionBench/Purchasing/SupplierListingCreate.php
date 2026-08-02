@@ -190,7 +190,7 @@ class SupplierListingCreate extends Component implements HasForms
     {
         return $schema
             ->components([
-                Section::make('Supplier')->schema([
+                Section::make('Supplier')->compact()->schema([
                     Select::make('supplier_id')
                         ->label('Supplier')
                         ->options(fn (): array => $this->supplierOptions())
@@ -211,6 +211,7 @@ class SupplierListingCreate extends Component implements HasForms
                         }),
                 ]),
                 Section::make('Catalog item')
+                    ->compact()
                     ->columns(['md' => 2])
                     ->schema([
                         Radio::make('material_type')
@@ -255,6 +256,7 @@ class SupplierListingCreate extends Component implements HasForms
                             ->columnSpanFull(),
                     ]),
                 Section::make('Purchase format')
+                    ->compact()
                     ->columns(['md' => 2])
                     ->schema([
                         TextInput::make('supplier_sku')->label('Supplier SKU')->maxLength(255),
@@ -285,6 +287,7 @@ class SupplierListingCreate extends Component implements HasForms
                             ->visible(fn (Get $get): bool => $get('material_type') === 'ingredient'),
                     ]),
                 Section::make('Pricing')
+                    ->compact()
                     ->columns(['md' => 3])
                     ->schema([
                         Radio::make('price_basis')
@@ -327,6 +330,7 @@ class SupplierListingCreate extends Component implements HasForms
                             ->columnSpanFull(),
                     ]),
                 Section::make('Ordering')
+                    ->compact()
                     ->columns(['md' => 2])
                     ->schema([
                         TextInput::make('minimum_packs')->label('Minimum order')->helperText('Purchase formats per order.')->integer()->minValue(1)->required(),

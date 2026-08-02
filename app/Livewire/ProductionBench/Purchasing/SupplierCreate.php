@@ -80,6 +80,7 @@ class SupplierCreate extends Component implements HasForms
     {
         return [
             Section::make('Supplier')
+                ->compact()
                 ->columns(['md' => 2])
                 ->schema([
                     TextInput::make('code')
@@ -105,6 +106,7 @@ class SupplierCreate extends Component implements HasForms
                         ->default(true),
                 ]),
             Section::make('Main contact')
+                ->compact()
                 ->columns(['md' => 2])
                 ->schema([
                     TextInput::make('contact_name')->label('Name')->maxLength(255)->autocomplete('name'),
@@ -113,6 +115,7 @@ class SupplierCreate extends Component implements HasForms
                     TextInput::make('website')->label('Website')->url()->rules(['url:http,https'])->maxLength(255)->autocomplete('url')->placeholder('https://'),
                 ]),
             Section::make('Address')
+                ->compact()
                 ->columns(['md' => 2])
                 ->schema([
                     TextInput::make('address_line_1')->label('Address line 1')->maxLength(255)->autocomplete('address-line1')->columnSpanFull(),
@@ -128,6 +131,7 @@ class SupplierCreate extends Component implements HasForms
                         ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Str::upper(trim((string) $state)) : null),
                 ]),
             Section::make('Notes')
+                ->compact()
                 ->schema([
                     Textarea::make('notes')->hiddenLabel()->rows(4),
                 ]),

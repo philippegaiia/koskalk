@@ -11,7 +11,9 @@
     @endif
 
     <div @class([
-        'w-full space-y-8',
+        'w-full',
+        'space-y-6' => $compact,
+        'space-y-8' => ! $compact,
         'mx-auto max-w-5xl' => $compact,
     ])>
         {{ $slot }}

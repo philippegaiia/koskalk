@@ -51,6 +51,9 @@ class SupplierListingCreate extends Component implements HasForms
     #[Locked]
     public ?string $lockedSupplierPublicId = null;
 
+    #[Locked]
+    public ?string $editingListingPublicId = null;
+
     /** @var array<int, string> */
     #[Locked]
     public array $supplierOptionLabels = [];
@@ -71,13 +74,19 @@ class SupplierListingCreate extends Component implements HasForms
         $this->currencyCatalog = $currencyCatalog;
     }
 
-    public function mount(ProductionBenchAccess $access, string|Supplier|null $supplier = null): void
-    {
+    public function mount(
+        ProductionBenchAccess $access,
+        string|Supplier|null $supplier = null,
+        string|SupplierListing|null $listing = null,
+    ): void {
         $this->assertPageIsWritable($access);
         $workspace = $this->workspace();
+        $editingListing = $this->resolveEditingListing($listing);
         $lockedSupplier = null;
 
-        $supplier ??= is_string(request()->query('supplier')) ? request()->query('supplier') : null;
+        $supplier = $editingListing?->supplier
+            ?? $supplier
+            ?? (is_string(request()->query('supplier')) ? request()->query('supplier') : null);
 
         if ($supplier !== null) {
             $supplierPublicId = $supplier instanceof Supplier ? $supplier->public_id : $supplier;
@@ -89,18 +98,22 @@ class SupplierListingCreate extends Component implements HasForms
         }
 
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
-        $materialType = in_array(request()->query('material_type'), ['ingredient', 'packaging'], true)
-            ? request()->query('material_type')
-            : 'ingredient';
-        $ingredient = is_string(request()->query('ingredient'))
-            ? $this->availableIngredientQuery()->where('public_id', request()->query('ingredient'))->first()
-            : null;
-        $packagingItem = is_string(request()->query('packaging_item'))
-            ? PackagingItem::query()
-                ->where('workspace_id', $workspace->id)
-                ->where('public_id', request()->query('packaging_item'))
-                ->first()
-            : null;
+        $materialType = $editingListing instanceof SupplierListing
+            ? ($editingListing->ingredient_id === null ? 'packaging' : 'ingredient')
+            : (in_array(request()->query('material_type'), ['ingredient', 'packaging'], true)
+                ? request()->query('material_type')
+                : 'ingredient');
+        $ingredient = $editingListing?->ingredient
+            ?? (is_string(request()->query('ingredient'))
+                ? $this->availableIngredientQuery()->where('public_id', request()->query('ingredient'))->first()
+                : null);
+        $packagingItem = $editingListing?->packagingItem
+            ?? (is_string(request()->query('packaging_item'))
+                ? PackagingItem::query()
+                    ->where('workspace_id', $workspace->id)
+                    ->where('public_id', request()->query('packaging_item'))
+                    ->first()
+                : null);
 
         if ($ingredient instanceof Ingredient) {
             $materialType = 'ingredient';
@@ -118,13 +131,19 @@ class SupplierListingCreate extends Component implements HasForms
             'material_type' => $materialType,
             'ingredient_id' => $ingredient?->id,
             'packaging_item_id' => $packagingItem?->id,
-            'net_unit' => $unit,
-            'price_basis' => ListingPriceBasis::PerUnit->value,
-            'price_unit' => $unit,
-            'currency' => $this->newListingCurrency($lockedSupplier),
-            'minimum_packs' => 1,
-            'organic_status' => OrganicStatus::Unknown->value,
-            'is_active' => true,
+            'supplier_sku' => $editingListing?->supplier_sku,
+            'supplier_item_name' => $editingListing?->supplier_item_name,
+            'purchase_format' => $editingListing?->purchase_format,
+            'net_quantity' => $editingListing?->net_quantity,
+            'net_unit' => $editingListing?->net_unit ?? $unit,
+            'price_basis' => $editingListing?->price_basis->value ?? ListingPriceBasis::PerUnit->value,
+            'price_amount' => $editingListing?->price_amount,
+            'price_unit' => $editingListing?->price_unit ?? $unit,
+            'currency' => $editingListing?->currency ?? $this->newListingCurrency($lockedSupplier),
+            'minimum_packs' => $editingListing?->minimum_packs ?? 1,
+            'organic_status' => $editingListing?->organic_status->value ?? OrganicStatus::Unknown->value,
+            'notes' => $editingListing?->notes,
+            'is_active' => $editingListing?->is_active ?? true,
         ]);
     }
 
@@ -150,6 +169,7 @@ class SupplierListingCreate extends Component implements HasForms
                 supplier: $supplier,
                 subject: $subject,
                 attributes: $this->listingAttributes($state),
+                listing: $this->editingListing(),
             );
         } catch (ValidationException $exception) {
             $this->surfaceValidationErrors($exception, (string) $state['material_type']);
@@ -198,6 +218,8 @@ class SupplierListingCreate extends Component implements HasForms
                             ->options(['ingredient' => 'Ingredient', 'packaging' => 'Packaging item'])
                             ->inline()
                             ->required()
+                            ->disabled($this->isEditing())
+                            ->dehydrated()
                             ->live()
                             ->afterStateUpdated(function (mixed $state, Set $set): void {
                                 $set('ingredient_id', null);
@@ -216,6 +238,8 @@ class SupplierListingCreate extends Component implements HasForms
                             ->getOptionLabelUsing(fn (mixed $value): ?string => $this->ingredientOptionLabel((int) $value))
                             ->afterStateUpdated(fn (mixed $state): ?string => is_numeric($state) ? $this->ingredientOptionLabel((int) $state) : null)
                             ->required(fn (Get $get): bool => $get('material_type') === 'ingredient')
+                            ->disabled($this->isEditing())
+                            ->dehydrated()
                             ->visible(fn (Get $get): bool => $get('material_type') === 'ingredient')
                             ->columnSpanFull(),
                         Select::make('packaging_item_id')
@@ -225,6 +249,8 @@ class SupplierListingCreate extends Component implements HasForms
                             ->getOptionLabelUsing(fn (mixed $value): ?string => $this->packagingOptionLabel((int) $value))
                             ->afterStateUpdated(fn (mixed $state): ?string => is_numeric($state) ? $this->packagingOptionLabel((int) $state) : null)
                             ->required(fn (Get $get): bool => $get('material_type') === 'packaging')
+                            ->disabled($this->isEditing())
+                            ->dehydrated()
                             ->visible(fn (Get $get): bool => $get('material_type') === 'packaging')
                             ->columnSpanFull(),
                     ]),
@@ -528,6 +554,40 @@ class SupplierListingCreate extends Component implements HasForms
     private function workspaceSupplierByPublicId(string $publicId): Supplier
     {
         return Supplier::query()->where('workspace_id', $this->workspace()->id)->where('public_id', $publicId)->firstOrFail();
+    }
+
+    private function resolveEditingListing(string|SupplierListing|null $listing): ?SupplierListing
+    {
+        if ($listing === null) {
+            return null;
+        }
+
+        $publicId = $listing instanceof SupplierListing ? $listing->public_id : $listing;
+        $editingListing = SupplierListing::query()
+            ->with(['supplier', 'ingredient', 'packagingItem'])
+            ->where('workspace_id', $this->workspace()->id)
+            ->where('public_id', $publicId)
+            ->firstOrFail();
+        $this->editingListingPublicId = $editingListing->public_id;
+
+        return $editingListing;
+    }
+
+    private function editingListing(): ?SupplierListing
+    {
+        if ($this->editingListingPublicId === null) {
+            return null;
+        }
+
+        return SupplierListing::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->where('public_id', $this->editingListingPublicId)
+            ->firstOrFail();
+    }
+
+    private function isEditing(): bool
+    {
+        return $this->editingListingPublicId !== null;
     }
 
     /** @return array<int, string> */

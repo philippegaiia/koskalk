@@ -158,6 +158,72 @@ it('creates an exact-price mass listing globally and returns to the listings ind
     ]);
 });
 
+it('opens an existing workspace listing in the edit form', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['code' => 'OLVEA', 'name' => 'Olvea']);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create([
+        'purchase_format' => '200 kg drum',
+        'net_quantity' => '200',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '4.20',
+        'price_unit' => 'kg',
+        'is_active' => true,
+    ]);
+
+    $editUrl = route('production-bench.purchasing.listings.edit', $listing);
+
+    $this->actingAs($owner)
+        ->get($editUrl)
+        ->assertOk()
+        ->assertSee('Edit supplier listing')
+        ->assertSee('Olive oil')
+        ->assertSee('OLVEA · Olvea');
+
+    $this->get('/dashboard/production-bench/purchasing/listings')
+        ->assertOk()
+        ->assertSeeHtml('href="'.$editUrl.'"');
+
+    $this->get('/dashboard/production-bench/purchasing/suppliers/'.$supplier->public_id)
+        ->assertOk()
+        ->assertSeeHtml('href="'.$editUrl.'"');
+});
+
+it('updates an existing supplier listing without changing its supplier or material', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create([
+        'purchase_format' => '200 kg drum',
+        'net_quantity' => '200',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '4.20',
+        'price_unit' => 'kg',
+        'currency' => 'EUR',
+    ]);
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+        ->assertSet('data.supplier_id', $supplier->id)
+        ->assertSet('data.ingredient_id', $ingredient->id)
+        ->set('data.purchase_format', '190 kg drum')
+        ->set('data.net_quantity', '190')
+        ->set('data.price_amount', '4.65')
+        ->set('data.notes', 'Updated quotation')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($listing->fresh())
+        ->supplier_id->toBe($supplier->id)
+        ->ingredient_id->toBe($ingredient->id)
+        ->purchase_format->toBe('190 kg drum')
+        ->net_quantity->toBe('190.000000000')
+        ->price_amount->toBe('4.650000000')
+        ->notes->toBe('Updated quotation');
+});
+
 it('accepts localized decimal quantities and prices', function (): void {
     [$owner, $workspace] = listingCreateWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);

@@ -71,6 +71,8 @@ it('keeps supplier mutations out of the index and detail pages', function (): vo
         ->assertSee('Northern Oils')
         ->assertSee('Add supplier')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.create').'"')
+        ->assertSee('Edit')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers.edit', $supplier).'"')
         ->assertDontSee('Save supplier')
         ->assertDontSeeHtml('wire:submit="saveSupplier"');
 

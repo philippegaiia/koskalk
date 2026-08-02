@@ -62,7 +62,7 @@
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[820px] text-left text-sm">
-                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]"><tr><th class="px-5 py-3">Material</th><th class="px-4 py-3">Purchase format</th><th class="px-4 py-3 text-right">Net quantity</th><th class="px-5 py-3 text-right">Price</th><th class="px-5 py-3">Status</th></tr></thead>
+                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]"><tr><th class="px-5 py-3">Material</th><th class="px-4 py-3">Purchase format</th><th class="px-4 py-3 text-right">Net quantity</th><th class="px-4 py-3 text-right">Price</th><th class="px-4 py-3">Status</th><th class="px-5 py-3 text-right">Actions</th></tr></thead>
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @forelse ($listingRows as $row)
                             @php($listing = $row['listing'])
@@ -70,11 +70,12 @@
                                 <td class="px-5 py-4 font-medium">{{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</td>
                                 <td class="px-4 py-4">{{ $listing->purchase_format }}@if ($listing->supplier_sku)<span class="numeric ml-1 text-xs text-[var(--color-ink-soft)]">{{ $listing->supplier_sku }}</span>@endif</td>
                                 <td class="numeric px-4 py-4 text-right">{{ rtrim(rtrim($listing->net_quantity, '0'), '.') }} {{ $listing->net_unit }}</td>
-                                <td class="px-5 py-4 text-right"><p class="text-xs font-medium text-[var(--color-ink-soft)]">{{ $row['price']['basis_label'] }}</p><p class="numeric mt-1">{{ $row['price']['entered_price'] }}</p><p class="numeric text-[var(--color-ink-soft)]">Derived: {{ $row['price']['derived_price'] }}</p></td>
-                                <td class="px-5 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $listing->is_active ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' }}">{{ $listing->is_active ? 'Active' : 'Inactive' }}</span></td>
+                                <td class="px-4 py-4 text-right"><p class="text-xs font-medium text-[var(--color-ink-soft)]">{{ $row['price']['basis_label'] }}</p><p class="numeric mt-1">{{ $row['price']['entered_price'] }}</p><p class="numeric text-[var(--color-ink-soft)]">Derived: {{ $row['price']['derived_price'] }}</p></td>
+                                <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $listing->is_active ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-field-muted)] text-[var(--color-ink-soft)]' }}">{{ $listing->is_active ? 'Active' : 'Inactive' }}</span></td>
+                                <td class="px-5 py-4 text-right">@if ($isBenchActive)<a href="{{ route('production-bench.purchasing.listings.edit', $listing) }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">Edit</a>@else — @endif</td>
                             </tr>
                         @empty
-                            <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">No listings.</td></tr>
+                            <tr><td colspan="6" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">No listings.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

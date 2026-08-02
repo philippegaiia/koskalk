@@ -35,6 +35,10 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertSee('Notes')
         ->assertSee('Save supplier')
         ->assertSee('Cancel')
+        ->assertSeeHtml('data-workflow-action-bar')
+        ->assertSeeHtml('class="sk-btn sk-btn-ghost"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary"')
+        ->assertDontSeeHtml('class="sk-btn sk-btn-danger"')
         ->assertSeeHtml('class="fi-section')
         ->assertSeeHtml('wire:model="data.code"')
         ->assertSeeHtml('data-production-bench-save-bar')
@@ -45,8 +49,7 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertSee('A-Z, 0-9, - or _, max 16.')
         ->assertDontSee('Up to 16 letters, numbers, hyphens, or underscores.');
 
-    expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
-        ->and(substr_count($response->getContent(), 'fi-compact'))->toBe(4)
+    expect(substr_count($response->getContent(), 'fi-compact'))->toBe(4)
         ->and($workspace->exists)->toBeTrue()
         ->and(Supplier::query()->where('workspace_id', $workspace->id)->count())->toBe(0);
 });
@@ -122,11 +125,15 @@ it('edits a workspace supplier without changing its public id', function (): voi
         ->assertSee('OLD_CODE')
         ->assertSee('Old name')
         ->assertSeeHtml('data-production-bench-save-bar')
-        ->assertSeeHtml('fixed bottom-0 left-0 right-0')
+        ->assertSeeHtml('data-workflow-action-bar')
+        ->assertSeeHtml('class="sk-btn sk-btn-danger"')
+        ->assertSeeHtml('class="sk-btn sk-btn-ghost"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary"')
         ->assertSeeHtml('pb-24')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.supplier', $supplier).'"');
 
-    expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
+    expect(strpos($response->getContent(), 'Delete supplier'))
+        ->toBeLessThan(strpos($response->getContent(), 'Cancel'))
         ->and(substr_count($response->getContent(), 'fi-compact'))->toBe(4)
         ->and($supplier->fresh())
         ->code->toBe('OLD_CODE')

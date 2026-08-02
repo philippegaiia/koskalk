@@ -54,7 +54,10 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertSee('Purchase formats per order.')
         ->assertSee('Save supplier listing')
         ->assertSeeHtml('data-production-bench-save-bar')
-        ->assertSeeHtml('fixed bottom-0 left-0 right-0')
+        ->assertSeeHtml('data-workflow-action-bar')
+        ->assertSeeHtml('class="sk-btn sk-btn-ghost"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary"')
+        ->assertDontSeeHtml('class="sk-btn sk-btn-danger"')
         ->assertSeeHtml('pb-24')
         ->assertSeeHtml('class="fi-section')
         ->assertSee('data.supplier_id', escape: false)
@@ -64,8 +67,7 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertDontSee('Number of purchase formats.')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.listings').'"');
 
-    expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)
-        ->and(substr_count($response->getContent(), 'fi-compact'))->toBe(5);
+    expect(substr_count($response->getContent(), 'fi-compact'))->toBe(5);
 
     expect(strpos($response->getContent(), 'Catalog item'))
         ->toBeLessThan(strpos($response->getContent(), 'Ingredient not in the catalogue?'))
@@ -195,17 +197,23 @@ it('opens an existing workspace listing in the edit form', function (): void {
 
     $editUrl = route('production-bench.purchasing.listings.edit', $listing);
 
-    $this->actingAs($owner)
+    $editResponse = $this->actingAs($owner)
         ->get($editUrl)
         ->assertOk()
         ->assertSee('Edit supplier listing')
         ->assertSee('Olive oil')
         ->assertSeeHtml('data-production-bench-save-bar')
-        ->assertSeeHtml('fixed bottom-0 left-0 right-0')
+        ->assertSeeHtml('data-workflow-action-bar')
+        ->assertSeeHtml('class="sk-btn sk-btn-danger"')
+        ->assertSeeHtml('class="sk-btn sk-btn-ghost"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary"')
         ->assertSeeHtml('pb-24')
         ->assertDontSee('Ingredient not in the catalogue?')
         ->assertDontSee('Packaging item not in the catalogue?')
         ->assertSee('OLVEA · Olvea');
+
+    expect(strpos($editResponse->getContent(), 'Delete listing'))
+        ->toBeLessThan(strpos($editResponse->getContent(), 'Cancel'));
 
     $this->get('/dashboard/production-bench/purchasing/listings')
         ->assertOk()

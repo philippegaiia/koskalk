@@ -111,12 +111,16 @@ it('deletes unused suppliers and deactivates suppliers with purchasing history',
 
     Livewire::test(SupplierEdit::class, ['supplier' => $unusedSupplier->public_id])
         ->call('delete')
+        ->assertSessionHas('status', __('production_bench.supplier.deleted'))
+        ->assertSessionMissing('production_bench_status')
         ->assertRedirect(route('production-bench.purchasing.suppliers'));
 
     $this->assertModelMissing($unusedSupplier);
 
     Livewire::test(SupplierEdit::class, ['supplier' => $usedSupplier->public_id])
         ->call('delete')
+        ->assertSessionHas('status', __('production_bench.supplier.deactivated'))
+        ->assertSessionMissing('production_bench_status')
         ->assertRedirect(route('production-bench.purchasing.supplier', $usedSupplier));
 
     expect($usedSupplier->refresh()->is_active)->toBeFalse();
@@ -144,12 +148,16 @@ it('deletes unused supplier listings and deactivates listings used by stock or o
 
     Livewire::test(SupplierListingCreate::class, ['listing' => $unusedListing->public_id])
         ->call('delete')
+        ->assertSessionHas('status', __('production_bench.listing.deleted'))
+        ->assertSessionMissing('production_bench_status')
         ->assertRedirect(route('production-bench.purchasing.supplier', $supplier));
 
     $this->assertModelMissing($unusedListing);
 
     Livewire::test(SupplierListingCreate::class, ['listing' => $usedListing->public_id])
         ->call('delete')
+        ->assertSessionHas('status', __('production_bench.listing.deactivated'))
+        ->assertSessionMissing('production_bench_status')
         ->assertRedirect(route('production-bench.purchasing.supplier', $supplier));
 
     expect($usedListing->refresh()->is_active)->toBeFalse();

@@ -214,7 +214,7 @@ class SupplierListingCreate extends Component implements HasForms
         $deleted = $deleteSupplierListing->handle($this->user(), $this->workspace(), $listing);
 
         session()->flash(
-            'production_bench_status',
+            'status',
             $deleted ? __('production_bench.listing.deleted') : __('production_bench.listing.deactivated'),
         );
 

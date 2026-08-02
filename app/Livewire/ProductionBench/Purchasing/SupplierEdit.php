@@ -84,7 +84,7 @@ class SupplierEdit extends Component implements HasForms
         $deleted = $deleteSupplier->handle($this->user(), $this->workspace(), $this->supplier);
 
         session()->flash(
-            'production_bench_status',
+            'status',
             $deleted ? __('production_bench.supplier.deleted') : __('production_bench.supplier.deactivated'),
         );
 

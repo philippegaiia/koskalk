@@ -5,6 +5,7 @@ use App\Filament\Resources\IfraCertificates\IfraCertificateResource;
 use App\Filament\Resources\IfraProductCategories\IfraProductCategoryResource;
 use App\Filament\Resources\IngredientAllergenEntries\IngredientAllergenEntryResource;
 use App\Filament\Resources\Ingredients\IngredientResource;
+use App\Filament\Resources\Ingredients\Pages\CreateIngredient;
 use App\Filament\Resources\Ingredients\Pages\EditIngredient;
 use App\Filament\Resources\Ingredients\Pages\ListIngredients;
 use App\Filament\Resources\Ingredients\Schemas\IngredientForm;
@@ -56,6 +57,25 @@ use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('keeps the entered display name when an admin creates an ingredient', function (): void {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+
+    Livewire::test(CreateIngredient::class)
+        ->fillForm([
+            'category' => IngredientCategory::EssentialOil->value,
+            'current_version.display_name' => 'Grapefruit white',
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $ingredient = Ingredient::query()->where('source_code_prefix', 'ADM')->latest('id')->firstOrFail();
+
+    expect($ingredient->display_name)->toBe('Grapefruit white')
+        ->and($ingredient->source_key)->toStartWith('ADM-')
+        ->and(IngredientResource::getRecordTitle($ingredient))->toBe('Grapefruit white');
+});
 
 it('keeps original upload names in the admin ingredient form state', function () {
     config(['media.disk' => 'local']);

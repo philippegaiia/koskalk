@@ -43,6 +43,26 @@ afterEach(function () {
     File::delete($this->cataloguePath);
 });
 
+it('commits a complete reviewed translation for every owned interface key', function (): void {
+    $source = app(EnglishTranslationSource::class)->all();
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $rows = collect($catalogue['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+
+    foreach ($source as $fullKey => $english) {
+        expect($rows)->toHaveKey($fullKey);
+
+        if (blank($english)) {
+            continue;
+        }
+
+        foreach (['de', 'es', 'fr', 'it', 'nl'] as $locale) {
+            expect(trim((string) data_get($rows[$fullKey], "text.{$locale}")))
+                ->not->toBe('', "Missing {$locale} translation for {$fullKey} ({$english})");
+        }
+    }
+});
+
 it('exports a deterministic human-reviewable catalogue without database metadata', function () {
     InterfaceTranslation::query()->create([
         'group' => 'public',

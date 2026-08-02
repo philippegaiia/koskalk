@@ -53,8 +53,8 @@ class ProductionBenchAccess
         }
 
         $message = $this->isReadOnly($workspace)
-            ? 'Production Bench is read-only while the add-on is cancelled.'
-            : 'Production Bench is not active for this workspace.';
+            ? __('production_bench.access.read_only')
+            : __('production_bench.access.inactive');
 
         throw ValidationException::withMessages([
             'production_bench' => $message,

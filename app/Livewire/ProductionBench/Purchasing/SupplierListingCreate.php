@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
+use App\Actions\Purchasing\DeleteSupplierListing;
 use App\Actions\Purchasing\SaveSupplierListing;
 use App\DecimalStringFormatter;
 use App\ListingPriceBasis;
@@ -201,13 +202,32 @@ class SupplierListingCreate extends Component implements HasForms
         $this->redirectRoute('production-bench.purchasing.listings', navigate: true);
     }
 
+    public function delete(DeleteSupplierListing $deleteSupplierListing): void
+    {
+        $listing = $this->editingListing();
+
+        if (! $listing instanceof SupplierListing) {
+            abort(404);
+        }
+
+        $supplier = $listing->supplier;
+        $deleted = $deleteSupplierListing->handle($this->user(), $this->workspace(), $listing);
+
+        session()->flash(
+            'production_bench_status',
+            $deleted ? __('production_bench.listing.deleted') : __('production_bench.listing.deactivated'),
+        );
+
+        $this->redirectRoute('production-bench.purchasing.supplier', ['supplier' => $supplier], navigate: true);
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                Section::make('Supplier')->compact()->schema([
+                Section::make(__('production_bench.supplier.singular'))->compact()->schema([
                     Select::make('supplier_id')
-                        ->label('Supplier')
+                        ->label(__('production_bench.filters.supplier'))
                         ->options(fn (): array => $this->supplierOptions())
                         ->searchable()
                         ->getSearchResultsUsing(fn (string $search): array => $this->supplierSearchResults($search))
@@ -225,13 +245,13 @@ class SupplierListingCreate extends Component implements HasForms
                             }
                         }),
                 ]),
-                Section::make('Catalog item')
+                Section::make(__('production_bench.listing.catalog_item'))
                     ->compact()
                     ->columns(['md' => 2])
                     ->schema([
                         Radio::make('material_type')
-                            ->label('Type')
-                            ->options(['ingredient' => 'Ingredient', 'packaging' => 'Packaging item'])
+                            ->label(__('production_bench.filters.type'))
+                            ->options(['ingredient' => __('production_bench.listing.ingredient'), 'packaging' => __('production_bench.listing.packaging_item')])
                             ->inline()
                             ->required()
                             ->disabled($this->isEditing())
@@ -248,7 +268,7 @@ class SupplierListingCreate extends Component implements HasForms
                             })
                             ->columnSpanFull(),
                         Select::make('ingredient_id')
-                            ->label('Ingredient')
+                            ->label(__('production_bench.listing.ingredient'))
                             ->options(fn (): array => $this->ingredientOptions())
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => $this->ingredientSearchResults($search))
@@ -258,10 +278,10 @@ class SupplierListingCreate extends Component implements HasForms
                             ->disabled($this->isEditing())
                             ->dehydrated()
                             ->visible(fn (Get $get): bool => $get('material_type') === 'ingredient')
-                            ->helperText('Recent items shown. Type to search all.')
+                            ->helperText(__('production_bench.listing.recent_items_help'))
                             ->columnSpanFull(),
                         Select::make('packaging_item_id')
-                            ->label('Packaging item')
+                            ->label(__('production_bench.listing.packaging_item'))
                             ->options(fn (): array => $this->packagingOptions())
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => $this->packagingSearchResults($search))
@@ -271,52 +291,52 @@ class SupplierListingCreate extends Component implements HasForms
                             ->disabled($this->isEditing())
                             ->dehydrated()
                             ->visible(fn (Get $get): bool => $get('material_type') === 'packaging')
-                            ->helperText('Recent items shown. Type to search all.')
+                            ->helperText(__('production_bench.listing.recent_items_help'))
                             ->columnSpanFull(),
                         SchemaView::make('livewire.production-bench.purchasing.catalog-item-create-link')
                             ->visible(fn (): bool => ! $this->isEditing())
                             ->columnSpanFull(),
                     ]),
-                Section::make('Purchase format')
+                Section::make(__('production_bench.listing.purchase_format_section'))
                     ->compact()
                     ->columns(['md' => 2])
                     ->schema([
-                        TextInput::make('supplier_sku')->label('Supplier SKU')->maxLength(255),
-                        TextInput::make('supplier_item_name')->label('Supplier item name')->maxLength(255),
-                        TextInput::make('purchase_format')->label('Purchase format')->placeholder('200 kg drum')->required()->maxLength(255)->columnSpanFull(),
+                        TextInput::make('supplier_sku')->label(__('production_bench.listing.supplier_sku'))->maxLength(255),
+                        TextInput::make('supplier_item_name')->label(__('production_bench.listing.supplier_item_name'))->maxLength(255),
+                        TextInput::make('purchase_format')->label(__('production_bench.listing.purchase_format'))->placeholder(__('production_bench.listing.purchase_format_placeholder'))->required()->maxLength(255)->columnSpanFull(),
                         LocalizedDecimalInput::make('net_quantity')
-                            ->label('Net quantity')
+                            ->label(__('production_bench.listing.net_quantity'))
                             ->required()
                             ->minValue('0.000000001')
                             ->mutateStateForValidationUsing(fn (mixed $state): mixed => $this->normalizedLocalizedDecimal($state))
                             ->dehydrateStateUsing(fn (mixed $state): mixed => $this->normalizedLocalizedDecimal($state))
                             ->live(onBlur: true),
                         Select::make('net_unit')
-                            ->label('Unit of measure')
+                            ->label(__('production_bench.listing.unit_of_measure'))
                             ->options(fn (Get $get): array => $get('material_type') === 'packaging' ? ['count' => 'count'] : $this->massUnitOptions())
                             ->required()
                             ->disabled(fn (Get $get): bool => $get('material_type') === 'packaging')
                             ->dehydrated()
                             ->live(),
                         Select::make('organic_status')
-                            ->label('Organic status')
+                            ->label(__('production_bench.listing.organic_status'))
                             ->options([
-                                OrganicStatus::Unknown->value => 'Not specified',
-                                OrganicStatus::Conventional->value => 'Conventional',
-                                OrganicStatus::Organic->value => 'Organic',
+                                OrganicStatus::Unknown->value => __('production_bench.listing.organic_unknown'),
+                                OrganicStatus::Conventional->value => __('production_bench.listing.organic_conventional'),
+                                OrganicStatus::Organic->value => __('production_bench.listing.organic_organic'),
                             ])
                             ->default(OrganicStatus::Unknown->value)
                             ->visible(fn (Get $get): bool => $get('material_type') === 'ingredient'),
                     ]),
-                Section::make('Pricing')
+                Section::make(__('production_bench.listing.pricing'))
                     ->compact()
                     ->columns(['md' => 3])
                     ->schema([
                         Radio::make('price_basis')
-                            ->label('Pricing basis')
+                            ->label(__('production_bench.listing.pricing_basis'))
                             ->options([
-                                ListingPriceBasis::PerUnit->value => 'Price per unit of measure',
-                                ListingPriceBasis::TotalPurchaseFormat->value => 'Total purchase-format price',
+                                ListingPriceBasis::PerUnit->value => __('production_bench.listing.price_per_unit'),
+                                ListingPriceBasis::TotalPurchaseFormat->value => __('production_bench.listing.total_purchase_format_price'),
                             ])
                             ->inline()
                             ->required()
@@ -326,14 +346,14 @@ class SupplierListingCreate extends Component implements HasForms
                             })
                             ->columnSpanFull(),
                         LocalizedDecimalInput::make('price_amount')
-                            ->label('Price')
+                            ->label(__('production_bench.listing.price'))
                             ->required()
                             ->minValue('0.000000001')
                             ->mutateStateForValidationUsing(fn (mixed $state): mixed => $this->normalizedLocalizedDecimal($state))
                             ->dehydrateStateUsing(fn (mixed $state): mixed => $this->normalizedLocalizedDecimal($state))
                             ->live(onBlur: true),
                         Select::make('price_unit')
-                            ->label('Price unit')
+                            ->label(__('production_bench.listing.price_unit'))
                             ->options(fn (Get $get): array => $get('material_type') === 'packaging' ? ['count' => 'count'] : $this->massUnitOptions())
                             ->required(fn (Get $get): bool => $get('price_basis') === ListingPriceBasis::PerUnit->value)
                             ->visible(fn (Get $get): bool => $get('price_basis') === ListingPriceBasis::PerUnit->value)
@@ -341,23 +361,23 @@ class SupplierListingCreate extends Component implements HasForms
                             ->dehydrated()
                             ->live(),
                         Select::make('currency')
-                            ->label('Currency')
+                            ->label(__('production_bench.common.currency'))
                             ->options($this->currencyOptions())
                             ->searchable()
                             ->required()
                             ->live(),
                         TextEntry::make('price_preview')
-                            ->label('Calculated price')
+                            ->label(__('production_bench.listing.calculated_price'))
                             ->state(fn (): string => $this->pricePreviewText())
                             ->columnSpanFull(),
                     ]),
-                Section::make('Ordering')
+                Section::make(__('production_bench.listing.ordering'))
                     ->compact()
                     ->columns(['md' => 2])
                     ->schema([
-                        TextInput::make('minimum_packs')->label('Minimum order')->helperText('Purchase formats per order.')->integer()->minValue(1)->required(),
-                        Toggle::make('is_active')->label('Active')->default(true),
-                        Textarea::make('notes')->label('Notes')->rows(4)->columnSpanFull(),
+                        TextInput::make('minimum_packs')->label(__('production_bench.listing.minimum_order'))->helperText(__('production_bench.listing.minimum_order_help'))->integer()->minValue(1)->required(),
+                        Toggle::make('is_active')->label(__('production_bench.common.active'))->default(true),
+                        Textarea::make('notes')->label(__('production_bench.common.notes'))->rows(4)->columnSpanFull(),
                     ]),
             ])
             ->statePath('data')
@@ -500,7 +520,7 @@ class SupplierListingCreate extends Component implements HasForms
             : $this->workspaceSupplierById(isset($state['supplier_id']) ? (int) $state['supplier_id'] : null);
 
         if (! $supplier instanceof Supplier) {
-            $this->addError('data.supplier_id', 'Choose a supplier in this workspace.');
+            $this->addError('data.supplier_id', __('production_bench.listing.choose_supplier'));
         }
 
         return $supplier;
@@ -515,7 +535,7 @@ class SupplierListingCreate extends Component implements HasForms
                 ->find($state['packaging_item_id'] ?? null);
 
             if (! $item instanceof PackagingItem) {
-                $this->addError('data.packaging_item_id', 'Choose an existing packaging item.');
+                $this->addError('data.packaging_item_id', __('production_bench.listing.choose_packaging'));
             }
 
             return $item;
@@ -524,7 +544,7 @@ class SupplierListingCreate extends Component implements HasForms
         $ingredient = $this->availableIngredientQuery()->find($state['ingredient_id'] ?? null);
 
         if (! $ingredient instanceof Ingredient) {
-            $this->addError('data.ingredient_id', 'Choose an existing ingredient in this workspace.');
+            $this->addError('data.ingredient_id', __('production_bench.listing.choose_ingredient'));
         }
 
         return $ingredient;

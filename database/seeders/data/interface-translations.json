@@ -386,7 +386,13 @@
         {
             "group": "account",
             "key": "usage.media_assets",
-            "text": {}
+            "text": {
+                "de": "Medieninhalte",
+                "es": "Recursos multimedia",
+                "fr": "Ressources multimédias",
+                "it": "Risorse multimediali",
+                "nl": "Mediabestanden"
+            }
         },
         {
             "group": "account",
@@ -402,7 +408,13 @@
         {
             "group": "account",
             "key": "usage.media_uploads_blocked",
-            "text": {}
+            "text": {
+                "de": "Vorhandene Inhalte bleiben verfügbar. Neue Uploads sind wieder möglich, nachdem Inhalte entfernt oder der Tarif erweitert wurde.",
+                "es": "Los recursos existentes siguen disponibles. Las nuevas cargas se reanudan al eliminar recursos o ampliar el plan.",
+                "fr": "Les ressources existantes restent disponibles. Les nouveaux téléversements reprennent après suppression de ressources ou mise à niveau du forfait.",
+                "it": "Le risorse esistenti restano disponibili. I nuovi caricamenti riprendono dopo la rimozione di risorse o il passaggio a un piano superiore.",
+                "nl": "Bestaande bestanden blijven beschikbaar. Nieuwe uploads worden hervat nadat bestanden zijn verwijderd of het abonnement is geüpgraded."
+            }
         },
         {
             "group": "account",
@@ -473,72 +485,156 @@
         {
             "group": "auth",
             "key": "login.email",
-            "text": {}
+            "text": {
+                "de": "E-Mail",
+                "es": "Correo electrónico",
+                "fr": "E-mail",
+                "it": "E-mail",
+                "nl": "E-mail"
+            }
         },
         {
             "group": "auth",
             "key": "login.heading",
-            "text": {}
+            "text": {
+                "de": "Im Arbeitsbereich anmelden",
+                "es": "Inicia sesión en tu espacio de trabajo",
+                "fr": "Connectez-vous à votre espace de travail",
+                "it": "Accedi al tuo spazio di lavoro",
+                "nl": "Meld je aan bij je werkruimte"
+            }
         },
         {
             "group": "auth",
             "key": "login.invitation_only",
-            "text": {}
+            "text": {
+                "de": "Der Zugang wird per Einladung eingerichtet.",
+                "es": "El acceso se concede mediante invitación.",
+                "fr": "L’accès est accordé sur invitation.",
+                "it": "L’accesso viene fornito su invito.",
+                "nl": "Toegang wordt via een uitnodiging verleend."
+            }
         },
         {
             "group": "auth",
             "key": "login.page_title",
-            "text": {}
+            "text": {
+                "de": "Anmelden",
+                "es": "Iniciar sesión",
+                "fr": "Se connecter",
+                "it": "Accedi",
+                "nl": "Aanmelden"
+            }
         },
         {
             "group": "auth",
             "key": "login.password",
-            "text": {}
+            "text": {
+                "de": "Passwort",
+                "es": "Contraseña",
+                "fr": "Mot de passe",
+                "it": "Password",
+                "nl": "Wachtwoord"
+            }
         },
         {
             "group": "auth",
             "key": "login.remember_me",
-            "text": {}
+            "text": {
+                "de": "Angemeldet bleiben",
+                "es": "Recordarme",
+                "fr": "Se souvenir de moi",
+                "it": "Ricordami",
+                "nl": "Onthoud mij"
+            }
         },
         {
             "group": "auth",
             "key": "login.submit",
-            "text": {}
+            "text": {
+                "de": "Anmelden",
+                "es": "Iniciar sesión",
+                "fr": "Se connecter",
+                "it": "Accedi",
+                "nl": "Aanmelden"
+            }
         },
         {
             "group": "auth",
             "key": "password_optional_reset",
-            "text": {}
+            "text": {
+                "de": "Leer lassen, um das aktuelle Passwort beizubehalten.",
+                "es": "Déjalo en blanco para conservar la contraseña actual.",
+                "fr": "Laissez vide pour conserver le mot de passe actuel.",
+                "it": "Lascia vuoto per mantenere la password attuale.",
+                "nl": "Laat leeg om het huidige wachtwoord te behouden."
+            }
         },
         {
             "group": "auth",
             "key": "password_requirements",
-            "text": {}
+            "text": {
+                "de": "Mindestens 12 Zeichen mit Großbuchstaben, Kleinbuchstaben, Zahl und Sonderzeichen verwenden.",
+                "es": "Usa al menos 12 caracteres, con una mayúscula, una minúscula, un número y un símbolo.",
+                "fr": "Utilisez au moins 12 caractères, dont une majuscule, une minuscule, un chiffre et un symbole.",
+                "it": "Usa almeno 12 caratteri, inclusi una maiuscola, una minuscola, un numero e un simbolo.",
+                "nl": "Gebruik minstens 12 tekens, met een hoofdletter, kleine letter, cijfer en symbool."
+            }
         },
         {
             "group": "auth",
             "key": "verification.body",
-            "text": {}
+            "text": {
+                "de": "Der Zugang wird vom Administrator eingerichtet. Wenden Sie sich an den Administrator, um dieses Konto vor dem Öffnen des privaten Arbeitsbereichs zu bestätigen.",
+                "es": "El administrador concede el acceso. Contacta con él para verificar esta cuenta antes de abrir el espacio de trabajo privado.",
+                "fr": "L’accès est accordé par l’administrateur. Contactez-le pour vérifier ce compte avant d’ouvrir l’espace de travail privé.",
+                "it": "L’accesso viene fornito dall’amministratore. Contattalo per verificare questo account prima di aprire lo spazio di lavoro privato.",
+                "nl": "Toegang wordt door de beheerder verleend. Neem contact op met de beheerder om dit account te verifiëren voordat je de privéwerkruimte opent."
+            }
         },
         {
             "group": "auth",
             "key": "verification.eyebrow",
-            "text": {}
+            "text": {
+                "de": "Kontosicherheit",
+                "es": "Seguridad de la cuenta",
+                "fr": "Sécurité du compte",
+                "it": "Sicurezza dell’account",
+                "nl": "Accountbeveiliging"
+            }
         },
         {
             "group": "auth",
             "key": "verification.heading",
-            "text": {}
+            "text": {
+                "de": "Dieses Konto ist nicht bestätigt.",
+                "es": "Esta cuenta no está verificada.",
+                "fr": "Ce compte n’est pas vérifié.",
+                "it": "Questo account non è verificato.",
+                "nl": "Dit account is niet geverifieerd."
+            }
         },
         {
             "group": "auth",
             "key": "verification.page_title",
-            "text": {}
+            "text": {
+                "de": "Kontobestätigung",
+                "es": "Verificación de la cuenta",
+                "fr": "Vérification du compte",
+                "it": "Verifica dell’account",
+                "nl": "Accountverificatie"
+            }
         },
         {
             "group": "auth",
             "key": "verification.sign_out",
-            "text": {}
+            "text": {
+                "de": "Abmelden",
+                "es": "Cerrar sesión",
+                "fr": "Se déconnecter",
+                "it": "Esci",
+                "nl": "Afmelden"
+            }
         },
         {
             "group": "dashboard",
@@ -2793,6 +2889,17 @@
                 "fr": "Nom",
                 "it": "Nome",
                 "nl": "Naam"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.details.notes",
+            "text": {
+                "de": "Notizen",
+                "es": "Notas",
+                "fr": "Notes",
+                "it": "Note",
+                "nl": "Notities"
             }
         },
         {
@@ -6142,7 +6249,13 @@
         {
             "group": "navigation",
             "key": "actions.dismiss_notification",
-            "text": {}
+            "text": {
+                "de": "Benachrichtigung schließen",
+                "es": "Descartar notificación",
+                "fr": "Fermer la notification",
+                "it": "Chiudi notifica",
+                "nl": "Melding sluiten"
+            }
         },
         {
             "group": "navigation",
@@ -6334,47 +6447,101 @@
         {
             "group": "number_formats",
             "key": "help",
-            "text": {}
+            "text": {
+                "de": "Steuert Dezimal- und Tausendertrennzeichen. Bei der Eingabe werden Komma und Punkt akzeptiert.",
+                "es": "Controla los separadores decimales y de millares. Se aceptan coma y punto al introducir valores.",
+                "fr": "Contrôle les séparateurs décimaux et de milliers. La virgule et le point sont acceptés à la saisie.",
+                "it": "Controlla i separatori decimali e delle migliaia. Sono accettati sia la virgola sia il punto.",
+                "nl": "Bepaalt decimaal- en duizendtalscheiding. Zowel komma als punt worden bij invoer geaccepteerd."
+            }
         },
         {
             "group": "number_formats",
             "key": "label",
-            "text": {}
+            "text": {
+                "de": "Zahlenformat",
+                "es": "Formato numérico",
+                "fr": "Format des nombres",
+                "it": "Formato numerico",
+                "nl": "Getalnotatie"
+            }
         },
         {
             "group": "number_formats",
             "key": "options.de_DE",
-            "text": {}
+            "text": {
+                "de": "Deutsch · 1.234,56",
+                "es": "Alemán · 1.234,56",
+                "fr": "Allemand · 1.234,56",
+                "it": "Tedesco · 1.234,56",
+                "nl": "Duits · 1.234,56"
+            }
         },
         {
             "group": "number_formats",
             "key": "options.en_GB",
-            "text": {}
+            "text": {
+                "de": "Englisch (UK) · 1,234.56",
+                "es": "Inglés (RU) · 1,234.56",
+                "fr": "Anglais (R.-U.) · 1,234.56",
+                "it": "Inglese (Regno Unito) · 1,234.56",
+                "nl": "Engels (VK) · 1,234.56"
+            }
         },
         {
             "group": "number_formats",
             "key": "options.en_US",
-            "text": {}
+            "text": {
+                "de": "Englisch (USA) · 1,234.56",
+                "es": "Inglés (EE. UU.) · 1,234.56",
+                "fr": "Anglais (États-Unis) · 1,234.56",
+                "it": "Inglese (USA) · 1,234.56",
+                "nl": "Engels (VS) · 1,234.56"
+            }
         },
         {
             "group": "number_formats",
             "key": "options.es_ES",
-            "text": {}
+            "text": {
+                "de": "Spanisch · 1.234,56",
+                "es": "Español · 1.234,56",
+                "fr": "Espagnol · 1.234,56",
+                "it": "Spagnolo · 1.234,56",
+                "nl": "Spaans · 1.234,56"
+            }
         },
         {
             "group": "number_formats",
             "key": "options.fr_FR",
-            "text": {}
+            "text": {
+                "de": "Französisch · 1 234,56",
+                "es": "Francés · 1 234,56",
+                "fr": "Français · 1 234,56",
+                "it": "Francese · 1 234,56",
+                "nl": "Frans · 1 234,56"
+            }
         },
         {
             "group": "number_formats",
             "key": "options.it_IT",
-            "text": {}
+            "text": {
+                "de": "Italienisch · 1.234,56",
+                "es": "Italiano · 1.234,56",
+                "fr": "Italien · 1.234,56",
+                "it": "Italiano · 1.234,56",
+                "nl": "Italiaans · 1.234,56"
+            }
         },
         {
             "group": "number_formats",
             "key": "options.nl_NL",
-            "text": {}
+            "text": {
+                "de": "Niederländisch · 1.234,56",
+                "es": "Neerlandés · 1.234,56",
+                "fr": "Néerlandais · 1.234,56",
+                "it": "Olandese · 1.234,56",
+                "nl": "Nederlands · 1.234,56"
+            }
         },
         {
             "group": "packaging",
@@ -6554,6 +6721,116 @@
         },
         {
             "group": "packaging",
+            "key": "categories.bottle",
+            "text": {
+                "de": "Flasche",
+                "es": "Botella",
+                "fr": "Bouteille",
+                "it": "Bottiglia",
+                "nl": "Fles"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.box",
+            "text": {
+                "de": "Schachtel",
+                "es": "Caja",
+                "fr": "Boîte",
+                "it": "Scatola",
+                "nl": "Doos"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.cap",
+            "text": {
+                "de": "Kappe",
+                "es": "Tapón",
+                "fr": "Bouchon",
+                "it": "Tappo",
+                "nl": "Dop"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.jar",
+            "text": {
+                "de": "Tiegel",
+                "es": "Tarro",
+                "fr": "Pot",
+                "it": "Vasetto",
+                "nl": "Pot"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.label",
+            "text": {
+                "de": "Etikett",
+                "es": "Etiqueta",
+                "fr": "Étiquette",
+                "it": "Etichetta",
+                "nl": "Etiket"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.lid",
+            "text": {
+                "de": "Deckel",
+                "es": "Tapa",
+                "fr": "Couvercle",
+                "it": "Coperchio",
+                "nl": "Deksel"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.other",
+            "text": {
+                "de": "Sonstige Verpackung",
+                "es": "Otro envase",
+                "fr": "Autre emballage",
+                "it": "Altro imballaggio",
+                "nl": "Andere verpakking"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.pump",
+            "text": {
+                "de": "Pumpe",
+                "es": "Bomba",
+                "fr": "Pompe",
+                "it": "Pompa",
+                "nl": "Pomp"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.shipping",
+            "text": {
+                "de": "Versandverpackung",
+                "es": "Embalaje de envío",
+                "fr": "Emballage d’expédition",
+                "it": "Imballaggio per spedizione",
+                "nl": "Verzendverpakking"
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "categories.tube",
+            "text": {
+                "de": "Tube",
+                "es": "Tubo",
+                "fr": "Tube",
+                "it": "Tubo",
+                "nl": "Tube"
+            }
+        },
+        {
+            "group": "packaging",
             "key": "editor.actions.back",
             "text": {
                 "de": "Zurück zu den Verpackungen",
@@ -6638,6 +6915,17 @@
                 "fr": "Mettez à jour les informations utilisées dans vos produits et vos coûts.",
                 "it": "Aggiorna i dettagli utilizzati nei prodotti e nel calcolo dei costi.",
                 "nl": "Werk de gegevens bij die in je producten en kostprijzen worden gebruikt."
+            }
+        },
+        {
+            "group": "packaging",
+            "key": "editor.form.category",
+            "text": {
+                "de": "Kategorie",
+                "es": "Categoría",
+                "fr": "Catégorie",
+                "it": "Categoria",
+                "nl": "Categorie"
             }
         },
         {
@@ -7067,6 +7355,1502 @@
                 "fr": "",
                 "it": "",
                 "nl": ""
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "access.inactive",
+            "text": {
+                "de": "Der Produktionsbereich ist für diesen Arbeitsbereich nicht aktiv.",
+                "es": "El área de producción no está activa para este espacio de trabajo.",
+                "fr": "L’espace de production n’est pas actif pour cet espace de travail.",
+                "it": "L’area produzione non è attiva per questo spazio di lavoro.",
+                "nl": "De productieomgeving is niet actief voor deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "access.read_only",
+            "text": {
+                "de": "Der Produktionsbereich ist schreibgeschützt, solange das Add-on gekündigt ist.",
+                "es": "El área de producción es de solo lectura mientras el complemento esté cancelado.",
+                "fr": "L’espace de production est en lecture seule tant que l’extension est résiliée.",
+                "it": "L’area produzione è in sola lettura mentre il componente aggiuntivo è annullato.",
+                "nl": "De productieomgeving is alleen-lezen zolang de add-on is opgezegd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.actions",
+            "text": {
+                "de": "Aktionen",
+                "es": "Acciones",
+                "fr": "Actions",
+                "it": "Azioni",
+                "nl": "Acties"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.active",
+            "text": {
+                "de": "Aktiv",
+                "es": "Activo",
+                "fr": "Actif",
+                "it": "Attivo",
+                "nl": "Actief"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.all",
+            "text": {
+                "de": "Alle",
+                "es": "Todos",
+                "fr": "Tous",
+                "it": "Tutti",
+                "nl": "Alle"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.cancel",
+            "text": {
+                "de": "Abbrechen",
+                "es": "Cancelar",
+                "fr": "Annuler",
+                "it": "Annulla",
+                "nl": "Annuleren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.currency",
+            "text": {
+                "de": "Währung",
+                "es": "Moneda",
+                "fr": "Devise",
+                "it": "Valuta",
+                "nl": "Valuta"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.edit",
+            "text": {
+                "de": "Bearbeiten",
+                "es": "Editar",
+                "fr": "Modifier",
+                "it": "Modifica",
+                "nl": "Bewerken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.inactive",
+            "text": {
+                "de": "Inaktiv",
+                "es": "Inactivo",
+                "fr": "Inactif",
+                "it": "Inattivo",
+                "nl": "Inactief"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.name",
+            "text": {
+                "de": "Name",
+                "es": "Nombre",
+                "fr": "Nom",
+                "it": "Nome",
+                "nl": "Naam"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.notes",
+            "text": {
+                "de": "Notizen",
+                "es": "Notas",
+                "fr": "Notes",
+                "it": "Note",
+                "nl": "Notities"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.read_only",
+            "text": {
+                "de": "Schreibgeschützt. Zum Bearbeiten fortsetzen.",
+                "es": "Solo lectura. Reanuda para editar.",
+                "fr": "Lecture seule. Reprenez pour modifier.",
+                "it": "Sola lettura. Riprendi per modificare.",
+                "nl": "Alleen-lezen. Hervat om te bewerken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.search",
+            "text": {
+                "de": "Suchen",
+                "es": "Buscar",
+                "fr": "Rechercher",
+                "it": "Cerca",
+                "nl": "Zoeken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.sort",
+            "text": {
+                "de": "Sortierung",
+                "es": "Orden",
+                "fr": "Tri",
+                "it": "Ordina",
+                "nl": "Sorteren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.status",
+            "text": {
+                "de": "Status",
+                "es": "Estado",
+                "fr": "Statut",
+                "it": "Stato",
+                "nl": "Status"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "filters.ingredients",
+            "text": {
+                "de": "Zutaten",
+                "es": "Ingredientes",
+                "fr": "Ingrédients",
+                "it": "Ingredienti",
+                "nl": "Ingrediënten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "filters.newest",
+            "text": {
+                "de": "Neueste",
+                "es": "Más recientes",
+                "fr": "Plus récents",
+                "it": "Più recenti",
+                "nl": "Nieuwste"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "filters.packaging",
+            "text": {
+                "de": "Verpackung",
+                "es": "Envases",
+                "fr": "Emballages",
+                "it": "Imballaggi",
+                "nl": "Verpakking"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "filters.supplier",
+            "text": {
+                "de": "Lieferant",
+                "es": "Proveedor",
+                "fr": "Fournisseur",
+                "it": "Fornitore",
+                "nl": "Leverancier"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "filters.type",
+            "text": {
+                "de": "Typ",
+                "es": "Tipo",
+                "fr": "Type",
+                "it": "Tipo",
+                "nl": "Type"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "home.activate",
+            "text": {
+                "de": "Produktionsbereich aktivieren",
+                "es": "Activar el área de producción",
+                "fr": "Activer l’espace de production",
+                "it": "Attiva area produzione",
+                "nl": "Productieomgeving activeren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "home.incoming",
+            "text": {
+                "de": "Eingang",
+                "es": "Entrante",
+                "fr": "Entrant",
+                "it": "In arrivo",
+                "nl": "Inkomend"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "home.quarantined",
+            "text": {
+                "de": "In Quarantäne",
+                "es": "En cuarentena",
+                "fr": "En quarantaine",
+                "it": "In quarantena",
+                "nl": "In quarantaine"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "home.read_only",
+            "text": {
+                "de": "Schreibgeschützt",
+                "es": "Solo lectura",
+                "fr": "Lecture seule",
+                "it": "Sola lettura",
+                "nl": "Alleen-lezen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "home.resume",
+            "text": {
+                "de": "Fortsetzen",
+                "es": "Reanudar",
+                "fr": "Reprendre",
+                "it": "Riprendi",
+                "nl": "Hervatten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "home.stop",
+            "text": {
+                "de": "Stoppen und Datensätze behalten",
+                "es": "Detener y conservar los registros",
+                "fr": "Arrêter et conserver les données",
+                "it": "Interrompi e conserva i dati",
+                "nl": "Stoppen en gegevens bewaren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.add_lot",
+            "text": {
+                "de": "Charge hinzufügen",
+                "es": "Añadir lote",
+                "fr": "Ajouter un lot",
+                "it": "Aggiungi lotto",
+                "nl": "Partij toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.available",
+            "text": {
+                "de": "Verfügbar",
+                "es": "Disponible",
+                "fr": "Disponible",
+                "it": "Disponibile",
+                "nl": "Beschikbaar"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.choose",
+            "text": {
+                "de": "Auswählen…",
+                "es": "Elegir…",
+                "fr": "Choisir…",
+                "it": "Scegli…",
+                "nl": "Kiezen…"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.expires_on",
+            "text": {
+                "de": "Ablaufdatum",
+                "es": "Fecha de caducidad",
+                "fr": "Date d’expiration",
+                "it": "Data di scadenza",
+                "nl": "Vervaldatum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.forecast",
+            "text": {
+                "de": "Prognose",
+                "es": "Previsión",
+                "fr": "Prévision",
+                "it": "Previsione",
+                "nl": "Prognose"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.help",
+            "text": {
+                "de": "Physisch umfasst Bestände in Quarantäne. Verfügbar schließt Quarantäne und reservierte Bestände aus. Negative Bestände sind zulässig.",
+                "es": "El stock físico incluye el stock en cuarentena. El disponible excluye el stock en cuarentena y reservado. Se permiten saldos negativos.",
+                "fr": "Le stock physique inclut le stock en quarantaine. Le disponible exclut le stock en quarantaine et réservé. Les soldes négatifs sont autorisés.",
+                "it": "Il fisico include le scorte in quarantena. Il disponibile esclude le scorte in quarantena e riservate. Sono ammessi saldi negativi.",
+                "nl": "Fysiek omvat voorraad in quarantaine. Beschikbaar sluit quarantaine en gereserveerde voorraad uit. Negatieve saldi zijn toegestaan."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.incoming",
+            "text": {
+                "de": "Eingang",
+                "es": "Entrante",
+                "fr": "Entrant",
+                "it": "In arrivo",
+                "nl": "Inkomend"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.item",
+            "text": {
+                "de": "Stück",
+                "es": "artículo",
+                "fr": "article",
+                "it": "articolo",
+                "nl": "item"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.item_lot",
+            "text": {
+                "de": "Artikel / Charge",
+                "es": "Artículo / lote",
+                "fr": "Article / lot",
+                "it": "Articolo / lotto",
+                "nl": "Item / partij"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.lot_created",
+            "text": {
+                "de": "Charge :code erstellt.",
+                "es": "Lote :code creado.",
+                "fr": "Lot :code créé.",
+                "it": "Lotto :code creato.",
+                "nl": "Partij :code aangemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.mass_shown",
+            "text": {
+                "de": "Masse in :unit",
+                "es": "Masa mostrada en :unit",
+                "fr": "Masse affichée en :unit",
+                "it": "Massa mostrata in :unit",
+                "nl": "Massa weergegeven in :unit"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.no_lots",
+            "text": {
+                "de": "Keine Chargen.",
+                "es": "No hay lotes.",
+                "fr": "Aucun lot.",
+                "it": "Nessun lotto.",
+                "nl": "Geen partijen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.opening_stock",
+            "text": {
+                "de": "Anfangsbestand",
+                "es": "Stock inicial",
+                "fr": "Stock initial",
+                "it": "Scorta iniziale",
+                "nl": "Beginvoorraad"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.optional",
+            "text": {
+                "de": "optional",
+                "es": "opcional",
+                "fr": "facultatif",
+                "it": "facoltativo",
+                "nl": "optioneel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.physical",
+            "text": {
+                "de": "Physisch",
+                "es": "Físico",
+                "fr": "Physique",
+                "it": "Fisico",
+                "nl": "Fysiek"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.price_per",
+            "text": {
+                "de": "Preis / :unit",
+                "es": "Precio / :unit",
+                "fr": "Prix / :unit",
+                "it": "Prezzo / :unit",
+                "nl": "Prijs / :unit"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.quantity",
+            "text": {
+                "de": "Menge",
+                "es": "Cantidad",
+                "fr": "Quantité",
+                "it": "Quantità",
+                "nl": "Hoeveelheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.quarantine",
+            "text": {
+                "de": "Quarantäne",
+                "es": "Poner en cuarentena",
+                "fr": "Mettre en quarantaine",
+                "it": "Metti in quarantena",
+                "nl": "In quarantaine plaatsen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.quarantined",
+            "text": {
+                "de": "In Quarantäne",
+                "es": "En cuarentena",
+                "fr": "En quarantaine",
+                "it": "In quarantena",
+                "nl": "In quarantaine"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.release",
+            "text": {
+                "de": "Freigeben",
+                "es": "Liberar",
+                "fr": "Libérer",
+                "it": "Rilascia",
+                "nl": "Vrijgeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.released",
+            "text": {
+                "de": "Freigegeben",
+                "es": "Liberado",
+                "fr": "Libéré",
+                "it": "Rilasciato",
+                "nl": "Vrijgegeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.reserved",
+            "text": {
+                "de": "Reserviert",
+                "es": "Reservado",
+                "fr": "Réservé",
+                "it": "Riservato",
+                "nl": "Gereserveerd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.stock_positions",
+            "text": {
+                "de": "Bestandspositionen",
+                "es": "Posiciones de stock",
+                "fr": "Positions de stock",
+                "it": "Posizioni di magazzino",
+                "nl": "Voorraadposities"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.stocked_on",
+            "text": {
+                "de": "Eingelagert am",
+                "es": "Fecha de entrada",
+                "fr": "Entré en stock le",
+                "it": "Data di carico",
+                "nl": "Op voorraad sinds"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.supplier_batch",
+            "text": {
+                "de": "Lieferantencharge",
+                "es": "Lote del proveedor",
+                "fr": "Lot fournisseur",
+                "it": "Lotto fornitore",
+                "nl": "Leveranciersbatch"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.supplier_listing",
+            "text": {
+                "de": "Lieferantenartikel",
+                "es": "Referencia de proveedor",
+                "fr": "Référence fournisseur",
+                "it": "Articolo fornitore",
+                "nl": "Leveranciersartikel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.units",
+            "text": {
+                "de": "Einheiten",
+                "es": "unidades",
+                "fr": "unités",
+                "it": "unità",
+                "nl": "eenheden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.unknown_item",
+            "text": {
+                "de": "Unbekannter Bestandsartikel",
+                "es": "Artículo de stock desconocido",
+                "fr": "Article de stock inconnu",
+                "it": "Articolo di magazzino sconosciuto",
+                "nl": "Onbekend voorraaditem"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.add",
+            "text": {
+                "de": "Artikel hinzufügen",
+                "es": "Añadir referencia",
+                "fr": "Ajouter une référence",
+                "it": "Aggiungi articolo",
+                "nl": "Artikel toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.calculated_price",
+            "text": {
+                "de": "Berechneter Preis",
+                "es": "Precio calculado",
+                "fr": "Prix calculé",
+                "it": "Prezzo calcolato",
+                "nl": "Berekende prijs"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.catalog_item",
+            "text": {
+                "de": "Katalogartikel",
+                "es": "Artículo del catálogo",
+                "fr": "Article du catalogue",
+                "it": "Articolo di catalogo",
+                "nl": "Catalogusitem"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.choose_ingredient",
+            "text": {
+                "de": "Eine vorhandene Zutat in diesem Arbeitsbereich auswählen.",
+                "es": "Elige un ingrediente existente en este espacio de trabajo.",
+                "fr": "Choisissez un ingrédient existant dans cet espace de travail.",
+                "it": "Scegli un ingrediente esistente in questo spazio di lavoro.",
+                "nl": "Kies een bestaand ingrediënt in deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.choose_packaging",
+            "text": {
+                "de": "Einen vorhandenen Verpackungsartikel auswählen.",
+                "es": "Elige un envase existente.",
+                "fr": "Choisissez un article d’emballage existant.",
+                "it": "Scegli un articolo di imballaggio esistente.",
+                "nl": "Kies een bestaand verpakkingsitem."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.choose_supplier",
+            "text": {
+                "de": "Einen Lieferanten in diesem Arbeitsbereich auswählen.",
+                "es": "Elige un proveedor de este espacio de trabajo.",
+                "fr": "Choisissez un fournisseur de cet espace de travail.",
+                "it": "Scegli un fornitore in questo spazio di lavoro.",
+                "nl": "Kies een leverancier in deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.create_ingredient",
+            "text": {
+                "de": "Zutat erstellen",
+                "es": "Crear ingrediente",
+                "fr": "Créer un ingrédient",
+                "it": "Crea ingrediente",
+                "nl": "Ingrediënt aanmaken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.create_packaging",
+            "text": {
+                "de": "Verpackungsartikel erstellen",
+                "es": "Crear artículo de envase",
+                "fr": "Créer un article d’emballage",
+                "it": "Crea articolo di imballaggio",
+                "nl": "Verpakkingsitem aanmaken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.deactivated",
+            "text": {
+                "de": "Der Lieferantenartikel wird in Bestands- oder Einkaufsbelegen verwendet und wurde deaktiviert.",
+                "es": "La referencia se usa en registros de stock o compra y se ha desactivado.",
+                "fr": "La référence est utilisée dans des documents de stock ou d’achat et a été désactivée.",
+                "it": "L’articolo fornitore è usato nei registri di magazzino o acquisto ed è stato disattivato.",
+                "nl": "Het leveranciersartikel wordt in voorraad- of inkooprecords gebruikt en is gedeactiveerd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.delete",
+            "text": {
+                "de": "Artikel löschen",
+                "es": "Eliminar referencia",
+                "fr": "Supprimer la référence",
+                "it": "Elimina articolo",
+                "nl": "Artikel verwijderen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.delete_confirm",
+            "text": {
+                "de": "Diesen Lieferantenartikel löschen? Verwendete Artikel werden deaktiviert, damit Bestands- und Einkaufsbelege erhalten bleiben.",
+                "es": "¿Eliminar esta referencia? Las referencias utilizadas se desactivarán para conservar los registros de stock y compra.",
+                "fr": "Supprimer cette référence fournisseur ? Les références utilisées seront désactivées afin de conserver les documents de stock et d’achat.",
+                "it": "Eliminare questo articolo fornitore? Gli articoli usati saranno disattivati per conservare i registri di magazzino e acquisto.",
+                "nl": "Dit leveranciersartikel verwijderen? Gebruikte artikelen worden gedeactiveerd om voorraad- en inkooprecords te bewaren."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.deleted",
+            "text": {
+                "de": "Lieferantenartikel gelöscht.",
+                "es": "Referencia de proveedor eliminada.",
+                "fr": "Référence fournisseur supprimée.",
+                "it": "Articolo fornitore eliminato.",
+                "nl": "Leveranciersartikel verwijderd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.derived",
+            "text": {
+                "de": "Abgeleitet: :price",
+                "es": "Calculado: :price",
+                "fr": "Calculé : :price",
+                "it": "Calcolato: :price",
+                "nl": "Afgeleid: :price"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.edit",
+            "text": {
+                "de": "Lieferantenartikel bearbeiten",
+                "es": "Editar referencia de proveedor",
+                "fr": "Modifier la référence fournisseur",
+                "it": "Modifica articolo fornitore",
+                "nl": "Leveranciersartikel bewerken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.ingredient",
+            "text": {
+                "de": "Zutat",
+                "es": "Ingrediente",
+                "fr": "Ingrédient",
+                "it": "Ingrediente",
+                "nl": "Ingrediënt"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.ingredient_missing",
+            "text": {
+                "de": "Zutat nicht im Katalog?",
+                "es": "¿El ingrediente no está en el catálogo?",
+                "fr": "L’ingrédient n’est pas dans le catalogue ?",
+                "it": "L’ingrediente non è nel catalogo?",
+                "nl": "Ingrediënt niet in de catalogus?"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.latest_price",
+            "text": {
+                "de": "Letzter Preis",
+                "es": "Último precio",
+                "fr": "Dernier prix",
+                "it": "Ultimo prezzo",
+                "nl": "Laatste prijs"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.listings",
+            "text": {
+                "de": "Artikel",
+                "es": "Referencias",
+                "fr": "Références",
+                "it": "Articoli",
+                "nl": "Artikelen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.material",
+            "text": {
+                "de": "Material",
+                "es": "Material",
+                "fr": "Matière",
+                "it": "Materiale",
+                "nl": "Materiaal"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.minimum_order",
+            "text": {
+                "de": "Mindestbestellmenge",
+                "es": "Pedido mínimo",
+                "fr": "Commande minimale",
+                "it": "Ordine minimo",
+                "nl": "Minimale bestelling"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.minimum_order_help",
+            "text": {
+                "de": "Gebinde pro Bestellung.",
+                "es": "Formatos de compra por pedido.",
+                "fr": "Formats d’achat par commande.",
+                "it": "Formati di acquisto per ordine.",
+                "nl": "Inkoopformaten per bestelling."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.net_quantity",
+            "text": {
+                "de": "Nettomenge",
+                "es": "Cantidad neta",
+                "fr": "Quantité nette",
+                "it": "Quantità netta",
+                "nl": "Nettohoeveelheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.new",
+            "text": {
+                "de": "Neuer Lieferantenartikel",
+                "es": "Nueva referencia de proveedor",
+                "fr": "Nouvelle référence fournisseur",
+                "it": "Nuovo articolo fornitore",
+                "nl": "Nieuw leveranciersartikel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.none",
+            "text": {
+                "de": "Keine Artikel.",
+                "es": "No hay referencias.",
+                "fr": "Aucune référence.",
+                "it": "Nessun articolo.",
+                "nl": "Geen artikelen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.ordering",
+            "text": {
+                "de": "Bestellung",
+                "es": "Pedido",
+                "fr": "Commande",
+                "it": "Ordine",
+                "nl": "Bestellen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.organic_conventional",
+            "text": {
+                "de": "Konventionell",
+                "es": "Convencional",
+                "fr": "Conventionnel",
+                "it": "Convenzionale",
+                "nl": "Conventioneel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.organic_organic",
+            "text": {
+                "de": "Bio",
+                "es": "Ecológico",
+                "fr": "Biologique",
+                "it": "Biologico",
+                "nl": "Biologisch"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.organic_status",
+            "text": {
+                "de": "Bio-Status",
+                "es": "Estado ecológico",
+                "fr": "Statut biologique",
+                "it": "Stato biologico",
+                "nl": "Biologische status"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.organic_unknown",
+            "text": {
+                "de": "Nicht angegeben",
+                "es": "No especificado",
+                "fr": "Non précisé",
+                "it": "Non specificato",
+                "nl": "Niet opgegeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.packaging_item",
+            "text": {
+                "de": "Verpackungsartikel",
+                "es": "Artículo de envase",
+                "fr": "Article d’emballage",
+                "it": "Articolo di imballaggio",
+                "nl": "Verpakkingsitem"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.packaging_missing",
+            "text": {
+                "de": "Verpackungsartikel nicht im Katalog?",
+                "es": "¿El envase no está en el catálogo?",
+                "fr": "L’article d’emballage n’est pas dans le catalogue ?",
+                "it": "L’articolo di imballaggio non è nel catalogo?",
+                "nl": "Verpakkingsitem niet in de catalogus?"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.packaging_quantity_whole",
+            "text": {
+                "de": "Die Verpackungsmenge muss eine ganze Zahl sein.",
+                "es": "La cantidad de envases debe ser un número entero.",
+                "fr": "La quantité d’emballages doit être un nombre entier.",
+                "it": "La quantità di imballaggi deve essere un numero intero.",
+                "nl": "De verpakkingshoeveelheid moet een geheel getal zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.per_page",
+            "text": {
+                "de": "Lieferantenartikel pro Seite",
+                "es": "Referencias por página",
+                "fr": "Références fournisseur par page",
+                "it": "Articoli fornitore per pagina",
+                "nl": "Leveranciersartikelen per pagina"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.plural",
+            "text": {
+                "de": "Lieferantenartikel",
+                "es": "Referencias de proveedor",
+                "fr": "Références fournisseur",
+                "it": "Articoli fornitore",
+                "nl": "Leveranciersartikelen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.price",
+            "text": {
+                "de": "Preis",
+                "es": "Precio",
+                "fr": "Prix",
+                "it": "Prezzo",
+                "nl": "Prijs"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.price_per_unit",
+            "text": {
+                "de": "Preis pro Maßeinheit",
+                "es": "Precio por unidad de medida",
+                "fr": "Prix par unité de mesure",
+                "it": "Prezzo per unità di misura",
+                "nl": "Prijs per maateenheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.price_unit",
+            "text": {
+                "de": "Preiseinheit",
+                "es": "Unidad de precio",
+                "fr": "Unité de prix",
+                "it": "Unità di prezzo",
+                "nl": "Prijseenheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.pricing",
+            "text": {
+                "de": "Preise",
+                "es": "Precios",
+                "fr": "Tarification",
+                "it": "Prezzi",
+                "nl": "Prijzen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.pricing_basis",
+            "text": {
+                "de": "Preisbasis",
+                "es": "Base de precio",
+                "fr": "Base de prix",
+                "it": "Base di prezzo",
+                "nl": "Prijsbasis"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.purchase_format",
+            "text": {
+                "de": "Gebinde",
+                "es": "Formato de compra",
+                "fr": "Format d’achat",
+                "it": "Formato di acquisto",
+                "nl": "Inkoopformaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.purchase_format_placeholder",
+            "text": {
+                "de": "200-kg-Fass",
+                "es": "Bidón de 200 kg",
+                "fr": "Fût de 200 kg",
+                "it": "Fusto da 200 kg",
+                "nl": "Vat van 200 kg"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.purchase_format_section",
+            "text": {
+                "de": "Gebinde",
+                "es": "Formato de compra",
+                "fr": "Format d’achat",
+                "it": "Formato di acquisto",
+                "nl": "Inkoopformaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.recent_items_help",
+            "text": {
+                "de": "Zuletzt verwendete Artikel werden angezeigt. Eingeben, um alle zu durchsuchen.",
+                "es": "Se muestran los artículos recientes. Escribe para buscar en todos.",
+                "fr": "Les articles récents sont affichés. Saisissez du texte pour tout rechercher.",
+                "it": "Sono mostrati gli articoli recenti. Digita per cercare in tutti.",
+                "nl": "Recente items worden getoond. Typ om alles te doorzoeken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.save",
+            "text": {
+                "de": "Lieferantenartikel speichern",
+                "es": "Guardar referencia de proveedor",
+                "fr": "Enregistrer la référence fournisseur",
+                "it": "Salva articolo fornitore",
+                "nl": "Leveranciersartikel opslaan"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.save_changes",
+            "text": {
+                "de": "Änderungen speichern",
+                "es": "Guardar cambios",
+                "fr": "Enregistrer les modifications",
+                "it": "Salva modifiche",
+                "nl": "Wijzigingen opslaan"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.singular",
+            "text": {
+                "de": "Lieferantenartikel",
+                "es": "Referencia de proveedor",
+                "fr": "Référence fournisseur",
+                "it": "Articolo fornitore",
+                "nl": "Leveranciersartikel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.supplier_item_name",
+            "text": {
+                "de": "Artikelname des Lieferanten",
+                "es": "Nombre del artículo del proveedor",
+                "fr": "Nom de l’article fournisseur",
+                "it": "Nome articolo fornitore",
+                "nl": "Artikelnaam leverancier"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.supplier_sku",
+            "text": {
+                "de": "Lieferanten-SKU",
+                "es": "SKU del proveedor",
+                "fr": "SKU fournisseur",
+                "it": "SKU fornitore",
+                "nl": "Leveranciers-SKU"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.total_purchase_format_price",
+            "text": {
+                "de": "Gesamtpreis des Gebindes",
+                "es": "Precio total del formato de compra",
+                "fr": "Prix total du format d’achat",
+                "it": "Prezzo totale del formato di acquisto",
+                "nl": "Totale prijs van het inkoopformaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "listing.unit_of_measure",
+            "text": {
+                "de": "Maßeinheit",
+                "es": "Unidad de medida",
+                "fr": "Unité de mesure",
+                "it": "Unità di misura",
+                "nl": "Maateenheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.home",
+            "text": {
+                "de": "Start",
+                "es": "Inicio",
+                "fr": "Accueil",
+                "it": "Home",
+                "nl": "Home"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.inventory",
+            "text": {
+                "de": "Bestand",
+                "es": "Inventario",
+                "fr": "Stock",
+                "it": "Inventario",
+                "nl": "Voorraad"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.purchasing",
+            "text": {
+                "de": "Einkauf",
+                "es": "Compras",
+                "fr": "Achats",
+                "it": "Acquisti",
+                "nl": "Inkoop"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.supplier_listings",
+            "text": {
+                "de": "Lieferantenartikel",
+                "es": "Referencias de proveedor",
+                "fr": "Références fournisseur",
+                "it": "Articoli fornitore",
+                "nl": "Leveranciersartikelen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.suppliers",
+            "text": {
+                "de": "Lieferanten",
+                "es": "Proveedores",
+                "fr": "Fournisseurs",
+                "it": "Fornitori",
+                "nl": "Leveranciers"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.add",
+            "text": {
+                "de": "Lieferant hinzufügen",
+                "es": "Añadir proveedor",
+                "fr": "Ajouter un fournisseur",
+                "it": "Aggiungi fornitore",
+                "nl": "Leverancier toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.address",
+            "text": {
+                "de": "Adresse",
+                "es": "Dirección",
+                "fr": "Adresse",
+                "it": "Indirizzo",
+                "nl": "Adres"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.address_line_1",
+            "text": {
+                "de": "Adresszeile 1",
+                "es": "Dirección, línea 1",
+                "fr": "Adresse, ligne 1",
+                "it": "Indirizzo, riga 1",
+                "nl": "Adresregel 1"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.address_line_2",
+            "text": {
+                "de": "Adresszeile 2",
+                "es": "Dirección, línea 2",
+                "fr": "Adresse, ligne 2",
+                "it": "Indirizzo, riga 2",
+                "nl": "Adresregel 2"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.city",
+            "text": {
+                "de": "Ort",
+                "es": "Ciudad",
+                "fr": "Ville",
+                "it": "Città",
+                "nl": "Plaats"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.code",
+            "text": {
+                "de": "Code",
+                "es": "Código",
+                "fr": "Code",
+                "it": "Codice",
+                "nl": "Code"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.code_help",
+            "text": {
+                "de": "A-Z, 0-9, - oder _, max. 16.",
+                "es": "A-Z, 0-9, - o _, máx. 16.",
+                "fr": "A-Z, 0-9, - ou _, 16 max.",
+                "it": "A-Z, 0-9, - o _, max 16.",
+                "nl": "A-Z, 0-9, - of _, max. 16."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.country_code",
+            "text": {
+                "de": "Ländercode",
+                "es": "Código de país",
+                "fr": "Code pays",
+                "it": "Codice paese",
+                "nl": "Landcode"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.deactivated",
+            "text": {
+                "de": "Der Lieferant wird in Einkaufsbelegen verwendet und wurde deaktiviert.",
+                "es": "El proveedor se usa en registros de compra y se ha desactivado.",
+                "fr": "Le fournisseur est utilisé dans des documents d’achat et a été désactivé.",
+                "it": "Il fornitore è usato nei registri acquisti ed è stato disattivato.",
+                "nl": "De leverancier wordt in inkooprecords gebruikt en is gedeactiveerd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.delete",
+            "text": {
+                "de": "Lieferant löschen",
+                "es": "Eliminar proveedor",
+                "fr": "Supprimer le fournisseur",
+                "it": "Elimina fornitore",
+                "nl": "Leverancier verwijderen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.delete_confirm",
+            "text": {
+                "de": "Diesen Lieferanten löschen? Verwendete Lieferanten werden deaktiviert, damit Einkaufsbelege erhalten bleiben.",
+                "es": "¿Eliminar este proveedor? Los proveedores utilizados se desactivarán para conservar los registros de compra.",
+                "fr": "Supprimer ce fournisseur ? Les fournisseurs utilisés seront désactivés afin de conserver les documents d’achat.",
+                "it": "Eliminare questo fornitore? I fornitori usati saranno disattivati per conservare i registri acquisti.",
+                "nl": "Deze leverancier verwijderen? Gebruikte leveranciers worden gedeactiveerd om inkooprecords te bewaren."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.deleted",
+            "text": {
+                "de": "Lieferant gelöscht.",
+                "es": "Proveedor eliminado.",
+                "fr": "Fournisseur supprimé.",
+                "it": "Fornitore eliminato.",
+                "nl": "Leverancier verwijderd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.details",
+            "text": {
+                "de": "Details",
+                "es": "Detalles",
+                "fr": "Détails",
+                "it": "Dettagli",
+                "nl": "Details"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.edit",
+            "text": {
+                "de": "Lieferant bearbeiten",
+                "es": "Editar proveedor",
+                "fr": "Modifier le fournisseur",
+                "it": "Modifica fornitore",
+                "nl": "Leverancier bewerken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.email",
+            "text": {
+                "de": "E-Mail",
+                "es": "Correo electrónico",
+                "fr": "E-mail",
+                "it": "E-mail",
+                "nl": "E-mail"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.location",
+            "text": {
+                "de": "Standort",
+                "es": "Ubicación",
+                "fr": "Lieu",
+                "it": "Località",
+                "nl": "Locatie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.main_contact",
+            "text": {
+                "de": "Hauptkontakt",
+                "es": "Contacto principal",
+                "fr": "Contact principal",
+                "it": "Contatto principale",
+                "nl": "Hoofdcontact"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.new",
+            "text": {
+                "de": "Neuer Lieferant",
+                "es": "Nuevo proveedor",
+                "fr": "Nouveau fournisseur",
+                "it": "Nuovo fornitore",
+                "nl": "Nieuwe leverancier"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.none",
+            "text": {
+                "de": "Keine Lieferanten.",
+                "es": "No hay proveedores.",
+                "fr": "Aucun fournisseur.",
+                "it": "Nessun fornitore.",
+                "nl": "Geen leveranciers."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.per_page",
+            "text": {
+                "de": "Lieferanten pro Seite",
+                "es": "Proveedores por página",
+                "fr": "Fournisseurs par page",
+                "it": "Fornitori per pagina",
+                "nl": "Leveranciers per pagina"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.postal_code",
+            "text": {
+                "de": "Postleitzahl",
+                "es": "Código postal",
+                "fr": "Code postal",
+                "it": "Codice postale",
+                "nl": "Postcode"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.region",
+            "text": {
+                "de": "Region",
+                "es": "Región",
+                "fr": "Région",
+                "it": "Regione",
+                "nl": "Regio"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.save",
+            "text": {
+                "de": "Lieferant speichern",
+                "es": "Guardar proveedor",
+                "fr": "Enregistrer le fournisseur",
+                "it": "Salva fornitore",
+                "nl": "Leverancier opslaan"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.singular",
+            "text": {
+                "de": "Lieferant",
+                "es": "Proveedor",
+                "fr": "Fournisseur",
+                "it": "Fornitore",
+                "nl": "Leverancier"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.telephone",
+            "text": {
+                "de": "Telefon",
+                "es": "Teléfono",
+                "fr": "Téléphone",
+                "it": "Telefono",
+                "nl": "Telefoon"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.website",
+            "text": {
+                "de": "Website",
+                "es": "Sitio web",
+                "fr": "Site web",
+                "it": "Sito web",
+                "nl": "Website"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "title",
+            "text": {
+                "de": "Produktionsbereich",
+                "es": "Área de producción",
+                "fr": "Espace de production",
+                "it": "Area produzione",
+                "nl": "Productieomgeving"
             }
         },
         {
@@ -7600,37 +9384,79 @@
         {
             "group": "public",
             "key": "footer.description",
-            "text": {}
+            "text": {
+                "de": "Privater professioneller Arbeitsbereich für Seifen- und Kosmetikrezepturen.",
+                "es": "Espacio de trabajo profesional privado para formulación de jabones y cosméticos.",
+                "fr": "Espace de travail professionnel privé pour la formulation de savons et cosmétiques.",
+                "it": "Spazio di lavoro professionale privato per formulazioni di saponi e cosmetici.",
+                "nl": "Privé professionele werkruimte voor zeep- en cosmeticarecepturen."
+            }
         },
         {
             "group": "public",
             "key": "language.label",
-            "text": {}
+            "text": {
+                "de": "Oberflächensprache",
+                "es": "Idioma de la interfaz",
+                "fr": "Langue de l’interface",
+                "it": "Lingua dell’interfaccia",
+                "nl": "Interfacetaal"
+            }
         },
         {
             "group": "public",
             "key": "navigation.open_workspace",
-            "text": {}
+            "text": {
+                "de": "Arbeitsbereich öffnen",
+                "es": "Abrir espacio de trabajo",
+                "fr": "Ouvrir l’espace de travail",
+                "it": "Apri spazio di lavoro",
+                "nl": "Werkruimte openen"
+            }
         },
         {
             "group": "public",
             "key": "navigation.product",
-            "text": {}
+            "text": {
+                "de": "Produkt",
+                "es": "Producto",
+                "fr": "Produit",
+                "it": "Prodotto",
+                "nl": "Product"
+            }
         },
         {
             "group": "public",
             "key": "navigation.sign_in",
-            "text": {}
+            "text": {
+                "de": "Anmelden",
+                "es": "Iniciar sesión",
+                "fr": "Se connecter",
+                "it": "Accedi",
+                "nl": "Aanmelden"
+            }
         },
         {
             "group": "public",
             "key": "navigation.toggle_menu",
-            "text": {}
+            "text": {
+                "de": "Navigationsmenü umschalten",
+                "es": "Alternar menú de navegación",
+                "fr": "Afficher ou masquer le menu de navigation",
+                "it": "Apri o chiudi il menu di navigazione",
+                "nl": "Navigatiemenu openen of sluiten"
+            }
         },
         {
             "group": "public",
             "key": "skip_to_content",
-            "text": {}
+            "text": {
+                "de": "Zum Inhalt springen",
+                "es": "Saltar al contenido",
+                "fr": "Aller au contenu",
+                "it": "Vai al contenuto",
+                "nl": "Naar inhoud springen"
+            }
         },
         {
             "group": "settings",
@@ -7795,6 +9621,72 @@
                 "fr": "Réglages de l’espace de travail",
                 "it": "Impostazioni dello spazio di lavoro",
                 "nl": "Instellingen voor de werkruimte"
+            }
+        },
+        {
+            "group": "settings",
+            "key": "workspace.mass_display",
+            "text": {
+                "de": "Maßsystem",
+                "es": "Sistema de medida",
+                "fr": "Système de mesure",
+                "it": "Sistema di misura",
+                "nl": "Meetsysteem"
+            }
+        },
+        {
+            "group": "settings",
+            "key": "workspace.mass_display_help",
+            "text": {
+                "de": "Legt die Starteinheit für neue Rezepturen und die Preisbasis der Zutaten fest. Rezepturen können weiterhin zwischen g, kg, oz und lb umgerechnet werden.",
+                "es": "Establece la unidad inicial de las nuevas fórmulas y la base de precio de los ingredientes. Puedes convertir cualquier fórmula entre g, kg, oz y lb.",
+                "fr": "Définit l’unité initiale des nouvelles formules et la base de prix des ingrédients. Toute formule peut toujours être convertie entre g, kg, oz et lb.",
+                "it": "Imposta l’unità iniziale delle nuove formule e la base di prezzo degli ingredienti. Puoi comunque convertire le formule tra g, kg, oz e lb.",
+                "nl": "Stelt de begineenheid voor nieuwe formules en de prijsbasis van ingrediënten in. Formules kunnen nog steeds tussen g, kg, oz en lb worden omgerekend."
+            }
+        },
+        {
+            "group": "settings",
+            "key": "workspace.mass_systems.metric",
+            "text": {
+                "de": "Metrisch",
+                "es": "Métrico",
+                "fr": "Métrique",
+                "it": "Metrico",
+                "nl": "Metrisch"
+            }
+        },
+        {
+            "group": "settings",
+            "key": "workspace.mass_systems.metric_example",
+            "text": {
+                "de": "g und kg · Preise pro kg",
+                "es": "g y kg · precios por kg",
+                "fr": "g et kg · prix par kg",
+                "it": "g e kg · prezzi per kg",
+                "nl": "g en kg · prijzen per kg"
+            }
+        },
+        {
+            "group": "settings",
+            "key": "workspace.mass_systems.us_customary",
+            "text": {
+                "de": "US-Maßsystem",
+                "es": "Sistema estadounidense",
+                "fr": "Système américain",
+                "it": "Sistema statunitense",
+                "nl": "Amerikaans systeem"
+            }
+        },
+        {
+            "group": "settings",
+            "key": "workspace.mass_systems.us_customary_example",
+            "text": {
+                "de": "oz und lb · Preise pro lb",
+                "es": "oz y lb · precios por lb",
+                "fr": "oz et lb · prix par lb",
+                "it": "oz e lb · prezzi per lb",
+                "nl": "oz en lb · prijzen per lb"
             }
         },
         {
@@ -10000,7 +11892,13 @@
         {
             "group": "workbench",
             "key": "instructions.procedure_text_only",
-            "text": {}
+            "text": {
+                "de": "Fertigungsbilder über „Aus Medienbibliothek einfügen“ in der Verfahrensleiste hinzufügen.",
+                "es": "Añade imágenes de fabricación con «Insertar desde la biblioteca multimedia» en la barra del procedimiento.",
+                "fr": "Ajoutez des images de fabrication avec « Insérer depuis la médiathèque » dans la barre de procédure.",
+                "it": "Aggiungi immagini di produzione con «Inserisci dalla libreria multimediale» nella barra della procedura.",
+                "nl": "Voeg productieafbeeldingen toe met ‘Invoegen uit mediabibliotheek’ in de procedurewerkbalk."
+            }
         },
         {
             "group": "workbench",

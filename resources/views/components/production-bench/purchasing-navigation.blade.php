@@ -1,7 +1,7 @@
 <nav aria-label="Purchasing sections" class="flex flex-wrap gap-2">
     @foreach ([
-        'production-bench.purchasing.suppliers' => 'Suppliers',
-        'production-bench.purchasing.listings' => 'Supplier listings',
+        'production-bench.purchasing.suppliers' => __('production_bench.navigation.suppliers'),
+        'production-bench.purchasing.listings' => __('production_bench.navigation.supplier_listings'),
     ] as $routeName => $label)
         @php($isCurrent = request()->routeIs($routeName) || ($routeName === 'production-bench.purchasing.suppliers' && request()->routeIs('production-bench.purchasing.supplier', 'production-bench.purchasing.suppliers.create', 'production-bench.purchasing.suppliers.edit', 'production-bench.purchasing.suppliers.listings.create')) || ($routeName === 'production-bench.purchasing.listings' && request()->routeIs('production-bench.purchasing.listings.create')))
         <a

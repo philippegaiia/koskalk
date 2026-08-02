@@ -1,14 +1,21 @@
 <?php
 
+use App\Actions\Purchasing\DeleteSupplier;
 use App\Actions\Purchasing\SaveSupplierListing;
 use App\ListingPriceBasis;
 use App\Livewire\ProductionBench\Purchasing\SupplierDetail;
+use App\Livewire\ProductionBench\Purchasing\SupplierEdit;
 use App\Livewire\ProductionBench\Purchasing\SupplierIndex;
+use App\Livewire\ProductionBench\Purchasing\SupplierListingCreate;
 use App\Livewire\ProductionBench\Purchasing\SupplierListingIndex;
 use App\MassDisplaySystem;
 use App\Models\Ingredient;
 use App\Models\IngredientTranslation;
+use App\Models\InterfaceTranslation;
 use App\Models\PackagingItem;
+use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderLine;
+use App\Models\StockLot;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\SupportedLocale;
@@ -17,7 +24,9 @@ use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPricePresentation;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -91,6 +100,75 @@ it('keeps supplier mutations out of the index and detail pages', function (): vo
     Livewire::test(SupplierListingIndex::class)
         ->assertSee('Add listing')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.listings.create').'"');
+});
+
+it('deletes unused suppliers and deactivates suppliers with purchasing history', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $unusedSupplier = Supplier::factory()->for($workspace)->create();
+    $usedSupplier = Supplier::factory()->for($workspace)->create();
+    PurchaseOrder::factory()->for($workspace)->for($usedSupplier)->create(['created_by_user_id' => $owner->id]);
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierEdit::class, ['supplier' => $unusedSupplier->public_id])
+        ->call('delete')
+        ->assertRedirect(route('production-bench.purchasing.suppliers'));
+
+    $this->assertModelMissing($unusedSupplier);
+
+    Livewire::test(SupplierEdit::class, ['supplier' => $usedSupplier->public_id])
+        ->call('delete')
+        ->assertRedirect(route('production-bench.purchasing.supplier', $usedSupplier));
+
+    expect($usedSupplier->refresh()->is_active)->toBeFalse();
+});
+
+it('deletes unused supplier listings and deactivates listings used by stock or orders', function (string $usage): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $unusedListing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    $usedListing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+
+    if ($usage === 'order') {
+        $order = PurchaseOrder::factory()->for($workspace)->for($supplier)->create(['created_by_user_id' => $owner->id]);
+        PurchaseOrderLine::factory()->for($order)->for($usedListing)->create([
+            'ingredient_id' => $ingredient->id,
+        ]);
+    } else {
+        StockLot::factory()->for($workspace)->for($ingredient)->create([
+            'supplier_listing_id' => $usedListing->id,
+        ]);
+    }
+
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $unusedListing->public_id])
+        ->call('delete')
+        ->assertRedirect(route('production-bench.purchasing.supplier', $supplier));
+
+    $this->assertModelMissing($unusedListing);
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $usedListing->public_id])
+        ->call('delete')
+        ->assertRedirect(route('production-bench.purchasing.supplier', $supplier));
+
+    expect($usedListing->refresh()->is_active)->toBeFalse();
+})->with(['order', 'stock']);
+
+it('does not allow supplier deletion across workspaces or from a read-only bench', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $foreignSupplier = Supplier::factory()->create();
+    $this->actingAs($owner);
+
+    expect(fn () => app(DeleteSupplier::class)->handle($owner, $workspace, $foreignSupplier))
+        ->toThrow(ModelNotFoundException::class);
+
+    app(ProductionBenchAccess::class)->cancel($owner, $workspace);
+
+    $this->get(route('production-bench.purchasing.suppliers.edit', $supplier))->assertForbidden();
+    $this->assertModelExists($supplier);
+    $this->assertModelExists($foreignSupplier);
 });
 
 it('keeps supplier and listing browse pages operational and free of future feature copy', function (): void {
@@ -561,6 +639,38 @@ it('labels purchasing filters and marks the local supplier navigation as current
 
     $this->get(route('production-bench.purchasing.supplier', $supplier))
         ->assertSeeHtml('aria-current="page"');
+});
+
+it('localizes supplier and listing table filters through owned interface keys', function (): void {
+    [$owner] = activeSupplierPagesWorkspace();
+    $translations = [
+        'common.search' => 'Rechercher',
+        'common.status' => 'Statut',
+        'common.sort' => 'Tri',
+        'filters.supplier' => 'Fournisseur',
+        'filters.type' => 'Type de matière',
+    ];
+
+    foreach ($translations as $key => $text) {
+        InterfaceTranslation::query()->create([
+            'group' => 'production_bench',
+            'key' => $key,
+            'text' => ['fr' => $text],
+        ]);
+    }
+
+    Cache::flush();
+    app()->setLocale('fr');
+    $this->actingAs($owner);
+
+    $supplierFilters = Livewire::test(SupplierIndex::class)->instance()->filtersForm->getFlatComponents(withHidden: true);
+    $listingFilters = Livewire::test(SupplierListingIndex::class)->instance()->filtersForm->getFlatComponents(withHidden: true);
+
+    expect($supplierFilters['search']->getLabel())->toBe('Rechercher')
+        ->and($supplierFilters['status']->getLabel())->toBe('Statut')
+        ->and($supplierFilters['sort']->getLabel())->toBe('Tri')
+        ->and($listingFilters['supplier_id']->getLabel())->toBe('Fournisseur')
+        ->and($listingFilters['material_type']->getLabel())->toBe('Type de matière');
 });
 
 /** @return array{0: User, 1: Workspace} */

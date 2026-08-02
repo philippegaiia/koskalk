@@ -47,25 +47,25 @@ class SupplierIndex extends Component implements HasForms
                 Grid::make(['md' => 3])
                     ->schema([
                         TextInput::make('search')
-                            ->label('Search')
+                            ->label(__('production_bench.common.search'))
                             ->type('search')
                             ->live(debounce: 300)
                             ->afterStateUpdated(fn () => $this->resetPage()),
                         Select::make('status')
-                            ->label('Status')
+                            ->label(__('production_bench.common.status'))
                             ->options([
-                                'active' => 'Active',
-                                'all' => 'All',
-                                'inactive' => 'Inactive',
+                                'active' => __('production_bench.common.active'),
+                                'all' => __('production_bench.common.all'),
+                                'inactive' => __('production_bench.common.inactive'),
                             ])
                             ->native(false)
                             ->live()
                             ->afterStateUpdated(fn () => $this->resetPage()),
                         Select::make('sort')
-                            ->label('Sort')
+                            ->label(__('production_bench.common.sort'))
                             ->options([
-                                'newest' => 'Newest',
-                                'name' => 'Name',
+                                'newest' => __('production_bench.filters.newest'),
+                                'name' => __('production_bench.common.name'),
                             ])
                             ->native(false)
                             ->live()

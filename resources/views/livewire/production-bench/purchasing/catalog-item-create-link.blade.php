@@ -5,18 +5,18 @@
 
 <p class="text-sm text-[var(--color-ink-soft)]">
     @if ($materialType === 'packaging')
-        Packaging item not in the catalogue?
+        {{ __('production_bench.listing.packaging_missing') }}
         <a
             href="{{ route('packaging-items.create', array_filter(['return_to' => 'supplier_listing', 'supplier' => $supplierPublicId])) }}"
             wire:navigate
             class="font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-line-strong)] underline-offset-4 hover:text-[var(--color-accent-hover)]"
-        >Create packaging item</a>
+        >{{ __('production_bench.listing.create_packaging') }}</a>
     @else
-        Ingredient not in the catalogue?
+        {{ __('production_bench.listing.ingredient_missing') }}
         <a
             href="{{ route('ingredients.create', array_filter(['return_to' => 'supplier_listing', 'supplier' => $supplierPublicId])) }}"
             wire:navigate
             class="font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-line-strong)] underline-offset-4 hover:text-[var(--color-accent-hover)]"
-        >Create ingredient</a>
+        >{{ __('production_bench.listing.create_ingredient') }}</a>
     @endif
 </p>

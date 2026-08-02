@@ -12,6 +12,7 @@ return [
         'packaging' => ['*'],
         'plans' => ['*'],
         'products' => ['*'],
+        'production_bench' => ['*'],
         'settings' => ['*'],
         'table' => ['*'],
         'workbench' => ['*'],

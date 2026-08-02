@@ -1,8 +1,8 @@
 <nav aria-label="Production Bench" class="flex min-w-0 gap-1 border-b border-[var(--color-line)] px-3 sm:px-4">
     @foreach ([
-        'production-bench.home' => 'Home',
-        'production-bench.inventory' => 'Inventory',
-        'production-bench.purchasing.suppliers' => 'Purchasing',
+        'production-bench.home' => __('production_bench.navigation.home'),
+        'production-bench.inventory' => __('production_bench.navigation.inventory'),
+        'production-bench.purchasing.suppliers' => __('production_bench.navigation.purchasing'),
     ] as $routeName => $label)
         <a
             href="{{ route($routeName) }}"

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'workspace_id', 'supplier_id', 'ingredient_id', 'packaging_item_id', 'supplier_sku',
@@ -43,6 +44,16 @@ class SupplierListing extends Model
     public function packagingItem(): BelongsTo
     {
         return $this->belongsTo(PackagingItem::class, 'packaging_item_id');
+    }
+
+    public function purchaseOrderLines(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderLine::class);
+    }
+
+    public function stockLots(): HasMany
+    {
+        return $this->hasMany(StockLot::class);
     }
 
     protected function casts(): array

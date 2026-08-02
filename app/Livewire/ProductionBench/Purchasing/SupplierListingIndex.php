@@ -54,35 +54,35 @@ class SupplierListingIndex extends Component implements HasForms
                 Grid::make(['md' => 2, 'xl' => 4])
                     ->schema([
                         TextInput::make('search')
-                            ->label('Search')
+                            ->label(__('production_bench.common.search'))
                             ->type('search')
                             ->live(debounce: 300)
                             ->afterStateUpdated(fn () => $this->resetPage())
                             ->columnSpan(['md' => 2, 'xl' => 1]),
                         Select::make('supplier_id')
-                            ->label('Supplier')
-                            ->placeholder('All')
+                            ->label(__('production_bench.filters.supplier'))
+                            ->placeholder(__('production_bench.common.all'))
                             ->searchable()
                             ->getSearchResultsUsing(fn (string $search): array => $this->supplierFilterSearchResults($search))
                             ->getOptionLabelUsing(fn (mixed $value): ?string => $this->supplierFilterOptionLabel(is_numeric($value) ? (int) $value : null))
                             ->live()
                             ->afterStateUpdated(fn () => $this->resetPage()),
                         Select::make('material_type')
-                            ->label('Type')
+                            ->label(__('production_bench.filters.type'))
                             ->options([
-                                'all' => 'All',
-                                'ingredient' => 'Ingredients',
-                                'packaging' => 'Packaging',
+                                'all' => __('production_bench.common.all'),
+                                'ingredient' => __('production_bench.filters.ingredients'),
+                                'packaging' => __('production_bench.filters.packaging'),
                             ])
                             ->native(false)
                             ->live()
                             ->afterStateUpdated(fn () => $this->resetPage()),
                         Select::make('status')
-                            ->label('Status')
+                            ->label(__('production_bench.common.status'))
                             ->options([
-                                'active' => 'Active',
-                                'all' => 'All',
-                                'inactive' => 'Inactive',
+                                'active' => __('production_bench.common.active'),
+                                'all' => __('production_bench.common.all'),
+                                'inactive' => __('production_bench.common.inactive'),
                             ])
                             ->native(false)
                             ->live()

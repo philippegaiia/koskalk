@@ -70,7 +70,7 @@ class SupplierListingPricePresentation
     ): array {
         if ($listing->price_basis === ListingPriceBasis::TotalPurchaseFormat) {
             return [
-                'basis_label' => 'Total purchase-format price',
+                'basis_label' => __('production_bench.listing.total_purchase_format_price'),
                 'entered_price' => $this->currencyAmount($currency, $listing->price_amount),
                 'derived_price' => $unitPrice,
                 'total_price' => $totalPrice,
@@ -78,7 +78,7 @@ class SupplierListingPricePresentation
         }
 
         return [
-            'basis_label' => 'Price per unit of measure',
+            'basis_label' => __('production_bench.listing.price_per_unit'),
             'entered_price' => $this->currencyAmount($currency, $listing->price_amount).' / '.($listing->ingredient_id !== null ? $listing->price_unit : 'item'),
             'derived_price' => $totalPrice,
             'total_price' => $totalPrice,

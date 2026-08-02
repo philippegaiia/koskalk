@@ -19,7 +19,7 @@ class IngredientResource extends Resource
 {
     protected static ?string $model = Ingredient::class;
 
-    protected static ?string $recordTitleAttribute = 'source_key';
+    protected static ?string $recordTitleAttribute = 'display_name';
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::ArchiveBox;
 

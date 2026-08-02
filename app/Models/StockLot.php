@@ -91,7 +91,7 @@ class StockLot extends Model
     {
         return $this->ingredient?->localizedDisplayName()
             ?? $this->packagingItem?->name
-            ?? 'Unknown stock item';
+            ?? __('production_bench.inventory.unknown_item');
     }
 
     protected function casts(): array

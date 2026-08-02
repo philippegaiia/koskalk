@@ -63,7 +63,13 @@ return new class extends Migration
             throw new RuntimeException('Every existing packaging item must resolve to its owner workspace before migration.');
         }
 
-        DB::statement('ALTER TABLE packaging_items ALTER COLUMN workspace_id SET NOT NULL');
+        if (DB::getDriverName() === 'pgsql') {
+            DB::statement('ALTER TABLE packaging_items ALTER COLUMN workspace_id SET NOT NULL');
+        } else {
+            Schema::table('packaging_items', function (Blueprint $table): void {
+                $table->unsignedBigInteger('workspace_id')->nullable(false)->change();
+            });
+        }
 
         Schema::table('packaging_items', function (Blueprint $table): void {
             $table->dropColumn('user_id');

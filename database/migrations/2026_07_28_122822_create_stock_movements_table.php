@@ -36,6 +36,27 @@ return new class extends Migration
             $table->index(['stock_lot_id', 'occurred_at']);
         });
 
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            DB::statement(<<<'SQL'
+                CREATE TRIGGER stock_movements_non_zero_quantity_insert
+                BEFORE INSERT ON stock_movements
+                WHEN NEW.quantity_delta = 0
+                BEGIN
+                    SELECT RAISE(ABORT, 'stock movement quantity must be non-zero');
+                END
+            SQL);
+            DB::statement(<<<'SQL'
+                CREATE TRIGGER stock_movements_non_zero_quantity_update
+                BEFORE UPDATE OF quantity_delta ON stock_movements
+                WHEN NEW.quantity_delta = 0
+                BEGIN
+                    SELECT RAISE(ABORT, 'stock movement quantity must be non-zero');
+                END
+            SQL);
+
+            return;
+        }
+
         DB::statement(<<<'SQL'
             ALTER TABLE stock_movements
             ADD CONSTRAINT stock_movements_non_zero_quantity_check

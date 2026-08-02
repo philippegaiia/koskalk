@@ -37,6 +37,10 @@ return new class extends Migration
             $table->index(['workspace_id', 'supplier_id', 'is_active']);
         });
 
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement(<<<'SQL'
             ALTER TABLE supplier_listings
             ADD CONSTRAINT supplier_listings_exact_subject_check

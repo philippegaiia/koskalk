@@ -40,6 +40,10 @@ return new class extends Migration
             $table->index(['workspace_id', 'user_packaging_item_id', 'status'], 'stock_lots_workspace_packaging_status_index');
         });
 
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         DB::statement(<<<'SQL'
             ALTER TABLE stock_lots
             ADD CONSTRAINT stock_lots_exact_subject_check

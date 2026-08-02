@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\ListingPriceBasis;
 use App\Models\Ingredient;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
@@ -27,11 +28,16 @@ class PurchaseOrderLineFactory extends Factory
             'ingredient_id' => Ingredient::factory(),
             'packaging_item_id' => null,
             'supplier_sku' => fake()->bothify('SKU-####'),
+            'supplier_item_name' => null,
             'listing_name' => '5 kg pail',
             'unit_kind' => StockUnitKind::Mass,
             'ordered_packs' => 1,
             'canonical_quantity_per_pack' => '5000',
             'pack_price' => '50',
+            'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'price_amount' => '50',
+            'price_unit' => null,
+            'price_recorded_at' => now(),
             'currency' => 'EUR',
             'expected_quantity' => '5000',
             'expected_cost' => '50',

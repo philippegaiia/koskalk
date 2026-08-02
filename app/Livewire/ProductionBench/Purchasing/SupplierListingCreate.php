@@ -365,7 +365,9 @@ class SupplierListingCreate extends Component implements HasForms
                             ->options($this->currencyOptions())
                             ->searchable()
                             ->required()
-                            ->live(),
+                            ->disabled()
+                            ->dehydrated()
+                            ->helperText(__('production_bench.listing.currency_help')),
                         TextEntry::make('price_preview')
                             ->label(__('production_bench.listing.calculated_price'))
                             ->state(fn (): string => $this->pricePreviewText())

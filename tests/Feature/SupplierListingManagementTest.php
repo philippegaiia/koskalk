@@ -174,6 +174,50 @@ it('rejects unsupported listing currencies at the action boundary', function ():
         ->and(SupplierListing::query()->count())->toBe(0);
 });
 
+it('rejects a listing currency that differs from its supplier currency', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $ingredient = Ingredient::factory()->create();
+    $packagingItem = PackagingItem::factory()->for($workspace)->create();
+
+    foreach ([$ingredient, $packagingItem] as $subject) {
+        $exception = captureValidationException(
+            fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
+                $owner,
+                $workspace,
+                $supplier,
+                $subject,
+                listingAttributes(['currency' => 'USD']),
+            ),
+        );
+
+        expect($exception)->toBeInstanceOf(ValidationException::class)
+            ->and($exception?->errors())->toHaveKey('currency');
+    }
+
+    expect(SupplierListing::query()->count())->toBe(0);
+});
+
+it('rejects changing a supplier currency while it has listings', function (): void {
+    [$owner, $workspace] = activePurchasingWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for(Ingredient::factory()->create())
+        ->create(['currency' => 'EUR']);
+
+    $exception = captureValidationException(
+        fn (): Supplier => app(SaveSupplier::class)->handle($owner, $workspace, [
+            'default_currency' => 'USD',
+        ], $supplier),
+    );
+
+    expect($exception)->toBeInstanceOf(ValidationException::class)
+        ->and($exception?->errors())->toHaveKey('default_currency')
+        ->and($supplier->fresh()?->default_currency)->toBe('EUR');
+});
+
 it('preserves only the unchanged historical currency exception when updating a listing', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);

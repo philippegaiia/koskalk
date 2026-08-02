@@ -117,7 +117,16 @@ class SupplierEdit extends Component implements HasForms
             Section::make(__('production_bench.supplier.singular'))->compact()->columns(['md' => 2])->schema([
                 TextInput::make('code')->label(__('production_bench.supplier.code'))->helperText(__('production_bench.supplier.code_help'))->required()->maxLength(16)->regex('/^[A-Za-z0-9_-]+$/')->mutateStateForValidationUsing(fn (?string $state): string => Str::upper(trim((string) $state)))->dehydrateStateUsing(fn (?string $state): string => Str::upper(trim((string) $state))),
                 TextInput::make('name')->label(__('production_bench.common.name'))->required()->maxLength(255)->autocomplete('organization'),
-                Select::make('default_currency')->label(__('production_bench.common.currency'))->options($this->currencyOptions())->searchable()->required(),
+                Select::make('default_currency')
+                    ->label(__('production_bench.common.currency'))
+                    ->options($this->currencyOptions())
+                    ->searchable()
+                    ->required()
+                    ->disabled(fn (): bool => $this->supplier instanceof Supplier && $this->supplier->listings()->exists())
+                    ->dehydrated()
+                    ->helperText(fn (): ?string => $this->supplier instanceof Supplier && $this->supplier->listings()->exists()
+                        ? __('production_bench.supplier.currency_locked_help')
+                        : null),
                 Toggle::make('is_active')->label(__('production_bench.common.active')),
             ]),
             Section::make(__('production_bench.supplier.main_contact'))->compact()->columns(['md' => 2])->schema([

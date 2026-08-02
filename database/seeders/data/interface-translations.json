@@ -8041,6 +8041,17 @@
         },
         {
             "group": "production_bench",
+            "key": "listing.currency_help",
+            "text": {
+                "de": "Verwendet die Währung des Lieferanten.",
+                "es": "Usa la moneda del proveedor.",
+                "fr": "Utilise la devise du fournisseur.",
+                "it": "Usa la valuta del fornitore.",
+                "nl": "Gebruikt de valuta van de leverancier."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "listing.deactivated",
             "text": {
                 "de": "Der Lieferantenartikel wird in Bestands- oder Einkaufsbelegen verwendet und wurde deaktiviert.",
@@ -8525,6 +8536,17 @@
         },
         {
             "group": "production_bench",
+            "key": "navigation.purchase_orders",
+            "text": {
+                "de": "Bestellungen",
+                "es": "Órdenes de compra",
+                "fr": "Bons de commande",
+                "it": "Ordini di acquisto",
+                "nl": "Inkooporders"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "navigation.purchasing",
             "text": {
                 "de": "Einkauf",
@@ -8532,6 +8554,17 @@
                 "fr": "Achats",
                 "it": "Acquisti",
                 "nl": "Inkoop"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.quotation_requests",
+            "text": {
+                "de": "Angebotsanfragen",
+                "es": "Solicitudes de cotización",
+                "fr": "Demandes de devis",
+                "it": "Richieste di preventivo",
+                "nl": "Offerteaanvragen"
             }
         },
         {
@@ -8554,6 +8587,545 @@
                 "fr": "Fournisseurs",
                 "it": "Fornitori",
                 "nl": "Leveranciers"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.choose_quotation",
+            "text": {
+                "de": "Eine ausgestellte Angebotsanfrage auswählen",
+                "es": "Elegir una solicitud de cotización emitida",
+                "fr": "Choisir une demande de devis émise",
+                "it": "Scegli una richiesta di preventivo emessa",
+                "nl": "Kies een uitgegeven offerteaanvraag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.choose_supplier",
+            "text": {
+                "de": "Lieferant auswählen",
+                "es": "Elegir un proveedor",
+                "fr": "Choisir un fournisseur",
+                "it": "Scegli un fornitore",
+                "nl": "Kies een leverancier"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.confirm_prices_before_issue",
+            "text": {
+                "de": "Bestätigen Sie vor der Ausgabe dieser Bestellung einen Preis für jede Position.",
+                "es": "Confirma un precio para cada línea antes de emitir esta orden de compra.",
+                "fr": "Confirmez un prix pour chaque ligne avant d’émettre ce bon de commande.",
+                "it": "Conferma un prezzo per ogni riga prima di emettere questo ordine di acquisto.",
+                "nl": "Bevestig voor elke regel een prijs voordat u deze inkooporder uitgeeft."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.convert",
+            "text": {
+                "de": "In Bestellung umwandeln",
+                "es": "Convertir en orden de compra",
+                "fr": "Convertir en bon de commande",
+                "it": "Converti in ordine di acquisto",
+                "nl": "Omzetten naar inkooporder"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.convert_missing_prices",
+            "text": {
+                "de": "Einige angeforderte Artikel haben noch keinen Preis. Mit der Bestellung fortfahren und die zurückgemeldeten Preise dort speichern?",
+                "es": "Algunos artículos solicitados aún no tienen precio. ¿Continuar con la orden de compra y guardar allí los precios recibidos?",
+                "fr": "Certains articles demandés n’ont pas encore de prix. Continuer vers le bon de commande et y enregistrer les prix retournés ?",
+                "it": "Alcuni articoli richiesti non hanno ancora un prezzo. Continuare con l’ordine di acquisto e salvare lì i prezzi ricevuti?",
+                "nl": "Sommige aangevraagde artikelen hebben nog geen prijs. Doorgaan naar de inkooporder en de ontvangen prijzen daar opslaan?"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.converted",
+            "text": {
+                "de": "In eine Bestellung umgewandelt.",
+                "es": "Convertida en orden de compra.",
+                "fr": "Convertie en bon de commande.",
+                "it": "Convertita in ordine di acquisto.",
+                "nl": "Omgezet naar inkooporder."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.copied",
+            "text": {
+                "de": "Kopiert",
+                "es": "Copiado",
+                "fr": "Copié",
+                "it": "Copiato",
+                "nl": "Gekopieerd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.copy",
+            "text": {
+                "de": "Kopieren",
+                "es": "Copiar",
+                "fr": "Copier",
+                "it": "Copia",
+                "nl": "Kopiëren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.create_draft",
+            "text": {
+                "de": "Entwurf erstellen",
+                "es": "Crear borrador",
+                "fr": "Créer le brouillon",
+                "it": "Crea bozza",
+                "nl": "Concept maken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.delivery_and_totals",
+            "text": {
+                "de": "Lieferung und Summen",
+                "es": "Entrega y totales",
+                "fr": "Livraison et totaux",
+                "it": "Consegna e totali",
+                "nl": "Levering en totalen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.discount",
+            "text": {
+                "de": "Rabatt",
+                "es": "Descuento",
+                "fr": "Remise",
+                "it": "Sconto",
+                "nl": "Korting"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.document",
+            "text": {
+                "de": "Beschaffungsdokument",
+                "es": "Documento de compra",
+                "fr": "Document achat",
+                "it": "Documento di acquisto",
+                "nl": "Inkoopdocument"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.draft",
+            "text": {
+                "de": "Entwurf",
+                "es": "Borrador",
+                "fr": "Brouillon",
+                "it": "Bozza",
+                "nl": "Concept"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.email_text",
+            "text": {
+                "de": "E-Mail-Text",
+                "es": "Texto del correo",
+                "fr": "Texte du courriel",
+                "it": "Testo email",
+                "nl": "E-mailtekst"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.expected_date",
+            "text": {
+                "de": "Erwartetes Datum",
+                "es": "Fecha prevista",
+                "fr": "Date prévue",
+                "it": "Data prevista",
+                "nl": "Verwachte datum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.from_quotation",
+            "text": {
+                "de": "Aus einer Angebotsanfrage",
+                "es": "Desde una solicitud de cotización",
+                "fr": "À partir d’une demande de devis",
+                "it": "Da una richiesta di preventivo",
+                "nl": "Vanuit een offerteaanvraag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.from_quotation_help",
+            "text": {
+                "de": "Lieferant und Positionen wiederverwenden. Fehlende Preise in der Bestellung bestätigen.",
+                "es": "Reutiliza el proveedor y las líneas. Confirma los precios que falten en la orden.",
+                "fr": "Réutilisez le fournisseur et les lignes. Confirmez les prix manquants sur le bon de commande.",
+                "it": "Riutilizza fornitore e righe. Conferma i prezzi mancanti nell’ordine.",
+                "nl": "Hergebruik leverancier en regels. Bevestig ontbrekende prijzen op de inkooporder."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.issue_order",
+            "text": {
+                "de": "Bestellung ausgeben",
+                "es": "Emitir orden de compra",
+                "fr": "Émettre le bon de commande",
+                "it": "Emetti ordine di acquisto",
+                "nl": "Inkooporder uitgeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.issue_quotation",
+            "text": {
+                "de": "Angebotsanfrage senden",
+                "es": "Emitir solicitud de cotización",
+                "fr": "Émettre la demande de devis",
+                "it": "Emetti richiesta di preventivo",
+                "nl": "Offerteaanvraag uitgeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.item",
+            "text": {
+                "de": "Artikel",
+                "es": "Artículo",
+                "fr": "Article",
+                "it": "Articolo",
+                "nl": "Artikel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.mixed_currencies",
+            "text": {
+                "de": "Alle ausgewählten Einkaufsformate müssen dieselbe Währung verwenden.",
+                "es": "Todos los formatos de compra seleccionados deben usar la misma moneda.",
+                "fr": "Tous les formats d’achat sélectionnés doivent utiliser la même devise.",
+                "it": "Tutti i formati di acquisto selezionati devono usare la stessa valuta.",
+                "nl": "Alle geselecteerde inkoopformaten moeten dezelfde valuta gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.new_order",
+            "text": {
+                "de": "Neue Bestellung",
+                "es": "Nueva orden de compra",
+                "fr": "Nouveau bon de commande",
+                "it": "Nuovo ordine di acquisto",
+                "nl": "Nieuwe inkooporder"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.new_quotation",
+            "text": {
+                "de": "Neue Angebotsanfrage",
+                "es": "Nueva solicitud de cotización",
+                "fr": "Nouvelle demande de devis",
+                "it": "Nuova richiesta di preventivo",
+                "nl": "Nieuwe offerteaanvraag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.no_orders",
+            "text": {
+                "de": "Keine Bestellungen.",
+                "es": "No hay órdenes de compra.",
+                "fr": "Aucun bon de commande.",
+                "it": "Nessun ordine di acquisto.",
+                "nl": "Geen inkooporders."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.no_quotations",
+            "text": {
+                "de": "Keine Angebotsanfragen.",
+                "es": "No hay solicitudes de cotización.",
+                "fr": "Aucune demande de devis.",
+                "it": "Nessuna richiesta di preventivo.",
+                "nl": "Geen offerteaanvragen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.open",
+            "text": {
+                "de": "Öffnen",
+                "es": "Abrir",
+                "fr": "Ouvrir",
+                "it": "Apri",
+                "nl": "Openen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.or_direct_order",
+            "text": {
+                "de": "Oder eine Direktbestellung erstellen",
+                "es": "O crear una orden directa",
+                "fr": "Ou créer une commande directe",
+                "it": "Oppure crea un ordine diretto",
+                "nl": "Of maak een directe bestelling"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.per_unit",
+            "text": {
+                "de": "Pro Einheit",
+                "es": "Por unidad",
+                "fr": "Par unité",
+                "it": "Per unità",
+                "nl": "Per eenheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.price",
+            "text": {
+                "de": "Preis",
+                "es": "Precio",
+                "fr": "Prix",
+                "it": "Prezzo",
+                "nl": "Prijs"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.price_basis",
+            "text": {
+                "de": "Preisbasis",
+                "es": "Base de precio",
+                "fr": "Base de prix",
+                "it": "Base del prezzo",
+                "nl": "Prijsbasis"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.prices_needed",
+            "text": {
+                "de": "Preise erforderlich",
+                "es": "Faltan precios",
+                "fr": "Prix requis",
+                "it": "Prezzi richiesti",
+                "nl": "Prijzen nodig"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.print_pdf",
+            "text": {
+                "de": "Drucken / Als PDF speichern",
+                "es": "Imprimir / Guardar PDF",
+                "fr": "Imprimer / Enregistrer en PDF",
+                "it": "Stampa / Salva PDF",
+                "nl": "Afdrukken / Opslaan als PDF"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.purchase_format",
+            "text": {
+                "de": "Einkaufsformat",
+                "es": "Formato de compra",
+                "fr": "Format achat",
+                "it": "Formato di acquisto",
+                "nl": "Inkoopformaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.purchase_formats",
+            "text": {
+                "de": "Einkaufsformate",
+                "es": "Formatos de compra",
+                "fr": "Formats achat",
+                "it": "Formati di acquisto",
+                "nl": "Inkoopformaten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.purchase_order",
+            "text": {
+                "de": "Bestellung",
+                "es": "Orden de compra",
+                "fr": "Bon de commande",
+                "it": "Ordine di acquisto",
+                "nl": "Inkooporder"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.purchase_orders",
+            "text": {
+                "de": "Bestellungen",
+                "es": "Órdenes de compra",
+                "fr": "Bons de commande",
+                "it": "Ordini di acquisto",
+                "nl": "Inkooporders"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.quantity",
+            "text": {
+                "de": "Menge",
+                "es": "Cantidad",
+                "fr": "Quantité",
+                "it": "Quantità",
+                "nl": "Aantal"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.quotation_detail_help",
+            "text": {
+                "de": "Prüfen Sie jeden angeforderten Artikel, senden Sie die Anfrage an den Lieferanten und tragen Sie anschließend den zurückgemeldeten Preis ein, bevor Sie sie in eine Bestellung umwandeln.",
+                "es": "Revisa cada artículo solicitado, envía la solicitud al proveedor y registra después el precio recibido antes de convertirla en una orden de compra.",
+                "fr": "Vérifiez chaque article demandé, envoyez la demande au fournisseur, puis saisissez le prix retourné avant de la convertir en bon de commande.",
+                "it": "Verifica ogni articolo richiesto, invia la richiesta al fornitore e inserisci il prezzo ricevuto prima di convertirla in un ordine di acquisto.",
+                "nl": "Controleer elk gevraagd artikel, stuur de aanvraag naar de leverancier en leg daarna de ontvangen prijs vast voordat u deze omzet naar een inkooporder."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.quotation_needs_prices",
+            "text": {
+                "de": "Erfassen Sie zuerst für jede Angebotsposition einen Preis.",
+                "es": "Registra primero un precio en cada línea de cotización.",
+                "fr": "Enregistrez d’abord un prix sur chaque ligne du devis.",
+                "it": "Registra prima un prezzo per ogni riga del preventivo.",
+                "nl": "Leg eerst een prijs vast voor elke offerteregel."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.quotation_request",
+            "text": {
+                "de": "Angebotsanfrage",
+                "es": "Solicitud de cotización",
+                "fr": "Demande de devis",
+                "it": "Richiesta di preventivo",
+                "nl": "Offerteaanvraag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.quotation_requests",
+            "text": {
+                "de": "Angebotsanfragen",
+                "es": "Solicitudes de cotización",
+                "fr": "Demandes de devis",
+                "it": "Richieste di preventivo",
+                "nl": "Offerteaanvragen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.quotation_unavailable",
+            "text": {
+                "de": "Diese Angebotsanfrage ist nicht verfügbar.",
+                "es": "Esta solicitud de cotización no está disponible.",
+                "fr": "Cette demande de devis n’est pas disponible.",
+                "it": "Questa richiesta di preventivo non è disponibile.",
+                "nl": "Deze offerteaanvraag is niet beschikbaar."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.reference",
+            "text": {
+                "de": "Referenz",
+                "es": "Referencia",
+                "fr": "Référence",
+                "it": "Riferimento",
+                "nl": "Referentie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.save_price",
+            "text": {
+                "de": "Preis speichern",
+                "es": "Guardar precio",
+                "fr": "Enregistrer le prix",
+                "it": "Salva prezzo",
+                "nl": "Prijs opslaan"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.shipping",
+            "text": {
+                "de": "Versand",
+                "es": "Envío",
+                "fr": "Livraison",
+                "it": "Spedizione",
+                "nl": "Verzending"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.tax",
+            "text": {
+                "de": "Steuer",
+                "es": "Impuesto",
+                "fr": "Taxe",
+                "it": "Imposta",
+                "nl": "Belasting"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.total_format",
+            "text": {
+                "de": "Gesamtes Einkaufsformat",
+                "es": "Formato de compra total",
+                "fr": "Total du format achat",
+                "it": "Totale formato di acquisto",
+                "nl": "Totaal inkoopformaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.unit",
+            "text": {
+                "de": "Einheit",
+                "es": "Unidad",
+                "fr": "Unité",
+                "it": "Unità",
+                "nl": "Eenheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "procurement.use_quotation",
+            "text": {
+                "de": "Angebotsanfrage verwenden",
+                "es": "Usar solicitud de cotización",
+                "fr": "Utiliser la demande de devis",
+                "it": "Usa richiesta di preventivo",
+                "nl": "Offerteaanvraag gebruiken"
             }
         },
         {
@@ -8642,6 +9214,17 @@
                 "fr": "Code pays",
                 "it": "Codice paese",
                 "nl": "Landcode"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "supplier.currency_locked_help",
+            "text": {
+                "de": "Die Währung ist gesperrt, solange Lieferantenangebote vorhanden sind.",
+                "es": "La moneda está bloqueada mientras existan formatos de proveedor.",
+                "fr": "La devise est verrouillée tant que des formats fournisseur existent.",
+                "it": "La valuta è bloccata finché esistono formati del fornitore.",
+                "nl": "De valuta is vergrendeld zolang er leveranciersformaten bestaan."
             }
         },
         {

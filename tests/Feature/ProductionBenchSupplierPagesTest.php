@@ -55,11 +55,11 @@ it('protects focused purchasing pages and renders each job separately', function
         ->assertDontSee('UOM')
         ->assertDontSee('quarantine')
         ->assertDontSee('Coming later')
-        ->assertDontSee('Quotation requests')
-        ->assertDontSee('Purchase orders')
+        ->assertSee('Quotation requests')
+        ->assertSee('Purchase orders')
         ->assertDontSee('Receipts')
-        ->assertDontSeeHtml('href="'.route('production-bench.purchasing.suppliers').'/quotation-requests"')
-        ->assertDontSeeHtml('href="'.route('production-bench.purchasing.suppliers').'/purchase-orders"')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.quotations').'"')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.orders').'"')
         ->assertDontSeeHtml('href="'.route('production-bench.purchasing.suppliers').'/receipts"');
 });
 
@@ -182,7 +182,7 @@ it('does not allow supplier deletion across workspaces or from a read-only bench
     $this->assertModelExists($foreignSupplier);
 });
 
-it('keeps supplier and listing browse pages operational and free of future feature copy', function (): void {
+it('keeps supplier and listing browse pages operational without receipt copy', function (): void {
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
     $this->actingAs($owner);
@@ -203,8 +203,8 @@ it('keeps supplier and listing browse pages operational and free of future featu
             ->assertDontSee('the supplier you buy from')
             ->assertDontSee('Coming later')
             ->assertDontSee('coming later')
-            ->assertDontSee('Quotation requests')
-            ->assertDontSee('Purchase orders')
+            ->assertSee('Quotation requests')
+            ->assertSee('Purchase orders')
             ->assertDontSee('Receipts');
     }
 
@@ -264,6 +264,26 @@ it('does not expose supplier listing creation controls on the detail page', func
         ->assertDontSee('Material type')
         ->assertDontSee('Price preview')
         ->assertDontSee('Save supplier listing');
+});
+
+it('locks supplier and listing currencies once the supplier has a listing', function (): void {
+    [$owner, $workspace] = activeSupplierPagesWorkspace();
+    $this->actingAs($owner);
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $ingredient = Ingredient::factory()->create();
+    SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create(['currency' => 'EUR']);
+
+    Livewire::test(SupplierEdit::class, ['supplier' => $supplier->public_id])
+        ->assertFormFieldDisabled('default_currency')
+        ->assertSee('Currency is locked while supplier listings exist.');
+
+    Livewire::test(SupplierListingCreate::class, ['supplier' => $supplier->public_id])
+        ->assertFormFieldDisabled('currency')
+        ->assertSee('Uses the supplier currency.');
 });
 
 it('shows entered and derived prices for total and per-unit supplier listings', function (): void {

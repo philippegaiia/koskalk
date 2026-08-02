@@ -137,7 +137,21 @@ class SaveSupplier
             'contact_name' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:255'],
-            'default_currency' => ['required', 'string', 'size:3', Rule::in(array_unique($allowedCurrencies))],
+            'default_currency' => [
+                'required',
+                'string',
+                'size:3',
+                Rule::in(array_unique($allowedCurrencies)),
+                function (string $attribute, mixed $value, Closure $fail) use ($supplier): void {
+                    if (
+                        $supplier instanceof Supplier
+                        && strtoupper($supplier->default_currency) !== strtoupper((string) $value)
+                        && $supplier->listings()->exists()
+                    ) {
+                        $fail('The supplier currency cannot be changed while supplier listings exist.');
+                    }
+                },
+            ],
             'notes' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
         ])->validate();

@@ -14,6 +14,7 @@ use App\Http\Controllers\MediaAssetPickerMutationController;
 use App\Http\Controllers\MediaAssetStatusController;
 use App\Http\Controllers\MediaLibraryController;
 use App\Http\Controllers\PackagingItemController;
+use App\Http\Controllers\ProcurementDocumentController;
 use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeMediaController;
@@ -160,5 +161,12 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/purchasing/listings/new', 'production-bench.purchasing.supplier-listing-create')->name('purchasing.listings.create');
             Route::view('/purchasing/listings/{listing}/edit', 'production-bench.purchasing.supplier-listing-create')->name('purchasing.listings.edit');
             Route::view('/purchasing/listings', 'production-bench.purchasing.listings')->name('purchasing.listings');
+            Route::view('/purchasing/quotation-requests', 'production-bench.purchasing.quotations')->name('purchasing.quotations');
+            Route::view('/purchasing/quotation-requests/new', 'production-bench.purchasing.quotation-create')->name('purchasing.quotations.create');
+            Route::view('/purchasing/purchase-orders', 'production-bench.purchasing.orders')->name('purchasing.orders');
+            Route::view('/purchasing/purchase-orders/new', 'production-bench.purchasing.order-create')->name('purchasing.orders.create');
+            Route::view('/purchasing/procurement/{purchaseOrder}', 'production-bench.purchasing.procurement-detail')->name('purchasing.procurement.show');
+            Route::get('/purchasing/documents/{purchaseOrder}/print', [ProcurementDocumentController::class, 'show'])
+                ->name('purchasing.documents.print');
         });
 });

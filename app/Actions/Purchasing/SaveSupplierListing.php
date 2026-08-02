@@ -17,6 +17,7 @@ use App\Services\CurrentMaterialPriceService;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\StockUnitKind;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -216,7 +217,23 @@ class SaveSupplierListing
             'organic_status' => ['nullable', Rule::enum(OrganicStatus::class)],
             'notes' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
-            'currency' => ['required', 'string', 'size:3', Rule::in(array_unique($allowedCurrencies))],
+            'currency' => [
+                'required',
+                'string',
+                'size:3',
+                Rule::in(array_unique($allowedCurrencies)),
+                function (string $attribute, mixed $value, Closure $fail) use ($listing, $supplier): void {
+                    $currency = strtoupper((string) $value);
+
+                    if ($listing instanceof SupplierListing && strtoupper($listing->currency) === $currency) {
+                        return;
+                    }
+
+                    if ($currency !== strtoupper($supplier->default_currency)) {
+                        $fail('The currency must match the supplier currency.');
+                    }
+                },
+            ],
             'price_recorded_at' => ['nullable', 'date'],
         ])->validate();
 

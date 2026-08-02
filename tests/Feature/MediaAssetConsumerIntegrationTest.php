@@ -658,6 +658,7 @@ it('removes usage rows when a consumer is deleted but retains the shared asset',
     $service->syncSingle($user, $packaging, MediaAssetUsageRole::PackagingMain, $asset->id);
 
     $ingredient->delete();
+    $packaging->currentPrice()->delete();
     $packaging->delete();
     $recipe->delete();
 

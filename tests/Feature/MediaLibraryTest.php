@@ -372,12 +372,12 @@ it('shows usage details for recipes, ingredients, and packaging items', function
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
     $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Honey soap']);
     $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id, 'display_name' => 'Beeswax']);
-    $packagingItem = new PackagingItem;
-    $packagingItem->user_id = $user->id;
-    $packagingItem->name = 'Amber jar';
-    $packagingItem->unit_cost = 1;
-    $packagingItem->currency = 'EUR';
-    $packagingItem->save();
+    $packagingItem = createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Amber jar',
+        'unit_cost' => 1,
+        'currency' => 'EUR',
+    ]);
 
     MediaAssetUsage::factory()->create([
         'media_asset_id' => $asset->id,

@@ -3402,17 +3402,6 @@
         },
         {
             "group": "ingredients",
-            "key": "editor.supplier.name",
-            "text": {
-                "de": "Lieferant",
-                "es": "Proveedor",
-                "fr": "Fournisseur",
-                "it": "Fornitore",
-                "nl": "Leverancier"
-            }
-        },
-        {
-            "group": "ingredients",
             "key": "editor.supplier.organic",
             "text": {
                 "de": "Bio-zertifiziert",
@@ -3431,17 +3420,6 @@
                 "fr": "Activez cette option lorsque l’ingrédient est certifié biologique.",
                 "it": "Attiva questa opzione quando l’ingrediente è certificato biologico.",
                 "nl": "Schakel dit in wanneer het ingrediënt biologisch gecertificeerd is."
-            }
-        },
-        {
-            "group": "ingredients",
-            "key": "editor.supplier.reference",
-            "text": {
-                "de": "Lieferantenreferenz",
-                "es": "Referencia del proveedor",
-                "fr": "Référence fournisseur",
-                "it": "Riferimento del fornitore",
-                "nl": "Leveranciersreferentie"
             }
         },
         {

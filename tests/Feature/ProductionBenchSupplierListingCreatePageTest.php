@@ -48,6 +48,9 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertSee('Calculated price')
         ->assertSee('Purchase formats per order.')
         ->assertSee('Save supplier listing')
+        ->assertSeeHtml('data-production-bench-save-bar')
+        ->assertSeeHtml('fixed bottom-0 left-0 right-0')
+        ->assertSeeHtml('pb-24')
         ->assertSeeHtml('class="fi-section')
         ->assertSee('data.supplier_id', escape: false)
         ->assertSeeHtml('inputmode="decimal"')
@@ -180,6 +183,9 @@ it('opens an existing workspace listing in the edit form', function (): void {
         ->assertOk()
         ->assertSee('Edit supplier listing')
         ->assertSee('Olive oil')
+        ->assertSeeHtml('data-production-bench-save-bar')
+        ->assertSeeHtml('fixed bottom-0 left-0 right-0')
+        ->assertSeeHtml('pb-24')
         ->assertSee('OLVEA · Olvea');
 
     $this->get('/dashboard/production-bench/purchasing/listings')

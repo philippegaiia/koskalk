@@ -37,6 +37,9 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertSee('Cancel')
         ->assertSeeHtml('class="fi-section')
         ->assertSeeHtml('wire:model="data.code"')
+        ->assertSeeHtml('data-production-bench-save-bar')
+        ->assertSeeHtml('fixed bottom-0 left-0 right-0')
+        ->assertSeeHtml('pb-24')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers').'"')
         ->assertSeeHtml('maxlength="16"')
         ->assertSee('A-Z, 0-9, - or _, max 16.')
@@ -118,6 +121,9 @@ it('edits a workspace supplier without changing its public id', function (): voi
         ->assertSee('Edit supplier')
         ->assertSee('OLD_CODE')
         ->assertSee('Old name')
+        ->assertSeeHtml('data-production-bench-save-bar')
+        ->assertSeeHtml('fixed bottom-0 left-0 right-0')
+        ->assertSeeHtml('pb-24')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.supplier', $supplier).'"');
 
     expect(substr_count($response->getContent(), '>Cancel</a>'))->toBe(1)

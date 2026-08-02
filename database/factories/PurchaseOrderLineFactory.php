@@ -25,7 +25,7 @@ class PurchaseOrderLineFactory extends Factory
             'purchase_order_id' => PurchaseOrder::factory(),
             'supplier_listing_id' => SupplierListing::factory(),
             'ingredient_id' => Ingredient::factory(),
-            'user_packaging_item_id' => null,
+            'packaging_item_id' => null,
             'supplier_sku' => fake()->bothify('SKU-####'),
             'listing_name' => '5 kg pail',
             'unit_kind' => StockUnitKind::Mass,

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPublicId;
+use App\OrganicStatus;
 use App\StockLotOrigin;
 use App\StockLotStatus;
 use App\StockUnitKind;
@@ -17,7 +18,9 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 #[Fillable([
     'workspace_id',
     'ingredient_id',
-    'user_packaging_item_id',
+    'packaging_item_id',
+    'supplier_listing_id',
+    'organic_status',
     'internal_lot_code',
     'supplier_batch_number',
     'origin',
@@ -46,6 +49,7 @@ class StockLot extends Model
         'unit_kind' => StockUnitKind::Mass->value,
         'status' => StockLotStatus::Quarantined->value,
         'provenance_complete' => false,
+        'organic_status' => OrganicStatus::Unknown->value,
     ];
 
     public function workspace(): BelongsTo
@@ -60,7 +64,12 @@ class StockLot extends Model
 
     public function packagingItem(): BelongsTo
     {
-        return $this->belongsTo(UserPackagingItem::class, 'user_packaging_item_id');
+        return $this->belongsTo(PackagingItem::class, 'packaging_item_id');
+    }
+
+    public function supplierListing(): BelongsTo
+    {
+        return $this->belongsTo(SupplierListing::class);
     }
 
     public function releasedBy(): BelongsTo
@@ -97,6 +106,7 @@ class StockLot extends Model
             'released_at' => 'datetime',
             'provenance_complete' => 'boolean',
             'historical_unit_cost' => 'decimal:9',
+            'organic_status' => OrganicStatus::class,
         ];
     }
 }

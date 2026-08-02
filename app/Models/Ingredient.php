@@ -31,13 +31,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'category',
     'display_name',
     'inci_name',
-    'supplier_name',
-    'supplier_reference',
     'soap_inci_naoh_name',
     'soap_inci_koh_name',
     'cas_number',
     'ec_number',
-    'is_organic',
+    'notes',
     'unit',
     'owner_type',
     'owner_id',
@@ -153,15 +151,17 @@ class Ingredient extends Model
         return $this->hasMany(IfraCertificate::class);
     }
 
-    public function userPrices(): HasMany
+    public function currentPrices(): HasMany
     {
-        return $this->hasMany(UserIngredientPrice::class);
+        return $this->hasMany(CurrentMaterialPrice::class);
     }
 
     protected function userPricePerKg(): Attribute
     {
         return Attribute::make(
-            get: fn () => $this->userPrices->first()?->price_per_kg,
+            get: fn () => $this->currentPrices->first()?->price_per_canonical_unit === null
+                ? null
+                : bcmul($this->currentPrices->first()->price_per_canonical_unit, '1000', 12),
             set: fn () => [],
         );
     }
@@ -380,7 +380,6 @@ class Ingredient extends Model
             'category' => IngredientCategory::class,
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
-            'is_organic' => 'bool',
             'is_potentially_saponifiable' => 'bool',
             'requires_admin_review' => 'bool',
             'is_active' => 'bool',

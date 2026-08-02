@@ -7,7 +7,7 @@ export function createPackagingSection() {
                 ...this.packagingPlanRows,
                 {
                     id: this.makeLocalPackagingPlanRowId(),
-                    user_packaging_item_id: packagingItem?.id ?? null,
+                    packaging_item_id: packagingItem?.id ?? null,
                     name: packagingItem?.name ?? '',
                     components_per_unit: 1,
                     notes: '',

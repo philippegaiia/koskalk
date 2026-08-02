@@ -6,7 +6,6 @@ use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Visibility;
@@ -39,7 +38,7 @@ function createPublicIdRecords(): array
     ]);
     $batch = ProductionBatch::factory()->for($owner)->for($recipe)->for($version, 'recipeVersion')->create();
     $ingredient = Ingredient::factory()->create();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $owner->id,
         'name' => 'Private carton',
         'unit_cost' => 1,

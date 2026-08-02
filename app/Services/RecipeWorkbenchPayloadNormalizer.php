@@ -253,7 +253,7 @@ class RecipeWorkbenchPayloadNormalizer
 
     /**
      * @return array<int, array{
-     *     user_packaging_item_id: int|null,
+     *     packaging_item_id: int|null,
      *     name: string,
      *     components_per_unit: float,
      *     notes: string|null,
@@ -266,8 +266,8 @@ class RecipeWorkbenchPayloadNormalizer
             ->filter(fn (mixed $row): bool => is_array($row))
             ->map(function (array $row): array {
                 return [
-                    'user_packaging_item_id' => isset($row['user_packaging_item_id']) && is_numeric($row['user_packaging_item_id'])
-                        ? (int) $row['user_packaging_item_id']
+                    'packaging_item_id' => isset($row['packaging_item_id']) && is_numeric($row['packaging_item_id'])
+                        ? (int) $row['packaging_item_id']
                         : null,
                     'name' => trim((string) ($row['name'] ?? '')),
                     'components_per_unit' => round(max(0, (float) ($row['components_per_unit'] ?? $row['quantity'] ?? 1)), 3),

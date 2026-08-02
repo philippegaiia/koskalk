@@ -3,10 +3,10 @@
 use App\IngredientCategory;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\MassDisplaySystem;
+use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\Plan;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\IngredientFormulaUsageService;
@@ -38,13 +38,7 @@ it('shows platform ingredients whether or not the user has priced them', functio
         'is_active' => true,
     ]);
 
-    UserIngredientPrice::query()->create([
-        'user_id' => $user->id,
-        'ingredient_id' => $olive->id,
-        'price_per_kg' => 5.2500,
-        'currency' => 'EUR',
-        'last_used_at' => now(),
-    ]);
+    rememberIngredientPriceForWorkspace($user, $olive, '5.25', 'EUR');
 
     actingAs($user);
 
@@ -101,13 +95,7 @@ it('displays and edits ingredient prices per pound for a US customary workspace'
         'is_active' => true,
     ]);
 
-    UserIngredientPrice::query()->create([
-        'user_id' => $user->id,
-        'ingredient_id' => $ingredient->id,
-        'price_per_kg' => 11.0231,
-        'currency' => 'USD',
-        'last_used_at' => now(),
-    ]);
+    rememberIngredientPriceForWorkspace($user, $ingredient, '11.0231', 'USD');
 
     actingAs($user);
 
@@ -117,10 +105,10 @@ it('displays and edits ingredient prices per pound for a US customary workspace'
         ->assertSeeHtml('value="5.00"')
         ->call('updateIngredientPrice', $ingredient->id, '6.00');
 
-    expect(UserIngredientPrice::query()
-        ->where('user_id', $user->id)
+    expect(bcmul(CurrentMaterialPrice::query()
+        ->where('workspace_id', $user->company()?->id)
         ->where('ingredient_id', $ingredient->id)
-        ->value('price_per_kg'))->toBe('13.2277');
+        ->value('price_per_canonical_unit'), '1000', 4))->toBe('13.2277');
 });
 
 it('renders inline ingredient prices with the users saved English number format', function () {
@@ -132,13 +120,7 @@ it('renders inline ingredient prices with the users saved English number format'
         'is_active' => true,
     ]);
 
-    UserIngredientPrice::query()->create([
-        'user_id' => $user->id,
-        'ingredient_id' => $ingredient->id,
-        'price_per_kg' => 0.1000,
-        'currency' => 'EUR',
-        'last_used_at' => now(),
-    ]);
+    rememberIngredientPriceForWorkspace($user, $ingredient, '0.10', 'EUR');
 
     $this->actingAs($user)
         ->get(route('ingredients.index'))
@@ -319,13 +301,7 @@ it('updates a user ingredient price via the price endpoint', function () {
         'is_active' => true,
     ]);
 
-    UserIngredientPrice::query()->create([
-        'user_id' => $user->id,
-        'ingredient_id' => $olive->id,
-        'price_per_kg' => 5.2500,
-        'currency' => 'EUR',
-        'last_used_at' => now()->subDay(),
-    ]);
+    rememberIngredientPriceForWorkspace($user, $olive, '5.25', 'EUR');
 
     actingAs($user);
 
@@ -336,13 +312,13 @@ it('updates a user ingredient price via the price endpoint', function () {
 
     $response->assertSuccessful();
 
-    $price = UserIngredientPrice::query()
-        ->where('user_id', $user->id)
+    $price = CurrentMaterialPrice::query()
+        ->where('workspace_id', $user->company()?->id)
         ->where('ingredient_id', $olive->id)
         ->first();
 
-    expect((float) $price->price_per_kg)->toBe(6.5);
-    expect($price->last_used_at->isAfter(now()->subMinute()))->toBeTrue();
+    expect((float) bcmul($price->price_per_canonical_unit, '1000', 12))->toBe(6.5);
+    expect($price->recorded_at->isAfter(now()->subMinute()))->toBeTrue();
 });
 
 it('does not allow pricing another users private ingredient through the endpoint', function () {
@@ -364,8 +340,8 @@ it('does not allow pricing another users private ingredient through the endpoint
         'price_per_kg' => '6.5000',
     ])->assertNotFound();
 
-    expect(UserIngredientPrice::query()
-        ->where('user_id', $user->id)
+    expect(CurrentMaterialPrice::query()
+        ->where('workspace_id', $user->company()?->id)
         ->where('ingredient_id', $ingredient->id)
         ->exists())->toBeFalse();
 });
@@ -392,13 +368,13 @@ it('uses the users default currency when creating a price via the price endpoint
         'price_per_kg' => '6.5000',
     ])->assertSuccessful();
 
-    expect(UserIngredientPrice::query()
-        ->where('user_id', $user->id)
+    expect(CurrentMaterialPrice::query()
+        ->where('workspace_id', $user->company()?->id)
         ->where('ingredient_id', $olive->id)
         ->value('currency'))->toBe('USD');
 });
 
-it('preserves an existing price currency when updating via the price endpoint', function () {
+it('uses the workspace currency when updating via the price endpoint', function () {
     $user = User::factory()->create();
     Workspace::factory()->create([
         'owner_user_id' => $user->id,
@@ -413,13 +389,7 @@ it('preserves an existing price currency when updating via the price endpoint', 
         'is_active' => true,
     ]);
 
-    UserIngredientPrice::query()->create([
-        'user_id' => $user->id,
-        'ingredient_id' => $olive->id,
-        'price_per_kg' => 5.2500,
-        'currency' => 'CHF',
-        'last_used_at' => now()->subDay(),
-    ]);
+    rememberIngredientPriceForWorkspace($user, $olive, '5.25', 'CHF');
 
     actingAs($user);
 
@@ -428,10 +398,10 @@ it('preserves an existing price currency when updating via the price endpoint', 
         'price_per_kg' => '6.5000',
     ])->assertSuccessful();
 
-    expect(UserIngredientPrice::query()
-        ->where('user_id', $user->id)
+    expect(CurrentMaterialPrice::query()
+        ->where('workspace_id', $user->company()?->id)
         ->where('ingredient_id', $olive->id)
-        ->value('currency'))->toBe('CHF');
+        ->value('currency'))->toBe('USD');
 });
 
 it('uses the users default currency when creating a price from the ingredient table', function () {
@@ -454,8 +424,8 @@ it('uses the users default currency when creating a price from the ingredient ta
     Livewire::test(IngredientsIndex::class)
         ->call('updateIngredientPrice', $ingredient->id, '7.2500');
 
-    expect(UserIngredientPrice::query()
-        ->where('user_id', $user->id)
+    expect(CurrentMaterialPrice::query()
+        ->where('workspace_id', $user->company()?->id)
         ->where('ingredient_id', $ingredient->id)
         ->value('currency'))->toBe('GBP');
 });

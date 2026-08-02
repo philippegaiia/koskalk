@@ -5,30 +5,28 @@ namespace App\Livewire\ProductionBench;
 use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Actions\Inventory\QuarantineStockLot;
 use App\Actions\Inventory\ReleaseStockLot;
-use App\Models\Ingredient;
 use App\Models\StockLot;
+use App\Models\SupplierListing;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
-use App\StockLotStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
 class InventoryIndex extends Component
 {
-    public string $subjectType = 'ingredient';
-
-    public ?int $subjectId = null;
+    public ?int $supplierListingId = null;
 
     public string $quantity = '';
 
     public string $unit = 'kg';
 
-    public string $status = 'released';
+    public string $pricePerUnit = '';
+
+    public string $currency = '';
 
     public string $supplierBatchNumber = '';
 
@@ -36,44 +34,65 @@ class InventoryIndex extends Component
 
     public string $expiresAt = '';
 
-    public bool $provenanceComplete = false;
-
     public string $notes = '';
 
     public ?string $savedLotCode = null;
 
-    public function updatedSubjectType(): void
+    public function mount(): void
     {
-        $this->subjectId = null;
-        $this->unit = $this->subjectType === 'packaging' ? 'count' : 'kg';
+        $workspace = $this->workspace();
+        $this->unit = $workspace->mass_display_system->priceUnit()->value;
+        $this->currency = $workspace->default_currency;
+    }
+
+    public function updatedSupplierListingId(): void
+    {
+        $listing = $this->selectedListing();
+
+        if (! $listing instanceof SupplierListing) {
+            return;
+        }
+
+        $this->currency = $listing->currency;
+
+        if ($listing->packaging_item_id !== null) {
+            $this->unit = 'count';
+            $this->pricePerUnit = bcdiv($listing->total_price, $listing->canonical_quantity_per_purchase_format, 9);
+
+            return;
+        }
+
+        $this->unit = $this->workspace()->mass_display_system->priceUnit()->value;
+        $pricePerGram = bcdiv($listing->total_price, $listing->canonical_quantity_per_purchase_format, 12);
+        $gramsPerDisplayUnit = app(MassConverter::class)->toGrams('1', $this->unit);
+        $this->pricePerUnit = bcmul($pricePerGram, $gramsPerDisplayUnit, 9);
     }
 
     public function createOpeningStock(CreateOpeningStockLot $action): void
     {
         $workspace = $this->workspace();
-        $subject = $this->subjectType === 'packaging'
-            ? UserPackagingItem::query()
-                ->where('user_id', $workspace->owner_user_id)
-                ->findOrFail($this->subjectId)
-            : Ingredient::query()->findOrFail($this->subjectId);
+        $listing = $this->selectedListing() ?? abort(404);
+        $pricePerCanonicalUnit = $listing->ingredient_id !== null
+            ? bcdiv($this->pricePerUnit, app(MassConverter::class)->toGrams('1', $this->unit), 12)
+            : $this->pricePerUnit;
 
         $lot = $action->handle(
             actor: $this->user(),
             workspace: $workspace,
-            subject: $subject,
+            listing: $listing,
             quantity: $this->quantity,
             unit: $this->unit,
-            status: StockLotStatus::from($this->status),
+            pricePerCanonicalUnit: $pricePerCanonicalUnit,
+            currency: $this->currency,
             idempotencyKey: (string) Str::uuid(),
             supplierBatchNumber: filled($this->supplierBatchNumber) ? $this->supplierBatchNumber : null,
             stockedAt: filled($this->stockedAt) ? $this->stockedAt : null,
             expiresAt: filled($this->expiresAt) ? $this->expiresAt : null,
-            provenanceComplete: $this->provenanceComplete,
             notes: filled($this->notes) ? $this->notes : null,
         );
 
         $this->savedLotCode = $lot->internal_lot_code;
-        $this->reset('subjectId', 'quantity', 'supplierBatchNumber', 'expiresAt', 'notes', 'provenanceComplete');
+        $this->reset('supplierListingId', 'quantity', 'pricePerUnit', 'supplierBatchNumber', 'expiresAt', 'notes');
     }
 
     public function release(int $lotId, ReleaseStockLot $action): void
@@ -116,8 +135,13 @@ class InventoryIndex extends Component
             'workspace' => $workspace,
             'isActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
-            'ingredients' => Ingredient::query()->where('is_active', true)->orderBy('display_name')->get(),
-            'packagingItems' => UserPackagingItem::query()->where('user_id', $workspace->owner_user_id)->orderBy('name')->get(),
+            'supplierListings' => SupplierListing::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('is_active', true)
+                ->with(['supplier', 'ingredient.translations', 'packagingItem'])
+                ->orderBy('supplier_id')
+                ->orderBy('purchase_format')
+                ->get(),
             'lots' => $lots,
             'displayUnit' => $displayUnit,
         ]);
@@ -128,6 +152,18 @@ class InventoryIndex extends Component
         return StockLot::query()
             ->where('workspace_id', $this->workspace()->id)
             ->findOrFail($lotId);
+    }
+
+    private function selectedListing(): ?SupplierListing
+    {
+        if ($this->supplierListingId === null) {
+            return null;
+        }
+
+        return SupplierListing::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->where('is_active', true)
+            ->find($this->supplierListingId);
     }
 
     private function user(): User

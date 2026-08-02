@@ -46,7 +46,7 @@ export function serializeDraft(state) {
         })),
         phase_items: phaseItems,
         packaging_items: (state.packagingPlanRows ?? []).map((row, index) => ({
-            user_packaging_item_id: row.user_packaging_item_id ?? null,
+            packaging_item_id: row.packaging_item_id ?? null,
             name: row.name ?? '',
             components_per_unit: nonNegativeNumber(row.components_per_unit),
             notes: row.notes ?? null,
@@ -73,7 +73,7 @@ export function serializeCosting(state) {
             price_per_kg: state.canonicalPricePerKg(row),
         })),
         packaging_items: state.packagingCostRows.map((row) => ({
-            user_packaging_item_id: row.user_packaging_item_id ?? null,
+            packaging_item_id: row.packaging_item_id ?? null,
             name: row.name,
             unit_cost: nonNegativeNumber(row.unit_cost),
             components_per_unit: nonNegativeNumber(row.quantity),

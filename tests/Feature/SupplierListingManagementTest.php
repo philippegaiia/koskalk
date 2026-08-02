@@ -3,12 +3,12 @@
 use App\Actions\Purchasing\SaveSupplier;
 use App\Actions\Purchasing\SaveSupplierListing;
 use App\ListingPriceBasis;
+use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\ProductionBenchAccess;
@@ -228,18 +228,10 @@ it('preserves only the unchanged historical currency exception when updating a l
         ->and($listing->fresh()?->currency)->toBe('HRK');
 });
 
-it('saves a per-unit mass listing without updating user ingredient price memory', function (): void {
+it('uses the last supplier listing price as the workspace indicative price', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
     $ingredient = Ingredient::factory()->create();
-    $rememberedPrice = UserIngredientPrice::query()->create([
-        'user_id' => $owner->id,
-        'ingredient_id' => $ingredient->id,
-        'price_per_kg' => '8.7500',
-        'currency' => 'GBP',
-        'last_used_at' => '2026-07-20 10:30:00',
-    ]);
-
     $listing = app(SaveSupplierListing::class)->handle(
         actor: $owner,
         workspace: $workspace,
@@ -256,16 +248,19 @@ it('saves a per-unit mass listing without updating user ingredient price memory'
     );
 
     expect($listing->ingredient_id)->toBe($ingredient->id)
-        ->and($listing->user_packaging_item_id)->toBeNull()
+        ->and($listing->packaging_item_id)->toBeNull()
         ->and($listing->canonical_quantity_per_purchase_format)->toBe('200000.000000000')
         ->and($listing->price_basis)->toBe(ListingPriceBasis::PerUnit)
         ->and($listing->price_amount)->toBe('4.200000000')
         ->and($listing->price_unit)->toBe('kg')
-        ->and($listing->total_price)->toBe('840.000000000')
-        ->and($rememberedPrice->fresh()?->price_per_kg)->toBe('8.7500')
-        ->and($rememberedPrice->fresh()?->currency)->toBe('GBP')
-        ->and($rememberedPrice->fresh()?->last_used_at?->toDateTimeString())->toBe('2026-07-20 10:30:00')
-        ->and(UserIngredientPrice::query()->count())->toBe(1);
+        ->and($listing->total_price)->toBe('840.000000000');
+
+    $currentPrice = CurrentMaterialPrice::query()->whereBelongsTo($ingredient)->sole();
+
+    expect($currentPrice->workspace_id)->toBe($workspace->id)
+        ->and($currentPrice->price_per_canonical_unit)->toBe('0.004200000000')
+        ->and($currentPrice->currency)->toBe('EUR')
+        ->and($currentPrice->source_id)->toBe($listing->id);
 
     app(SaveSupplierListing::class)->handle(
         actor: $owner,
@@ -282,10 +277,8 @@ it('saves a per-unit mass listing without updating user ingredient price memory'
         listing: $listing,
     );
 
-    expect($rememberedPrice->fresh()?->price_per_kg)->toBe('8.7500')
-        ->and($rememberedPrice->fresh()?->currency)->toBe('GBP')
-        ->and($rememberedPrice->fresh()?->last_used_at?->toDateTimeString())->toBe('2026-07-20 10:30:00')
-        ->and(UserIngredientPrice::query()->count())->toBe(1);
+    expect($currentPrice->fresh()?->price_per_canonical_unit)->toBe('0.004500000000')
+        ->and($currentPrice->fresh()?->source_id)->toBe($listing->id);
 });
 
 it('persists the same normalized mass quantity used to calculate listing prices', function (): void {
@@ -316,7 +309,7 @@ it('allows listing price units to be omitted when a convention supplies them', f
     [$owner, $workspace] = activePurchasingWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create();
-    $packaging = UserPackagingItem::factory()->for($owner)->create();
+    $packaging = PackagingItem::factory()->for($workspace)->create();
     $action = app(SaveSupplierListing::class);
     $totalMassAttributes = listingAttributes([
         'price_basis' => ListingPriceBasis::TotalPurchaseFormat,
@@ -341,7 +334,7 @@ it('allows listing price units to be omitted when a convention supplies them', f
 it('updates a count listing using total purchase-format pricing', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
-    $packaging = UserPackagingItem::factory()->for($owner)->create();
+    $packaging = PackagingItem::factory()->for($workspace)->create();
 
     $listing = app(SaveSupplierListing::class)->handle(
         actor: $owner,
@@ -444,7 +437,7 @@ it('rejects a private ingredient owned by another accessible workspace', functio
 it('rejects packaging owned by anyone other than the workspace owner', function (): void {
     [$owner, $workspace] = activePurchasingWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
-    $foreignPackaging = UserPackagingItem::factory()->create();
+    $foreignPackaging = PackagingItem::factory()->create();
 
     $exception = captureValidationException(
         fn (): SupplierListing => app(SaveSupplierListing::class)->handle(
@@ -569,7 +562,7 @@ function listingAttributes(array $overrides = []): array
         'price_amount' => '50',
         'price_unit' => null,
         'supplier_sku' => 'SKU-5',
-        'supplier_name' => null,
+        'supplier_item_name' => null,
         'container' => 'pail',
         'minimum_packs' => 1,
         'notes' => null,

@@ -120,14 +120,14 @@ class SupplierListingIndex extends Component implements HasForms
             ->with(['supplier', 'ingredient.translations', 'packagingItem'])
             ->when($supplierId, fn ($query) => $query->where('supplier_id', $supplierId))
             ->when($materialType === 'ingredient', fn ($query) => $query->whereNotNull('ingredient_id'))
-            ->when($materialType === 'packaging', fn ($query) => $query->whereNotNull('user_packaging_item_id'))
+            ->when($materialType === 'packaging', fn ($query) => $query->whereNotNull('packaging_item_id'))
             ->when($status === 'active', fn ($query) => $query->where('is_active', true))
             ->when($status === 'inactive', fn ($query) => $query->where('is_active', false))
             ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales): void {
                 $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales): void {
                     $searchQuery
                         ->whereRaw('LOWER(supplier_sku) LIKE ?', [$searchTerm])
-                        ->orWhereRaw('LOWER(supplier_name) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(supplier_item_name) LIKE ?', [$searchTerm])
                         ->orWhereRaw('LOWER(purchase_format) LIKE ?', [$searchTerm])
                         ->orWhereHas('supplier', fn ($supplierQuery) => $supplierQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
                         ->orWhereHas('ingredient', function (Builder $ingredientQuery) use ($searchTerm, $translationLocales): void {

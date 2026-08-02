@@ -2,14 +2,15 @@
 
 namespace Database\Factories;
 
-use App\Models\User;
-use App\Models\UserPackagingItem;
+use App\Models\PackagingItem;
+use App\Models\Workspace;
+use App\PackagingCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<UserPackagingItem>
+ * @extends Factory<PackagingItem>
  */
-class UserPackagingItemFactory extends Factory
+class PackagingItemFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -19,11 +20,12 @@ class UserPackagingItemFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
+            'workspace_id' => Workspace::factory(),
+            'created_by_user_id' => null,
             'name' => fake()->words(2, true),
-            'unit_cost' => fake()->randomFloat(4, 0.01, 25),
-            'currency' => 'EUR',
+            'category' => PackagingCategory::Other,
             'notes' => null,
+            'is_active' => true,
         ];
     }
 }

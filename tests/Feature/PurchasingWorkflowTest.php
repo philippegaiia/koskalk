@@ -4,11 +4,13 @@ use App\Actions\Purchasing\CreatePurchaseOrder;
 use App\Actions\Purchasing\PlacePurchaseOrder;
 use App\Actions\Purchasing\ReceivePurchaseOrder;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\StockLot;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\OrganicStatus;
 use App\PurchaseOrderStatus;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
@@ -17,6 +19,49 @@ use App\StockUnitKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+it('creates one order with ingredient and packaging listings from the same supplier', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'USD']);
+    $ingredientListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for(Ingredient::factory())
+        ->create(['currency' => 'USD', 'organic_status' => OrganicStatus::Organic]);
+    $packaging = PackagingItem::factory()->for($workspace)->create();
+    $packagingListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->state([
+            'ingredient_id' => null,
+            'packaging_item_id' => $packaging->id,
+            'unit_kind' => StockUnitKind::Count,
+            'net_quantity' => '100',
+            'net_unit' => 'count',
+            'canonical_quantity_per_purchase_format' => '100',
+            'currency' => 'USD',
+        ])
+        ->create();
+
+    $order = app(CreatePurchaseOrder::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        lines: [
+            ['listing' => $ingredientListing, 'packs' => 1],
+            ['listing' => $packagingListing, 'packs' => 2],
+        ],
+    );
+
+    expect($order->currency)->toBe('USD')
+        ->and($order->lines)->toHaveCount(2)
+        ->and($order->lines->whereNotNull('ingredient_id'))->toHaveCount(1)
+        ->and($order->lines->whereNotNull('packaging_item_id'))->toHaveCount(1)
+        ->and($order->lines->firstWhere('ingredient_id', $ingredientListing->ingredient_id)?->organic_status)
+        ->toBe(OrganicStatus::Organic);
+});
 
 it('snapshots pack listings and posts partial receipts as distinct lots', function (): void {
     $owner = User::factory()->create();
@@ -95,7 +140,8 @@ it('snapshots pack listings and posts partial receipts as distinct lots', functi
     $positionsAfterFirstReceipt = app(StockPositionService::class)
         ->forWorkspaceSubject($workspace, $ingredient);
     expect($positionsAfterFirstReceipt['physical'])->toBe('4900.000000000')
-        ->and($positionsAfterFirstReceipt['quarantined'])->toBe('4900.000000000')
+        ->and($positionsAfterFirstReceipt['quarantined'])->toBe('0.000000000')
+        ->and($positionsAfterFirstReceipt['available'])->toBe('4900.000000000')
         ->and($positionsAfterFirstReceipt['incoming'])->toBe('10000.000000000');
 
     $secondReceipt = app(ReceivePurchaseOrder::class)->handle(
@@ -132,7 +178,7 @@ it('snapshots pack listings and posts partial receipts as distinct lots', functi
 
     $finalPositions = app(StockPositionService::class)->forWorkspaceSubject($workspace, $ingredient);
     expect($finalPositions['physical'])->toBe('14600.000000000')
-        ->and($finalPositions['available'])->toBe('9700.000000000')
+        ->and($finalPositions['available'])->toBe('14600.000000000')
         ->and($finalPositions['incoming'])->toBe('0.000000000')
-        ->and($finalPositions['forecast'])->toBe('9700.000000000');
+        ->and($finalPositions['forecast'])->toBe('14600.000000000');
 });

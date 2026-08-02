@@ -30,8 +30,8 @@ class UserIngredientsTable
                 TextColumn::make('category')
                     ->badge()
                     ->sortable(),
-                TextColumn::make('supplier_name')
-                    ->label('Supplier')
+                TextColumn::make('notes')
+                    ->label('Notes')
                     ->placeholder('Not provided')
                     ->searchable()
                     ->wrap(),

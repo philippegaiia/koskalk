@@ -6,11 +6,12 @@ use App\Actions\Purchasing\SaveSupplierListing;
 use App\DecimalStringFormatter;
 use App\ListingPriceBasis;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
+use App\OrganicStatus;
 use App\OwnerType;
 use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
@@ -76,6 +77,8 @@ class SupplierListingCreate extends Component implements HasForms
         $workspace = $this->workspace();
         $lockedSupplier = null;
 
+        $supplier ??= is_string(request()->query('supplier')) ? request()->query('supplier') : null;
+
         if ($supplier !== null) {
             $supplierPublicId = $supplier instanceof Supplier ? $supplier->public_id : $supplier;
             $lockedSupplier = $this->workspaceSupplierByPublicId($supplierPublicId);
@@ -84,14 +87,41 @@ class SupplierListingCreate extends Component implements HasForms
         }
 
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
+        $materialType = in_array(request()->query('material_type'), ['ingredient', 'packaging'], true)
+            ? request()->query('material_type')
+            : 'ingredient';
+        $ingredient = is_string(request()->query('ingredient'))
+            ? $this->availableIngredientQuery()->where('public_id', request()->query('ingredient'))->first()
+            : null;
+        $packagingItem = is_string(request()->query('packaging_item'))
+            ? PackagingItem::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('public_id', request()->query('packaging_item'))
+                ->first()
+            : null;
+
+        if ($ingredient instanceof Ingredient) {
+            $materialType = 'ingredient';
+            $this->ingredientOptionLabels[$ingredient->id] = $ingredient->localizedDisplayName();
+        }
+
+        if ($packagingItem instanceof PackagingItem) {
+            $materialType = 'packaging';
+            $this->packagingOptionLabels[$packagingItem->id] = $packagingItem->name;
+        }
+
+        $unit = $materialType === 'packaging' ? 'count' : $displayUnit;
         $this->form->fill([
             'supplier_id' => $lockedSupplier?->id,
-            'material_type' => 'ingredient',
-            'net_unit' => $displayUnit,
+            'material_type' => $materialType,
+            'ingredient_id' => $ingredient?->id,
+            'packaging_item_id' => $packagingItem?->id,
+            'net_unit' => $unit,
             'price_basis' => ListingPriceBasis::PerUnit->value,
-            'price_unit' => $displayUnit,
+            'price_unit' => $unit,
             'currency' => $this->newListingCurrency($lockedSupplier),
             'minimum_packs' => 1,
+            'organic_status' => OrganicStatus::Unknown->value,
             'is_active' => true,
         ]);
     }
@@ -107,7 +137,7 @@ class SupplierListingCreate extends Component implements HasForms
         $supplier = $this->selectedSupplier($state);
         $subject = $this->selectedSubject($state);
 
-        if (! $supplier instanceof Supplier || (! $subject instanceof Ingredient && ! $subject instanceof UserPackagingItem)) {
+        if (! $supplier instanceof Supplier || (! $subject instanceof Ingredient && ! $subject instanceof PackagingItem)) {
             return;
         }
 
@@ -200,7 +230,7 @@ class SupplierListingCreate extends Component implements HasForms
                     ->columns(['md' => 2])
                     ->schema([
                         TextInput::make('supplier_sku')->label('Supplier SKU')->maxLength(255),
-                        TextInput::make('supplier_name')->label('Supplier item name')->maxLength(255),
+                        TextInput::make('supplier_item_name')->label('Supplier item name')->maxLength(255),
                         TextInput::make('purchase_format')->label('Purchase format')->placeholder('200 kg drum')->required()->maxLength(255)->columnSpanFull(),
                         LocalizedDecimalInput::make('net_quantity')
                             ->label('Net quantity')
@@ -216,6 +246,15 @@ class SupplierListingCreate extends Component implements HasForms
                             ->disabled(fn (Get $get): bool => $get('material_type') === 'packaging')
                             ->dehydrated()
                             ->live(),
+                        Select::make('organic_status')
+                            ->label('Organic status')
+                            ->options([
+                                OrganicStatus::Unknown->value => 'Not specified',
+                                OrganicStatus::Conventional->value => 'Conventional',
+                                OrganicStatus::Organic->value => 'Organic',
+                            ])
+                            ->default(OrganicStatus::Unknown->value)
+                            ->visible(fn (Get $get): bool => $get('material_type') === 'ingredient'),
                     ]),
                 Section::make('Pricing')
                     ->columns(['md' => 3])
@@ -333,13 +372,13 @@ class SupplierListingCreate extends Component implements HasForms
 
         $search = $this->normalizedSearch($search);
 
-        $results = UserPackagingItem::query()
-            ->where('user_id', $this->workspace()->owner_user_id)
+        $results = PackagingItem::query()
+            ->where('workspace_id', $this->workspace()->id)
             ->when($search !== '', fn (Builder $query): Builder => $query->whereLike('name', "%{$search}%"))
             ->orderBy('name')
             ->limit(self::OptionLimit)
             ->get(['id', 'name'])
-            ->mapWithKeys(fn (UserPackagingItem $item): array => [$item->id => $item->name])
+            ->mapWithKeys(fn (PackagingItem $item): array => [$item->id => $item->name])
             ->all();
 
         $this->packagingOptionLabels = array_replace($this->packagingOptionLabels, $results);
@@ -383,8 +422,8 @@ class SupplierListingCreate extends Component implements HasForms
             return $this->packagingOptionLabels[$id];
         }
 
-        $label = UserPackagingItem::query()
-            ->where('user_id', $this->workspace()->owner_user_id)
+        $label = PackagingItem::query()
+            ->where('workspace_id', $this->workspace()->id)
             ->find($id)?->name;
 
         if ($label === null) {
@@ -409,14 +448,14 @@ class SupplierListingCreate extends Component implements HasForms
     }
 
     /** @param array<string, mixed> $state */
-    private function selectedSubject(array $state): Ingredient|UserPackagingItem|null
+    private function selectedSubject(array $state): Ingredient|PackagingItem|null
     {
         if (($state['material_type'] ?? null) === 'packaging') {
-            $item = UserPackagingItem::query()
-                ->where('user_id', $this->workspace()->owner_user_id)
+            $item = PackagingItem::query()
+                ->where('workspace_id', $this->workspace()->id)
                 ->find($state['packaging_item_id'] ?? null);
 
-            if (! $item instanceof UserPackagingItem) {
+            if (! $item instanceof PackagingItem) {
                 $this->addError('data.packaging_item_id', 'Choose an existing packaging item.');
             }
 
@@ -442,7 +481,7 @@ class SupplierListingCreate extends Component implements HasForms
 
         return [
             'supplier_sku' => $state['supplier_sku'] ?? null,
-            'supplier_name' => $state['supplier_name'] ?? null,
+            'supplier_item_name' => $state['supplier_item_name'] ?? null,
             'purchase_format' => $state['purchase_format'],
             'container' => null,
             'net_quantity' => (string) $state['net_quantity'],
@@ -452,6 +491,9 @@ class SupplierListingCreate extends Component implements HasForms
             'price_unit' => $basis === ListingPriceBasis::TotalPurchaseFormat ? null : ($isPackaging ? 'count' : $state['price_unit']),
             'currency' => Str::upper(trim((string) $state['currency'])),
             'minimum_packs' => $state['minimum_packs'],
+            'organic_status' => $isPackaging
+                ? OrganicStatus::Unknown->value
+                : ($state['organic_status'] ?? OrganicStatus::Unknown->value),
             'notes' => $state['notes'] ?? null,
             'is_active' => $state['is_active'],
         ];

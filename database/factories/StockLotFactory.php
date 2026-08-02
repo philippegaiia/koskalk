@@ -25,7 +25,7 @@ class StockLotFactory extends Factory
         return [
             'workspace_id' => Workspace::factory(),
             'ingredient_id' => Ingredient::factory(),
-            'user_packaging_item_id' => null,
+            'packaging_item_id' => null,
             'internal_lot_code' => 'SK-'.fake()->unique()->numerify('######'),
             'supplier_batch_number' => null,
             'origin' => StockLotOrigin::OpeningBalance,
@@ -56,7 +56,7 @@ class StockLotFactory extends Factory
     {
         return $this->state(fn (): array => [
             'ingredient_id' => null,
-            'user_packaging_item_id' => UserPackagingItemFactory::new(),
+            'packaging_item_id' => PackagingItemFactory::new(),
             'unit_kind' => StockUnitKind::Count,
         ]);
     }

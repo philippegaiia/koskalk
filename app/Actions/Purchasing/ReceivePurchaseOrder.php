@@ -3,12 +3,16 @@
 namespace App\Actions\Purchasing;
 
 use App\GoodsReceiptStatus;
+use App\MaterialPriceSource;
 use App\Models\GoodsReceipt;
+use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\User;
 use App\PurchaseOrderStatus;
+use App\Services\CurrentMaterialPriceService;
 use App\Services\InternalLotCodeGenerator;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
@@ -25,6 +29,7 @@ class ReceivePurchaseOrder
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly InternalLotCodeGenerator $lotCodeGenerator,
+        private readonly CurrentMaterialPriceService $currentMaterialPriceService,
     ) {}
 
     /**
@@ -35,7 +40,6 @@ class ReceivePurchaseOrder
      *   actual_unit: string,
      *   supplier_batch_number?: ?string,
      *   expires_at?: ?string,
-     *   status: StockLotStatus
      * }>  $lines
      */
     public function handle(
@@ -113,11 +117,13 @@ class ReceivePurchaseOrder
                 }
 
                 $historicalTotalCost = bcmul($line->pack_price, (string) $packsReceived, 9);
-                $status = $input['status'];
+                $status = StockLotStatus::Released;
                 $lot = StockLot::query()->create([
                     'workspace_id' => $lockedOrder->workspace_id,
+                    'supplier_listing_id' => $line->supplier_listing_id,
                     'ingredient_id' => $line->ingredient_id,
-                    'user_packaging_item_id' => $line->user_packaging_item_id,
+                    'packaging_item_id' => $line->packaging_item_id,
+                    'organic_status' => $line->organic_status,
                     'internal_lot_code' => $this->lotCodeGenerator->next($lockedOrder->workspace),
                     'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
                     'origin' => StockLotOrigin::PurchaseReceipt,
@@ -157,6 +163,31 @@ class ReceivePurchaseOrder
                     'source_id' => $receiptLine->id,
                     'idempotency_key' => $idempotencyKey.':'.$line->id,
                 ]);
+
+                if ($line->ingredient_id !== null) {
+                    $ingredient = Ingredient::withoutGlobalScopes()->findOrFail($line->ingredient_id);
+                    $this->currentMaterialPriceService->rememberIngredient(
+                        workspace: $lockedOrder->workspace,
+                        ingredient: $ingredient,
+                        pricePerMassUnit: $lot->historical_unit_cost,
+                        massUnit: 'g',
+                        currency: $line->currency,
+                        source: MaterialPriceSource::Receipt,
+                        sourceId: $lot->id,
+                        actor: $actor,
+                    );
+                } else {
+                    $packagingItem = PackagingItem::query()->findOrFail($line->packaging_item_id);
+                    $this->currentMaterialPriceService->rememberPackaging(
+                        workspace: $lockedOrder->workspace,
+                        packagingItem: $packagingItem,
+                        pricePerItem: $lot->historical_unit_cost,
+                        currency: $line->currency,
+                        source: MaterialPriceSource::Receipt,
+                        sourceId: $lot->id,
+                        actor: $actor,
+                    );
+                }
             }
 
             $outstanding = $lockedOrder->lines()

@@ -4,10 +4,10 @@ use App\Livewire\ProductionBench\HomeIndex;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\PurchasingIndex;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
@@ -127,7 +127,7 @@ it('uses unit-of-measure wording for legacy packaging listing validation', funct
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
     $supplier = Supplier::factory()->for($workspace)->create();
-    $packaging = UserPackagingItem::factory()->for($user)->create();
+    $packaging = PackagingItem::factory()->for($workspace)->create();
     $this->actingAs($user);
 
     $component = Livewire::test(PurchasingIndex::class)

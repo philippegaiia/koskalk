@@ -65,6 +65,16 @@ class Workspace extends Model
         return $this->hasMany(Brand::class);
     }
 
+    public function packagingItems(): HasMany
+    {
+        return $this->hasMany(PackagingItem::class);
+    }
+
+    public function currentMaterialPrices(): HasMany
+    {
+        return $this->hasMany(CurrentMaterialPrice::class);
+    }
+
     public function productionEntitlement(): HasOne
     {
         return $this->hasOne(WorkspaceProductionEntitlement::class);

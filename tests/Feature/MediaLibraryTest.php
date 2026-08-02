@@ -9,11 +9,11 @@ use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\MediaLabel;
+use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\CurrentAppUserResolver;
@@ -372,7 +372,7 @@ it('shows usage details for recipes, ingredients, and packaging items', function
     $asset = MediaAsset::factory()->ready()->create(['workspace_id' => $workspace->id]);
     $recipe = Recipe::factory()->create(['workspace_id' => $workspace->id, 'name' => 'Honey soap']);
     $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id, 'display_name' => 'Beeswax']);
-    $packagingItem = new UserPackagingItem;
+    $packagingItem = new PackagingItem;
     $packagingItem->user_id = $user->id;
     $packagingItem->name = 'Amber jar';
     $packagingItem->unit_cost = 1;
@@ -393,7 +393,7 @@ it('shows usage details for recipes, ingredients, and packaging items', function
     ]);
     MediaAssetUsage::factory()->create([
         'media_asset_id' => $asset->id,
-        'usable_type' => UserPackagingItem::class,
+        'usable_type' => PackagingItem::class,
         'usable_id' => $packagingItem->id,
         'role' => MediaAssetUsageRole::PackagingMain,
     ]);
@@ -681,7 +681,7 @@ it('deletes an in-use asset everywhere with one explicit confirmation', function
         ]),
     );
     $ingredient = Ingredient::factory()->create(['workspace_id' => $workspace->id]);
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Amber jar',
         'unit_cost' => 1,

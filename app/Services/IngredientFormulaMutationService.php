@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\IngredientCategory;
+use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
 use App\Models\Recipe;
@@ -11,7 +12,6 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
 use App\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
@@ -522,7 +522,7 @@ class IngredientFormulaMutationService
         Ingredient $replacement,
     ): void {
         $costingItems = RecipeVersionCostingItem::query()
-            ->with('costing:id,user_id')
+            ->with('costing.recipeVersion:id,workspace_id')
             ->whereBelongsTo($ingredient)
             ->whereHas('costing', fn (Builder $costingQuery): Builder => $costingQuery
                 ->whereIn('recipe_version_id', $affectedVersionIds))
@@ -534,24 +534,25 @@ class IngredientFormulaMutationService
             return;
         }
 
-        $costingOwnerIds = $costingItems
-            ->pluck('costing.user_id')
-            ->map(fn (mixed $userId): int => (int) $userId)
+        $workspaceIds = $costingItems
+            ->pluck('costing.recipeVersion.workspace_id')
+            ->map(fn (mixed $workspaceId): int => (int) $workspaceId)
             ->unique()
             ->values();
-        $replacementPricesByUserId = UserIngredientPrice::query()
-            ->whereIn('user_id', $costingOwnerIds)
+        $replacementPricesByWorkspaceId = CurrentMaterialPrice::query()
+            ->whereIn('workspace_id', $workspaceIds)
             ->whereBelongsTo($replacement)
-            ->pluck('price_per_kg', 'user_id');
+            ->pluck('price_per_canonical_unit', 'workspace_id')
+            ->map(fn (string $pricePerGram): string => bcmul($pricePerGram, '1000', 12));
 
         $costingItems
-            ->groupBy(fn (RecipeVersionCostingItem $costingItem): int => $costingItem->costing->user_id)
-            ->each(function (EloquentCollection $ownerCostingItems, int $userId) use ($replacement, $replacementPricesByUserId): void {
+            ->groupBy(fn (RecipeVersionCostingItem $costingItem): int => $costingItem->costing->recipeVersion->workspace_id)
+            ->each(function (EloquentCollection $workspaceCostingItems, int $workspaceId) use ($replacement, $replacementPricesByWorkspaceId): void {
                 RecipeVersionCostingItem::query()
-                    ->whereKey($ownerCostingItems->modelKeys())
+                    ->whereKey($workspaceCostingItems->modelKeys())
                     ->update([
                         'ingredient_id' => $replacement->id,
-                        'price_per_kg' => $replacementPricesByUserId->get($userId),
+                        'price_per_kg' => $replacementPricesByWorkspaceId->get($workspaceId),
                     ]);
             });
     }

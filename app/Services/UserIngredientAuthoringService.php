@@ -34,11 +34,9 @@ class UserIngredientAuthoringService
             'name' => null,
             'category' => null,
             'inci_name' => null,
-            'supplier_name' => null,
-            'supplier_reference' => null,
             'cas_number' => null,
             'ec_number' => null,
-            'is_organic' => false,
+            'notes' => null,
             'featured_image_path' => null,
             'featured_image_original_name' => null,
             'icon_image_path' => null,
@@ -83,11 +81,9 @@ class UserIngredientAuthoringService
             'name' => data_get($entryData, 'current_version.display_name'),
             'category' => $ingredient->category?->value,
             'inci_name' => data_get($entryData, 'current_version.inci_name'),
-            'supplier_name' => data_get($entryData, 'current_version.supplier_name'),
-            'supplier_reference' => data_get($entryData, 'current_version.supplier_reference'),
             'cas_number' => data_get($entryData, 'current_version.cas_number'),
             'ec_number' => data_get($entryData, 'current_version.ec_number'),
-            'is_organic' => (bool) data_get($entryData, 'current_version.is_organic', false),
+            'notes' => $ingredient->notes,
             'featured_image_path' => $ingredient->featured_image_path,
             'featured_image_original_name' => $ingredient->featured_image_original_name,
             'icon_image_path' => $ingredient->icon_image_path,
@@ -290,11 +286,9 @@ class UserIngredientAuthoringService
             'name' => $state['name'] ?? null,
             'category' => $state['category'] ?? null,
             'inci_name' => $state['inci_name'] ?? null,
-            'supplier_name' => $state['supplier_name'] ?? null,
-            'supplier_reference' => $state['supplier_reference'] ?? null,
             'cas_number' => $state['cas_number'] ?? null,
             'ec_number' => $state['ec_number'] ?? null,
-            'is_organic' => (bool) ($state['is_organic'] ?? false),
+            'notes' => $state['notes'] ?? null,
             'featured_image_path' => null,
             'icon_image_path' => null,
             'info_markdown' => null,
@@ -340,6 +334,9 @@ class UserIngredientAuthoringService
                 : null;
         }
         $ingredient->info_markdown = Arr::get($state, 'info_markdown');
+        $ingredient->notes = blank(Arr::get($state, 'notes'))
+            ? null
+            : trim((string) Arr::get($state, 'notes'));
         $ingredient->composition_source_notes = Arr::get($state, 'ingredient_structure') === 'blend'
             ? Arr::get($state, 'composition_source_notes')
             : null;
@@ -370,11 +367,8 @@ class UserIngredientAuthoringService
             'current_version' => [
                 'display_name' => Arr::get($state, 'name'),
                 'inci_name' => Arr::get($state, 'inci_name'),
-                'supplier_name' => Arr::get($state, 'supplier_name'),
-                'supplier_reference' => Arr::get($state, 'supplier_reference'),
                 'cas_number' => $this->normalizeCasNumber(Arr::get($state, 'cas_number')),
                 'ec_number' => $this->normalizeEcNumber(Arr::get($state, 'ec_number')),
-                'is_organic' => (bool) Arr::get($state, 'is_organic', false),
                 'is_active' => true,
                 'is_manufactured' => false,
             ],

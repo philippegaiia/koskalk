@@ -2,9 +2,9 @@
 
 use App\ListingPriceBasis;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
-use App\Models\UserPackagingItem;
 use App\StockUnitKind;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -56,7 +56,7 @@ it('stores a supplier purchase format with a normalized unit price', function ()
 it('stores a count purchase format with a total purchase price', function (): void {
     $listing = SupplierListing::factory()->create([
         'ingredient_id' => null,
-        'user_packaging_item_id' => UserPackagingItem::factory(),
+        'packaging_item_id' => PackagingItem::factory(),
         'unit_kind' => StockUnitKind::Count,
         'purchase_format' => 'Carton',
         'net_quantity' => '24',
@@ -80,13 +80,13 @@ it('stores a count purchase format with a total purchase price', function (): vo
 it('rejects a listing that references both an ingredient and a packaging item', function (): void {
     $supplier = Supplier::factory()->create();
     $ingredient = Ingredient::factory()->create();
-    $packagingItem = UserPackagingItem::factory()->create();
+    $packagingItem = PackagingItem::factory()->create();
 
     expect(fn (): SupplierListing => SupplierListing::query()->create([
         'workspace_id' => $supplier->workspace_id,
         'supplier_id' => $supplier->id,
         'ingredient_id' => $ingredient->id,
-        'user_packaging_item_id' => $packagingItem->id,
+        'packaging_item_id' => $packagingItem->id,
         'purchase_format' => 'Carton',
         'unit_kind' => StockUnitKind::Mass,
         'canonical_quantity_per_purchase_format' => '1000',

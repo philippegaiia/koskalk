@@ -9,6 +9,11 @@
     </header>
 
     <form wire:submit="save" class="space-y-4">
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ route('ingredients.create', array_filter(['return_to' => 'supplier_listing', 'supplier' => $lockedSupplier?->public_id])) }}" wire:navigate class="sk-btn sk-btn-secondary">Create ingredient</a>
+            <a href="{{ route('packaging-items.create', array_filter(['return_to' => 'supplier_listing', 'supplier' => $lockedSupplier?->public_id])) }}" wire:navigate class="sk-btn sk-btn-secondary">Create packaging item</a>
+        </div>
+
         {{ $this->form }}
 
         @error('data.production_bench') <p class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror

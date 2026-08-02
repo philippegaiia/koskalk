@@ -8,7 +8,6 @@ use App\Models\RegulatoryRegimeAllergen;
 use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Services\RecipeWorkbenchIfraOptionsBuilder;
 use App\Services\RecipeWorkbenchIngredientCatalogBuilder;
@@ -181,7 +180,7 @@ it('includes the user packaging catalog in the initial workbench payload', funct
         'name' => 'Soap',
     ]);
     $user = User::factory()->create();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Amber Jar',
         'unit_cost' => 0.82,

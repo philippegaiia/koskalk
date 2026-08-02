@@ -25,11 +25,9 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
         'category' => IngredientCategory::EssentialOil,
         'display_name' => 'Lavender 40/42',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
-        'supplier_name' => 'Supplier A',
-        'supplier_reference' => 'REF-123',
+        'notes' => 'Supplier-neutral catalogue note',
         'cas_number' => '8000-28-0',
         'ec_number' => '289-995-2',
-        'is_organic' => true,
         'owner_type' => null,
         'owner_id' => null,
         'visibility' => Visibility::Public,
@@ -72,9 +70,8 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
     expect($copy->visibility)->toBe(Visibility::Private);
     expect($copy->display_name)->toBe('Lavender 40/42');
     expect($copy->inci_name)->toBe('LAVANDULA ANGUSTIFOLIA OIL');
-    expect($copy->supplier_name)->toBe('Supplier A');
+    expect($copy->notes)->toBe('Supplier-neutral catalogue note');
     expect($copy->cas_number)->toBe('8000-28-0');
-    expect($copy->is_organic)->toBeTrue();
     expect($copy->featured_image_path)->toBeNull();
     expect($copy->featured_image_original_name)->toBeNull();
     expect($copy->icon_image_path)->toBeNull();

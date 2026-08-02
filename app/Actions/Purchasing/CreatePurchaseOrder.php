@@ -33,7 +33,15 @@ class CreatePurchaseOrder
             throw ValidationException::withMessages(['supplier' => 'Choose a supplier and at least one listing from this workspace.']);
         }
 
-        return DB::transaction(function () use ($actor, $workspace, $supplier, $lines, $expectedAt, $notes): PurchaseOrder {
+        $currencies = collect($lines)
+            ->map(fn (array $line): string => strtoupper($line['listing']->currency))
+            ->unique();
+
+        if ($currencies->count() !== 1) {
+            throw ValidationException::withMessages(['lines' => 'All order lines must use the same currency.']);
+        }
+
+        return DB::transaction(function () use ($actor, $workspace, $supplier, $lines, $expectedAt, $notes, $currencies): PurchaseOrder {
             Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
             $sequence = PurchaseOrder::query()->where('workspace_id', $workspace->id)->count() + 1;
             $order = PurchaseOrder::query()->create([
@@ -42,7 +50,7 @@ class CreatePurchaseOrder
                 'reference' => 'PO-'.now()->format('ym').'-'.str_pad((string) $sequence, 4, '0', STR_PAD_LEFT),
                 'status' => PurchaseOrderStatus::Draft,
                 'expected_at' => $expectedAt,
-                'currency' => $supplier->default_currency,
+                'currency' => $currencies->sole(),
                 'notes' => $notes,
                 'created_by_user_id' => $actor->id,
             ]);
@@ -62,7 +70,7 @@ class CreatePurchaseOrder
                 $order->lines()->create([
                     'supplier_listing_id' => $listing->id,
                     'ingredient_id' => $listing->ingredient_id,
-                    'user_packaging_item_id' => $listing->user_packaging_item_id,
+                    'packaging_item_id' => $listing->packaging_item_id,
                     'supplier_sku' => $listing->supplier_sku,
                     'listing_name' => $listing->purchase_format,
                     'unit_kind' => $listing->unit_kind,
@@ -72,6 +80,7 @@ class CreatePurchaseOrder
                     'currency' => $listing->currency,
                     'expected_quantity' => bcmul($listing->canonical_quantity_per_purchase_format, (string) $packs, 9),
                     'expected_cost' => bcmul($listing->total_price, (string) $packs, 9),
+                    'organic_status' => $listing->organic_status,
                 ]);
             }
 

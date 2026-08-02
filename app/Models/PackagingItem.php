@@ -6,57 +6,64 @@ use App\Casts\OriginalFilename;
 use App\MediaAssetUsageRole;
 use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
+use App\PackagingCategory;
 use App\Services\MediaStorage;
-use Database\Factories\UserPackagingItemFactory;
+use Database\Factories\PackagingItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 #[Fillable([
     'public_id',
-    'user_id',
+    'workspace_id',
+    'created_by_user_id',
     'name',
-    'unit_cost',
-    'currency',
+    'category',
     'notes',
+    'is_active',
     'featured_image_path',
     'featured_image_original_name',
 ])]
 /**
  * Stores reusable packaging items that can be pulled into a formula costing.
  *
- * Each user builds their own catalog of packaging materials (boxes, labels, jars, etc.)
- * with an effective unit price. When a packaging item is added to a recipe costing, its
- * name and price are snapshotted into the costing row so historical costings stay accurate.
+ * Each workspace keeps one shared catalogue of boxes, labels, jars, and other components.
  *
  * @property int $id
- * @property int $user_id
+ * @property int $workspace_id
+ * @property int|null $created_by_user_id
  * @property string $name
- * @property string $unit_cost
- * @property string $currency
+ * @property PackagingCategory $category
  * @property string|null $notes
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read User $user
+ * @property-read Workspace $workspace
+ * @property-read User|null $createdBy
  * @property-read Collection<int, RecipeVersionCostingPackagingItem> $costingItems
  * @property-read Collection<int, RecipeVersionPackagingItem> $recipeVersionPackagingItems
  */
-class UserPackagingItem extends Model
+class PackagingItem extends Model
 {
-    /** @use HasFactory<UserPackagingItemFactory> */
+    /** @use HasFactory<PackagingItemFactory> */
     use HasFactory;
 
     use HasMediaAssetUsages;
     use HasPublicId;
 
-    /** The user who owns this packaging catalog item. */
-    public function user(): BelongsTo
+    public function workspace(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Workspace::class)->withoutGlobalScopes();
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
     }
 
     /** All costing rows that reference this catalog item. */
@@ -71,12 +78,28 @@ class UserPackagingItem extends Model
         return $this->hasMany(RecipeVersionPackagingItem::class);
     }
 
+    public function currentPrice(): HasOne
+    {
+        return $this->hasOne(CurrentMaterialPrice::class);
+    }
+
     protected function casts(): array
     {
         return [
-            'unit_cost' => 'decimal:4',
+            'category' => PackagingCategory::class,
+            'is_active' => 'boolean',
             'featured_image_original_name' => OriginalFilename::class,
         ];
+    }
+
+    protected function unitCost(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->currentPrice?->price_per_canonical_unit);
+    }
+
+    protected function currency(): Attribute
+    {
+        return Attribute::get(fn (): ?string => $this->currentPrice?->currency);
     }
 
     public function featuredImageUrl(): ?string

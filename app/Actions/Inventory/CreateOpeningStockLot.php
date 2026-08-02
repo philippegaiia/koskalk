@@ -2,12 +2,15 @@
 
 namespace App\Actions\Inventory;
 
+use App\MaterialPriceSource;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\StockLot;
 use App\Models\StockMovement;
+use App\Models\SupplierListing;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
+use App\Services\CurrentMaterialPriceService;
 use App\Services\InternalLotCodeGenerator;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
@@ -25,20 +28,21 @@ class CreateOpeningStockLot
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly InternalLotCodeGenerator $lotCodeGenerator,
+        private readonly CurrentMaterialPriceService $currentMaterialPriceService,
     ) {}
 
     public function handle(
         User $actor,
         Workspace $workspace,
-        Ingredient|UserPackagingItem $subject,
+        SupplierListing $listing,
         string $quantity,
         string $unit,
-        StockLotStatus $status,
+        string $pricePerCanonicalUnit,
+        string $currency,
         string $idempotencyKey,
         ?string $supplierBatchNumber = null,
         ?string $stockedAt = null,
         ?string $expiresAt = null,
-        bool $provenanceComplete = false,
         ?string $notes = null,
     ): StockLot {
         $this->access->assertWritable($actor, $workspace);
@@ -48,13 +52,30 @@ class CreateOpeningStockLot
             'idempotency_key' => $idempotencyKey,
             'stocked_at' => $stockedAt,
             'expires_at' => $expiresAt,
+            'price' => $pricePerCanonicalUnit,
+            'currency' => $currency,
         ], [
             'quantity' => ['required', 'numeric', 'gt:0'],
             'idempotency_key' => ['required', 'string', 'max:120'],
             'stocked_at' => ['nullable', 'date'],
             'expires_at' => ['nullable', 'date'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'currency' => ['required', 'string', 'size:3'],
         ])->validate();
 
+        $currentListing = SupplierListing::query()
+            ->where('workspace_id', $workspace->id)
+            ->find($listing->id);
+
+        if (! $currentListing instanceof SupplierListing) {
+            throw ValidationException::withMessages([
+                'supplier_listing' => 'Choose a supplier listing from this workspace.',
+            ]);
+        }
+
+        $subject = $currentListing->ingredient_id !== null
+            ? Ingredient::withoutGlobalScopes()->findOrFail($currentListing->ingredient_id)
+            : PackagingItem::query()->where('workspace_id', $workspace->id)->findOrFail($currentListing->packaging_item_id);
         $isMass = $subject instanceof Ingredient;
         $canonicalQuantity = $isMass
             ? $this->massConverter->toGrams($quantity, $unit)
@@ -63,15 +84,16 @@ class CreateOpeningStockLot
         return DB::transaction(function () use (
             $actor,
             $workspace,
+            $currentListing,
             $subject,
             $quantity,
             $unit,
-            $status,
+            $pricePerCanonicalUnit,
+            $currency,
             $idempotencyKey,
             $supplierBatchNumber,
             $stockedAt,
             $expiresAt,
-            $provenanceComplete,
             $notes,
             $isMass,
             $canonicalQuantity,
@@ -90,19 +112,23 @@ class CreateOpeningStockLot
 
             $lot = StockLot::query()->create([
                 'workspace_id' => $workspace->id,
+                'supplier_listing_id' => $currentListing->id,
                 'ingredient_id' => $isMass ? $subject->id : null,
-                'user_packaging_item_id' => $isMass ? null : $subject->id,
+                'packaging_item_id' => $isMass ? null : $subject->id,
+                'organic_status' => $currentListing->organic_status,
                 'internal_lot_code' => $this->lotCodeGenerator->next($workspace),
                 'supplier_batch_number' => $supplierBatchNumber,
                 'origin' => StockLotOrigin::OpeningBalance,
                 'unit_kind' => $isMass ? StockUnitKind::Mass : StockUnitKind::Count,
-                'status' => $status,
+                'status' => StockLotStatus::Released,
                 'stocked_at' => $stockedAt ?? now()->toDateString(),
                 'expires_at' => $expiresAt,
-                'available_from' => $status === StockLotStatus::Released ? ($stockedAt ?? now()->toDateString()) : null,
-                'released_at' => $status === StockLotStatus::Released ? now() : null,
-                'released_by_user_id' => $status === StockLotStatus::Released ? $actor->id : null,
-                'provenance_complete' => $provenanceComplete,
+                'available_from' => $stockedAt ?? now()->toDateString(),
+                'released_at' => now(),
+                'released_by_user_id' => $actor->id,
+                'provenance_complete' => true,
+                'historical_unit_cost' => $pricePerCanonicalUnit,
+                'currency' => strtoupper($currency),
                 'notes' => $notes,
             ]);
 
@@ -116,6 +142,29 @@ class CreateOpeningStockLot
                 'actor_user_id' => $actor->id,
                 'idempotency_key' => $idempotencyKey,
             ]);
+
+            if ($subject instanceof Ingredient) {
+                $this->currentMaterialPriceService->rememberIngredient(
+                    workspace: $workspace,
+                    ingredient: $subject,
+                    pricePerMassUnit: $pricePerCanonicalUnit,
+                    massUnit: 'g',
+                    currency: $currency,
+                    source: MaterialPriceSource::OpeningStock,
+                    sourceId: $lot->id,
+                    actor: $actor,
+                );
+            } else {
+                $this->currentMaterialPriceService->rememberPackaging(
+                    workspace: $workspace,
+                    packagingItem: $subject,
+                    pricePerItem: $pricePerCanonicalUnit,
+                    currency: $currency,
+                    source: MaterialPriceSource::OpeningStock,
+                    sourceId: $lot->id,
+                    actor: $actor,
+                );
+            }
 
             return $lot->load('movements');
         }, attempts: 5);

@@ -8,11 +8,11 @@ use App\Livewire\ProductionBench\Purchasing\SupplierListingIndex;
 use App\MassDisplaySystem;
 use App\Models\Ingredient;
 use App\Models\IngredientTranslation;
+use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPricePresentation;
@@ -131,7 +131,7 @@ it('shows mass and packaging supplier listings on the supplier detail page', fun
     $this->actingAs($owner);
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
-    $packaging = UserPackagingItem::factory()->for($owner)->create(['name' => 'Amber bottle']);
+    $packaging = PackagingItem::factory()->for($workspace)->create(['name' => 'Amber bottle']);
 
     createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
         'purchase_format' => 'Drum',
@@ -180,7 +180,7 @@ it('shows entered and derived prices for total and per-unit supplier listings', 
     $this->actingAs($owner);
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
-    $packaging = UserPackagingItem::factory()->for($owner)->create(['name' => 'Amber bottle']);
+    $packaging = PackagingItem::factory()->for($workspace)->create(['name' => 'Amber bottle']);
 
     createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
         'purchase_format' => 'Drum',
@@ -396,11 +396,11 @@ it('filters supplier listings by supplier and material type and paginates suppli
     $supplier = Supplier::factory()->for($workspace)->create(['name' => 'Material supplier']);
     $otherSupplier = Supplier::factory()->for($workspace)->create(['name' => 'Other supplier']);
     $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
-    $packaging = UserPackagingItem::factory()->for($owner)->create(['name' => 'Bottle']);
+    $packaging = PackagingItem::factory()->for($workspace)->create(['name' => 'Bottle']);
     SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create(['purchase_format' => 'Ingredient tin']);
     SupplierListing::factory()->for($workspace)->for($supplier)->create([
         'ingredient_id' => null,
-        'user_packaging_item_id' => $packaging->id,
+        'packaging_item_id' => $packaging->id,
         'unit_kind' => 'count',
         'net_quantity' => '100',
         'net_unit' => 'count',
@@ -578,7 +578,7 @@ function createSupplierPageListing(
     User $owner,
     Workspace $workspace,
     Supplier $supplier,
-    Ingredient|UserPackagingItem $subject,
+    Ingredient|PackagingItem $subject,
     array $attributes,
 ): SupplierListing {
     return app(SaveSupplierListing::class)->handle(
@@ -588,7 +588,7 @@ function createSupplierPageListing(
         $subject,
         [
             'supplier_sku' => null,
-            'supplier_name' => null,
+            'supplier_item_name' => null,
             'container' => null,
             'minimum_packs' => 1,
             'notes' => null,
@@ -602,7 +602,7 @@ it('presents currency-bearing supplier listing prices in metric and US customary
     [$owner, $workspace] = activeSupplierPagesWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create();
-    $packaging = UserPackagingItem::factory()->for($owner)->create();
+    $packaging = PackagingItem::factory()->for($workspace)->create();
     $totalMassListing = createSupplierPageListing($owner, $workspace, $supplier, $ingredient, [
         'purchase_format' => 'Drum',
         'net_quantity' => '200',

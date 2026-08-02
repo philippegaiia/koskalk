@@ -4,10 +4,10 @@ use App\ListingPriceBasis;
 use App\Livewire\ProductionBench\Purchasing\SupplierListingCreate;
 use App\MassDisplaySystem;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\ProductionBenchAccess;
@@ -33,7 +33,7 @@ it('shows a focused global listing form with searchable catalog selectors', func
     [$owner, $workspace] = listingCreateWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['code' => 'OLVEA', 'name' => 'Olvea']);
     Ingredient::factory()->create(['display_name' => 'Olive oil']);
-    UserPackagingItem::factory()->for($owner)->create(['name' => 'Amber bottle']);
+    PackagingItem::factory()->for($workspace)->create(['name' => 'Amber bottle']);
 
     $response = $this->actingAs($owner)
         ->get('/dashboard/production-bench/purchasing/listings/new');
@@ -121,7 +121,7 @@ it('creates an exact-price mass listing globally and returns to the listings ind
         ->set('data.material_type', 'ingredient')
         ->set('data.ingredient_id', $ingredient->id)
         ->set('data.supplier_sku', 'OO-200')
-        ->set('data.supplier_name', 'Extra virgin olive oil')
+        ->set('data.supplier_item_name', 'Extra virgin olive oil')
         ->set('data.purchase_format', '200 kg drum')
         ->set('data.net_quantity', '200')
         ->set('data.net_unit', 'kg')
@@ -143,7 +143,7 @@ it('creates an exact-price mass listing globally and returns to the listings ind
         'supplier_id' => $supplier->id,
         'ingredient_id' => $ingredient->id,
         'supplier_sku' => 'OO-200',
-        'supplier_name' => 'Extra virgin olive oil',
+        'supplier_item_name' => 'Extra virgin olive oil',
         'purchase_format' => '200 kg drum',
         'net_quantity' => '200.000000000',
         'net_unit' => 'kg',
@@ -191,7 +191,7 @@ it('accepts localized decimal quantities and prices', function (): void {
 it('locks supplier context and returns scoped packaging listings to supplier detail', function (): void {
     [$owner, $workspace] = listingCreateWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create(['code' => 'BOTTLES', 'name' => 'Bottle House']);
-    $packaging = UserPackagingItem::factory()->for($owner)->create(['name' => 'Amber bottle']);
+    $packaging = PackagingItem::factory()->for($workspace)->create(['name' => 'Amber bottle']);
     $this->actingAs($owner);
 
     $this->get('/dashboard/production-bench/purchasing/suppliers/'.$supplier->public_id.'/listings/new')
@@ -219,7 +219,7 @@ it('locks supplier context and returns scoped packaging listings to supplier det
     $listing = SupplierListing::query()->firstOrFail();
 
     expect($listing->supplier_id)->toBe($supplier->id)
-        ->and($listing->user_packaging_item_id)->toBe($packaging->id)
+        ->and($listing->packaging_item_id)->toBe($packaging->id)
         ->and($listing->ingredient_id)->toBeNull()
         ->and($listing->net_unit)->toBe('count')
         ->and($listing->total_price)->toBe('90.000000000');
@@ -305,7 +305,7 @@ it('bounds server-side catalog searches and retains selected rows', function ():
     $ingredients = Ingredient::factory()->count(30)->sequence(
         fn ($sequence): array => ['display_name' => sprintf('Ingredient %02d', $sequence->index + 1)],
     )->create();
-    $packagingItems = UserPackagingItem::factory()->count(30)->for($owner)->sequence(
+    $packagingItems = PackagingItem::factory()->count(30)->for($workspace)->sequence(
         fn ($sequence): array => ['name' => sprintf('Packaging %02d', $sequence->index + 1)],
     )->create();
     $selectedSupplier = $suppliers->last();
@@ -335,7 +335,7 @@ it('bounds server-side catalog searches and retains selected rows', function ():
             && Str::contains($sql, 'limit 20'),
     ))->toBeTrue()
         ->and(collect($catalogQueries)->contains(
-            fn (string $sql): bool => Str::contains($sql, 'user_packaging_items'),
+            fn (string $sql): bool => Str::contains($sql, 'packaging_items'),
         ))->toBeFalse();
 
     $component
@@ -362,7 +362,7 @@ it('does not requery supplier or material catalogs for price preview updates', f
     $ingredient = Ingredient::factory()->create(['display_name' => 'Selected ingredient']);
     Supplier::factory()->count(2)->for($workspace)->create();
     Ingredient::factory()->count(2)->create();
-    UserPackagingItem::factory()->count(3)->for($owner)->create();
+    PackagingItem::factory()->count(3)->for($workspace)->create();
     $this->actingAs($owner);
 
     $component = Livewire::test(SupplierListingCreate::class)
@@ -371,7 +371,7 @@ it('does not requery supplier or material catalogs for price preview updates', f
     $selectorQueries = [];
 
     DB::listen(function (QueryExecuted $query) use (&$selectorQueries): void {
-        if (Str::contains($query->sql, ['suppliers', 'ingredients', 'ingredient_translations', 'user_packaging_items'])) {
+        if (Str::contains($query->sql, ['suppliers', 'ingredients', 'ingredient_translations', 'packaging_items'])) {
             $selectorQueries[] = $query->sql;
         }
     });
@@ -397,7 +397,7 @@ it('keeps supplier and material selection inside the current workspace', functio
         'workspace_id' => $foreignWorkspace->id,
         'visibility' => Visibility::Private,
     ]);
-    $foreignPackaging = UserPackagingItem::factory()->create(['name' => 'Foreign bottle']);
+    $foreignPackaging = PackagingItem::factory()->create(['name' => 'Foreign bottle']);
     $this->actingAs($owner);
 
     $this->get('/dashboard/production-bench/purchasing/suppliers/'.$foreignSupplier->public_id.'/listings/new')

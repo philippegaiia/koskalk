@@ -2,10 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\PackagingItem;
 use App\Models\ProductionBatch;
 use App\Models\ProductionBatchPackagingItem;
-use App\Models\User;
-use App\Models\UserPackagingItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -22,11 +21,8 @@ class ProductionBatchPackagingItemFactory extends Factory
     {
         return [
             'production_batch_id' => ProductionBatch::factory(),
-            'user_packaging_item_id' => fn (): int => UserPackagingItem::query()->create([
-                'user_id' => User::factory()->create()->id,
+            'packaging_item_id' => fn (): int => PackagingItem::factory()->create([
                 'name' => 'Soap box',
-                'unit_cost' => 0.25,
-                'currency' => 'EUR',
                 'notes' => null,
             ])->id,
             'position' => 1,

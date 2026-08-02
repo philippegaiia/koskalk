@@ -3,6 +3,10 @@
 namespace App\Services;
 
 use App\MassUnit;
+use App\MaterialPriceSource;
+use App\Models\CurrentMaterialPrice;
+use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Recipe;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -11,8 +15,8 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
-use App\Models\UserPackagingItem;
+use App\Models\Workspace;
+use App\PackagingCategory;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -33,8 +37,8 @@ use Illuminate\Validation\ValidationException;
 class RecipeVersionCostingSynchronizer
 {
     public function __construct(
-        private readonly UserIngredientPriceMemory $userIngredientPriceMemory,
-        private readonly LiveCostingPricePropagationService $liveCostingPricePropagationService,
+        private readonly CurrentMaterialPriceService $currentMaterialPriceService,
+        private readonly PackagingItemAuthoringService $packagingItemAuthoringService,
         private readonly CurrencyCatalog $currencyCatalog,
         private readonly MassConverter $massConverter,
     ) {}
@@ -100,7 +104,7 @@ class RecipeVersionCostingSynchronizer
             'packaging_items' => $costing->packagingItems
                 ->map(fn (RecipeVersionCostingPackagingItem $item): array => [
                     'id' => $item->id,
-                    'user_packaging_item_id' => $item->user_packaging_item_id,
+                    'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'unit_cost' => (float) $item->unit_cost,
                     'components_per_unit' => (float) $item->quantity,
@@ -212,7 +216,7 @@ class RecipeVersionCostingSynchronizer
 
             $sourceCosting->packagingItems->each(function (RecipeVersionCostingPackagingItem $item) use ($targetCosting): void {
                 $targetCosting->packagingItems()->create([
-                    'user_packaging_item_id' => $item->user_packaging_item_id,
+                    'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'unit_cost' => $item->unit_cost,
                     'quantity' => $item->quantity,
@@ -233,7 +237,6 @@ class RecipeVersionCostingSynchronizer
     public function savePackagingItem(User $user, array $payload): array
     {
         $name = trim((string) ($payload['name'] ?? ''));
-        $currency = $this->normalizeCurrency($payload['currency'] ?? $user->defaultCurrency());
 
         if ($name === '') {
             return [
@@ -242,10 +245,6 @@ class RecipeVersionCostingSynchronizer
             ];
         }
 
-        $packagingItem = new UserPackagingItem([
-            'user_id' => $user->id,
-        ]);
-
         if (isset($payload['id'])) {
             if (! is_numeric($payload['id'])) {
                 throw ValidationException::withMessages([
@@ -253,28 +252,29 @@ class RecipeVersionCostingSynchronizer
                 ]);
             }
 
-            $packagingItem = UserPackagingItem::query()->find((int) $payload['id']);
+            $packagingItem = PackagingItem::query()
+                ->where('workspace_id', $user->company()?->id)
+                ->find((int) $payload['id']);
 
-            if (! $packagingItem instanceof UserPackagingItem || $packagingItem->user_id !== $user->id) {
+            if (! $packagingItem instanceof PackagingItem) {
                 throw ValidationException::withMessages([
                     'packaging_item' => 'Only your own packaging items can be edited from the costing tab.',
                 ]);
             }
+            $packagingItem = $this->packagingItemAuthoringService->update($packagingItem, [
+                'name' => $name,
+                'category' => $payload['category'] ?? $packagingItem->category->value,
+                'unit_cost' => $payload['unit_cost'] ?? 0,
+                'notes' => $payload['notes'] ?? null,
+            ], $user);
+        } else {
+            $packagingItem = $this->packagingItemAuthoringService->create([
+                'name' => $name,
+                'category' => $payload['category'] ?? PackagingCategory::Other->value,
+                'unit_cost' => $payload['unit_cost'] ?? 0,
+                'notes' => $payload['notes'] ?? null,
+            ], $user);
         }
-
-        $packagingItem->fill([
-            'name' => $name,
-            'unit_cost' => (float) ($payload['unit_cost'] ?? 0),
-            'currency' => $currency,
-            'notes' => $payload['notes'] ?? null,
-        ]);
-        $packagingItem->save();
-
-        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
-            $user,
-            $packagingItem->id,
-            (float) $packagingItem->unit_cost,
-        );
 
         return [
             'packaging_catalog' => $this->packagingCatalogPayload($user),
@@ -297,12 +297,13 @@ class RecipeVersionCostingSynchronizer
     {
         $currency = $user->defaultCurrency();
 
-        return UserPackagingItem::query()
-            ->where('user_id', $user->id)
+        return PackagingItem::query()
+            ->where('workspace_id', $user->company()?->id)
+            ->with('currentPrice')
             ->orderBy('name')
             ->orderBy('id')
             ->get()
-            ->map(fn (UserPackagingItem $item): array => [
+            ->map(fn (PackagingItem $item): array => [
                 'id' => $item->id,
                 'name' => $item->name,
                 'unit_cost' => (float) $item->unit_cost,
@@ -389,7 +390,7 @@ class RecipeVersionCostingSynchronizer
      * Rebuild costing items from the current formula structure.
      *
      * Reconciliation rules:
-     * - New formula rows → create costing row, prefilled from user_ingredient_prices
+     * - New formula rows → create costing row, prefilled from the workspace current price
      * - Deleted formula rows → their costing rows are removed
      * - Unchanged rows → preserve the saved costing price
      * - Reordered rows → preserve price, update position
@@ -423,8 +424,9 @@ class RecipeVersionCostingSynchronizer
             (int) $item->position,
         ));
 
-        $defaultPricesByIngredient = UserIngredientPrice::query()
-            ->where('user_id', $costing->user_id)
+        $defaultPricesByIngredient = CurrentMaterialPrice::query()
+            ->where('workspace_id', $recipeVersion->workspace_id)
+            ->whereNotNull('ingredient_id')
             ->whereIn('ingredient_id', $desiredRows->pluck('ingredient_id')->all())
             ->get()
             ->keyBy('ingredient_id');
@@ -440,7 +442,10 @@ class RecipeVersionCostingSynchronizer
                 'ingredient_id' => $row['ingredient_id'],
                 'phase_key' => $row['phase_key'],
                 'position' => $row['position'],
-                'price_per_kg' => $existingRow?->price_per_kg ?? $defaultPrice?->price_per_kg,
+                'price_per_kg' => $existingRow?->price_per_kg
+                    ?? ($defaultPrice?->price_per_canonical_unit === null
+                        ? null
+                        : bcmul($defaultPrice->price_per_canonical_unit, '1000', 12)),
             ]);
         });
     }
@@ -467,14 +472,14 @@ class RecipeVersionCostingSynchronizer
             ->sortBy('position')
             ->each(function (RecipeVersionPackagingItem $item) use ($costing, &$existingRowOccurrences, $existingRowsByKey): void {
                 $key = $this->packagingKey(
-                    $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                    $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                     $item->name,
                 );
                 $existingRow = $this->nextPackagingCostingRow($existingRowsByKey, $key, $existingRowOccurrences);
                 $catalogItem = $item->packagingItem;
 
                 $costing->packagingItems()->create([
-                    'user_packaging_item_id' => $item->user_packaging_item_id,
+                    'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'unit_cost' => $existingRow?->unit_cost ?? $catalogItem?->unit_cost ?? 0,
                     'quantity' => $item->components_per_unit,
@@ -483,14 +488,15 @@ class RecipeVersionCostingSynchronizer
     }
 
     /**
-     * Apply submitted item prices to costing rows and upsert user ingredient price memory.
+     * Apply submitted item prices to costing rows and update the workspace current price.
      *
      * For each submitted price, the costing item is updated. If the price is non-null,
-     * the user's global price memory (user_ingredient_prices) is also updated so the
+     * the workspace current price is also updated so the
      * price can be prefilled in future recipes containing the same ingredient.
      */
     private function applyItemPrices(RecipeVersionCosting $costing, User $user, mixed $rawItems): void
     {
+        $workspace = Workspace::withoutGlobalScopes()->findOrFail($costing->recipeVersion->workspace_id);
         $submittedItems = collect(is_array($rawItems) ? $rawItems : [])
             ->filter(fn (mixed $row): bool => is_array($row) && isset($row['ingredient_id'], $row['phase_key'], $row['position']))
             ->keyBy(fn (array $row): string => $this->costingKey(
@@ -499,7 +505,7 @@ class RecipeVersionCostingSynchronizer
                 (int) $row['position'],
             ));
 
-        $costing->items()->get()->each(function (RecipeVersionCostingItem $item) use ($costing, $submittedItems, $user): void {
+        $costing->items()->get()->each(function (RecipeVersionCostingItem $item) use ($costing, $submittedItems, $user, $workspace): void {
             $submittedRow = $submittedItems->get($this->costingKey(
                 (int) $item->ingredient_id,
                 $item->phase_key,
@@ -514,10 +520,16 @@ class RecipeVersionCostingSynchronizer
             $item->save();
 
             if ($item->price_per_kg !== null) {
-                $this->userIngredientPriceMemory->remember(
-                    $user,
-                    (int) $item->ingredient_id,
-                    (float) $item->price_per_kg,
+                $ingredient = Ingredient::withoutGlobalScopes()->findOrFail($item->ingredient_id);
+                $this->currentMaterialPriceService->rememberIngredient(
+                    workspace: $workspace,
+                    ingredient: $ingredient,
+                    pricePerMassUnit: (string) $item->price_per_kg,
+                    massUnit: MassUnit::Kilogram->value,
+                    currency: $costing->currency,
+                    source: MaterialPriceSource::ManualCosting,
+                    sourceId: $costing->id,
+                    actor: $user,
                     exceptCostingId: $costing->id,
                 );
             }
@@ -533,14 +545,15 @@ class RecipeVersionCostingSynchronizer
      */
     private function replacePackagingItems(RecipeVersionCosting $costing, mixed $rawItems): void
     {
+        $workspace = Workspace::withoutGlobalScopes()->findOrFail($costing->recipeVersion->workspace_id);
         $submittedItems = collect(is_array($rawItems) ? $rawItems : [])
             ->filter(fn (mixed $row): bool => is_array($row) && filled($row['name'] ?? null))
             ->values();
 
-        $linkedPackagingItems = UserPackagingItem::query()
-            ->where('user_id', $costing->user_id)
+        $linkedPackagingItems = PackagingItem::query()
+            ->where('workspace_id', $workspace->id)
             ->whereIn('id', $submittedItems
-                ->pluck('user_packaging_item_id')
+                ->pluck('packaging_item_id')
                 ->filter(fn (mixed $id): bool => is_numeric($id))
                 ->map(fn (mixed $id): int => (int) $id)
                 ->all())
@@ -551,14 +564,14 @@ class RecipeVersionCostingSynchronizer
         $costing->packagingItems()->delete();
 
         $submittedItems
-            ->each(function (array $row) use ($costing, $linkedPackagingItems, $user): void {
-                $linkedPackagingItemId = isset($row['user_packaging_item_id']) && is_numeric($row['user_packaging_item_id'])
-                    ? (int) $row['user_packaging_item_id']
+            ->each(function (array $row) use ($costing, $linkedPackagingItems, $user, $workspace): void {
+                $linkedPackagingItemId = isset($row['packaging_item_id']) && is_numeric($row['packaging_item_id'])
+                    ? (int) $row['packaging_item_id']
                     : null;
                 $unitCost = (float) ($row['unit_cost'] ?? 0);
 
                 $costing->packagingItems()->create([
-                    'user_packaging_item_id' => $linkedPackagingItemId,
+                    'packaging_item_id' => $linkedPackagingItemId,
                     'name' => trim((string) $row['name']),
                     'unit_cost' => $unitCost,
                     'quantity' => (float) ($row['components_per_unit'] ?? $row['quantity'] ?? 0),
@@ -566,18 +579,18 @@ class RecipeVersionCostingSynchronizer
 
                 $linkedPackagingItem = $linkedPackagingItems->get($linkedPackagingItemId);
 
-                if (! $linkedPackagingItem instanceof UserPackagingItem) {
+                if (! $linkedPackagingItem instanceof PackagingItem) {
                     return;
                 }
 
-                $linkedPackagingItem->forceFill([
-                    'unit_cost' => $unitCost,
-                ])->save();
-
-                $this->liveCostingPricePropagationService->packagingUnitCostChanged(
-                    $user,
-                    $linkedPackagingItem->id,
-                    $unitCost,
+                $this->currentMaterialPriceService->rememberPackaging(
+                    workspace: $workspace,
+                    packagingItem: $linkedPackagingItem,
+                    pricePerItem: (string) $unitCost,
+                    currency: $costing->currency,
+                    source: MaterialPriceSource::ManualCosting,
+                    sourceId: $costing->id,
+                    actor: $user,
                     exceptCostingId: $costing->id,
                 );
             });
@@ -602,7 +615,7 @@ class RecipeVersionCostingSynchronizer
     {
         return $items
             ->groupBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
-                $item->user_packaging_item_id === null ? null : (int) $item->user_packaging_item_id,
+                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             ))
             ->map(fn (Collection $rows): Collection => $rows->values());

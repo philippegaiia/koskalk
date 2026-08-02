@@ -2,11 +2,10 @@
 
 use App\Models\Ingredient;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\OwnerType;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\MediaStorage;
-use App\Services\UserPackagingItemAuthoringService;
+use App\Services\PackagingItemAuthoringService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -59,7 +58,7 @@ it('keeps platform catalog media public and user ingredient media private', func
 
 it('serves packaging media only to its owner', function () {
     $owner = User::factory()->create();
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $owner->id,
         'name' => 'Private carton',
         'unit_cost' => 1.25,
@@ -123,7 +122,7 @@ it('deletes complete private media prefixes after user records are deleted', fun
     Storage::disk('local')->put($ingredientPath, 'ingredient');
     Storage::disk('local')->put($ingredientOrphan, 'orphan');
 
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $owner->id,
         'name' => 'Disposable carton',
         'unit_cost' => 1,
@@ -136,7 +135,7 @@ it('deletes complete private media prefixes after user records are deleted', fun
     Storage::disk('local')->put($packagingOrphan, 'orphan');
 
     app(IngredientFormulaMutationService::class)->removeEverywhereAndDelete($owner, $ingredient);
-    expect(app(UserPackagingItemAuthoringService::class)->delete($packagingItem, $owner))->toBeTrue();
+    expect(app(PackagingItemAuthoringService::class)->delete($packagingItem, $owner))->toBeTrue();
 
     expect(Storage::disk('local')->allFiles('ingredients/'.$ingredient->public_id))->toBe([])
         ->and(Storage::disk('local')->allFiles('packaging-items/'.$packagingItem->public_id))->toBe([]);

@@ -3,14 +3,17 @@
 namespace App\Actions\Purchasing;
 
 use App\ListingPriceBasis;
+use App\MaterialPriceSource;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
+use App\OrganicStatus;
 use App\OwnerType;
 use App\Services\CurrencyCatalog;
+use App\Services\CurrentMaterialPriceService;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\StockUnitKind;
@@ -25,6 +28,7 @@ class SaveSupplierListing
         private readonly ProductionBenchAccess $access,
         private readonly SupplierListingPriceCalculator $priceCalculator,
         private readonly CurrencyCatalog $currencyCatalog,
+        private readonly CurrentMaterialPriceService $currentMaterialPriceService,
     ) {}
 
     /**
@@ -34,7 +38,7 @@ class SaveSupplierListing
         User $actor,
         Workspace $workspace,
         Supplier $supplier,
-        Ingredient|UserPackagingItem $subject,
+        Ingredient|PackagingItem $subject,
         array $attributes,
         ?SupplierListing $listing = null,
     ): SupplierListing {
@@ -94,7 +98,7 @@ class SaveSupplierListing
             $values = [
                 'supplier_id' => $currentSupplier->id,
                 'ingredient_id' => $currentSubject instanceof Ingredient ? $currentSubject->id : null,
-                'user_packaging_item_id' => $currentSubject instanceof UserPackagingItem ? $currentSubject->id : null,
+                'packaging_item_id' => $currentSubject instanceof PackagingItem ? $currentSubject->id : null,
                 ...$data,
                 'unit_kind' => $currentSubject instanceof Ingredient ? StockUnitKind::Mass : StockUnitKind::Count,
                 'canonical_quantity_per_purchase_format' => $prices['canonical_quantity'],
@@ -105,25 +109,50 @@ class SaveSupplierListing
             ];
 
             if (! $currentListing instanceof SupplierListing) {
-                return SupplierListing::query()->create([
+                $currentListing = SupplierListing::query()->create([
                     'workspace_id' => $workspace->id,
                     ...$values,
                 ]);
+            } else {
+                $currentListing->update($values);
             }
 
-            $currentListing->update($values);
+            if ($currentSubject instanceof Ingredient) {
+                $this->currentMaterialPriceService->rememberIngredient(
+                    workspace: $workspace,
+                    ingredient: $currentSubject,
+                    pricePerMassUnit: $prices['price_per_canonical_unit'],
+                    massUnit: 'g',
+                    currency: $currentListing->currency,
+                    source: MaterialPriceSource::SupplierListing,
+                    sourceId: $currentListing->id,
+                    actor: $actor,
+                    recordedAt: $currentListing->price_recorded_at,
+                );
+            } else {
+                $this->currentMaterialPriceService->rememberPackaging(
+                    workspace: $workspace,
+                    packagingItem: $currentSubject,
+                    pricePerItem: $prices['price_per_canonical_unit'],
+                    currency: $currentListing->currency,
+                    source: MaterialPriceSource::SupplierListing,
+                    sourceId: $currentListing->id,
+                    actor: $actor,
+                    recordedAt: $currentListing->price_recorded_at,
+                );
+            }
 
-            return $currentListing->refresh();
+            return $currentListing;
         }, attempts: 5);
     }
 
-    private function existingSubject(Ingredient|UserPackagingItem $subject): Ingredient|UserPackagingItem
+    private function existingSubject(Ingredient|PackagingItem $subject): Ingredient|PackagingItem
     {
         $currentSubject = $subject instanceof Ingredient
             ? Ingredient::query()->find($subject->id)
-            : UserPackagingItem::query()->find($subject->id);
+            : PackagingItem::query()->find($subject->id);
 
-        if (! $currentSubject instanceof Ingredient && ! $currentSubject instanceof UserPackagingItem) {
+        if (! $currentSubject instanceof Ingredient && ! $currentSubject instanceof PackagingItem) {
             $this->invalid('subject', 'Choose an existing ingredient or packaging item.');
         }
 
@@ -133,7 +162,7 @@ class SaveSupplierListing
     private function assertSubjectIsAccessible(
         User $actor,
         Workspace $workspace,
-        Ingredient|UserPackagingItem $subject,
+        Ingredient|PackagingItem $subject,
     ): void {
         if ($subject instanceof Ingredient) {
             $ingredientWorkspaceId = $subject->tenantWorkspaceId();
@@ -154,8 +183,8 @@ class SaveSupplierListing
             }
         }
 
-        if ($subject instanceof UserPackagingItem && $subject->user_id !== $workspace->owner_user_id) {
-            $this->invalid('packaging_item', 'The packaging item must belong to the workspace owner.');
+        if ($subject instanceof PackagingItem && $subject->workspace_id !== $workspace->id) {
+            $this->invalid('packaging_item', 'The packaging item must belong to this workspace.');
         }
     }
 
@@ -163,7 +192,7 @@ class SaveSupplierListing
     private function validatedAttributes(
         array $attributes,
         Supplier $supplier,
-        Ingredient|UserPackagingItem $subject,
+        Ingredient|PackagingItem $subject,
         ?SupplierListing $listing,
     ): array {
         $data = $this->normalizeStrings($attributes);
@@ -181,9 +210,10 @@ class SaveSupplierListing
             'price_amount' => ['required', 'string', 'max:255'],
             'price_unit' => ['nullable', 'string', 'max:24'],
             'supplier_sku' => ['nullable', 'string', 'max:255'],
-            'supplier_name' => ['nullable', 'string', 'max:255'],
+            'supplier_item_name' => ['nullable', 'string', 'max:255'],
             'container' => ['nullable', 'string', 'max:255'],
             'minimum_packs' => ['required', 'integer', 'min:1'],
+            'organic_status' => ['nullable', Rule::enum(OrganicStatus::class)],
             'notes' => ['nullable', 'string'],
             'is_active' => ['required', 'boolean'],
             'currency' => ['required', 'string', 'size:3', Rule::in(array_unique($allowedCurrencies))],
@@ -197,6 +227,12 @@ class SaveSupplierListing
         }
 
         $validated['price_basis'] = $basis;
+        $organicStatus = $validated['organic_status'] ?? null;
+        $validated['organic_status'] = $subject instanceof Ingredient
+            ? ($organicStatus instanceof OrganicStatus
+                ? $organicStatus
+                : OrganicStatus::tryFrom((string) $organicStatus) ?? OrganicStatus::Unknown)
+            : OrganicStatus::Unknown;
         $validated['price_recorded_at'] ??= now();
         $validated['net_unit'] = strtolower($validated['net_unit']);
         $priceUnit = $validated['price_unit'] ?? null;
@@ -204,7 +240,7 @@ class SaveSupplierListing
             ? null
             : strtolower($priceUnit);
 
-        if ($subject instanceof UserPackagingItem) {
+        if ($subject instanceof PackagingItem) {
             if ($validated['net_unit'] !== 'count') {
                 $this->invalid('net_unit', 'Packaging listings must use count units.');
             }
@@ -227,11 +263,11 @@ class SaveSupplierListing
         return $validated;
     }
 
-    private function hasExactSubject(SupplierListing $listing, Ingredient|UserPackagingItem $subject): bool
+    private function hasExactSubject(SupplierListing $listing, Ingredient|PackagingItem $subject): bool
     {
         return $subject instanceof Ingredient
-            ? $listing->ingredient_id === $subject->id && $listing->user_packaging_item_id === null
-            : $listing->user_packaging_item_id === $subject->id && $listing->ingredient_id === null;
+            ? $listing->ingredient_id === $subject->id && $listing->packaging_item_id === null
+            : $listing->packaging_item_id === $subject->id && $listing->ingredient_id === null;
     }
 
     /**

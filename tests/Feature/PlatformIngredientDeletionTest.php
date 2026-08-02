@@ -10,7 +10,6 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
 use App\OwnerType;
 use App\Services\MediaStorage;
 use App\Services\PlatformIngredientDeletionService;
@@ -76,12 +75,7 @@ it('blocks platform ingredient deletion while external records still depend on i
             'ingredient_id' => Ingredient::factory()->create()->id,
             'component_ingredient_id' => $ingredient->id,
         ]),
-        'price memory' => UserIngredientPrice::query()->create([
-            'user_id' => $customer->id,
-            'ingredient_id' => $ingredient->id,
-            'price_per_kg' => 5.5,
-            'currency' => 'EUR',
-        ]),
+        'current price' => rememberIngredientPriceForWorkspace($customer, $ingredient, 5.5),
         'production batch' => ProductionBatchIngredient::factory()->create([
             'ingredient_id' => $ingredient->id,
         ]),
@@ -105,7 +99,7 @@ it('blocks platform ingredient deletion while external records still depend on i
     'formula item' => ['formula'],
     'costing item' => ['costing'],
     'composite ingredient' => ['composite'],
-    'user price memory' => ['price memory'],
+    'workspace current price' => ['current price'],
     'production batch ingredient' => ['production batch'],
 ]);
 

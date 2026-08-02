@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\Recipe;
-use App\Models\UserPackagingItem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -63,7 +63,7 @@ class MediaStorage
         return 'ingredients/'.$publicId.'/'.trim($directory, '/');
     }
 
-    public static function packagingItemDirectory(UserPackagingItem $packagingItem, string $directory): string
+    public static function packagingItemDirectory(PackagingItem $packagingItem, string $directory): string
     {
         return static::packagingItemDirectoryForPublicId((string) $packagingItem->public_id, $directory);
     }
@@ -90,7 +90,7 @@ class MediaStorage
         return static::isNamespacedPath('ingredients/'.(string) $ingredient->public_id.'/', $path);
     }
 
-    public static function isPackagingItemPath(UserPackagingItem $packagingItem, ?string $path): bool
+    public static function isPackagingItemPath(PackagingItem $packagingItem, ?string $path): bool
     {
         return static::isNamespacedPath('packaging-items/'.(string) $packagingItem->public_id.'/', $path);
     }
@@ -302,7 +302,7 @@ class MediaStorage
         return route('ingredients.media', ['ingredient' => $ingredient, 'path' => $path]);
     }
 
-    public static function packagingItemUrl(UserPackagingItem $packagingItem, ?string $path): ?string
+    public static function packagingItemUrl(PackagingItem $packagingItem, ?string $path): ?string
     {
         if (! static::isPackagingItemPath($packagingItem, $path)) {
             return null;
@@ -331,7 +331,7 @@ class MediaStorage
         static::deleteUserPath($path);
     }
 
-    public static function deletePackagingItemPath(UserPackagingItem $packagingItem, ?string $path): void
+    public static function deletePackagingItemPath(PackagingItem $packagingItem, ?string $path): void
     {
         if (! static::isPackagingItemPath($packagingItem, $path)) {
             static::deletePublicPath($path);
@@ -349,7 +349,7 @@ class MediaStorage
         }
     }
 
-    public static function deletePackagingItemDirectory(UserPackagingItem $packagingItem): void
+    public static function deletePackagingItemDirectory(PackagingItem $packagingItem): void
     {
         Storage::disk(static::userDisk())->deleteDirectory('packaging-items/'.(string) $packagingItem->public_id);
     }

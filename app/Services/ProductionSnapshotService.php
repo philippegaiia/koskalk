@@ -100,7 +100,7 @@ class ProductionSnapshotService
 
             foreach ($preview['packaging_rows'] as $row) {
                 $batch->packagingItems()->create([
-                    'user_packaging_item_id' => $row['user_packaging_item_id'],
+                    'packaging_item_id' => $row['packaging_item_id'],
                     'position' => $row['position'],
                     'name' => $row['name'],
                     'components_per_unit' => $row['components_per_unit'],

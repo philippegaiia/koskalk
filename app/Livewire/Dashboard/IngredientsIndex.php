@@ -5,16 +5,17 @@ namespace App\Livewire\Dashboard;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\MassDisplaySystem;
 use App\MassUnit;
+use App\MaterialPriceSource;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\OwnerType;
 use App\Services\CurrentAppUserResolver;
+use App\Services\CurrentMaterialPriceService;
 use App\Services\EntitlementService;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\IngredientFormulaUsageService;
 use App\Services\MediaStorage;
 use App\Services\PriceBasisConverter;
-use App\Services\UserIngredientPriceMemory;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -193,6 +194,12 @@ class IngredientsIndex extends Component
             return;
         }
 
+        $workspace = $user->company();
+
+        if ($workspace === null) {
+            return;
+        }
+
         $ingredient = $this->accessibleIngredient($id, $user);
 
         if (! $ingredient instanceof Ingredient) {
@@ -216,10 +223,15 @@ class IngredientsIndex extends Component
             $this->currentPriceUnit,
         );
 
-        app(UserIngredientPriceMemory::class)->remember(
-            $user,
-            $ingredient->id,
-            (float) $canonicalPricePerKilogram,
+        app(CurrentMaterialPriceService::class)->rememberIngredient(
+            workspace: $workspace,
+            ingredient: $ingredient,
+            pricePerMassUnit: (string) $canonicalPricePerKilogram,
+            massUnit: MassUnit::Kilogram->value,
+            currency: $user->defaultCurrency(),
+            source: MaterialPriceSource::ManualCosting,
+            sourceId: null,
+            actor: $user,
         );
     }
 
@@ -433,7 +445,7 @@ class IngredientsIndex extends Component
             ->withCount(['costingItems', 'recipeItems'])
             ->with([
                 'mediaAssetUsages.mediaAsset',
-                'userPrices' => fn ($query) => $query->where('user_id', $user->id),
+                'currentPrices' => fn ($query) => $query->where('workspace_id', $user->company()?->id),
                 'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
             ])
             ->where(function (Builder $query) use ($user): void {
@@ -450,7 +462,7 @@ class IngredientsIndex extends Component
             ->when($this->ownershipFilter === 'priced', fn (Builder $query): Builder => $query
                 ->whereNull('owner_type')
                 ->where('is_active', true)
-                ->whereHas('userPrices', fn (Builder $priceQuery): Builder => $priceQuery->where('user_id', $user->id)))
+                ->whereHas('currentPrices', fn (Builder $priceQuery): Builder => $priceQuery->where('workspace_id', $user->company()?->id)))
             ->when($search !== '', fn (Builder $query): Builder => $query
                 ->where(fn (Builder $where): Builder => $where
                     ->whereRaw('LOWER(display_name) LIKE ?', ['%'.$search.'%'])

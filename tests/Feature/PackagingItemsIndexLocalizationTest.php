@@ -3,7 +3,6 @@
 use App\Models\InterfaceTranslation;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -16,7 +15,7 @@ beforeEach(function () {
 it('uses the approved packaging library copy and an unlabeled thumbnail column', function () {
     $user = User::factory()->create();
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Kraft soap box',
         'unit_cost' => 0.42,
@@ -44,7 +43,7 @@ it('loads packaging index interface copy from the database', function () {
 
     $user = User::factory()->create(['locale' => 'fr']);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Boîte kraft',
         'unit_cost' => 0.42,

@@ -4,7 +4,6 @@ use App\Livewire\Dashboard\PackagingItemEditor;
 use App\Models\InterfaceTranslation;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -47,7 +46,7 @@ it('uses the approved task-focused copy on the add packaging page', function () 
 
 it('uses the approved edit packaging copy', function () {
     $user = User::factory()->create();
-    $packaging = UserPackagingItem::query()->create([
+    $packaging = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Kraft soap box',
         'unit_cost' => 0.42,
@@ -112,7 +111,7 @@ it('loads the saved packaging status from the database', function () {
     SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
 
     $user = User::factory()->create(['locale' => 'fr']);
-    $packaging = UserPackagingItem::query()->create([
+    $packaging = createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Boîte kraft',
         'unit_cost' => 0.42,

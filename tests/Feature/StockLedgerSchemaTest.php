@@ -12,7 +12,7 @@ use App\StockLotOrigin;
 use App\StockLotStatus;
 use App\StockMovementType;
 use App\StockUnitKind;
-use Database\Factories\UserPackagingItemFactory;
+use Database\Factories\PackagingItemFactory;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -23,7 +23,9 @@ it('creates the lot movement and production document schema', function (): void 
     expect(Schema::hasColumns('stock_lots', [
         'workspace_id',
         'ingredient_id',
-        'user_packaging_item_id',
+        'packaging_item_id',
+        'supplier_listing_id',
+        'organic_status',
         'internal_lot_code',
         'supplier_batch_number',
         'origin',
@@ -65,12 +67,12 @@ it('requires a lot to reference exactly one correctly typed stock subject', func
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create();
     $ingredient = Ingredient::factory()->create();
-    $packaging = UserPackagingItemFactory::new()->for($owner)->create();
+    $packaging = PackagingItemFactory::new()->for($workspace)->create();
 
     expect(fn () => StockLot::query()->create([
         'workspace_id' => $workspace->id,
         'ingredient_id' => $ingredient->id,
-        'user_packaging_item_id' => $packaging->id,
+        'packaging_item_id' => $packaging->id,
         'internal_lot_code' => 'LOT-BOTH',
         'origin' => StockLotOrigin::OpeningBalance,
         'unit_kind' => StockUnitKind::Mass,

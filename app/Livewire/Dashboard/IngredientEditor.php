@@ -13,6 +13,7 @@ use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\MediaAssetUsageService;
@@ -27,7 +28,6 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\TextEntry;
@@ -63,6 +63,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
     #[Locked]
     public string $mediaPublicId;
 
+    #[Locked]
+    public ?string $returnTo = null;
+
+    #[Locked]
+    public ?string $returnSupplierPublicId = null;
+
     /**
      * @var array<string, mixed>
      */
@@ -81,8 +87,17 @@ class IngredientEditor extends Component implements HasActions, HasForms
         UserIngredientAuthoringService $userIngredientAuthoringService,
         MediaAssetUsageService $mediaAssetUsages,
     ): void {
+        if ($ingredient?->exists !== true) {
+            $ingredient = null;
+        }
+
         $this->ingredientId = $ingredient?->id;
         $this->mediaPublicId = (string) ($ingredient?->public_id ?? Str::uuid());
+
+        if ($ingredient === null && request()->query('return_to') === 'supplier_listing') {
+            $this->returnTo = 'supplier_listing';
+            $this->returnSupplierPublicId = $this->validReturnSupplierPublicId(request()->query('supplier'));
+        }
 
         $state = $ingredient instanceof Ingredient
             ? $userIngredientAuthoringService->formData($ingredient)
@@ -185,6 +200,14 @@ class IngredientEditor extends Component implements HasActions, HasForms
 
         if (! $wasEditing) {
             session()->flash('status', $statusMessage);
+
+            if ($this->returnTo === 'supplier_listing') {
+                return redirect()->route('production-bench.purchasing.listings.create', array_filter([
+                    'material_type' => 'ingredient',
+                    'ingredient' => $ingredient->public_id,
+                    'supplier' => $this->returnSupplierPublicId,
+                ]));
+            }
 
             return redirect()->route('ingredients.edit', $ingredient);
         }
@@ -329,6 +352,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label(__('ingredients.editor.details.inci'))
                                             ->maxLength(255)
                                             ->columnSpanFull(),
+                                        Textarea::make('notes')
+                                            ->label(__('ingredients.editor.details.notes'))
+                                            ->rows(3)
+                                            ->columnSpanFull(),
                                     ]),
                                 Section::make(__('ingredients.editor.supplier.section'))
                                     ->description(__('ingredients.editor.supplier.description'))
@@ -336,12 +363,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         'md' => 2,
                                     ])
                                     ->schema([
-                                        TextInput::make('supplier_name')
-                                            ->label(__('ingredients.editor.supplier.name'))
-                                            ->maxLength(255),
-                                        TextInput::make('supplier_reference')
-                                            ->label(__('ingredients.editor.supplier.reference'))
-                                            ->maxLength(255),
                                         TextInput::make('cas_number')
                                             ->label(__('ingredients.editor.supplier.cas_number'))
                                             ->maxLength(255)
@@ -350,10 +371,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label(__('ingredients.editor.supplier.ec_number'))
                                             ->maxLength(255)
                                             ->placeholder(__('ingredients.editor.supplier.ec_placeholder')),
-                                        Toggle::make('is_organic')
-                                            ->label(__('ingredients.editor.supplier.organic'))
-                                            ->helperText(__('ingredients.editor.supplier.organic_helper'))
-                                            ->columnSpanFull(),
                                         Select::make('function_ids')
                                             ->label(__('ingredients.editor.supplier.functions'))
                                             ->multiple()
@@ -792,6 +809,20 @@ class IngredientEditor extends Component implements HasActions, HasForms
     private function isEditing(): bool
     {
         return $this->ingredientId !== null;
+    }
+
+    private function validReturnSupplierPublicId(mixed $supplierPublicId): ?string
+    {
+        $workspaceId = $this->currentUser()?->company()?->id;
+
+        if (! is_string($supplierPublicId) || $workspaceId === null) {
+            return null;
+        }
+
+        return Supplier::query()
+            ->where('workspace_id', $workspaceId)
+            ->where('public_id', $supplierPublicId)
+            ->value('public_id');
     }
 
     private function isReadOnly(): bool

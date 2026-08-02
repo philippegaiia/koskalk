@@ -239,7 +239,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         costingPriceByRowId: {},
         packagingPlanRows: (payload.packagingItems ?? []).map((row) => ({
             id: row.id ?? `packaging-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            user_packaging_item_id: row.user_packaging_item_id ?? null,
+            packaging_item_id: row.packaging_item_id ?? null,
             name: row.name ?? '',
             components_per_unit: row.components_per_unit ?? 1,
             notes: row.notes ?? '',

@@ -11,6 +11,6 @@ it('stores original image names beside persisted upload paths', function () {
             'featured_image_original_name',
             'icon_image_original_name',
         ]))->toBeTrue()
-        ->and(Schema::hasColumns('user_packaging_items', ['featured_image_original_name']))->toBeTrue()
+        ->and(Schema::hasColumns('packaging_items', ['featured_image_original_name']))->toBeTrue()
         ->and(Schema::hasColumns('product_types', ['fallback_image_original_name']))->toBeTrue();
 });

@@ -2,16 +2,19 @@
 
 namespace App\Services;
 
+use App\MaterialPriceSource;
+use App\Models\PackagingItem;
 use App\Models\User;
-use App\Models\UserPackagingItem;
+use App\PackagingCategory;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class UserPackagingItemAuthoringService
+class PackagingItemAuthoringService
 {
     public function __construct(
-        private readonly LiveCostingPricePropagationService $liveCostingPricePropagationService,
+        private readonly CurrentMaterialPriceService $currentMaterialPriceService,
+        private readonly WorkspaceProvisioner $workspaceProvisioner,
     ) {}
 
     /**
@@ -21,6 +24,7 @@ class UserPackagingItemAuthoringService
     {
         return [
             'name' => null,
+            'category' => PackagingCategory::Other->value,
             'unit_cost' => null,
             'notes' => null,
             'featured_image_path' => null,
@@ -31,10 +35,11 @@ class UserPackagingItemAuthoringService
     /**
      * @return array<string, mixed>
      */
-    public function formData(UserPackagingItem $packagingItem): array
+    public function formData(PackagingItem $packagingItem): array
     {
         return [
             'name' => $packagingItem->name,
+            'category' => $packagingItem->category->value,
             'unit_cost' => $packagingItem->unit_cost === null ? null : (float) $packagingItem->unit_cost,
             'notes' => $packagingItem->notes,
             'featured_image_path' => $packagingItem->featured_image_path,
@@ -42,34 +47,30 @@ class UserPackagingItemAuthoringService
         ];
     }
 
-    public function create(array $state, User $user): UserPackagingItem
+    public function create(array $state, User $user): PackagingItem
     {
-        $packagingItem = new UserPackagingItem([
+        $workspace = $this->workspaceProvisioner->ensureCompanyWorkspace($user);
+
+        $packagingItem = new PackagingItem([
             'public_id' => Arr::get($state, 'public_id'),
-            'user_id' => $user->id,
-            'currency' => $user->defaultCurrency(),
+            'workspace_id' => $workspace->id,
+            'created_by_user_id' => $user->id,
         ]);
 
         $packagingItem = $this->persist($packagingItem, $state);
 
-        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
-            $user,
-            $packagingItem->id,
-            (float) $packagingItem->unit_cost,
-        );
+        $this->rememberPrice($packagingItem, $state['unit_cost'] ?? null, $user);
 
-        return $packagingItem;
+        return $packagingItem->load('currentPrice');
     }
 
-    public function update(UserPackagingItem $packagingItem, array $state, User $user): UserPackagingItem
+    public function update(PackagingItem $packagingItem, array $state, User $user): PackagingItem
     {
-        if ($packagingItem->user_id !== $user->id) {
+        if (! $packagingItem->workspace->hasMember($user)) {
             throw ValidationException::withMessages([
                 'packaging_item' => 'Only your own packaging items can be edited from the public app.',
             ]);
         }
-
-        $packagingItem->currency = $user->defaultCurrency();
 
         $previousFeaturedImagePath = $packagingItem->featured_image_path;
         $packagingItem = $this->persist($packagingItem, $state);
@@ -78,18 +79,14 @@ class UserPackagingItemAuthoringService
             MediaStorage::deletePackagingItemPath($packagingItem, $previousFeaturedImagePath);
         }
 
-        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
-            $user,
-            $packagingItem->id,
-            (float) $packagingItem->unit_cost,
-        );
+        $this->rememberPrice($packagingItem, $state['unit_cost'] ?? null, $user);
 
-        return $packagingItem;
+        return $packagingItem->load('currentPrice');
     }
 
-    public function updateUnitCost(UserPackagingItem $packagingItem, User $user, mixed $unitCost): UserPackagingItem
+    public function updateUnitCost(PackagingItem $packagingItem, User $user, mixed $unitCost): PackagingItem
     {
-        if ($packagingItem->user_id !== $user->id) {
+        if (! $packagingItem->workspace->hasMember($user)) {
             throw ValidationException::withMessages([
                 'packaging_item' => 'Only your own packaging items can be edited from the public app.',
             ]);
@@ -101,42 +98,27 @@ class UserPackagingItemAuthoringService
             ]);
         }
 
-        $unitCost = round((float) $unitCost, 4);
+        $this->rememberPrice($packagingItem, $unitCost, $user);
 
-        if ($unitCost < 0) {
-            throw ValidationException::withMessages([
-                'unit_cost' => 'The unit price must not be negative.',
-            ]);
-        }
-
-        $packagingItem->unit_cost = $unitCost;
-        $packagingItem->currency = $user->defaultCurrency();
-        $packagingItem->save();
-
-        $packagingItem = $packagingItem->fresh();
-
-        $this->liveCostingPricePropagationService->packagingUnitCostChanged(
-            $user,
-            $packagingItem->id,
-            (float) $packagingItem->unit_cost,
-        );
-
-        return $packagingItem;
+        return $packagingItem->fresh()->load('currentPrice');
     }
 
-    public function delete(UserPackagingItem $packagingItem, User $user): bool
+    public function delete(PackagingItem $packagingItem, User $user): bool
     {
-        if (
-            $packagingItem->user_id !== $user->id
-            || $packagingItem->costingItems()->exists()
-            || $packagingItem->recipeVersionPackagingItems()->exists()
-        ) {
+        if (! $packagingItem->workspace->hasMember($user)) {
             return false;
+        }
+
+        if ($packagingItem->costingItems()->exists() || $packagingItem->recipeVersionPackagingItems()->exists()) {
+            $packagingItem->update(['is_active' => false]);
+
+            return true;
         }
 
         $featuredImagePath = $packagingItem->featured_image_path;
 
         DB::transaction(function () use ($packagingItem, $featuredImagePath): void {
+            $packagingItem->currentPrice()->delete();
             $packagingItem->delete();
 
             DB::afterCommit(function () use ($packagingItem, $featuredImagePath): void {
@@ -148,10 +130,13 @@ class UserPackagingItemAuthoringService
         return true;
     }
 
-    private function persist(UserPackagingItem $packagingItem, array $state): UserPackagingItem
+    private function persist(PackagingItem $packagingItem, array $state): PackagingItem
     {
         $name = trim((string) Arr::get($state, 'name'));
-        $unitCost = (float) Arr::get($state, 'unit_cost', 0);
+        $categoryState = Arr::get($state, 'category', PackagingCategory::Other);
+        $category = $categoryState instanceof PackagingCategory
+            ? $categoryState
+            : PackagingCategory::tryFrom((string) $categoryState);
 
         if ($name === '') {
             throw ValidationException::withMessages([
@@ -159,17 +144,14 @@ class UserPackagingItemAuthoringService
             ]);
         }
 
-        if ($unitCost < 0) {
+        if (! $category instanceof PackagingCategory) {
             throw ValidationException::withMessages([
-                'unit_cost' => 'The unit price must not be negative.',
+                'category' => 'Select a packaging category.',
             ]);
         }
 
         $packagingItem->name = $name;
-        $packagingItem->unit_cost = $unitCost;
-        $packagingItem->currency = filled($packagingItem->currency)
-            ? $packagingItem->currency
-            : ($state['currency'] ?? 'EUR');
+        $packagingItem->category = $category;
         $packagingItem->notes = blank(Arr::get($state, 'notes'))
             ? null
             : trim((string) Arr::get($state, 'notes'));
@@ -183,5 +165,24 @@ class UserPackagingItemAuthoringService
         $packagingItem->save();
 
         return $packagingItem->fresh();
+    }
+
+    private function rememberPrice(PackagingItem $packagingItem, mixed $unitCost, User $user): void
+    {
+        if ($unitCost === null || $unitCost === '') {
+            throw ValidationException::withMessages([
+                'unit_cost' => 'The unit price field is required.',
+            ]);
+        }
+
+        $this->currentMaterialPriceService->rememberPackaging(
+            workspace: $packagingItem->workspace,
+            packagingItem: $packagingItem,
+            pricePerItem: (string) $unitCost,
+            currency: $user->defaultCurrency(),
+            source: MaterialPriceSource::ManualCosting,
+            sourceId: null,
+            actor: $user,
+        );
     }
 }

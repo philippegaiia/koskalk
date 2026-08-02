@@ -656,7 +656,7 @@
                                                         <a href="{{ route('recipes.edit', $usable) }}" class="text-xs font-medium text-[var(--color-accent-strong)] underline underline-offset-2">{{ $usable->name }}</a>
                                                     @elseif ($usable instanceof \App\Models\Ingredient && $usable->workspace_id === $selectedAsset->workspace_id)
                                                         <a href="{{ route('ingredients.edit', $usable) }}" class="text-xs font-medium text-[var(--color-accent-strong)] underline underline-offset-2">{{ $usable->display_name }}</a>
-                                                    @elseif ($usable instanceof \App\Models\UserPackagingItem && $usable->user_id === $user?->id)
+                                                    @elseif ($usable instanceof \App\Models\PackagingItem && $usable->user_id === $user?->id)
                                                         <a href="{{ route('packaging-items.edit', $usable) }}" class="text-xs font-medium text-[var(--color-accent-strong)] underline underline-offset-2">{{ $usable->name }}</a>
                                                     @else
                                                         <span class="text-xs text-[var(--color-ink-soft)]">{{ __('media_library.missing_target') }}</span>

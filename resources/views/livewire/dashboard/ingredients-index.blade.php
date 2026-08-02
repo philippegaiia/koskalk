@@ -144,8 +144,8 @@
                                                 <span>{{ $displayName }}</span>
                                                 <x-ingredient-source-marker :is-user-owned="$isMine" />
                                             </p>
-                                            @if ($ingredient->supplier_name)
-                                                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $ingredient->supplier_name }}</p>
+                                            @if ($ingredient->notes)
+                                                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $ingredient->notes }}</p>
                                             @endif
                                         </div>
                                     </td>

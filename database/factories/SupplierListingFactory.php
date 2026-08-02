@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\Workspace;
+use App\OrganicStatus;
 use App\StockUnitKind;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -26,9 +27,9 @@ class SupplierListingFactory extends Factory
             'workspace_id' => Workspace::factory(),
             'supplier_id' => Supplier::factory(),
             'ingredient_id' => Ingredient::factory(),
-            'user_packaging_item_id' => null,
+            'packaging_item_id' => null,
             'supplier_sku' => fake()->bothify('SKU-####'),
-            'supplier_name' => null,
+            'supplier_item_name' => null,
             'purchase_format' => '5 kg pail',
             'container' => 'pail',
             'unit_kind' => StockUnitKind::Mass,
@@ -42,6 +43,7 @@ class SupplierListingFactory extends Factory
             'total_price' => '50',
             'currency' => 'EUR',
             'minimum_packs' => 1,
+            'organic_status' => OrganicStatus::Unknown,
             'notes' => null,
             'is_active' => true,
         ];

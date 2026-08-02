@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\OrganicStatus;
 use App\StockUnitKind;
 use Database\Factories\PurchaseOrderLineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -11,9 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'purchase_order_id', 'supplier_listing_id', 'ingredient_id', 'user_packaging_item_id',
+    'purchase_order_id', 'supplier_listing_id', 'ingredient_id', 'packaging_item_id',
     'supplier_sku', 'listing_name', 'unit_kind', 'ordered_packs', 'canonical_quantity_per_pack',
-    'pack_price', 'currency', 'expected_quantity', 'expected_cost',
+    'pack_price', 'currency', 'expected_quantity', 'expected_cost', 'organic_status',
 ])]
 class PurchaseOrderLine extends Model
 {
@@ -44,6 +45,7 @@ class PurchaseOrderLine extends Model
             'pack_price' => 'decimal:9',
             'expected_quantity' => 'decimal:9',
             'expected_cost' => 'decimal:9',
+            'organic_status' => OrganicStatus::class,
         ];
     }
 }

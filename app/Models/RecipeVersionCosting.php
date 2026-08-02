@@ -45,7 +45,7 @@ class RecipeVersionCosting extends Model
     /** The recipe version this costing belongs to. */
     public function recipeVersion(): BelongsTo
     {
-        return $this->belongsTo(RecipeVersion::class);
+        return $this->belongsTo(RecipeVersion::class)->withoutGlobalScopes();
     }
 
     /** The user who owns this costing. */

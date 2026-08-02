@@ -24,13 +24,10 @@ class IngredientDataEntryService
             'current_version' => [
                 'display_name' => $ingredient->display_name,
                 'inci_name' => $ingredient->inci_name,
-                'supplier_name' => $ingredient->supplier_name,
-                'supplier_reference' => $ingredient->supplier_reference,
                 'soap_inci_naoh_name' => $ingredient->soap_inci_naoh_name,
                 'soap_inci_koh_name' => $ingredient->soap_inci_koh_name,
                 'cas_number' => $ingredient->cas_number,
                 'ec_number' => $ingredient->ec_number,
-                'is_organic' => $ingredient->is_organic,
                 'unit' => $ingredient->unit,
                 'is_active' => $ingredient->is_active,
                 'is_manufactured' => $ingredient->is_manufactured ?? false,
@@ -83,17 +80,10 @@ class IngredientDataEntryService
         $ingredient->fill([
             'display_name' => $currentVersionState['display_name'] ?? $ingredient->source_key,
             'inci_name' => $currentVersionState['inci_name'] ?? null,
-            'supplier_name' => array_key_exists('supplier_name', $currentVersionState)
-                ? ($currentVersionState['supplier_name'] ?? null)
-                : $ingredient->supplier_name,
-            'supplier_reference' => array_key_exists('supplier_reference', $currentVersionState)
-                ? ($currentVersionState['supplier_reference'] ?? null)
-                : $ingredient->supplier_reference,
             'soap_inci_naoh_name' => $currentVersionState['soap_inci_naoh_name'] ?? null,
             'soap_inci_koh_name' => $currentVersionState['soap_inci_koh_name'] ?? null,
             'cas_number' => $currentVersionState['cas_number'] ?? null,
             'ec_number' => $currentVersionState['ec_number'] ?? null,
-            'is_organic' => (bool) ($currentVersionState['is_organic'] ?? false),
             'unit' => $currentVersionState['unit'] ?? null,
             'is_active' => array_key_exists('is_active', $currentVersionState)
                 ? (bool) $currentVersionState['is_active']

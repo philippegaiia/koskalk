@@ -4,9 +4,9 @@ namespace App\Services;
 
 use App\GoodsReceiptStatus;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\PurchaseOrderStatus;
 use App\StockLotStatus;
@@ -29,14 +29,14 @@ class StockPositionService
     /**
      * @return array{physical: string, quarantined: string, reserved: string, available: string, incoming: string, forecast: string}
      */
-    public function forWorkspaceSubject(Workspace $workspace, Ingredient|UserPackagingItem $subject): array
+    public function forWorkspaceSubject(Workspace $workspace, Ingredient|PackagingItem $subject): array
     {
         $lots = StockLot::query()
             ->where('workspace_id', $workspace->id)
             ->when(
                 $subject instanceof Ingredient,
                 fn (Builder $query): Builder => $query->where('ingredient_id', $subject->id),
-                fn (Builder $query): Builder => $query->where('user_packaging_item_id', $subject->id),
+                fn (Builder $query): Builder => $query->where('packaging_item_id', $subject->id),
             )
             ->withSum('movements', 'quantity_delta')
             ->get();
@@ -80,7 +80,7 @@ class StockPositionService
         ];
     }
 
-    private function incomingForSubject(Workspace $workspace, Ingredient|UserPackagingItem $subject): string
+    private function incomingForSubject(Workspace $workspace, Ingredient|PackagingItem $subject): string
     {
         $lines = PurchaseOrderLine::query()
             ->whereHas('purchaseOrder', fn (Builder $query): Builder => $query
@@ -89,7 +89,7 @@ class StockPositionService
             ->when(
                 $subject instanceof Ingredient,
                 fn (Builder $query): Builder => $query->where('ingredient_id', $subject->id),
-                fn (Builder $query): Builder => $query->where('user_packaging_item_id', $subject->id),
+                fn (Builder $query): Builder => $query->where('packaging_item_id', $subject->id),
             )
             ->withSum([
                 'receiptLines as posted_packs_received' => fn (Builder $query): Builder => $query

@@ -73,7 +73,7 @@ export function createCostingSection(payload) {
             this.persistedCostingItemPrices = costingPayload?.item_prices ?? [];
             this.packagingCostRows = (costingPayload?.packaging_items ?? []).map((row) => ({
                 id: row.id ?? this.makeLocalPackagingRowId(),
-                user_packaging_item_id: row.user_packaging_item_id ?? null,
+                packaging_item_id: row.packaging_item_id ?? null,
                 name: row.name ?? '',
                 unit_cost: row.unit_cost ?? 0,
                 quantity: row.components_per_unit ?? row.quantity ?? 1,

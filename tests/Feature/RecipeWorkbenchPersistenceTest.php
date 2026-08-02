@@ -9,12 +9,12 @@ use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use App\Models\MediaAsset;
+use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\EntitlementService;
@@ -1658,10 +1658,12 @@ it('returns the saved packaging item payload when saving a packaging catalog ite
         ])
         ->and($result['packaging_item']['id'])->toBeInt();
 
-    expect(UserPackagingItem::query()
-        ->where('user_id', $user->id)
+    $packagingItem = PackagingItem::query()
+        ->where('workspace_id', $user->fresh()->active_workspace_id)
         ->where('name', 'Amber Jar')
-        ->value('unit_cost'))->toBe('1.2345');
+        ->firstOrFail();
+
+    expect($packagingItem->unit_cost)->toBe('1.234500000000');
 });
 
 it('serializes packaging plan row positions with the draft payload', function () {
@@ -1687,8 +1689,8 @@ const payload = globalThis.serializeDraft({
   phaseOrder: [],
   phaseItems: {},
   packagingPlanRows: [
-    { id: 'box', user_packaging_item_id: 11, name: 'Box', components_per_unit: 1, notes: null },
-    { id: 'label', user_packaging_item_id: 12, name: 'Label', components_per_unit: 2, notes: 'Front and back' },
+    { id: 'box', packaging_item_id: 11, name: 'Box', components_per_unit: 1, notes: null },
+    { id: 'label', packaging_item_id: 12, name: 'Label', components_per_unit: 2, notes: 'Front and back' },
   ],
 });
 
@@ -1730,7 +1732,7 @@ const state = globalThis.draftStateFromDraft({
   packagingItems: [
     {
       id: 'saved-packaging-14',
-      user_packaging_item_id: 14,
+      packaging_item_id: 14,
       name: 'Amber Jar',
       components_per_unit: 1,
       notes: 'Primary pack',
@@ -1779,7 +1781,7 @@ JS;
     expect($payload['packagingPlanRows'])->toHaveCount(1)
         ->and($payload['packagingPlanRows'][0])->toMatchArray([
             'id' => 'saved-packaging-14',
-            'user_packaging_item_id' => 14,
+            'packaging_item_id' => 14,
             'name' => 'Amber Jar',
             'components_per_unit' => 1,
             'notes' => 'Primary pack',
@@ -2064,7 +2066,7 @@ it('includes the user packaging catalog on the rendered workbench component', fu
         'name' => 'Soap',
     ]);
 
-    UserPackagingItem::query()->create([
+    createPackagingItemForWorkspace([
         'user_id' => $user->id,
         'name' => 'Amber Jar',
         'unit_cost' => 0.82,
@@ -2202,7 +2204,7 @@ JS;
         ->and($payload['packagingCatalogMessage'])->toBe('Packaging item saved.')
         ->and($payload['packagingCatalogModalOpen'])->toBeFalse()
         ->and($payload['row'])->toMatchArray([
-            'user_packaging_item_id' => 41,
+            'packaging_item_id' => 41,
             'name' => 'Amber Jar',
             'components_per_unit' => 1,
             'notes' => '',
@@ -2261,7 +2263,7 @@ JS;
     $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
 
     expect($payload['row'])->toMatchArray([
-        'user_packaging_item_id' => 91,
+        'packaging_item_id' => 91,
         'name' => 'Soap box',
         'components_per_unit' => 1,
         'notes' => '',

@@ -111,7 +111,7 @@ class RecipeWorkbenchVersionPayloadMapper
                 ->sortBy('position')
                 ->map(fn (RecipeVersionPackagingItem $item): array => [
                     'id' => 'saved-packaging-'.$item->id,
-                    'user_packaging_item_id' => $item->user_packaging_item_id,
+                    'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'components_per_unit' => (float) $item->components_per_unit,
                     'notes' => $item->notes,

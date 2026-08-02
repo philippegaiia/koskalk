@@ -13,13 +13,13 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\Models\UserIngredientPrice;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\OwnerType;
 use App\Services\IngredientCompositeDependencyService;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\RetriableDatabaseTransaction;
+use App\Services\WorkspaceProvisioner;
 use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Database\DatabaseManager;
@@ -559,13 +559,7 @@ it('replaces an ingredient across current backup archived and costing-only versi
     $user = User::factory()->create();
     $source = privateMutationIngredient($user, IngredientCategory::EssentialOil, 'Lavender');
     $replacement = privateMutationIngredient($user, IngredientCategory::Co2Extract, 'Lavender CO2');
-    UserIngredientPrice::query()->create([
-        'user_id' => $user->id,
-        'ingredient_id' => $replacement->id,
-        'price_per_kg' => 84.75,
-        'currency' => 'EUR',
-        'last_used_at' => now(),
-    ]);
+    rememberIngredientPriceForWorkspace($user, $replacement, 84.75);
 
     $recipe = privateMutationRecipe($user, 'Lavender Soap');
     $currentVersion = privateMutationVersion($user, $recipe, isCurrent: true, versionNumber: 3);
@@ -641,7 +635,7 @@ it('clears costing prices when the user has no remembered replacement price', fu
         ->and($costingItem->fresh()->price_per_kg)->toBeNull();
 });
 
-it('uses each costing owners private remembered replacement price', function (): void {
+it('uses the formula workspace replacement price for every costing row', function (): void {
     $formulaOwner = User::factory()->create();
     $otherCostingOwner = User::factory()->create();
     $source = privateMutationIngredient($formulaOwner, IngredientCategory::Additive, 'Old Additive');
@@ -652,20 +646,7 @@ it('uses each costing owners private remembered replacement price', function ():
     $version = privateMutationVersion($formulaOwner, privateMutationRecipe($formulaOwner, 'Shared Costed Formula'));
     $formulaOwnerCostingItem = privateMutationCostingItem($formulaOwner, $source, $version);
     $otherOwnerCostingItem = privateMutationCostingItem($otherCostingOwner, $source, $version);
-    UserIngredientPrice::query()->create([
-        'user_id' => $formulaOwner->id,
-        'ingredient_id' => $replacement->id,
-        'price_per_kg' => 11.25,
-        'currency' => 'EUR',
-        'last_used_at' => now(),
-    ]);
-    UserIngredientPrice::query()->create([
-        'user_id' => $otherCostingOwner->id,
-        'ingredient_id' => $replacement->id,
-        'price_per_kg' => 37.80,
-        'currency' => 'EUR',
-        'last_used_at' => now(),
-    ]);
+    rememberIngredientPriceForWorkspace($formulaOwner, $replacement, 11.25);
 
     app(IngredientFormulaMutationService::class)
         ->replaceEverywhereAndDelete($formulaOwner, $source, $replacement);
@@ -673,7 +654,7 @@ it('uses each costing owners private remembered replacement price', function ():
     expect($formulaOwnerCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
         ->and((float) $formulaOwnerCostingItem->fresh()->price_per_kg)->toBe(11.25)
         ->and($otherOwnerCostingItem->fresh()->ingredient_id)->toBe($replacement->id)
-        ->and((float) $otherOwnerCostingItem->fresh()->price_per_kg)->toBe(37.8);
+        ->and((float) $otherOwnerCostingItem->fresh()->price_per_kg)->toBe(11.25);
 });
 
 it('rolls back every change and keeps media when the replacement is incompatible', function (): void {
@@ -1183,8 +1164,11 @@ function privateMutationVersion(
     bool $isCurrent = true,
     int $versionNumber = 1,
 ): RecipeVersion {
+    $workspace = app(WorkspaceProvisioner::class)->ensureCompanyWorkspace($user);
+
     return RecipeVersion::factory()->create([
         'recipe_id' => $recipe->id,
+        'workspace_id' => $workspace->id,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,

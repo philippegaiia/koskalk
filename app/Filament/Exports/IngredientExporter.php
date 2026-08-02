@@ -25,8 +25,7 @@ class IngredientExporter extends Exporter
             ExportColumn::make('source_key')
                 ->label(__('Code')),
             ExportColumn::make('source_code_prefix'),
-            ExportColumn::make('supplier_name'),
-            ExportColumn::make('supplier_reference'),
+            ExportColumn::make('notes'),
             ExportColumn::make('soap_inci_naoh_name'),
             ExportColumn::make('soap_inci_koh_name'),
             ExportColumn::make('cas_number'),

@@ -23,20 +23,12 @@
             </div>
 
             <form wire:submit="createOpeningStock" class="grid gap-5 p-6 md:grid-cols-2 xl:grid-cols-4">
-                <label class="space-y-2">
-                    <span class="text-sm font-medium">Stock type</span>
-                    <select wire:model.live="subjectType" @disabled($isReadOnly) class="sk-input w-full">
-                        <option value="ingredient">Ingredient</option>
-                        <option value="packaging">Packaging</option>
-                    </select>
-                </label>
-
-                <label class="space-y-2 md:col-span-1 xl:col-span-2">
-                    <span class="text-sm font-medium">{{ $subjectType === 'ingredient' ? 'Ingredient' : 'Packaging item' }}</span>
-                    <select wire:model="subjectId" required @disabled($isReadOnly) class="sk-input w-full">
+                <label class="space-y-2 md:col-span-2 xl:col-span-4">
+                    <span class="text-sm font-medium">Supplier listing</span>
+                    <select wire:model.live="supplierListingId" required @disabled($isReadOnly) class="sk-input w-full">
                         <option value="">Choose…</option>
-                        @foreach ($subjectType === 'ingredient' ? $ingredients : $packagingItems as $subject)
-                            <option value="{{ $subject->id }}">{{ $subjectType === 'ingredient' ? $subject->localizedDisplayName() : $subject->name }}</option>
+                        @foreach ($supplierListings as $listing)
+                            <option value="{{ $listing->id }}">{{ $listing->supplier->name }} · {{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }} · {{ $listing->purchase_format }}</option>
                         @endforeach
                     </select>
                 </label>
@@ -45,8 +37,8 @@
                     <span class="text-sm font-medium">Quantity</span>
                     <div class="flex gap-2">
                         <input wire:model="quantity" inputmode="decimal" required @disabled($isReadOnly) class="sk-input min-w-0 flex-1 font-mono">
-                        <select wire:model="unit" @disabled($isReadOnly || $subjectType === 'packaging') class="sk-input w-24">
-                            @if ($subjectType === 'ingredient')
+                        <select wire:model="unit" @disabled($isReadOnly) class="sk-input w-24">
+                            @if ($unit !== 'count')
                                 <option>g</option><option>kg</option><option>oz</option><option>lb</option>
                             @else
                                 <option value="count">units</option>
@@ -57,11 +49,11 @@
                 </label>
 
                 <label class="space-y-2">
-                    <span class="text-sm font-medium">Status</span>
-                    <select wire:model="status" @disabled($isReadOnly) class="sk-input w-full">
-                        <option value="released">Released · available</option>
-                        <option value="quarantined">Quarantined · unavailable</option>
-                    </select>
+                    <span class="text-sm font-medium">Price / {{ $unit === 'count' ? 'item' : $unit }}</span>
+                    <div class="flex gap-2">
+                        <input wire:model="pricePerUnit" inputmode="decimal" required @disabled($isReadOnly) class="sk-input min-w-0 flex-1 font-mono">
+                        <input wire:model="currency" required maxlength="3" @disabled($isReadOnly) class="sk-input w-20 uppercase">
+                    </div>
                 </label>
 
                 <label class="space-y-2">
@@ -77,11 +69,6 @@
                 <label class="space-y-2">
                     <span class="text-sm font-medium">Expires on</span>
                     <input wire:model="expiresAt" type="date" @disabled($isReadOnly) class="sk-input w-full">
-                </label>
-
-                <label class="flex items-start gap-3 md:col-span-2">
-                    <input wire:model="provenanceComplete" type="checkbox" @disabled($isReadOnly) class="mt-1">
-                    <span><span class="block text-sm font-medium">Provenance complete</span><span class="text-xs text-[var(--color-ink-soft)]">Supplier and batch are known.</span></span>
                 </label>
 
                 <label class="space-y-2 md:col-span-2">

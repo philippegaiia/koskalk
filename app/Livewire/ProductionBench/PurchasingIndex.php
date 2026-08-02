@@ -13,13 +13,13 @@ use App\ListingPriceBasis;
 use App\MediaAssetType;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\Models\Workspace;
 use App\ProductionDocumentType;
 use App\PurchaseOrderStatus;
@@ -118,7 +118,7 @@ class PurchasingIndex extends Component
         $isMass = $this->listingSubjectType === 'ingredient';
         $subject = $isMass
             ? Ingredient::query()->findOrFail($this->listingSubjectId)
-            : UserPackagingItem::query()->where('user_id', $workspace->owner_user_id)->findOrFail($this->listingSubjectId);
+            : PackagingItem::query()->where('workspace_id', $workspace->id)->findOrFail($this->listingSubjectId);
 
         Validator::make([
             'description' => $this->listingDescription,
@@ -138,7 +138,7 @@ class PurchasingIndex extends Component
             'workspace_id' => $workspace->id,
             'supplier_id' => $supplier->id,
             'ingredient_id' => $isMass ? $subject->id : null,
-            'user_packaging_item_id' => $isMass ? null : $subject->id,
+            'packaging_item_id' => $isMass ? null : $subject->id,
             'supplier_sku' => filled($this->listingSku) ? $this->listingSku : null,
             'purchase_format' => $this->listingDescription,
             'unit_kind' => $isMass ? StockUnitKind::Mass : StockUnitKind::Count,
@@ -264,7 +264,7 @@ class PurchasingIndex extends Component
                 ->latest('id')
                 ->get(),
             'ingredients' => Ingredient::query()->where('is_active', true)->orderBy('display_name')->get(),
-            'packagingItems' => UserPackagingItem::query()->where('user_id', $workspace->owner_user_id)->orderBy('name')->get(),
+            'packagingItems' => PackagingItem::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),
             'orders' => PurchaseOrder::query()
                 ->where('workspace_id', $workspace->id)
                 ->with(['supplier', 'lines.receiptLines', 'receipts.lines.stockLot'])

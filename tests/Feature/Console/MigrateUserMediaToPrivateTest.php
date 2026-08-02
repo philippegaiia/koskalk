@@ -2,7 +2,6 @@
 
 use App\Models\Ingredient;
 use App\Models\User;
-use App\Models\UserPackagingItem;
 use App\OwnerType;
 use App\Services\MediaStorage;
 use App\Visibility;
@@ -33,7 +32,7 @@ it('moves only user-owned catalog media to namespaced private storage', function
     $platformIngredient = Ingredient::factory()->create([
         'featured_image_path' => 'ingredients/featured-images/platform.webp',
     ]);
-    $packagingItem = UserPackagingItem::query()->create([
+    $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $owner->id,
         'name' => 'Private bottle',
         'unit_cost' => 2,

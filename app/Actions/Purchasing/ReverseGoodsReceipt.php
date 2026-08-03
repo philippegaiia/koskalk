@@ -6,6 +6,7 @@ use App\GoodsReceiptStatus;
 use App\Models\GoodsReceipt;
 use App\Models\StockMovement;
 use App\Models\User;
+use App\Models\Workspace;
 use App\PurchaseOrderStatus;
 use App\Services\ProductionBenchAccess;
 use App\StockMovementType;
@@ -14,25 +15,46 @@ use Illuminate\Validation\ValidationException;
 
 class ReverseGoodsReceipt
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(
+        private readonly ProductionBenchAccess $access,
+        private readonly RebuildCurrentMaterialPriceAfterReceiptReversal $rebuildCurrentPrice,
+    ) {}
 
     public function handle(User $actor, GoodsReceipt $receipt, ?string $reason = null): GoodsReceipt
     {
-        $this->access->assertWritable($actor, $receipt->purchaseOrder->workspace);
+        $reason = trim((string) $reason);
 
-        return DB::transaction(function () use ($actor, $receipt, $reason): GoodsReceipt {
+        if ($reason === '' || mb_strlen($reason) > 1000) {
+            throw ValidationException::withMessages([
+                'reason' => 'A reversal reason of at most 1000 characters is required.',
+            ]);
+        }
+
+        $workspace = $receipt->workspace;
+        $this->access->assertWritable($actor, $workspace);
+
+        return DB::transaction(function () use ($actor, $receipt, $reason, $workspace): GoodsReceipt {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->access->assertWritable($actor, $lockedWorkspace);
             $lockedReceipt = GoodsReceipt::query()
-                ->with(['lines.stockLot.movements', 'purchaseOrder.lines'])
                 ->lockForUpdate()
                 ->findOrFail($receipt->id);
+
+            if ($lockedReceipt->workspace_id !== $lockedWorkspace->id) {
+                throw ValidationException::withMessages(['receipt' => 'The receipt belongs to another workspace.']);
+            }
 
             if ($lockedReceipt->status !== GoodsReceiptStatus::Posted) {
                 throw ValidationException::withMessages(['receipt' => 'Only a posted receipt can be reversed.']);
             }
 
-            foreach ($lockedReceipt->lines as $line) {
-                $original = $line->stockLot->movements
-                    ->first(fn (StockMovement $movement): bool => $movement->type === StockMovementType::PurchaseReceipt);
+            foreach ($lockedReceipt->lines()->with('stockLot')->get() as $line) {
+                $original = $line->stockLot->movements()
+                    ->where('type', StockMovementType::PurchaseReceipt)
+                    ->where('source_type', $line->getMorphClass())
+                    ->where('source_id', $line->id)
+                    ->lockForUpdate()
+                    ->first();
 
                 if (! $original instanceof StockMovement) {
                     throw ValidationException::withMessages(['receipt' => 'The original stock movement is missing.']);
@@ -58,25 +80,30 @@ class ReverseGoodsReceipt
                 'status' => GoodsReceiptStatus::Reversed,
                 'reversed_at' => now(),
                 'reversed_by_user_id' => $actor->id,
+                'reversal_reason' => $reason,
             ]);
 
-            $order = $lockedReceipt->purchaseOrder()->lockForUpdate()->firstOrFail();
-            $receivedAny = false;
-            $outstanding = false;
+            if ($lockedReceipt->purchase_order_id !== null) {
+                $order = $lockedReceipt->purchaseOrder()->lockForUpdate()->firstOrFail();
+                $receivedAny = false;
+                $outstanding = false;
 
-            foreach ($order->lines as $line) {
-                $receivedPacks = (int) $line->receiptLines()
-                    ->whereHas('goodsReceipt', fn ($query) => $query->where('status', GoodsReceiptStatus::Posted))
-                    ->sum('packs_received');
-                $receivedAny = $receivedAny || $receivedPacks > 0;
-                $outstanding = $outstanding || $receivedPacks < $line->ordered_packs;
+                foreach ($order->lines()->get() as $line) {
+                    $receivedPacks = (int) $line->receiptLines()
+                        ->whereHas('goodsReceipt', fn ($query) => $query->where('status', GoodsReceiptStatus::Posted))
+                        ->sum('packs_received');
+                    $receivedAny = $receivedAny || $receivedPacks > 0;
+                    $outstanding = $outstanding || $receivedPacks < $line->ordered_packs;
+                }
+
+                $order->update([
+                    'status' => ! $receivedAny
+                        ? PurchaseOrderStatus::Ordered
+                        : ($outstanding ? PurchaseOrderStatus::PartiallyReceived : PurchaseOrderStatus::Received),
+                ]);
             }
 
-            $order->update([
-                'status' => ! $receivedAny
-                    ? PurchaseOrderStatus::Ordered
-                    : ($outstanding ? PurchaseOrderStatus::PartiallyReceived : PurchaseOrderStatus::Received),
-            ]);
+            $this->rebuildCurrentPrice->handle($actor, $lockedReceipt);
 
             return $lockedReceipt->refresh();
         }, attempts: 5);

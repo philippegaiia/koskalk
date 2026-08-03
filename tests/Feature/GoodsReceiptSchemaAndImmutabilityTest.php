@@ -3,6 +3,7 @@
 use App\GoodsReceiptSource;
 use App\GoodsReceiptStatus;
 use App\ListingPriceBasis;
+use App\MaterialPriceSource;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\PackagingItem;
@@ -97,6 +98,34 @@ it('stores immutable receipt price snapshots against the required supplier listi
         ->and($line->receipt_price_amount)->toBe('9.750000000')
         ->and($line->purchase_format_price)->toBe('48.750000000')
         ->and($line->currency)->toBe('EUR');
+});
+
+it('stores an immutable previous material price snapshot and protects populated rollback', function (): void {
+    [$receipt, $listing, $lot] = directReceiptFixture();
+    $snapshot = [
+        'price_per_canonical_unit' => '0.007654321987',
+        'currency' => 'USD',
+        'recorded_at' => '2026-08-01T12:00:00.000000Z',
+        'source_type' => MaterialPriceSource::ManualCosting->value,
+        'source_id' => null,
+        'created_by_user_id' => $receipt->created_by_user_id,
+    ];
+    $line = GoodsReceiptLine::factory()
+        ->for($receipt)
+        ->for($listing, 'supplierListing')
+        ->for($lot, 'stockLot')
+        ->direct()
+        ->create(['previous_material_price_snapshot' => $snapshot]);
+
+    expect($line->previous_material_price_snapshot)->toBe($snapshot)
+        ->and(fn () => $line->update(['previous_material_price_snapshot' => null]))
+        ->toThrow(LogicException::class, 'Goods receipt lines are immutable');
+
+    $migration = require database_path('migrations/2026_08_03_035732_add_previous_material_price_snapshot_to_goods_receipt_lines.php');
+
+    expect(fn () => $migration->down())
+        ->toThrow(LogicException::class, 'previous material price snapshots')
+        ->and(Schema::hasColumn('goods_receipt_lines', 'previous_material_price_snapshot'))->toBeTrue();
 });
 
 it('requires every receipt line to retain its supplier listing snapshot', function (): void {

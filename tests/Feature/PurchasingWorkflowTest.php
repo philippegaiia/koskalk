@@ -4,6 +4,7 @@ use App\Actions\Purchasing\CreatePurchaseOrder;
 use App\Actions\Purchasing\PlacePurchaseOrder;
 use App\Actions\Purchasing\ReceivePurchaseOrder;
 use App\GoodsReceiptSource;
+use App\GoodsReceiptStatus;
 use App\ListingPriceBasis;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -63,6 +64,91 @@ it('creates one order with ingredient and packaging listings from the same suppl
         ->and($order->lines->whereNotNull('packaging_item_id'))->toHaveCount(1)
         ->and($order->lines->firstWhere('ingredient_id', $ingredientListing->ingredient_id)?->organic_status)
         ->toBe(OrganicStatus::Organic);
+});
+
+it('posts ingredient and packaging order lines in one receipt as separate inventory entries', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+    $supplier = Supplier::factory()->for($workspace)->create(['default_currency' => 'EUR']);
+    $ingredientListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for(Ingredient::factory()->create())
+        ->create([
+            'total_price' => '50',
+            'price_amount' => '50',
+            'currency' => 'EUR',
+        ]);
+    $packaging = PackagingItem::factory()->for($workspace)->create();
+    $packagingListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->create([
+            'ingredient_id' => null,
+            'packaging_item_id' => $packaging->id,
+            'unit_kind' => StockUnitKind::Count,
+            'net_quantity' => '100',
+            'net_unit' => 'count',
+            'canonical_quantity_per_purchase_format' => '100',
+            'total_price' => '25',
+            'price_amount' => '25',
+            'currency' => 'EUR',
+        ]);
+    $order = app(CreatePurchaseOrder::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        lines: [
+            ['listing' => $ingredientListing, 'packs' => 1],
+            ['listing' => $packagingListing, 'packs' => 1],
+        ],
+    );
+    app(PlacePurchaseOrder::class)->handle($owner, $order);
+    $ingredientOrderLine = $order->lines()->where('supplier_listing_id', $ingredientListing->id)->sole();
+    $packagingOrderLine = $order->lines()->where('supplier_listing_id', $packagingListing->id)->sole();
+
+    $receipt = app(ReceivePurchaseOrder::class)->handle(
+        actor: $owner,
+        order: $order,
+        idempotencyKey: 'mixed-order-delivery',
+        deliveryReference: 'MIXED-001',
+        lines: [
+            [
+                'order_line' => $ingredientOrderLine,
+                'packs_received' => 1,
+                'actual_quantity' => '4.9',
+                'actual_unit' => 'kg',
+            ],
+            [
+                'order_line' => $packagingOrderLine,
+                'packs_received' => 1,
+                'actual_quantity' => '98',
+                'actual_unit' => 'count',
+            ],
+        ],
+        receivedAt: '2026-08-03',
+    );
+
+    $receipt->load('lines.stockLot.movements');
+    $ingredientReceiptLine = $receipt->lines->firstWhere('supplier_listing_id', $ingredientListing->id);
+    $packagingReceiptLine = $receipt->lines->firstWhere('supplier_listing_id', $packagingListing->id);
+
+    expect($receipt->status)->toBe(GoodsReceiptStatus::Posted)
+        ->and($receipt->lines)->toHaveCount(2)
+        ->and($order->refresh()->status)->toBe(PurchaseOrderStatus::Received)
+        ->and($ingredientReceiptLine->stock_lot_id)->not->toBe($packagingReceiptLine->stock_lot_id)
+        ->and($ingredientReceiptLine->stockLot->movements)->toHaveCount(1)
+        ->and($packagingReceiptLine->stockLot->movements)->toHaveCount(1)
+        ->and($ingredientReceiptLine->receipt_price_basis)->toBe(ListingPriceBasis::TotalPurchaseFormat)
+        ->and($ingredientReceiptLine->receipt_price_amount)->toBe('50.000000000')
+        ->and($ingredientReceiptLine->purchase_format_price)->toBe('50.000000000')
+        ->and($ingredientReceiptLine->currency)->toBe('EUR')
+        ->and($packagingReceiptLine->receipt_price_basis)->toBe(ListingPriceBasis::TotalPurchaseFormat)
+        ->and($packagingReceiptLine->receipt_price_amount)->toBe('25.000000000')
+        ->and($packagingReceiptLine->purchase_format_price)->toBe('25.000000000')
+        ->and($packagingReceiptLine->currency)->toBe('EUR')
+        ->and(StockLot::query()->count())->toBe(2);
 });
 
 it('snapshots pack listings and posts partial receipts as distinct lots', function (): void {
@@ -144,7 +230,7 @@ it('snapshots pack listings and posts partial receipts as distinct lots', functi
         ->and($firstReceiptLine->purchase_format_price)->toBe('50.000000000')
         ->and($firstReceiptLine->currency)->toBe('EUR')
         ->and($firstLot->supplier_batch_number)->toBe('MILL-2026-7')
-        ->and($firstLot->historical_unit_cost)->toBe('0.010204081')
+        ->and($firstLot->historical_unit_cost)->toBe('0.010204082')
         ->and($firstLot->movements()->sole()->quantity_delta)->toBe('4900.000000000');
 
     $positionsAfterFirstReceipt = app(StockPositionService::class)

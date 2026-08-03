@@ -14,7 +14,7 @@ use LogicException;
     'goods_receipt_id', 'purchase_order_line_id', 'supplier_listing_id', 'stock_lot_id', 'packs_received',
     'actual_quantity', 'original_quantity', 'original_unit', 'historical_total_cost',
     'receipt_price_basis', 'receipt_price_amount', 'receipt_price_unit', 'purchase_format_price', 'currency',
-    'supplier_batch_number', 'expires_at', 'notes',
+    'supplier_batch_number', 'expires_at', 'notes', 'previous_material_price_snapshot',
 ])]
 class GoodsReceiptLine extends Model
 {
@@ -58,6 +58,7 @@ class GoodsReceiptLine extends Model
             'receipt_price_amount' => 'decimal:9',
             'purchase_format_price' => 'decimal:9',
             'expires_at' => 'date',
+            'previous_material_price_snapshot' => 'array',
         ];
     }
 }

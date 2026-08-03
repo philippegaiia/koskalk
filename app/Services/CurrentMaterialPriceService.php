@@ -96,6 +96,74 @@ class CurrentMaterialPriceService
         return $currentPrice;
     }
 
+    public function restoreIngredientProjection(
+        Workspace $workspace,
+        Ingredient $ingredient,
+        ?string $canonicalPrice,
+        ?string $currency,
+        ?MaterialPriceSource $source,
+        ?int $sourceId,
+        ?CarbonInterface $recordedAt,
+        User $actor,
+        ?int $createdByUserId = null,
+    ): ?CurrentMaterialPrice {
+        $currentPrice = $this->replaceProjection(
+            workspace: $workspace,
+            ingredientId: $ingredient->id,
+            packagingItemId: null,
+            canonicalPrice: $canonicalPrice,
+            currency: $currency,
+            source: $source,
+            sourceId: $sourceId,
+            recordedAt: $recordedAt,
+            actor: $actor,
+            createdByUserId: $createdByUserId,
+        );
+
+        $this->liveCostingPricePropagationService->ingredientPriceChanged(
+            $workspace,
+            $ingredient->id,
+            $currentPrice === null
+                ? '0'
+                : bcmul($currentPrice->price_per_canonical_unit, '1000', 12),
+        );
+
+        return $currentPrice;
+    }
+
+    public function restorePackagingProjection(
+        Workspace $workspace,
+        PackagingItem $packagingItem,
+        ?string $canonicalPrice,
+        ?string $currency,
+        ?MaterialPriceSource $source,
+        ?int $sourceId,
+        ?CarbonInterface $recordedAt,
+        User $actor,
+        ?int $createdByUserId = null,
+    ): ?CurrentMaterialPrice {
+        $currentPrice = $this->replaceProjection(
+            workspace: $workspace,
+            ingredientId: null,
+            packagingItemId: $packagingItem->id,
+            canonicalPrice: $canonicalPrice,
+            currency: $currency,
+            source: $source,
+            sourceId: $sourceId,
+            recordedAt: $recordedAt,
+            actor: $actor,
+            createdByUserId: $createdByUserId,
+        );
+
+        $this->liveCostingPricePropagationService->packagingPriceChanged(
+            $workspace,
+            $packagingItem->id,
+            $currentPrice?->price_per_canonical_unit ?? '0',
+        );
+
+        return $currentPrice;
+    }
+
     private function remember(
         Workspace $workspace,
         ?int $ingredientId,
@@ -158,6 +226,75 @@ class CurrentMaterialPriceService
                     'source_type' => $source,
                     'source_id' => $sourceId,
                     'created_by_user_id' => $actor->id,
+                ],
+            );
+        });
+    }
+
+    private function replaceProjection(
+        Workspace $workspace,
+        ?int $ingredientId,
+        ?int $packagingItemId,
+        ?string $canonicalPrice,
+        ?string $currency,
+        ?MaterialPriceSource $source,
+        ?int $sourceId,
+        ?CarbonInterface $recordedAt,
+        User $actor,
+        ?int $createdByUserId,
+    ): ?CurrentMaterialPrice {
+        return DB::transaction(function () use (
+            $workspace,
+            $ingredientId,
+            $packagingItemId,
+            $canonicalPrice,
+            $currency,
+            $source,
+            $sourceId,
+            $recordedAt,
+            $actor,
+            $createdByUserId,
+        ): ?CurrentMaterialPrice {
+            $subject = $ingredientId === null
+                ? ['packaging_item_id' => $packagingItemId]
+                : ['ingredient_id' => $ingredientId];
+            $existing = CurrentMaterialPrice::query()
+                ->where('workspace_id', $workspace->id)
+                ->where($subject)
+                ->lockForUpdate()
+                ->first();
+
+            if ($canonicalPrice === null) {
+                $existing?->delete();
+
+                return null;
+            }
+
+            if ($currency === null || $source === null || $recordedAt === null) {
+                throw ValidationException::withMessages([
+                    'price' => 'A restored price requires currency, source, and recorded date.',
+                ]);
+            }
+
+            $currency = strtoupper(trim($currency));
+
+            if (preg_match('/^[A-Z]{3}$/', $currency) !== 1) {
+                throw ValidationException::withMessages([
+                    'currency' => 'The currency must be a three-letter code.',
+                ]);
+            }
+
+            return CurrentMaterialPrice::query()->updateOrCreate(
+                ['workspace_id' => $workspace->id, ...$subject],
+                [
+                    'ingredient_id' => $ingredientId,
+                    'packaging_item_id' => $packagingItemId,
+                    'price_per_canonical_unit' => $this->validatedPrice($canonicalPrice),
+                    'currency' => $currency,
+                    'recorded_at' => $recordedAt,
+                    'source_type' => $source,
+                    'source_id' => $sourceId,
+                    'created_by_user_id' => $createdByUserId ?? $actor->id,
                 ],
             );
         });

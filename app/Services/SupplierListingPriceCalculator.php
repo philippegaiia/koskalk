@@ -122,11 +122,13 @@ class SupplierListingPriceCalculator
         ListingPriceBasis $basis,
         string $enteredPrice,
     ): array {
-        if (preg_match('/^[1-9]\d*$/', trim($netQuantity)) !== 1) {
+        $normalizedQuantity = trim($netQuantity);
+
+        if (preg_match('/^[1-9]\d*(?:\.0+)?$/', $normalizedQuantity) !== 1) {
             $this->invalid('net_quantity', 'Count quantities must be positive whole numbers.');
         }
 
-        $quantity = trim($netQuantity);
+        $quantity = explode('.', $normalizedQuantity, 2)[0];
         $price = $this->storageDecimal(
             $this->positiveDecimal($enteredPrice, 'price_amount'),
             'price_amount',

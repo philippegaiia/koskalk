@@ -5,22 +5,15 @@ namespace App\Actions\Purchasing;
 use App\GoodsReceiptSource;
 use App\GoodsReceiptStatus;
 use App\ListingPriceBasis;
-use App\MaterialPriceSource;
 use App\Models\GoodsReceipt;
-use App\Models\Ingredient;
-use App\Models\PackagingItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
-use App\Models\StockLot;
+use App\Models\SupplierListing;
 use App\Models\User;
+use App\Models\Workspace;
 use App\PurchaseOrderStatus;
-use App\Services\CurrentMaterialPriceService;
-use App\Services\InternalLotCodeGenerator;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
-use App\StockLotOrigin;
-use App\StockLotStatus;
-use App\StockMovementType;
 use App\StockUnitKind;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -30,8 +23,8 @@ class ReceivePurchaseOrder
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
-        private readonly InternalLotCodeGenerator $lotCodeGenerator,
-        private readonly CurrentMaterialPriceService $currentMaterialPriceService,
+        private readonly PostGoodsReceiptLine $postLine,
+        private readonly GoodsReceiptInputValidator $inputValidator,
     ) {}
 
     /**
@@ -54,27 +47,55 @@ class ReceivePurchaseOrder
         ?string $receivedAt = null,
         ?string $notes = null,
     ): GoodsReceipt {
-        $this->access->assertWritable($actor, $order->workspace);
+        $header = $this->inputValidator->header(
+            $idempotencyKey,
+            $receivedAt,
+            $deliveryReference,
+            $notes,
+            requiresReceiptDate: false,
+        );
+        $idempotencyKey = $header['idempotency_key'];
+        $receivedAt = $header['received_at'];
+        $deliveryReference = $header['delivery_reference'];
+        $notes = $header['notes'];
+        $workspace = $order->workspace;
+        $this->access->assertWritable($actor, $workspace);
 
         return DB::transaction(function () use (
             $actor,
             $order,
+            $workspace,
             $idempotencyKey,
             $deliveryReference,
             $lines,
             $receivedAt,
             $notes,
         ): GoodsReceipt {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $this->access->assertWritable($actor, $lockedWorkspace);
+            $lockedOrder = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
+
+            if ($lockedOrder->workspace_id !== $lockedWorkspace->id) {
+                throw ValidationException::withMessages(['order' => 'The order belongs to another workspace.']);
+            }
+
             $existing = GoodsReceipt::query()
-                ->where('workspace_id', $order->workspace_id)
+                ->where('workspace_id', $lockedWorkspace->id)
                 ->where('idempotency_key', $idempotencyKey)
                 ->first();
 
             if ($existing instanceof GoodsReceipt) {
-                return $existing;
-            }
+                if (
+                    $existing->source !== GoodsReceiptSource::PurchaseOrder
+                    || $existing->purchase_order_id !== $lockedOrder->id
+                ) {
+                    throw ValidationException::withMessages([
+                        'idempotency_key' => 'This submission key is already used by another receipt context.',
+                    ]);
+                }
 
-            $lockedOrder = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
+                return $existing->loadMissing('lines.stockLot');
+            }
 
             if (! in_array($lockedOrder->status, [PurchaseOrderStatus::Ordered, PurchaseOrderStatus::PartiallyReceived], true)) {
                 throw ValidationException::withMessages(['order' => 'Only a placed order with outstanding packs can be received.']);
@@ -84,14 +105,29 @@ class ReceivePurchaseOrder
                 throw ValidationException::withMessages(['lines' => 'Enter at least one received line.']);
             }
 
-            $lockedLines = [];
+            $normalizedLines = [];
+            $lineIds = [];
 
-            foreach ($lines as $input) {
+            foreach ($lines as $index => $input) {
+                $this->inputValidator->line($input, $index);
                 $line = PurchaseOrderLine::query()->lockForUpdate()->findOrFail($input['order_line']->id);
 
-                if ($line->purchase_order_id !== $lockedOrder->id || $input['packs_received'] < 1) {
+                if (
+                    $line->purchase_order_id !== $lockedOrder->id
+                    || ! isset($input['packs_received'])
+                    || ! is_int($input['packs_received'])
+                    || $input['packs_received'] < 1
+                ) {
                     throw ValidationException::withMessages(['lines' => 'The received line does not belong to this order.']);
                 }
+
+                if (in_array($line->id, $lineIds, true)) {
+                    throw ValidationException::withMessages([
+                        "lines.$index.order_line" => 'Each order line may only appear once per receipt.',
+                    ]);
+                }
+
+                $lineIds[] = $line->id;
 
                 if ($line->supplier_listing_id === null) {
                     throw ValidationException::withMessages([
@@ -99,23 +135,20 @@ class ReceivePurchaseOrder
                     ]);
                 }
 
-                $lockedLines[] = [$input, $line];
-            }
+                $listing = SupplierListing::query()->lockForUpdate()->findOrFail($line->supplier_listing_id);
 
-            $receipt = GoodsReceipt::query()->create([
-                'workspace_id' => $lockedOrder->workspace_id,
-                'supplier_id' => $lockedOrder->supplier_id,
-                'purchase_order_id' => $lockedOrder->id,
-                'source' => GoodsReceiptSource::PurchaseOrder,
-                'delivery_reference' => $deliveryReference,
-                'received_at' => $receivedAt ?? now()->toDateString(),
-                'status' => GoodsReceiptStatus::Posted,
-                'notes' => $notes,
-                'received_by_user_id' => $actor->id,
-                'idempotency_key' => $idempotencyKey,
-            ]);
+                if (
+                    $listing->workspace_id !== $lockedWorkspace->id
+                    || $listing->supplier_id !== $lockedOrder->supplier_id
+                    || $listing->ingredient_id !== $line->ingredient_id
+                    || $listing->packaging_item_id !== $line->packaging_item_id
+                    || $listing->unit_kind !== $line->unit_kind
+                ) {
+                    throw ValidationException::withMessages([
+                        'lines' => 'The supplier listing no longer matches this ordered line.',
+                    ]);
+                }
 
-            foreach ($lockedLines as [$input, $line]) {
                 $alreadyReceived = (int) $line->receiptLines()
                     ->whereHas('goodsReceipt', fn ($query) => $query->where('status', GoodsReceiptStatus::Posted))
                     ->sum('packs_received');
@@ -133,93 +166,62 @@ class ReceivePurchaseOrder
                     throw ValidationException::withMessages(['actual_quantity' => 'Actual received quantity must be positive.']);
                 }
 
-                $historicalTotalCost = bcmul($line->pack_price, (string) $packsReceived, 9);
                 $hasCompletePriceBasis = $line->price_basis !== null && $line->price_amount !== null;
-                $receiptPriceBasis = $hasCompletePriceBasis
-                    ? $line->price_basis
-                    : ListingPriceBasis::TotalPurchaseFormat;
-                $receiptPriceAmount = $hasCompletePriceBasis
-                    ? $line->price_amount
-                    : $line->pack_price;
-                $receiptPriceUnit = $hasCompletePriceBasis ? $line->price_unit : null;
-                $status = StockLotStatus::Released;
-                $lot = StockLot::query()->create([
-                    'workspace_id' => $lockedOrder->workspace_id,
-                    'supplier_listing_id' => $line->supplier_listing_id,
-                    'ingredient_id' => $line->ingredient_id,
-                    'packaging_item_id' => $line->packaging_item_id,
-                    'organic_status' => $line->organic_status,
-                    'internal_lot_code' => $this->lotCodeGenerator->next($lockedOrder->workspace),
-                    'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
-                    'origin' => StockLotOrigin::PurchaseReceipt,
-                    'unit_kind' => $line->unit_kind,
-                    'status' => $status,
-                    'stocked_at' => $receivedAt ?? now()->toDateString(),
-                    'expires_at' => $input['expires_at'] ?? null,
-                    'available_from' => $status === StockLotStatus::Released ? ($receivedAt ?? now()->toDateString()) : null,
-                    'released_at' => $status === StockLotStatus::Released ? now() : null,
-                    'released_by_user_id' => $status === StockLotStatus::Released ? $actor->id : null,
-                    'provenance_complete' => filled($input['supplier_batch_number'] ?? null),
-                    'historical_unit_cost' => bcdiv($historicalTotalCost, $actualQuantity, 9),
-                    'currency' => $line->currency,
-                ]);
-
-                $receiptLine = $receipt->lines()->create([
-                    'purchase_order_line_id' => $line->id,
-                    'supplier_listing_id' => $line->supplier_listing_id,
-                    'stock_lot_id' => $lot->id,
+                $normalizedLines[] = [
+                    'input' => $input,
+                    'line' => $line,
+                    'listing' => $listing,
                     'packs_received' => $packsReceived,
                     'actual_quantity' => $actualQuantity,
-                    'original_quantity' => $input['actual_quantity'],
-                    'original_unit' => $input['actual_unit'],
-                    'historical_total_cost' => $historicalTotalCost,
-                    'receipt_price_basis' => $receiptPriceBasis,
-                    'receipt_price_amount' => $receiptPriceAmount,
-                    'receipt_price_unit' => $receiptPriceUnit,
-                    'purchase_format_price' => $line->pack_price,
-                    'currency' => $line->currency,
-                    'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
-                    'expires_at' => $input['expires_at'] ?? null,
-                    'notes' => $input['notes'] ?? null,
-                ]);
+                    'receipt_price_basis' => $hasCompletePriceBasis
+                        ? $line->price_basis
+                        : ListingPriceBasis::TotalPurchaseFormat,
+                    'receipt_price_amount' => $hasCompletePriceBasis
+                        ? $line->price_amount
+                        : $line->pack_price,
+                    'receipt_price_unit' => $hasCompletePriceBasis ? $line->price_unit : null,
+                ];
+            }
 
-                $lot->movements()->create([
-                    'workspace_id' => $lockedOrder->workspace_id,
-                    'type' => StockMovementType::PurchaseReceipt,
-                    'quantity_delta' => $actualQuantity,
-                    'original_quantity' => $input['actual_quantity'],
-                    'original_unit' => $input['actual_unit'],
-                    'occurred_at' => now(),
-                    'actor_user_id' => $actor->id,
-                    'source_type' => $receiptLine->getMorphClass(),
-                    'source_id' => $receiptLine->id,
-                    'idempotency_key' => $idempotencyKey.':'.$line->id,
-                ]);
+            $receipt = GoodsReceipt::query()->create([
+                'workspace_id' => $lockedWorkspace->id,
+                'supplier_id' => $lockedOrder->supplier_id,
+                'purchase_order_id' => $lockedOrder->id,
+                'source' => GoodsReceiptSource::PurchaseOrder,
+                'delivery_reference' => $deliveryReference,
+                'received_at' => $receivedAt,
+                'status' => GoodsReceiptStatus::Posted,
+                'notes' => $notes,
+                'received_by_user_id' => $actor->id,
+                'idempotency_key' => $idempotencyKey,
+            ]);
 
-                if ($line->ingredient_id !== null) {
-                    $ingredient = Ingredient::withoutGlobalScopes()->findOrFail($line->ingredient_id);
-                    $this->currentMaterialPriceService->rememberIngredient(
-                        workspace: $lockedOrder->workspace,
-                        ingredient: $ingredient,
-                        pricePerMassUnit: $lot->historical_unit_cost,
-                        massUnit: 'g',
-                        currency: $line->currency,
-                        source: MaterialPriceSource::Receipt,
-                        sourceId: $lot->id,
-                        actor: $actor,
-                    );
-                } else {
-                    $packagingItem = PackagingItem::query()->findOrFail($line->packaging_item_id);
-                    $this->currentMaterialPriceService->rememberPackaging(
-                        workspace: $lockedOrder->workspace,
-                        packagingItem: $packagingItem,
-                        pricePerItem: $lot->historical_unit_cost,
-                        currency: $line->currency,
-                        source: MaterialPriceSource::Receipt,
-                        sourceId: $lot->id,
-                        actor: $actor,
-                    );
-                }
+            foreach ($normalizedLines as $normalizedLine) {
+                $input = $normalizedLine['input'];
+                $line = $normalizedLine['line'];
+                $this->postLine->handle(
+                    actor: $actor,
+                    workspace: $lockedWorkspace,
+                    receipt: $receipt,
+                    listing: $normalizedLine['listing'],
+                    purchaseOrderLine: $line,
+                    packsReceived: $normalizedLine['packs_received'],
+                    actualQuantity: $normalizedLine['actual_quantity'],
+                    originalQuantity: $input['actual_quantity'],
+                    originalUnit: $input['actual_unit'],
+                    receiptPriceBasis: $normalizedLine['receipt_price_basis'],
+                    receiptPriceAmount: $normalizedLine['receipt_price_amount'],
+                    receiptPriceUnit: $normalizedLine['receipt_price_unit'],
+                    purchaseFormatPrice: $line->pack_price,
+                    currency: $line->currency,
+                    movementIdempotencyKey: $this->inputValidator->movementKey(
+                        $idempotencyKey,
+                        'purchase-order-line:'.$line->id,
+                    ),
+                    supplierBatchNumber: $input['supplier_batch_number'] ?? null,
+                    expiresAt: $input['expires_at'] ?? null,
+                    notes: $input['notes'] ?? null,
+                );
             }
 
             $outstanding = $lockedOrder->lines()

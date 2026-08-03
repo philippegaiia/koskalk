@@ -55,15 +55,95 @@
         </div>
     </section>
 
-    @if ($receipt->documents->isNotEmpty() || $receipt->lines->contains(fn ($line) => $line->stockLot->documents->isNotEmpty()))
-        <section class="space-y-3">
-            <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.documents') }}</h2>
-            <ul class="divide-y divide-[var(--color-line)] rounded-xl bg-[var(--color-panel)] px-4">
-                @foreach($receipt->documents as $document)<li class="flex items-center justify-between gap-3 py-3 text-sm"><span>{{ $document->mediaAsset->original_filename }}</span><span class="text-xs text-[var(--color-ink-soft)]">{{ $document->type->value }}</span></li>@endforeach
-                @foreach($receipt->lines as $line)@foreach($line->stockLot->documents as $document)<li class="flex items-center justify-between gap-3 py-3 text-sm"><span>{{ $document->mediaAsset->original_filename }}</span><span class="text-xs text-[var(--color-ink-soft)]">{{ $line->stockLot->internal_lot_code }} · {{ $document->type->value }}</span></li>@endforeach @endforeach
+    <section aria-labelledby="receipt-documents-heading" class="space-y-4">
+        <div>
+            <h2 id="receipt-documents-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.receipt.documents') }}</h2>
+            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.documents_help') }}</p>
+        </div>
+
+        @if (session('documentStatus'))
+            <p role="status" class="rounded-xl bg-[var(--color-success-soft)] px-4 py-3 text-sm font-medium text-[var(--color-success-strong)]">{{ session('documentStatus') }}</p>
+        @endif
+
+        @if ($receipt->documents->isNotEmpty() || $receipt->lines->contains(fn ($line) => $line->stockLot->documents->isNotEmpty()))
+            <ul class="divide-y divide-[var(--color-line)] rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-4">
+                @foreach($receipt->documents as $document)
+                    <li class="flex flex-col gap-2 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                        <div class="min-w-0">
+                            <a href="{{ route('media.download', $document->mediaAsset) }}" class="break-all font-medium text-[var(--color-accent-strong)] hover:underline">{{ $document->mediaAsset->original_filename }}</a>
+                            @if($document->note)<p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $document->note }}</p>@endif
+                        </div>
+                        <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.document_types.'.$document->type->value) }} · {{ __('production_bench.receipt.document_receipt_target') }}</span>
+                    </li>
+                @endforeach
+                @foreach($receipt->lines as $line)
+                    @foreach($line->stockLot->documents as $document)
+                        <li class="flex flex-col gap-2 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+                            <div class="min-w-0">
+                                <a href="{{ route('media.download', $document->mediaAsset) }}" class="break-all font-medium text-[var(--color-accent-strong)] hover:underline">{{ $document->mediaAsset->original_filename }}</a>
+                                @if($document->note)<p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $document->note }}</p>@endif
+                            </div>
+                            <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.document_types.'.$document->type->value) }} · {{ $line->stockLot->internal_lot_code }} · {{ $line->stockLot->subjectName() }}</span>
+                        </li>
+                    @endforeach
+                @endforeach
             </ul>
-        </section>
-    @endif
+        @else
+            <p class="rounded-xl border border-dashed border-[var(--color-line-strong)] px-4 py-6 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.no_documents') }}</p>
+        @endif
+
+        @if ($canAttachDocuments)
+            <form wire:submit="attachDocument" data-receipt-document-upload class="sk-card grid gap-5 p-5 sm:grid-cols-2">
+                <label class="space-y-2 sm:col-span-2">
+                    <span class="text-sm font-medium">{{ __('production_bench.receipt.document_file') }}</span>
+                    <input wire:model="documentUpload" type="file" accept="application/pdf,image/*" required aria-invalid="{{ $errors->has('documentUpload') ? 'true' : 'false' }}" aria-describedby="receipt-document-upload-help{{ $errors->has('documentUpload') ? ' receipt-document-upload-error' : '' }}" class="sk-input w-full file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--color-field-muted)] file:px-3 file:py-2 file:text-sm file:font-medium">
+                    <span id="receipt-document-upload-help" class="block text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.receipt.document_file_help') }}</span>
+                    @error('documentUpload')<span id="receipt-document-upload-error" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+                </label>
+
+                <label class="space-y-2">
+                    <span class="text-sm font-medium">{{ __('production_bench.receipt.document_type') }}</span>
+                    <select wire:model.live="documentType" required aria-invalid="{{ $errors->has('documentType') ? 'true' : 'false' }}" @if($errors->has('documentType')) aria-describedby="receipt-document-type-error" @endif class="sk-input w-full">
+                        <optgroup label="{{ __('production_bench.receipt.document_receipt_types') }}">
+                            @foreach($receiptDocumentTypes as $type)<option value="{{ $type }}">{{ __('production_bench.receipt.document_types.'.$type) }}</option>@endforeach
+                        </optgroup>
+                        <optgroup label="{{ __('production_bench.receipt.document_lot_types') }}">
+                            @foreach($lotDocumentTypes as $type)<option value="{{ $type }}">{{ __('production_bench.receipt.document_types.'.$type) }}</option>@endforeach
+                        </optgroup>
+                    </select>
+                    @error('documentType')<span id="receipt-document-type-error" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+                </label>
+
+                <label class="space-y-2">
+                    <span class="text-sm font-medium">{{ __('production_bench.common.notes') }} <span class="font-normal text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.optional') }}</span></span>
+                    <input wire:model="documentNote" maxlength="1000" aria-invalid="{{ $errors->has('documentNote') ? 'true' : 'false' }}" @if($errors->has('documentNote')) aria-describedby="receipt-document-note-error" @endif class="sk-input w-full">
+                    @error('documentNote')<span id="receipt-document-note-error" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+                </label>
+
+                @if(in_array($documentType, $lotDocumentTypes, true))
+                    <fieldset aria-describedby="{{ $errors->has('documentLotIds') ? 'receipt-document-lots-error' : 'receipt-document-lots-help' }}" class="space-y-3 sm:col-span-2">
+                        <legend class="text-sm font-medium">{{ __('production_bench.receipt.document_lot_targets') }}</legend>
+                        <p id="receipt-document-lots-help" class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.receipt.document_lot_targets_help') }}</p>
+                        <div class="grid gap-2 sm:grid-cols-2">
+                            @foreach($receipt->lines as $line)
+                                <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] p-3">
+                                    <input wire:model="documentLotIds" type="checkbox" value="{{ $line->stock_lot_id }}" class="mt-0.5 size-4 accent-[var(--color-accent)]">
+                                    <span><span class="block text-sm font-medium">{{ $line->stockLot->subjectName() }}</span><span class="numeric mt-0.5 block text-xs text-[var(--color-ink-soft)]">{{ $line->stockLot->internal_lot_code }}</span></span>
+                                </label>
+                            @endforeach
+                        </div>
+                        @error('documentLotIds')<span id="receipt-document-lots-error" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+                    </fieldset>
+                @else
+                    <p class="rounded-xl bg-[var(--color-field-muted)] px-4 py-3 text-sm text-[var(--color-ink-soft)] sm:col-span-2">{{ __('production_bench.receipt.document_receipt_target_help') }}</p>
+                @endif
+
+                <div class="sm:col-span-2">
+                    <button type="submit" class="sk-btn sk-btn-primary">{{ __('production_bench.receipt.attach_document') }}</button>
+                </div>
+            </form>
+        @endif
+    </section>
 
     @if ($receipt->status->value === 'reversed')
         <section role="status" class="rounded-xl bg-[var(--color-danger-soft)] p-4 text-sm text-[var(--color-danger-strong)]">

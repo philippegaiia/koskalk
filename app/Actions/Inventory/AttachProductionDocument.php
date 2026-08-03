@@ -2,6 +2,8 @@
 
 namespace App\Actions\Inventory;
 
+use App\MediaAssetStatus;
+use App\MediaAssetType;
 use App\Models\MediaAsset;
 use App\Models\ProductionDocument;
 use App\Models\User;
@@ -38,12 +40,22 @@ class AttachProductionDocument
 
         $this->access->assertWritable($actor, $workspace);
 
-        return ProductionDocument::query()->create([
-            'workspace_id' => $workspace->id,
+        if (
+            $asset->getRawOriginal('status') !== MediaAssetStatus::Ready->value
+            || ! in_array($asset->getRawOriginal('type'), [MediaAssetType::Image->value, MediaAssetType::Pdf->value], true)
+        ) {
+            throw ValidationException::withMessages([
+                'document' => __('production_bench.receipt.document_asset_invalid'),
+            ]);
+        }
+
+        return ProductionDocument::query()->firstOrCreate([
             'media_asset_id' => $asset->id,
             'documentable_type' => $documentable->getMorphClass(),
             'documentable_id' => $documentable->getKey(),
             'type' => $type,
+        ], [
+            'workspace_id' => $workspace->id,
             'attached_by_user_id' => $actor->id,
             'note' => $note,
         ]);

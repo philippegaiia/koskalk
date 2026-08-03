@@ -98,7 +98,19 @@
                         @forelse ($lots as $row)
                             @php($lot = $row['lot'])
                             <tr id="lot-{{ $lot->public_id }}">
-                                <td class="px-5 py-4"><p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p><p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p></td>
+                                <td class="px-5 py-4">
+                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p>
+                                    <p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p>
+                                    @if($lot->goodsReceiptLine?->goodsReceipt)
+                                        @php($originReceipt = $lot->goodsReceiptLine->goodsReceipt)
+                                        <p class="mt-2 text-xs text-[var(--color-ink-soft)]">
+                                            <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.receipt_origin') }}</a>
+                                            · {{ $originReceipt->source->value === 'direct' ? __('production_bench.receipt.direct_source') : __('production_bench.receipt.order_source') }}
+                                            · {{ $originReceipt->supplier->name }}
+                                            · <span class="numeric">{{ $originReceipt->received_at->format('Y-m-d') }}</span>
+                                        </p>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $lot->status->value === 'released' ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' }}">{{ $lot->status->value === 'released' ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined') }}</span></td>
                                 @foreach (['physical', 'quarantined', 'reserved', 'available', 'incoming', 'forecast'] as $position)
                                     <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions'][$position] }}</td>

@@ -34,6 +34,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Throwable;
 
 class PurchasingIndex extends Component
 {
@@ -232,19 +233,35 @@ class PurchasingIndex extends Component
         $lot = StockLot::query()
             ->where('workspace_id', $this->workspace()->id)
             ->findOrFail($this->documentLotId);
-        $asset = $uploads->start(
-            $this->user(),
-            $this->workspace(),
-            $this->documentUpload,
-            [MediaAssetType::Image, MediaAssetType::Pdf],
-        );
-        $attach->handle(
-            actor: $this->user(),
-            documentable: $lot,
-            asset: $asset,
-            type: ProductionDocumentType::from($this->documentType),
-            note: filled($this->documentNote) ? $this->documentNote : null,
-        );
+        $type = ProductionDocumentType::from($this->documentType);
+        $asset = null;
+
+        try {
+            $asset = $uploads->start(
+                $this->user(),
+                $this->workspace(),
+                $this->documentUpload,
+                [MediaAssetType::Image, MediaAssetType::Pdf],
+                processSynchronously: true,
+            )->refresh();
+            $attach->handle(
+                actor: $this->user(),
+                documentable: $lot,
+                asset: $asset,
+                type: $type,
+                note: filled($this->documentNote) ? $this->documentNote : null,
+            );
+        } catch (Throwable $exception) {
+            if ($asset !== null && $asset->exists) {
+                try {
+                    $uploads->rollbackUnreferencedUpload($this->user(), $this->workspace(), $asset);
+                } catch (Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+            }
+
+            throw $exception;
+        }
 
         $this->reset('documentUpload', 'documentLotId', 'documentNote');
     }

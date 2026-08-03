@@ -6,11 +6,13 @@ use App\Jobs\NormalizeMediaAssetJob;
 use App\MediaAssetStatus;
 use App\MediaAssetType;
 use App\Models\MediaAsset;
+use App\Models\ProductionDocument;
 use App\Models\User;
 use App\Models\Workspace;
 use App\WorkspaceMemberRole;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -31,6 +33,7 @@ class MediaAssetUploadService
         Workspace $workspace,
         UploadedFile $upload,
         array $allowedTypes = [MediaAssetType::Image],
+        bool $processSynchronously = false,
     ): MediaAsset {
         Gate::forUser($user)->authorize('create', MediaAsset::class);
         $this->assertCanEditWorkspace($user, $workspace);
@@ -71,7 +74,7 @@ class MediaAssetUploadService
             throw $exception;
         }
 
-        $this->dispatchProcessing($asset);
+        $this->dispatchProcessing($asset, $processSynchronously);
 
         return $asset;
     }
@@ -122,8 +125,59 @@ class MediaAssetUploadService
         return $retried;
     }
 
-    private function dispatchProcessing(MediaAsset $asset): void
+    public function rollbackUnreferencedUpload(User $user, Workspace $workspace, MediaAsset $asset): void
     {
+        $this->assertCanEditWorkspace($user, $workspace);
+
+        if (
+            (int) $asset->workspace_id !== $workspace->id
+            || (int) $asset->uploaded_by_user_id !== $user->id
+        ) {
+            throw new AuthorizationException;
+        }
+
+        DB::transaction(function () use ($asset, $user, $workspace): void {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()->findOrFail($workspace->id);
+            $this->assertCanEditWorkspace($user, $lockedWorkspace);
+
+            $lockedAsset = MediaAsset::query()->lockForUpdate()->find($asset->id);
+
+            if (! $lockedAsset instanceof MediaAsset) {
+                return;
+            }
+
+            if (
+                (int) $lockedAsset->workspace_id !== $lockedWorkspace->id
+                || (int) $lockedAsset->uploaded_by_user_id !== $user->id
+            ) {
+                throw new AuthorizationException;
+            }
+
+            if (
+                $lockedAsset->usages()->exists()
+                || ProductionDocument::query()->where('media_asset_id', $lockedAsset->id)->exists()
+            ) {
+                throw ValidationException::withMessages([
+                    'asset' => 'A referenced media asset cannot be rolled back.',
+                ]);
+            }
+
+            if (filled($lockedAsset->pending_disk) && filled($lockedAsset->pending_path)) {
+                Storage::disk($lockedAsset->pending_disk)->delete($lockedAsset->pending_path);
+            }
+
+            $lockedAsset->delete();
+        });
+    }
+
+    private function dispatchProcessing(MediaAsset $asset, bool $synchronously = false): void
+    {
+        if ($synchronously) {
+            NormalizeMediaAssetJob::dispatchSync($asset->id, $asset->processing_token);
+
+            return;
+        }
+
         NormalizeMediaAssetJob::dispatch($asset->id, $asset->processing_token)
             ->onQueue('media')
             ->afterCommit();

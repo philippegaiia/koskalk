@@ -19,25 +19,29 @@ class MediaAssetDownloadController extends Controller
 
         abort_unless(
             $user instanceof User
-            && $mediaAsset->type === MediaAssetType::Pdf
             && $mediaAsset->status === MediaAssetStatus::Ready
+            && in_array($mediaAsset->type, [MediaAssetType::Image, MediaAssetType::Pdf], true)
             && $user->can('view', $mediaAsset),
             404,
         );
 
-        $document = $mediaAsset->getFirstMedia('document');
-        abort_unless($document !== null, 404);
+        $collection = $mediaAsset->type === MediaAssetType::Pdf ? 'document' : 'master';
+        $storedMedia = $mediaAsset->getFirstMedia($collection);
+        abort_unless($storedMedia !== null, 404);
 
-        $disk = Storage::disk($document->disk);
-        $path = $document->getPathRelativeToRoot();
+        $disk = Storage::disk($storedMedia->disk);
+        $path = $storedMedia->getPathRelativeToRoot();
         abort_unless($disk->exists($path), 404);
 
-        $downloadName = Str::endsWith(Str::lower($mediaAsset->displayName()), '.pdf')
-            ? $mediaAsset->displayName()
-            : $mediaAsset->displayName().'.pdf';
+        $isPdf = $mediaAsset->type === MediaAssetType::Pdf;
+        $downloadName = $isPdf
+            ? (Str::endsWith(Str::lower($mediaAsset->displayName()), '.pdf')
+                ? $mediaAsset->displayName()
+                : $mediaAsset->displayName().'.pdf')
+            : Str::beforeLast($mediaAsset->displayName(), '.').'.webp';
 
         return $disk->download($path, $downloadName, [
-            'Content-Type' => 'application/pdf',
+            'Content-Type' => $isPdf ? 'application/pdf' : 'image/webp',
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',
         ]);

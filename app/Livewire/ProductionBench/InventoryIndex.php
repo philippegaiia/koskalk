@@ -114,7 +114,11 @@ class InventoryIndex extends Component
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
         $lots = StockLot::query()
             ->where('workspace_id', $workspace->id)
-            ->with(['ingredient.translations', 'packagingItem'])
+            ->with([
+                'ingredient.translations',
+                'packagingItem',
+                'goodsReceiptLine.goodsReceipt.supplier',
+            ])
             ->latest('stocked_at')
             ->latest('id')
             ->get()

@@ -5,6 +5,7 @@ use App\GoodsReceiptSource;
 use App\ListingPriceBasis;
 use App\Livewire\ProductionBench\Purchasing\ReceiptCreate;
 use App\Livewire\ProductionBench\Purchasing\ReceiptDetail;
+use App\Livewire\ProductionBench\Purchasing\ReceiptIndex;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\Ingredient;
@@ -129,6 +130,27 @@ it('lists newest receipts with source supplier order and line count', function (
         ->assertSee('2');
 });
 
+it('paginates receipts twenty at a time in newest-first order', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+
+    foreach (range(1, 21) as $day) {
+        GoodsReceipt::factory()->for($workspace)->for($supplier)->direct()->create([
+            'delivery_reference' => sprintf('PAGED-%02d', $day),
+            'received_at' => sprintf('2026-07-%02d', $day),
+        ]);
+    }
+
+    $this->actingAs($owner);
+
+    Livewire::test(ReceiptIndex::class)
+        ->assertSee('PAGED-21')
+        ->assertDontSee('PAGED-01')
+        ->call('setPage', 2)
+        ->assertSee('PAGED-01')
+        ->assertDontSee('PAGED-21');
+});
+
 it('only offers issued purchase orders with outstanding lines and preselects a linked order', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     [, , $outstandingOrder, $outstandingLine] = outstandingReceiptOrder($owner, $workspace);
@@ -149,9 +171,101 @@ it('only offers issued purchase orders with outstanding lines and preselects a l
         ->assertSee('Remaining')
         ->assertDontSee($draftOrder->reference)
         ->assertDontSee($receivedOrder->reference)
-        ->assertSeeHtml('data-receipt-responsive-table')
+        ->assertSeeHtml('data-receipt-editable-lines')
         ->assertSeeHtml('wire:confirm=')
         ->assertSeeHtml('readonly');
+});
+
+it('finds eligible purchase orders and direct listings beyond the first hundred results', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    [$supplier, $listing, $targetOrder, $targetLine] = outstandingReceiptOrder($owner, $workspace);
+    $targetOrder->update([
+        'reference' => 'PO-SEARCH-101',
+        'issued_at' => now()->subYear(),
+    ]);
+
+    foreach (range(1, 101) as $index) {
+        $order = PurchaseOrder::factory()
+            ->for($workspace)
+            ->for($supplier)
+            ->create([
+                'reference' => sprintf('PO-RECENT-%03d', $index),
+                'stage' => ProcurementStage::PurchaseOrder,
+                'status' => PurchaseOrderStatus::Ordered,
+                'issued_at' => now(),
+                'created_by_user_id' => $owner->id,
+            ]);
+        PurchaseOrderLine::factory()
+            ->for($order)
+            ->for($listing, 'supplierListing')
+            ->create([
+                'ingredient_id' => $listing->ingredient_id,
+                'ordered_packs' => 1,
+            ]);
+    }
+
+    $directSupplier = Supplier::factory()->for($workspace)->create();
+
+    foreach (range(1, 101) as $index) {
+        SupplierListing::factory()
+            ->for($workspace)
+            ->for($directSupplier)
+            ->for(Ingredient::factory())
+            ->create(['purchase_format' => sprintf('Common format %03d', $index)]);
+    }
+
+    $targetListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($directSupplier)
+        ->for(Ingredient::factory())
+        ->create(['purchase_format' => 'Unique searchable format']);
+    $this->actingAs($owner);
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value])
+        ->test(ReceiptCreate::class)
+        ->assertDontSee('PO-SEARCH-101')
+        ->set('orderSearch', 'PO-SEARCH-101')
+        ->assertSee('PO-SEARCH-101')
+        ->set('orderPublicId', $targetOrder->public_id)
+        ->assertSet("lineInputs.{$targetLine->id}.packs_received", 1);
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
+        ->test(ReceiptCreate::class)
+        ->set('supplierId', $directSupplier->id)
+        ->assertDontSee('Unique searchable format')
+        ->set('listingSearch', 'Unique searchable')
+        ->assertSee('Unique searchable format')
+        ->assertSet("lineInputs.{$targetListing->id}.packs_received", 1);
+});
+
+it('posts direct listings selected across different searches', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $alphaListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for(Ingredient::factory())
+        ->create(['purchase_format' => 'Alpha searched format']);
+    $betaListing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for(Ingredient::factory())
+        ->create(['purchase_format' => 'Beta searched format']);
+    $this->actingAs($owner);
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
+        ->test(ReceiptCreate::class)
+        ->set('supplierId', $supplier->id)
+        ->set('listingSearch', 'Alpha searched')
+        ->set("selected.{$alphaListing->id}", true)
+        ->set('listingSearch', 'Beta searched')
+        ->set("selected.{$betaListing->id}", true)
+        ->call('post')
+        ->assertHasNoErrors()
+        ->assertRedirect();
+
+    expect(GoodsReceipt::query()->sole()->lines()->pluck('supplier_listing_id')->sort()->values()->all())
+        ->toBe([$alphaListing->id, $betaListing->id]);
 });
 
 it('exposes pressed source semantics and locked currencies for both receipt sources', function (): void {
@@ -174,6 +288,46 @@ it('exposes pressed source semantics and locked currencies for both receipt sour
         ->assertSeeHtml('data-receipt-currency-locked')
         ->assertSeeHtml('readonly')
         ->assertSee('Currency is fixed');
+});
+
+it('renders a single-axis editable receipt layout with associated errors and loading feedback', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    [$supplier, , $order, $line] = outstandingReceiptOrder($owner, $workspace);
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for(Ingredient::factory())->create();
+    $this->actingAs($owner);
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value, 'order' => $order->public_id])
+        ->test(ReceiptCreate::class)
+        ->assertSeeHtml('data-receipt-editable-lines')
+        ->assertSeeHtml('data-receipt-mobile-context')
+        ->assertDontSeeHtml('min-w-[980px]')
+        ->assertSeeHtml('id="receipt-order-currency-help"')
+        ->assertSeeHtml('aria-label="Currency"')
+        ->assertSeeHtml('wire:loading.attr="disabled"')
+        ->assertSeeHtml('wire:target="post"')
+        ->set('receivedAt', '')
+        ->call('post')
+        ->assertHasErrors('receivedAt')
+        ->assertSeeHtml('aria-describedby="receipt-date-error"')
+        ->assertSeeHtml('id="receipt-date-error"')
+        ->set('receivedAt', '2026-08-03')
+        ->set('orderPublicId', null)
+        ->call('post')
+        ->assertHasErrors('orderPublicId')
+        ->assertSeeHtml('aria-describedby="receipt-order-error"')
+        ->assertSeeHtml('id="receipt-order-error"')
+        ->assertSeeHtml('data-receipt-error-summary')
+        ->assertSeeHtml('aria-live="assertive"');
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
+        ->test(ReceiptCreate::class)
+        ->set('supplierId', $supplier->id)
+        ->assertSee($listing->purchase_format)
+        ->set('supplierId', null)
+        ->call('post')
+        ->assertHasErrors('supplierId')
+        ->assertSeeHtml('aria-describedby="receipt-supplier-error"')
+        ->assertSeeHtml('id="receipt-supplier-error"');
 });
 
 it('rejects a crafted invalid receipt source without throwing', function (): void {
@@ -494,6 +648,14 @@ it('renders field-level errors for dynamic PO and direct receipt inputs', functi
         ->assertSeeHtml('aria-describedby="line-'.$line->id.'-actual-quantity-error"')
         ->assertSeeHtml('id="line-'.$line->id.'-actual-quantity-error"');
 
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value, 'order' => $order->public_id])
+        ->test(ReceiptCreate::class)
+        ->set("selected.{$line->id}", true)
+        ->set("lineInputs.{$line->id}.currency", 'USD')
+        ->call('post')
+        ->assertHasErrors("lineInputs.{$line->id}.currency")
+        ->assertSeeHtml('aria-describedby="receipt-order-currency-help line-'.$line->id.'-currency-error"');
+
     Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
         ->test(ReceiptCreate::class)
         ->set('supplierId', $supplier->id)
@@ -503,6 +665,15 @@ it('renders field-level errors for dynamic PO and direct receipt inputs', functi
         ->assertHasErrors("lineInputs.{$listing->id}.packs_received")
         ->assertSeeHtml('aria-describedby="line-'.$listing->id.'-packs-error"')
         ->assertSeeHtml('id="line-'.$listing->id.'-packs-error"');
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
+        ->test(ReceiptCreate::class)
+        ->set('supplierId', $supplier->id)
+        ->set("selected.{$listing->id}", true)
+        ->set("lineInputs.{$listing->id}.currency", 'USD')
+        ->call('post')
+        ->assertHasErrors("lineInputs.{$listing->id}.currency")
+        ->assertSeeHtml('aria-describedby="receipt-direct-currency-help line-'.$listing->id.'-currency-error"');
 });
 
 it('shows receive delivery only for writable issued orders with outstanding quantity', function (): void {

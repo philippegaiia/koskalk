@@ -20,6 +20,25 @@ class StockPositionService
     public function forLot(StockLot $lot): array
     {
         $physical = $this->decimal((string) $lot->movements()->sum('quantity_delta'));
+
+        return $this->forLotWithPhysicalQuantity($lot, $physical);
+    }
+
+    /**
+     * @return array{physical: string, quarantined: string, reserved: string, available: string, incoming: string, forecast: string}
+     */
+    public function forLotWithLoadedMovementSum(StockLot $lot): array
+    {
+        $physical = $this->decimal((string) ($lot->movements_sum_quantity_delta ?? '0'));
+
+        return $this->forLotWithPhysicalQuantity($lot, $physical);
+    }
+
+    /**
+     * @return array{physical: string, quarantined: string, reserved: string, available: string, incoming: string, forecast: string}
+     */
+    private function forLotWithPhysicalQuantity(StockLot $lot, string $physical): array
+    {
         $quarantined = $lot->status === StockLotStatus::Quarantined ? $physical : $this->zero();
         $available = $lot->status === StockLotStatus::Released ? $physical : $this->zero();
 

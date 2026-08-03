@@ -94,14 +94,14 @@
         <div class="pb-24">
             <x-workflow-action-bar data-production-bench-procurement-action-bar>
                 @if ($canReceive)
-                    <a href="{{ route('production-bench.purchasing.receipts.create', ['source' => 'purchase_order', 'order' => $order->public_id]) }}" wire:navigate class="sk-btn sk-btn-outline">{{ __('production_bench.receipt.receive_delivery') }}</a>
+                    <a href="{{ route('production-bench.purchasing.receipts.create', ['source' => 'purchase_order', 'order' => $order->public_id]) }}" wire:navigate class="sk-btn sk-btn-outline min-h-11 data-loading:pointer-events-none data-loading:opacity-50">{{ __('production_bench.receipt.receive_delivery') }}</a>
                 @endif
                 @if ($emailText)
                     <a href="{{ route('production-bench.purchasing.documents.print', $order) }}" target="_blank" class="sk-btn sk-btn-outline">{{ __('production_bench.procurement.print_pdf') }}</a>
                 @endif
-                @if ($canIssueQuotation)<button type="button" wire:click="issueQuotation" class="sk-btn sk-btn-primary">{{ __('production_bench.procurement.issue_quotation') }}</button>@endif
-                @if ($canConvert)<button type="button" wire:click="convertToPurchaseOrder" @if ($needsPrices) wire:confirm="{{ __('production_bench.procurement.convert_missing_prices') }}" data-production-bench-convert-warning @endif class="sk-btn sk-btn-primary">{{ __('production_bench.procurement.convert') }}</button>@endif
-                @if ($canIssueOrder)<button type="button" wire:click="issuePurchaseOrder" class="sk-btn sk-btn-primary">{{ __('production_bench.procurement.issue_order') }}</button>@endif
+                @if ($canIssueQuotation)<button type="button" wire:click="issueQuotation" wire:loading.attr="disabled" wire:target="issueQuotation" class="sk-btn sk-btn-primary">{{ __('production_bench.procurement.issue_quotation') }}</button>@endif
+                @if ($canConvert)<button type="button" wire:click="convertToPurchaseOrder" wire:loading.attr="disabled" wire:target="convertToPurchaseOrder" @if ($needsPrices) wire:confirm="{{ __('production_bench.procurement.convert_missing_prices') }}" data-production-bench-convert-warning @endif class="sk-btn sk-btn-primary">{{ __('production_bench.procurement.convert') }}</button>@endif
+                @if ($canIssueOrder)<button type="button" wire:click="issuePurchaseOrder" wire:loading.attr="disabled" wire:target="issuePurchaseOrder" class="sk-btn sk-btn-primary">{{ __('production_bench.procurement.issue_order') }}</button>@endif
             </x-workflow-action-bar>
         </div>
     @endunless

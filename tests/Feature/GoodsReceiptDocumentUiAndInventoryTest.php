@@ -21,8 +21,10 @@ use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
 use App\WorkspaceMemberRole;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -89,8 +91,19 @@ it('validates the upload and lot target accessibly', function (): void {
         ->assertHasErrors(['documentUpload', 'documentLotIds'])
         ->assertSeeHtml('aria-describedby="receipt-document-upload-help receipt-document-upload-error"')
         ->assertSeeHtml('id="receipt-document-upload-error"')
-        ->assertSeeHtml('aria-describedby="receipt-document-lots-error"')
+        ->assertSeeHtml('aria-describedby="receipt-document-lots-help receipt-document-lots-error"')
         ->assertSeeHtml('id="receipt-document-lots-error"');
+});
+
+it('renders document and reversal loading states with precise targets', function (): void {
+    [$owner, , $receipt] = receiptDocumentUiFixture();
+    $this->actingAs($owner);
+
+    Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $receipt->public_id])
+        ->assertSeeHtml('wire:target="attachDocument"')
+        ->assertSeeHtml('wire:target="reverse"')
+        ->assertSeeHtml('wire:loading.attr="disabled"')
+        ->assertSeeHtml('aria-live="polite"');
 });
 
 it('associates document type and note errors with their fields', function (): void {
@@ -232,6 +245,23 @@ it('links receipt-origin inventory rows to their receipt with stable provenance 
     $after = app(StockPositionService::class)->forLot($lot);
 
     expect($after)->toBe($before);
+});
+
+it('loads movement totals for many inventory lots without per-lot sum queries', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    StockLot::factory()->count(15)->for($workspace)->create();
+    $this->actingAs($owner);
+    $movementQueries = [];
+
+    DB::listen(function (QueryExecuted $query) use (&$movementQueries): void {
+        if (str_contains(strtolower($query->sql), 'stock_movements')) {
+            $movementQueries[] = $query->sql;
+        }
+    });
+
+    Livewire::test(InventoryIndex::class)->assertOk();
+
+    expect($movementQueries)->toHaveCount(1);
 });
 
 it('downloads attached private images through the authenticated media download route', function (): void {

@@ -8,9 +8,12 @@ use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 class ReceiptIndex extends Component
 {
+    use WithPagination;
+
     public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
@@ -24,7 +27,7 @@ class ReceiptIndex extends Component
                 ->withCount('lines')
                 ->latest('received_at')
                 ->latest('id')
-                ->get(),
+                ->paginate(20),
         ]);
     }
 

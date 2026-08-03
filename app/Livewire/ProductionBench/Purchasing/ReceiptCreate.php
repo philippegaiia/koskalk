@@ -20,6 +20,7 @@ use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\StockUnitKind;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -40,6 +41,10 @@ class ReceiptCreate extends Component
     public string $idempotencyKey = '';
 
     public ?int $supplierId = null;
+
+    public string $orderSearch = '';
+
+    public string $listingSearch = '';
 
     public string $receivedAt = '';
 
@@ -89,6 +94,8 @@ class ReceiptCreate extends Component
         $this->source = $selectedSource->value;
         $this->orderPublicId = null;
         $this->supplierId = null;
+        $this->orderSearch = '';
+        $this->listingSearch = '';
         $this->selected = [];
         $this->lineInputs = [];
         $this->actualQuantityEdited = [];
@@ -109,6 +116,7 @@ class ReceiptCreate extends Component
 
     public function updatedSupplierId(): void
     {
+        $this->listingSearch = '';
         $this->selected = [];
         $this->lineInputs = [];
         $this->actualQuantityEdited = [];
@@ -116,6 +124,20 @@ class ReceiptCreate extends Component
         $this->lineUnitKinds = [];
 
         foreach ($this->directListings() as $listing) {
+            $this->lineInputs[$listing->id] = $this->defaultListingInput($listing);
+            $this->actualQuantityEdited[$listing->id] = false;
+            $this->nominalCanonicalQuantities[$listing->id] = $listing->canonical_quantity_per_purchase_format;
+            $this->lineUnitKinds[$listing->id] = $listing->unit_kind->value;
+        }
+    }
+
+    public function updatedListingSearch(): void
+    {
+        foreach ($this->directListings() as $listing) {
+            if (isset($this->lineInputs[$listing->id])) {
+                continue;
+            }
+
             $this->lineInputs[$listing->id] = $this->defaultListingInput($listing);
             $this->actualQuantityEdited[$listing->id] = false;
             $this->nominalCanonicalQuantities[$listing->id] = $listing->canonical_quantity_per_purchase_format;
@@ -191,8 +213,9 @@ class ReceiptCreate extends Component
         $order = $this->selectedOrder();
 
         if (! $order instanceof PurchaseOrder) {
-            $this->addError('orderPublicId', __('production_bench.receipt.order_unavailable'));
-            $this->throwFailure();
+            throw ValidationException::withMessages([
+                'orderPublicId' => __('production_bench.receipt.order_unavailable'),
+            ]);
         }
 
         $lines = $this->selectedLineInputs($order->lines->keyBy('id'));
@@ -232,7 +255,7 @@ class ReceiptCreate extends Component
         $supplier = Supplier::query()
             ->where('workspace_id', $this->workspace()->id)
             ->findOrFail($validated['supplierId']);
-        $lines = $this->selectedLineInputs($this->directListings()->keyBy('id'));
+        $lines = $this->selectedLineInputs($this->selectedDirectListings($supplier)->keyBy('id'));
 
         return $action->handle(
             actor: $this->user(),
@@ -261,10 +284,7 @@ class ReceiptCreate extends Component
     /** @param Collection<int, PurchaseOrderLine|SupplierListing> $models */
     private function selectedLineInputs(Collection $models): Collection
     {
-        $selectedIds = collect($this->selected)
-            ->filter(fn (mixed $selected): bool => (bool) $selected)
-            ->keys()
-            ->map(fn (int|string $id): int => (int) $id);
+        $selectedIds = $this->selectedLineIds();
 
         if ($selectedIds->isEmpty() || $selectedIds->contains(fn (int $id): bool => ! $models->has($id))) {
             $this->addError('selected', __('production_bench.receipt.choose_line'));
@@ -369,12 +389,32 @@ class ReceiptCreate extends Component
             ->where('stage', ProcurementStage::PurchaseOrder)
             ->whereNotNull('issued_at')
             ->whereIn('status', [PurchaseOrderStatus::Ordered, PurchaseOrderStatus::PartiallyReceived])
-            ->with(['supplier', 'lines.supplierListing', 'lines.ingredient.translations', 'lines.packagingItem', 'lines.receiptLines.goodsReceipt'])
-            ->latest('issued_at')
-            ->get()
-            ->filter(fn (PurchaseOrder $order): bool => $order->lines->contains(
-                fn (PurchaseOrderLine $line): bool => $this->remainingPacks($line) > 0,
+            ->whereHas('lines', fn (Builder $query): Builder => $query->whereRaw(
+                'purchase_order_lines.ordered_packs > (select coalesce(sum(goods_receipt_lines.packs_received), 0) from goods_receipt_lines inner join goods_receipts on goods_receipts.id = goods_receipt_lines.goods_receipt_id where goods_receipt_lines.purchase_order_line_id = purchase_order_lines.id and goods_receipts.status = ?)',
+                [GoodsReceiptStatus::Posted->value],
             ))
+            ->when(filled($this->orderSearch), function (Builder $query): Builder {
+                $search = trim($this->orderSearch);
+
+                return $query->where(function (Builder $searchQuery) use ($search): void {
+                    $searchQuery
+                        ->whereLike('reference', "%{$search}%")
+                        ->orWhereHas('supplier', fn (Builder $supplierQuery): Builder => $supplierQuery
+                            ->whereLike('name', "%{$search}%"));
+
+                    if (filled($this->orderPublicId)) {
+                        $searchQuery->orWhere('public_id', $this->orderPublicId);
+                    }
+                });
+            })
+            ->with(['supplier', 'lines.supplierListing', 'lines.ingredient.translations', 'lines.packagingItem', 'lines.receiptLines.goodsReceipt'])
+            ->when(
+                filled($this->orderPublicId),
+                fn (Builder $query): Builder => $query->orderByRaw('case when public_id = ? then 0 else 1 end', [$this->orderPublicId]),
+            )
+            ->latest('issued_at')
+            ->limit(100)
+            ->get()
             ->values();
     }
 
@@ -419,9 +459,42 @@ class ReceiptCreate extends Component
             ->where('workspace_id', $this->workspace()->id)
             ->where('supplier_id', $this->supplierId)
             ->where('is_active', true)
+            ->when(filled($this->listingSearch), function (Builder $query): Builder {
+                $search = trim($this->listingSearch);
+
+                return $query->where(function (Builder $searchQuery) use ($search): void {
+                    $searchQuery
+                        ->whereLike('purchase_format', "%{$search}%")
+                        ->orWhereLike('supplier_sku', "%{$search}%")
+                        ->orWhereLike('supplier_item_name', "%{$search}%");
+                });
+            })
             ->with(['ingredient.translations', 'packagingItem'])
             ->orderBy('purchase_format')
+            ->limit(100)
             ->get();
+    }
+
+    /** @return Collection<int, SupplierListing> */
+    private function selectedDirectListings(Supplier $supplier): Collection
+    {
+        return SupplierListing::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->where('supplier_id', $supplier->id)
+            ->where('is_active', true)
+            ->whereIn('id', $this->selectedLineIds())
+            ->with(['ingredient.translations', 'packagingItem'])
+            ->get();
+    }
+
+    /** @return Collection<int, int> */
+    private function selectedLineIds(): Collection
+    {
+        return collect($this->selected)
+            ->filter(fn (mixed $selected): bool => (bool) $selected)
+            ->keys()
+            ->map(fn (int|string $id): int => (int) $id)
+            ->values();
     }
 
     private function remainingPacks(PurchaseOrderLine $line): int

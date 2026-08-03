@@ -82,9 +82,9 @@
             </form>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
+        <section aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
             <div class="flex items-end justify-between gap-4 border-b border-[var(--color-line)] p-6">
-                <h2 class="text-xl font-semibold">{{ __('production_bench.inventory.stock_positions') }}</h2>
+                <h2 id="inventory-positions-heading" class="text-xl font-semibold">{{ __('production_bench.inventory.stock_positions') }}</h2>
                 <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
             </div>
             <div class="overflow-x-auto">
@@ -104,7 +104,7 @@
                                     @if($lot->goodsReceiptLine?->goodsReceipt)
                                         @php($originReceipt = $lot->goodsReceiptLine->goodsReceipt)
                                         <p class="mt-2 text-xs text-[var(--color-ink-soft)]">
-                                            <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.receipt_origin') }}</a>
+                                            <a href="{{ route('production-bench.purchasing.receipts.show', $originReceipt) }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.inventory.receipt_origin') }}</a>
                                             · {{ $originReceipt->source->value === 'direct' ? __('production_bench.receipt.direct_source') : __('production_bench.receipt.order_source') }}
                                             · {{ $originReceipt->supplier->name }}
                                             · <span class="numeric">{{ $originReceipt->received_at->format('Y-m-d') }}</span>
@@ -117,7 +117,7 @@
                                 @endforeach
                                 <td class="px-5 py-4 text-right">
                                     @if (! $isReadOnly)
-                                        <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" type="button" class="text-xs font-medium text-[var(--color-accent)]">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>
+                                        <button wire:click="{{ $lot->status->value === 'released' ? 'quarantine' : 'release' }}({{ $lot->id }})" wire:loading.attr="disabled" type="button" class="inline-flex min-h-11 items-center px-2 text-xs font-medium text-[var(--color-accent)]">{{ $lot->status->value === 'released' ? __('production_bench.inventory.quarantine') : __('production_bench.inventory.release') }}</button>
                                     @endif
                                 </td>
                             </tr>

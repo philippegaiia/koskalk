@@ -31,8 +31,8 @@
                                 <p class="font-medium text-[var(--color-ink-strong)]">{{ $line->stockLot->subjectName() }}</p>
                                 <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $line->supplierListing->purchase_format }}</p>
                                 <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                                    <a href="{{ route('production-bench.purchasing.supplier', $receipt->supplier).'#listing-'.$line->supplierListing->public_id }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.listing_link') }}</a>
-                                    <a href="{{ route('production-bench.inventory', ['lot' => $line->stockLot->public_id]).'#lot-'.$line->stockLot->public_id }}" wire:navigate class="font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.inventory_link') }}</a>
+                                    <a href="{{ route('production-bench.purchasing.supplier', $receipt->supplier).'#listing-'.$line->supplierListing->public_id }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.listing_link') }}</a>
+                                    <a href="{{ route('production-bench.inventory', ['lot' => $line->stockLot->public_id]).'#lot-'.$line->stockLot->public_id }}" wire:navigate class="inline-flex min-h-11 items-center font-medium text-[var(--color-accent-strong)] hover:underline">{{ __('production_bench.receipt.inventory_link') }}</a>
                                 </div>
                             </div>
                             @if ($line->purchaseOrderLine)
@@ -93,7 +93,7 @@
         @endif
 
         @if ($canAttachDocuments)
-            <form wire:submit="attachDocument" data-receipt-document-upload class="sk-card grid gap-5 p-5 sm:grid-cols-2">
+            <form wire:submit="attachDocument" wire:loading.attr="aria-busy" wire:target="documentUpload,attachDocument" data-receipt-document-upload class="sk-card grid gap-5 p-5 sm:grid-cols-2">
                 <label class="space-y-2 sm:col-span-2">
                     <span class="text-sm font-medium">{{ __('production_bench.receipt.document_file') }}</span>
                     <input wire:model="documentUpload" type="file" accept="application/pdf,image/*" required aria-invalid="{{ $errors->has('documentUpload') ? 'true' : 'false' }}" aria-describedby="receipt-document-upload-help{{ $errors->has('documentUpload') ? ' receipt-document-upload-error' : '' }}" class="sk-input w-full file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--color-field-muted)] file:px-3 file:py-2 file:text-sm file:font-medium">
@@ -121,7 +121,7 @@
                 </label>
 
                 @if(in_array($documentType, $lotDocumentTypes, true))
-                    <fieldset aria-describedby="{{ $errors->has('documentLotIds') ? 'receipt-document-lots-error' : 'receipt-document-lots-help' }}" class="space-y-3 sm:col-span-2">
+                    <fieldset aria-describedby="receipt-document-lots-help{{ $errors->has('documentLotIds') ? ' receipt-document-lots-error' : '' }}" class="space-y-3 sm:col-span-2">
                         <legend class="text-sm font-medium">{{ __('production_bench.receipt.document_lot_targets') }}</legend>
                         <p id="receipt-document-lots-help" class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.receipt.document_lot_targets_help') }}</p>
                         <div class="grid gap-2 sm:grid-cols-2">
@@ -139,7 +139,8 @@
                 @endif
 
                 <div class="sm:col-span-2">
-                    <button type="submit" class="sk-btn sk-btn-primary">{{ __('production_bench.receipt.attach_document') }}</button>
+                    <span wire:loading.delay wire:target="attachDocument" role="status" aria-live="polite" class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.attach_document') }}…</span>
+                    <button type="submit" wire:loading.attr="disabled" wire:target="attachDocument" class="sk-btn sk-btn-primary min-h-11">{{ __('production_bench.receipt.attach_document') }}</button>
                 </div>
             </form>
         @endif
@@ -156,7 +157,8 @@
         <div class="pb-24">
             <x-workflow-action-bar data-receipt-reversal-action-bar>
                 <label class="min-w-0 flex-1 text-sm"><span class="sr-only">{{ __('production_bench.receipt.reversal_reason') }}</span><input wire:model="reversalReason" required placeholder="{{ __('production_bench.receipt.reversal_reason_placeholder') }}" aria-invalid="{{ $errors->has('reversalReason') ? 'true' : 'false' }}" @if($errors->has('reversalReason')) aria-describedby="reversal-reason-error" @endif class="sk-input w-full">@error('reversalReason')<span id="reversal-reason-error" class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label>
-                <button type="button" wire:click="reverse" wire:confirm="{{ __('production_bench.receipt.reverse_confirm') }}" class="sk-btn sk-btn-danger">{{ __('production_bench.receipt.reverse') }}</button>
+                <span wire:loading.delay wire:target="reverse" role="status" aria-live="polite" class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.reverse') }}…</span>
+                <button type="button" wire:click="reverse" wire:confirm="{{ __('production_bench.receipt.reverse_confirm') }}" wire:loading.attr="disabled" wire:target="reverse" class="sk-btn sk-btn-danger min-h-11">{{ __('production_bench.receipt.reverse') }}</button>
             </x-workflow-action-bar>
         </div>
     @endif

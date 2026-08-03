@@ -119,11 +119,12 @@ class InventoryIndex extends Component
                 'packagingItem',
                 'goodsReceiptLine.goodsReceipt.supplier',
             ])
+            ->withSum('movements', 'quantity_delta')
             ->latest('stocked_at')
             ->latest('id')
             ->get()
             ->map(function (StockLot $lot) use ($positions, $massConverter, $displayUnit): array {
-                $stock = $positions->forLot($lot);
+                $stock = $positions->forLotWithLoadedMovementSum($lot);
 
                 return [
                     'lot' => $lot,

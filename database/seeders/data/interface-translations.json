@@ -7854,6 +7854,17 @@
         },
         {
             "group": "production_bench",
+            "key": "inventory.receipt_origin",
+            "text": {
+                "de": "Wareneingang",
+                "es": "Recepción",
+                "fr": "Réception",
+                "it": "Ricezione",
+                "nl": "Ontvangst"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "inventory.release",
             "text": {
                 "de": "Freigeben",
@@ -8569,6 +8580,17 @@
         },
         {
             "group": "production_bench",
+            "key": "navigation.receipts",
+            "text": {
+                "de": "Wareneingänge",
+                "es": "Recepciones",
+                "fr": "Réceptions",
+                "it": "Ricezioni",
+                "nl": "Ontvangsten"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "navigation.supplier_listings",
             "text": {
                 "de": "Lieferantenartikel",
@@ -9126,6 +9148,1403 @@
                 "fr": "Utiliser la demande de devis",
                 "it": "Usa richiesta di preventivo",
                 "nl": "Offerteaanvraag gebruiken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.actual_positive",
+            "text": {
+                "de": "Die tatsächlich erhaltene Menge muss positiv sein.",
+                "es": "La cantidad realmente recibida debe ser positiva.",
+                "fr": "La quantité réellement reçue doit être positive.",
+                "it": "La quantità effettivamente ricevuta deve essere positiva.",
+                "nl": "De werkelijk ontvangen hoeveelheid moet positief zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.actual_quantity",
+            "text": {
+                "de": "Tatsächliche Menge",
+                "es": "Cantidad real",
+                "fr": "Quantité réelle",
+                "it": "Quantità effettiva",
+                "nl": "Werkelijke hoeveelheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.attach_document",
+            "text": {
+                "de": "Dokument anhängen",
+                "es": "Adjuntar documento",
+                "fr": "Joindre le document",
+                "it": "Allega documento",
+                "nl": "Document bijvoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.choose_line",
+            "text": {
+                "de": "Wählen Sie mindestens eine verfügbare Wareneingangsposition.",
+                "es": "Seleccione al menos una línea de recepción disponible.",
+                "fr": "Sélectionnez au moins une ligne de réception disponible.",
+                "it": "Seleziona almeno una riga di ricezione disponibile.",
+                "nl": "Kies ten minste één beschikbare ontvangstregel."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.choose_order",
+            "text": {
+                "de": "Bestellung mit offenen Mengen auswählen",
+                "es": "Seleccione un pedido con cantidades pendientes",
+                "fr": "Sélectionner une commande avec des quantités restantes",
+                "it": "Seleziona un ordine con quantità residue",
+                "nl": "Kies een bestelling met openstaande hoeveelheden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.choose_source",
+            "text": {
+                "de": "Wie wird diese Lieferung erfasst?",
+                "es": "¿Cómo se recibe esta entrega?",
+                "fr": "Comment cette livraison est-elle réceptionnée ?",
+                "it": "Come viene registrata questa consegna?",
+                "nl": "Hoe wordt deze levering ontvangen?"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.choose_supplier",
+            "text": {
+                "de": "Lieferant auswählen",
+                "es": "Seleccione un proveedor",
+                "fr": "Sélectionner un fournisseur",
+                "it": "Seleziona un fornitore",
+                "nl": "Kies een leverancier"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.count",
+            "text": {
+                "de": "Stück",
+                "es": "unidades",
+                "fr": "unités",
+                "it": "pezzi",
+                "nl": "stuks"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.currency_locked_help",
+            "text": {
+                "de": "Die Währung wird durch die Bestellung oder das Lieferantenangebot festgelegt. Währungsumrechnungen werden nicht unterstützt.",
+                "es": "La moneda viene fijada por el pedido o la oferta del proveedor. No se admite la conversión de divisas.",
+                "fr": "La devise est définie par la commande ou l’offre fournisseur. La conversion de devises n’est pas prise en charge.",
+                "it": "La valuta è definita dall’ordine o dall’offerta del fornitore. La conversione valutaria non è supportata.",
+                "nl": "De valuta wordt bepaald door de bestelling of leveranciersvermelding. Valutaconversie wordt niet ondersteund."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.currency_mismatch",
+            "text": {
+                "de": "Die Eingangswährung muss der Währung der Bestellposition entsprechen.",
+                "es": "La moneda de recepción debe coincidir con la de la línea del pedido.",
+                "fr": "La devise de réception doit correspondre à celle de la ligne de commande.",
+                "it": "La valuta di ricezione deve corrispondere a quella della riga d’ordine.",
+                "nl": "De ontvangstvaluta moet overeenkomen met de valuta van de bestelregel."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.date_invalid",
+            "text": {
+                "de": "Das Datum muss ein gültiges Kalenderdatum im Format JJJJ-MM-TT sein.",
+                "es": "La fecha debe ser válida y tener el formato AAAA-MM-DD.",
+                "fr": "La date doit être valide et au format AAAA-MM-JJ.",
+                "it": "La data deve essere valida e nel formato AAAA-MM-GG.",
+                "nl": "De datum moet een geldige kalenderdatum in de notatie JJJJ-MM-DD zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.delivery_reference",
+            "text": {
+                "de": "Lieferscheinreferenz",
+                "es": "Referencia de entrega",
+                "fr": "Référence de livraison",
+                "it": "Riferimento di consegna",
+                "nl": "Leveringsreferentie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.direct",
+            "text": {
+                "de": "Direkter Wareneingang",
+                "es": "Recepción directa",
+                "fr": "Réception directe",
+                "it": "Ricezione diretta",
+                "nl": "Directe ontvangst"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.direct_currency_mismatch",
+            "text": {
+                "de": "Die Währung muss unterstützt werden und der Währung des Lieferantenangebots entsprechen.",
+                "es": "La moneda debe ser compatible y coincidir con la de la oferta del proveedor.",
+                "fr": "La devise doit être prise en charge et correspondre à celle de l’offre fournisseur.",
+                "it": "La valuta deve essere supportata e corrispondere a quella dell’offerta del fornitore.",
+                "nl": "De valuta moet worden ondersteund en overeenkomen met die van de leveranciersvermelding."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.direct_help",
+            "text": {
+                "de": "Vorhandene Lieferantenangebote ohne Bestellung einlagern.",
+                "es": "Reciba ofertas de proveedor existentes sin un pedido.",
+                "fr": "Réceptionnez des offres fournisseur existantes sans commande.",
+                "it": "Ricevi offerte fornitore esistenti senza un ordine.",
+                "nl": "Ontvang bestaande leveranciersvermeldingen zonder bestelling."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.direct_line_order_reference",
+            "text": {
+                "de": "Eine direkte Wareneingangsposition darf keine Bestellung referenzieren.",
+                "es": "Una línea de recepción directa no puede hacer referencia a un pedido.",
+                "fr": "Une ligne de réception directe ne peut pas référencer une commande.",
+                "it": "Una riga di ricezione diretta non può fare riferimento a un ordine.",
+                "nl": "Een directe ontvangstregel mag niet naar een bestelling verwijzen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.direct_listing_active",
+            "text": {
+                "de": "Das Angebot muss für diesen Arbeitsbereich und Lieferanten aktiv sein.",
+                "es": "La oferta debe estar activa para este espacio de trabajo y proveedor.",
+                "fr": "L’offre doit être active pour cet espace de travail et ce fournisseur.",
+                "it": "L’offerta deve essere attiva per questo spazio di lavoro e fornitore.",
+                "nl": "De vermelding moet actief zijn voor deze werkruimte en leverancier."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.direct_source",
+            "text": {
+                "de": "Direkt",
+                "es": "Directa",
+                "fr": "Directe",
+                "it": "Diretta",
+                "nl": "Direct"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_asset_invalid",
+            "text": {
+                "de": "Das Dokument muss eine private, fertig verarbeitete PDF- oder Bilddatei sein.",
+                "es": "El documento debe ser un PDF o una imagen privada y lista.",
+                "fr": "Le document doit être un PDF ou une image privée et prête.",
+                "it": "Il documento deve essere un PDF o un’immagine privata e pronta.",
+                "nl": "Het document moet een privé-pdf of -afbeelding zijn die gereed is."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_attached",
+            "text": {
+                "de": "Dokument angehängt.",
+                "es": "Documento adjuntado.",
+                "fr": "Document joint.",
+                "it": "Documento allegato.",
+                "nl": "Document bijgevoegd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_file",
+            "text": {
+                "de": "Datei",
+                "es": "Archivo",
+                "fr": "Fichier",
+                "it": "File",
+                "nl": "Bestand"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_file_help",
+            "text": {
+                "de": "PDF oder Bild, maximal 10 MB. Dateien bleiben privat.",
+                "es": "PDF o imagen, hasta 10 MB. Los archivos permanecen privados.",
+                "fr": "PDF ou image, 10 Mo maximum. Les fichiers restent privés.",
+                "it": "PDF o immagine, fino a 10 MB. I file restano privati.",
+                "nl": "Pdf of afbeelding, maximaal 10 MB. Bestanden blijven privé."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_lot_target_invalid",
+            "text": {
+                "de": "Jedes ausgewählte Los muss zu diesem Wareneingang gehören.",
+                "es": "Cada lote seleccionado debe pertenecer a esta recepción.",
+                "fr": "Chaque lot sélectionné doit appartenir à cette réception.",
+                "it": "Ogni lotto selezionato deve appartenere a questa ricezione.",
+                "nl": "Elke geselecteerde partij moet bij deze ontvangst horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_lot_target_required",
+            "text": {
+                "de": "Wählen Sie mindestens ein zugehöriges Eingangslos.",
+                "es": "Seleccione al menos un lote relacionado con la recepción.",
+                "fr": "Sélectionnez au moins un lot associé à la réception.",
+                "it": "Seleziona almeno un lotto collegato alla ricezione.",
+                "nl": "Kies ten minste één bijbehorende ontvangstpartij."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_lot_targets",
+            "text": {
+                "de": "Zugehörige Lose",
+                "es": "Lotes relacionados",
+                "fr": "Lots associés",
+                "it": "Lotti collegati",
+                "nl": "Bijbehorende partijen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_lot_targets_help",
+            "text": {
+                "de": "Wählen Sie ein oder mehrere Lose dieses Wareneingangs.",
+                "es": "Seleccione uno o varios lotes de esta recepción.",
+                "fr": "Sélectionnez un ou plusieurs lots de cette réception.",
+                "it": "Seleziona uno o più lotti di questa ricezione.",
+                "nl": "Kies één of meer partijen van deze ontvangst."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_lot_types",
+            "text": {
+                "de": "Losdokumente",
+                "es": "Documentos de lote",
+                "fr": "Documents de lot",
+                "it": "Documenti del lotto",
+                "nl": "Partijdocumenten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_receipt_target",
+            "text": {
+                "de": "Wareneingang",
+                "es": "Recepción",
+                "fr": "Réception",
+                "it": "Ricezione",
+                "nl": "Ontvangst"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_receipt_target_help",
+            "text": {
+                "de": "Dieses Dokument wird an den Wareneingang angehängt.",
+                "es": "Este documento se adjuntará a la recepción.",
+                "fr": "Ce document sera joint à la réception.",
+                "it": "Questo documento verrà allegato alla ricezione.",
+                "nl": "Dit document wordt aan de ontvangst gekoppeld."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_receipt_target_only",
+            "text": {
+                "de": "Wareneingangsdokumente dürfen nicht einzelnen Losen zugeordnet werden.",
+                "es": "Los documentos de recepción no pueden dirigirse a lotes individuales.",
+                "fr": "Les documents de réception ne peuvent pas cibler des lots individuels.",
+                "it": "I documenti di ricezione non possono essere associati a singoli lotti.",
+                "nl": "Ontvangstdocumenten kunnen niet aan afzonderlijke partijen worden gekoppeld."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_receipt_types",
+            "text": {
+                "de": "Wareneingangsdokumente",
+                "es": "Documentos de recepción",
+                "fr": "Documents de réception",
+                "it": "Documenti di ricezione",
+                "nl": "Ontvangstdocumenten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_type",
+            "text": {
+                "de": "Dokumenttyp",
+                "es": "Tipo de documento",
+                "fr": "Type de document",
+                "it": "Tipo di documento",
+                "nl": "Documenttype"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_type_invalid",
+            "text": {
+                "de": "Wählen Sie einen unterstützten Dokumenttyp für Wareneingang oder Los.",
+                "es": "Seleccione un tipo de documento de recepción o lote compatible.",
+                "fr": "Sélectionnez un type de document de réception ou de lot pris en charge.",
+                "it": "Seleziona un tipo di documento di ricezione o lotto supportato.",
+                "nl": "Kies een ondersteund documenttype voor ontvangst of partij."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.certificate",
+            "text": {
+                "de": "Zertifikat",
+                "es": "Certificado",
+                "fr": "Certificat",
+                "it": "Certificato",
+                "nl": "Certificaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.certificate_of_analysis",
+            "text": {
+                "de": "Analysenzertifikat",
+                "es": "Certificado de análisis",
+                "fr": "Certificat d’analyse",
+                "it": "Certificato di analisi",
+                "nl": "Analysecertificaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.delivery_note",
+            "text": {
+                "de": "Lieferschein",
+                "es": "Albarán",
+                "fr": "Bon de livraison",
+                "it": "Documento di trasporto",
+                "nl": "Pakbon"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.invoice",
+            "text": {
+                "de": "Rechnung",
+                "es": "Factura",
+                "fr": "Facture",
+                "it": "Fattura",
+                "nl": "Factuur"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.other",
+            "text": {
+                "de": "Sonstiges",
+                "es": "Otro",
+                "fr": "Autre",
+                "it": "Altro",
+                "nl": "Overig"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.photo",
+            "text": {
+                "de": "Foto",
+                "es": "Foto",
+                "fr": "Photo",
+                "it": "Foto",
+                "nl": "Foto"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.receipt",
+            "text": {
+                "de": "Kassenbeleg",
+                "es": "Ticket de compra",
+                "fr": "Ticket de caisse",
+                "it": "Scontrino",
+                "nl": "Kassabon"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.safety_data_sheet",
+            "text": {
+                "de": "Sicherheitsdatenblatt",
+                "es": "Ficha de datos de seguridad",
+                "fr": "Fiche de données de sécurité",
+                "it": "Scheda di sicurezza",
+                "nl": "Veiligheidsinformatieblad"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_types.specification",
+            "text": {
+                "de": "Spezifikation",
+                "es": "Especificación",
+                "fr": "Spécification",
+                "it": "Specifica",
+                "nl": "Specificatie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.document_workspace_mismatch",
+            "text": {
+                "de": "Dokument und Wareneingang müssen zum selben Arbeitsbereich gehören.",
+                "es": "El documento y la recepción deben pertenecer al mismo espacio de trabajo.",
+                "fr": "Le document et la réception doivent appartenir au même espace de travail.",
+                "it": "Il documento e la ricezione devono appartenere allo stesso spazio di lavoro.",
+                "nl": "Het document en de ontvangst moeten bij dezelfde werkruimte horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.documents",
+            "text": {
+                "de": "Dokumente",
+                "es": "Documentos",
+                "fr": "Documents",
+                "it": "Documenti",
+                "nl": "Documenten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.documents_help",
+            "text": {
+                "de": "Private Wareneingangsbelege und Qualitätsdokumente der Lose.",
+                "es": "Documentación privada de recepción y documentos de calidad de los lotes.",
+                "fr": "Pièces privées de réception et documents qualité des lots.",
+                "it": "Documenti privati di ricezione e documenti qualità dei lotti.",
+                "nl": "Privé-ontvangstpapieren en kwaliteitsdocumenten van partijen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.duplicate_order_line",
+            "text": {
+                "de": "Jede Bestellposition darf pro Wareneingang nur einmal vorkommen.",
+                "es": "Cada línea de pedido solo puede aparecer una vez por recepción.",
+                "fr": "Chaque ligne de commande ne peut apparaître qu’une fois par réception.",
+                "it": "Ogni riga d’ordine può comparire una sola volta per ricezione.",
+                "nl": "Elke bestelregel mag maar één keer per ontvangst voorkomen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.empty_help",
+            "text": {
+                "de": "Erfassen Sie eine ausgegebene Bestellung oder eine direkte Lieferantenlieferung, um Lagerlose anzulegen.",
+                "es": "Reciba un pedido emitido o registre una entrega directa para crear lotes de existencias.",
+                "fr": "Réceptionnez une commande émise ou enregistrez une livraison directe pour créer des lots de stock.",
+                "it": "Ricevi un ordine emesso o registra una consegna diretta per creare lotti di magazzino.",
+                "nl": "Ontvang een uitgegeven bestelling of registreer een directe levering om voorraadpartijen aan te maken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.empty_title",
+            "text": {
+                "de": "Noch keine Wareneingänge",
+                "es": "Aún no hay recepciones",
+                "fr": "Aucune réception pour le moment",
+                "it": "Nessuna ricezione",
+                "nl": "Nog geen ontvangsten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.expiry",
+            "text": {
+                "de": "Verfalls-/Mindesthaltbarkeitsdatum",
+                "es": "Caducidad / consumo preferente",
+                "fr": "Expiration / date de durabilité minimale",
+                "it": "Scadenza / termine minimo di conservazione",
+                "nl": "Verval-/ten minste houdbaar-datum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.fix_errors",
+            "text": {
+                "de": "Prüfen Sie vor dem Buchen die markierten Felder.",
+                "es": "Revise los campos marcados antes de contabilizar.",
+                "fr": "Vérifiez les champs signalés avant de valider.",
+                "it": "Controlla i campi evidenziati prima di registrare.",
+                "nl": "Controleer de gemarkeerde velden voordat u boekt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.formats",
+            "text": {
+                "de": "Einkaufsgebinde",
+                "es": "Formatos de compra",
+                "fr": "Conditionnements achetés",
+                "it": "Formati di acquisto",
+                "nl": "Inkoopformaten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.formats_positive_whole",
+            "text": {
+                "de": "Die Anzahl erhaltener Einkaufsgebinde muss eine positive ganze Zahl sein.",
+                "es": "Los formatos de compra recibidos deben ser un número entero positivo.",
+                "fr": "Le nombre de conditionnements reçus doit être un entier positif.",
+                "it": "Il numero di formati di acquisto ricevuti deve essere un intero positivo.",
+                "nl": "Het aantal ontvangen inkoopformaten moet een positief geheel getal zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.header",
+            "text": {
+                "de": "Wareneingangsdetails",
+                "es": "Detalles de la recepción",
+                "fr": "Détails de la réception",
+                "it": "Dettagli della ricezione",
+                "nl": "Ontvangstdetails"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.historical_cost",
+            "text": {
+                "de": "Historische Kosten",
+                "es": "Coste histórico",
+                "fr": "Coût historique",
+                "it": "Costo storico",
+                "nl": "Historische kosten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.idempotency_conflict",
+            "text": {
+                "de": "Dieser Übermittlungsschlüssel wird bereits in einem anderen Wareneingangskontext verwendet.",
+                "es": "Esta clave de envío ya se utiliza en otro contexto de recepción.",
+                "fr": "Cette clé de soumission est déjà utilisée dans un autre contexte de réception.",
+                "it": "Questa chiave di invio è già usata in un altro contesto di ricezione.",
+                "nl": "Deze inzendsleutel wordt al in een andere ontvangstcontext gebruikt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.index_help",
+            "text": {
+                "de": "Gebuchte Lieferungen und direkte Lagerzugänge einschließlich Losen und historischen Kosten.",
+                "es": "Entregas contabilizadas y recepciones directas, incluidos sus lotes y costes históricos.",
+                "fr": "Livraisons validées et réceptions directes, avec leurs lots et coûts historiques.",
+                "it": "Consegne registrate e ricezioni dirette, inclusi lotti e costi storici.",
+                "nl": "Geboekte leveringen en directe ontvangsten, inclusief partijen en historische kosten."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.internal_lot",
+            "text": {
+                "de": "Internes Los",
+                "es": "Lote interno",
+                "fr": "Lot interne",
+                "it": "Lotto interno",
+                "nl": "Interne partij"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.invalid_price_basis",
+            "text": {
+                "de": "Wählen Sie eine unterstützte Preisbasis für den Wareneingang.",
+                "es": "Seleccione una base de precio de recepción compatible.",
+                "fr": "Sélectionnez une base de prix de réception prise en charge.",
+                "it": "Seleziona una base prezzo di ricezione supportata.",
+                "nl": "Kies een ondersteunde prijsbasis voor de ontvangst."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.invalid_source",
+            "text": {
+                "de": "Wählen Sie Bestellung oder direkten Wareneingang.",
+                "es": "Seleccione pedido o recepción directa.",
+                "fr": "Choisissez commande ou réception directe.",
+                "it": "Scegli ordine o ricezione diretta.",
+                "nl": "Kies bestelling of directe ontvangst."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.inventory_link",
+            "text": {
+                "de": "Bestand",
+                "es": "Inventario",
+                "fr": "Stock",
+                "it": "Magazzino",
+                "nl": "Voorraad"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.item",
+            "text": {
+                "de": "Artikel",
+                "es": "Artículo",
+                "fr": "Article",
+                "it": "Articolo",
+                "nl": "Artikel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.line_incoherent",
+            "text": {
+                "de": "Die Eingaben der Wareneingangsposition stimmen nicht mit Arbeitsbereich und Angebot überein.",
+                "es": "Los datos de la línea de recepción no son coherentes con el espacio de trabajo y la oferta.",
+                "fr": "Les données de la ligne de réception ne correspondent pas à l’espace de travail et à l’offre.",
+                "it": "I dati della riga di ricezione non sono coerenti con lo spazio di lavoro e l’offerta.",
+                "nl": "De invoer van de ontvangstregel komt niet overeen met de werkruimte en vermelding."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.line_order_mismatch",
+            "text": {
+                "de": "Die erhaltene Position gehört nicht zu dieser Bestellung.",
+                "es": "La línea recibida no pertenece a este pedido.",
+                "fr": "La ligne reçue n’appartient pas à cette commande.",
+                "it": "La riga ricevuta non appartiene a questo ordine.",
+                "nl": "De ontvangen regel hoort niet bij deze bestelling."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.lines",
+            "text": {
+                "de": "Positionen",
+                "es": "Líneas",
+                "fr": "Lignes",
+                "it": "Righe",
+                "nl": "Regels"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.lines_required",
+            "text": {
+                "de": "Geben Sie mindestens eine erhaltene Position ein.",
+                "es": "Introduzca al menos una línea recibida.",
+                "fr": "Saisissez au moins une ligne reçue.",
+                "it": "Inserisci almeno una riga ricevuta.",
+                "nl": "Voer ten minste één ontvangen regel in."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.listing_changed",
+            "text": {
+                "de": "Das Lieferantenangebot entspricht nicht mehr der bestellten Position.",
+                "es": "La oferta del proveedor ya no coincide con la línea pedida.",
+                "fr": "L’offre fournisseur ne correspond plus à la ligne commandée.",
+                "it": "L’offerta del fornitore non corrisponde più alla riga ordinata.",
+                "nl": "De leveranciersvermelding komt niet meer overeen met de bestelregel."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.listing_ingredient_inaccessible",
+            "text": {
+                "de": "Der Inhaltsstoff des Angebots ist in diesem Arbeitsbereich nicht zugänglich.",
+                "es": "El ingrediente de la oferta no es accesible en este espacio de trabajo.",
+                "fr": "L’ingrédient de l’offre n’est pas accessible dans cet espace de travail.",
+                "it": "L’ingrediente dell’offerta non è accessibile in questo spazio di lavoro.",
+                "nl": "Het ingrediënt van de vermelding is niet toegankelijk in deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.listing_link",
+            "text": {
+                "de": "Lieferantenangebot",
+                "es": "Oferta del proveedor",
+                "fr": "Offre fournisseur",
+                "it": "Offerta del fornitore",
+                "nl": "Leveranciersvermelding"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.listing_packaging_workspace",
+            "text": {
+                "de": "Der Verpackungsartikel des Angebots muss zu diesem Arbeitsbereich gehören.",
+                "es": "El envase de la oferta debe pertenecer a este espacio de trabajo.",
+                "fr": "L’article d’emballage de l’offre doit appartenir à cet espace de travail.",
+                "it": "L’articolo di imballaggio dell’offerta deve appartenere a questo spazio di lavoro.",
+                "nl": "Het verpakkingsartikel van de vermelding moet bij deze werkruimte horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.listing_required",
+            "text": {
+                "de": "Vor dem Empfang dieser Position ist ein Lieferantenangebot erforderlich.",
+                "es": "Se requiere una oferta del proveedor antes de recibir esta línea.",
+                "fr": "Une offre fournisseur est requise avant de réceptionner cette ligne.",
+                "it": "È necessaria un’offerta del fornitore prima di ricevere questa riga.",
+                "nl": "Er is een leveranciersvermelding nodig voordat deze regel kan worden ontvangen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.listing_subject_required",
+            "text": {
+                "de": "Das Angebot muss genau einen Lagerartikel angeben.",
+                "es": "La oferta debe identificar exactamente un artículo de stock.",
+                "fr": "L’offre doit identifier exactement un article de stock.",
+                "it": "L’offerta deve identificare esattamente un articolo di magazzino.",
+                "nl": "De vermelding moet precies één voorraadartikel aangeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.listing_unit_mismatch",
+            "text": {
+                "de": "Der Lagerartikel des Angebots stimmt nicht mit seiner Einheitenart überein.",
+                "es": "El artículo de stock de la oferta no coincide con su tipo de unidad.",
+                "fr": "L’article de stock de l’offre ne correspond pas à son type d’unité.",
+                "it": "L’articolo di magazzino dell’offerta non corrisponde al tipo di unità.",
+                "nl": "Het voorraadartikel van de vermelding komt niet overeen met het eenheidstype."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.new",
+            "text": {
+                "de": "Neuer Wareneingang",
+                "es": "Nueva recepción",
+                "fr": "Nouvelle réception",
+                "it": "Nuova ricezione",
+                "nl": "Nieuwe ontvangst"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.no_documents",
+            "text": {
+                "de": "Keine Dokumente angehängt.",
+                "es": "No hay documentos adjuntos.",
+                "fr": "Aucun document joint.",
+                "it": "Nessun documento allegato.",
+                "nl": "Geen documenten bijgevoegd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.no_listings",
+            "text": {
+                "de": "Dieser Lieferant hat keine aktiven Angebote.",
+                "es": "Este proveedor no tiene ofertas activas.",
+                "fr": "Ce fournisseur n’a aucune offre active.",
+                "it": "Questo fornitore non ha offerte attive.",
+                "nl": "Deze leverancier heeft geen actieve vermeldingen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.no_reference",
+            "text": {
+                "de": "Keine Lieferscheinreferenz",
+                "es": "Sin referencia de entrega",
+                "fr": "Aucune référence de livraison",
+                "it": "Nessun riferimento di consegna",
+                "nl": "Geen leveringsreferentie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.not_applicable",
+            "text": {
+                "de": "Nicht zutreffend",
+                "es": "No aplicable",
+                "fr": "Sans objet",
+                "it": "Non applicabile",
+                "nl": "Niet van toepassing"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.not_provided",
+            "text": {
+                "de": "Nicht angegeben",
+                "es": "No indicado",
+                "fr": "Non renseigné",
+                "it": "Non indicato",
+                "nl": "Niet opgegeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.only_posted_reversible",
+            "text": {
+                "de": "Nur ein gebuchter Wareneingang kann storniert werden.",
+                "es": "Solo puede revertirse una recepción contabilizada.",
+                "fr": "Seule une réception validée peut être annulée.",
+                "it": "Può essere stornata solo una ricezione registrata.",
+                "nl": "Alleen een geboekte ontvangst kan worden teruggedraaid."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.open",
+            "text": {
+                "de": "Öffnen",
+                "es": "Abrir",
+                "fr": "Ouvrir",
+                "it": "Apri",
+                "nl": "Openen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.order_not_receivable",
+            "text": {
+                "de": "Nur eine ausgegebene Bestellung mit offenen Gebinden kann empfangen werden.",
+                "es": "Solo puede recibirse un pedido emitido con formatos pendientes.",
+                "fr": "Seule une commande émise avec des conditionnements restants peut être réceptionnée.",
+                "it": "Può essere ricevuto solo un ordine emesso con formati residui.",
+                "nl": "Alleen een uitgegeven bestelling met openstaande formaten kan worden ontvangen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.order_source",
+            "text": {
+                "de": "Bestellung",
+                "es": "Pedido",
+                "fr": "Commande",
+                "it": "Ordine",
+                "nl": "Bestelling"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.order_unavailable",
+            "text": {
+                "de": "Wählen Sie eine ausgegebene Bestellung mit offenen Mengen.",
+                "es": "Seleccione un pedido emitido con cantidades pendientes.",
+                "fr": "Sélectionnez une commande émise avec des quantités restantes.",
+                "it": "Seleziona un ordine emesso con quantità residue.",
+                "nl": "Kies een uitgegeven bestelling met openstaande hoeveelheden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.order_workspace_mismatch",
+            "text": {
+                "de": "Die Bestellung gehört zu einem anderen Arbeitsbereich.",
+                "es": "El pedido pertenece a otro espacio de trabajo.",
+                "fr": "La commande appartient à un autre espace de travail.",
+                "it": "L’ordine appartiene a un altro spazio di lavoro.",
+                "nl": "De bestelling hoort bij een andere werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.ordered",
+            "text": {
+                "de": "Bestellt",
+                "es": "Pedido",
+                "fr": "Commandé",
+                "it": "Ordinato",
+                "nl": "Besteld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.ordered_line_incoherent",
+            "text": {
+                "de": "Die bestellte Wareneingangsposition stimmt nicht mit ihrer Angebotskopie überein.",
+                "es": "La línea recibida del pedido no coincide con la copia de la oferta.",
+                "fr": "La ligne de réception commandée ne correspond pas à l’instantané de l’offre.",
+                "it": "La riga di ricezione ordinata non corrisponde alla copia dell’offerta.",
+                "nl": "De bestelde ontvangstregel komt niet overeen met de momentopname van de vermelding."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.original_movement_missing",
+            "text": {
+                "de": "Die ursprüngliche Lagerbewegung fehlt.",
+                "es": "Falta el movimiento de stock original.",
+                "fr": "Le mouvement de stock d’origine est manquant.",
+                "it": "Manca il movimento di magazzino originale.",
+                "nl": "De oorspronkelijke voorraadmutatie ontbreekt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.over_receipt",
+            "text": {
+                "de": "Die erhaltenen Gebinde dürfen die bestellte Menge nicht überschreiten.",
+                "es": "Los formatos recibidos no pueden superar la cantidad pedida.",
+                "fr": "Les conditionnements reçus ne peuvent pas dépasser la quantité commandée.",
+                "it": "I formati ricevuti non possono superare la quantità ordinata.",
+                "nl": "De ontvangen formaten mogen de bestelde hoeveelheid niet overschrijden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.packaging_price_unit",
+            "text": {
+                "de": "Preiseinheiten für Verpackungen müssen Stück sein.",
+                "es": "La unidad de precio de los envases debe ser por unidad.",
+                "fr": "L’unité de prix des emballages doit être la pièce.",
+                "it": "L’unità di prezzo degli imballaggi deve essere il pezzo.",
+                "nl": "De prijseenheid voor verpakkingen moet per stuk zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.per_unit",
+            "text": {
+                "de": "Pro Einheit",
+                "es": "Por unidad",
+                "fr": "Par unité",
+                "it": "Per unità",
+                "nl": "Per eenheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.plural",
+            "text": {
+                "de": "Wareneingänge",
+                "es": "Recepciones",
+                "fr": "Réceptions",
+                "it": "Ricezioni",
+                "nl": "Ontvangsten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.post",
+            "text": {
+                "de": "Wareneingang buchen",
+                "es": "Contabilizar recepción",
+                "fr": "Valider la réception",
+                "it": "Registra ricezione",
+                "nl": "Ontvangst boeken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.post_confirm",
+            "text": {
+                "de": "Diesen Wareneingang buchen? Lagerlose und -bewegungen werden sofort angelegt.",
+                "es": "¿Contabilizar esta recepción? Los lotes y movimientos de stock se crearán de inmediato.",
+                "fr": "Valider cette réception ? Les lots et mouvements de stock seront créés immédiatement.",
+                "it": "Registrare questa ricezione? Lotti e movimenti di magazzino verranno creati subito.",
+                "nl": "Deze ontvangst boeken? Voorraadpartijen en -mutaties worden direct aangemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.posted",
+            "text": {
+                "de": "Wareneingang gebucht.",
+                "es": "Recepción contabilizada.",
+                "fr": "Réception validée.",
+                "it": "Ricezione registrata.",
+                "nl": "Ontvangst geboekt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.previously_received",
+            "text": {
+                "de": "Bereits erhalten",
+                "es": "Recibido anteriormente",
+                "fr": "Déjà reçu",
+                "it": "Già ricevuto",
+                "nl": "Eerder ontvangen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.price",
+            "text": {
+                "de": "Eingangspreis",
+                "es": "Precio de recepción",
+                "fr": "Prix de réception",
+                "it": "Prezzo di ricezione",
+                "nl": "Ontvangstprijs"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.price_basis",
+            "text": {
+                "de": "Preisbasis",
+                "es": "Base del precio",
+                "fr": "Base de prix",
+                "it": "Base prezzo",
+                "nl": "Prijsbasis"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.price_too_small",
+            "text": {
+                "de": "Der Eingangspreis ist für die erhaltene Menge zu niedrig.",
+                "es": "El precio de recepción es demasiado bajo para la cantidad recibida.",
+                "fr": "Le prix de réception est trop faible pour la quantité reçue.",
+                "it": "Il prezzo di ricezione è troppo basso per la quantità ricevuta.",
+                "nl": "De ontvangstprijs is te laag voor de ontvangen hoeveelheid."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.price_unit",
+            "text": {
+                "de": "Preiseinheit",
+                "es": "Unidad de precio",
+                "fr": "Unité de prix",
+                "it": "Unità di prezzo",
+                "nl": "Prijseenheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.purchase_order",
+            "text": {
+                "de": "Ausgegebene Bestellung",
+                "es": "Pedido emitido",
+                "fr": "Commande émise",
+                "it": "Ordine emesso",
+                "nl": "Uitgegeven bestelling"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.receipt_ingredient_inaccessible",
+            "text": {
+                "de": "Der Inhaltsstoff des Wareneingangs ist in diesem Arbeitsbereich nicht zugänglich.",
+                "es": "El ingrediente de la recepción no es accesible en este espacio de trabajo.",
+                "fr": "L’ingrédient de la réception n’est pas accessible dans cet espace de travail.",
+                "it": "L’ingrediente della ricezione non è accessibile in questo spazio di lavoro.",
+                "nl": "Het ingrediënt van de ontvangst is niet toegankelijk in deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.receipt_packaging_workspace",
+            "text": {
+                "de": "Der Verpackungsartikel des Wareneingangs muss zu diesem Arbeitsbereich gehören.",
+                "es": "El envase de la recepción debe pertenecer a este espacio de trabajo.",
+                "fr": "L’article d’emballage de la réception doit appartenir à cet espace de travail.",
+                "it": "L’articolo di imballaggio della ricezione deve appartenere a questo spazio di lavoro.",
+                "nl": "Het verpakkingsartikel van de ontvangst moet bij deze werkruimte horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.receipt_values",
+            "text": {
+                "de": "Dieser Eingang",
+                "es": "Esta recepción",
+                "fr": "Cette réception",
+                "it": "Questa ricezione",
+                "nl": "Deze ontvangst"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.receipt_workspace_mismatch",
+            "text": {
+                "de": "Der Wareneingang gehört zu einem anderen Arbeitsbereich.",
+                "es": "La recepción pertenece a otro espacio de trabajo.",
+                "fr": "La réception appartient à un autre espace de travail.",
+                "it": "La ricezione appartiene a un altro spazio di lavoro.",
+                "nl": "De ontvangst hoort bij een andere werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.receive_delivery",
+            "text": {
+                "de": "Lieferung empfangen",
+                "es": "Recibir entrega",
+                "fr": "Réceptionner la livraison",
+                "it": "Ricevi consegna",
+                "nl": "Levering ontvangen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.receive_order",
+            "text": {
+                "de": "Bestellung empfangen",
+                "es": "Recibir pedido",
+                "fr": "Réceptionner une commande",
+                "it": "Ricevi ordine",
+                "nl": "Bestelling ontvangen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.receive_order_help",
+            "text": {
+                "de": "Eine oder mehrere offene Positionen einer ausgegebenen Bestellung empfangen.",
+                "es": "Reciba una o varias líneas pendientes de un pedido emitido.",
+                "fr": "Réceptionnez une ou plusieurs lignes restantes d’une commande émise.",
+                "it": "Ricevi una o più righe residue di un ordine emesso.",
+                "nl": "Ontvang één of meer openstaande regels van een uitgegeven bestelling."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.received_items",
+            "text": {
+                "de": "Erhaltene Artikel",
+                "es": "Artículos recibidos",
+                "fr": "Articles reçus",
+                "it": "Articoli ricevuti",
+                "nl": "Ontvangen artikelen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.received_on",
+            "text": {
+                "de": "Eingangsdatum",
+                "es": "Fecha de recepción",
+                "fr": "Date de réception",
+                "it": "Data di ricezione",
+                "nl": "Ontvangstdatum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.reference",
+            "text": {
+                "de": "Referenz",
+                "es": "Referencia",
+                "fr": "Référence",
+                "it": "Riferimento",
+                "nl": "Referentie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.remaining",
+            "text": {
+                "de": "Offen",
+                "es": "Pendiente",
+                "fr": "Restant",
+                "it": "Residuo",
+                "nl": "Openstaand"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.reversal_reason",
+            "text": {
+                "de": "Stornierungsgrund",
+                "es": "Motivo de reversión",
+                "fr": "Motif d’annulation",
+                "it": "Motivo dello storno",
+                "nl": "Reden voor terugdraaien"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.reversal_reason_invalid",
+            "text": {
+                "de": "Ein Stornierungsgrund mit höchstens 1000 Zeichen ist erforderlich.",
+                "es": "Se requiere un motivo de reversión de 1000 caracteres como máximo.",
+                "fr": "Un motif d’annulation de 1 000 caractères maximum est requis.",
+                "it": "È richiesto un motivo dello storno di massimo 1000 caratteri.",
+                "nl": "Een reden van maximaal 1000 tekens is vereist."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.reversal_reason_placeholder",
+            "text": {
+                "de": "Grund für die Stornierung dieses Wareneingangs",
+                "es": "Motivo para revertir esta recepción",
+                "fr": "Motif d’annulation de cette réception",
+                "it": "Motivo dello storno di questa ricezione",
+                "nl": "Reden om deze ontvangst terug te draaien"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.reverse",
+            "text": {
+                "de": "Wareneingang stornieren",
+                "es": "Revertir recepción",
+                "fr": "Annuler la réception",
+                "it": "Storna ricezione",
+                "nl": "Ontvangst terugdraaien"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.reverse_confirm",
+            "text": {
+                "de": "Diesen Wareneingang stornieren? Ausgleichende Lagerbewegungen werden gebucht.",
+                "es": "¿Revertir esta recepción? Se contabilizarán movimientos de stock compensatorios.",
+                "fr": "Annuler cette réception ? Des mouvements de stock compensatoires seront enregistrés.",
+                "it": "Stornare questa ricezione? Verranno registrati movimenti di magazzino compensativi.",
+                "nl": "Deze ontvangst terugdraaien? Er worden compenserende voorraadmutaties geboekt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.reversed",
+            "text": {
+                "de": "Wareneingang storniert.",
+                "es": "Recepción revertida.",
+                "fr": "Réception annulée.",
+                "it": "Ricezione stornata.",
+                "nl": "Ontvangst teruggedraaid."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.select_item",
+            "text": {
+                "de": ":item empfangen",
+                "es": "Recibir :item",
+                "fr": "Réceptionner :item",
+                "it": "Ricevi :item",
+                "nl": ":item ontvangen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.singular",
+            "text": {
+                "de": "Wareneingang",
+                "es": "Recepción de mercancías",
+                "fr": "Réception de marchandises",
+                "it": "Ricezione merci",
+                "nl": "Goederenontvangst"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.source",
+            "text": {
+                "de": "Quelle",
+                "es": "Origen",
+                "fr": "Source",
+                "it": "Origine",
+                "nl": "Bron"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.status_posted",
+            "text": {
+                "de": "Gebucht",
+                "es": "Contabilizada",
+                "fr": "Validée",
+                "it": "Registrata",
+                "nl": "Geboekt"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.status_reversed",
+            "text": {
+                "de": "Storniert",
+                "es": "Revertida",
+                "fr": "Annulée",
+                "it": "Stornata",
+                "nl": "Teruggedraaid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.supplier_batch",
+            "text": {
+                "de": "Lieferantencharge",
+                "es": "Lote del proveedor",
+                "fr": "Lot fournisseur",
+                "it": "Lotto del fornitore",
+                "nl": "Leveranciersbatch"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.supplier_workspace_mismatch",
+            "text": {
+                "de": "Der Lieferant muss zum aktiven Arbeitsbereich gehören.",
+                "es": "El proveedor debe pertenecer al espacio de trabajo activo.",
+                "fr": "Le fournisseur doit appartenir à l’espace de travail actif.",
+                "it": "Il fornitore deve appartenere allo spazio di lavoro attivo.",
+                "nl": "De leverancier moet bij de actieve werkruimte horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.total_format",
+            "text": {
+                "de": "Gesamtgebinde",
+                "es": "Formato completo",
+                "fr": "Conditionnement complet",
+                "it": "Formato completo",
+                "nl": "Totaal formaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.whole_count",
+            "text": {
+                "de": "Wareneingänge von Verpackungen erfordern eine positive ganze Stückzahl.",
+                "es": "Las recepciones de envases requieren una cantidad entera positiva.",
+                "fr": "Les réceptions d’emballages nécessitent un nombre entier positif.",
+                "it": "Le ricezioni di imballaggi richiedono un numero intero positivo.",
+                "nl": "Ontvangsten van verpakkingen vereisen een positief geheel aantal."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.workflow",
+            "text": {
+                "de": "Wareneingang im Einkauf",
+                "es": "Recepción de compras",
+                "fr": "Réception des achats",
+                "it": "Ricezione acquisti",
+                "nl": "Inkoopontvangst"
             }
         },
         {

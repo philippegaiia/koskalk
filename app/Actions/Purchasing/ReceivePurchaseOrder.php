@@ -14,6 +14,7 @@ use App\Models\Workspace;
 use App\PurchaseOrderStatus;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
+use App\Services\SupplierListingPriceCalculator;
 use App\StockUnitKind;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +26,7 @@ class ReceivePurchaseOrder
         private readonly MassConverter $massConverter,
         private readonly PostGoodsReceiptLine $postLine,
         private readonly GoodsReceiptInputValidator $inputValidator,
+        private readonly SupplierListingPriceCalculator $priceCalculator,
     ) {}
 
     /**
@@ -33,6 +35,10 @@ class ReceivePurchaseOrder
      *   packs_received: int,
      *   actual_quantity: string,
      *   actual_unit: string,
+     *   receipt_price_basis?: ListingPriceBasis,
+     *   receipt_price_amount?: string,
+     *   receipt_price_unit?: ?string,
+     *   currency?: string,
      *   supplier_batch_number?: ?string,
      *   expires_at?: ?string,
      *   notes?: ?string,
@@ -76,7 +82,7 @@ class ReceivePurchaseOrder
             $lockedOrder = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
 
             if ($lockedOrder->workspace_id !== $lockedWorkspace->id) {
-                throw ValidationException::withMessages(['order' => 'The order belongs to another workspace.']);
+                throw ValidationException::withMessages(['order' => __('production_bench.receipt.order_workspace_mismatch')]);
             }
 
             $existing = GoodsReceipt::query()
@@ -90,7 +96,7 @@ class ReceivePurchaseOrder
                     || $existing->purchase_order_id !== $lockedOrder->id
                 ) {
                     throw ValidationException::withMessages([
-                        'idempotency_key' => 'This submission key is already used by another receipt context.',
+                        'idempotency_key' => __('production_bench.receipt.idempotency_conflict'),
                     ]);
                 }
 
@@ -98,11 +104,11 @@ class ReceivePurchaseOrder
             }
 
             if (! in_array($lockedOrder->status, [PurchaseOrderStatus::Ordered, PurchaseOrderStatus::PartiallyReceived], true)) {
-                throw ValidationException::withMessages(['order' => 'Only a placed order with outstanding packs can be received.']);
+                throw ValidationException::withMessages(['order' => __('production_bench.receipt.order_not_receivable')]);
             }
 
             if ($lines === []) {
-                throw ValidationException::withMessages(['lines' => 'Enter at least one received line.']);
+                throw ValidationException::withMessages(['lines' => __('production_bench.receipt.lines_required')]);
             }
 
             $normalizedLines = [];
@@ -118,12 +124,12 @@ class ReceivePurchaseOrder
                     || ! is_int($input['packs_received'])
                     || $input['packs_received'] < 1
                 ) {
-                    throw ValidationException::withMessages(['lines' => 'The received line does not belong to this order.']);
+                    throw ValidationException::withMessages(['lines' => __('production_bench.receipt.line_order_mismatch')]);
                 }
 
                 if (in_array($line->id, $lineIds, true)) {
                     throw ValidationException::withMessages([
-                        "lines.$index.order_line" => 'Each order line may only appear once per receipt.',
+                        "lines.$index.order_line" => __('production_bench.receipt.duplicate_order_line'),
                     ]);
                 }
 
@@ -131,7 +137,7 @@ class ReceivePurchaseOrder
 
                 if ($line->supplier_listing_id === null) {
                     throw ValidationException::withMessages([
-                        'lines' => 'A supplier listing is required before this line can be received.',
+                        'lines' => __('production_bench.receipt.listing_required'),
                     ]);
                 }
 
@@ -145,7 +151,7 @@ class ReceivePurchaseOrder
                     || $listing->unit_kind !== $line->unit_kind
                 ) {
                     throw ValidationException::withMessages([
-                        'lines' => 'The supplier listing no longer matches this ordered line.',
+                        'lines' => __('production_bench.receipt.listing_changed'),
                     ]);
                 }
 
@@ -155,7 +161,7 @@ class ReceivePurchaseOrder
                 $packsReceived = $input['packs_received'];
 
                 if ($alreadyReceived + $packsReceived > $line->ordered_packs) {
-                    throw ValidationException::withMessages(['lines' => 'Received packs cannot exceed the ordered quantity.']);
+                    throw ValidationException::withMessages(['lines' => __('production_bench.receipt.over_receipt')]);
                 }
 
                 $actualQuantity = $line->unit_kind === StockUnitKind::Mass
@@ -163,23 +169,63 @@ class ReceivePurchaseOrder
                     : $this->countQuantity($input['actual_quantity'], $input['actual_unit']);
 
                 if (bccomp($actualQuantity, '0', 9) <= 0) {
-                    throw ValidationException::withMessages(['actual_quantity' => 'Actual received quantity must be positive.']);
+                    throw ValidationException::withMessages(['actual_quantity' => __('production_bench.receipt.actual_positive')]);
                 }
 
                 $hasCompletePriceBasis = $line->price_basis !== null && $line->price_amount !== null;
+                $receiptPriceBasis = $input['receipt_price_basis'] ?? ($hasCompletePriceBasis
+                    ? $line->price_basis
+                    : ListingPriceBasis::TotalPurchaseFormat);
+                $receiptPriceAmount = $input['receipt_price_amount'] ?? ($hasCompletePriceBasis
+                    ? $line->price_amount
+                    : $line->pack_price);
+                $receiptPriceUnit = array_key_exists('receipt_price_unit', $input)
+                    ? $input['receipt_price_unit']
+                    : ($hasCompletePriceBasis ? $line->price_unit : null);
+                $currency = strtoupper(trim($input['currency'] ?? $line->currency));
+
+                if (! $receiptPriceBasis instanceof ListingPriceBasis) {
+                    throw ValidationException::withMessages([
+                        "lines.$index.receipt_price_basis" => __('production_bench.receipt.invalid_price_basis'),
+                    ]);
+                }
+
+                if ($currency !== strtoupper($line->currency)) {
+                    throw ValidationException::withMessages([
+                        "lines.$index.currency" => __('production_bench.receipt.currency_mismatch'),
+                    ]);
+                }
+
+                if ($line->unit_kind === StockUnitKind::Count && ! in_array($receiptPriceUnit, [null, 'count'], true)) {
+                    throw ValidationException::withMessages([
+                        "lines.$index.receipt_price_unit" => __('production_bench.receipt.packaging_price_unit'),
+                    ]);
+                }
+
+                $calculatedPrice = $line->unit_kind === StockUnitKind::Mass
+                    ? $this->priceCalculator->forMass(
+                        $line->canonical_quantity_per_pack,
+                        'g',
+                        $receiptPriceBasis,
+                        $receiptPriceAmount,
+                        $receiptPriceUnit,
+                    )
+                    : $this->priceCalculator->forCount(
+                        $line->canonical_quantity_per_pack,
+                        $receiptPriceBasis,
+                        $receiptPriceAmount,
+                    );
                 $normalizedLines[] = [
                     'input' => $input,
                     'line' => $line,
                     'listing' => $listing,
                     'packs_received' => $packsReceived,
                     'actual_quantity' => $actualQuantity,
-                    'receipt_price_basis' => $hasCompletePriceBasis
-                        ? $line->price_basis
-                        : ListingPriceBasis::TotalPurchaseFormat,
-                    'receipt_price_amount' => $hasCompletePriceBasis
-                        ? $line->price_amount
-                        : $line->pack_price,
-                    'receipt_price_unit' => $hasCompletePriceBasis ? $line->price_unit : null,
+                    'receipt_price_basis' => $receiptPriceBasis,
+                    'receipt_price_amount' => bcadd($receiptPriceAmount, '0', 9),
+                    'receipt_price_unit' => $receiptPriceUnit,
+                    'purchase_format_price' => $calculatedPrice['total_price'],
+                    'currency' => $currency,
                 ];
             }
 
@@ -199,6 +245,23 @@ class ReceivePurchaseOrder
             foreach ($normalizedLines as $normalizedLine) {
                 $input = $normalizedLine['input'];
                 $line = $normalizedLine['line'];
+                $listingFormatStillMatches = $normalizedLine['listing']->unit_kind === $line->unit_kind
+                    && bccomp(
+                        $normalizedLine['listing']->canonical_quantity_per_purchase_format,
+                        $line->canonical_quantity_per_pack,
+                        9,
+                    ) === 0;
+
+                if ($listingFormatStillMatches) {
+                    $normalizedLine['listing']->update([
+                        'price_basis' => $normalizedLine['receipt_price_basis'],
+                        'price_amount' => $normalizedLine['receipt_price_amount'],
+                        'price_unit' => $normalizedLine['receipt_price_unit'],
+                        'total_price' => $normalizedLine['purchase_format_price'],
+                        'currency' => $normalizedLine['currency'],
+                        'price_recorded_at' => now(),
+                    ]);
+                }
                 $this->postLine->handle(
                     actor: $actor,
                     workspace: $lockedWorkspace,
@@ -212,8 +275,8 @@ class ReceivePurchaseOrder
                     receiptPriceBasis: $normalizedLine['receipt_price_basis'],
                     receiptPriceAmount: $normalizedLine['receipt_price_amount'],
                     receiptPriceUnit: $normalizedLine['receipt_price_unit'],
-                    purchaseFormatPrice: $line->pack_price,
-                    currency: $line->currency,
+                    purchaseFormatPrice: $normalizedLine['purchase_format_price'],
+                    currency: $normalizedLine['currency'],
                     movementIdempotencyKey: $this->inputValidator->movementKey(
                         $idempotencyKey,
                         'purchase-order-line:'.$line->id,
@@ -245,7 +308,7 @@ class ReceivePurchaseOrder
     private function countQuantity(string $quantity, string $unit): string
     {
         if ($unit !== 'count' || preg_match('/^[1-9]\d*$/', $quantity) !== 1) {
-            throw ValidationException::withMessages(['actual_quantity' => 'Packaging receipts require a positive whole count.']);
+            throw ValidationException::withMessages(['actual_quantity' => __('production_bench.receipt.whole_count')]);
         }
 
         return bcadd($quantity, '0', 9);

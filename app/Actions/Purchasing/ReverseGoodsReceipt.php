@@ -26,7 +26,7 @@ class ReverseGoodsReceipt
 
         if ($reason === '' || mb_strlen($reason) > 1000) {
             throw ValidationException::withMessages([
-                'reason' => 'A reversal reason of at most 1000 characters is required.',
+                'reversalReason' => __('production_bench.receipt.reversal_reason_invalid'),
             ]);
         }
 
@@ -41,11 +41,11 @@ class ReverseGoodsReceipt
                 ->findOrFail($receipt->id);
 
             if ($lockedReceipt->workspace_id !== $lockedWorkspace->id) {
-                throw ValidationException::withMessages(['receipt' => 'The receipt belongs to another workspace.']);
+                throw ValidationException::withMessages(['receipt' => __('production_bench.receipt.receipt_workspace_mismatch')]);
             }
 
             if ($lockedReceipt->status !== GoodsReceiptStatus::Posted) {
-                throw ValidationException::withMessages(['receipt' => 'Only a posted receipt can be reversed.']);
+                throw ValidationException::withMessages(['receipt' => __('production_bench.receipt.only_posted_reversible')]);
             }
 
             foreach ($lockedReceipt->lines()->with('stockLot')->get() as $line) {
@@ -57,7 +57,7 @@ class ReverseGoodsReceipt
                     ->first();
 
                 if (! $original instanceof StockMovement) {
-                    throw ValidationException::withMessages(['receipt' => 'The original stock movement is missing.']);
+                    throw ValidationException::withMessages(['receipt' => __('production_bench.receipt.original_movement_missing')]);
                 }
 
                 $line->stockLot->movements()->create([

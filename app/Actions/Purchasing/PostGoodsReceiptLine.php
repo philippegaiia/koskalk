@@ -98,7 +98,7 @@ class PostGoodsReceiptLine
 
         if (bccomp($historicalUnitCost, '0', 9) <= 0) {
             throw ValidationException::withMessages([
-                'receipt_price_amount' => 'The receipt price is too small for the received quantity.',
+                'receipt_price_amount' => __('production_bench.receipt.price_too_small'),
             ]);
         }
 
@@ -218,7 +218,7 @@ class PostGoodsReceiptLine
             || ($unitKind === StockUnitKind::Count && $packagingItemId === null)
         ) {
             throw ValidationException::withMessages([
-                'receipt_line' => 'The receipt line inputs are not coherent with the receipt workspace and listing.',
+                'receipt_line' => __('production_bench.receipt.line_incoherent'),
             ]);
         }
 
@@ -236,12 +236,12 @@ class PostGoodsReceiptLine
                 || $purchaseOrderLine->unit_kind !== $listing->unit_kind
             ) {
                 throw ValidationException::withMessages([
-                    'receipt_line' => 'The ordered receipt line does not match its listing snapshot.',
+                    'receipt_line' => __('production_bench.receipt.ordered_line_incoherent'),
                 ]);
             }
         } elseif ($receipt->source !== GoodsReceiptSource::Direct || $receipt->purchase_order_id !== null) {
             throw ValidationException::withMessages([
-                'receipt_line' => 'A direct receipt line cannot reference a purchase order.',
+                'receipt_line' => __('production_bench.receipt.direct_line_order_reference'),
             ]);
         }
 
@@ -262,7 +262,7 @@ class PostGoodsReceiptLine
                 )
             ) {
                 throw ValidationException::withMessages([
-                    'receipt_line' => 'The receipt ingredient is not accessible in this workspace.',
+                    'receipt_line' => __('production_bench.receipt.receipt_ingredient_inaccessible'),
                 ]);
             }
 
@@ -271,7 +271,7 @@ class PostGoodsReceiptLine
 
         if (PackagingItem::query()->whereKey($packagingItemId)->where('workspace_id', $workspace->id)->doesntExist()) {
             throw ValidationException::withMessages([
-                'receipt_line' => 'The receipt packaging item must belong to this workspace.',
+                'receipt_line' => __('production_bench.receipt.receipt_packaging_workspace'),
             ]);
         }
     }

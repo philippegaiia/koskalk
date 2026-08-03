@@ -165,6 +165,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/purchasing/quotation-requests/new', 'production-bench.purchasing.quotation-create')->name('purchasing.quotations.create');
             Route::view('/purchasing/purchase-orders', 'production-bench.purchasing.orders')->name('purchasing.orders');
             Route::view('/purchasing/purchase-orders/new', 'production-bench.purchasing.order-create')->name('purchasing.orders.create');
+            Route::view('/purchasing/receipts', 'production-bench.purchasing.receipts')->name('purchasing.receipts');
+            Route::view('/purchasing/receipts/new', 'production-bench.purchasing.receipt-create')->name('purchasing.receipts.create');
+            Route::view('/purchasing/receipts/{goodsReceipt}', 'production-bench.purchasing.receipt-detail')->name('purchasing.receipts.show');
             Route::view('/purchasing/procurement/{purchaseOrder}', 'production-bench.purchasing.procurement-detail')->name('purchasing.procurement.show');
             Route::get('/purchasing/documents/{purchaseOrder}/print', [ProcurementDocumentController::class, 'show'])
                 ->name('purchasing.documents.print');

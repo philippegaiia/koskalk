@@ -57,10 +57,10 @@ it('protects focused purchasing pages and renders each job separately', function
         ->assertDontSee('Coming later')
         ->assertSee('Quotation requests')
         ->assertSee('Purchase orders')
-        ->assertDontSee('Receipts')
+        ->assertSee('Receipts')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.quotations').'"')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.orders').'"')
-        ->assertDontSeeHtml('href="'.route('production-bench.purchasing.suppliers').'/receipts"');
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.receipts').'"');
 });
 
 it('keeps supplier mutations out of the index and detail pages', function (): void {
@@ -205,7 +205,7 @@ it('keeps supplier and listing browse pages operational without receipt copy', f
             ->assertDontSee('coming later')
             ->assertSee('Quotation requests')
             ->assertSee('Purchase orders')
-            ->assertDontSee('Receipts');
+            ->assertSee('Receipts');
     }
 
     $pages[0]

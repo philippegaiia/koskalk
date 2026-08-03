@@ -97,7 +97,7 @@
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @forelse ($lots as $row)
                             @php($lot = $row['lot'])
-                            <tr>
+                            <tr id="lot-{{ $lot->public_id }}">
                                 <td class="px-5 py-4"><p class="font-medium text-[var(--color-ink-strong)]">{{ $lot->subjectName() }}</p><p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }} @if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }} @endif</p></td>
                                 <td class="px-4 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-medium {{ $lot->status->value === 'released' ? 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' }}">{{ $lot->status->value === 'released' ? __('production_bench.inventory.released') : __('production_bench.inventory.quarantined') }}</span></td>
                                 @foreach (['physical', 'quarantined', 'reserved', 'available', 'incoming', 'forecast'] as $position)

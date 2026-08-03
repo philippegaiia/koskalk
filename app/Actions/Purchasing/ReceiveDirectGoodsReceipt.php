@@ -93,7 +93,7 @@ class ReceiveDirectGoodsReceipt
             if ($existing instanceof GoodsReceipt) {
                 if ($existing->source !== GoodsReceiptSource::Direct || $existing->supplier_id !== $lockedSupplier->id) {
                     throw ValidationException::withMessages([
-                        'idempotency_key' => 'This submission key is already used by another receipt context.',
+                        'idempotency_key' => __('production_bench.receipt.idempotency_conflict'),
                     ]);
                 }
 
@@ -102,12 +102,12 @@ class ReceiveDirectGoodsReceipt
 
             if ($lockedSupplier->workspace_id !== $lockedWorkspace->id) {
                 throw ValidationException::withMessages([
-                    'supplier' => 'The supplier must belong to the active workspace.',
+                    'supplier' => __('production_bench.receipt.supplier_workspace_mismatch'),
                 ]);
             }
 
             if ($lines === []) {
-                throw ValidationException::withMessages(['lines' => 'Enter at least one received line.']);
+                throw ValidationException::withMessages(['lines' => __('production_bench.receipt.lines_required')]);
             }
 
             $normalizedLines = [];
@@ -220,7 +220,7 @@ class ReceiveDirectGoodsReceipt
             || ! $listing->is_active
         ) {
             throw ValidationException::withMessages([
-                "lines.$index.listing" => 'The listing must be an active listing for this workspace and supplier.',
+                "lines.$index.listing" => __('production_bench.receipt.direct_listing_active'),
             ]);
         }
 
@@ -228,7 +228,7 @@ class ReceiveDirectGoodsReceipt
 
         if (($listing->ingredient_id === null) === ($listing->packaging_item_id === null)) {
             throw ValidationException::withMessages([
-                "lines.$index.listing" => 'The listing must identify exactly one stock subject.',
+                "lines.$index.listing" => __('production_bench.receipt.listing_subject_required'),
             ]);
         }
 
@@ -237,13 +237,13 @@ class ReceiveDirectGoodsReceipt
             || ($listing->unit_kind === StockUnitKind::Count && $listing->packaging_item_id === null)
         ) {
             throw ValidationException::withMessages([
-                "lines.$index.listing" => 'The listing stock subject does not match its unit kind.',
+                "lines.$index.listing" => __('production_bench.receipt.listing_unit_mismatch'),
             ]);
         }
 
         if (! isset($input['packs_received']) || ! is_int($input['packs_received']) || $input['packs_received'] < 1) {
             throw ValidationException::withMessages([
-                "lines.$index.packs_received" => 'Received purchase formats must be a positive whole number.',
+                "lines.$index.packs_received" => __('production_bench.receipt.formats_positive_whole'),
             ]);
         }
 
@@ -251,7 +251,7 @@ class ReceiveDirectGoodsReceipt
 
         if (! $basis instanceof ListingPriceBasis) {
             throw ValidationException::withMessages([
-                "lines.$index.receipt_price_basis" => 'Choose a supported receipt price basis.',
+                "lines.$index.receipt_price_basis" => __('production_bench.receipt.invalid_price_basis'),
             ]);
         }
 
@@ -262,7 +262,7 @@ class ReceiveDirectGoodsReceipt
             || $currency !== strtoupper($listing->currency)
         ) {
             throw ValidationException::withMessages([
-                "lines.$index.currency" => 'The currency must be supported and match the supplier listing currency.',
+                "lines.$index.currency" => __('production_bench.receipt.direct_currency_mismatch'),
             ]);
         }
 
@@ -286,7 +286,7 @@ class ReceiveDirectGoodsReceipt
 
         if ($listing->unit_kind === StockUnitKind::Count && ! in_array($priceUnit, [null, 'count'], true)) {
             throw ValidationException::withMessages([
-                "lines.$index.receipt_price_unit" => 'Packaging price units must be count.',
+                "lines.$index.receipt_price_unit" => __('production_bench.receipt.packaging_price_unit'),
             ]);
         }
 
@@ -331,7 +331,7 @@ class ReceiveDirectGoodsReceipt
                 )
             ) {
                 throw ValidationException::withMessages([
-                    "lines.$index.listing" => 'The listing ingredient is not accessible in this workspace.',
+                    "lines.$index.listing" => __('production_bench.receipt.listing_ingredient_inaccessible'),
                 ]);
             }
 
@@ -342,7 +342,7 @@ class ReceiveDirectGoodsReceipt
 
         if ($packagingItem->workspace_id !== $workspace->id) {
             throw ValidationException::withMessages([
-                "lines.$index.listing" => 'The listing packaging item must belong to this workspace.',
+                "lines.$index.listing" => __('production_bench.receipt.listing_packaging_workspace'),
             ]);
         }
     }
@@ -352,7 +352,7 @@ class ReceiveDirectGoodsReceipt
         $canonicalQuantity = $this->massConverter->toGrams($quantity, $unit);
 
         if (bccomp($canonicalQuantity, '0', 9) <= 0) {
-            throw ValidationException::withMessages(['actual_quantity' => 'Actual received quantity must be positive.']);
+            throw ValidationException::withMessages(['actual_quantity' => __('production_bench.receipt.actual_positive')]);
         }
 
         return $canonicalQuantity;
@@ -361,7 +361,7 @@ class ReceiveDirectGoodsReceipt
     private function countQuantity(string $quantity, string $unit): string
     {
         if ($unit !== 'count' || preg_match('/^[1-9]\d*$/', $quantity) !== 1) {
-            throw ValidationException::withMessages(['actual_quantity' => 'Packaging receipts require a positive whole count.']);
+            throw ValidationException::withMessages(['actual_quantity' => __('production_bench.receipt.whole_count')]);
         }
 
         return bcadd($quantity, '0', 9);

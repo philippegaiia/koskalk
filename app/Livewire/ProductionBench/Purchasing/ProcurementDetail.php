@@ -158,7 +158,12 @@ class ProcurementDetail extends Component
 
     public function render(ProductionBenchAccess $access, ProcurementDocumentFormatter $formatter): View
     {
-        $order = $this->order()->load(['supplier', 'lines.ingredient', 'lines.packagingItem']);
+        $order = $this->order()->load([
+            'supplier',
+            'lines.ingredient',
+            'lines.packagingItem',
+            'lines.receiptLines.goodsReceipt',
+        ]);
         $hasIssuedDocument = $order->quotation_snapshot !== null || $order->purchase_order_snapshot !== null;
 
         return view('livewire.production-bench.purchasing.procurement-detail', [
@@ -177,6 +182,16 @@ class ProcurementDetail extends Component
                 && $order->status === PurchaseOrderStatus::Draft
                 && $order->lines->every(fn (PurchaseOrderLine $line): bool => $line->pack_price !== null),
             'needsPrices' => $order->lines->contains(fn (PurchaseOrderLine $line): bool => $line->pack_price === null),
+            'canReceive' => $order->stage === ProcurementStage::PurchaseOrder
+                && $order->issued_at !== null
+                && in_array($order->status, [PurchaseOrderStatus::Ordered, PurchaseOrderStatus::PartiallyReceived], true)
+                && $order->lines->contains(function (PurchaseOrderLine $line): bool {
+                    $received = (int) $line->receiptLines
+                        ->filter(fn ($receiptLine): bool => $receiptLine->goodsReceipt?->status->value === 'posted')
+                        ->sum('packs_received');
+
+                    return $received < $line->ordered_packs;
+                }),
         ]);
     }
 

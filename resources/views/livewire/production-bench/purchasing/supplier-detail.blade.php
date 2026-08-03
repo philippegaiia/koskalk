@@ -66,7 +66,7 @@
                     <tbody class="divide-y divide-[var(--color-line)]">
                         @forelse ($listingRows as $row)
                             @php($listing = $row['listing'])
-                            <tr wire:key="listing-{{ $listing->id }}">
+                            <tr id="listing-{{ $listing->public_id }}" wire:key="listing-{{ $listing->id }}">
                                 <td class="px-5 py-4 font-medium">{{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }}</td>
                                 <td class="px-4 py-4">{{ $listing->purchase_format }}@if ($listing->supplier_sku)<span class="numeric ml-1 text-xs text-[var(--color-ink-soft)]">{{ $listing->supplier_sku }}</span>@endif</td>
                                 <td class="numeric px-4 py-4 text-right">{{ rtrim(rtrim($listing->net_quantity, '0'), '.') }} {{ $listing->net_unit }}</td>

@@ -79,7 +79,7 @@ class GoodsReceiptInputValidator
         if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $parts) !== 1
             || ! checkdate((int) $parts[2], (int) $parts[3], (int) $parts[1])) {
             throw ValidationException::withMessages([
-                $field => 'The date must be a valid calendar date in YYYY-MM-DD format.',
+                $field => __('production_bench.receipt.date_invalid'),
             ]);
         }
     }

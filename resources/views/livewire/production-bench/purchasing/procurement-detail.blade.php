@@ -93,6 +93,9 @@
     @unless($isReadOnly)
         <div class="pb-24">
             <x-workflow-action-bar data-production-bench-procurement-action-bar>
+                @if ($canReceive)
+                    <a href="{{ route('production-bench.purchasing.receipts.create', ['source' => 'purchase_order', 'order' => $order->public_id]) }}" wire:navigate class="sk-btn sk-btn-outline">{{ __('production_bench.receipt.receive_delivery') }}</a>
+                @endif
                 @if ($emailText)
                     <a href="{{ route('production-bench.purchasing.documents.print', $order) }}" target="_blank" class="sk-btn sk-btn-outline">{{ __('production_bench.procurement.print_pdf') }}</a>
                 @endif

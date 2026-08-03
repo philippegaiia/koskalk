@@ -3,6 +3,8 @@
 use App\Actions\Purchasing\CreatePurchaseOrder;
 use App\Actions\Purchasing\PlacePurchaseOrder;
 use App\Actions\Purchasing\ReceivePurchaseOrder;
+use App\GoodsReceiptSource;
+use App\ListingPriceBasis;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
@@ -130,9 +132,17 @@ it('snapshots pack listings and posts partial receipts as distinct lots', functi
             'status' => StockLotStatus::Quarantined,
         ]],
     );
-    $firstLot = $firstReceipt->lines()->sole()->stockLot;
+    $firstReceiptLine = $firstReceipt->lines()->sole();
+    $firstLot = $firstReceiptLine->stockLot;
 
     expect($order->refresh()->status)->toBe(PurchaseOrderStatus::PartiallyReceived)
+        ->and($firstReceipt->source)->toBe(GoodsReceiptSource::PurchaseOrder)
+        ->and($firstReceipt->supplier_id)->toBe($supplier->id)
+        ->and($firstReceiptLine->supplier_listing_id)->toBe($fiveKg->id)
+        ->and($firstReceiptLine->receipt_price_basis)->toBe(ListingPriceBasis::TotalPurchaseFormat)
+        ->and($firstReceiptLine->receipt_price_amount)->toBe('50.000000000')
+        ->and($firstReceiptLine->purchase_format_price)->toBe('50.000000000')
+        ->and($firstReceiptLine->currency)->toBe('EUR')
         ->and($firstLot->supplier_batch_number)->toBe('MILL-2026-7')
         ->and($firstLot->historical_unit_cost)->toBe('0.010204081')
         ->and($firstLot->movements()->sole()->quantity_delta)->toBe('4900.000000000');

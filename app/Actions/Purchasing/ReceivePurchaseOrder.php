@@ -2,7 +2,9 @@
 
 namespace App\Actions\Purchasing;
 
+use App\GoodsReceiptSource;
 use App\GoodsReceiptStatus;
+use App\ListingPriceBasis;
 use App\MaterialPriceSource;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
@@ -40,6 +42,7 @@ class ReceivePurchaseOrder
      *   actual_unit: string,
      *   supplier_batch_number?: ?string,
      *   expires_at?: ?string,
+     *   notes?: ?string,
      * }>  $lines
      */
     public function handle(
@@ -81,16 +84,7 @@ class ReceivePurchaseOrder
                 throw ValidationException::withMessages(['lines' => 'Enter at least one received line.']);
             }
 
-            $receipt = GoodsReceipt::query()->create([
-                'workspace_id' => $lockedOrder->workspace_id,
-                'purchase_order_id' => $lockedOrder->id,
-                'delivery_reference' => $deliveryReference,
-                'received_at' => $receivedAt ?? now()->toDateString(),
-                'status' => GoodsReceiptStatus::Posted,
-                'notes' => $notes,
-                'received_by_user_id' => $actor->id,
-                'idempotency_key' => $idempotencyKey,
-            ]);
+            $lockedLines = [];
 
             foreach ($lines as $input) {
                 $line = PurchaseOrderLine::query()->lockForUpdate()->findOrFail($input['order_line']->id);
@@ -99,6 +93,29 @@ class ReceivePurchaseOrder
                     throw ValidationException::withMessages(['lines' => 'The received line does not belong to this order.']);
                 }
 
+                if ($line->supplier_listing_id === null) {
+                    throw ValidationException::withMessages([
+                        'lines' => 'A supplier listing is required before this line can be received.',
+                    ]);
+                }
+
+                $lockedLines[] = [$input, $line];
+            }
+
+            $receipt = GoodsReceipt::query()->create([
+                'workspace_id' => $lockedOrder->workspace_id,
+                'supplier_id' => $lockedOrder->supplier_id,
+                'purchase_order_id' => $lockedOrder->id,
+                'source' => GoodsReceiptSource::PurchaseOrder,
+                'delivery_reference' => $deliveryReference,
+                'received_at' => $receivedAt ?? now()->toDateString(),
+                'status' => GoodsReceiptStatus::Posted,
+                'notes' => $notes,
+                'received_by_user_id' => $actor->id,
+                'idempotency_key' => $idempotencyKey,
+            ]);
+
+            foreach ($lockedLines as [$input, $line]) {
                 $alreadyReceived = (int) $line->receiptLines()
                     ->whereHas('goodsReceipt', fn ($query) => $query->where('status', GoodsReceiptStatus::Posted))
                     ->sum('packs_received');
@@ -117,6 +134,14 @@ class ReceivePurchaseOrder
                 }
 
                 $historicalTotalCost = bcmul($line->pack_price, (string) $packsReceived, 9);
+                $hasCompletePriceBasis = $line->price_basis !== null && $line->price_amount !== null;
+                $receiptPriceBasis = $hasCompletePriceBasis
+                    ? $line->price_basis
+                    : ListingPriceBasis::TotalPurchaseFormat;
+                $receiptPriceAmount = $hasCompletePriceBasis
+                    ? $line->price_amount
+                    : $line->pack_price;
+                $receiptPriceUnit = $hasCompletePriceBasis ? $line->price_unit : null;
                 $status = StockLotStatus::Released;
                 $lot = StockLot::query()->create([
                     'workspace_id' => $lockedOrder->workspace_id,
@@ -141,14 +166,21 @@ class ReceivePurchaseOrder
 
                 $receiptLine = $receipt->lines()->create([
                     'purchase_order_line_id' => $line->id,
+                    'supplier_listing_id' => $line->supplier_listing_id,
                     'stock_lot_id' => $lot->id,
                     'packs_received' => $packsReceived,
                     'actual_quantity' => $actualQuantity,
                     'original_quantity' => $input['actual_quantity'],
                     'original_unit' => $input['actual_unit'],
                     'historical_total_cost' => $historicalTotalCost,
+                    'receipt_price_basis' => $receiptPriceBasis,
+                    'receipt_price_amount' => $receiptPriceAmount,
+                    'receipt_price_unit' => $receiptPriceUnit,
+                    'purchase_format_price' => $line->pack_price,
+                    'currency' => $line->currency,
                     'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
                     'expires_at' => $input['expires_at'] ?? null,
+                    'notes' => $input['notes'] ?? null,
                 ]);
 
                 $lot->movements()->create([

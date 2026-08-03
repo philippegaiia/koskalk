@@ -13,7 +13,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use LogicException;
 
 #[Fillable([
     'workspace_id',
@@ -52,6 +54,34 @@ class StockLot extends Model
         'organic_status' => OrganicStatus::Unknown->value,
     ];
 
+    protected static function booted(): void
+    {
+        static::updating(function (StockLot $lot): void {
+            $immutableAcquisitionAttributes = [
+                'workspace_id',
+                'supplier_listing_id',
+                'ingredient_id',
+                'packaging_item_id',
+                'internal_lot_code',
+                'supplier_batch_number',
+                'unit_kind',
+                'expires_at',
+                'historical_unit_cost',
+                'currency',
+                'origin',
+                'organic_status',
+                'stocked_at',
+            ];
+
+            if (
+                $lot->isDirty($immutableAcquisitionAttributes)
+                && GoodsReceiptLine::query()->where('stock_lot_id', $lot->getKey())->exists()
+            ) {
+                throw new LogicException('Receipt lot acquisition fields are immutable.');
+            }
+        });
+    }
+
     public function workspace(): BelongsTo
     {
         return $this->belongsTo(Workspace::class)->withoutGlobalScopes();
@@ -80,6 +110,11 @@ class StockLot extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(StockMovement::class);
+    }
+
+    public function goodsReceiptLine(): HasOne
+    {
+        return $this->hasOne(GoodsReceiptLine::class);
     }
 
     public function documents(): MorphMany

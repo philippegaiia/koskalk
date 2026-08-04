@@ -9196,6 +9196,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.all_statuses",
+            "text": {
+                "de": "Alle Status",
+                "es": "Todos los estados",
+                "fr": "Tous les statuts",
+                "it": "Tutti gli stati",
+                "nl": "Alle statussen"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.available",
             "text": {
                 "de": "Verfügbar",
@@ -9203,6 +9214,17 @@
                 "fr": "Disponible",
                 "it": "Disponibile",
                 "nl": "Beschikbaar"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.back_to_list",
+            "text": {
+                "de": "Zurück zu den Produktionen",
+                "es": "Volver a las producciones",
+                "fr": "Retour aux productions",
+                "it": "Torna alle produzioni",
+                "nl": "Terug naar producties"
             }
         },
         {
@@ -9229,6 +9251,61 @@
         },
         {
             "group": "production_bench",
+            "key": "production.cancel",
+            "text": {
+                "de": "Produktion stornieren",
+                "es": "Cancelar producción",
+                "fr": "Annuler la production",
+                "it": "Annulla produzione",
+                "nl": "Productie annuleren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.cancel_help",
+            "text": {
+                "de": "Die Stornierung dieses Planungsdatensatzes ist dauerhaft. Der Bestand wird in diesem Schritt nicht verändert.",
+                "es": "La cancelación de este registro de planificación es permanente. El stock no cambia en este paso.",
+                "fr": "L’annulation de cet enregistrement de planification est définitive. Le stock ne change pas à cette étape.",
+                "it": "L’annullamento di questo piano è permanente. Le scorte non cambiano in questo passaggio.",
+                "nl": "Annuleren van dit planningsrecord is definitief. De voorraad verandert in deze stap niet."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.cancel_not_allowed",
+            "text": {
+                "de": "Hier können nur Entwürfe und geplante Produktionen storniert werden.",
+                "es": "Aquí solo se pueden cancelar producciones en borrador o planificadas.",
+                "fr": "Seules les productions en brouillon ou planifiées peuvent être annulées ici.",
+                "it": "Qui puoi annullare solo produzioni in bozza o pianificate.",
+                "nl": "Hier kunnen alleen concept- en geplande producties worden geannuleerd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.cancel_reason",
+            "text": {
+                "de": "Grund",
+                "es": "Motivo",
+                "fr": "Motif",
+                "it": "Motivo",
+                "nl": "Reden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.cancel_reason_invalid",
+            "text": {
+                "de": "Geben Sie einen Stornierungsgrund mit höchstens 1000 Zeichen ein.",
+                "es": "Introduce un motivo de cancelación de un máximo de 1000 caracteres.",
+                "fr": "Saisissez un motif d’annulation de 1000 caractères maximum.",
+                "it": "Inserisci un motivo di annullamento di massimo 1000 caratteri.",
+                "nl": "Voer een annuleringsreden van maximaal 1000 tekens in."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.choose_product_to_preview",
             "text": {
                 "de": "Wählen Sie ein Produkt, um die skalierten Materialien zu sehen.",
@@ -9236,6 +9313,17 @@
                 "fr": "Choisissez un produit pour prévisualiser ses matières mises à l’échelle.",
                 "it": "Scegli un prodotto per vedere i materiali scalati.",
                 "nl": "Kies een product om de geschaalde materialen te bekijken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.completed_task",
+            "text": {
+                "de": "Abgeschlossen",
+                "es": "Completada",
+                "fr": "Terminée",
+                "it": "Completata",
+                "nl": "Voltooid"
             }
         },
         {
@@ -9258,6 +9346,17 @@
                 "fr": "Planifier la production",
                 "it": "Pianifica produzione",
                 "nl": "Productie plannen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.detail_title",
+            "text": {
+                "de": "Produktionsdetails",
+                "es": "Detalles de producción",
+                "fr": "Détails de la production",
+                "it": "Dettagli della produzione",
+                "nl": "Productiedetails"
             }
         },
         {
@@ -9295,6 +9394,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.from_date",
+            "text": {
+                "de": "Von Datum",
+                "es": "Desde la fecha",
+                "fr": "Date de début",
+                "it": "Dalla data",
+                "nl": "Vanaf datum"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.incoming",
             "text": {
                 "de": "Unterwegs",
@@ -9302,6 +9412,28 @@
                 "fr": "En commande",
                 "it": "In arrivo",
                 "nl": "Onderweg"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.index_intro",
+            "text": {
+                "de": "Geplante Chargen, Aufgabentermine und Bestandsvorbereitung in einer einfachen Liste.",
+                "es": "Consulta en una lista sencilla los lotes planificados, las fechas de tareas y la preparación de stock.",
+                "fr": "Retrouvez les lots planifiés, les dates de tâches et la préparation du stock dans une liste simple.",
+                "it": "Vedi in un’unica lista lotti pianificati, date delle attività e preparazione delle scorte.",
+                "nl": "Bekijk geplande batches, taakdatums en voorraadvoorbereiding in één eenvoudige lijst."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.index_title",
+            "text": {
+                "de": "Produktionen",
+                "es": "Producciones",
+                "fr": "Productions",
+                "it": "Produzioni",
+                "nl": "Producties"
             }
         },
         {
@@ -9317,6 +9449,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.new",
+            "text": {
+                "de": "Neue Produktion",
+                "es": "Nueva producción",
+                "fr": "Nouvelle production",
+                "it": "Nuova produzione",
+                "nl": "Nieuwe productie"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.no_preset",
             "text": {
                 "de": "Chargengröße eingeben",
@@ -9324,6 +9467,28 @@
                 "fr": "Saisir un format de lot",
                 "it": "Inserisci dimensione lotto",
                 "nl": "Batchgrootte invoeren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.no_productions",
+            "text": {
+                "de": "Keine Produktionen entsprechen diesen Filtern.",
+                "es": "Ninguna producción coincide con estos filtros.",
+                "fr": "Aucune production ne correspond à ces filtres.",
+                "it": "Nessuna produzione corrisponde a questi filtri.",
+                "nl": "Geen producties voldoen aan deze filters."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.no_requirements",
+            "text": {
+                "de": "Keine Materialanforderungen.",
+                "es": "No hay necesidades de materiales.",
+                "fr": "Aucun besoin en matières.",
+                "it": "Nessun requisito materiale.",
+                "nl": "Geen materiaalvereisten."
             }
         },
         {
@@ -9368,6 +9533,17 @@
                 "fr": "facultatif",
                 "it": "opzionale",
                 "nl": "optioneel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.packaging_requirement",
+            "text": {
+                "de": "Verpackung",
+                "es": "Embalaje",
+                "fr": "Conditionnement",
+                "it": "Imballaggio",
+                "nl": "Verpakking"
             }
         },
         {
@@ -9449,6 +9625,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.requirements",
+            "text": {
+                "de": "Anforderungen",
+                "es": "Necesidades",
+                "fr": "Besoins",
+                "it": "Requisiti",
+                "nl": "Vereisten"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.requirements_help",
             "text": {
                 "de": "Eine schreibgeschützte Schätzung des Bedarfs und der aktuell verfügbaren oder eintreffenden Mengen.",
@@ -9478,6 +9665,17 @@
                 "fr": "Planifier la production",
                 "it": "Pianifica produzione",
                 "nl": "Productie plannen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.search_placeholder",
+            "text": {
+                "de": "Produktname oder Produktionscode",
+                "es": "Nombre del producto o código de producción",
+                "fr": "Nom du produit ou code de production",
+                "it": "Nome prodotto o codice produzione",
+                "nl": "Productnaam of productiecode"
             }
         },
         {
@@ -9592,6 +9790,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.status_filter",
+            "text": {
+                "de": "Status",
+                "es": "Estado",
+                "fr": "Statut",
+                "it": "Stato",
+                "nl": "Status"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.task_schedule",
             "text": {
                 "de": "Aufgabentermine",
@@ -9621,6 +9830,72 @@
                 "fr": "Jeu de tâches",
                 "it": "Set di attività",
                 "nl": "Taakset"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.tasks",
+            "text": {
+                "de": "Aufgaben",
+                "es": "Tareas",
+                "fr": "Tâches",
+                "it": "Attività",
+                "nl": "Taken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.to_date",
+            "text": {
+                "de": "Bis Datum",
+                "es": "Hasta la fecha",
+                "fr": "Date de fin",
+                "it": "Alla data",
+                "nl": "Tot datum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.unassigned",
+            "text": {
+                "de": "Nicht zugewiesen",
+                "es": "Sin asignar",
+                "fr": "Non attribué",
+                "it": "Non assegnato",
+                "nl": "Niet toegewezen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.unknown_product",
+            "text": {
+                "de": "Unbekanntes Produkt",
+                "es": "Producto desconocido",
+                "fr": "Produit inconnu",
+                "it": "Prodotto sconosciuto",
+                "nl": "Onbekend product"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.version",
+            "text": {
+                "de": "Formelversion",
+                "es": "Versión de fórmula",
+                "fr": "Version de la formule",
+                "it": "Versione formula",
+                "nl": "Formuleversie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.workspace_missing",
+            "text": {
+                "de": "Der Produktionsarbeitsbereich wurde nicht gefunden.",
+                "es": "No se ha encontrado el espacio de trabajo de producción.",
+                "fr": "L’espace de travail de production est introuvable.",
+                "it": "L’area di lavoro della produzione non è stata trovata.",
+                "nl": "De productiewerkruimte kon niet worden gevonden."
             }
         },
         {

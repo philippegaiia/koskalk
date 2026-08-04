@@ -152,8 +152,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->group(function (): void {
             Route::view('/', 'production-bench.home')->name('home');
             Route::view('/inventory', 'production-bench.inventory')->name('inventory');
-            Route::view('/production', 'production-bench.production.create')->name('production.create');
+            Route::view('/production', 'production-bench.production.index')->name('production.index');
+            Route::view('/production/new', 'production-bench.production.create')->name('production.create');
             Route::view('/production/settings', 'production-bench.production.settings')->name('production.settings');
+            Route::view('/production/{productionRun}', 'production-bench.production.show')->name('production.show');
             Route::redirect('/purchasing', '/dashboard/production-bench/purchasing/suppliers')->name('purchasing');
             Route::view('/purchasing/suppliers', 'production-bench.purchasing.suppliers')->name('purchasing.suppliers');
             Route::view('/purchasing/suppliers/new', 'production-bench.purchasing.supplier-create')->name('purchasing.suppliers.create');

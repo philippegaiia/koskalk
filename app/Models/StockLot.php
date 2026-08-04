@@ -36,7 +36,13 @@ use LogicException;
     'release_note',
     'provenance_complete',
     'historical_unit_cost',
+    'costing_unit_cost',
     'currency',
+    'costing_currency',
+    'exchange_rate',
+    'exchange_rate_date',
+    'exchange_rate_provider',
+    'exchange_rate_is_manual',
     'notes',
 ])]
 class StockLot extends Model
@@ -67,7 +73,13 @@ class StockLot extends Model
                 'unit_kind',
                 'expires_at',
                 'historical_unit_cost',
+                'costing_unit_cost',
                 'currency',
+                'costing_currency',
+                'exchange_rate',
+                'exchange_rate_date',
+                'exchange_rate_provider',
+                'exchange_rate_is_manual',
                 'origin',
                 'organic_status',
                 'stocked_at',
@@ -117,6 +129,57 @@ class StockLot extends Model
         return $this->hasOne(GoodsReceiptLine::class);
     }
 
+    public function costAdjustments(): HasMany
+    {
+        return $this->hasMany(StockLotCostAdjustment::class);
+    }
+
+    public function effectiveCostingTotalCost(): string
+    {
+        $receiptLine = $this->relationLoaded('goodsReceiptLine')
+            ? $this->getRelation('goodsReceiptLine')
+            : $this->goodsReceiptLine()->first();
+
+        if (! $receiptLine instanceof GoodsReceiptLine) {
+            throw new LogicException('A stock lot cost requires a goods receipt line.');
+        }
+
+        $baseCost = $receiptLine->costing_total_cost
+            ?? bcmul(
+                (string) ($this->costing_unit_cost ?? $this->historical_unit_cost),
+                (string) $receiptLine->actual_quantity,
+                9,
+            );
+        $adjustments = $this->relationLoaded('costAdjustments')
+            ? $this->getRelation('costAdjustments')
+            : $this->costAdjustments()->get();
+
+        return $adjustments->reduce(
+            fn (string $total, StockLotCostAdjustment $adjustment): string => bcadd(
+                $total,
+                (string) $adjustment->costing_amount,
+                9,
+            ),
+            $baseCost,
+        );
+    }
+
+    public function effectiveCostingUnitCost(): string
+    {
+        $receiptLine = $this->relationLoaded('goodsReceiptLine')
+            ? $this->getRelation('goodsReceiptLine')
+            : $this->goodsReceiptLine()->first();
+
+        if (! $receiptLine instanceof GoodsReceiptLine || bccomp((string) $receiptLine->actual_quantity, '0', 9) <= 0) {
+            throw new LogicException('A stock lot cost requires a positive receipt quantity.');
+        }
+
+        return bcround(
+            bcdiv($this->effectiveCostingTotalCost(), (string) $receiptLine->actual_quantity, 18),
+            9,
+        );
+    }
+
     public function documents(): MorphMany
     {
         return $this->morphMany(ProductionDocument::class, 'documentable');
@@ -141,6 +204,10 @@ class StockLot extends Model
             'released_at' => 'datetime',
             'provenance_complete' => 'boolean',
             'historical_unit_cost' => 'decimal:9',
+            'costing_unit_cost' => 'decimal:9',
+            'exchange_rate' => 'decimal:12',
+            'exchange_rate_date' => 'date',
+            'exchange_rate_is_manual' => 'boolean',
             'organic_status' => OrganicStatus::class,
         ];
     }

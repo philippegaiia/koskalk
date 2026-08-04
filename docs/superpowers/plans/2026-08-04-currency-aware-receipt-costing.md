@@ -41,7 +41,7 @@
 ### Task 3: Persist transaction and workspace-currency receipt costs
 
 **Files:**
-- Create: `database/migrations/2026_08_04_100000_add_currency_snapshots_to_receipt_costs.php`
+- Create: `database/migrations/2026_08_04_075635_add_currency_snapshots_to_receipt_costs.php`
 - Modify: `app/Models/GoodsReceiptLine.php`
 - Modify: `app/Models/StockLot.php`
 - Modify: `app/Actions/Purchasing/PostGoodsReceiptLine.php`

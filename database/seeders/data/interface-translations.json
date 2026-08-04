@@ -9680,6 +9680,17 @@
         },
         {
             "group": "production_bench",
+            "key": "receipt.exchange_rate",
+            "text": {
+                "de": "Wechselkurs",
+                "es": "Tipo de cambio",
+                "fr": "Taux de change",
+                "it": "Tasso di cambio",
+                "nl": "Wisselkoers"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "receipt.expiry",
             "text": {
                 "de": "Verfalls-/Mindesthaltbarkeitsdatum",
@@ -9797,6 +9808,28 @@
                 "fr": "Choisissez commande ou réception directe.",
                 "it": "Scegli ordine o ricezione diretta.",
                 "nl": "Kies bestelling of directe ontvangst."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.inventory_cost",
+            "text": {
+                "de": "Lagerkosten",
+                "es": "Coste de inventario",
+                "fr": "Coût de stock",
+                "it": "Costo di magazzino",
+                "nl": "Voorraadkosten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.inventory_cost_after_posting",
+            "text": {
+                "de": "Nach der Buchung in :currency berechnet",
+                "es": "Calculado después de contabilizar en :currency",
+                "fr": "Calculé après validation en :currency",
+                "it": "Calcolato dopo la registrazione in :currency",
+                "nl": "Berekend na boeken in :currency"
             }
         },
         {

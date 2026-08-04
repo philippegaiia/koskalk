@@ -39,7 +39,6 @@ class RecipeVersionCostingSynchronizer
     public function __construct(
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
         private readonly PackagingItemAuthoringService $packagingItemAuthoringService,
-        private readonly CurrencyCatalog $currencyCatalog,
         private readonly MassConverter $massConverter,
     ) {}
 
@@ -127,7 +126,9 @@ class RecipeVersionCostingSynchronizer
      */
     public function save(RecipeVersion $recipeVersion, User $user, array $payload): array
     {
-        return DB::transaction(function () use ($payload, $recipeVersion, $user): array {
+        $workspace = Workspace::withoutGlobalScopes()->findOrFail($recipeVersion->workspace_id);
+
+        return DB::transaction(function () use ($payload, $recipeVersion, $user, $workspace): array {
             $costing = $this->ensureCosting($recipeVersion, $user);
             $oilUnit = $this->normalizeOilUnit($payload['oil_unit_for_costing'] ?? $costing->oil_unit_for_costing);
             $oilWeight = $this->nullableFloat($payload['oil_weight_for_costing'] ?? null);
@@ -139,7 +140,7 @@ class RecipeVersionCostingSynchronizer
                     ? null
                     : $this->massConverter->toGrams($payload['oil_weight_for_costing'], $oilUnit),
                 'units_produced' => $this->nullableInt($payload['units_produced'] ?? null),
-                'currency' => $this->normalizeCurrency($payload['currency'] ?? $costing->currency),
+                'currency' => $workspace->default_currency,
             ]);
             $costing->save();
 
@@ -175,7 +176,9 @@ class RecipeVersionCostingSynchronizer
             return;
         }
 
-        DB::transaction(function () use ($sourceCosting, $targetVersion, $user): void {
+        $targetWorkspace = Workspace::withoutGlobalScopes()->findOrFail($targetVersion->workspace_id);
+
+        DB::transaction(function () use ($sourceCosting, $targetVersion, $user, $targetWorkspace): void {
             $targetCosting = RecipeVersionCosting::query()->firstOrNew([
                 'recipe_version_id' => $targetVersion->id,
                 'user_id' => $user->id,
@@ -186,7 +189,7 @@ class RecipeVersionCostingSynchronizer
                 'oil_unit_for_costing' => $sourceCosting->oil_unit_for_costing,
                 'oil_mass_grams_for_costing' => $sourceCosting->oil_mass_grams_for_costing,
                 'units_produced' => $sourceCosting->units_produced,
-                'currency' => $sourceCosting->currency,
+                'currency' => $targetWorkspace->default_currency,
             ]);
             $targetCosting->save();
 
@@ -323,7 +326,9 @@ class RecipeVersionCostingSynchronizer
      */
     public function ensureCosting(RecipeVersion $recipeVersion, User $user): RecipeVersionCosting
     {
-        return DB::transaction(function () use ($recipeVersion, $user): RecipeVersionCosting {
+        $workspace = Workspace::withoutGlobalScopes()->findOrFail($recipeVersion->workspace_id);
+
+        return DB::transaction(function () use ($recipeVersion, $user, $workspace): RecipeVersionCosting {
             $oilUnit = $this->normalizeOilUnit($recipeVersion->batch_unit);
             $canonicalMass = $this->formulaCanonicalMass($recipeVersion, $oilUnit);
 
@@ -338,7 +343,7 @@ class RecipeVersionCostingSynchronizer
                         : $this->massConverter->fromGrams($canonicalMass, $oilUnit),
                     'oil_unit_for_costing' => $oilUnit,
                     'oil_mass_grams_for_costing' => $canonicalMass,
-                    'currency' => $user->defaultCurrency(),
+                    'currency' => $workspace->default_currency,
                 ],
             );
 
@@ -660,16 +665,6 @@ class RecipeVersionCostingSynchronizer
         $normalized = (int) $value;
 
         return $normalized > 0 ? $normalized : null;
-    }
-
-    /** Normalize a currency string to a valid ISO 4217 code, defaulting to EUR. */
-    private function normalizeCurrency(mixed $value): string
-    {
-        $currency = strtoupper(trim((string) $value));
-
-        return $this->currencyCatalog->isSelectable($currency)
-            ? $currency
-            : config('currency.default', 'EUR');
     }
 
     /** Normalize an oil unit to one of the allowed values, defaulting to grams. */

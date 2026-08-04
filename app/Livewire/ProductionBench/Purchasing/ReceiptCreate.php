@@ -199,6 +199,7 @@ class ReceiptCreate extends Component
         return view('livewire.production-bench.purchasing.receipt-create', [
             'orders' => $orders,
             'selectedOrder' => $this->selectedOrder($orders),
+            'workspaceCurrency' => $this->workspace()->default_currency,
             'suppliers' => Supplier::query()
                 ->where('workspace_id', $this->workspace()->id)
                 ->where('is_active', true)

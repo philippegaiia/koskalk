@@ -49,17 +49,15 @@
 
  <div class="sk-inset p-4">
  <span class="sk-eyebrow">{{ __('workbench.costing.settings.currency') }}</span>
- <x-search-combobox
- id="costing-currency-search"
- :label="__('workbench.costing.settings.currency_label')"
- :options="collect($workbench['currencies'] ?? ['EUR' => __('workbench.costing.settings.currencies.eur'), 'USD' => __('workbench.costing.settings.currencies.usd'), 'CHF' => __('workbench.costing.settings.currencies.chf')])->map(fn (string $name, string $code): array => ['id' => $code, 'label' => $code.' — '.$name, 'searchText' => $code.' '.$name])->values()->all()"
- :selected-id="$workbench['defaultCurrency'] ?? 'EUR'"
- :placeholder="__('workbench.costing.settings.currency_placeholder')"
- :allow-empty="false"
- class="mt-3"
- x-effect="syncSelection(costingCurrency)"
- x-on:search-combobox-selected="costingCurrency = String($event.detail.id); scheduleCostingSave()"
- />
+ <div
+     id="costing-currency-search"
+     class="mt-3 flex items-center justify-between rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] px-3 py-2.5"
+     role="status"
+     data-costing-currency
+ >
+     <span class="text-sm text-[var(--color-ink-soft)]">{{ __('workbench.costing.settings.currency_label') }}</span>
+     <span class="numeric font-semibold text-[var(--color-ink-strong)]">{{ $workbench['defaultCurrency'] ?? 'EUR' }}</span>
+ </div>
  <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.costing.settings.price_help') }}</p>
  </div>
  </div>

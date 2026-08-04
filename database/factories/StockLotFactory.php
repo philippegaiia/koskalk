@@ -39,7 +39,13 @@ class StockLotFactory extends Factory
             'release_note' => null,
             'provenance_complete' => false,
             'historical_unit_cost' => null,
+            'costing_unit_cost' => null,
             'currency' => null,
+            'costing_currency' => null,
+            'exchange_rate' => null,
+            'exchange_rate_date' => null,
+            'exchange_rate_provider' => null,
+            'exchange_rate_is_manual' => false,
             'notes' => null,
         ];
     }

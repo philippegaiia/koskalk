@@ -18,6 +18,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\OwnerType;
 use App\Services\CurrentMaterialPriceService;
+use App\Services\ExchangeRateService;
 use App\Services\InternalLotCodeGenerator;
 use App\StockLotOrigin;
 use App\StockLotStatus;
@@ -30,6 +31,7 @@ class PostGoodsReceiptLine
     public function __construct(
         private readonly InternalLotCodeGenerator $lotCodeGenerator,
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
+        private readonly ExchangeRateService $exchangeRateService,
     ) {}
 
     public function handle(
@@ -95,6 +97,13 @@ class PostGoodsReceiptLine
             : null;
         $historicalTotalCost = bcmul($purchaseFormatPrice, (string) $packsReceived, 9);
         $historicalUnitCost = bcround(bcdiv($historicalTotalCost, $actualQuantity, 18), 9);
+        $exchangeRate = $this->exchangeRateService->snapshot(
+            baseCurrency: $currency,
+            quoteCurrency: $workspace->default_currency,
+            date: $stockedAt,
+        );
+        $costingTotalCost = bcmul($historicalTotalCost, $exchangeRate->rate, 9);
+        $costingUnitCost = bcround(bcdiv($costingTotalCost, $actualQuantity, 18), 9);
 
         if (bccomp($historicalUnitCost, '0', 9) <= 0) {
             throw ValidationException::withMessages([
@@ -121,6 +130,12 @@ class PostGoodsReceiptLine
             'provenance_complete' => filled($supplierBatchNumber),
             'historical_unit_cost' => $historicalUnitCost,
             'currency' => $currency,
+            'costing_unit_cost' => $costingUnitCost,
+            'costing_currency' => $exchangeRate->quoteCurrency,
+            'exchange_rate' => $exchangeRate->rate,
+            'exchange_rate_date' => $exchangeRate->rateDate,
+            'exchange_rate_provider' => $exchangeRate->provider,
+            'exchange_rate_is_manual' => $exchangeRate->isManual,
             'notes' => $notes,
         ]);
 
@@ -133,11 +148,17 @@ class PostGoodsReceiptLine
             'original_quantity' => $originalQuantity,
             'original_unit' => $originalUnit,
             'historical_total_cost' => $historicalTotalCost,
+            'costing_total_cost' => $costingTotalCost,
             'receipt_price_basis' => $receiptPriceBasis,
             'receipt_price_amount' => $receiptPriceAmount,
             'receipt_price_unit' => $receiptPriceUnit,
             'purchase_format_price' => $purchaseFormatPrice,
             'currency' => $currency,
+            'costing_currency' => $exchangeRate->quoteCurrency,
+            'exchange_rate' => $exchangeRate->rate,
+            'exchange_rate_date' => $exchangeRate->rateDate,
+            'exchange_rate_provider' => $exchangeRate->provider,
+            'exchange_rate_is_manual' => $exchangeRate->isManual,
             'supplier_batch_number' => $supplierBatchNumber,
             'expires_at' => $expiresAt,
             'notes' => $notes,
@@ -162,9 +183,9 @@ class PostGoodsReceiptLine
             $this->currentMaterialPriceService->rememberIngredient(
                 workspace: $workspace,
                 ingredient: $ingredient,
-                pricePerMassUnit: $lot->historical_unit_cost,
+                pricePerMassUnit: $lot->costing_unit_cost,
                 massUnit: 'g',
-                currency: $currency,
+                currency: $lot->costing_currency,
                 source: MaterialPriceSource::Receipt,
                 sourceId: $lot->id,
                 actor: $actor,
@@ -174,8 +195,8 @@ class PostGoodsReceiptLine
             $this->currentMaterialPriceService->rememberPackaging(
                 workspace: $workspace,
                 packagingItem: $packagingItem,
-                pricePerItem: $lot->historical_unit_cost,
-                currency: $currency,
+                pricePerItem: $lot->costing_unit_cost,
+                currency: $lot->costing_currency,
                 source: MaterialPriceSource::Receipt,
                 sourceId: $lot->id,
                 actor: $actor,

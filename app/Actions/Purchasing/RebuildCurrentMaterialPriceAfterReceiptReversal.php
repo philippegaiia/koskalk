@@ -251,8 +251,9 @@ class RebuildCurrentMaterialPriceAfterReceiptReversal
 
         foreach ($receiptLines as $receiptLine) {
             $candidates[] = [
-                'price' => $receiptLine->stockLot->historical_unit_cost,
-                'currency' => $receiptLine->currency,
+                'price' => $receiptLine->stockLot->effectiveCostingUnitCost(),
+                'currency' => $receiptLine->stockLot->costing_currency
+                    ?? $receiptLine->currency,
                 'source' => MaterialPriceSource::Receipt,
                 'source_id' => $receiptLine->stock_lot_id,
                 'recorded_at' => $receiptLine->goodsReceipt->created_at

@@ -26,6 +26,7 @@ use App\StockUnitKind;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -136,6 +137,63 @@ it('posts direct ingredient and packaging lines through the same immutable inven
         ->physical->toBe('290.000000000')
         ->available->toBe('290.000000000')
         ->incoming->toBe('0.000000000');
+});
+
+it('keeps the supplier currency and snapshots the workspace costing currency', function (): void {
+    Http::fake([
+        'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::response([
+            'base' => 'USD',
+            'quote' => 'EUR',
+            'date' => '2026-08-03',
+            'rate' => 0.91,
+        ]),
+    ]);
+
+    [$owner, $workspace, $supplier, $ingredient] = directReceiptContext();
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create([
+            'currency' => 'USD',
+            'price_amount' => '100',
+            'total_price' => '100',
+        ]);
+
+    $receipt = app(ReceiveDirectGoodsReceipt::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        idempotencyKey: 'direct-usd-to-eur',
+        lines: [[
+            'listing' => $listing,
+            'packs_received' => 2,
+            'actual_quantity' => '10',
+            'actual_unit' => 'kg',
+            'receipt_price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'receipt_price_amount' => '100',
+            'currency' => 'USD',
+        ]],
+        receivedAt: '2026-08-03',
+    );
+
+    $line = $receipt->lines()->with('stockLot')->sole();
+
+    expect($line->currency)->toBe('USD')
+        ->and($line->historical_total_cost)->toBe('200.000000000')
+        ->and($line->costing_total_cost)->toBe('182.000000000')
+        ->and($line->costing_currency)->toBe('EUR')
+        ->and($line->exchange_rate)->toBe('0.910000000000')
+        ->and($line->exchange_rate_date->toDateString())->toBe('2026-08-03')
+        ->and($line->exchange_rate_provider)->toBe('frankfurter')
+        ->and($line->exchange_rate_is_manual)->toBeFalse()
+        ->and($line->stockLot->historical_unit_cost)->toBe('0.020000000')
+        ->and($line->stockLot->costing_unit_cost)->toBe('0.018200000')
+        ->and($line->stockLot->costing_currency)->toBe('EUR')
+        ->and(CurrentMaterialPrice::query()->where('ingredient_id', $ingredient->id)->sole()->currency)
+        ->toBe('EUR');
+
+    Http::assertSentCount(1);
 });
 
 it('returns the original direct receipt when the same submission is retried', function (): void {

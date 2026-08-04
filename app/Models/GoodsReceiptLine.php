@@ -12,8 +12,9 @@ use LogicException;
 
 #[Fillable([
     'goods_receipt_id', 'purchase_order_line_id', 'supplier_listing_id', 'stock_lot_id', 'packs_received',
-    'actual_quantity', 'original_quantity', 'original_unit', 'historical_total_cost',
+    'actual_quantity', 'original_quantity', 'original_unit', 'historical_total_cost', 'costing_total_cost',
     'receipt_price_basis', 'receipt_price_amount', 'receipt_price_unit', 'purchase_format_price', 'currency',
+    'costing_currency', 'exchange_rate', 'exchange_rate_date', 'exchange_rate_provider', 'exchange_rate_is_manual',
     'supplier_batch_number', 'expires_at', 'notes', 'previous_material_price_snapshot',
 ])]
 class GoodsReceiptLine extends Model
@@ -54,9 +55,13 @@ class GoodsReceiptLine extends Model
             'actual_quantity' => 'decimal:9',
             'original_quantity' => 'decimal:9',
             'historical_total_cost' => 'decimal:9',
+            'costing_total_cost' => 'decimal:9',
             'receipt_price_basis' => ListingPriceBasis::class,
             'receipt_price_amount' => 'decimal:9',
             'purchase_format_price' => 'decimal:9',
+            'exchange_rate' => 'decimal:12',
+            'exchange_rate_date' => 'date',
+            'exchange_rate_is_manual' => 'boolean',
             'expires_at' => 'date',
             'previous_material_price_snapshot' => 'array',
         ];

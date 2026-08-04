@@ -282,7 +282,7 @@ it('defaults new costing from canonical formula mass in the formula display unit
         ->and($costing->oil_mass_grams_for_costing)->toBe('1000.000000000');
 });
 
-it('keeps the user ingredient price currency when costing updates the remembered amount', function () {
+it('uses the workspace currency when costing updates the remembered amount', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -318,7 +318,11 @@ it('keeps the user ingredient price currency when costing updates the remembered
         ->firstOrFail();
 
     expect(bcmul($currentPrice->price_per_canonical_unit, '1000', 4))->toBe('8.9123')
-        ->and($currentPrice->currency)->toBe('USD');
+        ->and($currentPrice->currency)->toBe('EUR')
+        ->and(RecipeVersionCosting::query()
+            ->where('recipe_version_id', $draftVersion->id)
+            ->where('user_id', $user->id)
+            ->value('currency'))->toBe('EUR');
 });
 
 it('saves large ingredient costing prices for high denomination currencies', function () {
@@ -459,7 +463,7 @@ it('updates the saved packaging item amount from costing overrides without chang
 
     expect($packagingItem->fresh())
         ->unit_cost->toBe('0.730000000000')
-        ->currency->toBe('USD')
+        ->currency->toBe('EUR')
         ->and(RecipeVersionCostingPackagingItem::query()
             ->where('packaging_item_id', $packagingItem->id)
             ->whereHas('costing', fn ($query) => $query->where('recipe_version_id', $secondDraftVersion->id))

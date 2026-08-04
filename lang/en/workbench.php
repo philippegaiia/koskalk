@@ -189,9 +189,9 @@ return [
             'finished_units' => 'Finished units',
             'finished_units_placeholder' => 'e.g. 50',
             'currency' => 'Currency',
-            'currency_label' => 'Costing currency',
+            'currency_label' => 'Workspace currency',
             'currency_placeholder' => 'Search currencies',
-            'price_help' => 'Ingredient prices follow the active metric or US customary costing basis.',
+            'price_help' => 'Bench prices and inventory costs use this currency. Supplier prices are converted when stock is received.',
             'units' => [
                 'g' => 'g',
                 'kg' => 'kg',

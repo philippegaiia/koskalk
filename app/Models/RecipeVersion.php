@@ -100,6 +100,11 @@ class RecipeVersion extends Model
             ->latest('id');
     }
 
+    public function productionRuns(): HasMany
+    {
+        return $this->hasMany(ProductionRun::class);
+    }
+
     protected function casts(): array
     {
         return [

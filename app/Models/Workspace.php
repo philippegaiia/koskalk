@@ -80,6 +80,11 @@ class Workspace extends Model
         return $this->hasOne(WorkspaceProductionEntitlement::class);
     }
 
+    public function productionRuns(): HasMany
+    {
+        return $this->hasMany(ProductionRun::class);
+    }
+
     public function hasMember(User $user): bool
     {
         return $this->owner_user_id === $user->id

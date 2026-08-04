@@ -138,6 +138,11 @@ class Recipe extends Model implements HasRichContent
             ->latest('id');
     }
 
+    public function productionRuns(): HasMany
+    {
+        return $this->hasMany(ProductionRun::class);
+    }
+
     public function latestPublishedVersion(): HasOne
     {
         return $this->hasOne(RecipeVersion::class)

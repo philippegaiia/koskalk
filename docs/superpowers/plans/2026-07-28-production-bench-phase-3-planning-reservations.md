@@ -74,6 +74,7 @@ This is the first implementation slice. It establishes the durable records and l
 - Create: `app/ProductionRunStatus.php`
 - Create: `app/ProductionRequirementKind.php`
 - Create: `app/ProductionRunSource.php`
+- Create: `app/ProductionBasisKind.php`
 - Create: `app/Models/ProductionRun.php`
 - Create: `app/Models/ProductionRequirement.php`
 - Create: `database/factories/ProductionRunFactory.php`
@@ -81,6 +82,7 @@ This is the first implementation slice. It establishes the durable records and l
 - Create: `database/migrations/*_create_production_runs_table.php`
 - Create: `database/migrations/*_create_production_requirements_table.php`
 - Create: `app/Policies/ProductionRunPolicy.php`
+- Modify: `lang/en/production_bench.php`
 - Modify: `app/Models/Workspace.php`
 - Modify: `app/Models/Recipe.php`
 - Modify: `app/Models/RecipeVersion.php`
@@ -134,7 +136,7 @@ Expected: FAIL because the production tables and classes do not exist.
 
 - production and exactly one ingredient/packaging subject;
 - optional source recipe-item/packaging-row IDs for traceability;
-- kind and canonical quantity;
+- kind plus exactly one canonical quantity column: decimal grams for ingredients or whole units for packaging;
 - human-readable subject, phase/position, percentage/components-per-unit, and unit snapshots;
 - sort order and timestamps.
 
@@ -147,7 +149,7 @@ The policy is defense-in-depth. Domain actions in later tasks must still validat
 ```bash
 php artisan test --compact tests/Feature/ProductionPlanningSchemaTest.php
 vendor/bin/pint --dirty --format agent
-git add app/ProductionRunStatus.php app/ProductionRequirementKind.php app/ProductionRunSource.php app/Models/ProductionRun.php app/Models/ProductionRequirement.php app/Models/Workspace.php app/Models/Recipe.php app/Models/RecipeVersion.php app/Policies/ProductionRunPolicy.php database/factories/ProductionRunFactory.php database/factories/ProductionRequirementFactory.php database/migrations/*_create_production_runs_table.php database/migrations/*_create_production_requirements_table.php tests/Feature/ProductionPlanningSchemaTest.php
+git add app/ProductionRunStatus.php app/ProductionRequirementKind.php app/ProductionRunSource.php app/ProductionBasisKind.php app/Models/ProductionRun.php app/Models/ProductionRequirement.php app/Models/Workspace.php app/Models/Recipe.php app/Models/RecipeVersion.php app/Policies/ProductionRunPolicy.php database/factories/ProductionRunFactory.php database/factories/ProductionRequirementFactory.php database/migrations/*_create_production_runs_table.php database/migrations/*_create_production_requirements_table.php lang/en/production_bench.php tests/Feature/ProductionPlanningSchemaTest.php
 git commit -m "feat: add production planning schema"
 ```
 

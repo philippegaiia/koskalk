@@ -309,6 +309,17 @@ return [
         'read_only' => 'Production Bench is read-only while the add-on is cancelled.',
         'inactive' => 'Production Bench is not active for this workspace.',
     ],
+    'production' => [
+        'status' => [
+            'draft' => 'Draft',
+            'scheduled' => 'Planned',
+            'reserved' => 'Stock prepared',
+            'in_production' => 'In production',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+            'aborted' => 'Aborted',
+        ],
+    ],
     'home' => [
         'read_only' => 'Read-only',
         'stop' => 'Stop and keep records',

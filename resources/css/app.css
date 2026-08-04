@@ -463,6 +463,72 @@
     }
 }
 
+@keyframes flash-spark-rise {
+    0% {
+        opacity: 0;
+        transform: translate3d(0, 1.5rem, 0) scale(0.7) rotate(0deg);
+    }
+
+    25% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate3d(3rem, -2.5rem, 0) scale(1.1) rotate(24deg);
+    }
+}
+
+@keyframes flash-orb-pop {
+    0% {
+        transform: scale(0.75);
+    }
+
+    55% {
+        transform: scale(1.08);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.flash-celebration-orb {
+    animation: flash-orb-pop 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.flash-spark {
+    position: absolute;
+    color: var(--color-accent-strong);
+    font-size: 1.25rem;
+    pointer-events: none;
+    animation: flash-spark-rise 1.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.flash-spark-a {
+    right: 16%;
+    bottom: 0.75rem;
+}
+
+.flash-spark-b {
+    right: 9%;
+    bottom: 1.25rem;
+    animation-delay: 140ms;
+}
+
+.flash-spark-c {
+    right: 24%;
+    bottom: 0.5rem;
+    animation-delay: 280ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .flash-celebration-orb,
+    .flash-spark {
+        animation: none;
+    }
+}
+
 @layer utilities {
     .animate-hero-rise {
         animation: hero-rise 900ms cubic-bezier(0.22, 1, 0.36, 1) both;

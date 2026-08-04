@@ -440,6 +440,8 @@ return [
         'generate_preview' => 'Generate date preview',
         'generate_productions' => 'Confirm and create productions',
         'generated_success' => ':count production(s) created.',
+        'celebration_title' => 'Production plan created',
+        'celebration_help' => 'Your batches and task dates are ready in the production list.',
         'summary' => 'Flash simulation',
         'summary_help' => 'This is an indicative calculation only. It does not reserve stock or create productions.',
         'expected_units' => 'Units planned',

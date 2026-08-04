@@ -7777,6 +7777,28 @@
         },
         {
             "group": "production_bench",
+            "key": "flash.celebration_help",
+            "text": {
+                "de": "Ihre Chargen und Aufgabentermine sind in der Produktionsliste bereit.",
+                "es": "Sus lotes y fechas de tareas están listos en la lista de producción.",
+                "fr": "Vos lots et dates de tâches sont prêts dans la liste des productions.",
+                "it": "I tuoi lotti e le date delle attività sono pronti nell’elenco produzioni.",
+                "nl": "Je batches en taakdata staan klaar in de productielijst."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.celebration_title",
+            "text": {
+                "de": "Produktionsplan erstellt",
+                "es": "Plan de producción creado",
+                "fr": "Plan de production créé",
+                "it": "Piano di produzione creato",
+                "nl": "Productieplan aangemaakt"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "flash.date_preview",
             "text": {
                 "de": "Vorgeschlagene Produktionstermine",

@@ -1,4 +1,22 @@
 <x-production-bench.page compact>
+    <div
+        x-data="{ celebrating: false, timer: null }"
+        x-on:flash-productions-generated.window="celebrating = true; clearTimeout(timer); timer = setTimeout(() => celebrating = false, 5200)"
+        class="space-y-6"
+    >
+    <div x-cloak x-show="celebrating" x-transition.opacity role="status" aria-live="polite" class="flash-celebration relative overflow-hidden rounded-2xl border border-[var(--color-accent)] bg-[var(--color-accent-soft)] px-5 py-5 shadow-sm sm:px-6">
+        <div class="relative z-10 flex items-center gap-4">
+            <div class="flash-celebration-orb grid size-12 shrink-0 place-items-center rounded-full bg-[var(--color-accent)] text-2xl text-white shadow-sm motion-safe:animate-pulse">✦</div>
+            <div>
+                <p class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.flash.celebration_title') }}</p>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.celebration_help') }}</p>
+            </div>
+        </div>
+        <span aria-hidden="true" class="flash-spark flash-spark-a">✦</span>
+        <span aria-hidden="true" class="flash-spark flash-spark-b">•</span>
+        <span aria-hidden="true" class="flash-spark flash-spark-c">✦</span>
+    </div>
+
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.common.inactive') }}</h1>
@@ -192,4 +210,5 @@
             </section>
         @endif
     @endif
+    </div>
 </x-production-bench.page>

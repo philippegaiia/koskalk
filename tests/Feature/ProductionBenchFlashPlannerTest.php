@@ -40,7 +40,8 @@ it('renders the flash planner, simulates a line, and previews dates without crea
     $page->call('generate')
         ->assertHasNoErrors()
         ->assertSet('showDatePreview', false)
-        ->assertSee(__('production_bench.flash.generated_success', ['count' => 1]));
+        ->assertSee(__('production_bench.flash.generated_success', ['count' => 1]))
+        ->assertSee(__('production_bench.flash.celebration_title'));
 
     expect($page->get('generatedPublicIds'))->toHaveCount(1)
         ->and($fixture['workspace']->productionRuns()->count())->toBe(1);

@@ -379,53 +379,12 @@ export function createPresentationSection() {
                 ?? '';
         },
 
-        get batchIngredientRows() {
-            if (this.isCosmeticFormula) {
-                return [];
+        get ingredientListVariantHelperText() {
+            if (this.activeIngredientListVariantKey === 'incorporated_ingredients') {
+                return 'Ingredients before saponification, with required allergens.';
             }
 
-            const formulaWeight = this.number(this.finalBatchWeight());
-            const phaseRows = ['saponified_oils', 'additives', 'fragrance'].flatMap((phaseKey) => (
-                (this.phaseItems[phaseKey] ?? []).map((row) => {
-                    const weight = this.number(this.rowWeight(row));
-
-                    return {
-                        id: `batch-${phaseKey}-${row.id}`,
-                        name: row.name,
-                        stage: this.batchPhaseLabel(phaseKey),
-                        weight,
-                        percent_of_formula: formulaWeight > 0 ? (weight / formulaWeight) * 100 : 0,
-                    };
-                })
-            ));
-            const lyeRows = this.lyeSummaryCards
-                .map((card) => {
-                    const weight = this.number(card?.value ?? 0);
-
-                    return {
-                        id: `batch-${card.id}`,
-                        name: card.label,
-                        stage: 'Lye solution',
-                        weight,
-                        percent_of_formula: formulaWeight > 0 ? (weight / formulaWeight) * 100 : 0,
-                    };
-                });
-
-            return [...phaseRows, ...lyeRows]
-                .filter((row) => row.weight > 0);
-        },
-
-        batchPhaseLabel(phaseKey) {
-            return this.phaseOrder.find((phase) => phase.key === phaseKey)?.name
-                ?? this.humanizeKey(phaseKey);
-        },
-
-        get batchIngredientTotalWeight() {
-            return this.batchIngredientRows.reduce((sum, row) => sum + this.number(row.weight), 0);
-        },
-
-        get batchIngredientTotalPercent() {
-            return this.batchIngredientRows.reduce((sum, row) => sum + this.number(row.percent_of_formula), 0);
+            return 'Saponified oil names with the estimated unsaponified oils.';
         },
 
         get cosmeticOutputIngredientRows() {
@@ -496,7 +455,7 @@ export function createPresentationSection() {
         },
 
         get printIngredientListText() {
-            return this.finalIngredientList || this.drySoapOutputListText;
+            return this.finalIngredientList || this.curedSoapOutputListText;
         },
 
         get printPlainIngredientListText() {
@@ -572,45 +531,49 @@ export function createPresentationSection() {
             }[status] ?? 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)]';
         },
 
-        get drySoapOutputListText() {
+        get curedSoapOutputListText() {
             if (this.isCosmeticFormula) {
                 return this.generatedIngredientListText;
             }
 
-            const ingredientLabels = this.drySoapIngredientRows.map((row) => row.label);
-            const allergenLabels = this.drySoapDeclarationRows
+            const ingredientLabels = this.curedSoapIngredientRows.map((row) => row.label);
+            const allergenLabels = this.curedSoapDeclarationRows
                 .filter((row) => row.included_in_inci)
                 .map((row) => row.label);
 
             return [...ingredientLabels, ...allergenLabels].join(', ');
         },
 
-        get drySoapOutputBasisWeight() {
+        get curedSoapOutputBasisWeight() {
             if (this.isCosmeticFormula) {
                 return this.number(this.oilWeight);
             }
 
-            return this.number(this.curedBatchWeight());
+            return this.number(this.labelingBasis?.cured_weight ?? this.curedBatchWeight());
         },
 
-        get drySoapResidualWaterWeight() {
+        get curedSoapResidualWaterWeight() {
             if (this.isCosmeticFormula) {
                 return 0;
             }
 
-            return this.drySoapOutputBasisWeight * 0.11;
+            return this.number(
+                this.labelingBasis?.residual_water_weight
+                ?? (this.curedSoapOutputBasisWeight * 0.11),
+            );
         },
 
-        get drySoapIngredientRows() {
+        get curedSoapIngredientRows() {
             if (this.isCosmeticFormula) {
                 return this.generatedIngredientRows.map((row) => ({
                     ...row,
                     adjusted_weight: this.number(row.weight),
-                    percent_of_dry_basis: this.number(row.percent_of_formula),
+                    percent_of_cured_basis: this.number(row.percent_of_formula),
                 }));
             }
 
-            const residualWaterWeight = this.drySoapResidualWaterWeight;
+            const curedBasisWeight = this.curedSoapOutputBasisWeight;
+            const residualWaterWeight = this.curedSoapResidualWaterWeight;
             const rows = (this.activeIngredientListVariant?.ingredient_rows ?? [])
                 .map((row) => ({
                     ...row,
@@ -619,16 +582,13 @@ export function createPresentationSection() {
                         : this.number(row.weight),
                 }))
                 .filter((row) => row.adjusted_weight > 0);
-            const nonWaterTotalWeight = rows
-                .filter((row) => row.label !== 'AQUA')
-                .reduce((sum, row) => sum + row.adjusted_weight, 0);
 
             return rows
                 .map((row) => ({
                     ...row,
-                    percent_of_dry_basis: row.label === 'AQUA'
-                        ? 11
-                        : (nonWaterTotalWeight > 0 ? (row.adjusted_weight / nonWaterTotalWeight) * 89 : 0),
+                    percent_of_cured_basis: curedBasisWeight > 0
+                        ? (row.adjusted_weight / curedBasisWeight) * 100
+                        : 0,
                 }))
                 .sort((left, right) => {
                     if (left.adjusted_weight === right.adjusted_weight) {
@@ -639,36 +599,37 @@ export function createPresentationSection() {
                 });
         },
 
-        get drySoapIngredientTotalWeight() {
-            return this.drySoapIngredientRows.reduce((sum, row) => sum + this.number(row.adjusted_weight), 0);
+        get curedSoapIngredientTotalWeight() {
+            return this.curedSoapIngredientRows.reduce((sum, row) => sum + this.number(row.adjusted_weight), 0);
         },
 
-        get drySoapIngredientTotalPercent() {
-            return this.drySoapIngredientRows.reduce((sum, row) => sum + this.number(row.percent_of_dry_basis), 0);
+        get curedSoapIngredientTotalPercent() {
+            return this.curedSoapIngredientRows.reduce((sum, row) => sum + this.number(row.percent_of_cured_basis), 0);
         },
 
-        get drySoapDeclarationRows() {
+        get curedSoapDeclarationRows() {
             if (this.isCosmeticFormula) {
                 return this.declarationRows.map((row) => ({
                     ...row,
                     adjusted_weight: this.oilWeight * (this.number(row.percent_of_formula) / 100),
-                    percent_of_dry_basis: this.number(row.percent_of_formula),
+                    percent_of_cured_basis: this.number(row.percent_of_formula),
                 }));
             }
 
             const formulaWeight = this.number(this.labelingBasis?.formula_weight ?? this.finalBatchWeight());
-            const ingredientTotalWeight = this.drySoapIngredientTotalWeight;
+            const curedBasisWeight = this.curedSoapOutputBasisWeight;
 
             return (this.activeIngredientListVariant?.declaration_rows ?? [])
                 .map((row) => {
                     const declarationWeight = formulaWeight * (this.number(row.percent_of_formula) / 100);
+                    const percentOfCuredBasis = row.percent_of_cured_basis === null || row.percent_of_cured_basis === undefined
+                        ? (curedBasisWeight > 0 ? (declarationWeight / curedBasisWeight) * 100 : 0)
+                        : this.number(row.percent_of_cured_basis);
 
                     return {
                         ...row,
                         adjusted_weight: declarationWeight,
-                        percent_of_dry_basis: ingredientTotalWeight > 0
-                            ? (declarationWeight / ingredientTotalWeight) * 100
-                            : 0,
+                        percent_of_cured_basis: percentOfCuredBasis,
                     };
                 })
                 .sort((left, right) => {
@@ -680,8 +641,8 @@ export function createPresentationSection() {
                 });
         },
 
-        get drySoapAllergenRows() {
-            return this.drySoapDeclarationRows.filter((row) => row.included_in_inci);
+        get curedSoapAllergenRows() {
+            return this.curedSoapDeclarationRows.filter((row) => row.included_in_inci);
         },
 
         outputRowKindLabel(row) {
@@ -714,11 +675,12 @@ export function createPresentationSection() {
 
         selectIngredientListVariant(key) {
             this.selectedIngredientListVariantKey = key;
-            this.inciCopyMessage = '';
+            this.ingredientListCopyMessage = '';
+            this.ingredientListCopyTarget = '';
         },
 
         useGeneratedIngredientListAsFinal() {
-            this.finalIngredientList = this.drySoapOutputListText;
+            this.finalIngredientList = this.curedSoapOutputListText;
             this.finalIngredientListBasisHash = this.ingredientListBasisHash;
         },
 

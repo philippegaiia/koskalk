@@ -26,6 +26,7 @@ import {
 import { humanizeKey as humanizeText } from './utils';
 import { resolveNumberLocale } from './number-format';
 import { MASS_UNITS, convertMass } from './mass';
+import { copyText } from './clipboard';
 import { createFormulaSection } from './sections/formula-section';
 import { createPackagingSection } from './sections/packaging-section';
 import { createCostingSection } from './sections/costing-section';
@@ -217,7 +218,9 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         catalogReview: initialDraft?.catalogReview ?? null,
         selectedIngredientListVariantKey: initialSnapshot?.labeling?.default_variant_key ?? (isCosmeticFormula ? 'incorporated_ingredients' : 'saponified_with_superfat'),
         savedRecipeUrl: payload.recipe?.saved_formula_url ?? null,
-        inciCopyMessage: '',
+        ingredientListCopyMessage: '',
+        ingredientListCopyTarget: '',
+        ingredientListCopyTimer: null,
         calculationPreviewMessage: '',
         calculationPreviewTimer: null,
         isPreviewingCalculation: false,
@@ -856,20 +859,16 @@ function createPersistenceSection() {
             }
         },
 
-        async copyGeneratedIngredientList() {
-            if (!this.drySoapOutputListText || !navigator?.clipboard?.writeText) {
-                return;
-            }
+        async copyIngredientList(text, target) {
+            this.ingredientListCopyTarget = target;
+            this.ingredientListCopyMessage = await copyText(text) ? 'Copied' : 'Copy failed';
 
-            try {
-                await navigator.clipboard.writeText(this.drySoapOutputListText);
-                this.inciCopyMessage = 'Copied';
-                setTimeout(() => {
-                    this.inciCopyMessage = '';
-                }, 1600);
-            } catch (error) {
-                this.inciCopyMessage = 'Copy failed';
-            }
+            clearTimeout(this.ingredientListCopyTimer);
+            this.ingredientListCopyTimer = setTimeout(() => {
+                this.ingredientListCopyMessage = '';
+                this.ingredientListCopyTarget = '';
+                this.ingredientListCopyTimer = null;
+            }, 1600);
         },
 
         serializeDraft() {

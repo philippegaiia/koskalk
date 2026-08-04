@@ -87,7 +87,9 @@ export function snapshotStateFromSnapshot(snapshot, currentState, options = {}) 
         backendCalculation: snapshot.calculation ?? null,
         backendLabeling: snapshot.labeling ?? null,
         backendRestrictions: snapshot.restrictions ?? null,
-        inciCopyMessage: '',
+        ingredientListCopyMessage: '',
+        ingredientListCopyTarget: '',
+        ingredientListCopyTimer: null,
     };
 
     return nextState;

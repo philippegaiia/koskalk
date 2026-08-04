@@ -159,6 +159,84 @@ class SoapCalculationService
         ];
     }
 
+    /**
+     * Calculate the theoretical cured-soap mass attributable to one oil.
+     *
+     * The saponified oil portion gains its selected active lye mass and loses
+     * the glycerine produced by that same lye reaction. The result can then
+     * be assigned to the oil's soap-specific INCI output.
+     *
+     * @param  array{
+     *     superfat?: float|int|string,
+     *     lye_type?: 'naoh'|'koh'|'dual',
+     *     dual_lye_koh_percentage?: float|int|string,
+     *     koh_purity_percentage?: float|int|string
+     * }  $settings
+     * @return array{
+     *     saponified_weight: float,
+     *     selected_naoh_weight: float,
+     *     selected_koh_weight: float,
+     *     koh_to_weigh: float,
+     *     glycerine_weight: float,
+     *     naoh_soap_salt_weight: float,
+     *     koh_soap_salt_weight: float,
+     *     soap_salt_weight: float
+     * }
+     */
+    public function calculateOilReactionProducts(float $oilWeight, float $kohSapValue, array $settings = []): array
+    {
+        if ($oilWeight <= 0) {
+            throw new InvalidArgumentException('Oil weight must be greater than zero.');
+        }
+
+        $superfat = $this->normalizeNumericValue($settings['superfat'] ?? 5, 'superfat');
+        $lyeType = (string) ($settings['lye_type'] ?? 'naoh');
+        $dualLyeKohPercentage = $this->normalizeNumericValue($settings['dual_lye_koh_percentage'] ?? 50, 'dual lye KOH percentage');
+        $kohPurityPercentage = $this->normalizeNumericValue($settings['koh_purity_percentage'] ?? 100, 'KOH purity percentage');
+        $soapContext = $this->deriveSoapContext($lyeType, $dualLyeKohPercentage);
+
+        $this->validateSuperfatForContext($superfat, $soapContext);
+
+        $normalizedKohSapValue = SoapSap::normalizeKohSapInput($kohSapValue);
+        $naohSapValue = SoapSap::deriveNaohFromKoh($normalizedKohSapValue);
+        $superfatMultiplier = 1 - ($superfat / 100);
+        $naohAdjusted = $oilWeight * $naohSapValue * $superfatMultiplier;
+        $kohAdjusted = $oilWeight * $normalizedKohSapValue * $superfatMultiplier;
+        $selectedLye = $this->selectedLyeProfile(
+            $lyeType,
+            $naohAdjusted,
+            $kohAdjusted,
+            $dualLyeKohPercentage,
+            $kohPurityPercentage,
+        );
+        $kohRatio = match ($lyeType) {
+            'naoh' => 0.0,
+            'koh' => 1.0,
+            'dual' => $dualLyeKohPercentage / 100,
+        };
+        $naohRatio = 1 - $kohRatio;
+        $saponifiedWeight = $oilWeight * $superfatMultiplier;
+        $naohGlycerineWeight = $selectedLye['naoh_weight'] * self::GLYCERINE_FROM_NAOH_RATIO;
+        $kohGlycerineWeight = $selectedLye['koh_weight'] * self::GLYCERINE_FROM_KOH_RATIO;
+        $naohSoapSaltWeight = ($saponifiedWeight * $naohRatio)
+            + $selectedLye['naoh_weight']
+            - $naohGlycerineWeight;
+        $kohSoapSaltWeight = ($saponifiedWeight * $kohRatio)
+            + $selectedLye['koh_weight']
+            - $kohGlycerineWeight;
+
+        return [
+            'saponified_weight' => $this->roundValue($saponifiedWeight),
+            'selected_naoh_weight' => $selectedLye['naoh_weight'],
+            'selected_koh_weight' => $selectedLye['koh_weight'],
+            'koh_to_weigh' => $selectedLye['koh_to_weigh'],
+            'glycerine_weight' => $this->roundValue($naohGlycerineWeight + $kohGlycerineWeight),
+            'naoh_soap_salt_weight' => $this->roundValue($naohSoapSaltWeight),
+            'koh_soap_salt_weight' => $this->roundValue($kohSoapSaltWeight),
+            'soap_salt_weight' => $this->roundValue($naohSoapSaltWeight + $kohSoapSaltWeight),
+        ];
+    }
+
     private function deriveSoapContext(string $lyeType, float $dualLyeKohPercentage): array
     {
         if (! in_array($lyeType, ['naoh', 'koh', 'dual'], true)) {

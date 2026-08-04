@@ -83,6 +83,28 @@ it('derives naoh from the canonical koh sap value', function () {
         ->and(SoapSap::deriveNaohFromKoh(0.257))->toBe(0.183241);
 });
 
+it('calculates theoretical soap salt mass per oil from each oil SAP value', function () {
+    $service = new SoapCalculationService;
+
+    $almond = $service->calculateOilReactionProducts(577.5, 0.188, [
+        'superfat' => 7,
+        'lye_type' => 'naoh',
+    ]);
+    $coconut = $service->calculateOilReactionProducts(192.5, 0.257, [
+        'superfat' => 7,
+        'lye_type' => 'naoh',
+    ]);
+
+    expect($almond['saponified_weight'])->toBe(537.075)
+        ->and($almond['selected_naoh_weight'])->toBe(71.9917)
+        ->and($almond['glycerine_weight'])->toBe(55.2535)
+        ->and($almond['soap_salt_weight'])->toBe(553.8132)
+        ->and($coconut['saponified_weight'])->toBe(179.025)
+        ->and($coconut['selected_naoh_weight'])->toBe(32.8047)
+        ->and($coconut['glycerine_weight'])->toBe(25.1776)
+        ->and($coconut['soap_salt_weight'])->toBe(186.6521);
+});
+
 it('normalizes professional-style koh sap inputs', function () {
     expect(SoapSap::normalizeKohSapInput(245))->toBe(0.245)
         ->and(round(SoapSap::deriveNaohFromKoh(245), 6))->toBe(0.174685)

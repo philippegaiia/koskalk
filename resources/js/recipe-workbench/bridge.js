@@ -14,7 +14,8 @@ export async function refreshCalculationPreview(workbench) {
             workbench.backendLabeling = response.labeling ?? null;
             workbench.backendRestrictions = response.restrictions ?? null;
             workbench.syncIngredientListVariantSelection();
-            workbench.inciCopyMessage = '';
+            workbench.ingredientListCopyMessage = '';
+            workbench.ingredientListCopyTarget = '';
             workbench.calculationPreviewMessage = '';
         } else {
             workbench.backendCalculation = null;

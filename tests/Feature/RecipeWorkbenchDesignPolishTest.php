@@ -893,7 +893,7 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
         ->not->toContain('Missing KOH SAP');
 });
 
-it('stacks production figure tables beside soap output and gives cosmetics one descending ingredient table', function () {
+it('shows cured soap output beside restrictions and gives cosmetics one descending ingredient table', function () {
     $outputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab')->render();
     $cosmeticOutputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
         'isCosmeticWorkbench' => true,
@@ -901,26 +901,23 @@ it('stacks production figure tables beside soap output and gives cosmetics one d
     $presentationSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
 
     expect($outputTab)
-        ->toContain('Production tables')
-        ->toContain('lg:grid-cols-[minmax(0,7fr)_minmax(18rem,3fr)]')
+        ->toContain('lg:grid-cols-[minmax(0,1fr)_290px]')
         ->toContain('sm:grid-cols-3 lg:grid-cols-1')
-        ->toContain('Batch ingredients')
+        ->toContain('Cured soap output')
         ->toContain('Cured soap composition')
-        ->toContain('batchIngredientRows')
-        ->toContain('drySoapIngredientRows')
+        ->toContain('curedSoapIngredientRows')
         ->toContain('Formula %')
-        ->toContain('Dry soap %')
-        ->toContain('Stage')
-        ->toContain('What to weigh into the batch before saponification, including lye and water.')
+        ->toContain('% SOAP')
+        ->toContain('align-middle')
         ->not->toContain('Integrated ingredients')
         ->not->toContain('Mise en oeuvre')
         ->not->toContain('Ingredient basis')
         ->not->toContain('incorporatedIngredientRows')
+        ->not->toContain('Batch ingredients')
+        ->not->toContain('Production tables')
         ->not->toContain('lg:grid-cols-2')
         ->and(substr_count($outputTab, 'Cured soap composition'))
         ->toBe(1)
-        ->and(strpos($outputTab, 'Production tables'))
-        ->toBeLessThan(strpos($outputTab, 'Dry soap output'))
         ->and(strpos($outputTab, 'Cured soap composition'))
         ->toBeLessThan(strpos($outputTab, 'Restrictions'))
         ->and($cosmeticOutputTab)
@@ -933,13 +930,83 @@ it('stacks production figure tables beside soap output and gives cosmetics one d
         ->not->toContain('Production tables')
         ->not->toContain('Batch ingredients')
         ->and($presentationSectionSource)
-        ->toContain('get batchIngredientRows()')
         ->toContain('get cosmeticOutputIngredientRows()')
         ->toContain('return right.percentage - left.percentage')
         ->toContain('get cosmeticOutputIngredientTotalWeight()')
-        ->toContain('get cosmeticOutputIngredientTotalPercent()')
-        ->toContain('this.lyeSummaryCards')
-        ->toContain("stage: 'Lye solution'");
+        ->toContain('get cosmeticOutputIngredientTotalPercent()');
+});
+
+it('uses the cured soap basis for soap output percentages', function () {
+    $outputTab = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-tab.blade.php'));
+    $ingredientListPreview = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-list-preview.blade.php'));
+    $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
+
+    expect($outputTab)
+        ->toContain('Cured soap output')
+        ->toContain('Cured soap basis')
+        ->toContain('% SOAP')
+        ->and(substr_count($outputTab, 'numeric mt-3 text-xl'))
+        ->toBe(3)
+        ->and($outputTab)
+        ->toContain('Label percentages use the cured soap weight, including 11% residual water.')
+        ->toContain('Allergens are shown separately but are already included in their source oils.')
+        ->not->toContain('This view normalizes the selected acceptable ingredient list')
+        ->not->toContain('11% residual water</span>')
+        ->not->toContain('Dry soap output')
+        ->not->toContain('Dry soap %')
+        ->and($ingredientListPreview)
+        ->toContain('Ingredient lists')
+        ->toContain('Copy list')
+        ->toContain('% SOAP')
+        ->not->toContain('Cured soap basis')
+        ->and($presentationSection)
+        ->toContain('get curedSoapIngredientRows()')
+        ->toContain('percent_of_cured_basis')
+        ->not->toContain('nonWaterTotalWeight')
+        ->not->toContain('missingSoapMass');
+});
+
+it('organizes ingredient lists around generated and editable final outputs', function () {
+    $source = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-list-preview.blade.php'));
+
+    expect($source)
+        ->toContain('Ingredient lists')
+        ->toContain('Choose a list, then copy it or edit a final version.')
+        ->toContain('INCI ingredient list')
+        ->toContain('Plain-language ingredient list')
+        ->toContain('Final INCI list')
+        ->toContain('Final plain-language list')
+        ->toContain('Ingredients as added')
+        ->toContain('Use generated')
+        ->not->toContain('Use as final')
+        ->not->toContain('Generated from the selected ingredient-list variant')
+        ->not->toContain('Cured soap basis')
+        ->and(substr_count($source, 'Copy list'))
+        ->toBe(4);
+});
+
+it('keeps generated ingredient controls and final editors aligned in both lanes', function () {
+    $source = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-list-preview.blade.php'));
+
+    expect($source)
+        ->toContain('mt-5 grid items-stretch gap-5 xl:grid-cols-2')
+        ->and(substr_count($source, '<div class="flex flex-col gap-5">'))
+        ->toBe(2)
+        ->and(substr_count($source, '<section class="sk-inset flex flex-1 flex-col px-5 py-4'))
+        ->toBe(2)
+        ->and(substr_count($source, 'mt-4 flex-1 rounded-lg bg-[var(--color-field)]'))
+        ->toBe(2)
+        ->and($source)
+        ->toContain('@click="useGeneratedIngredientListAsFinal()" class="sk-btn sk-btn-outline"')
+        ->toContain('@click="useGeneratedPlainIngredientListAsFinal()" class="sk-btn sk-btn-outline"');
+});
+
+it('keeps the generated inci actions together beside compact helper text', function () {
+    $source = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-list-preview.blade.php'));
+
+    expect($source)
+        ->toContain('<div class="min-w-0 sm:max-w-64">')
+        ->toContain('<div class="flex shrink-0 flex-nowrap items-center gap-2">');
 });
 
 it('animates only the ingredient row that was just added', function () {

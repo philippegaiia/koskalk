@@ -87,6 +87,119 @@ it('returns a generated ingredient list and declaration details in the live prev
         ->and($incorporatedVariant['final_labels'])->not->toContain('SODIUM OLIVATE', 'GLYCERIN');
 });
 
+it('calculates declaration percentages on the cured soap basis', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeSoapOilIngredient([
+        'display_name' => 'Olive Oil',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+    ]);
+    $lavenderOil = Ingredient::factory()->create([
+        'category' => IngredientCategory::EssentialOil,
+        'display_name' => 'Lavender Super Oil',
+        'inci_name' => 'LAVANDULA HYBRIDA OIL',
+        'is_active' => true,
+    ]);
+    $linalool = Allergen::factory()->create([
+        'inci_name' => 'LINALOOL',
+    ]);
+
+    IngredientAllergenEntry::factory()->create([
+        'ingredient_id' => $lavenderOil->id,
+        'allergen_id' => $linalool->id,
+        'concentration_percent' => 10,
+        'source_notes' => null,
+    ]);
+
+    $payload = soapDraftPayloadWithFragrance($oliveOil, $lavenderOil);
+    $payload['oil_weight'] = 770;
+    $payload['phase_items']['saponified_oils'][0]['weight'] = 770;
+    $payload['phase_items']['saponified_oils'][0]['percentage'] = 100;
+    $payload['phase_items']['fragrance'][0]['weight'] = 15.4;
+    $payload['phase_items']['fragrance'][0]['percentage'] = 2;
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation(
+        $payload,
+        app(RecipeWorkbenchService::class),
+    );
+
+    $declaration = collect($result['labeling']['declaration_rows'])
+        ->firstWhere('label', 'LINALOOL');
+    $expectedCuredPercentage = (15.4 * 0.1 / $result['labeling']['basis']['cured_weight']) * 100;
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['labeling']['basis']['cured_weight'])->toBeGreaterThan(900)
+        ->and($declaration['percent_of_cured_basis'])
+        ->toBeGreaterThan($expectedCuredPercentage - 0.00001)
+        ->toBeLessThan($expectedCuredPercentage + 0.00001);
+});
+
+it('uses each oil SAP value when assigning theoretical soap salt mass', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $almondOil = makeSoapOilIngredient([
+        'display_name' => 'Almond Oil',
+        'inci_name' => 'PRUNUS AMYGDALUS DULCIS (SWEET ALMOND) OIL',
+        'soap_inci_naoh_name' => 'SODIUM ALMONDATE',
+        'soap_inci_koh_name' => 'POTASSIUM ALMONDATE',
+    ]);
+    $coconutOil = makeSoapOilIngredient([
+        'display_name' => 'Coconut Oil',
+        'inci_name' => 'COCOS NUCIFERA (COCONUT) OIL',
+        'soap_inci_naoh_name' => 'SODIUM COCOATE',
+        'soap_inci_koh_name' => 'POTASSIUM COCOATE',
+    ], 0.257);
+    $fragrance = Ingredient::factory()->create([
+        'category' => IngredientCategory::FragranceOil,
+        'display_name' => 'Unscented Base',
+        'inci_name' => 'PARFUM',
+        'is_active' => true,
+    ]);
+
+    $payload = soapDraftPayloadWithFragrance($almondOil, $fragrance);
+    $payload['oil_weight'] = 770;
+    $payload['superfat'] = 7;
+    $payload['phase_items']['saponified_oils'] = [
+        [
+            'ingredient_id' => $almondOil->id,
+            'percentage' => 75,
+            'weight' => 577.5,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $coconutOil->id,
+            'percentage' => 25,
+            'weight' => 192.5,
+            'note' => null,
+        ],
+    ];
+    $payload['phase_items']['fragrance'] = [];
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation(
+        $payload,
+        app(RecipeWorkbenchService::class),
+    );
+
+    $ingredientRows = collect($result['labeling']['ingredient_rows'])->keyBy('label');
+
+    expect($result['ok'])->toBeTrue()
+        ->and($ingredientRows['SODIUM ALMONDATE']['weight'])->toBe(553.8132)
+        ->and($ingredientRows['SODIUM COCOATE']['weight'])->toBe(186.6521)
+        ->and($ingredientRows['GLYCERIN']['weight'])->toBe(80.4311);
+});
+
 it('generates a plain-language soap ingredient list starting with saponified oils', function () {
     ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -539,9 +652,9 @@ it('splits each saponified oil into soap and theoretical superfat rows', functio
 
     $ingredientRows = collect($result['labeling']['ingredient_rows'])->keyBy('label');
 
-    expect($ingredientRows['SODIUM OLIVATE']['weight'])->toBe(720.0)
+    expect($ingredientRows['SODIUM OLIVATE']['weight'])->toBe(742.4391)
         ->and($ingredientRows['OLEA EUROPAEA FRUIT OIL']['weight'])->toBe(80.0)
-        ->and($ingredientRows['SODIUM COCOATE']['weight'])->toBe(180.0)
+        ->and($ingredientRows['SODIUM COCOATE']['weight'])->toBe(187.6687)
         ->and($ingredientRows['COCOS NUCIFERA OIL']['weight'])->toBe(20.0);
 });
 
@@ -602,10 +715,10 @@ it('splits dual lye saponified oils into separate sodium and potassium rows', fu
     )
         ->and($ingredientRows)->not->toHaveKey('SODIUM OLIVATE, POTASSIUM OLIVATE')
         ->and($ingredientRows)->not->toHaveKey('SODIUM COCOATE, POTASSIUM COCOATE')
-        ->and($ingredientRows['SODIUM OLIVATE']['weight'])->toBe(432.0)
-        ->and($ingredientRows['POTASSIUM OLIVATE']['weight'])->toBe(288.0)
-        ->and($ingredientRows['SODIUM COCOATE']['weight'])->toBe(108.0)
-        ->and($ingredientRows['POTASSIUM COCOATE']['weight'])->toBe(72.0)
+        ->and($ingredientRows['SODIUM OLIVATE']['weight'])->toBe(445.4635)
+        ->and($ingredientRows['POTASSIUM OLIVATE']['weight'])->toBe(312.5193)
+        ->and($ingredientRows['SODIUM COCOATE']['weight'])->toBe(112.6012)
+        ->and($ingredientRows['POTASSIUM COCOATE']['weight'])->toBe(80.3796)
         ->and($ingredientRows['OLEA EUROPAEA FRUIT OIL']['weight'])->toBe(80.0)
         ->and($ingredientRows['COCOS NUCIFERA OIL']['weight'])->toBe(20.0);
 });
@@ -641,7 +754,7 @@ it('marks merged rows as mixed when soap and superfat labels collapse to the sam
         ->firstWhere('label', 'OLEA EUROPAEA FRUIT OIL');
 
     expect($ingredientRow)->not->toBeNull()
-        ->and($ingredientRow['weight'])->toBe(1000.0)
+        ->and($ingredientRow['weight'])->toBe(1029.6072)
         ->and($ingredientRow['kind'])->toBe('mixed_saponified_superfat');
 });
 

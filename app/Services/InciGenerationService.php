@@ -16,6 +16,7 @@ class InciGenerationService
 
     public function __construct(
         private readonly IngredientFormulaContextResolver $ingredientFormulaContextResolver,
+        private readonly SoapCalculationService $soapCalculationService,
     ) {}
 
     /**
@@ -26,7 +27,9 @@ class InciGenerationService
      *         label: string,
      *         note: string,
      *         formula_weight: float,
-     *         threshold_percent: float
+     *         threshold_percent: float,
+     *         cured_weight: float|null,
+     *         residual_water_weight: float|null
      *     },
      *     ingredient_rows: array<int, array{
      *         label: string,
@@ -39,6 +42,7 @@ class InciGenerationService
      *     declaration_rows: array<int, array{
      *         label: string,
      *         percent_of_formula: float,
+     *         percent_of_cured_basis: float|null,
      *         threshold_percent: float,
      *         exceeds_threshold: bool,
      *         included_in_inci: bool,
@@ -63,6 +67,7 @@ class InciGenerationService
      *         declaration_rows: array<int, array{
      *             label: string,
      *             percent_of_formula: float,
+     *             percent_of_cured_basis: float|null,
      *             threshold_percent: float,
      *             exceeds_threshold: bool,
      *             included_in_inci: bool,
@@ -85,6 +90,7 @@ class InciGenerationService
     {
         $rowContexts = $this->ingredientFormulaContextResolver->resolve($payload, [
             'allergenEntries.allergen',
+            'sapProfile',
         ]);
         $declarationRuleState = $this->declarationRuleState($payload);
         $basis = $this->basisState(
@@ -227,7 +233,9 @@ class InciGenerationService
      *     label: string,
      *     note: string,
      *     formula_weight: float,
-     *     threshold_percent: float
+     *     threshold_percent: float,
+     *     cured_weight: float|null,
+     *     residual_water_weight: float|null
      * }  $basis
      * @param  array<string, mixed>|null  $soapCalculation
      * @return array<int, array{
@@ -306,7 +314,9 @@ class InciGenerationService
      *     label: string,
      *     note: string,
      *     formula_weight: float,
-     *     threshold_percent: float
+     *     threshold_percent: float,
+     *     cured_weight: float|null,
+     *     residual_water_weight: float|null
      * }  $basis
      * @param  array<string, mixed>|null  $soapCalculation
      * @return array<int, array{
@@ -359,6 +369,7 @@ class InciGenerationService
                 $rowContexts,
                 $ingredientRowsState['label_keys'],
                 $basis['formula_weight'],
+                $basis['cured_weight'],
                 $declarationRuleState,
             );
             $finalLabels = $this->finalLabels($ingredientRowsState['rows'], $declarationRows);
@@ -860,7 +871,9 @@ class InciGenerationService
      *     label: string,
      *     note: string,
      *     formula_weight: float,
-     *     threshold_percent: float
+     *     threshold_percent: float,
+     *     cured_weight: float|null,
+     *     residual_water_weight: float|null
      * }
      */
     private function basisState(array $payload, array $rowContexts, ?array $soapCalculation, float $thresholdPercent): array
@@ -879,6 +892,8 @@ class InciGenerationService
                 'note' => 'Percentages use the current finished blend basis from the total batch weight.',
                 'formula_weight' => round($declaredFormulaWeight > 0 ? $declaredFormulaWeight : $phaseWeight, 5),
                 'threshold_percent' => $thresholdPercent,
+                'cured_weight' => null,
+                'residual_water_weight' => null,
             ];
         }
 
@@ -888,18 +903,25 @@ class InciGenerationService
                 'note' => 'Soap calculation is incomplete, so the preview currently uses only the live ingredient rows. Aqua and produced glycerine will appear once the soap calculation resolves.',
                 'formula_weight' => round($phaseWeight, 5),
                 'threshold_percent' => $thresholdPercent,
+                'cured_weight' => null,
+                'residual_water_weight' => null,
             ];
         }
 
         $waterWeight = (float) data_get($soapCalculation, 'lye.water.weight', 0);
         $naohWeight = (float) data_get($soapCalculation, 'lye.selected.naoh_weight', 0);
         $kohToWeigh = (float) data_get($soapCalculation, 'lye.selected.koh_to_weigh', 0);
+        $formulaWeight = round($phaseWeight + $waterWeight + $naohWeight + $kohToWeigh, 5);
+        $nonWaterWeight = max(0.0, $formulaWeight - $waterWeight);
+        $curedWeight = $nonWaterWeight > 0 ? round($nonWaterWeight / 0.89, 5) : null;
 
         return [
             'label' => 'Current batch basis',
-            'note' => 'Percentages use the live batch basis from oils, lye, water, and post-reaction additions. A dedicated dry-bar marketed basis still needs its own resolver.',
-            'formula_weight' => round($phaseWeight + $waterWeight + $naohWeight + $kohToWeigh, 5),
+            'note' => 'Percentages use the live batch basis from oils, lye, water, and post-reaction additions. Cured-soap output percentages use the retained non-water mass with 11% residual water.',
+            'formula_weight' => $formulaWeight,
             'threshold_percent' => $thresholdPercent,
+            'cured_weight' => $curedWeight,
+            'residual_water_weight' => $curedWeight === null ? null : round($curedWeight * 0.11, 5),
         ];
     }
 
@@ -1106,6 +1128,7 @@ class InciGenerationService
                         $context,
                         $payload,
                         $formulaWeight,
+                        $soapCalculation,
                         $saponifiedWeight,
                         $declarationRuleState,
                     ),
@@ -1156,28 +1179,33 @@ class InciGenerationService
         array $context,
         array $payload,
         float $formulaWeight,
+        ?array $soapCalculation,
         float $saponifiedWeight,
         array $declarationRuleState,
     ): array {
         $ingredient = $context['ingredient'];
+        $soapSaltWeights = $this->soapSaltWeights(
+            $context,
+            $payload,
+            $soapCalculation,
+            $saponifiedWeight,
+        );
 
         if ($ingredient instanceof Ingredient && ($payload['lye_type'] ?? 'naoh') === 'dual') {
             $naohLabel = $this->normalizePrintedLabel($ingredient->soap_inci_naoh_name);
             $kohLabel = $this->normalizePrintedLabel($ingredient->soap_inci_koh_name);
 
             if ($naohLabel !== null && $kohLabel !== null && $naohLabel !== $kohLabel) {
-                $kohRatio = $this->dualKohRatio($payload);
-
                 return array_values(array_filter([
                     [
                         'label' => $naohLabel,
-                        'weight' => $saponifiedWeight * (1 - $kohRatio),
+                        'weight' => $soapSaltWeights['naoh'],
                         'kind' => 'saponified_oil',
                         'warning' => null,
                     ],
                     [
                         'label' => $kohLabel,
-                        'weight' => $saponifiedWeight * $kohRatio,
+                        'weight' => $soapSaltWeights['koh'],
                         'kind' => 'saponified_oil',
                         'warning' => null,
                     ],
@@ -1194,10 +1222,73 @@ class InciGenerationService
 
         return [[
             'label' => $labelState['label'],
-            'weight' => $saponifiedWeight,
+            'weight' => $soapSaltWeights['total'],
             'kind' => $labelState['kind'],
             'warning' => $labelState['warning'],
         ]];
+    }
+
+    /**
+     * @param  array{
+     *     phase_key: string,
+     *     weight: float,
+     *     ingredient: Ingredient|null,
+     *     ingredient_name: string,
+     *     is_user_owned: bool
+     * }  $context
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array{naoh: float, koh: float, total: float}
+     */
+    private function soapSaltWeights(
+        array $context,
+        array $payload,
+        ?array $soapCalculation,
+        float $saponifiedWeight,
+    ): array {
+        $ingredient = $context['ingredient'];
+        $kohSapValue = $ingredient instanceof Ingredient
+            ? $ingredient->sapProfile?->koh_sap_value
+            : null;
+
+        if ($kohSapValue === null || $soapCalculation === null) {
+            $kohRatio = match ((string) ($payload['lye_type'] ?? 'naoh')) {
+                'koh' => 1.0,
+                'dual' => (float) ($payload['dual_lye_koh_percentage'] ?? 50) / 100,
+                default => 0.0,
+            };
+
+            return [
+                'naoh' => $saponifiedWeight * (1 - $kohRatio),
+                'koh' => $saponifiedWeight * $kohRatio,
+                'total' => $saponifiedWeight,
+            ];
+        }
+
+        $products = $this->soapCalculationService->calculateOilReactionProducts(
+            $context['weight'],
+            (float) $kohSapValue,
+            [
+                'superfat' => data_get($soapCalculation, 'lye.superfat_percentage', $payload['superfat'] ?? 5),
+                'lye_type' => data_get($soapCalculation, 'lye.selected.type', $payload['lye_type'] ?? 'naoh'),
+                'dual_lye_koh_percentage' => data_get(
+                    $soapCalculation,
+                    'lye.selected.dual_lye_koh_percentage',
+                    $payload['dual_lye_koh_percentage'] ?? 50,
+                ),
+                'koh_purity_percentage' => data_get(
+                    $soapCalculation,
+                    'lye.selected.koh_purity_percentage',
+                    $payload['koh_purity_percentage'] ?? 100,
+                ),
+            ],
+        );
+
+        return [
+            'naoh' => $products['naoh_soap_salt_weight'],
+            'koh' => $products['koh_soap_salt_weight'],
+            'total' => $products['soap_salt_weight'],
+        ];
     }
 
     /**
@@ -1221,9 +1312,11 @@ class InciGenerationService
      *     is_user_owned: bool
      * }>  $rowContexts
      * @param  array<int, string>  $ingredientLabelKeys
+     * @param  array<string, mixed>  $declarationRuleState
      * @return array<int, array{
      *     label: string,
      *     percent_of_formula: float,
+     *     percent_of_cured_basis: float|null,
      *     threshold_percent: float,
      *     exceeds_threshold: bool,
      *     included_in_inci: bool,
@@ -1238,6 +1331,7 @@ class InciGenerationService
         array $rowContexts,
         array $ingredientLabelKeys,
         float $formulaWeight,
+        ?float $curedWeight,
         array $declarationRuleState,
     ): array {
         $rowsByLabel = [];
@@ -1290,7 +1384,7 @@ class InciGenerationService
         }
 
         $rows = array_values(array_map(
-            function (array $row) use ($ingredientLabelKeys): array {
+            function (array $row) use ($ingredientLabelKeys, $curedWeight, $formulaWeight): array {
                 $percentOfFormula = round((float) $row['percent_of_formula'], 5);
                 $thresholdPercent = (float) $row['threshold_percent'];
                 $thresholdOperator = (string) $row['threshold_operator'];
@@ -1312,6 +1406,9 @@ class InciGenerationService
                 return [
                     'label' => $row['label'],
                     'percent_of_formula' => $percentOfFormula,
+                    'percent_of_cured_basis' => $curedWeight !== null && $curedWeight > 0
+                        ? round((($percentOfFormula * $formulaWeight) / $curedWeight), 5)
+                        : null,
                     'threshold_percent' => $thresholdPercent,
                     'exceeds_threshold' => $exceedsThreshold,
                     'included_in_inci' => $includedInInci,

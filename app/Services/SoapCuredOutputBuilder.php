@@ -20,19 +20,13 @@ class SoapCuredOutputBuilder
         $variant = is_array($variant) ? $variant : [];
         $ingredientRows = collect(Arr::get($variant, 'ingredient_rows', []))
             ->filter(fn (mixed $row): bool => is_array($row));
-        $nonWaterSourceWeight = (float) $ingredientRows
-            ->reject(fn (array $row): bool => ($row['label'] ?? '') === 'AQUA')
-            ->sum(fn (array $row): float => (float) ($row['weight'] ?? 0));
-        $nonWaterOutputWeight = $curedWeight * 0.89;
 
         $rows = $ingredientRows
-            ->map(function (array $row) use ($curedWeight, $nonWaterSourceWeight, $nonWaterOutputWeight): array {
+            ->map(function (array $row) use ($curedWeight): array {
                 $isWater = ($row['label'] ?? '') === 'AQUA';
                 $weight = $isWater
                     ? $curedWeight * 0.11
-                    : ($nonWaterSourceWeight > 0
-                        ? $nonWaterOutputWeight * ((float) ($row['weight'] ?? 0) / $nonWaterSourceWeight)
-                        : 0.0);
+                    : (float) ($row['weight'] ?? 0);
 
                 return [
                     'name' => (string) ($row['label'] ?? ''),

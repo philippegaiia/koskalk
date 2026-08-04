@@ -1437,6 +1437,37 @@ it('returns a structured recipe content error when no saved recipe exists', func
         ->assertSet('recipeContentMessage', __('workbench.instructions.draft_text_help'));
 });
 
+it('reports clipboard success and failure for ingredient list copies', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import { copyText } from './resources/js/recipe-workbench/clipboard.js';
+
+let copiedText = null;
+Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { clipboard: { writeText: async (value) => { copiedText = value; } } },
+});
+
+assert.equal(await copyText('INCI list'), true);
+assert.equal(copiedText, 'INCI list');
+
+Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { clipboard: { writeText: async () => { throw new Error('blocked'); } } },
+});
+
+assert.equal(await copyText('plain list'), false);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
 it('composes one translated root navigation guard from formula and nested dirty state', function () {
     $script = <<<'JS'
 import assert from 'node:assert/strict';
@@ -3662,6 +3693,90 @@ it('presents soap qualities as compact tabbed metric cards', function () {
         ->and($formulaTabSource)
         ->toContain('@include(\'livewire.dashboard.partials.recipe-workbench.formula-analysis\')')
         ->toContain('@include(\'livewire.dashboard.partials.recipe-workbench.post-reaction\')');
+});
+
+it('keeps allergen mass inside its source oil when rendering cured soap output', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/sections/presentation-section.js', 'utf8')
+  .replace('export function createPresentationSection', 'function createPresentationSection');
+
+eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
+
+const workbench = {
+  productFamilySlug: 'soap',
+  backendLabeling: {
+    basis: {
+      formula_weight: 1093.62,
+      cured_weight: 1000.22,
+      residual_water_weight: 110.0242,
+    },
+    default_variant_key: 'saponified_with_superfat',
+    list_variants: [{
+      key: 'saponified_with_superfat',
+      ingredient_rows: [
+        { label: 'SODIUM ALMONDATE', weight: 553.8132, kind: 'saponified_oil' },
+        { label: 'SODIUM COCOATE', weight: 186.6521, kind: 'saponified_oil' },
+        { label: 'AQUA', weight: 203.43, kind: 'water' },
+        { label: 'GLYCERIN', weight: 80.43, kind: 'derived' },
+        { label: 'PRUNUS AMYGDALUS DULCIS OIL', weight: 40.425, kind: 'theoretical_superfat' },
+        { label: 'COCOS NUCIFERA OIL', weight: 13.475, kind: 'theoretical_superfat' },
+        { label: 'LAVANDULA HYBRIDA OIL', weight: 15.4, kind: 'ingredient' },
+      ],
+      declaration_rows: [{
+        label: 'LINALOOL',
+        percent_of_formula: 0.14082,
+        percent_of_cured_basis: 0.15397,
+        included_in_inci: true,
+      }],
+    }],
+  },
+  number: (value) => Number(value ?? 0),
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
+
+const ingredientRows = workbench.curedSoapIngredientRows;
+const lavender = ingredientRows.find((row) => row.label === 'LAVANDULA HYBRIDA OIL');
+const linalool = workbench.curedSoapDeclarationRows[0];
+
+assert.ok(lavender);
+assert.ok(linalool);
+assert.ok(Math.abs(workbench.curedSoapIngredientTotalWeight - 1000.22) < 0.001);
+assert.ok(Math.abs(lavender.adjusted_weight - 15.4) < 0.001);
+assert.ok(Math.abs(lavender.percent_of_cured_basis - 1.53966) < 0.001);
+assert.ok(Math.abs(linalool.adjusted_weight - 1.54) < 0.001);
+assert.ok(Math.abs(linalool.percent_of_cured_basis - 0.15397) < 0.001);
+
+console.log(JSON.stringify({
+  totalWeight: workbench.curedSoapIngredientTotalWeight,
+  lavenderWeight: lavender.adjusted_weight,
+  lavenderPercent: lavender.percent_of_cured_basis,
+  linaloolWeight: linalool.adjusted_weight,
+  linaloolPercent: linalool.percent_of_cured_basis,
+}));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $result = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($result['totalWeight'])->toBeGreaterThan(1000.219)
+        ->toBeLessThan(1000.221)
+        ->and($result['lavenderWeight'])->toBeGreaterThan(15.399)
+        ->toBeLessThan(15.401)
+        ->and($result['linaloolPercent'])->toBeGreaterThan(0.153)
+        ->toBeLessThan(0.155);
 });
 
 it('presents tendency quality metrics without score target treatment', function () {

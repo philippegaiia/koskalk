@@ -82,6 +82,41 @@
             </form>
         </section>
 
+        <section aria-labelledby="production-forecast-heading" class="sk-card overflow-hidden">
+            <div class="border-b border-[var(--color-line)] p-6">
+                <h2 id="production-forecast-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.production_forecast') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.production_forecast_help') }}</p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[720px] text-left text-sm">
+                    <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
+                        <tr>
+                            <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                            <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
+                            <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.incoming') }}</th>
+                            <th class="px-5 py-3 text-right">{{ __('production_bench.inventory.forecast') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[var(--color-line)]">
+                        @forelse ($forecast as $row)
+                            @php($subject = $row['subject'])
+                            <tr>
+                                <td class="px-5 py-4">
+                                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
+                                    <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
+                                </td>
+                                <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions']['available'] }}</td>
+                                <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions']['incoming'] }}</td>
+                                <td class="px-5 py-4 text-right font-mono font-semibold tabular-nums">{{ $row['positions']['forecast'] }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_forecast') }}</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <section aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
             <div class="flex items-end justify-between gap-4 border-b border-[var(--color-line)] p-6">
                 <h2 id="inventory-positions-heading" class="text-xl font-semibold">{{ __('production_bench.inventory.stock_positions') }}</h2>

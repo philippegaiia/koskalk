@@ -5,14 +5,19 @@ namespace App\Livewire\ProductionBench;
 use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Actions\Inventory\QuarantineStockLot;
 use App\Actions\Inventory\ReleaseStockLot;
+use App\Models\Ingredient;
+use App\Models\PackagingItem;
+use App\Models\ProductionRequirement;
 use App\Models\StockLot;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\ProductionRunStatus;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Livewire\Component;
 
@@ -112,7 +117,7 @@ class InventoryIndex extends Component
     ): View {
         $workspace = $this->workspace();
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
-        $lots = StockLot::query()
+        $stockLots = StockLot::query()
             ->where('workspace_id', $workspace->id)
             ->with([
                 'ingredient.translations',
@@ -122,7 +127,38 @@ class InventoryIndex extends Component
             ->withSum('movements', 'quantity_delta')
             ->latest('stocked_at')
             ->latest('id')
+            ->get();
+        $forecastSubjects = collect();
+
+        foreach ($stockLots as $lot) {
+            if ($lot->ingredient_id !== null && $lot->ingredient !== null) {
+                $forecastSubjects->put('ingredient:'.$lot->ingredient_id, $lot->ingredient);
+            }
+
+            if ($lot->packaging_item_id !== null && $lot->packagingItem !== null) {
+                $forecastSubjects->put('packaging:'.$lot->packaging_item_id, $lot->packagingItem);
+            }
+        }
+
+        ProductionRequirement::query()
+            ->whereHas('productionRun', function (Builder $query) use ($workspace): void {
+                $query
+                    ->where('workspace_id', $workspace->id)
+                    ->whereIn('status', [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved]);
+            })
+            ->with(['ingredient.translations', 'packagingItem'])
             ->get()
+            ->each(function (ProductionRequirement $requirement) use ($forecastSubjects): void {
+                if ($requirement->ingredient_id !== null && $requirement->ingredient !== null) {
+                    $forecastSubjects->put('ingredient:'.$requirement->ingredient_id, $requirement->ingredient);
+                }
+
+                if ($requirement->packaging_item_id !== null && $requirement->packagingItem !== null) {
+                    $forecastSubjects->put('packaging:'.$requirement->packaging_item_id, $requirement->packagingItem);
+                }
+            });
+
+        $lots = $stockLots
             ->map(function (StockLot $lot) use ($positions, $massConverter, $displayUnit): array {
                 $stock = $positions->forLotWithLoadedMovementSum($lot);
 
@@ -135,6 +171,24 @@ class InventoryIndex extends Component
                     )->all(),
                 ];
             });
+        $forecast = $forecastSubjects
+            ->map(function (Ingredient|PackagingItem $subject) use ($workspace, $positions, $massConverter, $displayUnit): array {
+                $stock = $positions->forWorkspaceSubject($workspace, $subject);
+                $format = fn (string $quantity): string => $subject instanceof Ingredient
+                    ? number_format((float) $massConverter->fromGrams($quantity, $displayUnit), 2)
+                    : number_format((float) $quantity, 0);
+
+                return [
+                    'subject' => $subject,
+                    'display_unit' => $subject instanceof Ingredient ? $displayUnit : __('production_bench.inventory.units'),
+                    'positions' => [
+                        'available' => $format($stock['available']),
+                        'incoming' => $format($stock['incoming']),
+                        'forecast' => $format($stock['forecast']),
+                    ],
+                ];
+            })
+            ->values();
 
         return view('livewire.production-bench.inventory-index', [
             'workspace' => $workspace,
@@ -148,6 +202,7 @@ class InventoryIndex extends Component
                 ->orderBy('purchase_format')
                 ->get(),
             'lots' => $lots,
+            'forecast' => $forecast,
             'displayUnit' => $displayUnit,
         ]);
     }

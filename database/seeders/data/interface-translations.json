@@ -7788,6 +7788,17 @@
         },
         {
             "group": "production_bench",
+            "key": "inventory.no_forecast",
+            "text": {
+                "de": "Derzeit werden keine Zutaten oder Verpackungen erfasst.",
+                "es": "Actualmente no hay ingredientes ni envases registrados.",
+                "fr": "Aucun ingrédient ni emballage n’est actuellement suivi.",
+                "it": "Al momento non sono tracciati ingredienti o imballaggi.",
+                "nl": "Er worden momenteel geen ingrediënten of verpakkingen bijgehouden."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "inventory.no_lots",
             "text": {
                 "de": "Keine Chargen.",
@@ -7839,6 +7850,28 @@
                 "fr": "Prix / :unit",
                 "it": "Prezzo / :unit",
                 "nl": "Prijs / :unit"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.production_forecast",
+            "text": {
+                "de": "Produktionsprognose",
+                "es": "Previsión de producción",
+                "fr": "Prévision de production",
+                "it": "Previsione di produzione",
+                "nl": "Productieprognose"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.production_forecast_help",
+            "text": {
+                "de": "Verfügbarer und eingehender Bestand nach dem Bedarf geplanter Produktionen. Es werden weder Bestände reserviert noch bewegt.",
+                "es": "Stock disponible y entrante después de la demanda de las producciones planificadas. No se reserva ni mueve stock.",
+                "fr": "Stock disponible et entrant après la demande des productions planifiées. Aucun stock n’est réservé ni déplacé.",
+                "it": "Scorte disponibili e in arrivo dopo la domanda delle produzioni pianificate. Non viene riservata né spostata alcuna scorta.",
+                "nl": "Beschikbare en inkomende voorraad na de vraag van geplande producties. Er wordt geen voorraad gereserveerd of verplaatst."
             }
         },
         {

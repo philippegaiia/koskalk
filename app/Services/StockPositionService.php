@@ -9,11 +9,14 @@ use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\Workspace;
 use App\PurchaseOrderStatus;
+use App\Services\Production\ProductionDemandService;
 use App\StockLotStatus;
 use Illuminate\Database\Eloquent\Builder;
 
 class StockPositionService
 {
+    public function __construct(private readonly ProductionDemandService $productionDemand) {}
+
     /**
      * @return array{physical: string, quarantined: string, reserved: string, available: string, incoming: string, forecast: string}
      */
@@ -76,8 +79,9 @@ class StockPositionService
         }
 
         $incoming = $this->incomingForSubject($workspace, $subject);
+        $demand = $this->productionDemand->forWorkspaceSubject($workspace, $subject);
 
-        return $this->positions($physical, $quarantined, $available, $incoming);
+        return $this->positions($physical, $quarantined, $available, $incoming, $demand);
     }
 
     /**
@@ -88,6 +92,7 @@ class StockPositionService
         string $quarantined,
         string $available,
         string $incoming = '0.000000000',
+        string $productionDemand = '0.000000000',
     ): array {
         return [
             'physical' => $physical,
@@ -95,7 +100,7 @@ class StockPositionService
             'reserved' => $this->zero(),
             'available' => $available,
             'incoming' => $incoming,
-            'forecast' => bcadd($available, $incoming, 9),
+            'forecast' => bcsub(bcadd($available, $incoming, 9), $productionDemand, 9),
         ];
     }
 

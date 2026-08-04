@@ -143,6 +143,14 @@ class Recipe extends Model implements HasRichContent
         return $this->hasMany(ProductionRun::class);
     }
 
+    public function productionBatchPresets(): HasMany
+    {
+        return $this->hasMany(ProductionBatchPreset::class)
+            ->orderByDesc('is_default')
+            ->orderBy('name')
+            ->orderBy('id');
+    }
+
     public function latestPublishedVersion(): HasOne
     {
         return $this->hasOne(RecipeVersion::class)

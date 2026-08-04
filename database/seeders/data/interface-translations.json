@@ -9165,11 +9165,11 @@
             "group": "production_bench",
             "key": "receipt.actual_quantity",
             "text": {
-                "de": "Tatsächliche Menge",
-                "es": "Cantidad real",
-                "fr": "Quantité réelle",
-                "it": "Quantità effettiva",
-                "nl": "Werkelijke hoeveelheid"
+                "de": "Tatsächlich erhaltene Menge",
+                "es": "Cantidad realmente recibida",
+                "fr": "Quantité réellement reçue",
+                "it": "Quantità effettivamente ricevuta",
+                "nl": "Werkelijk ontvangen hoeveelheid"
             }
         },
         {
@@ -9715,11 +9715,11 @@
             "group": "production_bench",
             "key": "receipt.formats",
             "text": {
-                "de": "Einkaufsgebinde",
-                "es": "Formatos de compra",
-                "fr": "Conditionnements achetés",
-                "it": "Formati di acquisto",
-                "nl": "Inkoopformaten"
+                "de": "Erhaltene Gebinde",
+                "es": "Paquetes recibidos",
+                "fr": "Conditionnements reçus",
+                "it": "Confezioni ricevute",
+                "nl": "Ontvangen verpakkingen"
             }
         },
         {
@@ -9727,10 +9727,21 @@
             "key": "receipt.formats_positive_whole",
             "text": {
                 "de": "Die Anzahl erhaltener Einkaufsgebinde muss eine positive ganze Zahl sein.",
-                "es": "Los formatos de compra recibidos deben ser un número entero positivo.",
+                "es": "El número de paquetes recibidos debe ser un entero positivo.",
                 "fr": "Le nombre de conditionnements reçus doit être un entier positif.",
-                "it": "Il numero di formati di acquisto ricevuti deve essere un intero positivo.",
-                "nl": "Het aantal ontvangen inkoopformaten moet een positief geheel getal zijn."
+                "it": "Il numero di confezioni ricevute deve essere un intero positivo.",
+                "nl": "Het aantal ontvangen verpakkingen moet een positief geheel getal zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.fully_received",
+            "text": {
+                "de": "Vollständig erhalten",
+                "es": "Recibido por completo",
+                "fr": "Entièrement reçu",
+                "it": "Ricevuto completamente",
+                "nl": "Volledig ontvangen"
             }
         },
         {

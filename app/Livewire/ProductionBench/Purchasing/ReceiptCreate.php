@@ -347,15 +347,17 @@ class ReceiptCreate extends Component
 
     private function defaultOrderLineInput(PurchaseOrderLine $line): array
     {
+        $packsReceived = $this->remainingPacks($line);
+        $canonicalQuantity = bcmul($line->canonical_quantity_per_pack, (string) $packsReceived, 9);
         $actualUnit = $line->unit_kind === StockUnitKind::Count
             ? 'count'
             : ($line->supplierListing?->net_unit ?? 'kg');
 
         return [
-            'packs_received' => 1,
+            'packs_received' => $packsReceived,
             'actual_quantity' => $line->unit_kind === StockUnitKind::Count
-                ? bcadd($line->canonical_quantity_per_pack, '0', 0)
-                : app(MassConverter::class)->fromGrams($line->canonical_quantity_per_pack, $actualUnit),
+                ? bcadd($canonicalQuantity, '0', 0)
+                : app(MassConverter::class)->fromGrams($canonicalQuantity, $actualUnit),
             'actual_unit' => $actualUnit,
             'receipt_price_basis' => $line->price_basis?->value ?? ListingPriceBasis::TotalPurchaseFormat->value,
             'receipt_price_amount' => $line->price_amount ?? $line->pack_price,

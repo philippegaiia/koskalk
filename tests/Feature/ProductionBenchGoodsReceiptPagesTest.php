@@ -178,6 +178,67 @@ it('only offers issued purchase orders with outstanding lines and preselects a l
         ->assertSeeHtml('readonly');
 });
 
+it('defaults purchase-order receipt quantities to the full outstanding amount', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    [, , $order, $line] = outstandingReceiptOrder($owner, $workspace, 5);
+    app(ReceivePurchaseOrder::class)->handle(
+        actor: $owner,
+        order: $order,
+        idempotencyKey: fake()->uuid(),
+        deliveryReference: null,
+        lines: [[
+            'order_line' => $line,
+            'packs_received' => 2,
+            'actual_quantity' => '10',
+            'actual_unit' => 'kg',
+        ]],
+    );
+    $this->actingAs($owner);
+
+    $component = Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value, 'order' => $order->public_id])
+        ->test(ReceiptCreate::class);
+
+    expect($component->get("lineInputs.{$line->id}.packs_received"))->toBe(3)
+        ->and((float) $component->get("lineInputs.{$line->id}.actual_quantity"))->toBe(15.0);
+});
+
+it('renders each purchase-order item in two readable rows and disables completed items', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    [$supplier, , $order, $availableLine] = outstandingReceiptOrder($owner, $workspace, 3);
+    $completedListing = SupplierListing::factory()->for($workspace)->for($supplier)->for(Ingredient::factory())->create();
+    $completedLine = PurchaseOrderLine::factory()
+        ->for($order)
+        ->for($completedListing, 'supplierListing')
+        ->create([
+            'ingredient_id' => $completedListing->ingredient_id,
+            'ordered_packs' => 1,
+            'expected_quantity' => $completedListing->canonical_quantity_per_purchase_format,
+        ]);
+    app(ReceivePurchaseOrder::class)->handle(
+        actor: $owner,
+        order: $order,
+        idempotencyKey: fake()->uuid(),
+        deliveryReference: null,
+        lines: [[
+            'order_line' => $completedLine,
+            'packs_received' => 1,
+            'actual_quantity' => '5',
+            'actual_unit' => 'kg',
+        ]],
+    );
+    $this->actingAs($owner);
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value, 'order' => $order->public_id])
+        ->test(ReceiptCreate::class)
+        ->assertSee('Packages received')
+        ->assertSee('Actual received quantity')
+        ->assertSeeHtml('data-receipt-line-summary="'.$availableLine->id.'"')
+        ->assertSeeHtml('data-receipt-line-details="'.$availableLine->id.'"')
+        ->assertSeeHtml('data-receipt-line-fields="'.$completedLine->id.'" disabled')
+        ->assertDontSeeHtml('data-receipt-line-fields="'.$availableLine->id.'" disabled')
+        ->assertDontSeeHtml('min-w-[1180px]');
+});
+
 it('finds eligible purchase orders and direct listings beyond the first hundred results', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     [$supplier, $listing, $targetOrder, $targetLine] = outstandingReceiptOrder($owner, $workspace);
@@ -229,7 +290,7 @@ it('finds eligible purchase orders and direct listings beyond the first hundred 
         ->set('orderSearch', 'PO-SEARCH-101')
         ->assertSee('PO-SEARCH-101')
         ->set('orderPublicId', $targetOrder->public_id)
-        ->assertSet("lineInputs.{$targetLine->id}.packs_received", 1);
+        ->assertSet("lineInputs.{$targetLine->id}.packs_received", $targetLine->ordered_packs);
 
     Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
         ->test(ReceiptCreate::class)

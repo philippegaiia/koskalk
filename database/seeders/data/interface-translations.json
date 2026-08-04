@@ -7733,6 +7733,314 @@
         },
         {
             "group": "production_bench",
+            "key": "flash.add_product",
+            "text": {
+                "de": "Produkt hinzufügen",
+                "es": "Añadir producto",
+                "fr": "Ajouter un produit",
+                "it": "Aggiungi prodotto",
+                "nl": "Product toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.batch_label",
+            "text": {
+                "de": "Charge :number von :total",
+                "es": "lote :number de :total",
+                "fr": "lot :number sur :total",
+                "it": "lotto :number di :total",
+                "nl": "batch :number van :total"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.batch_quantity",
+            "text": {
+                "de": "Chargemenge",
+                "es": "Cantidad por lote",
+                "fr": "Quantité du lot",
+                "it": "Quantità del lotto",
+                "nl": "Batchhoeveelheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.batches_per_day",
+            "text": {
+                "de": "Chargen pro Arbeitstag",
+                "es": "Lotes por día laborable",
+                "fr": "Lots par jour ouvré",
+                "it": "Lotti per giorno lavorativo",
+                "nl": "Batches per werkdag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.date_preview",
+            "text": {
+                "de": "Vorgeschlagene Produktionstermine",
+                "es": "Fechas de producción propuestas",
+                "fr": "Dates de production proposées",
+                "it": "Date di produzione proposte",
+                "nl": "Voorgestelde productiedata"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.date_preview_help",
+            "text": {
+                "de": "Prüfen Sie die Termine und Folgetätigkeiten. Im nächsten Schritt wird dieser geprüfte Vorschlag in Produktionsdatensätze umgewandelt.",
+                "es": "Revise las fechas y tareas posteriores. En el siguiente paso esta propuesta revisada se convertirá en registros de producción.",
+                "fr": "Vérifiez les dates et les tâches de suivi. L’étape suivante transformera cette proposition en productions.",
+                "it": "Controlla le date e le attività successive. Nel passaggio successivo questa proposta diventerà produzioni.",
+                "nl": "Controleer de data en vervolgtaken. In de volgende stap wordt dit voorstel omgezet in productieregisters."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.desired_units",
+            "text": {
+                "de": "Gewünschte Einheiten",
+                "es": "Unidades deseadas",
+                "fr": "Unités souhaitées",
+                "it": "Unità desiderate",
+                "nl": "Gewenste eenheden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.expected_units",
+            "text": {
+                "de": "Geplante Einheiten",
+                "es": "Unidades planificadas",
+                "fr": "Unités prévues",
+                "it": "Unità previste",
+                "nl": "Geplande eenheden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.extra_units",
+            "text": {
+                "de": "Zusätzliche Einheiten",
+                "es": "Unidades adicionales",
+                "fr": "Unités supplémentaires",
+                "it": "Unità extra",
+                "nl": "Extra eenheden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.generate_preview",
+            "text": {
+                "de": "Terminübersicht erstellen",
+                "es": "Generar vista previa de fechas",
+                "fr": "Générer l’aperçu des dates",
+                "it": "Genera anteprima date",
+                "nl": "Datumvoorbeeld maken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.generation_next_step",
+            "text": {
+                "de": "Noch wurde nichts erstellt. Die Produktionserstellung wird im nächsten Schritt bestätigt.",
+                "es": "Aún no se ha creado nada. La generación de producción se confirmará en el siguiente paso.",
+                "fr": "Rien n’a encore été créé. La création des productions sera confirmée à l’étape suivante.",
+                "it": "Non è ancora stato creato nulla. La generazione della produzione sarà confermata nel passaggio successivo.",
+                "nl": "Er is nog niets aangemaakt. Het aanmaken van producties wordt in de volgende stap bevestigd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.indicative_value",
+            "text": {
+                "de": "Richtwert",
+                "es": "Valor indicativo",
+                "fr": "Valeur indicative",
+                "it": "Valore indicativo",
+                "nl": "Indicatieve waarde"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.intro",
+            "text": {
+                "de": "Probieren Sie mehrere Produkte zusammen aus, sehen Sie sofort die Materialauswirkungen und prüfen Sie die Produktionstermine, bevor etwas erstellt wird.",
+                "es": "Pruebe varios productos juntos, vea el impacto de materiales de inmediato y revise las fechas antes de crear nada.",
+                "fr": "Simulez plusieurs produits ensemble, voyez immédiatement l’impact matière et vérifiez les dates avant toute création.",
+                "it": "Simula più prodotti insieme, visualizza subito l’impatto sui materiali e controlla le date prima di creare qualcosa.",
+                "nl": "Simuleer meerdere producten samen, zie direct de materiaalimpact en controleer productiedata voordat er iets wordt aangemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.missing_price",
+            "text": {
+                "de": "Kein aktueller Preis",
+                "es": "Sin precio actual",
+                "fr": "Aucun prix actuel",
+                "it": "Nessun prezzo corrente",
+                "nl": "Geen actuele prijs"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.optional",
+            "text": {
+                "de": "optional",
+                "es": "opcional",
+                "fr": "facultatif",
+                "it": "facoltativo",
+                "nl": "optioneel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.product_line",
+            "text": {
+                "de": "Produkt :number",
+                "es": "Producto :number",
+                "fr": "Produit :number",
+                "it": "Prodotto :number",
+                "nl": "Product :number"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.products",
+            "text": {
+                "de": "Herzustellende Produkte",
+                "es": "Productos a fabricar",
+                "fr": "Produits à fabriquer",
+                "it": "Prodotti da produrre",
+                "nl": "Te maken producten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.products_help",
+            "text": {
+                "de": "Fügen Sie für jedes Produkt eine Zeile hinzu. Vorgaben füllen die übliche Chargengröße, aber alle Werte bleiben änderbar.",
+                "es": "Añada una línea por producto. Los ajustes rellenan el lote habitual, pero todos los valores siguen siendo editables.",
+                "fr": "Ajoutez une ligne par produit. Les préréglages remplissent le lot habituel, mais chaque valeur reste modifiable.",
+                "it": "Aggiungi una riga per ogni prodotto. I preset compilano il lotto abituale, ma ogni valore resta modificabile.",
+                "nl": "Voeg voor elk product een regel toe. Voorinstellingen vullen de gebruikelijke batch in, maar alle waarden blijven aanpasbaar."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.remove_product",
+            "text": {
+                "de": "Entfernen",
+                "es": "Quitar",
+                "fr": "Supprimer",
+                "it": "Rimuovi",
+                "nl": "Verwijderen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.required",
+            "text": {
+                "de": "Benötigt",
+                "es": "Necesario",
+                "fr": "Nécessaire",
+                "it": "Necessario",
+                "nl": "Benodigd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.schedule_heading",
+            "text": {
+                "de": "Zeitplan prüfen",
+                "es": "Revisar el calendario",
+                "fr": "Vérifier le planning",
+                "it": "Controlla la pianificazione",
+                "nl": "Planning controleren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.schedule_help",
+            "text": {
+                "de": "Wählen Sie den ersten Produktionstermin und die Anzahl der Chargen pro Arbeitstag. Wochenenden und konfigurierte Schließtage werden übersprungen.",
+                "es": "Elija la primera fecha de producción y cuántos lotes se pueden hacer por día laborable. Se omiten fines de semana y cierres configurados.",
+                "fr": "Choisissez la première date de production et le nombre de lots par jour ouvré. Les week-ends et fermetures configurées sont ignorés.",
+                "it": "Scegli la prima data di produzione e quanti lotti realizzare per giorno lavorativo. Weekend e chiusure configurate vengono saltati.",
+                "nl": "Kies de eerste productiedatum en hoeveel batches per werkdag kunnen worden gemaakt. Weekenden en ingestelde sluitingsdagen worden overgeslagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.summary",
+            "text": {
+                "de": "Flash-Simulation",
+                "es": "Simulación flash",
+                "fr": "Simulation flash",
+                "it": "Simulazione flash",
+                "nl": "Flash-simulatie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.summary_help",
+            "text": {
+                "de": "Dies ist nur eine Richtwertberechnung. Es wird kein Bestand reserviert und keine Produktion erstellt.",
+                "es": "Este cálculo es orientativo. No reserva stock ni crea producciones.",
+                "fr": "Ce calcul est indicatif. Il ne réserve aucun stock et ne crée aucune production.",
+                "it": "Questo calcolo è indicativo. Non riserva scorte e non crea produzioni.",
+                "nl": "Dit is alleen een indicatieve berekening. Er wordt geen voorraad gereserveerd en geen productie aangemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.task_minutes",
+            "text": {
+                "de": "Aufgabenminuten",
+                "es": "Minutos de tareas",
+                "fr": "Minutes de tâches",
+                "it": "Minuti attività",
+                "nl": "Taakminuten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.title",
+            "text": {
+                "de": "Flash-Produktionsplanung",
+                "es": "Planificador flash de producción",
+                "fr": "Planification flash de production",
+                "it": "Pianificazione flash della produzione",
+                "nl": "Flash-productieplanner"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.units_per_batch",
+            "text": {
+                "de": "Einheiten pro Charge",
+                "es": "Unidades por lote",
+                "fr": "Unités par lot",
+                "it": "Unità per lotto",
+                "nl": "Eenheden per batch"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.whole_batches",
+            "text": {
+                "de": "Ganze Chargen",
+                "es": "Lotes completos",
+                "fr": "Lots entiers",
+                "it": "Lotti interi",
+                "nl": "Volledige batches"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "home.activate",
             "text": {
                 "de": "Produktionsbereich aktivieren",
@@ -8719,6 +9027,17 @@
                 "fr": "Calendrier",
                 "it": "Calendario",
                 "nl": "Kalender"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.flash",
+            "text": {
+                "de": "Flash-Planer",
+                "es": "Planificador flash",
+                "fr": "Planificateur flash",
+                "it": "Pianificatore flash",
+                "nl": "Flash-planner"
             }
         },
         {

@@ -4,6 +4,7 @@
         'production-bench.home' => __('production_bench.navigation.home'),
         'production-bench.inventory' => __('production_bench.navigation.inventory'),
         'production-bench.production.index' => __('production_bench.navigation.production_workflow'),
+        'production-bench.production.flash' => __('production_bench.navigation.flash'),
         'production-bench.production.calendar' => __('production_bench.navigation.calendar'),
         'production-bench.purchasing.suppliers' => __('production_bench.navigation.purchasing'),
         'production-bench.production.settings' => __('production_bench.navigation.production'),
@@ -11,7 +12,7 @@
         <a
             href="{{ route($routeName) }}"
             wire:navigate
-            @if ($routeName === 'production-bench.purchasing.suppliers' ? request()->routeIs('production-bench.purchasing.*') : ($routeName === 'production-bench.production.index' ? $productionWorkflowActive : request()->routeIs($routeName)))
+                @if ($routeName === 'production-bench.purchasing.suppliers' ? request()->routeIs('production-bench.purchasing.*') : ($routeName === 'production-bench.production.index' ? $productionWorkflowActive : request()->routeIs($routeName)))
                 aria-current="page"
             @endif
             @class([

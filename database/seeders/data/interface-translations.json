@@ -9781,11 +9781,11 @@
             "group": "production_bench",
             "key": "receipt.historical_cost",
             "text": {
-                "de": "Historische Kosten",
-                "es": "Coste histórico",
-                "fr": "Coût historique",
-                "it": "Costo storico",
-                "nl": "Historische kosten"
+                "de": "Einkaufspreis",
+                "es": "Precio de compra",
+                "fr": "Prix d’achat",
+                "it": "Prezzo di acquisto",
+                "nl": "Inkoopprijs"
             }
         },
         {
@@ -9803,11 +9803,11 @@
             "group": "production_bench",
             "key": "receipt.index_help",
             "text": {
-                "de": "Gebuchte Lieferungen und direkte Lagerzugänge einschließlich Losen und historischen Kosten.",
-                "es": "Entregas contabilizadas y recepciones directas, incluidos sus lotes y costes históricos.",
-                "fr": "Livraisons validées et réceptions directes, avec leurs lots et coûts historiques.",
-                "it": "Consegne registrate e ricezioni dirette, inclusi lotti e costi storici.",
-                "nl": "Geboekte leveringen en directe ontvangsten, inclusief partijen en historische kosten."
+                "de": "Gebuchte Lieferungen und direkte Lagerzugänge einschließlich Losen und Einkaufspreisen.",
+                "es": "Entregas contabilizadas y recepciones directas, incluidos sus lotes y precios de compra.",
+                "fr": "Livraisons validées et réceptions directes, avec leurs lots et prix d’achat.",
+                "it": "Consegne registrate e ricezioni dirette, inclusi lotti e prezzi di acquisto.",
+                "nl": "Geboekte leveringen en directe ontvangsten, inclusief partijen en inkoopprijzen."
             }
         },
         {
@@ -9847,11 +9847,11 @@
             "group": "production_bench",
             "key": "receipt.inventory_cost",
             "text": {
-                "de": "Lagerkosten",
-                "es": "Coste de inventario",
-                "fr": "Coût de stock",
-                "it": "Costo di magazzino",
-                "nl": "Voorraadkosten"
+                "de": "Bestandswert",
+                "es": "Valor del inventario",
+                "fr": "Valeur du stock",
+                "it": "Valore di magazzino",
+                "nl": "Voorraadwaarde"
             }
         },
         {

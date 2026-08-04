@@ -15,6 +15,7 @@ use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\StockUnitKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
@@ -175,4 +176,38 @@ it('compensates an adjustment with a second immutable record', function (): void
     expect($compensation->compensates_adjustment_id)->toBe($adjustment->id)
         ->and($lot->fresh()->effectiveCostingTotalCost())->toBe('100.000000000')
         ->and($lot->costAdjustments()->count())->toBe(2);
+});
+
+it('reuses the original exchange-rate snapshot when compensating an adjustment', function (): void {
+    Http::fake([
+        'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::sequence()
+            ->push(['date' => '2026-08-03', 'base' => 'USD', 'quote' => 'EUR', 'rate' => 0.9])
+            ->push(['date' => '2026-08-04', 'base' => 'USD', 'quote' => 'EUR', 'rate' => 1.1]),
+    ]);
+    [$owner, $workspace, $lot] = stockAdjustmentContext();
+    $action = app(AddStockLotCostAdjustment::class);
+    $adjustment = $action->handle(
+        actor: $owner,
+        workspace: $workspace,
+        lot: $lot,
+        type: StockLotCostAdjustmentType::ImportDuty,
+        amount: '10',
+        currency: 'USD',
+        reason: 'Import duty recorded at receipt date',
+    );
+    Cache::forget('exchange-rate:frankfurter:'.now()->toDateString().':USD:EUR');
+
+    $compensation = $action->compensate(
+        actor: $owner,
+        workspace: $workspace,
+        adjustment: $adjustment,
+        reason: 'Import duty correction',
+    );
+
+    expect($adjustment->exchange_rate)->toBe('0.900000000000')
+        ->and($compensation->exchange_rate)->toBe('0.900000000000')
+        ->and($compensation->costing_amount)->toBe('-9.000000000')
+        ->and($lot->fresh()->effectiveCostingTotalCost())->toBe('100.000000000');
+
+    Http::assertSentCount(1);
 });

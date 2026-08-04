@@ -25,6 +25,7 @@ use App\StockLotStatus;
 use App\StockMovementType;
 use App\StockUnitKind;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class PostGoodsReceiptLine
 {
@@ -97,19 +98,26 @@ class PostGoodsReceiptLine
             : null;
         $historicalTotalCost = bcmul($purchaseFormatPrice, (string) $packsReceived, 9);
         $historicalUnitCost = bcround(bcdiv($historicalTotalCost, $actualQuantity, 18), 9);
-        $exchangeRate = $this->exchangeRateService->snapshot(
-            baseCurrency: $currency,
-            quoteCurrency: $workspace->default_currency,
-            date: $stockedAt,
-        );
-        $costingTotalCost = bcmul($historicalTotalCost, $exchangeRate->rate, 9);
-        $costingUnitCost = bcround(bcdiv($costingTotalCost, $actualQuantity, 18), 9);
-
         if (bccomp($historicalUnitCost, '0', 9) <= 0) {
             throw ValidationException::withMessages([
                 'receipt_price_amount' => __('production_bench.receipt.price_too_small'),
             ]);
         }
+
+        try {
+            $exchangeRate = $this->exchangeRateService->snapshot(
+                baseCurrency: $currency,
+                quoteCurrency: $workspace->default_currency,
+                date: $stockedAt,
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages([
+                'exchange_rate' => $exception->getMessage(),
+            ]);
+        }
+
+        $costingTotalCost = bcmul($historicalTotalCost, $exchangeRate->rate, 9);
+        $costingUnitCost = bcround(bcdiv($costingTotalCost, $actualQuantity, 18), 9);
 
         $lot = StockLot::query()->create([
             'workspace_id' => $workspace->id,

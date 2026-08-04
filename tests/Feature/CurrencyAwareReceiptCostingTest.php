@@ -36,3 +36,34 @@ it('fetches and caches a cross-currency rate snapshot', function (): void {
 
     Http::assertSentCount(1);
 });
+
+it('uses a manual rate when the exchange-rate provider is unavailable', function (): void {
+    Http::fake([
+        'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::failedConnection('provider unavailable'),
+    ]);
+
+    $snapshot = app(ExchangeRateService::class)->snapshot(
+        baseCurrency: 'USD',
+        quoteCurrency: 'EUR',
+        date: '2026-08-05',
+        manualRate: '0.91',
+    );
+
+    expect($snapshot->rate)->toBe('0.910000000000')
+        ->and($snapshot->provider)->toBe('manual')
+        ->and($snapshot->isManual)->toBeTrue();
+
+    Http::assertNothingSent();
+});
+
+it('surfaces connection failures as an invalid exchange-rate error', function (): void {
+    Http::fake([
+        'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::failedConnection('provider unavailable'),
+    ]);
+
+    expect(fn () => app(ExchangeRateService::class)->snapshot('USD', 'EUR', '2026-08-06'))
+        ->toThrow(InvalidArgumentException::class);
+
+    expect(Http::recorded(fn ($request): bool => $request->url() === 'https://api.frankfurter.dev/v2/rate/USD/EUR?date=2026-08-06'))
+        ->toHaveCount(1);
+});

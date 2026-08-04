@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\ExchangeRateProvider;
 use App\Data\ExchangeRateSnapshot;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Http\Client\RequestException;
 use InvalidArgumentException;
@@ -26,7 +27,7 @@ class FrankfurterExchangeRateProvider implements ExchangeRateProvider
                     'date' => $date,
                 ])
                 ->throw();
-        } catch (RequestException $exception) {
+        } catch (RequestException|ConnectionException $exception) {
             throw new InvalidArgumentException('The exchange-rate provider did not return a usable rate.', previous: $exception);
         }
 

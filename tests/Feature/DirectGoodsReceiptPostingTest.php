@@ -196,6 +196,45 @@ it('keeps the supplier currency and snapshots the workspace costing currency', f
     Http::assertSentCount(1);
 });
 
+it('surfaces an unavailable exchange-rate provider as a validation error', function (): void {
+    Http::fake([
+        'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::failedConnection('provider unavailable'),
+    ]);
+
+    [$owner, $workspace, $supplier, $ingredient] = directReceiptContext();
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create([
+            'currency' => 'USD',
+            'net_quantity' => '5',
+            'net_unit' => 'kg',
+            'canonical_quantity_per_purchase_format' => '5000',
+        ]);
+
+    expect(fn () => app(ReceiveDirectGoodsReceipt::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        idempotencyKey: 'direct-provider-unavailable',
+        lines: [[
+            'listing' => $listing,
+            'packs_received' => 1,
+            'actual_quantity' => '5',
+            'actual_unit' => 'kg',
+            'receipt_price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'receipt_price_amount' => '100',
+            'currency' => 'USD',
+        ]],
+        receivedAt: '2026-08-03',
+    ))->toThrow(ValidationException::class);
+
+    expect(GoodsReceipt::query()->count())->toBe(0)
+        ->and(StockLot::query()->count())->toBe(0)
+        ->and(StockMovement::query()->count())->toBe(0);
+});
+
 it('returns the original direct receipt when the same submission is retried', function (): void {
     [$owner, $workspace, $supplier, , $listing] = directReceiptContext();
     $arguments = [

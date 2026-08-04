@@ -147,6 +147,7 @@ class AddStockLotCostAdjustment
             amount: bcsub('0', (string) $adjustment->amount, 9),
             currency: $adjustment->currency,
             reason: $reason,
+            manualRate: (string) $adjustment->exchange_rate,
             compensatesAdjustmentId: $adjustment->id,
         );
     }

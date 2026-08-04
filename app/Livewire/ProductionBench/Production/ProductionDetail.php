@@ -3,8 +3,13 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\CancelProduction;
+use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\ReleaseProductionStock;
+use App\Actions\Production\ReopenProductionTask;
+use App\Actions\Production\RescheduleProductionTask;
+use App\Models\Employee;
 use App\Models\ProductionRun;
+use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
@@ -17,6 +22,46 @@ class ProductionDetail extends Component
     public string $productionId = '';
 
     public string $cancellationReason = '';
+
+    public function assignTask(int $taskId, ?string $employeeId, RescheduleProductionTask $rescheduleProductionTask): void
+    {
+        try {
+            $employee = filled($employeeId)
+                ? Employee::query()->where('workspace_id', $this->workspace()->id)->find((int) $employeeId)
+                : null;
+            $rescheduleProductionTask->handle(
+                actor: $this->user(),
+                task: $this->task($taskId),
+                employee: $employee,
+                clearEmployee: blank($employeeId),
+            );
+        } catch (ValidationException $exception) {
+            $this->addTaskErrors($exception);
+
+            return;
+        }
+
+        $this->dispatch('production-task-updated');
+    }
+
+    public function toggleTask(int $taskId, CompleteProductionTask $completeProductionTask, ReopenProductionTask $reopenProductionTask): void
+    {
+        $task = $this->task($taskId);
+
+        try {
+            if ($task->completed_at === null) {
+                $completeProductionTask->handle($this->user(), $task);
+            } else {
+                $reopenProductionTask->handle($this->user(), $task);
+            }
+        } catch (ValidationException $exception) {
+            $this->addTaskErrors($exception);
+
+            return;
+        }
+
+        $this->dispatch('production-task-updated');
+    }
 
     public function mount(string|int|ProductionRun $productionId): void
     {
@@ -89,7 +134,29 @@ class ProductionDetail extends Component
             'production' => $production,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
+            'employees' => Employee::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('is_active', true)
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->get(),
         ]);
+    }
+
+    private function task(int $taskId): ProductionTask
+    {
+        return ProductionTask::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->findOrFail($taskId);
+    }
+
+    private function addTaskErrors(ValidationException $exception): void
+    {
+        foreach ($exception->errors() as $field => $messages) {
+            foreach ($messages as $message) {
+                $this->addError('task_'.$field, $message);
+            }
+        }
     }
 
     private function production(): ProductionRun

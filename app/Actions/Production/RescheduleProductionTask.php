@@ -25,6 +25,7 @@ class RescheduleProductionTask
         ProductionTask $task,
         ?string $scheduledFor = null,
         ?Employee $employee = null,
+        bool $clearEmployee = false,
     ): ProductionTask {
         if ($scheduledFor !== null) {
             $this->validateDate($scheduledFor);
@@ -38,7 +39,7 @@ class RescheduleProductionTask
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $employee, $scheduledFor, $task): ProductionTask {
+        return DB::transaction(function () use ($actor, $clearEmployee, $employee, $scheduledFor, $task): ProductionTask {
             $lockedTask = ProductionTask::query()->lockForUpdate()->findOrFail($task->id);
             $lockedProduction = ProductionRun::query()->lockForUpdate()->find($lockedTask->production_run_id);
 
@@ -64,7 +65,9 @@ class RescheduleProductionTask
                 ]);
             }
 
-            if ($employee instanceof Employee) {
+            if ($clearEmployee) {
+                $lockedTask->employee_id = null;
+            } elseif ($employee instanceof Employee) {
                 $candidate = Employee::query()
                     ->where('workspace_id', $lockedWorkspace->id)
                     ->lockForUpdate()

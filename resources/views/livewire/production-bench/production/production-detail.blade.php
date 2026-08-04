@@ -69,8 +69,27 @@
         <div class="divide-y divide-[var(--color-line)]">
             @forelse ($production->tasks as $task)
                 <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                    <div><p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p><p class="text-xs text-[var(--color-ink-soft)]">{{ $task->employee ? $task->employee->first_name.' '.$task->employee->last_name : __('production_bench.production.unassigned') }}</p></div>
-                    <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $task->scheduled_for->format('Y-m-d') }} @if($task->completed_at) · {{ __('production_bench.production.completed_task') }} @endif</p>
+                    <div class="min-w-0">
+                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p>
+                        <div class="mt-2 flex flex-wrap items-center gap-2">
+                            <select wire:change="assignTask({{ $task->id }}, $event.target.value)" class="sk-input min-w-48 py-1.5 text-sm" @disabled($isReadOnly || in_array($production->status->value, ['in_production', 'completed', 'cancelled', 'aborted'], true))>
+                                <option value="">{{ __('production_bench.production.choose_employee') }}</option>
+                                @foreach ($employees as $employee)
+                                    <option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>
+                                @endforeach
+                            </select>
+                            @if ($task->employee)
+                                <span class="text-xs text-[var(--color-ink-soft)]">{{ $task->employee->first_name.' '.$task->employee->last_name }}</span>
+                            @endif
+                            @error('task_employee') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 sm:justify-end">
+                        <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $task->scheduled_for->format('Y-m-d') }} @if($task->completed_at) · {{ __('production_bench.production.completed_task') }} @endif</p>
+                        <button type="button" wire:click="toggleTask({{ $task->id }})" wire:loading.attr="disabled" @disabled($isReadOnly || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true)) class="sk-btn sk-btn-ghost py-1.5 text-sm">
+                            {{ $task->completed_at ? __('production_bench.production.reopen_task') : __('production_bench.production.mark_complete') }}
+                        </button>
+                    </div>
                 </div>
             @empty
                 <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_tasks') }}</p>

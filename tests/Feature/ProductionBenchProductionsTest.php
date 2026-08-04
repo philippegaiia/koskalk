@@ -116,6 +116,34 @@ it('shows immutable planning snapshots, requirements, tasks, and employee assign
         ->assertSee($fixture['version']->version_number);
 });
 
+it('assigns employees and lets the operator complete or reopen a task', function (): void {
+    $fixture = productionListFixture();
+    $employee = Employee::factory()->for($fixture['workspace'])->create([
+        'first_name' => 'Ana',
+        'last_name' => 'Maker',
+    ]);
+    $task = ProductionTask::factory()
+        ->for($fixture['workspace'])
+        ->for($fixture['production'], 'productionRun')
+        ->create(['name_snapshot' => 'Mix oils', 'scheduled_for' => '2026-08-10']);
+
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, [
+        'productionId' => $fixture['production']->id,
+    ]);
+
+    $page->call('assignTask', $task->id, (string) $employee->id)
+        ->assertHasNoErrors();
+    expect($task->fresh()->employee_id)->toBe($employee->id);
+
+    $page->call('toggleTask', $task->id)->assertHasNoErrors();
+    expect($task->fresh()->completed_at)->not->toBeNull();
+
+    $page->call('toggleTask', $task->id)->assertHasNoErrors();
+    $page->call('assignTask', $task->id, '')->assertHasNoErrors();
+    expect($task->fresh()->completed_at)->toBeNull()
+        ->and($task->fresh()->employee_id)->toBeNull();
+});
+
 it('cancels draft and scheduled productions with a required reason', function (): void {
     $fixture = productionListFixture();
 

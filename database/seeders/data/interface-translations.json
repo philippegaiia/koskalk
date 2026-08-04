@@ -9845,6 +9845,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.choose_employee",
+            "text": {
+                "de": "Mitarbeiter zuweisen",
+                "es": "Asignar empleado",
+                "fr": "Affecter un employé",
+                "it": "Assegna dipendente",
+                "nl": "Medewerker toewijzen"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.choose_lots_manually",
             "text": {
                 "de": "Lose manuell auswählen",
@@ -10028,6 +10039,17 @@
                 "fr": "Choisir les lots manuellement",
                 "it": "Scegli lotti manualmente",
                 "nl": "Partijen handmatig kiezen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.mark_complete",
+            "text": {
+                "de": "Als erledigt markieren",
+                "es": "Marcar como completada",
+                "fr": "Marquer comme terminée",
+                "it": "Segna come completata",
+                "nl": "Als voltooid markeren"
             }
         },
         {
@@ -10325,6 +10347,17 @@
                 "fr": "restant",
                 "it": "rimanente",
                 "nl": "resterend"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.reopen_task",
+            "text": {
+                "de": "Aufgabe wieder öffnen",
+                "es": "Reabrir tarea",
+                "fr": "Rouvrir la tâche",
+                "it": "Riapri attività",
+                "nl": "Taak heropenen"
             }
         },
         {

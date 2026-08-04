@@ -12,7 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class ScheduleProduction
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(
+        private readonly ProductionBenchAccess $access,
+        private readonly GenerateProductionTasks $generateProductionTasks,
+    ) {}
 
     public function handle(User $actor, ProductionRun $production): ProductionRun
     {
@@ -26,7 +29,7 @@ class ScheduleProduction
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $production): ProductionRun {
+        $scheduled = DB::transaction(function () use ($actor, $production): ProductionRun {
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
@@ -52,5 +55,7 @@ class ScheduleProduction
 
             return $lockedProduction->fresh('requirements');
         }, attempts: 5);
+
+        return $this->generateProductionTasks->handle($actor, $scheduled);
     }
 }

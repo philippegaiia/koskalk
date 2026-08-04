@@ -4,6 +4,7 @@ namespace App\Actions\Production;
 
 use App\MassUnit;
 use App\Models\ProductionRun;
+use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
@@ -12,7 +13,10 @@ use App\ProductionRunStatus;
 
 class PlanProduction
 {
-    public function __construct(private readonly CreateProductionDraft $createProductionDraft) {}
+    public function __construct(
+        private readonly CreateProductionDraft $createProductionDraft,
+        private readonly GenerateProductionTasks $generateProductionTasks,
+    ) {}
 
     public function handle(
         User $actor,
@@ -25,8 +29,9 @@ class PlanProduction
         ?string $plannedFor = null,
         ?string $notes = null,
         ProductionRunSource $source = ProductionRunSource::Direct,
+        ?ProductionTaskSet $taskSet = null,
     ): ProductionRun {
-        return $this->createProductionDraft->handle(
+        $production = $this->createProductionDraft->handle(
             actor: $actor,
             workspace: $workspace,
             recipe: $recipe,
@@ -38,6 +43,9 @@ class PlanProduction
             notes: $notes,
             source: $source,
             status: ProductionRunStatus::Scheduled,
+            taskSet: $taskSet,
         );
+
+        return $this->generateProductionTasks->handle($actor, $production);
     }
 }

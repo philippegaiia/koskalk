@@ -4,6 +4,7 @@ namespace App\Actions\Production;
 
 use App\MassUnit;
 use App\Models\ProductionRun;
+use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
@@ -37,6 +38,7 @@ class CreateProductionDraft
         ?string $notes = null,
         ProductionRunSource $source = ProductionRunSource::Direct,
         ProductionRunStatus $status = ProductionRunStatus::Draft,
+        ?ProductionTaskSet $taskSet = null,
     ): ProductionRun {
         $this->access->assertWritable($actor, $workspace);
 
@@ -64,6 +66,7 @@ class CreateProductionDraft
             $recipe,
             $source,
             $status,
+            $taskSet,
             $workspace,
         ): ProductionRun {
             $lockedWorkspace = Workspace::withoutGlobalScopes()
@@ -98,6 +101,27 @@ class CreateProductionDraft
                 ]);
             }
 
+            if ($taskSet instanceof ProductionTaskSet
+                && (int) $taskSet->workspace_id !== (int) $lockedWorkspace->id) {
+                throw ValidationException::withMessages([
+                    'production_task_set' => 'Choose a task set from the production workspace.',
+                ]);
+            }
+
+            $lockedTaskSet = $taskSet instanceof ProductionTaskSet
+                ? ProductionTaskSet::query()
+                    ->where('workspace_id', $lockedWorkspace->id)
+                    ->where('is_active', true)
+                    ->lockForUpdate()
+                    ->find($taskSet->id)
+                : null;
+
+            if ($taskSet instanceof ProductionTaskSet && $lockedTaskSet === null) {
+                throw ValidationException::withMessages([
+                    'production_task_set' => 'Choose an active task set from this workspace.',
+                ]);
+            }
+
             $publishedVersion = RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $lockedRecipe->id)
                 ->where('workspace_id', $lockedWorkspace->id)
@@ -124,6 +148,7 @@ class CreateProductionDraft
                 'workspace_id' => $lockedWorkspace->id,
                 'recipe_id' => $lockedRecipe->id,
                 'recipe_version_id' => $publishedVersion->id,
+                'production_task_set_id' => $lockedTaskSet?->id,
                 'status' => $status,
                 'source' => $source,
                 'planned_for' => $plannedFor,

@@ -39,6 +39,7 @@ use Illuminate\Support\Collection;
     'featured_image_path',
     'featured_image_original_name',
     'slug',
+    'default_production_task_set_id',
     'archived_at',
     'locked_at',
     'locked_by',
@@ -149,6 +150,12 @@ class Recipe extends Model implements HasRichContent
             ->orderByDesc('is_default')
             ->orderBy('name')
             ->orderBy('id');
+    }
+
+    public function defaultProductionTaskSet(): BelongsTo
+    {
+        return $this->belongsTo(ProductionTaskSet::class, 'default_production_task_set_id')
+            ->withoutGlobalScopes();
     }
 
     public function latestPublishedVersion(): HasOne

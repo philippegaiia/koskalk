@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'workspace_id',
     'recipe_id',
     'recipe_version_id',
+    'production_task_set_id',
     'status',
     'source',
     'planned_for',
@@ -74,6 +75,18 @@ class ProductionRun extends Model
     {
         return $this->hasMany(ProductionRequirement::class)
             ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
+    public function taskSet(): BelongsTo
+    {
+        return $this->belongsTo(ProductionTaskSet::class, 'production_task_set_id');
+    }
+
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(ProductionTask::class)
+            ->orderBy('scheduled_for')
             ->orderBy('id');
     }
 

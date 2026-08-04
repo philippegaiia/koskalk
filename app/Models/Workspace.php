@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system'])]
+#[Fillable(['name', 'slug', 'owner_user_id', 'default_currency', 'country', 'mass_display_system', 'production_works_on_weekends'])]
 class Workspace extends Model
 {
     /** @use HasFactory<WorkspaceFactory> */
@@ -85,6 +85,26 @@ class Workspace extends Model
         return $this->hasMany(ProductionRun::class);
     }
 
+    public function employees(): HasMany
+    {
+        return $this->hasMany(Employee::class);
+    }
+
+    public function productionTaskTypes(): HasMany
+    {
+        return $this->hasMany(ProductionTaskType::class);
+    }
+
+    public function productionTaskSets(): HasMany
+    {
+        return $this->hasMany(ProductionTaskSet::class);
+    }
+
+    public function productionHolidays(): HasMany
+    {
+        return $this->hasMany(ProductionHoliday::class);
+    }
+
     public function hasMember(User $user): bool
     {
         return $this->owner_user_id === $user->id
@@ -114,6 +134,7 @@ class Workspace extends Model
     {
         return [
             'mass_display_system' => MassDisplaySystem::class,
+            'production_works_on_weekends' => 'boolean',
         ];
     }
 }

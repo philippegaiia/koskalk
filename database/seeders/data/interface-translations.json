@@ -7425,6 +7425,17 @@
         },
         {
             "group": "production_bench",
+            "key": "common.clear",
+            "text": {
+                "de": "Leeren",
+                "es": "Borrar",
+                "fr": "Effacer",
+                "it": "Cancella",
+                "nl": "Wissen"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "common.currency",
             "text": {
                 "de": "Währung",
@@ -7487,6 +7498,17 @@
                 "fr": "Lecture seule. Reprenez pour modifier.",
                 "it": "Sola lettura. Riprendi per modificare.",
                 "nl": "Alleen-lezen. Hervat om te bewerken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.save_changes",
+            "text": {
+                "de": "Änderungen speichern",
+                "es": "Guardar cambios",
+                "fr": "Enregistrer les modifications",
+                "it": "Salva modifiche",
+                "nl": "Wijzigingen opslaan"
             }
         },
         {
@@ -8543,6 +8565,17 @@
                 "fr": "Stock",
                 "it": "Inventario",
                 "nl": "Voorraad"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.production",
+            "text": {
+                "de": "Produktion einrichten",
+                "es": "Configuración de producción",
+                "fr": "Configuration de la production",
+                "it": "Impostazioni produzione",
+                "nl": "Productie instellen"
             }
         },
         {
@@ -10699,6 +10732,534 @@
                 "fr": "Réception des achats",
                 "it": "Ricezione acquisti",
                 "nl": "Inkoopontvangst"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.add_employee",
+            "text": {
+                "de": "Mitarbeiter hinzufügen",
+                "es": "Añadir empleado",
+                "fr": "Ajouter un employé",
+                "it": "Aggiungi dipendente",
+                "nl": "Werknemer toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.add_holiday",
+            "text": {
+                "de": "Schließtag hinzufügen",
+                "es": "Añadir cierre",
+                "fr": "Ajouter une fermeture",
+                "it": "Aggiungi chiusura",
+                "nl": "Sluitingsdag toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.add_preset",
+            "text": {
+                "de": "Chargengröße speichern",
+                "es": "Guardar tamaño de lote",
+                "fr": "Enregistrer le format de lot",
+                "it": "Salva dimensione lotto",
+                "nl": "Batchgrootte opslaan"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.add_task",
+            "text": {
+                "de": "Aufgabe hinzufügen",
+                "es": "Añadir tarea",
+                "fr": "Ajouter une tâche",
+                "it": "Aggiungi attività",
+                "nl": "Taak toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.add_task_set",
+            "text": {
+                "de": "Aufgabensatz speichern",
+                "es": "Guardar conjunto de tareas",
+                "fr": "Enregistrer le jeu de tâches",
+                "it": "Salva set di attività",
+                "nl": "Taakset opslaan"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.add_task_type",
+            "text": {
+                "de": "Aufgabentyp hinzufügen",
+                "es": "Añadir tipo de tarea",
+                "fr": "Ajouter un type de tâche",
+                "it": "Aggiungi tipo di attività",
+                "nl": "Taaktype toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.batch_size",
+            "text": {
+                "de": "Chargengröße",
+                "es": "Tamaño de lote",
+                "fr": "Taille du lot",
+                "it": "Dimensione del lotto",
+                "nl": "Batchgrootte"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.choose_product",
+            "text": {
+                "de": "Produkt auswählen",
+                "es": "Elegir producto",
+                "fr": "Choisir un produit",
+                "it": "Scegli prodotto",
+                "nl": "Product kiezen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.choose_task",
+            "text": {
+                "de": "Aufgabe auswählen",
+                "es": "Elegir tarea",
+                "fr": "Choisir une tâche",
+                "it": "Scegli attività",
+                "nl": "Taak kiezen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.colour",
+            "text": {
+                "de": "Farbe",
+                "es": "Color",
+                "fr": "Couleur",
+                "it": "Colore",
+                "nl": "Kleur"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.days_after_production",
+            "text": {
+                "de": "Tage nach der Produktion",
+                "es": "Días después de la producción",
+                "fr": "Jours après la production",
+                "it": "Giorni dopo la produzione",
+                "nl": "Dagen na productie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.default",
+            "text": {
+                "de": "Standard",
+                "es": "Predeterminado",
+                "fr": "Par défaut",
+                "it": "Predefinito",
+                "nl": "Standaard"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.default_for_product",
+            "text": {
+                "de": "Als Produktstandard verwenden",
+                "es": "Usar como predeterminado del producto",
+                "fr": "Utiliser comme valeur par défaut du produit",
+                "it": "Usa come predefinito del prodotto",
+                "nl": "Als productstandaard gebruiken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.default_product",
+            "text": {
+                "de": "Standardprodukt",
+                "es": "Producto predeterminado",
+                "fr": "Produit par défaut",
+                "it": "Prodotto predefinito",
+                "nl": "Standaardproduct"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.duration_minutes",
+            "text": {
+                "de": "Minuten",
+                "es": "Minutos",
+                "fr": "Minutes",
+                "it": "Minuti",
+                "nl": "Minuten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.employees",
+            "text": {
+                "de": "Mitarbeiter",
+                "es": "Empleados",
+                "fr": "Employés",
+                "it": "Dipendenti",
+                "nl": "Werknemers"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.employees_help",
+            "text": {
+                "de": "Optionale Namen für die spätere Zuweisung von Produktionsaufgaben.",
+                "es": "Nombres opcionales para asignar tareas de producción más adelante.",
+                "fr": "Noms facultatifs pour affecter les tâches de production plus tard.",
+                "it": "Nomi facoltativi per assegnare in seguito le attività di produzione.",
+                "nl": "Optionele namen om later productietaken toe te wijzen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.expected_units",
+            "text": {
+                "de": "Erwartete Einheiten",
+                "es": "Unidades previstas",
+                "fr": "Unités prévues",
+                "it": "Unità previste",
+                "nl": "Verwachte eenheden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.first_name",
+            "text": {
+                "de": "Vorname",
+                "es": "Nombre",
+                "fr": "Prénom",
+                "it": "Nome",
+                "nl": "Voornaam"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.holiday_date",
+            "text": {
+                "de": "Datum",
+                "es": "Fecha",
+                "fr": "Date",
+                "it": "Data",
+                "nl": "Datum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.holiday_name",
+            "text": {
+                "de": "Name des Schließtages",
+                "es": "Nombre del cierre",
+                "fr": "Nom de la fermeture",
+                "it": "Nome della chiusura",
+                "nl": "Naam van sluitingsdag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.intro",
+            "text": {
+                "de": "Wiederverwendbare Chargengrößen, Personen, Aufgaben und Arbeitstage einmal einrichten. Das tägliche Produktionsformular bleibt kurz.",
+                "es": "Configura una vez tamaños de lote, personas, tareas y días laborables. El formulario diario de producción sigue siendo breve.",
+                "fr": "Configurez une fois les formats de lot, les personnes, les tâches et les jours ouvrés. Le formulaire quotidien reste court.",
+                "it": "Imposta una volta dimensioni dei lotti, persone, attività e giorni lavorativi. Il modulo giornaliero resta breve.",
+                "nl": "Stel batchgroottes, personen, taken en werkdagen één keer in. Het dagelijkse productieformulier blijft kort."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.last_name",
+            "text": {
+                "de": "Nachname",
+                "es": "Apellidos",
+                "fr": "Nom",
+                "it": "Cognome",
+                "nl": "Achternaam"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_default_product",
+            "text": {
+                "de": "Kein Standardprodukt",
+                "es": "Sin producto predeterminado",
+                "fr": "Aucun produit par défaut",
+                "it": "Nessun prodotto predefinito",
+                "nl": "Geen standaardproduct"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_employees",
+            "text": {
+                "de": "Noch keine Mitarbeiter.",
+                "es": "Aún no hay empleados.",
+                "fr": "Aucun employé pour le moment.",
+                "it": "Nessun dipendente ancora.",
+                "nl": "Nog geen werknemers."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_holidays",
+            "text": {
+                "de": "Noch keine Schließtage.",
+                "es": "Aún no hay cierres.",
+                "fr": "Aucune fermeture pour le moment.",
+                "it": "Nessuna chiusura ancora.",
+                "nl": "Nog geen sluitingsdagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_presets",
+            "text": {
+                "de": "Noch keine Chargengrößen.",
+                "es": "Aún no hay tamaños de lote.",
+                "fr": "Aucun format de lot pour le moment.",
+                "it": "Nessuna dimensione di lotto ancora.",
+                "nl": "Nog geen batchgroottes."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_task_sets",
+            "text": {
+                "de": "Noch keine Aufgabensätze.",
+                "es": "Aún no hay conjuntos de tareas.",
+                "fr": "Aucun jeu de tâches pour le moment.",
+                "it": "Nessun set di attività ancora.",
+                "nl": "Nog geen taaksets."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_task_types",
+            "text": {
+                "de": "Noch keine Aufgabentypen.",
+                "es": "Aún no hay tipos de tarea.",
+                "fr": "Aucun type de tâche pour le moment.",
+                "it": "Nessun tipo di attività ancora.",
+                "nl": "Nog geen taaktypes."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.preset_name",
+            "text": {
+                "de": "Name der Voreinstellung",
+                "es": "Nombre del tamaño",
+                "fr": "Nom du format",
+                "it": "Nome della dimensione",
+                "nl": "Naam van voorinstelling"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.presets",
+            "text": {
+                "de": "Chargengrößen",
+                "es": "Tamaños de lote",
+                "fr": "Formats de lot",
+                "it": "Dimensioni dei lotti",
+                "nl": "Batchgroottes"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.presets_help",
+            "text": {
+                "de": "Optionale Abkürzungen wie 12 kg Öle / 100 Einheiten. Jeder Wert bleibt bei der Planung änderbar.",
+                "es": "Atajos opcionales como 12 kg de aceites / 100 unidades. Cada valor sigue siendo editable al planificar.",
+                "fr": "Raccourcis facultatifs comme 12 kg d’huiles / 100 unités. Chaque valeur reste modifiable lors de la planification.",
+                "it": "Scorciatoie opzionali come 12 kg di oli / 100 unità. Ogni valore resta modificabile durante la pianificazione.",
+                "nl": "Optionele snelkeuzes zoals 12 kg oliën / 100 eenheden. Elke waarde blijft bewerkbaar bij het plannen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.product",
+            "text": {
+                "de": "Produkt",
+                "es": "Producto",
+                "fr": "Produit",
+                "it": "Prodotto",
+                "nl": "Product"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.recurring",
+            "text": {
+                "de": "Jedes Jahr",
+                "es": "Cada año",
+                "fr": "Chaque année",
+                "it": "Ogni anno",
+                "nl": "Elk jaar"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.remove_task",
+            "text": {
+                "de": "Aufgabe entfernen",
+                "es": "Eliminar tarea",
+                "fr": "Supprimer la tâche",
+                "it": "Rimuovi attività",
+                "nl": "Taak verwijderen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_name",
+            "text": {
+                "de": "Aufgabe",
+                "es": "Tarea",
+                "fr": "Tâche",
+                "it": "Attività",
+                "nl": "Taak"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_set_name",
+            "text": {
+                "de": "Name des Aufgabensatzes",
+                "es": "Nombre del conjunto de tareas",
+                "fr": "Nom du jeu de tâches",
+                "it": "Nome del set di attività",
+                "nl": "Naam van taakset"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_sets",
+            "text": {
+                "de": "Aufgabensätze",
+                "es": "Conjuntos de tareas",
+                "fr": "Jeux de tâches",
+                "it": "Set di attività",
+                "nl": "Taaksets"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_sets_help",
+            "text": {
+                "de": "Die erste Aufgabe liegt am Produktionstag. Weitere Aufgaben erhalten die Tage nach der Produktion.",
+                "es": "La primera tarea se fija en el día de producción; las siguientes usan los días posteriores.",
+                "fr": "La première tâche est le jour de production ; les suivantes utilisent les jours après production.",
+                "it": "La prima attività è fissata al giorno di produzione; le successive usano i giorni dopo.",
+                "nl": "De eerste taak valt op de productiedag; latere taken gebruiken de dagen na productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_types",
+            "text": {
+                "de": "Aufgabentypen",
+                "es": "Tipos de tarea",
+                "fr": "Types de tâches",
+                "it": "Tipi di attività",
+                "nl": "Taaktypes"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_types_help",
+            "text": {
+                "de": "Benennen Sie einen wiederkehrenden Schritt und geben Sie optional eine Standarddauer an.",
+                "es": "Nombra un paso repetible y, opcionalmente, indica una duración predeterminada.",
+                "fr": "Nommez une étape récurrente et indiquez éventuellement une durée par défaut.",
+                "it": "Nomina un passaggio ripetibile e indica, se vuoi, una durata predefinita.",
+                "nl": "Geef een herhaalbare stap een naam en voeg optioneel een standaardduur toe."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.title",
+            "text": {
+                "de": "Produktion einrichten",
+                "es": "Configuración de producción",
+                "fr": "Configuration de la production",
+                "it": "Impostazioni produzione",
+                "nl": "Productie instellen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.weekends",
+            "text": {
+                "de": "Wochenenden",
+                "es": "Fines de semana",
+                "fr": "Week-ends",
+                "it": "Fine settimana",
+                "nl": "Weekenden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.weekends_help",
+            "text": {
+                "de": "Legen Sie fest, ob automatische Folgetasks samstags und sonntags geplant werden dürfen.",
+                "es": "Elige si las tareas automáticas posteriores pueden programarse sábado y domingo.",
+                "fr": "Choisissez si les tâches automatiques peuvent être planifiées le samedi et le dimanche.",
+                "it": "Scegli se le attività automatiche successive possono essere pianificate sabato e domenica.",
+                "nl": "Kies of automatische vervolgtaken op zaterdag en zondag mogen worden gepland."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.working_calendar",
+            "text": {
+                "de": "Arbeitskalender",
+                "es": "Calendario laboral",
+                "fr": "Calendrier de travail",
+                "it": "Calendario lavorativo",
+                "nl": "Werkagenda"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.working_calendar_help",
+            "text": {
+                "de": "Automatische Folgetasks werden auf den nächsten Arbeitstag verschoben. Der Produktionstag selbst wird immer eingehalten.",
+                "es": "Las tareas automáticas posteriores pasan al siguiente día laborable. La fecha de producción siempre se respeta.",
+                "fr": "Les tâches automatiques passent au prochain jour ouvré. La date de production est toujours respectée.",
+                "it": "Le attività automatiche successive passano al giorno lavorativo seguente. La data di produzione è sempre rispettata.",
+                "nl": "Automatische vervolgtaken gaan naar de volgende werkdag. De productiedatum zelf wordt altijd gerespecteerd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.works_on_weekends",
+            "text": {
+                "de": "Am Wochenende arbeiten",
+                "es": "Trabajar los fines de semana",
+                "fr": "Travailler le week-end",
+                "it": "Lavorare nei fine settimana",
+                "nl": "In het weekend werken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.works_on_weekends_help",
+            "text": {
+                "de": "Wenn deaktiviert, werden Wochenendtermine für automatische Aufgaben nach vorne verschoben.",
+                "es": "Si se desactiva, las fechas de fin de semana se desplazan para las tareas automáticas.",
+                "fr": "Désactivé, les dates de week-end sont décalées pour les tâches automatiques.",
+                "it": "Se disattivato, le date del fine settimana vengono spostate per le attività automatiche.",
+                "nl": "Als dit uitstaat, worden weekenddatums voor automatische taken doorgeschoven."
             }
         },
         {

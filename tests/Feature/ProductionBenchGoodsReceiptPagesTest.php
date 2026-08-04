@@ -800,6 +800,7 @@ it('shows total mass costs without per-gram noise and labels packaging costs per
     Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $receipt->public_id])
         ->assertSeeHtml('data-receipt-detail-line="'.$massLine->id.'"')
         ->assertSeeHtml('sk-card-elevation-subtle')
+        ->assertSeeHtml('line-clamp-2 min-h-8 leading-4')
         ->assertSee('Purchased price')
         ->assertSee('Inventory value')
         ->assertSee('50.00 EUR')

@@ -226,4 +226,9 @@
     "Whoops!": "Oups !",
     "Yes": "Oui",
     "You are receiving this email because we received a password reset request for your account.": "Vous recevez cet e-mail car nous avons reçu une demande de réinitialisation de mot de passe pour votre compte."
+    ,"production_bench.navigation.production":"Configuration de la production"
+    ,"production_bench.settings.title":"Configuration de la production"
+    ,"production_bench.settings.intro":"Configurez une fois les formats de lot, les personnes, les tâches et les jours ouvrés. Le formulaire quotidien reste court."
+    ,"production_bench.common.clear":"Effacer"
+    ,"production_bench.common.save_changes":"Enregistrer les modifications"
 }

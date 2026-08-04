@@ -3,6 +3,7 @@
         'production-bench.home' => __('production_bench.navigation.home'),
         'production-bench.inventory' => __('production_bench.navigation.inventory'),
         'production-bench.purchasing.suppliers' => __('production_bench.navigation.purchasing'),
+        'production-bench.production.settings' => __('production_bench.navigation.production'),
     ] as $routeName => $label)
         <a
             href="{{ route($routeName) }}"

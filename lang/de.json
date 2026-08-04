@@ -226,4 +226,9 @@
     "Whoops!": "Ups!",
     "Yes": "Ja",
     "You are receiving this email because we received a password reset request for your account.": "Sie erhalten diese E-Mail, weil wir einen Antrag auf eine Zurücksetzung Ihres Passworts bekommen haben."
+    ,"production_bench.navigation.production":"Produktion einrichten"
+    ,"production_bench.settings.title":"Produktion einrichten"
+    ,"production_bench.settings.intro":"Legen Sie wiederverwendbare Chargengrößen, Personen, Aufgaben und Arbeitstage einmal fest. Das tägliche Formular bleibt kurz."
+    ,"production_bench.common.clear":"Leeren"
+    ,"production_bench.common.save_changes":"Änderungen speichern"
 }

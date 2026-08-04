@@ -261,6 +261,9 @@ it('renders each purchase-order item as three aligned form rows and disables com
         ->assertSeeHtml('data-receipt-line-metadata="'.$availableLine->id.'"')
         ->assertSeeHtml('data-receipt-line-checkbox="'.$availableLine->id.'"')
         ->assertSeeHtml('accent-[var(--color-accent)]')
+        ->assertSeeHtml('sk-card-elevation-subtle')
+        ->assertSeeHtml('xl:grid-cols-4')
+        ->assertDontSeeHtml('<span aria-hidden="true" class="hidden xl:block"></span>')
         ->assertSeeInOrder([
             'Ordered',
             'Previously received',
@@ -761,15 +764,15 @@ it('shows total mass costs without per-gram noise and labels packaging costs per
         'net_unit' => 'count',
     ]);
     $receipt = GoodsReceipt::factory()->for($workspace)->for($supplier)->direct()->create();
-    GoodsReceiptLine::factory()->direct()->for($receipt)->for($massListing, 'supplierListing')->create([
-        'historical_total_cost' => '50',
-        'costing_total_cost' => '50',
+    $massLine = GoodsReceiptLine::factory()->direct()->for($receipt)->for($massListing, 'supplierListing')->create([
+        'historical_total_cost' => '50.000000000',
+        'costing_total_cost' => '50.000000000',
         'original_quantity' => '5',
         'original_unit' => 'kg',
     ]);
-    GoodsReceiptLine::factory()->direct()->for($receipt)->for($packagingListing, 'supplierListing')->create([
-        'historical_total_cost' => '20',
-        'costing_total_cost' => '20',
+    $packagingLine = GoodsReceiptLine::factory()->direct()->for($receipt)->for($packagingListing, 'supplierListing')->create([
+        'historical_total_cost' => '20.000000000',
+        'costing_total_cost' => '20.000000000',
         'original_quantity' => '100',
         'original_unit' => 'count',
         'receipt_price_basis' => ListingPriceBasis::PerUnit,
@@ -780,9 +783,16 @@ it('shows total mass costs without per-gram noise and labels packaging costs per
     $this->actingAs($owner);
 
     Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $receipt->public_id])
+        ->assertSeeHtml('data-receipt-detail-line="'.$massLine->id.'"')
+        ->assertSeeHtml('sk-card-elevation-subtle')
+        ->assertSee('50.0000 EUR')
+        ->assertSee('20.0000 EUR')
         ->assertDontSee('/ g')
         ->assertDontSee('/ count')
         ->assertSee('/ unit');
+
+    expect($massLine->fresh()->costing_total_cost)->toBe('50.000000000')
+        ->and($packagingLine->fresh()->costing_total_cost)->toBe('20.000000000');
 });
 
 it('renders field-level errors for dynamic PO and direct receipt inputs', function (): void {

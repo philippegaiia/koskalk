@@ -12,7 +12,10 @@
                 <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.index_intro') }}</p>
             </div>
             @if ($isBenchActive)
-                <a href="{{ route('production-bench.production.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.new') }}</a>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" wire:click="prepareSelected" class="sk-btn sk-btn-secondary" @disabled($isReadOnly)>{{ __('production_bench.production.prepare_stock') }}</button>
+                    <a href="{{ route('production-bench.production.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.new') }}</a>
+                </div>
             @endif
         </header>
 
@@ -40,12 +43,20 @@
             </label>
         </section>
 
+        @error('selectedProductionIds')
+            <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+        @enderror
+
         <section aria-labelledby="production-list-heading" class="sk-card overflow-hidden">
             <h2 id="production-list-heading" class="sr-only">{{ __('production_bench.production.index_title') }}</h2>
             <div class="divide-y divide-[var(--color-line)]">
                 @forelse ($productions as $production)
-                    <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="block px-5 py-5 transition hover:bg-[var(--color-panel-muted)] sm:px-6">
-                        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex gap-4 px-5 py-5 transition hover:bg-[var(--color-panel-muted)] sm:px-6">
+                        <div class="pt-1">
+                            <input type="checkbox" wire:model.live="selectedProductionIds" value="{{ $production->id }}" @disabled($isReadOnly || ! in_array($production->status->value, ['scheduled', 'reserved'], true)) aria-label="{{ __('production_bench.production.select_production', ['name' => $production->recipe?->name ?? __('production_bench.production.unknown_product')]) }}" style="accent-color: var(--color-accent);" class="h-5 w-5 rounded border-[var(--color-line-strong)]">
+                        </div>
+                        <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="min-w-0 flex-1">
+                            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $production->recipe?->name ?? __('production_bench.production.unknown_product') }}</h3>
@@ -59,8 +70,9 @@
                                 <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.expected_units') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->expected_units }}</dd></div>
                                 <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.tasks') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->tasks->count() }}</dd></div>
                             </dl>
-                        </div>
-                    </a>
+                            </div>
+                        </a>
+                    </div>
                 @empty
                     <p class="p-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_productions') }}</p>
                 @endforelse

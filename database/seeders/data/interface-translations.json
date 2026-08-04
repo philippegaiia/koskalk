@@ -9240,6 +9240,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.automatic_lots",
+            "text": {
+                "de": "Vorgeschlagene FEFO-Lose",
+                "es": "Lotes FEFO sugeridos",
+                "fr": "Lots FEFO proposés",
+                "it": "Lotti FEFO suggeriti",
+                "nl": "Voorgestelde FEFO-partijen"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.available",
             "text": {
                 "de": "Verfügbar",
@@ -9247,6 +9258,17 @@
                 "fr": "Disponible",
                 "it": "Disponibile",
                 "nl": "Beschikbaar"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.available_quantity",
+            "text": {
+                "de": "verfügbar",
+                "es": "disponible",
+                "fr": "disponible",
+                "it": "disponibile",
+                "nl": "beschikbaar"
             }
         },
         {
@@ -9339,6 +9361,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.choose_lots_manually",
+            "text": {
+                "de": "Lose manuell auswählen",
+                "es": "Elegir lotes manualmente",
+                "fr": "Choisir les lots manuellement",
+                "it": "Scegli lotti manualmente",
+                "nl": "Partijen handmatig kiezen"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.choose_product_to_preview",
             "text": {
                 "de": "Wählen Sie ein Produkt, um die skalierten Materialien zu sehen.",
@@ -9357,6 +9390,28 @@
                 "fr": "Terminée",
                 "it": "Completata",
                 "nl": "Voltooid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.confirm_prepare_stock",
+            "text": {
+                "de": "Bestandsvorbereitung bestätigen",
+                "es": "Confirmar preparación de existencias",
+                "fr": "Confirmer la préparation du stock",
+                "it": "Conferma preparazione scorte",
+                "nl": "Voorraadvoorbereiding bevestigen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.confirm_prepare_stock_help",
+            "text": {
+                "de": "Reservierungen werden gemeinsam gebucht. Fehlt für eine Produktion Bestand, bleibt keine der ausgewählten Produktionen unverändert.",
+                "es": "Las reservas se registran juntas. Si falta stock para una producción, ninguna de las producciones seleccionadas cambiará.",
+                "fr": "Les réservations sont enregistrées ensemble. Si une production est en manque, aucune production sélectionnée ne change.",
+                "it": "Le prenotazioni vengono registrate insieme. Se manca stock per una produzione, nessuna produzione selezionata cambia.",
+                "nl": "Reserveringen worden samen geboekt. Als één productie voorraad tekortkomt, verandert geen van de geselecteerde producties."
             }
         },
         {
@@ -9471,6 +9526,28 @@
         },
         {
             "group": "production_bench",
+            "key": "production.lots",
+            "text": {
+                "de": "Lose",
+                "es": "Lotes",
+                "fr": "Lots",
+                "it": "Lotti",
+                "nl": "Partijen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.manual_lots",
+            "text": {
+                "de": "Lose manuell auswählen",
+                "es": "Elegir lotes manualmente",
+                "fr": "Choisir les lots manuellement",
+                "it": "Scegli lotti manualmente",
+                "nl": "Partijen handmatig kiezen"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.material",
             "text": {
                 "de": "Material",
@@ -9482,6 +9559,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.missing",
+            "text": {
+                "de": "Fehlend",
+                "es": "Faltante",
+                "fr": "Manquant",
+                "it": "Mancante",
+                "nl": "Ontbrekend"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.new",
             "text": {
                 "de": "Neue Produktion",
@@ -9489,6 +9577,28 @@
                 "fr": "Nouvelle production",
                 "it": "Nuova produzione",
                 "nl": "Nieuwe productie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.no_eligible_lots",
+            "text": {
+                "de": "Keine geeigneten freigegebenen Lose verfügbar.",
+                "es": "No hay lotes liberados aptos disponibles.",
+                "fr": "Aucun lot libéré éligible n’est disponible.",
+                "it": "Non sono disponibili lotti rilasciati idonei.",
+                "nl": "Geen geschikte vrijgegeven partijen beschikbaar."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.no_expiry",
+            "text": {
+                "de": "kein Ablaufdatum",
+                "es": "sin caducidad",
+                "fr": "sans expiration",
+                "it": "senza scadenza",
+                "nl": "geen vervaldatum"
             }
         },
         {
@@ -9603,6 +9713,50 @@
         },
         {
             "group": "production_bench",
+            "key": "production.prepare_stock",
+            "text": {
+                "de": "Bestand vorbereiten",
+                "es": "Preparar existencias",
+                "fr": "Préparer le stock",
+                "it": "Prepara scorte",
+                "nl": "Voorraad voorbereiden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.prepare_stock_help",
+            "text": {
+                "de": "Prüfen Sie die vorgeschlagenen Lose vor der Bestätigung. Dadurch wird der verfügbare Bestand reduziert, aber nicht der physische Bestand.",
+                "es": "Revise los lotes sugeridos antes de confirmar. Esto reduce las existencias disponibles, pero nunca las existencias físicas.",
+                "fr": "Vérifiez les lots proposés avant de confirmer. Le stock disponible diminue, mais jamais le stock physique.",
+                "it": "Controlla i lotti suggeriti prima di confermare. Riduce le scorte disponibili, mai quelle fisiche.",
+                "nl": "Controleer de voorgestelde partijen voordat je bevestigt. Dit vermindert de beschikbare voorraad, maar nooit de fysieke voorraad."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.prepare_stock_help_short",
+            "text": {
+                "de": "Prüfen Sie die geeigneten Lose und reservieren Sie den Bestand ausdrücklich, wenn Sie bereit sind.",
+                "es": "Revise los lotes aptos y reserve las existencias explícitamente cuando esté listo.",
+                "fr": "Vérifiez les lots éligibles et réservez explicitement le stock quand vous êtes prêt.",
+                "it": "Controlla i lotti idonei e riserva esplicitamente le scorte quando sei pronto.",
+                "nl": "Controleer geschikte partijen en reserveer voorraad expliciet wanneer je klaar bent."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.prepare_stock_title",
+            "text": {
+                "de": "Produktionsbestand vorbereiten",
+                "es": "Preparar existencias de producción",
+                "fr": "Préparer le stock de production",
+                "it": "Prepara le scorte di produzione",
+                "nl": "Productievoorraad voorbereiden"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.preset",
             "text": {
                 "de": "Voreinstellung für Chargengröße",
@@ -9625,6 +9779,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.preview_only",
+            "text": {
+                "de": "Nur Vorschau bis zur Bestätigung.",
+                "es": "Solo vista previa hasta confirmar.",
+                "fr": "Aperçu uniquement jusqu’à confirmation.",
+                "it": "Solo anteprima fino alla conferma.",
+                "nl": "Alleen voorbeeld totdat je bevestigt."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.production_date",
             "text": {
                 "de": "Produktionstag",
@@ -9643,6 +9808,39 @@
                 "fr": "Les dates des tâches suivantes sont calculées à partir de cette date.",
                 "it": "Le date delle attività successive vengono calcolate da questa data.",
                 "nl": "Datums voor vervolgtaken worden vanaf deze datum berekend."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.proposed",
+            "text": {
+                "de": "Vorgeschlagen",
+                "es": "Propuesto",
+                "fr": "Proposé",
+                "it": "Proposto",
+                "nl": "Voorgesteld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.release_stock",
+            "text": {
+                "de": "Bestand freigeben",
+                "es": "Liberar existencias",
+                "fr": "Libérer le stock",
+                "it": "Rilascia scorte",
+                "nl": "Voorraad vrijgeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.remaining_to_prepare",
+            "text": {
+                "de": "verbleibend",
+                "es": "pendiente",
+                "fr": "restant",
+                "it": "rimanente",
+                "nl": "resterend"
             }
         },
         {
@@ -9720,6 +9918,28 @@
                 "fr": "Choisissez un produit avec une formule publiée.",
                 "it": "Scegli un prodotto con una formula pubblicata.",
                 "nl": "Kies een product met een gepubliceerde formule."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.select_production",
+            "text": {
+                "de": ":name auswählen",
+                "es": "Seleccionar :name",
+                "fr": "Sélectionner :name",
+                "it": "Seleziona :name",
+                "nl": ":name selecteren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.select_production_to_prepare",
+            "text": {
+                "de": "Wählen Sie mindestens eine geplante Produktion aus.",
+                "es": "Seleccione al menos una producción planificada.",
+                "fr": "Sélectionnez au moins une production planifiée.",
+                "it": "Seleziona almeno una produzione pianificata.",
+                "nl": "Selecteer minstens één geplande productie."
             }
         },
         {
@@ -9834,6 +10054,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.stock_prepared_success",
+            "text": {
+                "de": "Produktionsbestand vorbereitet.",
+                "es": "Existencias de producción preparadas.",
+                "fr": "Stock de production préparé.",
+                "it": "Scorte di produzione preparate.",
+                "nl": "Productievoorraad voorbereid."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.task_schedule",
             "text": {
                 "de": "Aufgabentermine",
@@ -9907,6 +10138,17 @@
                 "fr": "Produit inconnu",
                 "it": "Prodotto sconosciuto",
                 "nl": "Onbekend product"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.use_automatic_lots",
+            "text": {
+                "de": "Vorgeschlagene Lose verwenden",
+                "es": "Usar lotes sugeridos",
+                "fr": "Utiliser les lots proposés",
+                "it": "Usa lotti suggeriti",
+                "nl": "Voorgestelde partijen gebruiken"
             }
         },
         {

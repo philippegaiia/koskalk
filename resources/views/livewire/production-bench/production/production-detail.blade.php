@@ -21,6 +21,24 @@
         <span class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent-strong)]">{{ $production->status->label() }}</span>
     </header>
 
+    @if (in_array($production->status->value, ['scheduled', 'reserved'], true))
+        <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-4">
+            <div>
+                <p class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.prepare_stock') }}</p>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.prepare_stock_help_short') }}</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                @if ($production->status->value === 'reserved')
+                    <button type="button" wire:click="releaseStock" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-ghost">{{ __('production_bench.production.release_stock') }}</button>
+                @endif
+                <a href="{{ route('production-bench.production.prepare', $production) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.prepare_stock') }}</a>
+            </div>
+        </section>
+        @error('production')
+            <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+        @enderror
+    @endif
+
     <section class="sk-card grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</p></div>
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.batch_size') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->basis_input_value }} {{ $production->basis_input_unit->value }}</p></div>
@@ -60,7 +78,7 @@
         </div>
     </section>
 
-    @if (in_array($production->status->value, ['draft', 'scheduled'], true))
+    @if (in_array($production->status->value, ['draft', 'scheduled', 'reserved'], true))
         <section aria-labelledby="cancel-production-heading" class="sk-card space-y-4 p-5 sm:p-6">
             <div><h2 id="cancel-production-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.cancel') }}</h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.cancel_help') }}</p></div>
             <form wire:submit="cancel" class="space-y-3">

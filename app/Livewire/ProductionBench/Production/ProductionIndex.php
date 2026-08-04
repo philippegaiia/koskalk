@@ -23,6 +23,9 @@ class ProductionIndex extends Component
 
     public string $dateTo = '';
 
+    /** @var list<int> */
+    public array $selectedProductionIds = [];
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -41,6 +44,24 @@ class ProductionIndex extends Component
     public function updatedDateTo(): void
     {
         $this->resetPage();
+    }
+
+    public function prepareSelected(): void
+    {
+        $this->selectedProductionIds = array_values(array_filter(
+            array_map('intval', $this->selectedProductionIds),
+            fn (int $id): bool => $id > 0,
+        ));
+
+        if ($this->selectedProductionIds === []) {
+            $this->addError('selectedProductionIds', __('production_bench.production.select_production_to_prepare'));
+
+            return;
+        }
+
+        $this->redirectRoute('production-bench.production.prepare', [
+            'ids' => implode(',', $this->selectedProductionIds),
+        ]);
     }
 
     public function render(ProductionBenchAccess $access): View

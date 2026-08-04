@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\CancelProduction;
+use App\Actions\Production\ReleaseProductionStock;
 use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
@@ -56,6 +57,26 @@ class ProductionDetail extends Component
 
         $this->cancellationReason = '';
         $this->dispatch('production-cancelled');
+    }
+
+    public function releaseStock(ReleaseProductionStock $releaseProductionStock): void
+    {
+        try {
+            $releaseProductionStock->handle(
+                actor: $this->user(),
+                production: $this->production(),
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->dispatch('production-stock-released');
     }
 
     public function render(ProductionBenchAccess $access): View

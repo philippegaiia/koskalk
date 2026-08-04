@@ -419,7 +419,7 @@ it('rolls back every line when one direct packaging line has a fractional actual
             ],
         ],
         receivedAt: '2026-08-03',
-    ))->toThrow(ValidationException::class, 'Packaging receipts require a positive whole count.');
+    ))->toThrow(ValidationException::class, 'Packaging receipts require a positive whole number of units.');
 
     expect(GoodsReceipt::query()->count())->toBe(0)
         ->and(StockLot::query()->count())->toBe(0)

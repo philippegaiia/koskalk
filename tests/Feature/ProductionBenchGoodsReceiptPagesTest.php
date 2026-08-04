@@ -9,6 +9,7 @@ use App\Livewire\ProductionBench\Purchasing\ReceiptIndex;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\Ingredient;
+use App\Models\PackagingItem;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\Supplier;
@@ -18,6 +19,7 @@ use App\Models\Workspace;
 use App\ProcurementStage;
 use App\PurchaseOrderStatus;
 use App\Services\ProductionBenchAccess;
+use App\StockUnitKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -639,6 +641,44 @@ it('renders immutable receipt relationships and requires a reason to reverse', f
         ->assertHasNoErrors()
         ->assertSee('Delivery entered twice')
         ->assertSee('Reversed');
+});
+
+it('shows total mass costs without per-gram noise and labels packaging costs per unit', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $massListing = SupplierListing::factory()->for($workspace)->for($supplier)->create();
+    $packagingListing = SupplierListing::factory()->for($workspace)->for($supplier)->create([
+        'ingredient_id' => null,
+        'packaging_item_id' => PackagingItem::factory(),
+        'unit_kind' => StockUnitKind::Count,
+        'purchase_format' => 'Box of 100 units',
+        'canonical_quantity_per_purchase_format' => '100',
+        'net_quantity' => '100',
+        'net_unit' => 'count',
+    ]);
+    $receipt = GoodsReceipt::factory()->for($workspace)->for($supplier)->direct()->create();
+    GoodsReceiptLine::factory()->direct()->for($receipt)->for($massListing, 'supplierListing')->create([
+        'historical_total_cost' => '50',
+        'costing_total_cost' => '50',
+        'original_quantity' => '5',
+        'original_unit' => 'kg',
+    ]);
+    GoodsReceiptLine::factory()->direct()->for($receipt)->for($packagingListing, 'supplierListing')->create([
+        'historical_total_cost' => '20',
+        'costing_total_cost' => '20',
+        'original_quantity' => '100',
+        'original_unit' => 'count',
+        'receipt_price_basis' => ListingPriceBasis::PerUnit,
+        'receipt_price_amount' => '0.20',
+        'receipt_price_unit' => 'count',
+    ]);
+
+    $this->actingAs($owner);
+
+    Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $receipt->public_id])
+        ->assertDontSee('/ g')
+        ->assertDontSee('/ count')
+        ->assertSee('/ unit');
 });
 
 it('renders field-level errors for dynamic PO and direct receipt inputs', function (): void {

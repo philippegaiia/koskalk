@@ -103,6 +103,8 @@ A **task set** is a named, ordered collection of task types. Each task-set item 
 
 The relative day belongs to the task-set item, not the task type, because the same kind of work may occur at a different delay in another process.
 
+The first item is the production-day anchor. Its relative day is always `0`, and its generated task date is always the production date. It is not shifted away from a configured weekend or holiday because the maker's explicit production date is respected.
+
 A product may have one optional default task set. When the product is selected, that set is preselected but may be replaced or removed for the individual production.
 
 Checkpoint 3 uses one task-set representation only. It does not reproduce Cosmood's legacy dual template structures, task dependencies, bypass reasons, capacity flags, or production-line associations.
@@ -152,13 +154,22 @@ The maker may plan despite shortages. Saving creates the production, its snapsho
 
 Generated tasks snapshot the task name, relative offset, duration, and scheduled date used by that production. Later edits to a reusable task set do not silently rewrite existing productions.
 
+The first generated task and the production date are synchronized before production starts:
+
+- changing the production date moves the first task to exactly that date;
+- changing the first task date changes the production date;
+- either change recalculates the other unfinished automatically scheduled tasks;
+- the first task cannot hold an independent custom date.
+
 When the production date changes:
 
 - unfinished automatically scheduled tasks are recalculated from their stored offsets;
 - completed tasks are never moved;
 - tasks with a custom date are never moved.
 
-A maker may change an individual task date. The task becomes visibly marked **Custom date**. A **Reset to automatic date** action reconnects it to the production date and task-set offset.
+Once production has started, changing the production-date anchor is no longer a planning reschedule and is handled through the execution record rather than silently moving tasks.
+
+A maker may change the date of any later task. The task becomes visibly marked **Custom date**. A **Reset to automatic date** action reconnects it to the production date and task-set offset.
 
 Tasks may be assigned to an active employee, completed, reopened when permitted, and viewed from their production. Employee assignment does not change scheduling.
 
@@ -371,6 +382,7 @@ Shortages may link the maker to purchasing, but they do not create orders automa
 - Flash generation is idempotent against duplicate submission.
 - Generated productions are independent records; there is no hidden wave aggregate.
 - Task-date recalculation never moves completed or custom-dated tasks.
+- The first generated task remains synchronized with the production date and is exempt from non-working-day shifting.
 - Automatic task dates skip configured non-working days; explicit production dates are respected.
 - Reservation confirmation is explicit, lot-specific, transactionally locked, and rejects over-reservation.
 - Multiple reservations may satisfy one requirement; duplicate requirement lines are not used for lot splitting.
@@ -389,6 +401,7 @@ The review demonstrates:
 - a soap product with `12 kg / 100 units` and `26 kg / 288 units` presets;
 - a product with no preset and manual quantity entry;
 - a default task set generating dates around a weekend and recurring holiday;
+- the first task remaining exactly synchronized with the production date;
 - moving the production date and automatically rescheduling unfinished tasks;
 - manually changing one task date and assigning an employee;
 - List, Month, Week, and Agenda production views;

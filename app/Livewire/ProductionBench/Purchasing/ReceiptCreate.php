@@ -70,6 +70,10 @@ class ReceiptCreate extends Component
     #[Locked]
     public array $lineUnitKinds = [];
 
+    /** @var array<int, string> */
+    #[Locked]
+    public array $linePriceUnits = [];
+
     public function mount(ProductionBenchAccess $access): void
     {
         abort_unless($access->isActive($this->workspace()), 403);
@@ -102,6 +106,7 @@ class ReceiptCreate extends Component
         $this->actualQuantityEdited = [];
         $this->nominalCanonicalQuantities = [];
         $this->lineUnitKinds = [];
+        $this->linePriceUnits = [];
         $this->resetValidation();
     }
 
@@ -112,6 +117,7 @@ class ReceiptCreate extends Component
         $this->actualQuantityEdited = [];
         $this->nominalCanonicalQuantities = [];
         $this->lineUnitKinds = [];
+        $this->linePriceUnits = [];
         $this->initializeOrderLines();
     }
 
@@ -123,12 +129,15 @@ class ReceiptCreate extends Component
         $this->actualQuantityEdited = [];
         $this->nominalCanonicalQuantities = [];
         $this->lineUnitKinds = [];
+        $this->linePriceUnits = [];
 
         foreach ($this->directListings() as $listing) {
             $this->lineInputs[$listing->id] = $this->defaultListingInput($listing);
             $this->actualQuantityEdited[$listing->id] = false;
             $this->nominalCanonicalQuantities[$listing->id] = $listing->canonical_quantity_per_purchase_format;
             $this->lineUnitKinds[$listing->id] = $listing->unit_kind->value;
+            $this->linePriceUnits[$listing->id] = $listing->price_unit
+                ?? ($listing->unit_kind === StockUnitKind::Count ? 'count' : $listing->net_unit);
         }
     }
 
@@ -143,6 +152,8 @@ class ReceiptCreate extends Component
             $this->actualQuantityEdited[$listing->id] = false;
             $this->nominalCanonicalQuantities[$listing->id] = $listing->canonical_quantity_per_purchase_format;
             $this->lineUnitKinds[$listing->id] = $listing->unit_kind->value;
+            $this->linePriceUnits[$listing->id] = $listing->price_unit
+                ?? ($listing->unit_kind === StockUnitKind::Count ? 'count' : $listing->net_unit);
         }
     }
 
@@ -162,6 +173,15 @@ class ReceiptCreate extends Component
 
         if ($field === 'actual_quantity') {
             $this->actualQuantityEdited[$lineId] = true;
+
+            return;
+        }
+
+        if ($field === 'receipt_price_basis') {
+            $basis = $value instanceof ListingPriceBasis ? $value->value : (string) $value;
+            $this->lineInputs[$lineId]['receipt_price_unit'] = $basis === ListingPriceBasis::PerUnit->value
+                ? ($this->linePriceUnits[$lineId] ?? null)
+                : null;
 
             return;
         }
@@ -342,6 +362,8 @@ class ReceiptCreate extends Component
                 $this->actualQuantityEdited[$line->id] = false;
                 $this->nominalCanonicalQuantities[$line->id] = $line->canonical_quantity_per_pack;
                 $this->lineUnitKinds[$line->id] = $line->unit_kind->value;
+                $this->linePriceUnits[$line->id] = $line->price_unit
+                    ?? ($line->unit_kind === StockUnitKind::Count ? 'count' : ($line->supplierListing?->net_unit ?? 'kg'));
             }
         }
     }

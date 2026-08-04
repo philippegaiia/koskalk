@@ -9174,6 +9174,17 @@
         },
         {
             "group": "production_bench",
+            "key": "receipt.actual_quantity_help",
+            "text": {
+                "de": "Wird aus der Gebindemenge abgeleitet; nur ändern, wenn der gelieferte Inhalt abweicht.",
+                "es": "Se calcula a partir del paquete; cámbiela solo si difiere el contenido entregado.",
+                "fr": "Calculée à partir du conditionnement ; modifiez-la uniquement si le contenu livré diffère.",
+                "it": "Viene calcolata dalla confezione; modificala solo se il contenuto ricevuto è diverso.",
+                "nl": "Afgeleid van de verpakking; wijzig dit alleen als de geleverde inhoud afwijkt."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "receipt.attach_document",
             "text": {
                 "de": "Dokument anhängen",
@@ -9720,6 +9731,17 @@
                 "fr": "Conditionnements reçus",
                 "it": "Confezioni ricevute",
                 "nl": "Ontvangen verpakkingen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.formats_help",
+            "text": {
+                "de": "Zählt die für diese Bestellung erhaltenen Gebinde.",
+                "es": "Cuenta los paquetes recibidos para este pedido.",
+                "fr": "Compte les conditionnements reçus pour cette commande.",
+                "it": "Conta le confezioni ricevute per questo ordine.",
+                "nl": "Telt de ontvangen verpakkingen voor deze bestelling."
             }
         },
         {
@@ -10567,6 +10589,17 @@
                 "fr": "Conditionnement complet",
                 "it": "Formato completo",
                 "nl": "Totaal formaat"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.unit_locked_help",
+            "text": {
+                "de": "Durch das Lieferantenangebot festgelegt.",
+                "es": "Fijada por la oferta del proveedor.",
+                "fr": "Fixée par l’offre du fournisseur.",
+                "it": "Fissata dall’offerta del fornitore.",
+                "nl": "Vastgelegd door de leveranciersvermelding."
             }
         },
         {

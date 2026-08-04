@@ -202,6 +202,16 @@ it('defaults purchase-order receipt quantities to the full outstanding amount', 
     expect($component->get("lineInputs.{$line->id}.packs_received"))->toBe(3)
         ->and($component->get("lineInputs.{$line->id}.actual_quantity"))->toBe('15.00')
         ->and($component->get("lineInputs.{$line->id}.receipt_price_amount"))->toBe('19.00');
+
+    $component
+        ->set("lineInputs.{$line->id}.receipt_price_basis", ListingPriceBasis::PerUnit->value);
+
+    expect($component->get("lineInputs.{$line->id}.receipt_price_unit"))->toBe($line->supplierListing->net_unit);
+
+    $component
+        ->set("lineInputs.{$line->id}.receipt_price_basis", ListingPriceBasis::TotalPurchaseFormat->value);
+
+    expect($component->get("lineInputs.{$line->id}.receipt_price_unit"))->toBeNull();
 });
 
 it('keeps missing receipt prices blank and preserves four decimal prices', function (): void {
@@ -260,6 +270,9 @@ it('renders each purchase-order item as three aligned form rows and disables com
         ->assertSeeHtml('data-receipt-line-details="'.$availableLine->id.'"')
         ->assertSeeHtml('data-receipt-line-metadata="'.$availableLine->id.'"')
         ->assertSeeHtml('data-receipt-line-checkbox="'.$availableLine->id.'"')
+        ->assertSeeHtml('data-receipt-fixed-unit="'.$availableLine->id.'"')
+        ->assertSeeHtml('data-receipt-price-unit-locked="'.$availableLine->id.'"')
+        ->assertSeeHtml('aria-disabled="true" disabled')
         ->assertSeeHtml('accent-[var(--color-accent)]')
         ->assertSeeHtml('sk-card-elevation-subtle')
         ->assertSeeHtml('xl:grid-cols-4')
@@ -392,6 +405,8 @@ it('exposes pressed source semantics and locked currencies for both receipt sour
         ->set('supplierId', $supplier->id)
         ->assertSee($listing->purchase_format)
         ->assertSeeHtml('data-receipt-currency-locked')
+        ->assertSeeHtml('data-receipt-fixed-unit="'.$listing->id.'"')
+        ->assertSeeHtml('data-receipt-price-unit-locked="'.$listing->id.'"')
         ->assertSeeHtml('readonly')
         ->assertSee('Currency is fixed');
 });

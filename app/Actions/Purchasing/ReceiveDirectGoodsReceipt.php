@@ -260,6 +260,9 @@ class ReceiveDirectGoodsReceipt
             ? $this->positiveMassQuantity($input['actual_quantity'], $input['actual_unit'])
             : $this->countQuantity($input['actual_quantity'], $input['actual_unit']);
         $priceUnit = $input['receipt_price_unit'] ?? null;
+        $priceUnit = $basis === ListingPriceBasis::TotalPurchaseFormat
+            ? null
+            : ($priceUnit ?: ($listing->price_unit ?? ($listing->unit_kind === StockUnitKind::Count ? 'count' : $listing->net_unit)));
         $calculatedPrice = $listing->unit_kind === StockUnitKind::Mass
             ? $this->priceCalculator->forMass(
                 $listing->net_quantity,

@@ -182,6 +182,10 @@ class ReceivePurchaseOrder
                 $receiptPriceUnit = array_key_exists('receipt_price_unit', $input)
                     ? $input['receipt_price_unit']
                     : ($hasCompletePriceBasis ? $line->price_unit : null);
+
+                $receiptPriceUnit = $receiptPriceBasis === ListingPriceBasis::TotalPurchaseFormat
+                    ? null
+                    : ($receiptPriceUnit ?: ($line->price_unit ?? ($line->unit_kind === StockUnitKind::Count ? 'count' : $listing->net_unit)));
                 $currency = strtoupper(trim($input['currency'] ?? $line->currency));
 
                 if (! $receiptPriceBasis instanceof ListingPriceBasis) {

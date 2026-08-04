@@ -151,6 +151,14 @@ it('reverses a direct receipt without requiring a purchase order', function (): 
         ->for($supplier)
         ->for(Ingredient::factory()->create())
         ->create();
+    $listingPriceSnapshot = $listing->only([
+        'price_basis',
+        'price_amount',
+        'price_unit',
+        'total_price',
+        'currency',
+    ]);
+    $listingPriceRecordedAt = $listing->price_recorded_at;
     $receipt = app(ReceiveDirectGoodsReceipt::class)->handle(
         actor: $owner,
         workspace: $workspace,
@@ -162,7 +170,7 @@ it('reverses a direct receipt without requiring a purchase order', function (): 
             'actual_quantity' => '4.8',
             'actual_unit' => 'kg',
             'receipt_price_basis' => ListingPriceBasis::TotalPurchaseFormat,
-            'receipt_price_amount' => '50',
+            'receipt_price_amount' => '75',
             'currency' => 'EUR',
         ]],
         receivedAt: '2026-08-03',
@@ -192,6 +200,8 @@ it('reverses a direct receipt without requiring a purchase order', function (): 
         ->and($line->refresh()->only(array_keys($receiptPriceSnapshot)))->toBe($receiptPriceSnapshot)
         ->and($lot->refresh()->only(array_keys($lotCostSnapshot)))->toBe($lotCostSnapshot)
         ->and($lot->historical_unit_cost)->toBe($historicalUnitCost)
+        ->and($listing->refresh()->only(array_keys($listingPriceSnapshot)))->toBe($listingPriceSnapshot)
+        ->and($listing->price_recorded_at?->equalTo($listingPriceRecordedAt))->toBeTrue()
         ->and($currentPrice->refresh()->source_type)->toBe(MaterialPriceSource::SupplierListing)
         ->and($currentPrice->source_id)->toBe($listing->id)
         ->and($currentPrice->price_per_canonical_unit)->toBe('0.010000000000')

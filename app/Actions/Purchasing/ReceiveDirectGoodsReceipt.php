@@ -18,7 +18,6 @@ use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\StockUnitKind;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -136,14 +135,6 @@ class ReceiveDirectGoodsReceipt
             ]);
 
             foreach ($normalizedLines as $index => $line) {
-                $line['listing']->update([
-                    'price_basis' => $line['receipt_price_basis'],
-                    'price_amount' => $line['receipt_price_amount'],
-                    'price_unit' => $line['receipt_price_unit'],
-                    'total_price' => $line['purchase_format_price'],
-                    'currency' => $line['currency'],
-                    'price_recorded_at' => $line['price_recorded_at'],
-                ]);
                 $this->postLine->handle(
                     actor: $actor,
                     workspace: $lockedWorkspace,
@@ -201,7 +192,6 @@ class ReceiveDirectGoodsReceipt
      *   supplier_batch_number: ?string,
      *   expires_at: ?string,
      *   notes: ?string,
-     *   price_recorded_at: Carbon,
      * }
      */
     private function normalizeLine(
@@ -304,7 +294,6 @@ class ReceiveDirectGoodsReceipt
             'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
             'expires_at' => $input['expires_at'] ?? null,
             'notes' => $input['notes'] ?? null,
-            'price_recorded_at' => now(),
         ];
     }
 

@@ -525,8 +525,16 @@ it('rejects forged listings that point to another workspaces private subjects', 
         ->and(StockLot::query()->count())->toBe(0);
 })->with(['ingredient', 'packaging']);
 
-it('updates the locked listing price while keeping receipt snapshots independent', function (): void {
+it('keeps the supplier listing price independent from immutable receipt and lot costs', function (): void {
     [$owner, $workspace, $supplier, , $listing] = directReceiptContext();
+    $listingPriceSnapshot = $listing->only([
+        'price_basis',
+        'price_amount',
+        'price_unit',
+        'total_price',
+        'currency',
+    ]);
+    $listingPriceRecordedAt = $listing->price_recorded_at;
 
     $receipt = app(ReceiveDirectGoodsReceipt::class)->handle(
         actor: $owner,
@@ -547,14 +555,12 @@ it('updates the locked listing price while keeping receipt snapshots independent
     );
     $line = $receipt->lines()->sole();
 
-    expect($listing->refresh()->price_basis)->toBe(ListingPriceBasis::PerUnit)
-        ->and($listing->price_amount)->toBe('12.000000000')
-        ->and($listing->price_unit)->toBe('kg')
-        ->and($listing->total_price)->toBe('60.000000000')
-        ->and($listing->currency)->toBe('EUR')
-        ->and($listing->price_recorded_at)->not->toBeNull()
+    expect($listing->refresh()->only(array_keys($listingPriceSnapshot)))->toBe($listingPriceSnapshot)
+        ->and($listing->price_recorded_at?->equalTo($listingPriceRecordedAt))->toBeTrue()
         ->and($line->receipt_price_amount)->toBe('12.000000000')
-        ->and($line->purchase_format_price)->toBe('60.000000000');
+        ->and($line->purchase_format_price)->toBe('60.000000000')
+        ->and($line->historical_total_cost)->toBe('60.000000000')
+        ->and($line->stockLot->historical_unit_cost)->toBe('0.012500000');
 
     $listing->update([
         'price_amount' => '99',
@@ -562,7 +568,8 @@ it('updates the locked listing price while keeping receipt snapshots independent
     ]);
 
     expect($line->refresh()->receipt_price_amount)->toBe('12.000000000')
-        ->and($line->purchase_format_price)->toBe('60.000000000');
+        ->and($line->purchase_format_price)->toBe('60.000000000')
+        ->and($line->stockLot->refresh()->historical_unit_cost)->toBe('0.012500000');
 });
 
 it('validates direct receipt metadata before any write', function (string $case): void {

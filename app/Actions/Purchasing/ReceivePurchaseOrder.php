@@ -245,23 +245,6 @@ class ReceivePurchaseOrder
             foreach ($normalizedLines as $normalizedLine) {
                 $input = $normalizedLine['input'];
                 $line = $normalizedLine['line'];
-                $listingFormatStillMatches = $normalizedLine['listing']->unit_kind === $line->unit_kind
-                    && bccomp(
-                        $normalizedLine['listing']->canonical_quantity_per_purchase_format,
-                        $line->canonical_quantity_per_pack,
-                        9,
-                    ) === 0;
-
-                if ($listingFormatStillMatches) {
-                    $normalizedLine['listing']->update([
-                        'price_basis' => $normalizedLine['receipt_price_basis'],
-                        'price_amount' => $normalizedLine['receipt_price_amount'],
-                        'price_unit' => $normalizedLine['receipt_price_unit'],
-                        'total_price' => $normalizedLine['purchase_format_price'],
-                        'currency' => $normalizedLine['currency'],
-                        'price_recorded_at' => now(),
-                    ]);
-                }
                 $this->postLine->handle(
                     actor: $actor,
                     workspace: $lockedWorkspace,

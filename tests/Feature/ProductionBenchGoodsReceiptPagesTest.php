@@ -459,9 +459,17 @@ it('returns the original receipt when the same submission key is retried', funct
         ->and($first->lines()->sole()->stockLot->movements()->count())->toBe(1);
 });
 
-it('posts an edited purchase-order receipt price snapshot and updates the listing projection', function (): void {
+it('posts an edited purchase-order receipt price snapshot without changing the supplier listing', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     [, $listing, $order, $line] = outstandingReceiptOrder($owner, $workspace);
+    $listingPriceSnapshot = $listing->only([
+        'price_basis',
+        'price_amount',
+        'price_unit',
+        'total_price',
+        'currency',
+    ]);
+    $listingPriceRecordedAt = $listing->price_recorded_at;
 
     $receipt = app(ReceivePurchaseOrder::class)->handle(
         actor: $owner,
@@ -487,8 +495,8 @@ it('posts an edited purchase-order receipt price snapshot and updates the listin
         ->and($receiptLine->purchase_format_price)->toBe('60.000000000')
         ->and($receiptLine->historical_total_cost)->toBe('60.000000000')
         ->and($receiptLine->stockLot->historical_unit_cost)->toBe('0.012500000')
-        ->and($listing->refresh()->price_amount)->toBe('12.000000000')
-        ->and($listing->price_unit)->toBe('kg');
+        ->and($listing->refresh()->only(array_keys($listingPriceSnapshot)))->toBe($listingPriceSnapshot)
+        ->and($listing->price_recorded_at?->equalTo($listingPriceRecordedAt))->toBeTrue();
 });
 
 it('preserves a changed listing projection while costing from the immutable PO format', function (): void {

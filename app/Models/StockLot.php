@@ -129,6 +129,11 @@ class StockLot extends Model
         return $this->hasOne(GoodsReceiptLine::class);
     }
 
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(StockReservation::class);
+    }
+
     public function costAdjustments(): HasMany
     {
         return $this->hasMany(StockLotCostAdjustment::class);

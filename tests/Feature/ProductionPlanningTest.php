@@ -280,6 +280,10 @@ it('rejects a plan update while active stock reservations exist', function (): v
         idempotencyKey: 'reserved-update',
     );
 
+    // The production migration now creates this table for every test. Recreate
+    // the minimal legacy shape here because this test only exercises the
+    // lifecycle guard's status query.
+    Schema::dropIfExists('stock_reservations');
     Schema::create('stock_reservations', function (Blueprint $table): void {
         $table->id();
         $table->unsignedBigInteger('production_run_id');

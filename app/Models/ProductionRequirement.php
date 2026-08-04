@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'production_run_id',
@@ -54,6 +55,11 @@ class ProductionRequirement extends Model
     public function recipeVersionPackagingItem(): BelongsTo
     {
         return $this->belongsTo(RecipeVersionPackagingItem::class);
+    }
+
+    public function reservations(): HasMany
+    {
+        return $this->hasMany(StockReservation::class);
     }
 
     protected function casts(): array

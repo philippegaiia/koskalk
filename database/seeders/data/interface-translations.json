@@ -9152,6 +9152,83 @@
         },
         {
             "group": "production_bench",
+            "key": "production.status.aborted",
+            "text": {
+                "de": "Abgebrochen",
+                "es": "Abortado",
+                "fr": "Interrompu",
+                "it": "Interrotto",
+                "nl": "Afgebroken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.status.cancelled",
+            "text": {
+                "de": "Storniert",
+                "es": "Cancelado",
+                "fr": "Annulé",
+                "it": "Annullato",
+                "nl": "Geannuleerd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.status.completed",
+            "text": {
+                "de": "Abgeschlossen",
+                "es": "Completado",
+                "fr": "Terminé",
+                "it": "Completato",
+                "nl": "Voltooid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.status.draft",
+            "text": {
+                "de": "Entwurf",
+                "es": "Borrador",
+                "fr": "Brouillon",
+                "it": "Bozza",
+                "nl": "Concept"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.status.in_production",
+            "text": {
+                "de": "In Produktion",
+                "es": "En producción",
+                "fr": "En production",
+                "it": "In produzione",
+                "nl": "In productie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.status.reserved",
+            "text": {
+                "de": "Bestand vorbereitet",
+                "es": "Stock preparado",
+                "fr": "Stock préparé",
+                "it": "Scorte preparate",
+                "nl": "Voorraad voorbereid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.status.scheduled",
+            "text": {
+                "de": "Geplant",
+                "es": "Planificado",
+                "fr": "Planifié",
+                "it": "Pianificato",
+                "nl": "Gepland"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "receipt.actual_positive",
             "text": {
                 "de": "Die tatsächlich erhaltene Menge muss positiv sein.",

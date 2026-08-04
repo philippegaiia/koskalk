@@ -22,7 +22,10 @@ use App\OwnerType;
 use App\ProductionBasisKind;
 use App\ProductionRunStatus;
 use App\Visibility;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -262,6 +265,45 @@ it('rebuilds requirements only for draft or scheduled productions', function ():
     ))->toThrow(ValidationException::class);
 });
 
+it('rejects a plan update while active stock reservations exist', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Reserved oil']);
+    $phase = productionPlanningTask2Phase($fixture['version'], $fixture['workspace'], 'Oils');
+    productionPlanningTask2Item($fixture['version'], $phase, $fixture['workspace'], $ingredient, '100.0000');
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'reserved-update',
+    );
+
+    Schema::create('stock_reservations', function (Blueprint $table): void {
+        $table->id();
+        $table->unsignedBigInteger('production_run_id');
+        $table->string('status');
+    });
+
+    try {
+        DB::table('stock_reservations')->insert([
+            'production_run_id' => $production->id,
+            'status' => 'reserved',
+        ]);
+
+        expect(fn (): ProductionRun => app(UpdateProductionPlan::class)->handle(
+            actor: $fixture['owner'],
+            production: $production,
+            basisInputValue: '2',
+            basisInputUnit: 'kg',
+            expectedUnits: 10,
+        ))->toThrow(ValidationException::class);
+    } finally {
+        Schema::dropIfExists('stock_reservations');
+    }
+});
+
 it('returns the existing production for a duplicate idempotency key without duplicating requirements', function (): void {
     $fixture = productionPlanningTask2Fixture();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Oil']);
@@ -369,6 +411,28 @@ it('rejects recipe materials from another workspace', function (): void {
         basisInputUnit: 'kg',
         expectedUnits: 10,
         idempotencyKey: 'foreign-material',
+    ))->toThrow(ValidationException::class);
+});
+
+it('rejects a published packaging requirement whose catalogue item is missing', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+
+    RecipeVersionPackagingItem::query()->create([
+        'recipe_version_id' => $fixture['version']->id,
+        'packaging_item_id' => null,
+        'name' => 'Deleted box',
+        'components_per_unit' => '1.000',
+        'position' => 1,
+    ]);
+
+    expect(fn (): ProductionRun => app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'missing-packaging',
     ))->toThrow(ValidationException::class);
 });
 

@@ -7,12 +7,14 @@ use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\Workspace;
 use App\ProductionBasisKind;
 use App\ProductionRunStatus;
 use App\Services\MassConverter;
 use App\Services\Production\ProductionRequirementBuilder;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 class UpdateProductionPlan
@@ -59,7 +61,9 @@ class UpdateProductionPlan
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
-            $lockedWorkspace = $lockedProduction->workspace;
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->find($lockedProduction->workspace_id);
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
@@ -77,6 +81,8 @@ class UpdateProductionPlan
                     'production' => 'Only draft or planned productions can be updated.',
                 ]);
             }
+
+            $this->assertNoActiveReservations($lockedProduction);
 
             $lockedRecipe = Recipe::withoutGlobalScopes()
                 ->with('productFamily')
@@ -181,5 +187,23 @@ class UpdateProductionPlan
         return $parsed !== false
             && ($errors === false || ($errors['warning_count'] === 0 && $errors['error_count'] === 0))
             && $parsed->format('Y-m-d') === $date;
+    }
+
+    private function assertNoActiveReservations(ProductionRun $production): void
+    {
+        if (! Schema::hasTable('stock_reservations')) {
+            return;
+        }
+
+        $hasActiveReservations = DB::table('stock_reservations')
+            ->where('production_run_id', $production->id)
+            ->whereNotIn('status', ['released', 'cancelled'])
+            ->exists();
+
+        if ($hasActiveReservations) {
+            throw ValidationException::withMessages([
+                'production' => 'A production with active stock reservations cannot be changed.',
+            ]);
+        }
     }
 }

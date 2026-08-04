@@ -110,7 +110,9 @@ class ProductionRequirementBuilder
             $packagingItem = $packagingPlan->packagingItem;
 
             if (! $packagingItem instanceof PackagingItem) {
-                continue;
+                throw ValidationException::withMessages([
+                    'packaging' => 'Every published packaging requirement must still exist.',
+                ]);
             }
 
             $this->assertMaterialWorkspace($packagingItem, (int) $version->workspace_id, 'packaging');

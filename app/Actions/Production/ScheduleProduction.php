@@ -4,6 +4,7 @@ namespace App\Actions\Production;
 
 use App\Models\ProductionRun;
 use App\Models\User;
+use App\Models\Workspace;
 use App\ProductionRunStatus;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,9 @@ class ScheduleProduction
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
-            $lockedWorkspace = $lockedProduction->workspace;
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->find($lockedProduction->workspace_id);
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([

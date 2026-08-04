@@ -231,4 +231,7 @@
     ,"production_bench.settings.intro":"Stel herbruikbare batchgroottes, mensen, taken en werkdagen één keer in. Het dagelijkse formulier blijft kort."
     ,"production_bench.common.clear":"Wissen"
     ,"production_bench.common.save_changes":"Wijzigingen opslaan"
+    ,"production_bench.navigation.production_workflow":"Productie"
+    ,"production_bench.production.create_title":"Productie plannen"
+    ,"production_bench.production.planned_success":"Productie gepland."
 }

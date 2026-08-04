@@ -231,4 +231,7 @@
     ,"production_bench.settings.intro":"Configura una volta dimensioni dei lotti, persone, attività e giorni lavorativi. Il modulo quotidiano resta breve."
     ,"production_bench.common.clear":"Cancella"
     ,"production_bench.common.save_changes":"Salva modifiche"
+    ,"production_bench.navigation.production_workflow":"Produzione"
+    ,"production_bench.production.create_title":"Pianifica produzione"
+    ,"production_bench.production.planned_success":"Produzione pianificata."
 }

@@ -8580,6 +8580,17 @@
         },
         {
             "group": "production_bench",
+            "key": "navigation.production_workflow",
+            "text": {
+                "de": "Produktion",
+                "es": "Producción",
+                "fr": "Production",
+                "it": "Produzione",
+                "nl": "Productie"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "navigation.purchase_orders",
             "text": {
                 "de": "Bestellungen",
@@ -9185,6 +9196,325 @@
         },
         {
             "group": "production_bench",
+            "key": "production.available",
+            "text": {
+                "de": "Verfügbar",
+                "es": "Disponible",
+                "fr": "Disponible",
+                "it": "Disponibile",
+                "nl": "Beschikbaar"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.basis",
+            "text": {
+                "de": "Chargenmenge",
+                "es": "Cantidad del lote",
+                "fr": "Quantité du lot",
+                "it": "Quantità del lotto",
+                "nl": "Batchhoeveelheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.basis_help",
+            "text": {
+                "de": "Bei Seife ist dies die anfängliche Ölmasse. Bei Kosmetik ist es die Gesamtmasse der Formel.",
+                "es": "Para jabón es la masa inicial de aceites. Para cosmética es la masa total de la fórmula.",
+                "fr": "Pour le savon, c’est la masse initiale des huiles. Pour les cosmétiques, c’est la masse totale de la formule.",
+                "it": "Per il sapone è la massa iniziale degli oli. Per i cosmetici è la massa totale della formula.",
+                "nl": "Voor zeep is dit de beginmassa van de oliën. Voor cosmetica is het de totale formulemassa."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.choose_product_to_preview",
+            "text": {
+                "de": "Wählen Sie ein Produkt, um die skalierten Materialien zu sehen.",
+                "es": "Elige un producto para ver sus materiales escalados.",
+                "fr": "Choisissez un produit pour prévisualiser ses matières mises à l’échelle.",
+                "it": "Scegli un prodotto per vedere i materiali scalati.",
+                "nl": "Kies een product om de geschaalde materialen te bekijken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.create_intro",
+            "text": {
+                "de": "Wählen Sie ein Produkt, passen Sie die Charge bei Bedarf an und legen Sie den Produktionstag fest. Der Bestand wird erst später bei der Vorbereitung reserviert.",
+                "es": "Elige un producto, ajusta el lote si hace falta y fija la fecha de producción. El stock solo se reserva al prepararlo.",
+                "fr": "Choisissez un produit, ajustez le lot si besoin et fixez la date de production. Le stock ne sera réservé que lors de sa préparation.",
+                "it": "Scegli un prodotto, modifica il lotto se serve e fissa la data di produzione. Le scorte vengono riservate solo durante la preparazione.",
+                "nl": "Kies een product, pas de batch indien nodig aan en stel de productiedatum in. Voorraad wordt pas bij voorbereiding gereserveerd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.create_title",
+            "text": {
+                "de": "Produktion planen",
+                "es": "Planificar producción",
+                "fr": "Planifier la production",
+                "it": "Pianifica produzione",
+                "nl": "Productie plannen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.details",
+            "text": {
+                "de": "Produktionsdetails",
+                "es": "Detalles de producción",
+                "fr": "Détails de la production",
+                "it": "Dettagli della produzione",
+                "nl": "Productiedetails"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.details_help",
+            "text": {
+                "de": "Formel und Verpackung stammen aus der zuletzt veröffentlichten Produktversion.",
+                "es": "La fórmula y el embalaje proceden de la última versión publicada del producto.",
+                "fr": "La formule et le conditionnement viennent de la dernière version publiée du produit.",
+                "it": "Formula e imballaggio provengono dall’ultima versione pubblicata del prodotto.",
+                "nl": "Formule en verpakking komen uit de laatst gepubliceerde productversie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.expected_units_help",
+            "text": {
+                "de": "Wird zur Skalierung der Verpackungsanforderungen verwendet.",
+                "es": "Se usa para escalar las necesidades de embalaje.",
+                "fr": "Utilisé pour mettre à l’échelle les besoins en emballages.",
+                "it": "Usato per scalare i requisiti di imballaggio.",
+                "nl": "Wordt gebruikt om verpakkingsbehoeften te schalen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.incoming",
+            "text": {
+                "de": "Unterwegs",
+                "es": "En camino",
+                "fr": "En commande",
+                "it": "In arrivo",
+                "nl": "Onderweg"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.material",
+            "text": {
+                "de": "Material",
+                "es": "Material",
+                "fr": "Matière",
+                "it": "Materiale",
+                "nl": "Materiaal"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.no_preset",
+            "text": {
+                "de": "Chargengröße eingeben",
+                "es": "Introducir tamaño de lote",
+                "fr": "Saisir un format de lot",
+                "it": "Inserisci dimensione lotto",
+                "nl": "Batchgrootte invoeren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.no_task_set",
+            "text": {
+                "de": "Kein Aufgabensatz",
+                "es": "Sin conjunto de tareas",
+                "fr": "Aucun jeu de tâches",
+                "it": "Nessun set di attività",
+                "nl": "Geen taakset"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.no_tasks",
+            "text": {
+                "de": "Kein Aufgabensatz ausgewählt. Sie können diese Produktion trotzdem planen.",
+                "es": "No se ha seleccionado un conjunto de tareas. Aun así puedes planificar esta producción.",
+                "fr": "Aucun jeu de tâches sélectionné. Vous pouvez tout de même planifier cette production.",
+                "it": "Nessun set di attività selezionato. Puoi comunque pianificare questa produzione.",
+                "nl": "Geen taakset geselecteerd. Je kunt deze productie toch plannen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.non_working_date",
+            "text": {
+                "de": "Dies ist ein konfigurierter arbeitsfreier Tag. Der Produktionstag bleibt genau wie eingegeben; spätere automatische Aufgaben werden auf den nächsten Arbeitstag verschoben.",
+                "es": "Es un día no laborable configurado. La fecha de producción se mantiene tal cual; las tareas automáticas posteriores pasan al siguiente día laborable.",
+                "fr": "Il s’agit d’un jour non ouvré configuré. La date de production reste celle saisie ; les tâches automatiques suivantes passent au prochain jour ouvré.",
+                "it": "È un giorno non lavorativo configurato. La data di produzione resta quella inserita; le attività automatiche successive passano al prossimo giorno lavorativo.",
+                "nl": "Dit is een ingestelde niet-werkdag. De productiedatum blijft zoals ingevoerd; latere automatische taken gaan naar de volgende werkdag."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.optional",
+            "text": {
+                "de": "optional",
+                "es": "opcional",
+                "fr": "facultatif",
+                "it": "opzionale",
+                "nl": "optioneel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.percentage",
+            "text": {
+                "de": "Formel %",
+                "es": "% de fórmula",
+                "fr": "% de la formule",
+                "it": "% formula",
+                "nl": "Formule %"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.planned_success",
+            "text": {
+                "de": "Produktion geplant.",
+                "es": "Producción planificada.",
+                "fr": "Production planifiée.",
+                "it": "Produzione pianificata.",
+                "nl": "Productie gepland."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.preset",
+            "text": {
+                "de": "Voreinstellung für Chargengröße",
+                "es": "Tamaño de lote predefinido",
+                "fr": "Format de lot prédéfini",
+                "it": "Dimensione lotto predefinita",
+                "nl": "Voorinstelling voor batchgrootte"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.preset_help",
+            "text": {
+                "de": "Optionale Abkürzung. Jeder Wert kann für diese Produktion geändert werden.",
+                "es": "Atajo opcional. Puedes cambiar todos los valores para esta producción.",
+                "fr": "Raccourci facultatif. Chaque valeur peut être modifiée pour cette production.",
+                "it": "Scorciatoia opzionale. Puoi modificare ogni valore per questa produzione.",
+                "nl": "Optionele snelkeuze. Elke waarde kan voor deze productie worden gewijzigd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.production_date",
+            "text": {
+                "de": "Produktionstag",
+                "es": "Fecha de producción",
+                "fr": "Date de production",
+                "it": "Data di produzione",
+                "nl": "Productiedatum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.production_date_help",
+            "text": {
+                "de": "Folgetermine werden aus diesem Datum berechnet.",
+                "es": "Las fechas de las tareas posteriores se calculan desde esta fecha.",
+                "fr": "Les dates des tâches suivantes sont calculées à partir de cette date.",
+                "it": "Le date delle attività successive vengono calcolate da questa data.",
+                "nl": "Datums voor vervolgtaken worden vanaf deze datum berekend."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.required",
+            "text": {
+                "de": "Erforderlich",
+                "es": "Necesario",
+                "fr": "Nécessaire",
+                "it": "Necessario",
+                "nl": "Benodigd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.requirements_help",
+            "text": {
+                "de": "Eine schreibgeschützte Schätzung des Bedarfs und der aktuell verfügbaren oder eintreffenden Mengen.",
+                "es": "Estimación de solo lectura de las necesidades y de lo disponible o en camino.",
+                "fr": "Estimation en lecture seule des besoins et des quantités disponibles ou en commande.",
+                "it": "Stima in sola lettura del fabbisogno e delle quantità disponibili o in arrivo.",
+                "nl": "Alleen-lezen schatting van de behoefte en wat beschikbaar of onderweg is."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.requirements_preview",
+            "text": {
+                "de": "Materialvorschau",
+                "es": "Vista previa de materiales",
+                "fr": "Aperçu des matières",
+                "it": "Anteprima materiali",
+                "nl": "Materiaalvoorbeeld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.schedule",
+            "text": {
+                "de": "Produktion planen",
+                "es": "Planificar producción",
+                "fr": "Planifier la production",
+                "it": "Pianifica produzione",
+                "nl": "Productie plannen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.select_product",
+            "text": {
+                "de": "Wählen Sie ein Produkt mit veröffentlichter Formel.",
+                "es": "Elige un producto con una fórmula publicada.",
+                "fr": "Choisissez un produit avec une formule publiée.",
+                "it": "Scegli un prodotto con una formula pubblicata.",
+                "nl": "Kies een product met een gepubliceerde formule."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.setup_link",
+            "text": {
+                "de": "Produktion einrichten",
+                "es": "Configuración de producción",
+                "fr": "Configuration de la production",
+                "it": "Impostazioni produzione",
+                "nl": "Productie instellen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.shortage",
+            "text": {
+                "de": "Fehlmenge",
+                "es": "Faltante",
+                "fr": "Manquant",
+                "it": "Mancante",
+                "nl": "Tekort"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.status.aborted",
             "text": {
                 "de": "Abgebrochen",
@@ -9258,6 +9588,39 @@
                 "fr": "Planifié",
                 "it": "Pianificato",
                 "nl": "Gepland"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.task_schedule",
+            "text": {
+                "de": "Aufgabentermine",
+                "es": "Fechas de tareas",
+                "fr": "Dates des tâches",
+                "it": "Date delle attività",
+                "nl": "Taakdatums"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.task_schedule_help",
+            "text": {
+                "de": "Die erste Aufgabe bleibt am Produktionstag. Spätere automatische Aufgaben überspringen konfigurierte Schließtage und Wochenenden.",
+                "es": "La primera tarea permanece en la fecha de producción. Las tareas automáticas posteriores omiten cierres y fines de semana configurados.",
+                "fr": "La première tâche reste le jour de production. Les tâches automatiques suivantes évitent les fermetures et week-ends configurés.",
+                "it": "La prima attività resta il giorno della produzione. Le attività automatiche successive saltano chiusure e fine settimana configurati.",
+                "nl": "De eerste taak blijft op de productiedag. Latere automatische taken slaan ingestelde sluitingen en weekenden over."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.task_set",
+            "text": {
+                "de": "Aufgabensatz",
+                "es": "Conjunto de tareas",
+                "fr": "Jeu de tâches",
+                "it": "Set di attività",
+                "nl": "Taakset"
             }
         },
         {

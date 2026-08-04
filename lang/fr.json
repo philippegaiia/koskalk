@@ -231,4 +231,7 @@
     ,"production_bench.settings.intro":"Configurez une fois les formats de lot, les personnes, les tâches et les jours ouvrés. Le formulaire quotidien reste court."
     ,"production_bench.common.clear":"Effacer"
     ,"production_bench.common.save_changes":"Enregistrer les modifications"
+    ,"production_bench.navigation.production_workflow":"Production"
+    ,"production_bench.production.create_title":"Planifier la production"
+    ,"production_bench.production.planned_success":"Production planifiée."
 }

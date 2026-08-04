@@ -231,4 +231,7 @@
     ,"production_bench.settings.intro":"Configura una vez los tamaños de lote, las personas, las tareas y los días laborables. El formulario diario sigue siendo breve."
     ,"production_bench.common.clear":"Borrar"
     ,"production_bench.common.save_changes":"Guardar cambios"
+    ,"production_bench.navigation.production_workflow":"Producción"
+    ,"production_bench.production.create_title":"Planificar producción"
+    ,"production_bench.production.planned_success":"Producción planificada."
 }

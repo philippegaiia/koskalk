@@ -231,4 +231,7 @@
     ,"production_bench.settings.intro":"Legen Sie wiederverwendbare Chargengrößen, Personen, Aufgaben und Arbeitstage einmal fest. Das tägliche Formular bleibt kurz."
     ,"production_bench.common.clear":"Leeren"
     ,"production_bench.common.save_changes":"Änderungen speichern"
+    ,"production_bench.navigation.production_workflow":"Produktion"
+    ,"production_bench.production.create_title":"Produktion planen"
+    ,"production_bench.production.planned_success":"Produktion geplant."
 }

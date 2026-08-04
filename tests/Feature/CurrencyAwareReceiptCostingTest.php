@@ -1,7 +1,12 @@
 <?php
 
+use App\Data\ExchangeRateSnapshot;
 use App\Services\ExchangeRateService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+
+uses(RefreshDatabase::class);
 
 it('uses an identity rate when the transaction and workspace currencies match', function (): void {
     $snapshot = app(ExchangeRateService::class)->snapshot('EUR', 'EUR', '2026-08-04');
@@ -35,6 +40,39 @@ it('fetches and caches a cross-currency rate snapshot', function (): void {
         ->and($second)->toEqual($first);
 
     Http::assertSentCount(1);
+});
+
+it('caches exchange-rate payloads safely in the database cache store', function (): void {
+    $originalDriver = config('cache.default');
+    Cache::setDefaultDriver('database');
+    Cache::forgetDriver('database');
+    Cache::put(
+        'exchange-rate:frankfurter:2026-08-07:USD:EUR',
+        new ExchangeRateSnapshot('USD', 'EUR', '0.87', '2026-08-07', 'frankfurter'),
+        now()->addDay(),
+    );
+
+    Http::fake([
+        'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::response([
+            'date' => '2026-08-07',
+            'base' => 'USD',
+            'quote' => 'EUR',
+            'rate' => 0.92,
+        ]),
+    ]);
+
+    try {
+        $service = app(ExchangeRateService::class);
+        $first = $service->snapshot('USD', 'EUR', '2026-08-07');
+        $second = $service->snapshot('USD', 'EUR', '2026-08-07');
+
+        expect($first->rate)->toBe('0.920000000000')
+            ->and($second)->toEqual($first);
+        Http::assertSentCount(1);
+    } finally {
+        Cache::setDefaultDriver($originalDriver);
+        Cache::forgetDriver($originalDriver);
+    }
 });
 
 it('uses a manual rate when the exchange-rate provider is unavailable', function (): void {

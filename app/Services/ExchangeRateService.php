@@ -49,11 +49,57 @@ class ExchangeRateService
             );
         }
 
-        return Cache::remember(
-            "exchange-rate:frankfurter:{$rateDate}:{$baseCurrency}:{$quoteCurrency}",
-            now()->addDay(),
-            fn (): ExchangeRateSnapshot => $this->provider->rate($baseCurrency, $quoteCurrency, $rateDate),
+        $cacheKey = "exchange-rate:frankfurter:{$rateDate}:{$baseCurrency}:{$quoteCurrency}";
+        $loadPayload = fn (): array => $this->payload(
+            $this->provider->rate($baseCurrency, $quoteCurrency, $rateDate),
         );
+        $payload = Cache::remember($cacheKey, now()->addDay(), $loadPayload);
+
+        if (! is_array($payload) || ! $this->isValidPayload($payload)) {
+            Cache::forget($cacheKey);
+            $payload = Cache::remember($cacheKey, now()->addDay(), $loadPayload);
+        }
+
+        if (! is_array($payload) || ! $this->isValidPayload($payload)) {
+            throw new InvalidArgumentException('The cached exchange-rate payload is invalid.');
+        }
+
+        return new ExchangeRateSnapshot(
+            baseCurrency: $payload['base_currency'],
+            quoteCurrency: $payload['quote_currency'],
+            rate: $payload['rate'],
+            rateDate: $payload['rate_date'],
+            provider: $payload['provider'],
+            isManual: $payload['is_manual'],
+        );
+    }
+
+    /**
+     * @return array{base_currency: string, quote_currency: string, rate: string, rate_date: string, provider: string, is_manual: bool}
+     */
+    private function payload(ExchangeRateSnapshot $snapshot): array
+    {
+        return [
+            'base_currency' => $snapshot->baseCurrency,
+            'quote_currency' => $snapshot->quoteCurrency,
+            'rate' => $snapshot->rate,
+            'rate_date' => $snapshot->rateDate,
+            'provider' => $snapshot->provider,
+            'is_manual' => $snapshot->isManual,
+        ];
+    }
+
+    /**
+     * @param  array<mixed>  $payload
+     */
+    private function isValidPayload(array $payload): bool
+    {
+        return is_string($payload['base_currency'] ?? null)
+            && is_string($payload['quote_currency'] ?? null)
+            && is_string($payload['rate'] ?? null)
+            && is_string($payload['rate_date'] ?? null)
+            && is_string($payload['provider'] ?? null)
+            && is_bool($payload['is_manual'] ?? null);
     }
 
     private function currency(string $currency): string

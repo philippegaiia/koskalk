@@ -11,6 +11,7 @@ use App\Models\Workspace;
 use App\PurchaseOrderStatus;
 use App\Services\Production\ProductionDemandService;
 use App\StockLotStatus;
+use App\StockReservationStatus;
 use Illuminate\Database\Eloquent\Builder;
 
 class StockPositionService
@@ -23,8 +24,9 @@ class StockPositionService
     public function forLot(StockLot $lot): array
     {
         $physical = $this->decimal((string) $lot->movements()->sum('quantity_delta'));
+        $reserved = $this->decimal((string) $lot->reservations()->where('status', StockReservationStatus::Active)->sum('quantity'));
 
-        return $this->forLotWithPhysicalQuantity($lot, $physical);
+        return $this->forLotWithPhysicalQuantity($lot, $physical, $reserved);
     }
 
     /**
@@ -33,19 +35,23 @@ class StockPositionService
     public function forLotWithLoadedMovementSum(StockLot $lot): array
     {
         $physical = $this->decimal((string) ($lot->movements_sum_quantity_delta ?? '0'));
+        $reserved = $this->decimal((string) ($lot->active_reserved_quantity ?? '0'));
 
-        return $this->forLotWithPhysicalQuantity($lot, $physical);
+        return $this->forLotWithPhysicalQuantity($lot, $physical, $reserved);
     }
 
     /**
      * @return array{physical: string, quarantined: string, reserved: string, available: string, incoming: string, forecast: string}
      */
-    private function forLotWithPhysicalQuantity(StockLot $lot, string $physical): array
+    private function forLotWithPhysicalQuantity(StockLot $lot, string $physical, string $reserved): array
     {
         $quarantined = $lot->status === StockLotStatus::Quarantined ? $physical : $this->zero();
-        $available = $lot->status === StockLotStatus::Released ? $physical : $this->zero();
+        $reserved = $lot->status === StockLotStatus::Released ? $reserved : $this->zero();
+        $available = $lot->status === StockLotStatus::Released
+            ? bcsub($physical, $reserved, 9)
+            : $this->zero();
 
-        return $this->positions($physical, $quarantined, $available);
+        return $this->positions($physical, $quarantined, $reserved, $available);
     }
 
     /**
@@ -66,6 +72,7 @@ class StockPositionService
         $physical = $this->zero();
         $quarantined = $this->zero();
         $available = $this->zero();
+        $reserved = $this->zero();
 
         foreach ($lots as $lot) {
             $quantity = $this->decimal((string) ($lot->movements_sum_quantity_delta ?? '0'));
@@ -74,14 +81,16 @@ class StockPositionService
             if ($lot->status === StockLotStatus::Quarantined) {
                 $quarantined = bcadd($quarantined, $quantity, 9);
             } else {
-                $available = bcadd($available, $quantity, 9);
+                $lotReserved = $this->decimal((string) $lot->reservations()->where('status', StockReservationStatus::Active)->sum('quantity'));
+                $reserved = bcadd($reserved, $lotReserved, 9);
+                $available = bcadd($available, bcsub($quantity, $lotReserved, 9), 9);
             }
         }
 
         $incoming = $this->incomingForSubject($workspace, $subject);
         $demand = $this->productionDemand->forWorkspaceSubject($workspace, $subject);
 
-        return $this->positions($physical, $quarantined, $available, $incoming, $demand);
+        return $this->positions($physical, $quarantined, $reserved, $available, $incoming, $demand);
     }
 
     /**
@@ -90,6 +99,7 @@ class StockPositionService
     private function positions(
         string $physical,
         string $quarantined,
+        string $reserved,
         string $available,
         string $incoming = '0.000000000',
         string $productionDemand = '0.000000000',
@@ -97,7 +107,7 @@ class StockPositionService
         return [
             'physical' => $physical,
             'quarantined' => $quarantined,
-            'reserved' => $this->zero(),
+            'reserved' => $reserved,
             'available' => $available,
             'incoming' => $incoming,
             'forecast' => bcsub(bcadd($available, $incoming, 9), $productionDemand, 9),

@@ -12,31 +12,23 @@ use App\StockReservationStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
-class CancelProduction
+class ReleaseProductionStock
 {
     public function __construct(private readonly ProductionBenchAccess $access) {}
 
-    public function handle(User $actor, ProductionRun $production, string $reason): ProductionRun
+    public function handle(User $actor, ProductionRun $production): ProductionRun
     {
-        $reason = trim($reason);
-
-        if ($reason === '' || mb_strlen($reason) > 1000) {
-            throw ValidationException::withMessages([
-                'cancellationReason' => __('production_bench.production.cancel_reason_invalid'),
-            ]);
-        }
-
         $workspace = $production->workspace;
 
-        if ($workspace === null) {
+        if (! $workspace instanceof Workspace) {
             throw ValidationException::withMessages([
-                'production' => __('production_bench.production.workspace_missing'),
+                'production' => 'The production workspace could not be found.',
             ]);
         }
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $production, $reason): ProductionRun {
+        return DB::transaction(function () use ($actor, $production): ProductionRun {
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
@@ -44,17 +36,17 @@ class CancelProduction
                 ->lockForUpdate()
                 ->find($lockedProduction->workspace_id);
 
-            if ($lockedWorkspace === null) {
+            if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
-                    'production' => __('production_bench.production.workspace_missing'),
+                    'production' => 'The production workspace could not be found.',
                 ]);
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
 
-            if (! in_array($lockedProduction->status, [ProductionRunStatus::Draft, ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
+            if (! in_array($lockedProduction->status, [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
                 throw ValidationException::withMessages([
-                    'production' => __('production_bench.production.cancel_not_allowed'),
+                    'production' => 'Only planned or stock-prepared productions can release stock.',
                 ]);
             }
 
@@ -67,19 +59,16 @@ class CancelProduction
 
             foreach ($reservations as $reservation) {
                 $reservation->update([
-                    'status' => StockReservationStatus::Cancelled,
-                    'cancelled_at' => now(),
+                    'status' => StockReservationStatus::Released,
+                    'released_at' => now(),
                 ]);
             }
 
-            $lockedProduction->update([
-                'status' => ProductionRunStatus::Cancelled,
-                'cancelled_at' => now(),
-                'cancelled_by_user_id' => $actor->id,
-                'cancellation_reason' => $reason,
-            ]);
+            if ($lockedProduction->status === ProductionRunStatus::Reserved) {
+                $lockedProduction->update(['status' => ProductionRunStatus::Scheduled]);
+            }
 
-            return $lockedProduction->fresh(['requirements', 'tasks', 'recipe']);
+            return $lockedProduction->fresh(['requirements', 'recipe']);
         }, attempts: 5);
     }
 }

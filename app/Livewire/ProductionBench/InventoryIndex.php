@@ -16,6 +16,7 @@ use App\ProductionRunStatus;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
+use App\StockReservationStatus;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -125,6 +126,9 @@ class InventoryIndex extends Component
                 'goodsReceiptLine.goodsReceipt.supplier',
             ])
             ->withSum('movements', 'quantity_delta')
+            ->withSum([
+                'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', StockReservationStatus::Active),
+            ], 'quantity')
             ->latest('stocked_at')
             ->latest('id')
             ->get();

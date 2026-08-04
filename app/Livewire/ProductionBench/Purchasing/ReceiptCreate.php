@@ -19,6 +19,7 @@ use App\PurchaseOrderStatus;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\StockUnitKind;
+use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -349,6 +350,7 @@ class ReceiptCreate extends Component
     {
         $packsReceived = $this->remainingPacks($line);
         $canonicalQuantity = bcmul($line->canonical_quantity_per_pack, (string) $packsReceived, 9);
+        $priceAmount = $line->price_amount ?? $line->pack_price;
         $actualUnit = $line->unit_kind === StockUnitKind::Count
             ? 'count'
             : ($line->supplierListing?->net_unit ?? 'kg');
@@ -357,10 +359,22 @@ class ReceiptCreate extends Component
             'packs_received' => $packsReceived,
             'actual_quantity' => $line->unit_kind === StockUnitKind::Count
                 ? bcadd($canonicalQuantity, '0', 0)
-                : app(MassConverter::class)->fromGrams($canonicalQuantity, $actualUnit),
+                : NumberLocale::formatAdaptiveDecimal(
+                    app(MassConverter::class)->fromGrams($canonicalQuantity, $actualUnit),
+                    minimumDecimals: 2,
+                    maximumDecimals: 3,
+                    locale: 'en_US',
+                ),
             'actual_unit' => $actualUnit,
             'receipt_price_basis' => $line->price_basis?->value ?? ListingPriceBasis::TotalPurchaseFormat->value,
-            'receipt_price_amount' => $line->price_amount ?? $line->pack_price,
+            'receipt_price_amount' => $priceAmount === null
+                ? null
+                : NumberLocale::formatAdaptiveDecimal(
+                    $priceAmount,
+                    minimumDecimals: 2,
+                    maximumDecimals: 4,
+                    locale: 'en_US',
+                ),
             'receipt_price_unit' => $line->price_unit,
             'currency' => $line->currency,
             'supplier_batch_number' => '',
@@ -373,10 +387,22 @@ class ReceiptCreate extends Component
     {
         return [
             'packs_received' => 1,
-            'actual_quantity' => $listing->net_quantity,
+            'actual_quantity' => $listing->unit_kind === StockUnitKind::Count
+                ? bcadd($listing->net_quantity, '0', 0)
+                : NumberLocale::formatAdaptiveDecimal(
+                    $listing->net_quantity,
+                    minimumDecimals: 2,
+                    maximumDecimals: 3,
+                    locale: 'en_US',
+                ),
             'actual_unit' => $listing->unit_kind === StockUnitKind::Count ? 'count' : $listing->net_unit,
             'receipt_price_basis' => $listing->price_basis->value,
-            'receipt_price_amount' => $listing->price_amount,
+            'receipt_price_amount' => NumberLocale::formatAdaptiveDecimal(
+                $listing->price_amount,
+                minimumDecimals: 2,
+                maximumDecimals: 4,
+                locale: 'en_US',
+            ),
             'receipt_price_unit' => $listing->price_unit,
             'currency' => $listing->currency,
             'supplier_batch_number' => '',
@@ -449,7 +475,12 @@ class ReceiptCreate extends Component
 
         $this->lineInputs[$lineId]['actual_quantity'] = $unitKind === StockUnitKind::Count
             ? bcadd($canonicalTotal, '0', 0)
-            : app(MassConverter::class)->fromGrams($canonicalTotal, (string) $input['actual_unit']);
+            : NumberLocale::formatAdaptiveDecimal(
+                app(MassConverter::class)->fromGrams($canonicalTotal, (string) $input['actual_unit']),
+                minimumDecimals: 2,
+                maximumDecimals: 3,
+                locale: 'en_US',
+            );
     }
 
     private function directListings(): Collection

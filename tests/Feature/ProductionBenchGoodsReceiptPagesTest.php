@@ -181,6 +181,7 @@ it('only offers issued purchase orders with outstanding lines and preselects a l
 it('defaults purchase-order receipt quantities to the full outstanding amount', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     [, , $order, $line] = outstandingReceiptOrder($owner, $workspace, 5);
+    $line->update(['price_amount' => '19.000000000']);
     app(ReceivePurchaseOrder::class)->handle(
         actor: $owner,
         order: $order,
@@ -199,10 +200,32 @@ it('defaults purchase-order receipt quantities to the full outstanding amount', 
         ->test(ReceiptCreate::class);
 
     expect($component->get("lineInputs.{$line->id}.packs_received"))->toBe(3)
-        ->and((float) $component->get("lineInputs.{$line->id}.actual_quantity"))->toBe(15.0);
+        ->and($component->get("lineInputs.{$line->id}.actual_quantity"))->toBe('15.00')
+        ->and($component->get("lineInputs.{$line->id}.receipt_price_amount"))->toBe('19.00');
 });
 
-it('renders each purchase-order item in two readable rows and disables completed items', function (): void {
+it('keeps missing receipt prices blank and preserves four decimal prices', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    [, , $order, $line] = outstandingReceiptOrder($owner, $workspace);
+    $line->update([
+        'price_amount' => null,
+        'pack_price' => null,
+    ]);
+    $this->actingAs($owner);
+
+    $component = Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value, 'order' => $order->public_id])
+        ->test(ReceiptCreate::class);
+
+    expect($component->get("lineInputs.{$line->id}.receipt_price_amount"))->toBeNull();
+
+    $line->update(['price_amount' => '0.004200000']);
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::PurchaseOrder->value, 'order' => $order->public_id])
+        ->test(ReceiptCreate::class)
+        ->assertSet("lineInputs.{$line->id}.receipt_price_amount", '0.0042');
+});
+
+it('renders each purchase-order item as three aligned form rows and disables completed items', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     [$supplier, , $order, $availableLine] = outstandingReceiptOrder($owner, $workspace, 3);
     $completedListing = SupplierListing::factory()->for($workspace)->for($supplier)->for(Ingredient::factory())->create();
@@ -232,8 +255,25 @@ it('renders each purchase-order item in two readable rows and disables completed
         ->test(ReceiptCreate::class)
         ->assertSee('Packages received')
         ->assertSee('Actual received quantity')
+        ->assertSeeHtml('data-receipt-line-grid="'.$availableLine->id.'"')
         ->assertSeeHtml('data-receipt-line-summary="'.$availableLine->id.'"')
         ->assertSeeHtml('data-receipt-line-details="'.$availableLine->id.'"')
+        ->assertSeeHtml('data-receipt-line-metadata="'.$availableLine->id.'"')
+        ->assertSeeHtml('data-receipt-line-checkbox="'.$availableLine->id.'"')
+        ->assertSeeHtml('accent-[var(--color-accent)]')
+        ->assertSeeInOrder([
+            'Ordered',
+            'Previously received',
+            'Remaining',
+            'Packages received',
+            'Actual received quantity',
+            'Price basis',
+            'Receipt price',
+            'Price unit',
+            'Supplier batch',
+            'Expiry / best before',
+            'Notes',
+        ])
         ->assertSeeHtml('data-receipt-line-fields="'.$completedLine->id.'" disabled')
         ->assertDontSeeHtml('data-receipt-line-fields="'.$availableLine->id.'" disabled')
         ->assertDontSeeHtml('min-w-[1180px]');
@@ -412,7 +452,7 @@ it('synchronizes nominal PO quantity until the actual mass is edited', function 
         ->test(ReceiptCreate::class)
         ->set("lineInputs.{$line->id}.packs_received", 2);
 
-    expect((float) $component->get("lineInputs.{$line->id}.actual_quantity"))->toBe(10.0);
+    expect($component->get("lineInputs.{$line->id}.actual_quantity"))->toBe('10.00');
 
     $component
         ->set("lineInputs.{$line->id}.actual_quantity", '9.7')
@@ -430,7 +470,10 @@ it('synchronizes nominal PO quantity until the actual mass is edited', function 
 it('synchronizes nominal direct quantity and preserves a measured override', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();
-    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for(Ingredient::factory())->create();
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for(Ingredient::factory())->create([
+        'canonical_quantity_per_purchase_format' => '5123',
+        'net_quantity' => '5.123',
+    ]);
     $this->actingAs($owner);
 
     $component = Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
@@ -438,7 +481,7 @@ it('synchronizes nominal direct quantity and preserves a measured override', fun
         ->set('supplierId', $supplier->id)
         ->set("lineInputs.{$listing->id}.packs_received", 2);
 
-    expect((float) $component->get("lineInputs.{$listing->id}.actual_quantity"))->toBe(10.0);
+    expect($component->get("lineInputs.{$listing->id}.actual_quantity"))->toBe('10.246');
 
     $component
         ->set("lineInputs.{$listing->id}.actual_quantity", '9.85')

@@ -1,0 +1,138 @@
+<?php
+
+use App\Livewire\ProductionBench\Production\ProductionCalendar;
+use App\Models\Ingredient;
+use App\Models\ProductFamily;
+use App\Models\ProductionRun;
+use App\Models\ProductionTask;
+use App\Models\Recipe;
+use App\Models\RecipeVersion;
+use App\Models\User;
+use App\Models\Workspace;
+use App\OwnerType;
+use App\ProductionRunStatus;
+use App\Visibility;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Livewire\Livewire;
+
+uses(RefreshDatabase::class);
+
+it('returns workspace-scoped production and task events for a date range', function (): void {
+    $fixture = productionCalendarFixture();
+    $production = $fixture['production'];
+    $task = ProductionTask::factory()->for($fixture['workspace'])->for($production, 'productionRun')->create([
+        'name_snapshot' => 'Cut and cure',
+        'scheduled_for' => '2026-08-21',
+    ]);
+    $other = productionCalendarFixture();
+    productionCalendarProduction($other, '2026-08-20', ProductionRunStatus::Scheduled);
+
+    $component = Livewire::actingAs($fixture['owner'])->test(ProductionCalendar::class)
+        ->call('setRange', '2026-08-01', '2026-09-01');
+    $events = $component->instance()->events();
+
+    expect($events)->toHaveCount(2)
+        ->and(collect($events)->pluck('extendedProps.eventType')->sort()->values()->all())->toBe(['production', 'task'])
+        ->and(collect($events)->pluck('title')->all())->toContain('Olive soap', 'Cut and cure')
+        ->and(collect($events)->pluck('url')->join('|'))->toContain($production->public_id)
+        ->and(collect($events)->pluck('url')->join('|'))->not->toContain($other['production']->public_id)
+        ->and($task->productionRun->is($production))->toBeTrue();
+});
+
+it('filters tasks and completed events without exposing mutation controls', function (): void {
+    $fixture = productionCalendarFixture();
+    $production = $fixture['production'];
+    $production->update(['status' => ProductionRunStatus::Completed]);
+    ProductionTask::factory()->for($fixture['workspace'])->for($production, 'productionRun')->create([
+        'name_snapshot' => 'Completed task',
+        'scheduled_for' => '2026-08-21',
+        'completed_at' => now(),
+    ]);
+
+    $component = Livewire::actingAs($fixture['owner'])->test(ProductionCalendar::class)
+        ->call('setRange', '2026-08-01', '2026-09-01');
+
+    expect($component->instance()->events())->toBe([]);
+
+    $component->set('showCompleted', true);
+    expect($component->instance()->events())->toHaveCount(2);
+
+    $component->set('showTasks', false);
+    expect($component->instance()->events())->toHaveCount(1)
+        ->and($component->instance()->events()[0]['extendedProps']['eventType'])->toBe('production');
+});
+
+it('renders the calendar page with month, week, and agenda controls', function (): void {
+    $fixture = productionCalendarFixture();
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('production-bench.production.calendar'))
+        ->assertOk()
+        ->assertSee('Production calendar')
+        ->assertSee('Month')
+        ->assertSee('Week')
+        ->assertSee('Agenda')
+        ->assertSee('productionCalendar');
+});
+
+/**
+ * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, production: ProductionRun}
+ */
+function productionCalendarFixture(): array
+{
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $workspace->productionEntitlement()->create([
+        'status' => 'active',
+        'activated_at' => now(),
+    ]);
+    Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $family = ProductFamily::factory()->create([
+        'slug' => 'calendar-'.fake()->unique()->numberBetween(1, 999999),
+        'calculation_basis' => 'initial_oils',
+    ]);
+    $recipe = Recipe::factory()->for($family, 'productFamily')->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Olive soap',
+    ]);
+    $version = RecipeVersion::factory()->for($recipe)->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'is_current' => true,
+    ]);
+    $production = productionCalendarProduction([
+        'owner' => $owner,
+        'workspace' => $workspace,
+        'recipe' => $recipe,
+        'version' => $version,
+    ], '2026-08-20', ProductionRunStatus::Scheduled);
+
+    return compact('owner', 'workspace', 'recipe', 'version', 'production');
+}
+
+/**
+ * @param  array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}  $fixture
+ */
+function productionCalendarProduction(array $fixture, string $plannedFor, ProductionRunStatus $status): ProductionRun
+{
+    return ProductionRun::query()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'recipe_id' => $fixture['recipe']->id,
+        'recipe_version_id' => $fixture['version']->id,
+        'status' => $status,
+        'source' => 'direct',
+        'planned_for' => $plannedFor,
+        'basis_kind' => 'oil_mass',
+        'basis_quantity_grams' => '10000.000000000',
+        'basis_input_value' => '10.000000000',
+        'basis_input_unit' => 'kg',
+        'expected_units' => 100,
+        'idempotency_key' => fake()->uuid(),
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+}

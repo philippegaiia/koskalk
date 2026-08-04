@@ -7381,6 +7381,138 @@
         },
         {
             "group": "production_bench",
+            "key": "calendar.agenda",
+            "text": {
+                "de": "Agenda",
+                "es": "Agenda",
+                "fr": "Agenda",
+                "it": "Agenda",
+                "nl": "Agenda"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.completed",
+            "text": {
+                "de": "Abgeschlossen",
+                "es": "Completadas",
+                "fr": "Terminées",
+                "it": "Completate",
+                "nl": "Voltooid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.intro",
+            "text": {
+                "de": "Produktionschargen und Folgetermine nach Monat, Woche oder Agenda anzeigen.",
+                "es": "Vea lotes de producción y tareas posteriores por mes, semana o agenda.",
+                "fr": "Consultez les productions et leurs tâches par mois, semaine ou agenda.",
+                "it": "Visualizza produzioni e attività successive per mese, settimana o agenda.",
+                "nl": "Bekijk productiebatches en vervolgtaken per maand, week of agenda."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.invalid_range",
+            "text": {
+                "de": "Wählen Sie einen gültigen Kalenderzeitraum von höchstens einem Jahr.",
+                "es": "Elija un intervalo de calendario válido de un año como máximo.",
+                "fr": "Choisissez une période valide d’un an maximum.",
+                "it": "Scegli un intervallo valido di massimo un anno.",
+                "nl": "Kies een geldig kalenderbereik van maximaal één jaar."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.month",
+            "text": {
+                "de": "Monat",
+                "es": "Mes",
+                "fr": "Mois",
+                "it": "Mese",
+                "nl": "Maand"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.no_events",
+            "text": {
+                "de": "Keine Ereignisse in diesem Zeitraum.",
+                "es": "No hay eventos en este periodo.",
+                "fr": "Aucun événement sur cette période.",
+                "it": "Nessun evento in questo intervallo.",
+                "nl": "Geen gebeurtenissen in deze periode."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.open_production",
+            "text": {
+                "de": "Produktion öffnen",
+                "es": "Abrir producción",
+                "fr": "Ouvrir la production",
+                "it": "Apri produzione",
+                "nl": "Productie openen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.productions",
+            "text": {
+                "de": "Produktionen",
+                "es": "Producciones",
+                "fr": "Productions",
+                "it": "Produzioni",
+                "nl": "Producties"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.tasks",
+            "text": {
+                "de": "Aufgaben",
+                "es": "Tareas",
+                "fr": "Tâches",
+                "it": "Attività",
+                "nl": "Taken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.title",
+            "text": {
+                "de": "Produktionskalender",
+                "es": "Calendario de producción",
+                "fr": "Calendrier de production",
+                "it": "Calendario di produzione",
+                "nl": "Productiekalender"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.today",
+            "text": {
+                "de": "Heute",
+                "es": "Hoy",
+                "fr": "Aujourd’hui",
+                "it": "Oggi",
+                "nl": "Vandaag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "calendar.week",
+            "text": {
+                "de": "Woche",
+                "es": "Semana",
+                "fr": "Semaine",
+                "it": "Settimana",
+                "nl": "Week"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "common.actions",
             "text": {
                 "de": "Aktionen",
@@ -8576,6 +8708,17 @@
                 "fr": "Unité de mesure",
                 "it": "Unità di misura",
                 "nl": "Maateenheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "navigation.calendar",
+            "text": {
+                "de": "Kalender",
+                "es": "Calendario",
+                "fr": "Calendrier",
+                "it": "Calendario",
+                "nl": "Kalender"
             }
         },
         {

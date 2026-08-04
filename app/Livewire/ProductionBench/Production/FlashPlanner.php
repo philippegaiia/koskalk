@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Production;
 
+use App\Actions\Production\GenerateFlashProductions;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
@@ -11,6 +12,7 @@ use App\Services\Production\FlashDateProposalService;
 use App\Services\Production\FlashProductionSimulator;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
@@ -25,15 +27,21 @@ class FlashPlanner extends Component
 
     public bool $showDatePreview = false;
 
+    public string $idempotencyKey = '';
+
     /** @var list<array<string, mixed>> */
     public array $datePreview = [];
 
     public ?string $simulationError = null;
 
+    /** @var list<string> */
+    public array $generatedPublicIds = [];
+
     public function mount(): void
     {
         $this->firstDate = now()->toDateString();
         $this->lines = [$this->blankLine()];
+        $this->idempotencyKey = (string) Str::uuid();
     }
 
     public function updatedLines(mixed $value, string $key): void
@@ -90,6 +98,34 @@ class FlashPlanner extends Component
             $this->showDatePreview = false;
             $this->datePreview = [];
         }
+    }
+
+    public function generate(GenerateFlashProductions $generate): void
+    {
+        $this->simulationError = null;
+
+        try {
+            $productions = $generate->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                lines: $this->lines,
+                firstDate: $this->firstDate,
+                batchesPerDay: $this->batchesPerDay,
+                idempotencyKey: $this->idempotencyKey,
+            );
+        } catch (ValidationException $exception) {
+            $this->simulationError = collect($exception->errors())->flatten()->first();
+
+            return;
+        }
+
+        $this->generatedPublicIds = $productions
+            ->map(fn ($production): string => (string) $production->public_id)
+            ->values()
+            ->all();
+        $this->idempotencyKey = (string) Str::uuid();
+        $this->showDatePreview = false;
+        $this->dispatch('flash-productions-generated');
     }
 
     public function render(

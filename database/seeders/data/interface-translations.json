@@ -7843,13 +7843,35 @@
         },
         {
             "group": "production_bench",
+            "key": "flash.generate_productions",
+            "text": {
+                "de": "Bestätigen und Produktionen erstellen",
+                "es": "Confirmar y crear producciones",
+                "fr": "Confirmer et créer les productions",
+                "it": "Conferma e crea produzioni",
+                "nl": "Bevestigen en producties aanmaken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.generated_success",
+            "text": {
+                "de": ":count Produktion(en) erstellt.",
+                "es": ":count producción(es) creada(s).",
+                "fr": ":count production(s) créée(s).",
+                "it": ":count produzione/i creata/e.",
+                "nl": ":count productie(s) aangemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "flash.generation_next_step",
             "text": {
-                "de": "Noch wurde nichts erstellt. Die Produktionserstellung wird im nächsten Schritt bestätigt.",
-                "es": "Aún no se ha creado nada. La generación de producción se confirmará en el siguiente paso.",
-                "fr": "Rien n’a encore été créé. La création des productions sera confirmée à l’étape suivante.",
-                "it": "Non è ancora stato creato nulla. La generazione della produzione sarà confermata nel passaggio successivo.",
-                "nl": "Er is nog niets aangemaakt. Het aanmaken van producties wordt in de volgende stap bevestigd."
+                "de": "Noch wurde nichts erstellt. Bestätigen Sie unten, wenn Termine und Aufgaben stimmen.",
+                "es": "Aún no se ha creado nada. Confirme abajo cuando las fechas y tareas sean correctas.",
+                "fr": "Rien n’a encore été créé. Confirmez ci-dessous lorsque les dates et tâches sont correctes.",
+                "it": "Non è ancora stato creato nulla. Conferma qui sotto quando date e attività sono corrette.",
+                "nl": "Er is nog niets aangemaakt. Bevestig hieronder wanneer de data en taken kloppen."
             }
         },
         {

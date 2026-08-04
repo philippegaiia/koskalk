@@ -435,6 +435,8 @@ return [
         'schedule_help' => 'Choose the first production date and how many batches can be made per working day. Weekends and configured closures are skipped.',
         'batches_per_day' => 'Batches per working day',
         'generate_preview' => 'Generate date preview',
+        'generate_productions' => 'Confirm and create productions',
+        'generated_success' => ':count production(s) created.',
         'summary' => 'Flash simulation',
         'summary_help' => 'This is an indicative calculation only. It does not reserve stock or create productions.',
         'expected_units' => 'Units planned',
@@ -447,7 +449,7 @@ return [
         'date_preview' => 'Proposed production dates',
         'date_preview_help' => 'Check the dates and follow-up tasks. The next step will turn this reviewed proposal into production records.',
         'batch_label' => 'batch :number of :total',
-        'generation_next_step' => 'Nothing has been created yet. Production generation will be confirmed in the next step.',
+        'generation_next_step' => 'Nothing has been created yet. Confirm below when the dates and tasks look right.',
     ],
     'settings' => [
         'title' => 'Production setup',

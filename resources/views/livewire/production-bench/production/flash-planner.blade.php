@@ -16,6 +16,13 @@
             @endif
         </header>
 
+        @if ($generatedPublicIds)
+            <p role="status" class="rounded-xl bg-[var(--color-success-soft)] px-4 py-3 text-sm text-[var(--color-success-strong)]">
+                {{ __('production_bench.flash.generated_success', ['count' => count($generatedPublicIds)]) }}
+                <span class="ml-2 font-mono">{{ implode(', ', $generatedPublicIds) }}</span>
+            </p>
+        @endif
+
         <section aria-labelledby="flash-lines-heading" class="sk-card space-y-5 p-5 sm:p-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -179,6 +186,9 @@
                     @endforeach
                 </div>
                 <p class="rounded-xl bg-[var(--color-panel-muted)] px-4 py-3 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.generation_next_step') }}</p>
+                <div class="flex flex-wrap justify-end gap-3">
+                    <button type="button" wire:click="generate" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.flash.generate_productions') }}</button>
+                </div>
             </section>
         @endif
     @endif

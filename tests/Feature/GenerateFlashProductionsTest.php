@@ -1,0 +1,167 @@
+<?php
+
+use App\Actions\Production\GenerateFlashProductions;
+use App\Models\ProductFamily;
+use App\Models\ProductionRun;
+use App\Models\ProductionTaskSet;
+use App\Models\ProductionTaskSetItem;
+use App\Models\ProductionTaskType;
+use App\Models\Recipe;
+use App\Models\RecipeVersion;
+use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceProductionEntitlement;
+use App\OwnerType;
+use App\ProductionRunSource;
+use App\Visibility;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
+
+uses(RefreshDatabase::class);
+
+it('creates one planned production per flash batch with tasks and is idempotent', function (): void {
+    $fixture = generateFlashFixture();
+    $lines = [
+        [
+            'recipe_id' => $fixture['recipe']->id,
+            'desired_units' => '250',
+            'expected_units_per_batch' => '100',
+            'basis_input_value' => '12',
+            'basis_input_unit' => 'kg',
+            'task_set_id' => $fixture['taskSet']->id,
+        ],
+    ];
+
+    $action = app(GenerateFlashProductions::class);
+    $first = $action->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        lines: $lines,
+        firstDate: '2026-08-10',
+        batchesPerDay: 2,
+        idempotencyKey: 'flash-demo-1',
+    );
+    $second = $action->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        lines: $lines,
+        firstDate: '2026-08-10',
+        batchesPerDay: 2,
+        idempotencyKey: 'flash-demo-1',
+    );
+
+    expect($first)->toHaveCount(3)
+        ->and($second)->toHaveCount(3)
+        ->and(ProductionRun::query()->where('workspace_id', $fixture['workspace']->id)->count())->toBe(3)
+        ->and(ProductionRun::query()->where('source', ProductionRunSource::Flash)->count())->toBe(3)
+        ->and($first->pluck('planned_for')->map(fn ($date): string => $date->toDateString())->all())->toBe(['2026-08-10', '2026-08-10', '2026-08-11'])
+        ->and($first->every(fn (ProductionRun $production): bool => $production->tasks()->count() === 1))->toBeTrue();
+});
+
+it('rolls back every generated production when a later flash line is invalid', function (): void {
+    $fixture = generateFlashFixture();
+    $otherOwner = User::factory()->create();
+    $otherWorkspace = Workspace::factory()->for($otherOwner, 'owner')->create();
+    $otherFamily = ProductFamily::factory()->create(['calculation_basis' => 'initial_oils']);
+    $foreignRecipe = Recipe::factory()->for($otherFamily, 'productFamily')->create([
+        'workspace_id' => $otherWorkspace->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $otherWorkspace->id,
+        'visibility' => Visibility::Private,
+    ]);
+    RecipeVersion::factory()->for($foreignRecipe)->create([
+        'workspace_id' => $otherWorkspace->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $otherWorkspace->id,
+        'visibility' => Visibility::Private,
+        'is_current' => false,
+    ]);
+
+    expect(fn () => app(GenerateFlashProductions::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        lines: [
+            [
+                'recipe_id' => $fixture['recipe']->id,
+                'desired_units' => '100',
+                'expected_units_per_batch' => '100',
+                'basis_input_value' => '12',
+                'basis_input_unit' => 'kg',
+            ],
+            [
+                'recipe_id' => $foreignRecipe->id,
+                'desired_units' => '100',
+                'expected_units_per_batch' => '100',
+                'basis_input_value' => '12',
+                'basis_input_unit' => 'kg',
+            ],
+        ],
+        firstDate: '2026-08-10',
+        batchesPerDay: 1,
+        idempotencyKey: 'flash-atomic-1',
+    ))->toThrow(ValidationException::class);
+
+    expect(ProductionRun::query()->where('workspace_id', $fixture['workspace']->id)->count())->toBe(0);
+});
+
+it('rejects reusing a flash key for a different number of batches', function (): void {
+    $fixture = generateFlashFixture();
+    $action = app(GenerateFlashProductions::class);
+    $baseLine = [
+        'recipe_id' => $fixture['recipe']->id,
+        'expected_units_per_batch' => '100',
+        'basis_input_value' => '12',
+        'basis_input_unit' => 'kg',
+    ];
+
+    $action->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        lines: [$baseLine + ['desired_units' => '250']],
+        firstDate: '2026-08-10',
+        batchesPerDay: 1,
+        idempotencyKey: 'flash-conflict-1',
+    );
+
+    expect(fn () => $action->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        lines: [$baseLine + ['desired_units' => '150']],
+        firstDate: '2026-08-10',
+        batchesPerDay: 1,
+        idempotencyKey: 'flash-conflict-1',
+    ))->toThrow(ValidationException::class);
+});
+
+/** @return array{owner: User, workspace: Workspace, recipe: Recipe, taskSet: ProductionTaskSet} */
+function generateFlashFixture(): array
+{
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    WorkspaceProductionEntitlement::factory()->for($workspace)->create();
+    $family = ProductFamily::factory()->create([
+        'calculation_basis' => 'initial_oils',
+        'slug' => 'generate-flash-family-'.fake()->unique()->numberBetween(1, 999999),
+    ]);
+    $recipe = Recipe::factory()->for($family, 'productFamily')->create([
+        'workspace_id' => $workspace->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+    ]);
+    RecipeVersion::factory()->for($recipe)->create([
+        'workspace_id' => $workspace->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'is_current' => false,
+    ]);
+    $taskType = ProductionTaskType::factory()->for($workspace)->create(['name' => 'Make']);
+    $taskSet = ProductionTaskSet::factory()->for($workspace)->create(['name' => 'Flash set']);
+    ProductionTaskSetItem::factory()->for($taskSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+
+    return compact('owner', 'workspace', 'recipe', 'taskSet');
+}

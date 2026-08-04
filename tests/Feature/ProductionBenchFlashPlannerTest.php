@@ -36,6 +36,14 @@ it('renders the flash planner, simulates a line, and previews dates without crea
 
     expect($page->get('datePreview'))->toHaveCount(1)
         ->and($fixture['workspace']->productionRuns()->count())->toBe(0);
+
+    $page->call('generate')
+        ->assertHasNoErrors()
+        ->assertSet('showDatePreview', false)
+        ->assertSee(__('production_bench.flash.generated_success', ['count' => 1]));
+
+    expect($page->get('generatedPublicIds'))->toHaveCount(1)
+        ->and($fixture['workspace']->productionRuns()->count())->toBe(1);
 });
 
 it('allows adding and removing flash product lines', function (): void {

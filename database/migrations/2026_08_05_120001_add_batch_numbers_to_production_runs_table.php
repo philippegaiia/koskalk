@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('batch_number_assigned_by_user_id')
                 ->nullable()
                 ->constrained('users')
-                ->nullOnDelete();
+                ->restrictOnDelete();
 
             $table->unique(['workspace_id', 'planning_batch_number'], 'production_runs_workspace_planning_batch_number_unique');
             $table->unique(['workspace_id', 'batch_number'], 'production_runs_workspace_batch_number_unique');

@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -9,23 +10,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $nextSerialByWorkspace = [];
+        $backfill = function (): void {
+            $nextSerialByWorkspace = [];
 
-        DB::transaction(function () use (&$nextSerialByWorkspace): void {
-            $runs = DB::table('production_runs')
+            DB::table('production_runs')
                 ->orderBy('workspace_id')
                 ->orderBy('id')
-                ->get(['id', 'workspace_id']);
+                ->chunk(500, function (Collection $runs) use (&$nextSerialByWorkspace): void {
+                    foreach ($runs as $run) {
+                        $serial = $nextSerialByWorkspace[$run->workspace_id] ?? 1;
 
-            foreach ($runs as $run) {
-                $serial = $nextSerialByWorkspace[$run->workspace_id] ?? 1;
+                        DB::table('production_runs')->where('id', $run->id)->update([
+                            'planning_batch_number' => 'T'.str_pad((string) $serial, 5, '0', STR_PAD_LEFT),
+                        ]);
 
-                DB::table('production_runs')->where('id', $run->id)->update([
-                    'planning_batch_number' => 'T'.str_pad((string) $serial, 5, '0', STR_PAD_LEFT),
-                ]);
-
-                $nextSerialByWorkspace[$run->workspace_id] = $serial + 1;
-            }
+                        $nextSerialByWorkspace[$run->workspace_id] = $serial + 1;
+                    }
+                });
 
             foreach ($nextSerialByWorkspace as $workspaceId => $nextSerial) {
                 DB::table('production_run_number_settings')->insertOrIgnore([
@@ -45,24 +46,50 @@ return new class extends Migration
                         'updated_at' => now(),
                     ]);
             }
-        });
 
-        if (DB::table('production_runs')->whereNull('planning_batch_number')->exists()) {
-            throw new RuntimeException('Production run planning references must be backfilled before enforcing their presence.');
+            if (DB::table('production_runs')->whereNull('planning_batch_number')->exists()) {
+                throw new RuntimeException('Production run planning references must be backfilled before enforcing their presence.');
+            }
+
+            if (DB::getDriverName() === 'sqlite') {
+                DB::statement('DROP TRIGGER IF EXISTS production_runs_valid_values_insert');
+                DB::statement('DROP TRIGGER IF EXISTS production_runs_valid_values_update');
+            }
+
+            Schema::table('production_runs', function (Blueprint $table): void {
+                $table->string('planning_batch_number', 32)->nullable(false)->change();
+            });
+
+            if (DB::getDriverName() === 'sqlite') {
+                $this->createProductionRunValidationTriggers();
+            }
+        };
+
+        if (DB::getDriverName() === 'pgsql') {
+            DB::transaction(function () use ($backfill): void {
+                DB::statement('LOCK TABLE production_runs IN SHARE ROW EXCLUSIVE MODE');
+                $backfill();
+            });
+
+            return;
         }
 
-        if (DB::getDriverName() === 'sqlite') {
-            DB::statement('DROP TRIGGER IF EXISTS production_runs_valid_values_insert');
-            DB::statement('DROP TRIGGER IF EXISTS production_runs_valid_values_update');
+        if (DB::getDriverName() === 'sqlite' && DB::transactionLevel() === 0) {
+            DB::statement('BEGIN IMMEDIATE TRANSACTION');
+
+            try {
+                $backfill();
+                DB::statement('COMMIT');
+            } catch (Throwable $exception) {
+                DB::statement('ROLLBACK');
+
+                throw $exception;
+            }
+
+            return;
         }
 
-        Schema::table('production_runs', function (Blueprint $table): void {
-            $table->string('planning_batch_number', 32)->nullable(false)->change();
-        });
-
-        if (DB::getDriverName() === 'sqlite') {
-            $this->createProductionRunValidationTriggers();
-        }
+        DB::transaction($backfill);
     }
 
     public function down(): void

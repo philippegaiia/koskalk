@@ -68,6 +68,30 @@ it('keeps rendered run identifiers unique within a workspace while isolating wor
         ]))->toThrow(QueryException::class);
 });
 
+it('rejects planning and permanent identifiers that collide across a workspace or on one run', function (): void {
+    $workspace = Workspace::factory()->create();
+
+    ProductionRun::factory()->for($workspace)->create([
+        'planning_batch_number' => 'T20000',
+        'batch_number' => 'B20000',
+        'batch_number_serial' => 20000,
+        'batch_number_assigned_at' => now(),
+    ]);
+
+    expect(fn (): ProductionRun => ProductionRun::factory()->for($workspace)->create([
+        'planning_batch_number' => 'B20000',
+    ]))->toThrow(QueryException::class)
+        ->and(fn (): ProductionRun => ProductionRun::factory()->for($workspace)->create([
+            'batch_number' => 'T20000',
+        ]))->toThrow(QueryException::class)
+        ->and(fn (): ProductionRun => ProductionRun::factory()->for($workspace)->create([
+            'planning_batch_number' => 'T20001',
+            'batch_number' => 'T20001',
+            'batch_number_serial' => 20001,
+            'batch_number_assigned_at' => now(),
+        ]))->toThrow(QueryException::class);
+});
+
 it('backfills temporary planning identifiers in workspace and run order without inferring permanent numbers', function (): void {
     $firstWorkspace = Workspace::factory()->create();
     $secondWorkspace = Workspace::factory()->create();
@@ -123,8 +147,61 @@ it('prevents model and mass updates from rewriting assigned identifiers and meta
         ->and(fn (): int => DB::table('production_runs')->where('id', $run->id)->update([
             'batch_number_assigned_by_user_id' => null,
         ]))->toThrow(QueryException::class)
+        ->and(fn (): ?bool => $assigner->delete())
+        ->toThrow(QueryException::class)
         ->and(fn (): ?bool => $run->fresh()->delete())
         ->toThrow(QueryException::class);
+});
+
+it('keeps planning references immutable before permanent assignment', function (): void {
+    $run = ProductionRun::factory()->create(['planning_batch_number' => 'T21001']);
+
+    expect(fn (): int => DB::table('production_runs')->where('id', $run->id)->update([
+        'planning_batch_number' => 'T21002',
+    ]))->toThrow(QueryException::class);
+});
+
+it('rejects non-positive number serial settings and run assignment serials', function (): void {
+    $setting = ProductionRunNumberSetting::query()->create([
+        'workspace_id' => Workspace::factory()->create()->id,
+    ]);
+    $run = ProductionRun::factory()->create();
+
+    expect(fn (): int => DB::table('production_run_number_settings')->where('id', $setting->id)->update([
+        'next_planning_serial' => 0,
+    ]))->toThrow(QueryException::class)
+        ->and(fn (): int => DB::table('production_run_number_settings')->where('id', $setting->id)->update([
+            'next_permanent_serial' => 0,
+        ]))->toThrow(QueryException::class)
+        ->and(fn (): int => DB::table('production_run_number_settings')->where('id', $setting->id)->update([
+            'permanent_padding' => 0,
+        ]))->toThrow(QueryException::class)
+        ->and(fn (): int => DB::table('production_runs')->where('id', $run->id)->update([
+            'batch_number_serial' => 0,
+        ]))->toThrow(QueryException::class);
+});
+
+it('enforces permanent number integrity on PostgreSQL', function (): void {
+    if (DB::getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('PostgreSQL-only trigger integration test.');
+    }
+
+    $assigner = User::factory()->create();
+    $run = ProductionRun::factory()->create();
+    $run->update([
+        'batch_number' => 'B-22001',
+        'batch_number_serial' => 22001,
+        'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $assigner->id,
+    ]);
+
+    expect(fn (): int => ProductionRun::query()->whereKey($run->id)->update([
+        'batch_number' => 'B-22002',
+    ]))->toThrow(QueryException::class)
+        ->and(fn (): int => ProductionRun::query()->whereKey($run->id)->update([
+            'batch_number_assigned_at' => now()->addMinute(),
+        ]))->toThrow(QueryException::class)
+        ->and(fn (): ?bool => $run->fresh()->delete())->toThrow(QueryException::class);
 });
 
 it('gives factory runs distinct temporary identifiers and falls back to them for display', function (): void {

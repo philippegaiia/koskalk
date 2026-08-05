@@ -66,7 +66,7 @@ it('uses permanent batch numbers before planning references in production event 
         ->toBe('B-00001-FR · Olive soap')
         ->and(collect($events)->firstWhere('id', 'task-'.$task->id)['title'])
         ->toBe('Cure soap')
-        ->and(collect($events)->firstWhere('id', 'task-'.$task->id)['extendedProps']['url'])
+        ->and(collect($events)->firstWhere('id', 'task-'.$task->id)['url'])
         ->toContain($permanent->public_id);
 });
 

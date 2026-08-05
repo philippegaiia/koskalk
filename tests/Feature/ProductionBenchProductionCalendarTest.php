@@ -25,7 +25,9 @@ it('returns workspace-scoped production and task events for a date range', funct
         'scheduled_for' => '2026-08-21',
     ]);
     $other = productionCalendarFixture();
-    productionCalendarProduction($other, '2026-08-20', ProductionRunStatus::Scheduled);
+    productionCalendarProduction($other, '2026-08-20', ProductionRunStatus::Scheduled, [
+        'planning_batch_number' => 'T00002',
+    ]);
 
     $component = Livewire::actingAs($fixture['owner'])->test(ProductionCalendar::class)
         ->call('setRange', '2026-08-01', '2026-09-01');
@@ -33,10 +35,39 @@ it('returns workspace-scoped production and task events for a date range', funct
 
     expect($events)->toHaveCount(2)
         ->and(collect($events)->pluck('extendedProps.eventType')->sort()->values()->all())->toBe(['production', 'task'])
-        ->and(collect($events)->pluck('title')->all())->toContain('Olive soap', 'Cut and cure')
+        ->and(collect($events)->pluck('title')->all())->toContain('T00001 · Olive soap', 'Cut and cure')
         ->and(collect($events)->pluck('url')->join('|'))->toContain($production->public_id)
         ->and(collect($events)->pluck('url')->join('|'))->not->toContain($other['production']->public_id)
         ->and($task->productionRun->is($production))->toBeTrue();
+});
+
+it('uses permanent batch numbers before planning references in production event titles', function (): void {
+    $fixture = productionCalendarFixture();
+    $permanent = productionCalendarProduction($fixture, '2026-08-22', ProductionRunStatus::Scheduled, [
+        'planning_batch_number' => 'T00002',
+        'batch_number' => 'B-00001-FR',
+        'batch_number_serial' => 1,
+        'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $fixture['owner']->id,
+    ]);
+    $task = ProductionTask::factory()->for($fixture['workspace'])->for($permanent, 'productionRun')->create([
+        'name_snapshot' => 'Cure soap',
+        'scheduled_for' => '2026-08-23',
+    ]);
+
+    $events = Livewire::actingAs($fixture['owner'])->test(ProductionCalendar::class)
+        ->call('setRange', '2026-08-01', '2026-09-01')
+        ->instance()
+        ->events();
+
+    expect(collect($events)->firstWhere('id', 'production-'.$fixture['production']->id)['title'])
+        ->toBe('T00001 · Olive soap')
+        ->and(collect($events)->firstWhere('id', 'production-'.$permanent->id)['title'])
+        ->toBe('B-00001-FR · Olive soap')
+        ->and(collect($events)->firstWhere('id', 'task-'.$task->id)['title'])
+        ->toBe('Cure soap')
+        ->and(collect($events)->firstWhere('id', 'task-'.$task->id)['extendedProps']['url'])
+        ->toContain($permanent->public_id);
 });
 
 it('filters tasks and completed events without exposing mutation controls', function (): void {
@@ -118,7 +149,7 @@ function productionCalendarFixture(): array
 /**
  * @param  array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}  $fixture
  */
-function productionCalendarProduction(array $fixture, string $plannedFor, ProductionRunStatus $status): ProductionRun
+function productionCalendarProduction(array $fixture, string $plannedFor, ProductionRunStatus $status, array $identity = []): ProductionRun
 {
     return ProductionRun::query()->create([
         'workspace_id' => $fixture['workspace']->id,
@@ -134,5 +165,10 @@ function productionCalendarProduction(array $fixture, string $plannedFor, Produc
         'expected_units' => 100,
         'idempotency_key' => fake()->uuid(),
         'created_by_user_id' => $fixture['owner']->id,
+        'planning_batch_number' => $identity['planning_batch_number'] ?? 'T00001',
+        'batch_number' => $identity['batch_number'] ?? null,
+        'batch_number_serial' => $identity['batch_number_serial'] ?? null,
+        'batch_number_assigned_at' => $identity['batch_number_assigned_at'] ?? null,
+        'batch_number_assigned_by_user_id' => $identity['batch_number_assigned_by_user_id'] ?? null,
     ]);
 }

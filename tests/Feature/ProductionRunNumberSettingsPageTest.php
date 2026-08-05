@@ -88,13 +88,14 @@ it('keeps editors and viewers read-only while enforcing owner or admin configura
 
     Livewire::actingAs($editor)
         ->test(NumberingSettings::class)
-        ->assertSee(__('production_bench.settings.numbering_future_help'))
+        ->assertSee(__('production_bench.settings.numbering_editor_read_only'))
         ->assertSeeHtml('readonly')
         ->call('save')
         ->assertForbidden();
 
     Livewire::actingAs($viewer)
         ->test(NumberingSettings::class)
+        ->assertSee(__('production_bench.settings.numbering_viewer_read_only'))
         ->assertSeeHtml('readonly')
         ->call('save')
         ->assertForbidden();
@@ -105,6 +106,7 @@ it('does not allow inactive or cancelled production benches to change number set
 
     Livewire::actingAs($inactive['owner'])
         ->test(NumberingSettings::class)
+        ->assertSee(__('production_bench.settings.numbering_inactive_read_only'))
         ->set('permanentPrefix', 'INACTIVE-')
         ->call('save')
         ->assertHasErrors('nextPermanentSerial');
@@ -114,6 +116,7 @@ it('does not allow inactive or cancelled production benches to change number set
 
     Livewire::actingAs($cancelled['owner'])
         ->test(NumberingSettings::class)
+        ->assertSee(__('production_bench.settings.numbering_cancelled_read_only'))
         ->set('permanentPrefix', 'CANCELLED-')
         ->call('save')
         ->assertHasErrors('nextPermanentSerial');
@@ -132,6 +135,14 @@ it('provides English numbering translation keys', function (): void {
         'temporary_counter_help',
         'numbering_future_help',
         'numbering_saved',
+        'numbering_editor_read_only',
+        'numbering_viewer_read_only',
+        'numbering_inactive_read_only',
+        'numbering_cancelled_read_only',
+        'numbering_affix_invalid',
+        'numbering_rendered_too_long',
+        'numbering_next_in_use',
+        'numbering_positive_integer',
     ] as $key) {
         expect(Lang::has("production_bench.settings.{$key}", 'en'))->toBeTrue();
     }

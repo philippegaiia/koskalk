@@ -7403,6 +7403,17 @@
         },
         {
             "group": "production_bench",
+            "key": "calendar.day",
+            "text": {
+                "de": "Tag",
+                "es": "Día",
+                "fr": "Jour",
+                "it": "Giorno",
+                "nl": "Dag"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "calendar.intro",
             "text": {
                 "de": "Produktionschargen und Folgetermine nach Monat, Woche oder Agenda anzeigen.",
@@ -7579,6 +7590,17 @@
         },
         {
             "group": "production_bench",
+            "key": "common.delete",
+            "text": {
+                "de": "Löschen",
+                "es": "Eliminar",
+                "fr": "Supprimer",
+                "it": "Elimina",
+                "nl": "Verwijderen"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "common.edit",
             "text": {
                 "de": "Bearbeiten",
@@ -7630,6 +7652,17 @@
                 "fr": "Lecture seule. Reprenez pour modifier.",
                 "it": "Sola lettura. Riprendi per modificare.",
                 "nl": "Alleen-lezen. Hervat om te bewerken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "common.filters",
+            "text": {
+                "de": "Filter",
+                "es": "Filtros",
+                "fr": "Filtres",
+                "it": "Filtri",
+                "nl": "Filters"
             }
         },
         {
@@ -9130,6 +9163,17 @@
         },
         {
             "group": "production_bench",
+            "key": "navigation.tasks",
+            "text": {
+                "de": "Aufgaben",
+                "es": "Tareas",
+                "fr": "Tâches",
+                "it": "Attività",
+                "nl": "Taken"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "navigation.purchase_orders",
             "text": {
                 "de": "Bestellungen",
@@ -9878,6 +9922,28 @@
         },
         {
             "group": "production_bench",
+            "key": "production.choose_department",
+            "text": {
+                "de": "Abteilung zuweisen",
+                "es": "Asignar departamento",
+                "fr": "Affecter un département",
+                "it": "Assegna reparto",
+                "nl": "Afdeling toewijzen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.reset_task_date",
+            "text": {
+                "de": "Automatisches Datum zurücksetzen",
+                "es": "Restablecer fecha automática",
+                "fr": "Réinitialiser la date automatique",
+                "it": "Reimposta data automatica",
+                "nl": "Automatische datum resetten"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.choose_lots_manually",
             "text": {
                 "de": "Lose manuell auswählen",
@@ -10006,6 +10072,105 @@
                 "fr": "Date de début",
                 "it": "Dalla data",
                 "nl": "Vanaf datum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.task_list_help",
+            "text": {
+                "de": "Sehen Sie, was heute, als Nächstes oder verspätet in allen geplanten Produktionen zu tun ist.",
+                "es": "Vea qué debe hacerse hoy, después o con retraso en todas las producciones planificadas.",
+                "fr": "Voyez ce qui doit être fait aujourd’hui, ensuite ou en retard dans toutes les productions planifiées.",
+                "it": "Vedi cosa deve essere fatto oggi, dopo o in ritardo in tutte le produzioni pianificate.",
+                "nl": "Zie wat vandaag, hierna of te laat moet gebeuren in alle geplande producties."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.task_scopes",
+            "text": {
+                "de": "Aufgabenzeiträume",
+                "es": "Rangos de fechas de tareas",
+                "fr": "Périodes des tâches",
+                "it": "Intervalli delle attività",
+                "nl": "Taakperiodes"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.today",
+            "text": {
+                "de": "Heute",
+                "es": "Hoy",
+                "fr": "Aujourd’hui",
+                "it": "Oggi",
+                "nl": "Vandaag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.upcoming",
+            "text": {
+                "de": "Bevorstehend",
+                "es": "Próximas",
+                "fr": "À venir",
+                "it": "In arrivo",
+                "nl": "Aankomend"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.overdue",
+            "text": {
+                "de": "Überfällig",
+                "es": "Atrasadas",
+                "fr": "En retard",
+                "it": "In ritardo",
+                "nl": "Achterstallig"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.task_search_placeholder",
+            "text": {
+                "de": "Aufgabe, Produkt oder Produktionscode",
+                "es": "Tarea, producto o código de producción",
+                "fr": "Tâche, produit ou code de production",
+                "it": "Attività, prodotto o codice produzione",
+                "nl": "Taak, product of productiecode"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.open_tasks",
+            "text": {
+                "de": "Offene Aufgaben",
+                "es": "Tareas abiertas",
+                "fr": "Tâches ouvertes",
+                "it": "Attività aperte",
+                "nl": "Open taken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.no_tasks_match",
+            "text": {
+                "de": "Keine Produktionsaufgaben entsprechen diesen Filtern.",
+                "es": "Ninguna tarea de producción coincide con estos filtros.",
+                "fr": "Aucune tâche de production ne correspond à ces filtres.",
+                "it": "Nessuna attività di produzione corrisponde a questi filtri.",
+                "nl": "Geen productietaken voldoen aan deze filters."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.product",
+            "text": {
+                "de": "Produkt",
+                "es": "Producto",
+                "fr": "Produit",
+                "it": "Prodotto",
+                "nl": "Product"
             }
         },
         {
@@ -10611,6 +10776,17 @@
                 "fr": "Dates des tâches",
                 "it": "Date delle attività",
                 "nl": "Taakdatums"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.task_date",
+            "text": {
+                "de": "Aufgabendatum",
+                "es": "Fecha de tarea",
+                "fr": "Date de la tâche",
+                "it": "Data attività",
+                "nl": "Taakdatum"
             }
         },
         {
@@ -11572,6 +11748,28 @@
         },
         {
             "group": "production_bench",
+            "key": "receipt.manual_exchange_rate",
+            "text": {
+                "de": "Manueller Wechselkurs (optional)",
+                "es": "Tipo de cambio manual (opcional)",
+                "fr": "Taux de change manuel (facultatif)",
+                "it": "Tasso di cambio manuale (opzionale)",
+                "nl": "Handmatige wisselkoers (optioneel)"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "receipt.manual_exchange_rate_help",
+            "text": {
+                "de": "Verwenden Sie dies, wenn der Wechselkursanbieter nicht verfügbar ist. Geben Sie die Arbeitsbereichswährung pro Lieferantenwährung ein.",
+                "es": "Úselo cuando el proveedor de tipos de cambio no esté disponible. Introduzca la moneda del espacio de trabajo por unidad de moneda del proveedor.",
+                "fr": "Utilisez-le lorsque le fournisseur de taux est indisponible. Saisissez la devise de l’espace de travail par unité de devise fournisseur.",
+                "it": "Usalo quando il fornitore dei tassi non è disponibile. Inserisci la valuta dell’area di lavoro per unità di valuta del fornitore.",
+                "nl": "Gebruik dit wanneer de wisselkoersprovider niet beschikbaar is. Voer de werkruimtevaluta per eenheid leveranciersvaluta in."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "receipt.new",
             "text": {
                 "de": "Neuer Wareneingang",
@@ -12254,6 +12452,50 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.applicable",
+            "text": {
+                "de": "Anwendbar",
+                "es": "Aplicable",
+                "fr": "Applicable",
+                "it": "Applicabile",
+                "nl": "Toepasbaar"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.applicable_product",
+            "text": {
+                "de": "Diese Vorlage für :product verwenden",
+                "es": "Usar esta plantilla para :product",
+                "fr": "Utiliser ce modèle pour :product",
+                "it": "Usa questo modello per :product",
+                "nl": "Deze sjabloon gebruiken voor :product"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.applicable_products",
+            "text": {
+                "de": "Anwendbare Produkte",
+                "es": "Productos aplicables",
+                "fr": "Produits concernés",
+                "it": "Prodotti applicabili",
+                "nl": "Toepasbare producten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.applicable_products_help",
+            "text": {
+                "de": "Wählen Sie alle Produkte aus, die diesen Ablauf verwenden können.",
+                "es": "Selecciona todos los productos que puedan usar este flujo.",
+                "fr": "Sélectionnez tous les produits pouvant utiliser ce processus.",
+                "it": "Seleziona tutti i prodotti che possono usare questo flusso.",
+                "nl": "Selecteer alle producten die deze workflow kunnen gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.batch_size",
             "text": {
                 "de": "Chargengröße",
@@ -12261,6 +12503,72 @@
                 "fr": "Taille du lot",
                 "it": "Dimensione del lotto",
                 "nl": "Batchgrootte"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.batch_size_active_help",
+            "text": {
+                "de": "Aktive Chargengrößen können bei der Produktionsplanung ausgewählt werden.",
+                "es": "Los tamaños de lote activos se pueden seleccionar al planificar la producción.",
+                "fr": "Les tailles de lot actives peuvent être sélectionnées lors de la planification de la production.",
+                "it": "Le dimensioni dei lotti attive possono essere selezionate durante la pianificazione della produzione.",
+                "nl": "Actieve batchgroottes kunnen worden geselecteerd bij het plannen van productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.batch_size_deleted",
+            "text": {
+                "de": "Chargengröße gelöscht.",
+                "es": "Tamaño de lote eliminado.",
+                "fr": "Taille de lot supprimée.",
+                "it": "Dimensione lotto eliminata.",
+                "nl": "Batchgrootte verwijderd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.batch_size_help",
+            "text": {
+                "de": "Geben Sie die Gesamtmenge für eine Charge ein, zum Beispiel 12 kg.",
+                "es": "Introduzca la cantidad total de material de un lote, por ejemplo 12 kg.",
+                "fr": "Saisissez la quantité totale d’une production, par exemple 12 kg.",
+                "it": "Inserisci la quantità totale di un lotto, ad esempio 12 kg.",
+                "nl": "Voer de totale hoeveelheid voor één batch in, bijvoorbeeld 12 kg."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.batch_size_invalid",
+            "text": {
+                "de": "Geben Sie eine gültige Chargenmenge größer als null ein.",
+                "es": "Introduzca una cantidad de lote válida mayor que cero.",
+                "fr": "Saisissez une quantité de lot valide supérieure à zéro.",
+                "it": "Inserisci una quantità di lotto valida maggiore di zero.",
+                "nl": "Voer een geldige batchhoeveelheid groter dan nul in."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.batch_size_required",
+            "text": {
+                "de": "Geben Sie die Chargenmenge ein.",
+                "es": "Introduzca la cantidad del lote.",
+                "fr": "Saisissez la quantité du lot.",
+                "it": "Inserisci la quantità del lotto.",
+                "nl": "Voer de batchhoeveelheid in."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.batch_size_saved",
+            "text": {
+                "de": "Chargengröße gespeichert.",
+                "es": "Tamaño de lote guardado.",
+                "fr": "Taille de lot enregistrée.",
+                "it": "Dimensione lotto salvata.",
+                "nl": "Batchgrootte opgeslagen."
             }
         },
         {
@@ -12300,11 +12608,22 @@
             "group": "production_bench",
             "key": "settings.days_after_production",
             "text": {
-                "de": "Tage nach der Produktion",
-                "es": "Días después de la producción",
-                "fr": "Jours après la production",
-                "it": "Giorni dopo la produzione",
-                "nl": "Dagen na productie"
+                "de": "Tage relativ zur Produktion",
+                "es": "Días relativos a la producción",
+                "fr": "Jours relatifs à la production",
+                "it": "Giorni relativi alla produzione",
+                "nl": "Dagen relatief aan productie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.days_relative_to_production",
+            "text": {
+                "de": "Tage relativ zur Produktion",
+                "es": "Días relativos a la producción",
+                "fr": "Jours relatifs à la production",
+                "it": "Giorni relativi alla produzione",
+                "nl": "Dagen relatief aan productie"
             }
         },
         {
@@ -12333,11 +12652,198 @@
             "group": "production_bench",
             "key": "settings.default_product",
             "text": {
-                "de": "Standardprodukt",
-                "es": "Producto predeterminado",
-                "fr": "Produit par défaut",
-                "it": "Prodotto predefinito",
-                "nl": "Standaardproduct"
+                "de": "Standard für :product",
+                "es": "Predeterminado para :product",
+                "fr": "Par défaut pour :product",
+                "it": "Predefinito per :product",
+                "nl": "Standaard voor :product"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.delete_employee_confirm",
+            "text": {
+                "de": "Diesen Mitarbeiter löschen? Zugewiesene Produktionsaufgaben werden nicht mehr zugewiesen.",
+                "es": "¿Eliminar a este empleado? Las tareas de producción asignadas quedarán sin asignar.",
+                "fr": "Supprimer cet employé ? Les tâches de production qui lui sont affectées seront désattribuées.",
+                "it": "Eliminare questo dipendente? Le attività di produzione assegnate verranno disassegnate.",
+                "nl": "Deze medewerker verwijderen? Toegewezen productietaken worden niet langer toegewezen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.employee_title",
+            "text": {
+                "de": "Titel / Rolle",
+                "es": "Cargo / función",
+                "fr": "Titre / rôle",
+                "it": "Titolo / ruolo",
+                "nl": "Titel / rol"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.employee_departments",
+            "text": {
+                "de": "Abteilungen",
+                "es": "Departamentos",
+                "fr": "Départements",
+                "it": "Reparti",
+                "nl": "Afdelingen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_title",
+            "text": {
+                "de": "Kein Titel",
+                "es": "Sin cargo",
+                "fr": "Aucun titre",
+                "it": "Nessun titolo",
+                "nl": "Geen titel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_departments_assigned",
+            "text": {
+                "de": "Keine Abteilungen zugewiesen",
+                "es": "Sin departamentos asignados",
+                "fr": "Aucun département affecté",
+                "it": "Nessun reparto assegnato",
+                "nl": "Geen afdelingen toegewezen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.departments",
+            "text": {
+                "de": "Abteilungen",
+                "es": "Departamentos",
+                "fr": "Départements",
+                "it": "Reparti",
+                "nl": "Afdelingen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.departments_help",
+            "text": {
+                "de": "Optionale Gruppen zur Organisation der Produktionsarbeit. Erstellen Sie nur Gruppen, die Ihrem Team helfen.",
+                "es": "Grupos opcionales para organizar el trabajo de producción. Cree solo los grupos útiles para su equipo.",
+                "fr": "Groupes facultatifs pour organiser le travail de production. Créez seulement les groupes utiles à votre équipe.",
+                "it": "Gruppi opzionali per organizzare il lavoro di produzione. Crea solo i gruppi utili al tuo team.",
+                "nl": "Optionele groepen om productiewerk te organiseren. Maak alleen groepen die uw team helpen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.department_name",
+            "text": {
+                "de": "Name der Abteilung",
+                "es": "Nombre del departamento",
+                "fr": "Nom du département",
+                "it": "Nome del reparto",
+                "nl": "Naam van afdeling"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.add_department",
+            "text": {
+                "de": "Abteilung hinzufügen",
+                "es": "Añadir departamento",
+                "fr": "Ajouter un département",
+                "it": "Aggiungi reparto",
+                "nl": "Afdeling toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_departments",
+            "text": {
+                "de": "Noch keine Abteilungen.",
+                "es": "Aún no hay departamentos.",
+                "fr": "Aucun département pour le moment.",
+                "it": "Nessun reparto ancora.",
+                "nl": "Nog geen afdelingen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.department_usage",
+            "text": {
+                "de": "{0} Noch keine Einträge|{1} :employees Mitarbeiter, :tasks Aufgabe|[2,*] :employees Mitarbeiter, :tasks Aufgaben",
+                "es": "{0} Aún no hay registros|{1} :employees empleado, :tasks tarea|[2,*] :employees empleados, :tasks tareas",
+                "fr": "{0} Aucun enregistrement|{1} :employees employé, :tasks tâche|[2,*] :employees employés, :tasks tâches",
+                "it": "{0} Nessun record|{1} :employees dipendente, :tasks attività|[2,*] :employees dipendenti, :tasks attività",
+                "nl": "{0} Nog geen records|{1} :employees medewerker, :tasks taak|[2,*] :employees medewerkers, :tasks taken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.delete_department_confirm",
+            "text": {
+                "de": "Diese Abteilung löschen? Verwendete Abteilungen müssen deaktiviert werden.",
+                "es": "¿Eliminar este departamento? Los departamentos usados deben desactivarse.",
+                "fr": "Supprimer ce département ? Les départements utilisés doivent être désactivés.",
+                "it": "Eliminare questo reparto? I reparti usati devono essere disattivati.",
+                "nl": "Deze afdeling verwijderen? Gebruikte afdelingen moeten worden gedeactiveerd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.default_department",
+            "text": {
+                "de": "Standardabteilung",
+                "es": "Departamento predeterminado",
+                "fr": "Département par défaut",
+                "it": "Reparto predefinito",
+                "nl": "Standaardafdeling"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_default_department",
+            "text": {
+                "de": "Keine Standardabteilung",
+                "es": "Sin departamento predeterminado",
+                "fr": "Aucun département par défaut",
+                "it": "Nessun reparto predefinito",
+                "nl": "Geen standaardafdeling"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.delete_preset_confirm",
+            "text": {
+                "de": "Diese Chargengröße löschen? Bestehende Produktionen behalten ihre gespeicherten Mengen.",
+                "es": "¿Eliminar este tamaño de lote? Las producciones existentes conservarán sus cantidades guardadas.",
+                "fr": "Supprimer cette taille de lot ? Les productions existantes conservent leurs quantités enregistrées.",
+                "it": "Eliminare questa dimensione lotto? Le produzioni esistenti mantengono le quantità salvate.",
+                "nl": "Deze batchgrootte verwijderen? Bestaande producties behouden hun opgeslagen hoeveelheden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.delete_task_set_confirm",
+            "text": {
+                "de": "Diesen Aufgabensatz löschen? Bestehende Produktionsaufgaben behalten ihre gespeicherten Momentaufnahmen.",
+                "es": "¿Eliminar este conjunto de tareas? Las tareas de producción existentes conservarán sus datos guardados.",
+                "fr": "Supprimer cet ensemble de tâches ? Les tâches existantes conservent leurs instantanés enregistrés.",
+                "it": "Eliminare questo insieme di attività? Le attività esistenti mantengono i dati salvati.",
+                "nl": "Deze taakset verwijderen? Bestaande productietaken behouden hun opgeslagen gegevens."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.delete_task_type_confirm",
+            "text": {
+                "de": "Diese Aufgabe löschen?",
+                "es": "¿Eliminar esta tarea?",
+                "fr": "Supprimer cette tâche ?",
+                "it": "Eliminare questa attività?",
+                "nl": "Deze taak verwijderen?"
             }
         },
         {
@@ -12349,6 +12855,39 @@
                 "fr": "Minutes",
                 "it": "Minuti",
                 "nl": "Minuten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.duration_override",
+            "text": {
+                "de": "Dauer überschreiben (Minuten)",
+                "es": "Duración personalizada (minutos)",
+                "fr": "Durée personnalisée (minutes)",
+                "it": "Durata personalizzata (minuti)",
+                "nl": "Duur aanpassen (minuten)"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.edit_batch_size",
+            "text": {
+                "de": "Chargengröße bearbeiten",
+                "es": "Editar tamaño de lote",
+                "fr": "Modifier la taille du lot",
+                "it": "Modifica dimensione lotto",
+                "nl": "Batchgrootte bewerken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.edit_task_set",
+            "text": {
+                "de": "Aufgabensatz bearbeiten",
+                "es": "Editar conjunto de tareas",
+                "fr": "Modifier le jeu de tâches",
+                "it": "Modifica set di attività",
+                "nl": "Taakset bewerken"
             }
         },
         {
@@ -12382,6 +12921,39 @@
                 "fr": "Unités prévues",
                 "it": "Unità previste",
                 "nl": "Verwachte eenheden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.expected_units_positive",
+            "text": {
+                "de": "Die erwartete Stückzahl muss mindestens 1 sein.",
+                "es": "Las unidades previstas deben ser al menos 1.",
+                "fr": "Le nombre d’unités prévu doit être d’au moins 1.",
+                "it": "Le unità previste devono essere almeno 1.",
+                "nl": "Het verwachte aantal eenheden moet minimaal 1 zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.expected_units_required",
+            "text": {
+                "de": "Geben Sie die erwartete Stückzahl ein.",
+                "es": "Introduzca el número esperado de unidades.",
+                "fr": "Saisissez le nombre d’unités prévu.",
+                "it": "Inserisci il numero previsto di unità.",
+                "nl": "Voer het verwachte aantal eenheden in."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.expected_units_whole",
+            "text": {
+                "de": "Die erwartete Stückzahl muss eine ganze Zahl sein.",
+                "es": "Las unidades previstas deben ser un número entero.",
+                "fr": "Le nombre d’unités prévu doit être un nombre entier.",
+                "it": "Le unità previste devono essere un numero intero.",
+                "nl": "Het verwachte aantal eenheden moet een heel getal zijn."
             }
         },
         {
@@ -12441,6 +13013,72 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.manage_batch_sizes",
+            "text": {
+                "de": "Chargengrößen verwalten",
+                "es": "Gestionar tamaños de lote",
+                "fr": "Gérer les tailles de lot",
+                "it": "Gestisci dimensioni lotto",
+                "nl": "Batchgroottes beheren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.manage_task_sets",
+            "text": {
+                "de": "Aufgabensätze verwalten",
+                "es": "Gestionar conjuntos de tareas",
+                "fr": "Gérer les jeux de tâches",
+                "it": "Gestisci i set di attività",
+                "nl": "Taaksets beheren"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.new_batch_size",
+            "text": {
+                "de": "Neue Chargengröße",
+                "es": "Nuevo tamaño de lote",
+                "fr": "Nouvelle taille de lot",
+                "it": "Nuova dimensione lotto",
+                "nl": "Nieuwe batchgrootte"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.new_task_set",
+            "text": {
+                "de": "Neuer Aufgabensatz",
+                "es": "Nuevo conjunto de tareas",
+                "fr": "Nouveau jeu de tâches",
+                "it": "Nuovo set di attività",
+                "nl": "Nieuwe taakset"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_applicable_products",
+            "text": {
+                "de": "Keine Produkte verknüpft",
+                "es": "No hay productos vinculados",
+                "fr": "Aucun produit lié",
+                "it": "Nessun prodotto collegato",
+                "nl": "Geen producten gekoppeld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_colour",
+            "text": {
+                "de": "Keine Farbe",
+                "es": "Sin color",
+                "fr": "Sans couleur",
+                "it": "Nessun colore",
+                "nl": "Geen kleur"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.no_default_product",
             "text": {
                 "de": "Kein Standardprodukt",
@@ -12474,6 +13112,28 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.no_matching_products",
+            "text": {
+                "de": "Keine passenden Produkte.",
+                "es": "No hay productos coincidentes.",
+                "fr": "Aucun produit correspondant.",
+                "it": "Nessun prodotto corrispondente.",
+                "nl": "Geen overeenkomende producten."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.no_matching_task_sets",
+            "text": {
+                "de": "Keine passenden Aufgabensätze.",
+                "es": "No hay conjuntos de tareas coincidentes.",
+                "fr": "Aucun jeu de tâches correspondant.",
+                "it": "Nessun set di attività corrispondente.",
+                "nl": "Geen overeenkomende taaksets."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.no_presets",
             "text": {
                 "de": "Noch keine Chargengrößen.",
@@ -12503,6 +13163,17 @@
                 "fr": "Aucun type de tâche pour le moment.",
                 "it": "Nessun tipo di attività ancora.",
                 "nl": "Nog geen taaktypes."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.next_number",
+            "text": {
+                "de": "Nächste Nummer",
+                "es": "Siguiente número",
+                "fr": "Prochain numéro",
+                "it": "Numero successivo",
+                "nl": "Volgend nummer"
             }
         },
         {
@@ -12595,6 +13266,94 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.numbering_editor_read_only",
+            "text": {
+                "de": "Bearbeiter können die Nummerierung ansehen, aber nicht ändern.",
+                "es": "Los editores pueden ver la numeración, pero no modificarla.",
+                "fr": "Les éditeurs peuvent voir la numérotation, mais ne peuvent pas la modifier.",
+                "it": "Gli editor possono visualizzare la numerazione, ma non modificarla.",
+                "nl": "Bewerkers kunnen de nummering bekijken, maar niet wijzigen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_viewer_read_only",
+            "text": {
+                "de": "Betrachter können die Nummerierung ansehen, aber nicht ändern.",
+                "es": "Los espectadores pueden ver la numeración, pero no modificarla.",
+                "fr": "Les lecteurs peuvent voir la numérotation, mais ne peuvent pas la modifier.",
+                "it": "I visualizzatori possono vedere la numerazione, ma non modificarla.",
+                "nl": "Kijkers kunnen de nummering bekijken, maar niet wijzigen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_inactive_read_only",
+            "text": {
+                "de": "Die Nummerierung ist schreibgeschützt, solange Production Bench inaktiv ist.",
+                "es": "La numeración es de solo lectura mientras Production Bench está inactivo.",
+                "fr": "La numérotation est en lecture seule tant que Production Bench est inactive.",
+                "it": "La numerazione è di sola lettura finché Production Bench è inattivo.",
+                "nl": "De nummering is alleen-lezen zolang Production Bench inactief is."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_cancelled_read_only",
+            "text": {
+                "de": "Die Nummerierung ist schreibgeschützt, weil Production Bench beendet wurde.",
+                "es": "La numeración es de solo lectura porque Production Bench se ha cancelado.",
+                "fr": "La numérotation est en lecture seule car Production Bench est annulée.",
+                "it": "La numerazione è di sola lettura perché Production Bench è stato annullato.",
+                "nl": "De nummering is alleen-lezen omdat Production Bench is geannuleerd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_affix_invalid",
+            "text": {
+                "de": "Verwenden Sie nur Buchstaben, Zahlen, Bindestriche, Unterstriche, Punkte oder Schrägstriche.",
+                "es": "Use solo letras, números, guiones, guiones bajos, puntos o barras.",
+                "fr": "Utilisez uniquement des lettres, chiffres, traits d’union, traits de soulignement, points ou barres obliques.",
+                "it": "Usa solo lettere, numeri, trattini, trattini bassi, punti o barre.",
+                "nl": "Gebruik alleen letters, cijfers, koppeltekens, lage streepjes, punten of schuine strepen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_rendered_too_long",
+            "text": {
+                "de": "Die erzeugte Chargennummer darf nicht länger als 120 Zeichen sein.",
+                "es": "El número de lote generado no puede superar los 120 caracteres.",
+                "fr": "Le numéro de lot généré ne doit pas dépasser 120 caractères.",
+                "it": "Il numero di lotto generato non può superare 120 caratteri.",
+                "nl": "Het gegenereerde batchnummer mag niet langer zijn dan 120 tekens."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_next_in_use",
+            "text": {
+                "de": "Die nächste erzeugte Chargennummer wird bereits verwendet.",
+                "es": "El siguiente número de lote generado ya está en uso.",
+                "fr": "Le prochain numéro de lot généré est déjà utilisé.",
+                "it": "Il prossimo numero di lotto generato è già in uso.",
+                "nl": "Het volgende gegenereerde batchnummer is al in gebruik."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_positive_integer",
+            "text": {
+                "de": "Geben Sie eine positive ganze Zahl ein.",
+                "es": "Introduzca un número entero positivo.",
+                "fr": "Saisissez un nombre entier positif.",
+                "it": "Inserisci un numero intero positivo.",
+                "nl": "Voer een positief geheel getal in."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.temporary_counter",
             "text": {
                 "de": "Temporärer Zähler",
@@ -12661,6 +13420,17 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.products_selected",
+            "text": {
+                "de": "1 Produkt ausgewählt|:count Produkte ausgewählt",
+                "es": "1 producto seleccionado|:count productos seleccionados",
+                "fr": "1 produit sélectionné|:count produits sélectionnés",
+                "it": "1 prodotto selezionato|:count prodotti selezionati",
+                "nl": "1 product geselecteerd|:count producten geselecteerd"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.recurring",
             "text": {
                 "de": "Jedes Jahr",
@@ -12683,6 +13453,72 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.search_batch_sizes",
+            "text": {
+                "de": "Nach Name oder Produkt suchen",
+                "es": "Buscar por nombre o producto",
+                "fr": "Rechercher par nom ou produit",
+                "it": "Cerca per nome o prodotto",
+                "nl": "Zoeken op naam of product"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.search_products",
+            "text": {
+                "de": "Produkte suchen",
+                "es": "Buscar productos",
+                "fr": "Rechercher des produits",
+                "it": "Cerca prodotti",
+                "nl": "Producten zoeken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.search_task_sets",
+            "text": {
+                "de": "Nach Name, Aufgabe oder Produkt suchen",
+                "es": "Buscar por nombre, tarea o producto",
+                "fr": "Rechercher par nom, tâche ou produit",
+                "it": "Cerca per nome, attività o prodotto",
+                "nl": "Zoeken op naam, taak of product"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_duration_help",
+            "text": {
+                "de": "Leer lassen, um die Standarddauer des Aufgabentyps zu verwenden.",
+                "es": "Déjalo vacío para usar la duración predeterminada del tipo de tarea.",
+                "fr": "Laissez vide pour utiliser la durée par défaut du type de tâche.",
+                "it": "Lascia vuoto per usare la durata predefinita del tipo di attività.",
+                "nl": "Laat leeg om de standaardduur van het taaktype te gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_duration_positive",
+            "text": {
+                "de": "Die Dauer darf nicht negativ sein.",
+                "es": "La duración no puede ser negativa.",
+                "fr": "La durée ne peut pas être négative.",
+                "it": "La durata non può essere negativa.",
+                "nl": "De duur mag niet negatief zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_duration_whole",
+            "text": {
+                "de": "Verwenden Sie eine ganze Anzahl von Minuten.",
+                "es": "Usa un número entero de minutos.",
+                "fr": "Utilisez un nombre entier de minutes.",
+                "it": "Usa un numero intero di minuti.",
+                "nl": "Gebruik een heel aantal minuten."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.task_name",
             "text": {
                 "de": "Aufgabe",
@@ -12694,6 +13530,72 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.task_offset_help",
+            "text": {
+                "de": "Negativ = vor der Produktion · 0 = Produktionstag · positiv = danach",
+                "es": "Negativo = antes de producir · 0 = día de producción · positivo = después",
+                "fr": "Négatif = avant la production · 0 = jour de production · positif = après",
+                "it": "Negativo = prima della produzione · 0 = giorno di produzione · positivo = dopo",
+                "nl": "Negatief = vóór productie · 0 = productiedag · positief = erna"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_offset_required",
+            "text": {
+                "de": "Geben Sie die Anzahl der Tage relativ zur Produktion ein.",
+                "es": "Introduce el número de días respecto a la producción.",
+                "fr": "Saisissez le nombre de jours par rapport à la production.",
+                "it": "Inserisci il numero di giorni relativo alla produzione.",
+                "nl": "Voer het aantal dagen ten opzichte van productie in."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_offset_whole",
+            "text": {
+                "de": "Verwenden Sie eine ganze Anzahl von Tagen.",
+                "es": "Usa un número entero de días.",
+                "fr": "Utilisez un nombre entier de jours.",
+                "it": "Usa un numero intero di giorni.",
+                "nl": "Gebruik een heel aantal dagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_required",
+            "text": {
+                "de": "Wählen Sie eine Aufgabe.",
+                "es": "Elige una tarea.",
+                "fr": "Choisissez une tâche.",
+                "it": "Scegli un’attività.",
+                "nl": "Kies een taak."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_set_active_help",
+            "text": {
+                "de": "Aktive Aufgabensätze können bei der Produktionsplanung ausgewählt werden.",
+                "es": "Los conjuntos activos pueden seleccionarse al planificar la producción.",
+                "fr": "Les jeux actifs peuvent être sélectionnés lors de la planification de la production.",
+                "it": "I set attivi possono essere scelti durante la pianificazione della produzione.",
+                "nl": "Actieve taaksets kunnen worden gekozen bij het plannen van productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_set_deleted",
+            "text": {
+                "de": "Aufgabensatz gelöscht.",
+                "es": "Conjunto de tareas eliminado.",
+                "fr": "Jeu de tâches supprimé.",
+                "it": "Set di attività eliminato.",
+                "nl": "Taakset verwijderd."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.task_set_name",
             "text": {
                 "de": "Name des Aufgabensatzes",
@@ -12701,6 +13603,50 @@
                 "fr": "Nom du jeu de tâches",
                 "it": "Nome del set di attività",
                 "nl": "Naam van taakset"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_set_production_day_required",
+            "text": {
+                "de": "Fügen Sie mindestens eine Aufgabe am Produktionstag (0 Tage) hinzu.",
+                "es": "Añade al menos una tarea en el día de producción (0 días).",
+                "fr": "Ajoutez au moins une tâche le jour de production (0 jour).",
+                "it": "Aggiungi almeno un’attività nel giorno di produzione (0 giorni).",
+                "nl": "Voeg minstens één taak toe op de productiedag (0 dagen)."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_set_saved",
+            "text": {
+                "de": "Aufgabensatz gespeichert.",
+                "es": "Conjunto de tareas guardado.",
+                "fr": "Jeu de tâches enregistré.",
+                "it": "Set di attività salvato.",
+                "nl": "Taakset opgeslagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_set_tasks",
+            "text": {
+                "de": "Aufgaben in diesem Satz",
+                "es": "Tareas de este conjunto",
+                "fr": "Tâches de ce jeu",
+                "it": "Attività di questo set",
+                "nl": "Taken in deze set"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.task_set_tasks_help",
+            "text": {
+                "de": "Fügen Sie Vorbereitung, Produktionstag und Nacharbeiten in der gewünschten Reihenfolge hinzu.",
+                "es": "Añade preparación, día de producción y tareas posteriores en el orden deseado.",
+                "fr": "Ajoutez la préparation, le jour de production et le suivi dans l’ordre souhaité.",
+                "it": "Aggiungi preparazione, giorno di produzione e attività successive nell’ordine desiderato.",
+                "nl": "Voeg voorbereiding, productiedag en opvolging toe in de gewenste volgorde."
             }
         },
         {
@@ -12727,6 +13673,17 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.task_type_in_use",
+            "text": {
+                "de": "Diese Aufgabe wird von einem Aufgabensatz verwendet. Entfernen Sie sie zuerst aus diesem Satz.",
+                "es": "Esta tarea es utilizada por un conjunto de tareas. Quítela de ese conjunto antes de eliminarla.",
+                "fr": "Cette tâche est utilisée par un ensemble de tâches. Retirez-la de cet ensemble avant de la supprimer.",
+                "it": "Questa attività è utilizzata da un insieme di attività. Rimuovila da quell’insieme prima di eliminarla.",
+                "nl": "Deze taak wordt gebruikt door een taakset. Verwijder de taak eerst uit die set."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.task_types",
             "text": {
                 "de": "Aufgabentypen",
@@ -12749,6 +13706,17 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.tasks_selected",
+            "text": {
+                "de": "1 Aufgabe|:count Aufgaben",
+                "es": "1 tarea|:count tareas",
+                "fr": "1 tâche|:count tâches",
+                "it": "1 attività|:count attività",
+                "nl": "1 taak|:count taken"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.title",
             "text": {
                 "de": "Produktion einrichten",
@@ -12756,6 +13724,28 @@
                 "fr": "Configuration de la production",
                 "it": "Impostazioni produzione",
                 "nl": "Productie instellen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.saved",
+            "text": {
+                "de": "Änderungen gespeichert.",
+                "es": "Cambios guardados.",
+                "fr": "Modifications enregistrées.",
+                "it": "Modifiche salvate.",
+                "nl": "Wijzigingen opgeslagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.view_products",
+            "text": {
+                "de": "Produkte anzeigen",
+                "es": "Ver productos",
+                "fr": "Voir les produits",
+                "it": "Visualizza prodotti",
+                "nl": "Producten bekijken"
             }
         },
         {

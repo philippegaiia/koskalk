@@ -7,7 +7,7 @@
 
     @if (! $isEditable)
         <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">
-            {{ $isReadOnly ? __('production_bench.common.read_only') : __('production_bench.settings.numbering_future_help') }}
+            {{ $accessMessage }}
         </p>
     @endif
 

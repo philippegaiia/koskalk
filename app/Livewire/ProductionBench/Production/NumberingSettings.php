@@ -97,11 +97,17 @@ class NumberingSettings extends Component
         ], true);
         $isBenchActive = $access->isActive($workspace);
         $isReadOnly = $access->isReadOnly($workspace);
+        $accessMessage = match (true) {
+            $isReadOnly => __('production_bench.settings.numbering_cancelled_read_only'),
+            ! $isBenchActive => __('production_bench.settings.numbering_inactive_read_only'),
+            $canConfigure => null,
+            $workspace->roleFor($this->user()) === WorkspaceMemberRole::Editor => __('production_bench.settings.numbering_editor_read_only'),
+            default => __('production_bench.settings.numbering_viewer_read_only'),
+        };
 
         return view('livewire.production-bench.production.numbering-settings', [
-            'isBenchActive' => $isBenchActive,
             'isEditable' => $canConfigure && $isBenchActive && ! $isReadOnly,
-            'isReadOnly' => $isReadOnly,
+            'accessMessage' => $accessMessage,
         ]);
     }
 

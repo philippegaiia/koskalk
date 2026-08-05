@@ -355,15 +355,17 @@ it('rolls back a direct planning reference when task generation fails', function
         'workspace_id' => $fixture['workspace']->id,
         'next_planning_serial' => 17,
     ]);
+    $foreignOwner = User::factory()->create();
+    $foreignWorkspace = Workspace::factory()->for($foreignOwner, 'owner')->create();
     $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create([
-        'name' => 'Missing production-day task',
+        'name' => 'Foreign task type',
     ]);
     ProductionTaskSetItem::factory()
         ->for($taskSet, 'taskSet')
-        ->for(ProductionTaskType::factory()->for($fixture['workspace']), 'taskType')
+        ->for(ProductionTaskType::factory()->for($foreignWorkspace), 'taskType')
         ->create([
             'position' => 1,
-            'days_after_production' => 1,
+            'days_after_production' => 0,
         ]);
     $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => false]);
 

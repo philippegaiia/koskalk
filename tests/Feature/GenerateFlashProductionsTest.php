@@ -99,15 +99,17 @@ it('rolls back every generated production when a later flash line is invalid', f
         'workspace_id' => $fixture['workspace']->id,
         'next_planning_serial' => 17,
     ]);
+    $foreignOwner = User::factory()->create();
+    $foreignWorkspace = Workspace::factory()->for($foreignOwner, 'owner')->create();
     $invalidTaskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create([
-        'name' => 'No production-day task',
+        'name' => 'Foreign task type',
     ]);
     ProductionTaskSetItem::factory()
         ->for($invalidTaskSet, 'taskSet')
-        ->for(ProductionTaskType::factory()->for($fixture['workspace']), 'taskType')
+        ->for(ProductionTaskType::factory()->for($foreignWorkspace), 'taskType')
         ->create([
             'position' => 1,
-            'days_after_production' => 1,
+            'days_after_production' => 0,
         ]);
     $invalidTaskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => false]);
 

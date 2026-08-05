@@ -14,6 +14,7 @@ use App\ProductionRunSource;
 use App\ProductionRunStatus;
 use App\Services\MassConverter;
 use App\Services\Production\ProductionRequirementBuilder;
+use App\Services\Production\ProductionRunNumberService;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,6 +25,7 @@ class CreateProductionDraft
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly ProductionRunNumberService $numbers,
     ) {}
 
     public function handle(
@@ -143,6 +145,7 @@ class CreateProductionDraft
                 basisQuantityGrams: $basisQuantityGrams,
                 expectedUnits: $expectedUnits,
             );
+            $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 
             $production = ProductionRun::query()->create([
                 'workspace_id' => $lockedWorkspace->id,
@@ -162,6 +165,7 @@ class CreateProductionDraft
                 'notes' => $notes,
                 'idempotency_key' => $idempotencyKey,
                 'created_by_user_id' => $actor->id,
+                'planning_batch_number' => $planningBatchNumber,
             ]);
 
             $production->requirements()->createMany($requirements->all());

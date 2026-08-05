@@ -55,8 +55,11 @@ it('creates one planned production per flash batch with tasks and is idempotent'
         ->and($second)->toHaveCount(3)
         ->and(ProductionRun::query()->where('workspace_id', $fixture['workspace']->id)->count())->toBe(3)
         ->and(ProductionRun::query()->where('source', ProductionRunSource::Flash)->count())->toBe(3)
+        ->and($first->pluck('planning_batch_number')->all())->toBe(['T00001', 'T00002', 'T00003'])
+        ->and($second->pluck('planning_batch_number')->all())->toBe(['T00001', 'T00002', 'T00003'])
         ->and($first->pluck('planned_for')->map(fn ($date): string => $date->toDateString())->all())->toBe(['2026-08-10', '2026-08-10', '2026-08-11'])
-        ->and($first->every(fn (ProductionRun $production): bool => $production->tasks()->count() === 1))->toBeTrue();
+        ->and($first->every(fn (ProductionRun $production): bool => $production->tasks()->count() === 1))->toBeTrue()
+        ->and(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->next_planning_serial)->toBe(4);
 });
 
 it('leaves generated flash runs unnumbered and does not advance the permanent counter', function (): void {
@@ -92,22 +95,21 @@ it('leaves generated flash runs unnumbered and does not advance the permanent co
 
 it('rolls back every generated production when a later flash line is invalid', function (): void {
     $fixture = generateFlashFixture();
-    $otherOwner = User::factory()->create();
-    $otherWorkspace = Workspace::factory()->for($otherOwner, 'owner')->create();
-    $otherFamily = ProductFamily::factory()->create(['calculation_basis' => 'initial_oils']);
-    $foreignRecipe = Recipe::factory()->for($otherFamily, 'productFamily')->create([
-        'workspace_id' => $otherWorkspace->id,
-        'owner_type' => OwnerType::Workspace,
-        'owner_id' => $otherWorkspace->id,
-        'visibility' => Visibility::Private,
+    ProductionRunNumberSetting::query()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'next_planning_serial' => 17,
     ]);
-    RecipeVersion::factory()->for($foreignRecipe)->create([
-        'workspace_id' => $otherWorkspace->id,
-        'owner_type' => OwnerType::Workspace,
-        'owner_id' => $otherWorkspace->id,
-        'visibility' => Visibility::Private,
-        'is_current' => false,
+    $invalidTaskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create([
+        'name' => 'No production-day task',
     ]);
+    ProductionTaskSetItem::factory()
+        ->for($invalidTaskSet, 'taskSet')
+        ->for(ProductionTaskType::factory()->for($fixture['workspace']), 'taskType')
+        ->create([
+            'position' => 1,
+            'days_after_production' => 1,
+        ]);
+    $invalidTaskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => false]);
 
     expect(fn () => app(GenerateFlashProductions::class)->handle(
         actor: $fixture['owner'],
@@ -119,13 +121,15 @@ it('rolls back every generated production when a later flash line is invalid', f
                 'expected_units_per_batch' => '100',
                 'basis_input_value' => '12',
                 'basis_input_unit' => 'kg',
+                'task_set_id' => $fixture['taskSet']->id,
             ],
             [
-                'recipe_id' => $foreignRecipe->id,
+                'recipe_id' => $fixture['recipe']->id,
                 'desired_units' => '100',
                 'expected_units_per_batch' => '100',
                 'basis_input_value' => '12',
                 'basis_input_unit' => 'kg',
+                'task_set_id' => $invalidTaskSet->id,
             ],
         ],
         firstDate: '2026-08-10',
@@ -133,7 +137,8 @@ it('rolls back every generated production when a later flash line is invalid', f
         idempotencyKey: 'flash-atomic-1',
     ))->toThrow(ValidationException::class);
 
-    expect(ProductionRun::query()->where('workspace_id', $fixture['workspace']->id)->count())->toBe(0);
+    expect(ProductionRun::query()->where('workspace_id', $fixture['workspace']->id)->count())->toBe(0)
+        ->and(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->next_planning_serial)->toBe(17);
 });
 
 it('rejects reusing a flash key for a different number of batches', function (): void {

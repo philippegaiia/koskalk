@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatchPreset;
+use App\Models\ProductionRunNumberSetting;
 use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
@@ -78,6 +79,7 @@ it('allows the user to edit a loaded preset and schedule one planned production'
     $production = $fixture['recipe']->productionRuns()->firstOrFail();
 
     expect($production->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and($production->planning_batch_number)->toBe('T00001')
         ->and($production->basis_quantity_grams)->toBe('6000.000000000')
         ->and($production->expected_units)->toBe(20)
         ->and($production->tasks()->count())->toBe(2)

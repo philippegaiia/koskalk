@@ -10,6 +10,7 @@ use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberSetting;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -335,8 +336,11 @@ it('returns the existing production for a duplicate idempotency key without dupl
     );
 
     expect($second->is($first))->toBeTrue()
+        ->and($first->planning_batch_number)->toBe('T00001')
+        ->and($second->planning_batch_number)->toBe('T00001')
         ->and(ProductionRun::query()->where('workspace_id', $fixture['workspace']->id)->count())->toBe(1)
-        ->and(ProductionRequirement::query()->where('production_run_id', $first->id)->count())->toBe(1);
+        ->and(ProductionRequirement::query()->where('production_run_id', $first->id)->count())->toBe(1)
+        ->and(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->next_planning_serial)->toBe(2);
 });
 
 it('rejects cross-workspace recipes and read-only production bench mutations', function (): void {

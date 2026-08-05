@@ -61,6 +61,18 @@ class ProductionBenchAccess
         ]);
     }
 
+    public function assertCanConfigure(User $actor, Workspace $workspace): void
+    {
+        $this->assertWritable($actor, $workspace);
+
+        if (! in_array($workspace->roleFor($actor), [
+            WorkspaceMemberRole::Owner,
+            WorkspaceMemberRole::Admin,
+        ], true)) {
+            throw new AuthorizationException;
+        }
+    }
+
     private function writeStatus(
         User $actor,
         Workspace $workspace,

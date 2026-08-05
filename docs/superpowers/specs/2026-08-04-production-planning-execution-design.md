@@ -45,6 +45,15 @@ The product should optimize the common case without hiding control:
 - every inventory mutation has a preview and explicit confirmation;
 - advanced setup is kept in reusable presets and task sets, outside the routine production form.
 
+### Production run identities
+
+Every saved `ProductionRun` receives a workspace-unique, immutable planning reference immediately (for example,
+`T00001`). A workspace may later assign an immutable permanent batch number (for example, `B-00001-FR`) individually
+or in bulk before production starts. The permanent number is shown in place of the planning reference once assigned;
+otherwise the planning reference remains the production's visible identity. List, detail, and calendar views use this
+same fallback rule. These identifiers belong to Production Bench runs and are independent of the Basic
+`production_batches` feature and its retention rules.
+
 ## Checkpoint 3: Planning, Tasks, Calendar, Flash, and Reservations
 
 ### Outcome

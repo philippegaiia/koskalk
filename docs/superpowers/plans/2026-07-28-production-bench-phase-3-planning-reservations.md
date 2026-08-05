@@ -12,7 +12,7 @@
 
 Every `git add` command below is intentionally path-specific. Replace migration `*` placeholders with the exact timestamped files generated for that task; never stage an entire application, migration, view, test, or language directory.
 
-**Scope boundary:** This plan implements Checkpoint 3 only. It creates forecasts and reservations but no stock movements. Starting production, actual lot consumption, finished output, and actual historical production cost remain Checkpoint 4.
+**Scope boundary:** This plan implements Checkpoint 3 only. It creates forecasts and reservations but no stock movements. Starting production, actual lot consumption, finished output, and actual historical production cost remain Checkpoint 4. Every saved `ProductionRun` receives its immutable planning reference before it appears in list or calendar views; optional permanent batch numbering is a Production Bench concern. Basic `production_batches` remains an independent feature and is not linked to a `ProductionRun`.
 
 ---
 

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Production;
 
+use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CancelProduction;
 use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\ReleaseProductionStock;
@@ -13,15 +14,42 @@ use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class ProductionDetail extends Component
 {
+    use \App\Livewire\Concerns\InteractsWithAppNotifications;
+
     public string $productionId = '';
 
     public string $cancellationReason = '';
+
+
+
+    public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
+    {
+        try {
+            $assignProductionBatchNumbers->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                productionIds: [(int) $this->productionId],
+            );
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field === 'production_ids' ? 'production_bench' : $field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.production.batch_number_assigned'));
+        $this->dispatch('production-batch-numbers-updated');
+    }
 
     public function assignTask(int $taskId, ?string $employeeId, RescheduleProductionTask $rescheduleProductionTask): void
     {
@@ -128,12 +156,20 @@ class ProductionDetail extends Component
     {
         $workspace = $this->workspace();
         $production = $this->production();
+        $canMutate = $access->isActive($workspace)
+            && ! $access->isReadOnly($workspace)
+            && in_array($workspace->roleFor($this->user()), [
+                WorkspaceMemberRole::Owner,
+                WorkspaceMemberRole::Admin,
+                WorkspaceMemberRole::Editor,
+            ], true);
 
         return view('livewire.production-bench.production.production-detail', [
             'workspace' => $workspace,
             'production' => $production,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
+            'canMutate' => $canMutate,
             'employees' => Employee::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)
@@ -163,7 +199,7 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'recipeVersion', 'requirements', 'tasks.employee', 'cancelledBy'])
+            ->with(['recipe', 'recipeVersion', 'requirements', 'tasks.employee', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
     }
 

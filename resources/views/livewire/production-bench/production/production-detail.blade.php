@@ -14,12 +14,51 @@
     <header class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
             <a href="{{ route('production-bench.production.index') }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">← {{ __('production_bench.production.back_to_list') }}</a>
-            <p class="mt-4 sk-eyebrow">{{ $production->public_id }}</p>
+            <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
+                <p class="sk-eyebrow">{{ $production->displayIdentifier() }}</p>
+                <p class="font-mono text-xs text-[var(--color-ink-soft)]">{{ $production->public_id }}</p>
+            </div>
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $production->recipe?->name ?? __('production_bench.production.unknown_product') }}</h1>
             <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.detail_title') }}</p>
         </div>
         <span class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent-strong)]">{{ $production->status->label() }}</span>
     </header>
+
+    <section class="sk-card grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4" aria-labelledby="batch-identity-heading">
+        <h2 id="batch-identity-heading" class="sr-only">{{ __('production_bench.production.batch_identity') }}</h2>
+        <div>
+            <p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number') }}</p>
+            <p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->batch_number ?? '—' }}</p>
+        </div>
+        <div>
+            <p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.planning_reference') }}</p>
+            <p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planning_batch_number }}</p>
+        </div>
+        @if ($production->batch_number_assigned_at)
+            <div>
+                <p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number_assigned_at') }}</p>
+                <p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->batch_number_assigned_at->format('Y-m-d H:i') }}</p>
+            </div>
+            <div>
+                <p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number_assigned_by') }}</p>
+                <p class="mt-1 text-[var(--color-ink-strong)]">{{ $production->batchNumberAssignedBy?->name ?? '—' }}</p>
+            </div>
+        @endif
+    </section>
+
+    @if ($canMutate && $production->batch_number === null && in_array($production->status->value, ['scheduled', 'reserved'], true) && $production->planned_for)
+        <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-4" aria-labelledby="assign-batch-heading">
+            <div>
+                <h2 id="assign-batch-heading" class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.assign_batch_number') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.assign_batch_number_help') }}</p>
+            </div>
+            <button type="button" wire:click="assignBatchNumber" wire:confirm="{{ __('production_bench.production.assign_batch_number_confirm') }}" wire:loading.attr="disabled" wire:target="assignBatchNumber" class="sk-btn sk-btn-primary">{{ __('production_bench.production.assign_batch_number') }}</button>
+        </section>
+    @endif
+
+    @error('production_bench')
+        <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+    @enderror
 
     @if (in_array($production->status->value, ['scheduled', 'reserved'], true))
         <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-4">

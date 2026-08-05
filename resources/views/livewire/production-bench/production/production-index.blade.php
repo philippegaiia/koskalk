@@ -13,7 +13,8 @@
             </div>
             @if ($isBenchActive)
                 <div class="flex flex-wrap gap-2">
-                    <button type="button" wire:click="prepareSelected" class="sk-btn sk-btn-secondary" @disabled($isReadOnly)>{{ __('production_bench.production.prepare_stock') }}</button>
+                    <button type="button" wire:click="assignSelectedBatchNumbers" wire:confirm="{{ __('production_bench.production.assign_batch_numbers_confirm') }}" wire:loading.attr="disabled" wire:target="assignSelectedBatchNumbers" class="sk-btn sk-btn-secondary" @disabled(! $canMutate)>{{ __('production_bench.production.assign_batch_numbers') }}</button>
+                    <button type="button" wire:click="prepareSelected" class="sk-btn sk-btn-secondary" @disabled(! $canMutate)>{{ __('production_bench.production.prepare_stock') }}</button>
                     <a href="{{ route('production-bench.production.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.new') }}</a>
                 </div>
             @endif
@@ -53,7 +54,7 @@
                 @forelse ($productions as $production)
                     <div class="flex gap-4 px-5 py-5 transition hover:bg-[var(--color-panel-muted)] sm:px-6">
                         <div class="pt-1">
-                            <input type="checkbox" wire:model.live="selectedProductionIds" value="{{ $production->id }}" @disabled($isReadOnly || ! in_array($production->status->value, ['scheduled', 'reserved'], true)) aria-label="{{ __('production_bench.production.select_production', ['name' => $production->recipe?->name ?? __('production_bench.production.unknown_product')]) }}" style="accent-color: var(--color-accent);" class="h-5 w-5 rounded border-[var(--color-line-strong)]">
+                            <input type="checkbox" wire:model.live="selectedProductionIds" value="{{ $production->id }}" @disabled(! $canMutate || ! in_array($production->status->value, ['scheduled', 'reserved'], true)) aria-label="{{ __('production_bench.production.select_production', ['name' => $production->recipe?->name ?? __('production_bench.production.unknown_product')]) }}" style="accent-color: var(--color-accent);" class="h-5 w-5 rounded border-[var(--color-line-strong)]">
                         </div>
                         <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="min-w-0 flex-1">
                             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -62,7 +63,13 @@
                                     <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $production->recipe?->name ?? __('production_bench.production.unknown_product') }}</h3>
                                     <span class="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-accent-strong)]">{{ $production->status->label() }}</span>
                                 </div>
-                                <p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $production->public_id }}</p>
+                                <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                                    <span class="font-mono text-[var(--color-ink-soft)]">{{ $production->public_id }}</span>
+                                    <span class="text-[var(--color-ink-soft)]"><span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.planning_reference') }}:</span> <span class="font-mono">{{ $production->planning_batch_number }}</span></span>
+                                    @if ($production->batch_number)
+                                        <span class="text-[var(--color-ink-soft)]"><span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number') }}:</span> <span class="font-mono font-semibold text-[var(--color-ink-strong)]">{{ $production->batch_number }}</span></span>
+                                    @endif
+                                </div>
                             </div>
                             <dl class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-4">
                                 <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</dd></div>

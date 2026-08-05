@@ -2,17 +2,22 @@
 
 namespace App\Livewire\ProductionBench\Production;
 
+use App\Actions\Production\AssignProductionBatchNumbers;
+use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class ProductionIndex extends Component
 {
+    use InteractsWithAppNotifications;
     use WithPagination;
 
     public string $search = '';
@@ -25,6 +30,10 @@ class ProductionIndex extends Component
 
     /** @var list<int> */
     public array $selectedProductionIds = [];
+
+    public ?string $statusMessage = null;
+
+    public string $statusType = 'idle';
 
     public function updatedSearch(): void
     {
@@ -64,9 +73,47 @@ class ProductionIndex extends Component
         ]);
     }
 
+    public function assignSelectedBatchNumbers(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
+    {
+        try {
+            $result = $assignProductionBatchNumbers->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                productionIds: $this->selectedProductionIds,
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError(
+                        in_array($field, ['production_ids', 'batch_number', 'production_bench'], true)
+                            ? 'selectedProductionIds'
+                            : $field,
+                        $message,
+                    );
+                }
+            }
+
+            return;
+        }
+
+        $this->selectedProductionIds = [];
+        $this->showAppNotification(__('production_bench.production.batch_numbers_assigned', [
+            'assigned' => $result['assigned'],
+            'already' => $result['already_assigned'],
+        ]));
+        $this->dispatch('production-batch-numbers-updated');
+    }
+
     public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
+        $canMutate = $access->isActive($workspace)
+            && ! $access->isReadOnly($workspace)
+            && in_array($workspace->roleFor($this->user()), [
+                WorkspaceMemberRole::Owner,
+                WorkspaceMemberRole::Admin,
+                WorkspaceMemberRole::Editor,
+            ], true);
         $productions = ProductionRun::query()
             ->where('workspace_id', $workspace->id)
             ->with(['recipe', 'tasks'])
@@ -75,6 +122,8 @@ class ProductionIndex extends Component
                 $query->where(function (Builder $nested) use ($search): void {
                     $nested
                         ->where('public_id', 'like', "%{$search}%")
+                        ->orWhere('planning_batch_number', 'like', "%{$search}%")
+                        ->orWhere('batch_number', 'like', "%{$search}%")
                         ->orWhereHas('recipe', fn (Builder $recipe): Builder => $recipe->where('name', 'like', "%{$search}%"));
                 });
             })
@@ -90,6 +139,7 @@ class ProductionIndex extends Component
             'workspace' => $workspace,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
+            'canMutate' => $canMutate,
             'productions' => $productions,
         ]);
     }

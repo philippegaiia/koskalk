@@ -9779,6 +9779,127 @@
         },
         {
             "group": "production_bench",
+            "key": "production.assign_batch_number",
+            "text": {
+                "de": "Chargennummer zuweisen",
+                "es": "Asignar número de lote",
+                "fr": "Attribuer le numéro de lot",
+                "it": "Assegna numero di lotto",
+                "nl": "Batchnummer toewijzen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.assign_batch_number_confirm",
+            "text": {
+                "de": "Die nächste dauerhafte Chargennummer dieser Produktion zuweisen?",
+                "es": "¿Asignar el siguiente número de lote permanente a esta producción?",
+                "fr": "Attribuer le prochain numéro de lot permanent à cette production ?",
+                "it": "Assegnare a questa produzione il prossimo numero di lotto permanente?",
+                "nl": "De volgende permanente batchnummer aan deze productie toewijzen?"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.assign_batch_number_help",
+            "text": {
+                "de": "Diese dauerhafte Nummer bleibt beim Produktionsdatensatz und kann später nicht geändert werden.",
+                "es": "Este número permanente queda en el registro de producción y no se puede cambiar después.",
+                "fr": "Ce numéro permanent reste associé à la production et ne peut plus être modifié.",
+                "it": "Questo numero permanente resta nel record di produzione e non può essere modificato in seguito.",
+                "nl": "Dit permanente nummer blijft bij de productie en kan later niet worden gewijzigd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.assign_batch_numbers",
+            "text": {
+                "de": "Ausgewählten Produktionen Chargennummern zuweisen",
+                "es": "Asignar números de lote a las producciones seleccionadas",
+                "fr": "Attribuer des numéros de lot aux productions sélectionnées",
+                "it": "Assegna numeri di lotto alle produzioni selezionate",
+                "nl": "Batchnummers toewijzen aan geselecteerde producties"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.assign_batch_numbers_confirm",
+            "text": {
+                "de": "Dauerhafte Chargennummern für die ausgewählten Produktionen zuweisen? Nummern werden verbraucht und nicht wiederverwendet.",
+                "es": "¿Asignar números de lote permanentes a las producciones seleccionadas? Los números se consumen y no se reutilizan.",
+                "fr": "Attribuer des numéros de lot permanents aux productions sélectionnées ? Les numéros sont consommés et ne sont pas réutilisés.",
+                "it": "Assegnare numeri di lotto permanenti alle produzioni selezionate? I numeri vengono consumati e non riutilizzati.",
+                "nl": "Permanente batchnummers toewijzen aan de geselecteerde producties? Nummers worden verbruikt en niet hergebruikt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.batch_identity",
+            "text": {
+                "de": "Chargenidentität",
+                "es": "Identidad del lote",
+                "fr": "Identité du lot",
+                "it": "Identità del lotto",
+                "nl": "Batchidentiteit"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.batch_number",
+            "text": {
+                "de": "Chargennummer",
+                "es": "Número de lote",
+                "fr": "Numéro de lot",
+                "it": "Numero di lotto",
+                "nl": "Batchnummer"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.batch_number_assigned_at",
+            "text": {
+                "de": "Zugewiesen am",
+                "es": "Asignado el",
+                "fr": "Attribué le",
+                "it": "Assegnato il",
+                "nl": "Toegewezen op"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.batch_number_assigned_by",
+            "text": {
+                "de": "Zugewiesen von",
+                "es": "Asignado por",
+                "fr": "Attribué par",
+                "it": "Assegnato da",
+                "nl": "Toegewezen door"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.batch_number_assigned",
+            "text": {
+                "de": "Dauerhafte Chargennummer zugewiesen.",
+                "es": "Número de lote permanente asignado.",
+                "fr": "Numéro de lot permanent attribué.",
+                "it": "Numero di lotto permanente assegnato.",
+                "nl": "Permanente batchnummer toegewezen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.batch_numbers_assigned",
+            "text": {
+                "de": ":assigned dauerhafte Chargennummer(n) zugewiesen. :already hatte bereits eine Nummer.",
+                "es": ":assigned número(s) de lote permanente(s) asignado(s). :already ya tenía un número.",
+                "fr": ":assigned numéro(s) de lot permanent(s) attribué(s). :already en avait déjà un.",
+                "it": ":assigned numero/i di lotto permanente/i assegnato/i. :already ne aveva già uno.",
+                "nl": ":assigned permanente batchnummer(s) toegewezen. :already had al een nummer."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.back_to_list",
             "text": {
                 "de": "Zurück zu den Produktionen",
@@ -10237,6 +10358,17 @@
                 "fr": "Production planifiée.",
                 "it": "Produzione pianificata.",
                 "nl": "Productie gepland."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.planning_reference",
+            "text": {
+                "de": "Planungsreferenz",
+                "es": "Referencia de planificación",
+                "fr": "Référence de planification",
+                "it": "Riferimento di pianificazione",
+                "nl": "Planningsreferentie"
             }
         },
         {

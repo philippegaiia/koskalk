@@ -9792,11 +9792,11 @@
             "group": "production_bench",
             "key": "production.assign_batch_number_confirm",
             "text": {
-                "de": "Die nächste dauerhafte Chargennummer dieser Produktion zuweisen?",
-                "es": "¿Asignar el siguiente número de lote permanente a esta producción?",
-                "fr": "Attribuer le prochain numéro de lot permanent à cette production ?",
-                "it": "Assegnare a questa produzione il prossimo numero di lotto permanente?",
-                "nl": "De volgende permanente batchnummer aan deze productie toewijzen?"
+                "de": "Die nächste dauerhafte Chargennummer dieser Produktion zuweisen? Sie wird dauerhaft verbraucht, kann nicht geändert oder wiederverwendet werden und bleibt auch bei einer Stornierung zugewiesen.",
+                "es": "¿Asignar el siguiente número de lote permanente a esta producción? Se consumirá permanentemente, no podrá cambiarse ni reutilizarse y seguirá asignado si se cancela la producción.",
+                "fr": "Attribuer le prochain numéro de lot permanent à cette production ? Il sera consommé définitivement, ne pourra pas être modifié ou réutilisé et restera attribué si la production est annulée.",
+                "it": "Assegnare a questa produzione il prossimo numero di lotto permanente? Verrà consumato definitivamente, non potrà essere modificato o riutilizzato e resterà assegnato se la produzione viene annullata.",
+                "nl": "De volgende permanente batchnummer aan deze productie toewijzen? Het nummer wordt definitief verbruikt, kan niet worden gewijzigd of hergebruikt en blijft toegewezen als de productie wordt geannuleerd."
             }
         },
         {

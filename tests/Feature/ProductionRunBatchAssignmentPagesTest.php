@@ -26,7 +26,10 @@ it('shows a planning reference and assigns one permanent number from the product
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => $fixture['production']->id])
         ->assertSee($fixture['production']->planning_batch_number)
+        ->assertSee('12 kg')
+        ->assertDontSee('12.000000000')
         ->assertSee(__('production_bench.production.assign_batch_number'))
+        ->assertSee('consumed permanently')
         ->call('assignBatchNumber')
         ->assertHasNoErrors()
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
@@ -136,6 +139,9 @@ it('searches by both planning and permanent batch identifiers and keeps selectio
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionIndex::class)
+        ->assertSee('T00001 · Olive soap')
+        ->assertSee('12 kg')
+        ->assertDontSee('12.000000000')
         ->set('search', $numbered->planning_batch_number)
         ->assertSee($numbered->planning_batch_number)
         ->assertDontSee($other->planning_batch_number)

@@ -349,7 +349,7 @@ return [
         'batch_number_assigned_by' => 'Assigned by',
         'assign_batch_number' => 'Assign batch number',
         'assign_batch_number_help' => 'This permanent number is kept with the production record and cannot be changed later.',
-        'assign_batch_number_confirm' => 'Assign the next permanent batch number to this production?',
+        'assign_batch_number_confirm' => 'Assign the next permanent batch number to this production? It will be consumed permanently, cannot be changed or reused, and remains assigned if the production is cancelled.',
         'assign_batch_numbers' => 'Assign selected batch numbers',
         'assign_batch_numbers_confirm' => 'Assign permanent batch numbers to the selected productions? Numbers are consumed and cannot be reused.',
         'batch_number_assigned' => 'Permanent batch number assigned.',

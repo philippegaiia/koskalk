@@ -36,13 +36,11 @@ class CancelProduction
 
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $production, $reason): ProductionRun {
-            $lockedProduction = ProductionRun::query()
-                ->lockForUpdate()
-                ->findOrFail($production->id);
+        return DB::transaction(function () use ($actor, $production, $reason, $workspace): ProductionRun {
             $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->whereKey($workspace->id)
                 ->lockForUpdate()
-                ->find($lockedProduction->workspace_id);
+                ->first();
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
@@ -51,6 +49,11 @@ class CancelProduction
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
+
+            $lockedProduction = ProductionRun::query()
+                ->where('workspace_id', $lockedWorkspace->id)
+                ->lockForUpdate()
+                ->findOrFail($production->id);
 
             if (! in_array($lockedProduction->status, [ProductionRunStatus::Draft, ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
                 throw ValidationException::withMessages([

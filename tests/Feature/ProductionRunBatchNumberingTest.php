@@ -311,13 +311,28 @@ it('retains permanent number audit metadata when a production is cancelled', fun
 
     $assignment->handle($owner, $workspace, [$run->id]);
     $assigned = $run->fresh();
+    $assigned->load('workspace');
+    $queries = [];
+
+    DB::listen(function ($query) use (&$queries): void {
+        if (str_contains(strtolower($query->sql), 'workspaces')
+            || str_contains(strtolower($query->sql), 'production_runs')) {
+            $queries[] = $query->sql;
+        }
+    });
+
     $cancelled = (new CancelProduction(new ProductionBenchAccess))->handle($owner, $assigned, 'Customer postponed the batch.');
+    $workspaceQueryIndex = collect($queries)->search(fn (string $query): bool => str_contains(strtolower($query), 'workspaces'));
+    $productionQueryIndex = collect($queries)->search(fn (string $query): bool => str_contains(strtolower($query), 'production_runs'));
+    $productionLockQuery = collect($queries)->first(fn (string $query): bool => str_contains(strtolower($query), 'production_runs'));
 
     expect($cancelled->status)->toBe(ProductionRunStatus::Cancelled)
         ->and($cancelled->batch_number)->toBe($assigned->batch_number)
         ->and($cancelled->batch_number_serial)->toBe($assigned->batch_number_serial)
         ->and($cancelled->batch_number_assigned_by_user_id)->toBe($assigned->batch_number_assigned_by_user_id)
-        ->and($cancelled->batch_number_assigned_at?->equalTo($assigned->batch_number_assigned_at))->toBeTrue();
+        ->and($cancelled->batch_number_assigned_at?->equalTo($assigned->batch_number_assigned_at))->toBeTrue()
+        ->and($workspaceQueryIndex)->toBeLessThan($productionQueryIndex)
+        ->and(str_contains(strtolower($productionLockQuery), 'workspace_id'))->toBeTrue();
 });
 
 it('serializes settings initialization against a concurrent PostgreSQL workspace lock', function (): void {

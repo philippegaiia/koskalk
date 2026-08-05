@@ -204,6 +204,19 @@ it('enforces permanent number integrity on PostgreSQL', function (): void {
         ->and(fn (): ?bool => $run->fresh()->delete())->toThrow(QueryException::class);
 });
 
+it('serializes PostgreSQL workspace number writes before cross-field collision checks', function (): void {
+    if (DB::getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('PostgreSQL-only trigger locking integration test.');
+    }
+
+    $definition = (string) DB::selectOne(<<<'SQL'
+        SELECT pg_get_functiondef('production_runs_enforce_batch_number_integrity()'::regprocedure) AS definition
+    SQL)->definition;
+
+    expect($definition)->toContain('pg_advisory_xact_lock(NEW.workspace_id)')
+        ->and($definition)->toContain('pg_advisory_xact_lock(OLD.workspace_id)');
+});
+
 it('gives factory runs distinct temporary identifiers and falls back to them for display', function (): void {
     $runs = ProductionRun::factory()->count(2)->create();
 

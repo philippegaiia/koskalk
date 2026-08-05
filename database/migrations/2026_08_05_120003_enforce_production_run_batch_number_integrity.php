@@ -64,12 +64,16 @@ return new class extends Migration
             RETURNS trigger AS $$
             BEGIN
                 IF TG_OP = 'DELETE' THEN
+                    PERFORM pg_advisory_xact_lock(OLD.workspace_id);
+
                     IF OLD.batch_number IS NOT NULL THEN
                         RAISE EXCEPTION 'permanently numbered production runs cannot be deleted';
                     END IF;
 
                     RETURN OLD;
                 END IF;
+
+                PERFORM pg_advisory_xact_lock(NEW.workspace_id);
 
                 IF NEW.planning_batch_number IS NOT NULL
                     AND NEW.batch_number IS NOT NULL

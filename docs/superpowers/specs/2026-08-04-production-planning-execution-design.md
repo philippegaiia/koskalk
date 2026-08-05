@@ -459,7 +459,7 @@ Checkpoint 4 should follow with:
 1. start lifecycle and frozen operational plan;
 2. actual lot-consumption workspace;
 3. packaging actuals, journal, and documents;
-4. atomic completion and Basic snapshot integration;
+4. atomic completion and Production Bench completion snapshot integration;
 5. output lot, quarantine, availability, and release;
 6. actual costing and intermediate cost propagation;
 7. abort and compensating correction workflows;

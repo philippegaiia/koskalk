@@ -40,7 +40,12 @@ class ProductionDetail extends Component
         } catch (\Illuminate\Validation\ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
-                    $this->addError($field === 'production_ids' ? 'production_bench' : $field, $message);
+                    $this->addError(
+                        in_array($field, ['production_ids', 'batch_number', 'next_permanent_serial'], true)
+                            ? 'production_bench'
+                            : $field,
+                        $message,
+                    );
                 }
             }
 

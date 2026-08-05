@@ -85,7 +85,7 @@ class ProductionIndex extends Component
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
                     $this->addError(
-                        in_array($field, ['production_ids', 'batch_number', 'production_bench'], true)
+                        in_array($field, ['production_ids', 'batch_number', 'next_permanent_serial', 'production_bench'], true)
                             ? 'selectedProductionIds'
                             : $field,
                         $message,

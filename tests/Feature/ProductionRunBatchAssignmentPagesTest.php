@@ -126,6 +126,21 @@ it('rejects an empty selection and rolls back when a stale selection is no longe
         ->and($fixture['workspace']->productionRunNumberSetting()->sole()->next_permanent_serial)->toBe(1);
 });
 
+it('surfaces permanent counter exhaustion on the assignment page', function (): void {
+    $fixture = productionBatchAssignmentFixture();
+    $fixture['workspace']->productionRunNumberSetting()->update([
+        'next_permanent_serial' => PHP_INT_MAX,
+    ]);
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionIndex::class)
+        ->set('selectedProductionIds', [$fixture['production']->id])
+        ->call('assignSelectedBatchNumbers')
+        ->assertHasErrors('selectedProductionIds');
+
+    expect($fixture['production']->fresh()->batch_number)->toBeNull();
+});
+
 it('searches by both planning and permanent batch identifiers and keeps selection usable for stock preparation', function (): void {
     $fixture = productionBatchAssignmentFixture();
     $numbered = productionBatchAssignmentRun($fixture, '2026-08-14');

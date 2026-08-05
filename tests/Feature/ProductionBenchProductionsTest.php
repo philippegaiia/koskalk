@@ -16,6 +16,7 @@ use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
 use App\ProductionRequirementKind;
 use App\ProductionRunStatus;
+use App\Services\Production\ProductionRunNumberService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -247,5 +248,6 @@ function productionListRun(array $fixture, string $name, string $plannedFor, Pro
         'notes' => $name,
         'idempotency_key' => fake()->uuid(),
         'created_by_user_id' => $fixture['owner']->id,
+        'planning_batch_number' => app(ProductionRunNumberService::class)->allocatePlanningReference($fixture['workspace']),
     ]);
 }

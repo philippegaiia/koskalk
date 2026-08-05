@@ -30,6 +30,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'notes',
     'idempotency_key',
     'created_by_user_id',
+    'planning_batch_number',
+    'batch_number',
+    'batch_number_serial',
+    'batch_number_assigned_at',
+    'batch_number_assigned_by_user_id',
     'cancelled_at',
     'cancelled_by_user_id',
     'cancellation_reason',
@@ -71,6 +76,16 @@ class ProductionRun extends Model
         return $this->belongsTo(User::class, 'cancelled_by_user_id');
     }
 
+    public function batchNumberAssignedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'batch_number_assigned_by_user_id');
+    }
+
+    public function displayIdentifier(): string
+    {
+        return (string) ($this->batch_number ?? $this->planning_batch_number);
+    }
+
     public function requirements(): HasMany
     {
         return $this->hasMany(ProductionRequirement::class)
@@ -101,6 +116,8 @@ class ProductionRun extends Model
             'basis_input_value' => 'decimal:9',
             'basis_input_unit' => MassUnit::class,
             'expected_units' => 'integer',
+            'batch_number_serial' => 'integer',
+            'batch_number_assigned_at' => 'datetime',
             'cancelled_at' => 'datetime',
         ];
     }

@@ -62,6 +62,11 @@ class ProductionRunFactory extends Factory
             'created_by_user_id' => fn (array $attributes): int => Workspace::withoutGlobalScopes()
                 ->findOrFail($attributes['workspace_id'])
                 ->owner_user_id,
+            'planning_batch_number' => 'T'.str_pad((string) fake()->unique()->numberBetween(1, 99999), 5, '0', STR_PAD_LEFT),
+            'batch_number' => null,
+            'batch_number_serial' => null,
+            'batch_number_assigned_at' => null,
+            'batch_number_assigned_by_user_id' => null,
             'cancelled_at' => null,
             'cancelled_by_user_id' => null,
             'cancellation_reason' => null,

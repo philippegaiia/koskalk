@@ -94,7 +94,7 @@ class ProductionCalendar extends Component
             foreach ($productions as $production) {
                 $events[] = [
                     'id' => 'production-'.$production->id,
-                    'title' => $production->recipe?->name ?? __('production_bench.production.unknown_product'),
+                    'title' => trim($production->displayIdentifier().' · '.($production->recipe?->name ?? __('production_bench.production.unknown_product'))),
                     'start' => $production->planned_for->toDateString(),
                     'allDay' => true,
                     'url' => route('production-bench.production.show', ['productionRun' => $production->public_id]),

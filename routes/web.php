@@ -155,6 +155,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::view('/production', 'production-bench.production.index')->name('production.index');
             Route::view('/production/new', 'production-bench.production.create')->name('production.create');
             Route::view('/production/settings', 'production-bench.production.settings')->name('production.settings');
+            Route::view('/production/settings/numbering', 'production-bench.production.numbering')->name('production.settings.numbering');
             Route::view('/production/prepare-stock/{productionRun?}', 'production-bench.production.prepare-stock')->name('production.prepare');
             Route::view('/production/flash', 'production-bench.production.flash')->name('production.flash');
             Route::view('/production/calendar', 'production-bench.production.calendar')->name('production.calendar');

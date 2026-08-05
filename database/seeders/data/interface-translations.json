@@ -12507,6 +12507,116 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.number_digits",
+            "text": {
+                "de": "Anzahl der Stellen",
+                "es": "Número de dígitos",
+                "fr": "Nombre de chiffres",
+                "it": "Numero di cifre",
+                "nl": "Aantal cijfers"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.number_prefix",
+            "text": {
+                "de": "Präfix",
+                "es": "Prefijo",
+                "fr": "Préfixe",
+                "it": "Prefisso",
+                "nl": "Voorvoegsel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.number_preview",
+            "text": {
+                "de": "Beispiel",
+                "es": "Ejemplo",
+                "fr": "Exemple",
+                "it": "Esempio",
+                "nl": "Voorbeeld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.number_suffix",
+            "text": {
+                "de": "Suffix",
+                "es": "Sufijo",
+                "fr": "Suffixe",
+                "it": "Suffisso",
+                "nl": "Achtervoegsel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering",
+            "text": {
+                "de": "Nummerierung",
+                "es": "Numeración",
+                "fr": "Numérotation",
+                "it": "Numerazione",
+                "nl": "Nummering"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_future_help",
+            "text": {
+                "de": "Änderungen wirken sich nur auf künftig vergebene Chargennummern aus.",
+                "es": "Los cambios solo afectan a los números de lote asignados en el futuro.",
+                "fr": "Les modifications n’affectent que les numéros de lot attribués à l’avenir.",
+                "it": "Le modifiche riguardano solo i numeri di lotto assegnati in futuro.",
+                "nl": "Wijzigingen gelden alleen voor batchnummers die in de toekomst worden toegekend."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_help",
+            "text": {
+                "de": "Legen Sie das dauerhafte Chargennummernformat für künftige Produktionsläufe fest.",
+                "es": "Define el formato de número de lote permanente para futuras producciones.",
+                "fr": "Définissez le format permanent des numéros de lot pour les prochaines productions.",
+                "it": "Imposta il formato permanente del numero di lotto per le produzioni future.",
+                "nl": "Stel het permanente batchnummerformaat in voor toekomstige productieruns."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.numbering_saved",
+            "text": {
+                "de": "Nummerierungseinstellungen gespeichert.",
+                "es": "Configuración de numeración guardada.",
+                "fr": "Paramètres de numérotation enregistrés.",
+                "it": "Impostazioni di numerazione salvate.",
+                "nl": "Nummeringsinstellingen opgeslagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.temporary_counter",
+            "text": {
+                "de": "Temporärer Zähler",
+                "es": "Contador temporal",
+                "fr": "Compteur temporaire",
+                "it": "Contatore temporaneo",
+                "nl": "Tijdelijke teller"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.temporary_counter_help",
+            "text": {
+                "de": "Temporäre Planungsreferenzen werden automatisch vergeben und können hier nicht geändert werden.",
+                "es": "Las referencias de planificación temporales se asignan automáticamente y no se pueden cambiar aquí.",
+                "fr": "Les références de planification temporaires sont attribuées automatiquement et ne peuvent pas être modifiées ici.",
+                "it": "I riferimenti temporanei di pianificazione vengono assegnati automaticamente e non possono essere modificati qui.",
+                "nl": "Tijdelijke planningsreferenties worden automatisch toegewezen en kunnen hier niet worden gewijzigd."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.preset_name",
             "text": {
                 "de": "Name der Voreinstellung",

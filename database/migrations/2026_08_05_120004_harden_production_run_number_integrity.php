@@ -153,7 +153,23 @@ return new class extends Migration
                     RETURN OLD;
                 END IF;
 
+                IF TG_OP = 'UPDATE' AND OLD.workspace_id IS DISTINCT FROM NEW.workspace_id THEN
+                    RAISE EXCEPTION 'production run workspace is immutable';
+                END IF;
+
                 PERFORM pg_advisory_xact_lock(NEW.workspace_id);
+
+                IF (NEW.batch_number IS NULL AND (
+                    NEW.batch_number_serial IS NOT NULL
+                    OR NEW.batch_number_assigned_at IS NOT NULL
+                    OR NEW.batch_number_assigned_by_user_id IS NOT NULL
+                )) OR (NEW.batch_number IS NOT NULL AND (
+                    NEW.batch_number_serial IS NULL
+                    OR NEW.batch_number_assigned_at IS NULL
+                    OR NEW.batch_number_assigned_by_user_id IS NULL
+                )) THEN
+                    RAISE EXCEPTION 'production run permanent batch number audit fields must be issued together';
+                END IF;
 
                 IF NEW.planning_batch_number IS NOT NULL
                     AND NEW.batch_number IS NOT NULL
@@ -292,7 +308,15 @@ return new class extends Migration
         DB::statement(<<<'SQL'
             CREATE TRIGGER production_runs_number_identity_insert
             BEFORE INSERT ON production_runs
-            WHEN (
+            WHEN (NEW.batch_number IS NULL AND (
+                NEW.batch_number_serial IS NOT NULL
+                OR NEW.batch_number_assigned_at IS NOT NULL
+                OR NEW.batch_number_assigned_by_user_id IS NOT NULL
+            )) OR (NEW.batch_number IS NOT NULL AND (
+                NEW.batch_number_serial IS NULL
+                OR NEW.batch_number_assigned_at IS NULL
+                OR NEW.batch_number_assigned_by_user_id IS NULL
+            )) OR (
                 NEW.planning_batch_number IS NOT NULL
                 AND NEW.batch_number IS NOT NULL
                 AND NEW.planning_batch_number = NEW.batch_number
@@ -313,8 +337,16 @@ return new class extends Migration
         SQL);
         DB::statement(<<<'SQL'
             CREATE TRIGGER production_runs_number_identity_update
-            BEFORE UPDATE OF workspace_id, planning_batch_number, batch_number ON production_runs
-            WHEN (
+            BEFORE UPDATE OF workspace_id, planning_batch_number, batch_number, batch_number_serial, batch_number_assigned_at, batch_number_assigned_by_user_id ON production_runs
+            WHEN (NEW.batch_number IS NULL AND (
+                NEW.batch_number_serial IS NOT NULL
+                OR NEW.batch_number_assigned_at IS NOT NULL
+                OR NEW.batch_number_assigned_by_user_id IS NOT NULL
+            )) OR (NEW.batch_number IS NOT NULL AND (
+                NEW.batch_number_serial IS NULL
+                OR NEW.batch_number_assigned_at IS NULL
+                OR NEW.batch_number_assigned_by_user_id IS NULL
+            )) OR (
                 NEW.planning_batch_number IS NOT NULL
                 AND NEW.batch_number IS NOT NULL
                 AND NEW.planning_batch_number = NEW.batch_number
@@ -338,7 +370,8 @@ return new class extends Migration
         DB::statement(<<<'SQL'
             CREATE TRIGGER production_runs_number_integrity_update
             BEFORE UPDATE OF workspace_id, planning_batch_number, batch_number ON production_runs
-            WHEN OLD.planning_batch_number IS NOT NEW.planning_batch_number
+            WHEN OLD.workspace_id IS NOT NEW.workspace_id
+                OR OLD.planning_batch_number IS NOT NEW.planning_batch_number
                 OR (OLD.batch_number IS NOT NULL AND NEW.batch_number IS NOT OLD.batch_number)
             BEGIN
                 SELECT RAISE(ABORT, 'production run batch numbers are immutable');

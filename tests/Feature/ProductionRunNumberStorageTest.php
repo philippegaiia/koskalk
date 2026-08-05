@@ -46,18 +46,21 @@ it('stores one numbered-run setting row per workspace with the intended defaults
 it('keeps rendered run identifiers unique within a workspace while isolating workspaces', function (): void {
     $firstWorkspace = Workspace::factory()->create();
     $secondWorkspace = Workspace::factory()->create();
+    $assigner = User::factory()->create();
 
     ProductionRun::factory()->for($firstWorkspace)->create([
         'planning_batch_number' => 'T00001',
         'batch_number' => 'B-00001',
         'batch_number_serial' => 1,
         'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $assigner->id,
     ]);
     ProductionRun::factory()->for($secondWorkspace)->create([
         'planning_batch_number' => 'T00001',
         'batch_number' => 'B-00001',
         'batch_number_serial' => 1,
         'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $assigner->id,
     ]);
 
     expect(fn (): ProductionRun => ProductionRun::factory()->for($firstWorkspace)->create([
@@ -70,12 +73,14 @@ it('keeps rendered run identifiers unique within a workspace while isolating wor
 
 it('rejects planning and permanent identifiers that collide across a workspace or on one run', function (): void {
     $workspace = Workspace::factory()->create();
+    $assigner = User::factory()->create();
 
     ProductionRun::factory()->for($workspace)->create([
         'planning_batch_number' => 'T20000',
         'batch_number' => 'B20000',
         'batch_number_serial' => 20000,
         'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $assigner->id,
     ]);
 
     expect(fn (): ProductionRun => ProductionRun::factory()->for($workspace)->create([
@@ -90,6 +95,40 @@ it('rejects planning and permanent identifiers that collide across a workspace o
             'batch_number_serial' => 20001,
             'batch_number_assigned_at' => now(),
         ]))->toThrow(QueryException::class);
+});
+
+it('requires a complete permanent number audit tuple', function (): void {
+    $workspace = Workspace::factory()->create();
+    $assigner = User::factory()->create();
+
+    expect(fn (): ProductionRun => ProductionRun::factory()->for($workspace)->create([
+        'batch_number' => 'B-23001',
+    ]))->toThrow(QueryException::class)
+        ->and(fn (): ProductionRun => ProductionRun::factory()->for($workspace)->create([
+            'batch_number_assigned_at' => now(),
+        ]))->toThrow(QueryException::class)
+        ->and(fn (): ProductionRun => ProductionRun::factory()->for($workspace)->create([
+            'batch_number_assigned_by_user_id' => $assigner->id,
+        ]))->toThrow(QueryException::class);
+
+    $run = ProductionRun::factory()->for($workspace)->create();
+
+    expect(fn (): int => DB::table('production_runs')->where('id', $run->id)->update([
+        'batch_number' => 'B-23002',
+        'batch_number_serial' => 23002,
+    ]))->toThrow(QueryException::class)
+        ->and(fn (): int => DB::table('production_runs')->where('id', $run->id)->update([
+            'batch_number_assigned_at' => now(),
+        ]))->toThrow(QueryException::class);
+});
+
+it('keeps production runs in their original workspace at the database boundary', function (): void {
+    $run = ProductionRun::factory()->create();
+    $otherWorkspace = Workspace::factory()->create();
+
+    expect(fn (): int => DB::table('production_runs')->where('id', $run->id)->update([
+        'workspace_id' => $otherWorkspace->id,
+    ]))->toThrow(QueryException::class);
 });
 
 it('backfills temporary planning identifiers in workspace and run order without inferring permanent numbers', function (): void {

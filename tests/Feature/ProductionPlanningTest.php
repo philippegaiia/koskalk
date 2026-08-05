@@ -11,6 +11,9 @@ use App\Models\ProductFamily;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberSetting;
+use App\Models\ProductionTaskSet;
+use App\Models\ProductionTaskSetItem;
+use App\Models\ProductionTaskType;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -341,6 +344,43 @@ it('returns the existing production for a duplicate idempotency key without dupl
         ->and(ProductionRun::query()->where('workspace_id', $fixture['workspace']->id)->count())->toBe(1)
         ->and(ProductionRequirement::query()->where('production_run_id', $first->id)->count())->toBe(1)
         ->and(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->next_planning_serial)->toBe(2);
+});
+
+it('rolls back a direct planning reference when task generation fails', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Oil']);
+    $phase = productionPlanningTask2Phase($fixture['version'], $fixture['workspace'], 'Oils');
+    productionPlanningTask2Item($fixture['version'], $phase, $fixture['workspace'], $ingredient, '100.0000');
+    ProductionRunNumberSetting::query()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'next_planning_serial' => 17,
+    ]);
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create([
+        'name' => 'Missing production-day task',
+    ]);
+    ProductionTaskSetItem::factory()
+        ->for($taskSet, 'taskSet')
+        ->for(ProductionTaskType::factory()->for($fixture['workspace']), 'taskType')
+        ->create([
+            'position' => 1,
+            'days_after_production' => 1,
+        ]);
+    $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => false]);
+
+    expect(fn (): ProductionRun => app(PlanProduction::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'task-generation-failure',
+        plannedFor: '2026-08-10',
+        taskSet: $taskSet,
+    ))->toThrow(ValidationException::class);
+
+    expect(ProductionRun::query()->where('workspace_id', $fixture['workspace']->id)->count())->toBe(0)
+        ->and(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->next_planning_serial)->toBe(17);
 });
 
 it('rejects cross-workspace recipes and read-only production bench mutations', function (): void {

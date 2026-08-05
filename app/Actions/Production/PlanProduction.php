@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\ProductionRunSource;
 use App\ProductionRunStatus;
+use Illuminate\Support\Facades\DB;
 
 class PlanProduction
 {
@@ -31,21 +32,35 @@ class PlanProduction
         ProductionRunSource $source = ProductionRunSource::Direct,
         ?ProductionTaskSet $taskSet = null,
     ): ProductionRun {
-        $production = $this->createProductionDraft->handle(
-            actor: $actor,
-            workspace: $workspace,
-            recipe: $recipe,
-            basisInputValue: $basisInputValue,
-            basisInputUnit: $basisInputUnit,
-            expectedUnits: $expectedUnits,
-            idempotencyKey: $idempotencyKey,
-            plannedFor: $plannedFor,
-            notes: $notes,
-            source: $source,
-            status: ProductionRunStatus::Scheduled,
-            taskSet: $taskSet,
-        );
+        return DB::transaction(function () use (
+            $actor,
+            $basisInputUnit,
+            $basisInputValue,
+            $expectedUnits,
+            $idempotencyKey,
+            $notes,
+            $plannedFor,
+            $recipe,
+            $source,
+            $taskSet,
+            $workspace,
+        ): ProductionRun {
+            $production = $this->createProductionDraft->handle(
+                actor: $actor,
+                workspace: $workspace,
+                recipe: $recipe,
+                basisInputValue: $basisInputValue,
+                basisInputUnit: $basisInputUnit,
+                expectedUnits: $expectedUnits,
+                idempotencyKey: $idempotencyKey,
+                plannedFor: $plannedFor,
+                notes: $notes,
+                source: $source,
+                status: ProductionRunStatus::Scheduled,
+                taskSet: $taskSet,
+            );
 
-        return $this->generateProductionTasks->handle($actor, $production);
+            return $this->generateProductionTasks->handle($actor, $production);
+        }, attempts: 5);
     }
 }

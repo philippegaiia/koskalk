@@ -324,7 +324,7 @@ Completion atomically:
 2. posts immutable consumption movements per actual lot;
 3. releases unused reservations;
 4. snapshots each consumed lot's historical acquisition cost and line cost;
-5. creates the existing linked immutable Basic `ProductionBatch` snapshot;
+5. stores an immutable Production Bench completion snapshot for the consumed lots and costs;
 6. creates one internal output lot;
 7. posts the production-output movement;
 8. stores the actual output and material-cost totals;
@@ -332,7 +332,10 @@ Completion atomically:
 
 Either every step succeeds or none succeeds. Later supplier-listing, exchange-rate, current ingredient-price, or formula changes cannot alter the completed cost.
 
-The linked Basic snapshot keeps one ingredient or packaging line for each formula requirement. When that requirement consumed several internal lots, child lot-cost snapshots preserve each lot, actual quantity, historical unit cost, and line cost. The Basic snapshot therefore retains complete lot traceability without duplicating the visible formula line.
+The Production Bench completion snapshot keeps one ingredient or packaging line for each formula requirement. When that
+requirement consumed several internal lots, child lot-cost snapshots preserve each lot, actual quantity, historical unit
+cost, and line cost. It retains complete lot traceability without duplicating the visible formula line. It is not a link
+to Basic `production_batches`.
 
 The output lot follows the existing quarantine, curing/availability-date, and release design. A manufactured intermediate carries its actual cost into downstream production.
 
@@ -431,7 +434,7 @@ The review continues with one prepared production and demonstrates:
 - packaging consumption;
 - private production notes and documents;
 - atomic completion;
-- one output lot and linked Basic production snapshot;
+- one output lot and immutable Production Bench completion snapshot;
 - actual historical material cost from the consumed receipt lots;
 - output quarantine and release;
 - an abort with consumed, returned, and lost material reconciliation;

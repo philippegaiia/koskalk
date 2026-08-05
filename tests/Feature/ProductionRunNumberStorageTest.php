@@ -217,6 +217,32 @@ it('serializes PostgreSQL workspace number writes before cross-field collision c
         ->and($definition)->toContain('pg_advisory_xact_lock(OLD.workspace_id)');
 });
 
+it('ships a forward migration that reapplies production run number hardening', function (): void {
+    $migrationPath = database_path('migrations/2026_08_05_120004_harden_production_run_number_integrity.php');
+
+    expect(is_file($migrationPath))->toBeTrue();
+
+    $migration = require $migrationPath;
+    $migration->up();
+    $migration->up();
+
+    $assigner = User::factory()->create();
+    $run = ProductionRun::factory()->create();
+    $run->update([
+        'batch_number' => 'B-24001',
+        'batch_number_serial' => 24001,
+        'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $assigner->id,
+    ]);
+
+    expect(fn (): int => ProductionRun::query()->whereKey($run->id)->update([
+        'batch_number' => 'B-24002',
+    ]))->toThrow(QueryException::class)
+        ->and(fn (): ?bool => $assigner->delete())->toThrow(QueryException::class)
+        ->and(fn (): mixed => $migration->down())
+        ->toThrow(RuntimeException::class, 'forward-only');
+});
+
 it('gives factory runs distinct temporary identifiers and falls back to them for display', function (): void {
     $runs = ProductionRun::factory()->count(2)->create();
 

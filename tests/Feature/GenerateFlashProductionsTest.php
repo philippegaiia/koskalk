@@ -3,6 +3,7 @@
 use App\Actions\Production\GenerateFlashProductions;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberSetting;
 use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
@@ -56,6 +57,37 @@ it('creates one planned production per flash batch with tasks and is idempotent'
         ->and(ProductionRun::query()->where('source', ProductionRunSource::Flash)->count())->toBe(3)
         ->and($first->pluck('planned_for')->map(fn ($date): string => $date->toDateString())->all())->toBe(['2026-08-10', '2026-08-10', '2026-08-11'])
         ->and($first->every(fn (ProductionRun $production): bool => $production->tasks()->count() === 1))->toBeTrue();
+});
+
+it('leaves generated flash runs unnumbered and does not advance the permanent counter', function (): void {
+    $fixture = generateFlashFixture();
+    ProductionRunNumberSetting::query()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'next_permanent_serial' => 17,
+    ]);
+
+    $productions = app(GenerateFlashProductions::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        lines: [[
+            'recipe_id' => $fixture['recipe']->id,
+            'desired_units' => '250',
+            'expected_units_per_batch' => '100',
+            'basis_input_value' => '12',
+            'basis_input_unit' => 'kg',
+            'task_set_id' => $fixture['taskSet']->id,
+        ]],
+        firstDate: '2026-08-10',
+        batchesPerDay: 2,
+        idempotencyKey: 'flash-numbering-1',
+    );
+
+    expect($productions->every(fn (ProductionRun $production): bool => $production->source === ProductionRunSource::Flash
+        && $production->batch_number === null
+        && $production->batch_number_serial === null
+        && $production->batch_number_assigned_at === null
+        && $production->batch_number_assigned_by_user_id === null))->toBeTrue()
+        ->and($fixture['workspace']->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(17);
 });
 
 it('rolls back every generated production when a later flash line is invalid', function (): void {
@@ -162,6 +194,7 @@ function generateFlashFixture(): array
         'position' => 1,
         'days_after_production' => 0,
     ]);
+    $taskSet->recipes()->attach($recipe->id, ['is_default' => true]);
 
     return compact('owner', 'workspace', 'recipe', 'taskSet');
 }

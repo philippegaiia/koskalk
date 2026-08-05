@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Production\AssignProductionBatchNumbers;
+use App\Actions\Production\CancelProduction;
 use App\Actions\Production\SaveProductionRunNumberSettings;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberSetting;
@@ -255,6 +256,23 @@ it('rejects a terminal permanent serial before changing runs or counters', funct
         ->and($workspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(PHP_INT_MAX);
 });
 
+it('rejects an exhausted counter atomically for a two-run assignment', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $first = productionNumberingRun($workspace, ['planned_for' => '2026-08-10']);
+    $second = productionNumberingRun($workspace, ['planned_for' => '2026-08-11']);
+    ProductionRunNumberSetting::query()->create([
+        'workspace_id' => $workspace->id,
+        'next_permanent_serial' => PHP_INT_MAX - 1,
+    ]);
+    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+
+    expect(fn () => $action->handle($owner, $workspace, [$first->id, $second->id]))
+        ->toThrow(ValidationException::class)
+        ->and($first->fresh()->batch_number)->toBeNull()
+        ->and($second->fresh()->batch_number)->toBeNull()
+        ->and($workspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(PHP_INT_MAX - 1);
+});
+
 it('allows the highest serial that can still be incremented for one assignment', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     $run = productionNumberingRun($workspace);
@@ -284,6 +302,22 @@ it('isolates permanent batch numbers and counters between workspaces', function 
         ->and($second->fresh()->batch_number)->toBe('B-00001')
         ->and($firstWorkspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(2)
         ->and($secondWorkspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(2);
+});
+
+it('retains permanent number audit metadata when a production is cancelled', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $run = productionNumberingRun($workspace);
+    $assignment = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+
+    $assignment->handle($owner, $workspace, [$run->id]);
+    $assigned = $run->fresh();
+    $cancelled = (new CancelProduction(new ProductionBenchAccess))->handle($owner, $assigned, 'Customer postponed the batch.');
+
+    expect($cancelled->status)->toBe(ProductionRunStatus::Cancelled)
+        ->and($cancelled->batch_number)->toBe($assigned->batch_number)
+        ->and($cancelled->batch_number_serial)->toBe($assigned->batch_number_serial)
+        ->and($cancelled->batch_number_assigned_by_user_id)->toBe($assigned->batch_number_assigned_by_user_id)
+        ->and($cancelled->batch_number_assigned_at?->equalTo($assigned->batch_number_assigned_at))->toBeTrue();
 });
 
 it('serializes settings initialization against a concurrent PostgreSQL workspace lock', function (): void {

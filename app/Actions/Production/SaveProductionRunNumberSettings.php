@@ -28,7 +28,7 @@ class SaveProductionRunNumberSettings
         $this->access->assertCanConfigure($actor, $workspace);
 
         $padding = $this->normalizePositiveInteger($padding, 'permanent_padding', 120);
-        $nextPermanentSerial = $this->normalizePositiveInteger($nextPermanentSerial, 'next_permanent_serial');
+        $nextPermanentSerial = $this->normalizePositiveInteger($nextPermanentSerial, 'next_permanent_serial', PHP_INT_MAX - 1);
         $this->validateAffix($prefix, 'permanent_prefix');
         $this->validateAffix($suffix, 'permanent_suffix');
         $candidate = $this->numbers->formatPermanentNumber($prefix, $nextPermanentSerial, $suffix, $padding);

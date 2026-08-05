@@ -5,7 +5,6 @@ namespace App\Actions\Production;
 use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProductionRunSource;
 use App\ProductionRunStatus;
 use App\Services\Production\ProductionRunNumberService;
 use App\Services\ProductionBenchAccess;
@@ -34,6 +33,7 @@ class AssignProductionBatchNumbers
             $this->access->assertWritable($actor, $lockedWorkspace);
 
             $productions = ProductionRun::query()
+                ->where('workspace_id', $lockedWorkspace->id)
                 ->whereIn('id', $productionIds)
                 ->orderBy('id')
                 ->lockForUpdate()
@@ -41,13 +41,7 @@ class AssignProductionBatchNumbers
 
             if ($productions->count() !== count($productionIds)) {
                 throw ValidationException::withMessages([
-                    'production_ids' => 'One or more selected productions could not be found.',
-                ]);
-            }
-
-            if ($productions->contains(fn (ProductionRun $production): bool => $production->workspace_id !== $lockedWorkspace->id)) {
-                throw ValidationException::withMessages([
-                    'production_ids' => 'Every selected production must belong to this workspace.',
+                    'production_ids' => 'One or more selected productions could not be found in this workspace.',
                 ]);
             }
 
@@ -61,6 +55,13 @@ class AssignProductionBatchNumbers
                 ->values();
 
             $this->assertEligible($eligible);
+
+            if ($eligible->isNotEmpty() && $settings->next_permanent_serial > PHP_INT_MAX - $eligible->count()) {
+                throw ValidationException::withMessages([
+                    'next_permanent_serial' => 'The permanent batch number counter is exhausted for this assignment.',
+                ]);
+            }
+
             $candidates = $this->numbers->permanentCandidates($settings, $eligible->count());
 
             if ($this->numbers->identityExists($lockedWorkspace->id, $candidates)) {
@@ -93,12 +94,6 @@ class AssignProductionBatchNumbers
     private function assertEligible(Collection $productions): void
     {
         foreach ($productions as $production) {
-            if ($production->source === ProductionRunSource::Flash) {
-                throw ValidationException::withMessages([
-                    'production_ids' => 'Flash productions cannot receive permanent batch numbers.',
-                ]);
-            }
-
             if (! in_array($production->status, [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
                 throw ValidationException::withMessages([
                     'production_ids' => 'Only scheduled or reserved productions can receive batch numbers.',

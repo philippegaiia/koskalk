@@ -12,7 +12,9 @@ use App\Services\Production\ProductionRunNumberService;
 use App\Services\ProductionBenchAccess;
 use App\WorkspaceMemberRole;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -84,6 +86,14 @@ it('rejects unsafe or invalid permanent batch number settings', function (): voi
         ->toThrow(ValidationException::class);
 });
 
+it('rejects terminal next permanent serial settings', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $action = new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService);
+
+    expect(fn () => $action->handle($owner, $workspace, 'B-', '', 5, PHP_INT_MAX))
+        ->toThrow(ValidationException::class);
+});
+
 it('rejects settings whose next rendered candidate is already a workspace identity', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     productionNumberingRun($workspace, ['planning_batch_number' => 'SOAP-00042-FR']);
@@ -141,11 +151,10 @@ it('skips already-numbered runs during idempotent assignment retries', function 
         ->and($workspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(3);
 });
 
-it('rejects empty, missing, cross-workspace, draft, flash, and undated selections', function (): void {
+it('rejects empty, missing, cross-workspace, draft, and undated selections', function (): void {
     [$owner, $workspace] = activeProductionNumberingWorkspace();
     [, $otherWorkspace] = activeProductionNumberingWorkspace();
     $draft = productionNumberingRun($workspace, ['status' => ProductionRunStatus::Draft]);
-    $flash = productionNumberingRun($workspace, ['source' => 'flash']);
     $undated = productionNumberingRun($workspace, ['planned_for' => null]);
     $foreign = productionNumberingRun($otherWorkspace);
     ProductionRunNumberSetting::query()->create(['workspace_id' => $workspace->id]);
@@ -155,9 +164,39 @@ it('rejects empty, missing, cross-workspace, draft, flash, and undated selection
         ->and(fn () => $action->handle($owner, $workspace, [999999]))->toThrow(ValidationException::class)
         ->and(fn () => $action->handle($owner, $workspace, [$foreign->id]))->toThrow(ValidationException::class)
         ->and(fn () => $action->handle($owner, $workspace, [$draft->id]))->toThrow(ValidationException::class)
-        ->and(fn () => $action->handle($owner, $workspace, [$flash->id]))->toThrow(ValidationException::class)
         ->and(fn () => $action->handle($owner, $workspace, [$undated->id]))->toThrow(ValidationException::class)
         ->and($workspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(1);
+});
+
+it('allows Flash runs to receive permanent numbers in the normal assignment workflow', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $flash = productionNumberingRun($workspace, ['source' => 'flash']);
+    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+
+    expect($action->handle($owner, $workspace, [$flash->id]))
+        ->toBe(['assigned' => 1, 'already_assigned' => 0])
+        ->and($flash->fresh()->batch_number)->toBe('B-00001');
+});
+
+it('scopes locked production rows to the requested workspace', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $run = productionNumberingRun($workspace);
+    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+    $queries = [];
+
+    DB::listen(function ($query) use (&$queries): void {
+        if (str_contains(strtolower($query->sql), 'production_runs')) {
+            $queries[] = $query->sql;
+        }
+    });
+
+    $action->handle($owner, $workspace, [$run->id]);
+
+    $lockQuery = collect($queries)->first(fn (string $query): bool => str_contains(strtolower($query), 'order by')
+        && (DB::getDriverName() !== 'pgsql' || str_contains(strtolower($query), 'for update')));
+
+    expect($lockQuery)->not->toBeNull()
+        ->and(str_contains(strtolower($lockQuery), 'workspace_id'))->toBeTrue();
 });
 
 it('allows owner admin and editor assignment but rejects viewers and inactive access', function (): void {
@@ -201,6 +240,36 @@ it('rolls back every assignment and the counter when any rendered candidate coll
         ->and($workspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(1);
 });
 
+it('rejects a terminal permanent serial before changing runs or counters', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $run = productionNumberingRun($workspace);
+    ProductionRunNumberSetting::query()->create([
+        'workspace_id' => $workspace->id,
+        'next_permanent_serial' => PHP_INT_MAX,
+    ]);
+    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+
+    expect(fn () => $action->handle($owner, $workspace, [$run->id]))
+        ->toThrow(ValidationException::class)
+        ->and($run->fresh()->batch_number)->toBeNull()
+        ->and($workspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(PHP_INT_MAX);
+});
+
+it('allows the highest serial that can still be incremented for one assignment', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $run = productionNumberingRun($workspace);
+    ProductionRunNumberSetting::query()->create([
+        'workspace_id' => $workspace->id,
+        'next_permanent_serial' => PHP_INT_MAX - 1,
+    ]);
+    $action = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+
+    expect($action->handle($owner, $workspace, [$run->id]))
+        ->toBe(['assigned' => 1, 'already_assigned' => 0])
+        ->and($run->fresh()->batch_number_serial)->toBe(PHP_INT_MAX - 1)
+        ->and($workspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(PHP_INT_MAX);
+});
+
 it('isolates permanent batch numbers and counters between workspaces', function (): void {
     [$firstOwner, $firstWorkspace] = activeProductionNumberingWorkspace();
     [$secondOwner, $secondWorkspace] = activeProductionNumberingWorkspace();
@@ -215,4 +284,42 @@ it('isolates permanent batch numbers and counters between workspaces', function 
         ->and($second->fresh()->batch_number)->toBe('B-00001')
         ->and($firstWorkspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(2)
         ->and($secondWorkspace->fresh()->productionRunNumberSetting->next_permanent_serial)->toBe(2);
+});
+
+it('serializes settings initialization against a concurrent PostgreSQL workspace lock', function (): void {
+    if (DB::getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('PostgreSQL-only two-connection contention test.');
+    }
+
+    if (DB::transactionLevel() > 0) {
+        DB::commit();
+    }
+
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    (new ProductionBenchAccess)->activate($owner, $workspace);
+
+    $secondConnectionName = 'production_numbering_contention';
+    $defaultConnectionName = config('database.default');
+    config(['database.connections.'.$secondConnectionName => config('database.connections.'.$defaultConnectionName)]);
+    DB::purge($secondConnectionName);
+    $secondConnection = DB::connection($secondConnectionName);
+
+    DB::beginTransaction();
+    DB::table('workspaces')->where('id', $workspace->id)->lockForUpdate()->first();
+    $secondConnection->statement("SET lock_timeout = '250ms'");
+    config(['database.default' => $secondConnectionName]);
+
+    try {
+        $action = new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService);
+
+        expect(fn () => $action->handle($owner, $workspace, 'C-', '', 5, 1))
+            ->toThrow(QueryException::class);
+    } finally {
+        config(['database.default' => $defaultConnectionName]);
+        DB::rollBack();
+        $secondConnection->disconnect();
+        DB::table('workspaces')->where('id', $workspace->id)->delete();
+        DB::table('users')->where('id', $owner->id)->delete();
+    }
 });

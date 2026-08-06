@@ -11099,6 +11099,72 @@
         },
         {
             "group": "production_bench",
+            "key": "production.start",
+            "text": {
+                "de": "Produktion starten",
+                "es": "Iniciar producción",
+                "fr": "Démarrer la production",
+                "it": "Avvia produzione",
+                "nl": "Productie starten"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.start_blocked_coverage",
+            "text": {
+                "de": "Reservieren Sie die restlichen Mengen, bevor Sie diese Produktion starten.",
+                "es": "Reserva las cantidades restantes antes de iniciar esta producción.",
+                "fr": "Réservez les quantités restantes avant de démarrer cette production.",
+                "it": "Prenota le quantità rimanenti prima di avviare questa produzione.",
+                "nl": "Reserveer de resterende hoeveelheden voordat u deze productie start."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.start_blocked_number",
+            "text": {
+                "de": "Weisen Sie vor dem Start dieser Produktion eine permanente Chargennummer zu.",
+                "es": "Asigna un número de lote permanente antes de iniciar esta producción.",
+                "fr": "Attribuez un numéro de lot permanent avant de démarrer cette production.",
+                "it": "Assegna un numero di lotto permanente prima di avviare questa produzione.",
+                "nl": "Ken een permanent batchnummer toe voordat u deze productie start."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.start_blocked_status",
+            "text": {
+                "de": "Nur eine vorbereitete Produktion kann gestartet werden.",
+                "es": "Solo se puede iniciar una producción con stock preparado.",
+                "fr": "Seule une production préparée peut être démarrée.",
+                "it": "Solo una produzione preparata può essere avviata.",
+                "nl": "Alleen een voorbereide productie kan worden gestart."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.start_confirm",
+            "text": {
+                "de": "Diese Produktion starten? Der Plan wird eingefroren und der Bestand wird aus den reservierten Losen entnommen.",
+                "es": "¿Iniciar esta producción? El plan se congela y el stock se consumirá de los lotes reservados.",
+                "fr": "Démarrer cette production ? Le plan est figé et le stock sera consommé depuis les lots réservés.",
+                "it": "Avviare questa produzione? Il piano viene bloccato e le scorte verranno consumate dai lotti prenotati.",
+                "nl": "Deze productie starten? Het plan wordt bevroren en voorraad wordt verbruikt uit de gereserveerde partijen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.started",
+            "text": {
+                "de": "Produktion gestartet.",
+                "es": "Producción iniciada.",
+                "fr": "Production démarrée.",
+                "it": "Produzione avviata.",
+                "nl": "Productie gestart."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.status.aborted",
             "text": {
                 "de": "Abgebrochen",

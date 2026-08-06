@@ -10,6 +10,7 @@ use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\ReopenProductionTask;
 use App\Actions\Production\RescheduleProductionTask;
 use App\Actions\Production\ResetProductionTaskDate;
+use App\Actions\Production\StartProduction;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Department;
 use App\Models\Employee;
@@ -196,6 +197,27 @@ class ProductionDetail extends Component
         $this->cancellationReason = '';
         $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-cancelled');
+    }
+
+    public function start(StartProduction $startProduction): void
+    {
+        try {
+            $startProduction->handle(
+                actor: $this->user(),
+                production: $this->production(),
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError(in_array($field, ['production', 'production_bench'], true) ? 'production' : $field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.production.started'));
+        $this->dispatch('production-started');
     }
 
     public function releaseStock(ReleaseProductionStock $releaseProductionStock): void

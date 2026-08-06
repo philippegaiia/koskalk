@@ -1,10 +1,13 @@
 <?php
 
+use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\GenerateProductionTasks;
 use App\Actions\Production\PlanProduction;
+use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\ScheduleProduction;
+use App\Actions\Production\StartProduction;
 use App\Actions\Production\UpdateProductionPlan;
 use App\MassUnit;
 use App\Models\FattyAcid;
@@ -27,6 +30,7 @@ use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\StockLot;
+use App\Models\StockMovement;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
@@ -34,6 +38,7 @@ use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
 use App\ProductionBasisKind;
 use App\ProductionRunStatus;
+use App\StockMovementType;
 use App\StockReservationStatus;
 use App\Visibility;
 use Illuminate\Database\Schema\Blueprint;
@@ -985,6 +990,99 @@ it('rejects deletion once a permanent number, a reservation, or a terminal statu
     'aborted' => [ProductionRunStatus::Aborted->value],
 ]);
 
+it('starts a fully reserved and permanently numbered production', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = productionPlanningReservedRun($fixture, 'start-ok-1');
+
+    $started = app(StartProduction::class)->handle($fixture['owner'], $production);
+
+    expect($started->status)->toBe(ProductionRunStatus::InProduction)
+        ->and($started->started_at)->not->toBeNull()
+        ->and($started->started_by_user_id)->toBe($fixture['owner']->id)
+        ->and($started->batch_number)->not->toBeNull();
+});
+
+it('rejects starting before the run is reserved', function (string $status): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'start-status-'.fake()->unique()->numberBetween(1, 99999),
+        status: $status === ProductionRunStatus::Scheduled->value
+            ? ProductionRunStatus::Scheduled
+            : ProductionRunStatus::Draft,
+    );
+
+    if ($status !== ProductionRunStatus::Draft->value && $status !== ProductionRunStatus::Scheduled->value) {
+        $production->update(['status' => $status]);
+    }
+
+    expect(function () use ($fixture, $production): void {
+        app(StartProduction::class)->handle($fixture['owner'], $production);
+    })->toThrow(ValidationException::class);
+})->with([
+    'draft' => [ProductionRunStatus::Draft->value],
+    'scheduled' => [ProductionRunStatus::Scheduled->value],
+    'completed' => [ProductionRunStatus::Completed->value],
+    'cancelled' => [ProductionRunStatus::Cancelled->value],
+    'aborted' => [ProductionRunStatus::Aborted->value],
+]);
+
+it('rejects starting without a permanent batch number', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'start-no-number-1',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+    $production->requirements->each(function (ProductionRequirement $requirement) use ($fixture): void {
+        $lot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+            'ingredient_id' => $requirement->ingredient_id,
+            'packaging_item_id' => $requirement->packaging_item_id,
+            'unit_kind' => $requirement->ingredient_id !== null ? 'mass' : 'count',
+            'expires_at' => '2027-01-01',
+            'released_at' => now(),
+        ]);
+        StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $fixture['workspace']->id,
+            'type' => StockMovementType::OpeningBalance,
+            'quantity_delta' => $requirement->ingredient_id !== null
+                ? $requirement->required_mass_grams
+                : (string) $requirement->required_units,
+        ]);
+    });
+    app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'start-no-number-prepare',
+    );
+
+    expect(function () use ($fixture, $production): void {
+        app(StartProduction::class)->handle($fixture['owner'], $production->fresh());
+    })->toThrow(ValidationException::class);
+});
+
+it('rejects starting twice', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = productionPlanningReservedRun($fixture, 'start-twice-1');
+
+    app(StartProduction::class)->handle($fixture['owner'], $production);
+
+    expect(function () use ($fixture, $production): void {
+        app(StartProduction::class)->handle($fixture['owner'], $production->fresh());
+    })->toThrow(ValidationException::class);
+});
+
 function productionPlanningTask2Fixture(string $calculationBasis = 'initial_oils', bool $withPublishedVersion = true): array
 {
     $owner = User::factory()->create();
@@ -1025,6 +1123,55 @@ function productionPlanningTask2Phase(RecipeVersion $version, Workspace $workspa
         'name' => $name,
         'slug' => str($name)->slug(),
     ]);
+}
+
+/**
+ * @param  array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}  $fixture
+ */
+function productionPlanningReservedRun(array $fixture, string $idempotencyKey): ProductionRun
+{
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: $idempotencyKey,
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+
+    $production->requirements->each(function (ProductionRequirement $requirement) use ($fixture): void {
+        $lot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+            'ingredient_id' => $requirement->ingredient_id,
+            'packaging_item_id' => $requirement->packaging_item_id,
+            'unit_kind' => $requirement->ingredient_id !== null ? 'mass' : 'count',
+            'expires_at' => '2027-01-01',
+            'released_at' => now(),
+        ]);
+        StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $fixture['workspace']->id,
+            'type' => StockMovementType::OpeningBalance,
+            'quantity_delta' => $requirement->ingredient_id !== null
+                ? $requirement->required_mass_grams
+                : (string) $requirement->required_units,
+        ]);
+    });
+
+    app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: $idempotencyKey.'-prepare',
+    );
+
+    app(AssignProductionBatchNumbers::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        productionIds: [$production->id],
+    );
+
+    return $production->fresh();
 }
 
 /**

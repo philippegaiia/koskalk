@@ -77,6 +77,19 @@
         @enderror
     @endif
 
+    @if ($production->status->value === 'reserved' && $production->batch_number !== null)
+        <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--color-accent)] bg-[var(--color-accent-soft)] p-4">
+            <div>
+                <p class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.start') }}</p>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $production->batch_number }}</p>
+            </div>
+            <button type="button" wire:click="start" wire:confirm="{{ __('production_bench.production.start_confirm') }}" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.start') }}</button>
+        </section>
+        @error('production')
+            <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+        @enderror
+    @endif
+
     <section class="sk-card grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</p></div>
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.batch_size') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, auth()->user()?->number_locale) }} {{ $production->basis_input_unit->value }}</p></div>

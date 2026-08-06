@@ -23,12 +23,15 @@ use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionPackagingItem;
+use App\Models\StockLot;
+use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
 use App\ProductionBasisKind;
 use App\ProductionRunStatus;
+use App\StockReservationStatus;
 use App\Visibility;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -603,6 +606,127 @@ it('keeps the production aggregate loadable when the version link is removed', f
         ->and($loaded->formulaLines()->count())->toBe(4);
 });
 
+it('rescales snapshot quantities in place and keeps reservation history', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'rescale-plan-1',
+    );
+
+    $requirementIds = $production->requirements()->pluck('id')->all();
+    $lineIds = $production->formulaLines()->pluck('id')->all();
+    $oliveRequirement = $production->requirements()
+        ->where('kind', 'ingredient')
+        ->orderBy('id')
+        ->firstOrFail();
+    $oliveLine = $production->formulaLines()
+        ->where('component', 'ingredient')
+        ->orderBy('sort_order')
+        ->firstOrFail();
+    $oldNaohMass = $production->formulaLines()->where('component', 'naoh')->firstOrFail()->planned_mass_grams;
+    $oldWaterMass = $production->formulaLines()->where('component', 'water')->firstOrFail()->planned_mass_grams;
+    $lot = StockLot::factory()->released()->for($fixture['workspace'])->for($fixture['olive'])->create();
+    $reservation = StockReservation::factory()->released()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $production->id,
+        'production_requirement_id' => $oliveRequirement->id,
+        'stock_lot_id' => $lot->id,
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+
+    $updated = app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '20',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 150,
+        plannedFor: '2026-09-01',
+    );
+
+    expect($updated->basis_quantity_grams)->toBe('20000.000000000')
+        ->and($updated->expected_units)->toBe(150)
+        ->and($updated->requirements()->pluck('id')->all())->toBe($requirementIds)
+        ->and($updated->formulaLines()->pluck('id')->all())->toBe($lineIds)
+        ->and($updated->requirements()->where('kind', 'ingredient')->orderBy('id')->pluck('required_mass_grams')->all())
+        ->toBe(['15000.000000000', '5000.000000000'])
+        ->and($updated->requirements()->where('kind', 'packaging')->firstOrFail()->required_units)->toBe(150)
+        ->and($updated->formulaLines()->where('component', 'ingredient')->orderBy('sort_order')->firstOrFail()->planned_mass_grams)
+        ->toBe('15000.000000000')
+        ->and(((float) $updated->formulaLines()->where('component', 'naoh')->firstOrFail()->planned_mass_grams) / (float) $oldNaohMass)
+        ->toBeGreaterThan(1.428)->toBeLessThan(1.429)
+        ->and(((float) $updated->formulaLines()->where('component', 'water')->firstOrFail()->planned_mass_grams) / (float) $oldWaterMass)
+        ->toBeGreaterThan(1.428)->toBeLessThan(1.429)
+        ->and($oliveRequirement->fresh()->id)->toBe($oliveRequirement->id)
+        ->and($reservation->fresh()->status)->toBe(StockReservationStatus::Released)
+        ->and($reservation->fresh()->production_requirement_id)->toBe($oliveRequirement->id)
+        ->and($updated->formulaLines()->count())->toBe($production->formulaLines()->count());
+});
+
+it('corrects quantities without the source version or a live recipe lookup', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'rescale-no-version-1',
+    );
+
+    $production->update(['recipe_version_id' => null]);
+    RecipeVersion::withoutGlobalScopes()
+        ->whereKey($fixture['version']->id)
+        ->delete();
+
+    $updated = app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '1.5',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 12,
+    );
+
+    expect($updated->basis_quantity_grams)->toBe('1500.000000000')
+        ->and($updated->expected_units)->toBe(12)
+        ->and($updated->recipe_version_id)->toBeNull()
+        ->and($updated->requirements()->count())->toBe(3)
+        ->and($updated->formulaLines()->count())->toBe(4);
+});
+
+it('rejects correction outside draft or scheduled status', function (string $status): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'rescale-status-'.fake()->unique()->numberBetween(1, 99999),
+    );
+    $production->update(['status' => $status]);
+
+    expect(fn (): ProductionRun => app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '20',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 150,
+    ))->toThrow(ValidationException::class);
+})->with([
+    'reserved' => [ProductionRunStatus::Reserved->value],
+    'in production' => [ProductionRunStatus::InProduction->value],
+    'completed' => [ProductionRunStatus::Completed->value],
+    'cancelled' => [ProductionRunStatus::Cancelled->value],
+    'aborted' => [ProductionRunStatus::Aborted->value],
+]);
+
 function productionPlanningTask2Fixture(string $calculationBasis = 'initial_oils', bool $withPublishedVersion = true): array
 {
     $owner = User::factory()->create();
@@ -649,7 +773,7 @@ function productionPlanningTask2Phase(RecipeVersion $version, Workspace $workspa
  * A published soap formula with two saponified oils, one packaging plan, and
  * optional SAP profiles so the production snapshot includes calculated lye.
  *
- * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}
+ * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, coconut: Ingredient}
  */
 function productionPlanningTask3SoapFixture(bool $withSap = true): array
 {
@@ -721,6 +845,9 @@ function productionPlanningTask3SoapFixture(bool $withSap = true): array
         'components_per_unit' => '1.000',
         'position' => 1,
     ]);
+
+    $fixture['olive'] = $olive;
+    $fixture['coconut'] = $coconut;
 
     return $fixture;
 }

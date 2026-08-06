@@ -3,6 +3,7 @@
 use App\Actions\Production\CancelProduction;
 use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\ReleaseProductionStock;
+use App\Actions\Production\UpdateProductionPlan;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductionRequirement;
@@ -187,6 +188,38 @@ it('rejects read-only preparation and cross-workspace production selections', fu
         productionIds: [$production->id, $otherProduction->id],
         idempotencyKey: 'prepare-cross-workspace',
     ))->toThrow(ValidationException::class);
+});
+
+it('keeps released reservation history when a planned production is corrected', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    $ingredientRequirement = productionStockIngredientRequirement($production, $fixture['ingredient'], '130.000000000');
+    productionStockLot($fixture, $fixture['ingredient'], '500.000000000', '2026-08-25');
+
+    $prepared = app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'prepare-release-1',
+    );
+    $released = app(ReleaseProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        production: $prepared[0],
+    );
+    $reservation = $released->requirements()->first()->reservations()->first();
+
+    $updated = app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $released,
+        basisInputValue: '2',
+        basisInputUnit: 'kg',
+        expectedUnits: 20,
+    );
+
+    expect($updated->requirements()->first()->id)->toBe($ingredientRequirement->id)
+        ->and($updated->requirements()->first()->required_mass_grams)->toBe('200.000000000')
+        ->and($reservation->fresh()->status)->toBe(StockReservationStatus::Released)
+        ->and($reservation->fresh()->production_requirement_id)->toBe($ingredientRequirement->id)
+        ->and($updated->status)->toBe(ProductionRunStatus::Scheduled);
 });
 
 /**

@@ -4,14 +4,11 @@ namespace App\Actions\Production;
 
 use App\MassUnit;
 use App\Models\ProductionRun;
-use App\Models\Recipe;
-use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProductionBasisKind;
 use App\ProductionRunStatus;
 use App\Services\MassConverter;
-use App\Services\Production\ProductionRequirementBuilder;
+use App\Services\Production\ProductionSnapshotRescaler;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -22,7 +19,7 @@ class UpdateProductionPlan
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
-        private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly ProductionSnapshotRescaler $rescaler,
     ) {}
 
     public function handle(
@@ -84,41 +81,9 @@ class UpdateProductionPlan
 
             $this->assertNoActiveReservations($lockedProduction);
 
-            $lockedRecipe = Recipe::withoutGlobalScopes()
-                ->with('productFamily')
-                ->findOrFail($lockedProduction->recipe_id);
-
-            if ((int) $lockedRecipe->workspace_id !== (int) $lockedWorkspace->id) {
-                throw ValidationException::withMessages([
-                    'recipe' => 'The recipe must belong to the production workspace.',
-                ]);
-            }
-
-            $pinnedVersion = RecipeVersion::withoutGlobalScopes()
-                ->whereKey($lockedProduction->recipe_version_id)
-                ->where('recipe_id', $lockedRecipe->id)
-                ->where('workspace_id', $lockedWorkspace->id)
-                ->where('is_current', false)
-                ->first();
-
-            if (! $pinnedVersion instanceof RecipeVersion) {
-                throw ValidationException::withMessages([
-                    'recipe_version' => 'The pinned published formula is no longer available.',
-                ]);
-            }
-
-            $basisKind = $lockedRecipe->productFamily?->calculation_basis === 'total_formula'
-                ? ProductionBasisKind::TotalFormulaMass
-                : ProductionBasisKind::OilMass;
-            $requirements = $this->requirementBuilder->build(
-                version: $pinnedVersion,
-                basisKind: $basisKind,
-                basisQuantityGrams: $basisQuantityGrams,
-                expectedUnits: $expectedUnits,
-            );
+            $this->rescaler->rescale($lockedProduction, $basisQuantityGrams, $expectedUnits);
 
             $lockedProduction->update([
-                'basis_kind' => $basisKind,
                 'basis_quantity_grams' => $basisQuantityGrams,
                 'basis_input_value' => $basisInputValue,
                 'basis_input_unit' => $massUnit,
@@ -126,10 +91,8 @@ class UpdateProductionPlan
                 'planned_for' => $plannedFor,
                 'notes' => $notes,
             ]);
-            $lockedProduction->requirements()->delete();
-            $lockedProduction->requirements()->createMany($requirements->all());
 
-            return $lockedProduction->fresh('requirements');
+            return $lockedProduction->fresh(['requirements', 'formulaLines']);
         }, attempts: 5);
     }
 

@@ -430,7 +430,7 @@ class SupplierListingCreate extends Component implements HasForms
         $results = $this->availableIngredientQuery()
             ->when($search !== '', fn (Builder $query): Builder => $query->where(fn (Builder $nested): Builder => $nested
                 ->whereLike('display_name', "%{$search}%")
-                ->orWhereLike('catalog_key', "%{$search}%")
+                ->orWhereLike('source_key', "%{$search}%")
                 ->orWhereLike('inci_name', "%{$search}%")
                 ->orWhereHas('translations', fn (Builder $translation): Builder => $translation->whereLike('display_name', "%{$search}%"))))
             ->orderBy('display_name')
@@ -724,7 +724,7 @@ class SupplierListingCreate extends Component implements HasForms
 
     private function ingredientLabel(Ingredient $ingredient): string
     {
-        return $ingredient->localizedDisplayName() ?? $ingredient->display_name ?? $ingredient->catalog_key;
+        return $ingredient->localizedDisplayName() ?? $ingredient->display_name ?? $ingredient->source_key;
     }
 
     private function normalizedSearch(string $search): string

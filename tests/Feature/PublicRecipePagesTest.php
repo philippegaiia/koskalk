@@ -87,7 +87,8 @@ it('shows private user ingredients in the workbench only for their owner', funct
         'owner_type' => OwnerType::User,
         'owner_id' => $owner->id,
         'visibility' => Visibility::Private,
-        'catalog_key' => 'USR-OWN',
+        'source_file' => 'user',
+        'source_key' => 'USR-OWN',
     ]);
 
     $this->actingAs($owner)

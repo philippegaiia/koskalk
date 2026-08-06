@@ -1,10 +1,10 @@
 [
     {
-        "catalog_key": "OB123",
+        "source_key": "OB123",
         "koh_sap_value": 0.188,
         "iodine_value": 86.4,
         "ins_value": 102.8,
-        "source_notes": "Example structure only. Replace catalog_key with a real ingredient catalog_key from your catalog.",
+        "source_notes": "Example structure only. Replace source_key with a real ingredient source_key from your catalog.",
         "fatty_acids": {
             "palmitic": 12.0,
             "stearic": 2.8,
@@ -20,7 +20,7 @@
         }
     },
     {
-        "catalog_key": "OB456",
+        "source_key": "OB456",
         "koh_sap_value": 0.257,
         "iodine_value": null,
         "ins_value": null,
@@ -38,7 +38,7 @@
         }
     },
     {
-        "catalog_key": "OB789",
+        "source_key": "OB789",
         "koh_sap_value": 0.201,
         "iodine_value": null,
         "ins_value": null,

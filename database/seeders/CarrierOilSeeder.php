@@ -29,18 +29,19 @@ class CarrierOilSeeder extends Seeder
         $count = 0;
 
         foreach ($rows as $row) {
-            $catalogKey = $row['catalog_key'];
-            $displayName = $this->toDisplayName($catalogKey);
+            $sourceKey = $row['source_key'];
+            $displayName = $this->toDisplayName($sourceKey);
 
             $this->command->info("Seeding {$displayName}...");
 
             $ingredient = $this->existingIngredientFor(
                 ingredientsByDisplayName: $ingredientsByDisplayName,
                 displayName: $displayName,
-                catalogKey: $catalogKey,
+                sourceKey: $sourceKey,
             ) ?? Ingredient::query()->updateOrCreate(
                 [
-                    'catalog_key' => $catalogKey,
+                    'source_file' => 'mendrulandia_oils',
+                    'source_key' => $sourceKey,
                 ],
                 [
                     'category' => IngredientCategory::CarrierOil,
@@ -60,8 +61,8 @@ class CarrierOilSeeder extends Seeder
 
             $ingredient->save();
 
-            $fattyAcids = $this->normalizeFattyAcids($row['fatty_acids'] ?? [], $catalogKey, $fattyAcidIdsByKey);
-            $sourceNotes = "Mendrulandia oils [{$catalogKey}]";
+            $fattyAcids = $this->normalizeFattyAcids($row['fatty_acids'] ?? [], $sourceKey, $fattyAcidIdsByKey);
+            $sourceNotes = "Mendrulandia oils [{$sourceKey}]";
 
             $this->syncFattyAcids($ingredient, $fattyAcids, $sourceNotes);
 
@@ -82,7 +83,7 @@ class CarrierOilSeeder extends Seeder
     }
 
     /**
-     * @return array<int, array{catalog_key: string, fatty_acids: array<string, float>, koh_sap_value: ?float, iodine_value: ?float, ins_value: ?float, inci_name: ?string}>
+     * @return array<int, array{source_key: string, fatty_acids: array<string, float>, koh_sap_value: ?float, iodine_value: ?float, ins_value: ?float, inci_name: ?string}>
      */
     private function rows(string $path): array
     {
@@ -116,14 +117,14 @@ class CarrierOilSeeder extends Seeder
                 throw new RuntimeException("Mendrulandia oils row [{$index}] must be an object.");
             }
 
-            $catalogKey = $row['catalog_key'] ?? null;
+            $sourceKey = $row['source_key'] ?? null;
 
-            if (! is_string($catalogKey) || $catalogKey === '') {
-                throw new RuntimeException("Mendrulandia oils row [{$index}] is missing a valid catalog_key.");
+            if (! is_string($sourceKey) || $sourceKey === '') {
+                throw new RuntimeException("Mendrulandia oils row [{$index}] is missing a valid source_key.");
             }
 
             $result[] = [
-                'catalog_key' => $catalogKey,
+                'source_key' => $sourceKey,
                 'fatty_acids' => is_array($row['fatty_acids'] ?? null) ? $row['fatty_acids'] : [],
                 'koh_sap_value' => $this->nullableFloat($row['koh_sap_value'] ?? null),
                 'iodine_value' => $this->nullableFloat($row['iodine_value'] ?? null),
@@ -182,18 +183,21 @@ class CarrierOilSeeder extends Seeder
     /**
      * @param  Collection<string, Collection<int, Ingredient>>  $ingredientsByDisplayName
      */
-    private function existingIngredientFor(Collection $ingredientsByDisplayName, string $displayName, string $catalogKey): ?Ingredient
+    private function existingIngredientFor(Collection $ingredientsByDisplayName, string $displayName, string $sourceKey): ?Ingredient
     {
         $matches = $ingredientsByDisplayName->get($this->normalizeDisplayName($displayName), collect());
 
-        $catalogIngredient = $matches->first(fn (Ingredient $ingredient): bool => $this->isPlatformCatalogIngredient($ingredient));
+        $catalogIngredient = $matches->first(
+            fn (Ingredient $ingredient): bool => $this->isPlatformCatalogIngredient($ingredient)
+        );
 
         if ($catalogIngredient instanceof Ingredient) {
             return $catalogIngredient;
         }
 
         $mendrulandiaIngredient = $matches->first(
-            fn (Ingredient $ingredient): bool => $ingredient->catalog_key === $catalogKey
+            fn (Ingredient $ingredient): bool => $ingredient->source_file === 'mendrulandia_oils'
+                && $ingredient->source_key === $sourceKey
         );
 
         return $mendrulandiaIngredient instanceof Ingredient ? $mendrulandiaIngredient : null;
@@ -201,7 +205,9 @@ class CarrierOilSeeder extends Seeder
 
     private function isPlatformCatalogIngredient(Ingredient $ingredient): bool
     {
-        return $ingredient->owner_type === null
+        return $ingredient->source_file !== 'mendrulandia_oils'
+            && ! in_array($ingredient->source_file, ['admin', 'user'], true)
+            && $ingredient->owner_type === null
             && $ingredient->workspace_id === null;
     }
 
@@ -234,31 +240,31 @@ class CarrierOilSeeder extends Seeder
      * @param  array<string, int>  $fattyAcidIdsByKey
      * @return array<int, array{fatty_acid_id: int, percentage: float}>
      */
-    private function normalizeFattyAcids(array $fattyAcids, string $catalogKey, array $fattyAcidIdsByKey): array
+    private function normalizeFattyAcids(array $fattyAcids, string $sourceKey, array $fattyAcidIdsByKey): array
     {
         return collect($fattyAcids)
             ->filter(fn (mixed $percentage): bool => $percentage !== null && $percentage !== '')
-            ->map(function (mixed $percentage, mixed $fattyAcidKey) use ($catalogKey, $fattyAcidIdsByKey): array {
+            ->map(function (mixed $percentage, mixed $fattyAcidKey) use ($sourceKey, $fattyAcidIdsByKey): array {
                 $normalizedKey = trim((string) $fattyAcidKey);
 
                 if ($normalizedKey === '') {
-                    throw new RuntimeException("Mendrulandia oils row [{$catalogKey}] contains an empty fatty acid key.");
+                    throw new RuntimeException("Mendrulandia oils row [{$sourceKey}] contains an empty fatty acid key.");
                 }
 
                 $fattyAcidId = $fattyAcidIdsByKey[$normalizedKey] ?? null;
 
                 if ($fattyAcidId === null) {
-                    throw new RuntimeException("Mendrulandia oils row [{$catalogKey}] references unknown fatty acid [{$normalizedKey}].");
+                    throw new RuntimeException("Mendrulandia oils row [{$sourceKey}] references unknown fatty acid [{$normalizedKey}].");
                 }
 
                 if (! is_numeric($percentage)) {
-                    throw new RuntimeException("Mendrulandia oils row [{$catalogKey}] has a non-numeric percentage for fatty acid [{$normalizedKey}].");
+                    throw new RuntimeException("Mendrulandia oils row [{$sourceKey}] has a non-numeric percentage for fatty acid [{$normalizedKey}].");
                 }
 
                 $normalizedPercentage = round((float) $percentage, 5);
 
                 if ($normalizedPercentage < 0 || $normalizedPercentage > 100) {
-                    throw new RuntimeException("Mendrulandia oils row [{$catalogKey}] has an out-of-range percentage for fatty acid [{$normalizedKey}].");
+                    throw new RuntimeException("Mendrulandia oils row [{$sourceKey}] has an out-of-range percentage for fatty acid [{$normalizedKey}].");
                 }
 
                 return [

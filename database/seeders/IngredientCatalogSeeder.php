@@ -17,13 +17,13 @@ class IngredientCatalogSeeder extends Seeder
         $path = (string) config('catalog-imports.ingredients.path');
 
         foreach ($this->rows($path) as $row) {
-            $catalogKey = $this->value($row, 'Code');
+            $sourceKey = $this->value($row, 'Code');
 
-            if ($catalogKey === null) {
+            if ($sourceKey === null) {
                 continue;
             }
 
-            $sourceCodePrefix = $this->sourceCodePrefix($catalogKey);
+            $sourceCodePrefix = $this->sourceCodePrefix($sourceKey);
             $category = $this->ingredientCategory(
                 $sourceCodePrefix,
                 $this->value($row, 'INCI'),
@@ -41,11 +41,13 @@ class IngredientCatalogSeeder extends Seeder
 
             $ingredient = Ingredient::query()->updateOrCreate(
                 [
-                    'catalog_key' => $catalogKey,
+                    'source_file' => $path,
+                    'source_key' => $sourceKey,
                 ],
                 [
+                    'source_code_prefix' => $sourceCodePrefix,
                     'category' => $category,
-                    'display_name' => $displayNameEn ?? $displayNameFr ?? $this->value($row, 'INCI') ?? $catalogKey,
+                    'display_name' => $displayNameEn ?? $displayNameFr ?? $this->value($row, 'INCI') ?? $sourceKey,
                     'inci_name' => $this->value($row, 'INCI'),
                     'soap_inci_naoh_name' => $soapInciNaohName,
                     'soap_inci_koh_name' => $soapInciKohName,

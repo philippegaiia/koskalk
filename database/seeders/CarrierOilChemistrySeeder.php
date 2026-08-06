@@ -23,32 +23,32 @@ class CarrierOilChemistrySeeder extends Seeder
             return;
         }
 
-        $ingredientsByCatalogKey = Ingredient::query()
-            ->whereIn('catalog_key', array_keys($rows))
+        $ingredientsBySourceKey = Ingredient::query()
+            ->whereIn('source_key', array_keys($rows))
             ->get()
-            ->keyBy('catalog_key');
+            ->keyBy('source_key');
 
         $fattyAcidIdsByKey = FattyAcid::query()->pluck('id', 'key');
 
-        foreach ($rows as $catalogKey => $row) {
-            $ingredient = $ingredientsByCatalogKey->get($catalogKey);
+        foreach ($rows as $sourceKey => $row) {
+            $ingredient = $ingredientsBySourceKey->get($sourceKey);
 
             if (! $ingredient instanceof Ingredient) {
-                throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] does not match any existing ingredient.");
+                throw new RuntimeException("Carrier oil chemistry row [{$sourceKey}] does not match any existing ingredient.");
             }
 
             if ($ingredient->category !== IngredientCategory::CarrierOil) {
-                throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] points to [{$ingredient->display_name}], which is not a carrier oil.");
+                throw new RuntimeException("Carrier oil chemistry row [{$sourceKey}] points to [{$ingredient->display_name}], which is not a carrier oil.");
             }
 
             $sourceNotes = $this->nullableString($row, 'source_notes');
-            $fattyAcids = $this->normalizeFattyAcids($row['fatty_acids'] ?? null, $catalogKey, $fattyAcidIdsByKey);
+            $fattyAcids = $this->normalizeFattyAcids($row['fatty_acids'] ?? null, $sourceKey, $fattyAcidIdsByKey);
 
             $this->syncSapProfile(
                 ingredient: $ingredient,
-                kohSapValue: $this->nullableFloat($row, 'koh_sap_value', $catalogKey),
-                iodineValue: $this->nullableFloat($row, 'iodine_value', $catalogKey),
-                insValue: $this->nullableFloat($row, 'ins_value', $catalogKey),
+                kohSapValue: $this->nullableFloat($row, 'koh_sap_value', $sourceKey),
+                iodineValue: $this->nullableFloat($row, 'iodine_value', $sourceKey),
+                insValue: $this->nullableFloat($row, 'ins_value', $sourceKey),
                 sourceNotes: $sourceNotes,
                 fattyAcids: $fattyAcids,
             );
@@ -91,23 +91,23 @@ class CarrierOilChemistrySeeder extends Seeder
             throw new RuntimeException("Carrier oil chemistry JSON at [{$path}] must contain a top-level array of rows.");
         }
 
-        $rowsByCatalogKey = [];
+        $rowsBySourceKey = [];
 
         foreach ($decoded as $index => $row) {
             if (! is_array($row)) {
                 throw new RuntimeException("Carrier oil chemistry row [{$index}] must be an object.");
             }
 
-            $catalogKey = $this->requiredString($row, 'catalog_key', "row {$index}");
+            $sourceKey = $this->requiredString($row, 'source_key', "row {$index}");
 
-            if (array_key_exists($catalogKey, $rowsByCatalogKey)) {
-                throw new RuntimeException("Carrier oil chemistry JSON contains duplicate catalog_key [{$catalogKey}].");
+            if (array_key_exists($sourceKey, $rowsBySourceKey)) {
+                throw new RuntimeException("Carrier oil chemistry JSON contains duplicate source_key [{$sourceKey}].");
             }
 
-            $rowsByCatalogKey[$catalogKey] = $row;
+            $rowsBySourceKey[$sourceKey] = $row;
         }
 
-        return $rowsByCatalogKey;
+        return $rowsBySourceKey;
     }
 
     /**
@@ -147,7 +147,7 @@ class CarrierOilChemistrySeeder extends Seeder
     /**
      * @param  array<string, mixed>  $row
      */
-    private function nullableFloat(array $row, string $key, string $catalogKey): ?float
+    private function nullableFloat(array $row, string $key, string $sourceKey): ?float
     {
         $value = $row[$key] ?? null;
 
@@ -156,7 +156,7 @@ class CarrierOilChemistrySeeder extends Seeder
         }
 
         if (! is_numeric($value)) {
-            throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] has a non-numeric [{$key}] value.");
+            throw new RuntimeException("Carrier oil chemistry row [{$sourceKey}] has a non-numeric [{$key}] value.");
         }
 
         return round((float) $value, 5);
@@ -166,35 +166,35 @@ class CarrierOilChemistrySeeder extends Seeder
      * @param  Collection<int|string, int|string>  $fattyAcidIdsByKey
      * @return array<int, array{fatty_acid_id:int, percentage:float}>
      */
-    private function normalizeFattyAcids(mixed $fattyAcids, string $catalogKey, Collection $fattyAcidIdsByKey): array
+    private function normalizeFattyAcids(mixed $fattyAcids, string $sourceKey, Collection $fattyAcidIdsByKey): array
     {
         if (! is_array($fattyAcids)) {
-            throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] must include a fatty_acids object.");
+            throw new RuntimeException("Carrier oil chemistry row [{$sourceKey}] must include a fatty_acids object.");
         }
 
         return collect($fattyAcids)
             ->filter(fn (mixed $percentage): bool => $percentage !== null && $percentage !== '')
-            ->map(function (mixed $percentage, mixed $fattyAcidKey) use ($catalogKey, $fattyAcidIdsByKey): array {
+            ->map(function (mixed $percentage, mixed $fattyAcidKey) use ($sourceKey, $fattyAcidIdsByKey): array {
                 $normalizedKey = trim((string) $fattyAcidKey);
 
                 if ($normalizedKey === '') {
-                    throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] contains an empty fatty acid key.");
+                    throw new RuntimeException("Carrier oil chemistry row [{$sourceKey}] contains an empty fatty acid key.");
                 }
 
                 $fattyAcidId = $fattyAcidIdsByKey->get($normalizedKey);
 
                 if ($fattyAcidId === null) {
-                    throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] references unknown fatty acid [{$normalizedKey}].");
+                    throw new RuntimeException("Carrier oil chemistry row [{$sourceKey}] references unknown fatty acid [{$normalizedKey}].");
                 }
 
                 if (! is_numeric($percentage)) {
-                    throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] has a non-numeric percentage for fatty acid [{$normalizedKey}].");
+                    throw new RuntimeException("Carrier oil chemistry row [{$sourceKey}] has a non-numeric percentage for fatty acid [{$normalizedKey}].");
                 }
 
                 $normalizedPercentage = round((float) $percentage, 5);
 
                 if ($normalizedPercentage < 0 || $normalizedPercentage > 100) {
-                    throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] has an out-of-range percentage for fatty acid [{$normalizedKey}].");
+                    throw new RuntimeException("Carrier oil chemistry row [{$sourceKey}] has an out-of-range percentage for fatty acid [{$normalizedKey}].");
                 }
 
                 return [

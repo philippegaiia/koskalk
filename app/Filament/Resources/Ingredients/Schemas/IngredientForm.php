@@ -387,9 +387,9 @@ class IngredientForm
             ->where('is_active', true)
             ->when($record?->exists, fn ($query) => $query->whereKeyNot($record?->getKey()))
             ->get()
-            ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->display_name ?? $ingredient->catalog_key))
+            ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->display_name ?? $ingredient->source_key))
             ->mapWithKeys(function (Ingredient $ingredient): array {
-                $label = $ingredient->display_name ?? $ingredient->catalog_key;
+                $label = $ingredient->display_name ?? $ingredient->source_key;
                 $inciName = $ingredient->inci_name;
 
                 if (filled($inciName)) {

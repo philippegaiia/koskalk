@@ -27,7 +27,7 @@ class IngredientsTable
                     ->sortable()
                     ->description(fn (Ingredient $record): ?string => $record->inci_name)
                     ->wrap(),
-                TextColumn::make('catalog_key')
+                TextColumn::make('source_key')
                     ->label(__('Code'))
                     ->searchable()
                     ->sortable(),
@@ -69,7 +69,7 @@ class IngredientsTable
                         ->exporter(IngredientExporter::class),
                 ]),
             ])
-            ->defaultSort('catalog_key')
+            ->defaultSort('source_key')
             ->emptyStateHeading('No ingredients yet')
             ->emptyStateDescription('Seed the starter catalog or add a platform ingredient manually.')
             ->paginated([25, 50, 100]);

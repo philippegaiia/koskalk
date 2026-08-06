@@ -21,8 +21,10 @@ class IngredientExporter extends Exporter
                 ->label(__('Ingredient')),
             ExportColumn::make('inci_name'),
             ExportColumn::make('category'),
-            ExportColumn::make('catalog_key')
+            ExportColumn::make('source_file'),
+            ExportColumn::make('source_key')
                 ->label(__('Code')),
+            ExportColumn::make('source_code_prefix'),
             ExportColumn::make('notes'),
             ExportColumn::make('soap_inci_naoh_name'),
             ExportColumn::make('soap_inci_koh_name'),

@@ -20,7 +20,9 @@ class IngredientFactory extends Factory
     public function definition(): array
     {
         return [
-            'catalog_key' => fake()->unique()->bothify('ING###'),
+            'source_file' => 'factory',
+            'source_key' => fake()->unique()->bothify('ING###'),
+            'source_code_prefix' => 'ING',
             'category' => IngredientCategory::Additive,
             'display_name' => fake()->words(2, true),
             'inci_name' => strtoupper(fake()->words(2, true)),

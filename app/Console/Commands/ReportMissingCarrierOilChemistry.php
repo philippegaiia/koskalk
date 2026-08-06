@@ -30,10 +30,10 @@ class ReportMissingCarrierOilChemistry extends Command
         }
 
         $this->table(
-            ['Catalog key', 'Ingredient', 'Missing SAP', 'Missing Fatty Acids', 'Fatty Acid Count'],
+            ['Source key', 'Ingredient', 'Missing SAP', 'Missing Fatty Acids', 'Fatty Acid Count'],
             $missingCarrierOils
                 ->map(fn (array $row): array => [
-                    $row['catalog_key'],
+                    $row['source_key'],
                     $row['display_name'],
                     $row['missing_sap'] ? 'yes' : 'no',
                     $row['missing_fatty_acids'] ? 'yes' : 'no',
@@ -50,7 +50,7 @@ class ReportMissingCarrierOilChemistry extends Command
 
     /**
      * @return Collection<int, array{
-     *     catalog_key:?string,
+     *     source_key:?string,
      *     display_name:?string,
      *     missing_sap:bool,
      *     missing_fatty_acids:bool,
@@ -73,7 +73,7 @@ class ReportMissingCarrierOilChemistry extends Command
             })
             ->map(function (Ingredient $ingredient): array {
                 return [
-                    'catalog_key' => $ingredient->catalog_key,
+                    'source_key' => $ingredient->source_key,
                     'display_name' => $ingredient->display_name,
                     'missing_sap' => $ingredient->sapProfile?->koh_sap_value === null,
                     'missing_fatty_acids' => $ingredient->fattyAcidEntries->isEmpty(),

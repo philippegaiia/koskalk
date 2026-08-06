@@ -73,7 +73,7 @@ it('keeps the entered display name when an admin creates an ingredient', functio
     $ingredient = Ingredient::query()->where('source_code_prefix', 'ADM')->latest('id')->firstOrFail();
 
     expect($ingredient->display_name)->toBe('Grapefruit white')
-        ->and($ingredient->catalog_key)->toStartWith('ADM-')
+        ->and($ingredient->source_key)->toStartWith('ADM-')
         ->and(IngredientResource::getRecordTitle($ingredient))->toBe('Grapefruit white');
 });
 
@@ -192,7 +192,7 @@ it('renders the catalog list resources in the admin panel', function () {
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Olive Oil',
         'is_potentially_saponifiable' => true,
-        'catalog_key' => 'OB1',
+        'source_key' => 'OB1',
     ]);
 
     IngredientSapProfile::factory()
@@ -476,7 +476,7 @@ it('keeps composite component ingredient options current within the request', fu
     $oliveOil = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Olive Oil',
-        'catalog_key' => 'OIL-OLIVE',
+        'source_key' => 'OIL-OLIVE',
         'is_active' => true,
     ]);
 
@@ -490,7 +490,7 @@ it('keeps composite component ingredient options current within the request', fu
     $coconutOil = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Coconut Oil',
-        'catalog_key' => 'OIL-COCONUT',
+        'source_key' => 'OIL-COCONUT',
         'is_active' => true,
     ]);
 
@@ -776,7 +776,7 @@ it('renders the compliance resources in the admin panel', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::EssentialOil,
         'display_name' => 'Lavender Essential Oil',
-        'catalog_key' => 'EO1',
+        'source_key' => 'EO1',
     ]);
 
     $allergen = Allergen::factory()->create([

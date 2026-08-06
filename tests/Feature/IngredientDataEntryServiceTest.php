@@ -16,7 +16,8 @@ uses(RefreshDatabase::class);
 it('syncs current carrier oil data from the ingredient entry service', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'catalog_key' => 'OO1',
+        'source_key' => 'OO1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
@@ -71,7 +72,8 @@ it('syncs current carrier oil data from the ingredient entry service', function 
 it('syncs current aromatic allergen data from the ingredient entry service', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::EssentialOil,
-        'catalog_key' => 'EO1',
+        'source_key' => 'EO1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
@@ -115,7 +117,8 @@ it('syncs current aromatic allergen data from the ingredient entry service', fun
 it('syncs ingredient functions from the ingredient entry service', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Additive,
-        'catalog_key' => 'ADD1',
+        'source_key' => 'ADD1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
@@ -153,7 +156,8 @@ it('syncs ingredient functions from the ingredient entry service', function () {
 it('keeps sap profile reference metrics separate from fatty acid entries', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'catalog_key' => 'AVO1',
+        'source_key' => 'AVO1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
@@ -182,25 +186,29 @@ it('keeps sap profile reference metrics separate from fatty acid entries', funct
 it('syncs composite ingredient components from the ingredient entry service', function () {
     $macerate = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'catalog_key' => 'MAC1',
+        'source_key' => 'MAC1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
     $sunflowerOil = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'catalog_key' => 'SUN1',
+        'source_key' => 'SUN1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
     $tocopherol = Ingredient::factory()->create([
         'category' => IngredientCategory::Additive,
-        'catalog_key' => 'TOC1',
+        'source_key' => 'TOC1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
     $calendulaExtract = Ingredient::factory()->create([
         'category' => IngredientCategory::Additive,
-        'catalog_key' => 'CAL1',
+        'source_key' => 'CAL1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
@@ -282,7 +290,8 @@ it('syncs composite ingredient components from the ingredient entry service', fu
 it('rejects composite components that do not reference catalog ingredients', function () {
     $macerate = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'catalog_key' => 'MAC2',
+        'source_key' => 'MAC2',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
@@ -308,7 +317,8 @@ it('rejects composite components that do not reference catalog ingredients', fun
 it('clears stale dependent data when an ingredient is reclassified', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'catalog_key' => 'REC1',
+        'source_key' => 'REC1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 
@@ -379,12 +389,14 @@ it('clears stale dependent data when an ingredient is reclassified', function ()
 it('preserves existing per-row source notes when resynced without them', function () {
     $blend = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'catalog_key' => 'BLN1',
+        'source_key' => 'BLN1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
     $component = Ingredient::factory()->create([
         'category' => IngredientCategory::CarrierOil,
-        'catalog_key' => 'CMP1',
+        'source_key' => 'CMP1',
+        'source_file' => 'admin',
         'is_active' => true,
     ]);
 

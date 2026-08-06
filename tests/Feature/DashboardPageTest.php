@@ -131,7 +131,8 @@ it('shows the current users personal ingredient count on the dashboard', functio
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'catalog_key' => 'USR-CLAY',
+        'source_file' => 'user',
+        'source_key' => 'USR-CLAY',
     ]);
 
     Ingredient::factory()->create([
@@ -140,7 +141,8 @@ it('shows the current users personal ingredient count on the dashboard', functio
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
-        'catalog_key' => 'USR-GLY',
+        'source_file' => 'user',
+        'source_key' => 'USR-GLY',
     ]);
 
     $response = $this->actingAs($user)

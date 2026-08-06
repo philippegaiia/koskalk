@@ -226,6 +226,25 @@
         </section>
     @endif
 
+    @if ($production->status->value === 'in_production')
+        <section aria-labelledby="abort-heading" class="sk-card space-y-4 p-5 sm:p-6">
+            <div>
+                <h2 id="abort-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.abort_title') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.abort_help') }}</p>
+            </div>
+            <label class="block text-sm">
+                <span class="font-medium">{{ __('production_bench.production.abort_reason') }}</span>
+                <textarea wire:model="abortReason" rows="2" maxlength="2000" required @disabled($isReadOnly) class="sk-input mt-1 w-full"></textarea>
+            </label>
+            @error('abort_reason')
+                <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+            @enderror
+            <div class="flex justify-end">
+                <button type="button" wire:click="abort" wire:confirm="{{ __('production_bench.production.abort_confirm') }}" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-ghost">{{ __('production_bench.production.abort') }}</button>
+            </div>
+        </section>
+    @endif
+
     <section aria-labelledby="tasks-detail-heading" class="sk-card overflow-hidden">
         <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="tasks-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.tasks') }}</h2></div>
         @error('task_task') <div role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</div> @enderror

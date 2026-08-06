@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Production;
 
+use App\Actions\Production\AbortProduction;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\AssignProductionTask;
 use App\Actions\Production\CancelProduction;
@@ -52,6 +53,8 @@ class ProductionDetail extends Component
     public string $manufactureDate = '';
 
     public ?string $outputIngredientId = null;
+
+    public string $abortReason = '';
 
     public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
@@ -324,6 +327,28 @@ class ProductionDetail extends Component
 
         $this->showAppNotification(__('production_bench.production.completed'));
         $this->dispatch('production-completed');
+    }
+
+    public function abort(AbortProduction $abortProduction): void
+    {
+        try {
+            $abortProduction->handle(
+                actor: $this->user(),
+                production: $this->production(),
+                reason: $this->abortReason,
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.production.aborted'));
+        $this->dispatch('production-aborted');
     }
 
     public function render(ProductionBenchAccess $access): View

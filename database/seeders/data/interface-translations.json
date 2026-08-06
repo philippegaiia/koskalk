@@ -9999,6 +9999,72 @@
         },
         {
             "group": "production_bench",
+            "key": "production.abort",
+            "text": {
+                "de": "Produktion abbrechen",
+                "es": "Abortar producción",
+                "fr": "Abandonner la production",
+                "it": "Annulla produzione",
+                "nl": "Productie afbreken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.abort_confirm",
+            "text": {
+                "de": "Diese Produktion abbrechen? Der erfasste Verbrauch wird gebucht und restliche Reservierungen werden freigegeben. Dies kann nicht rückgängig gemacht werden.",
+                "es": "¿Abortar esta producción? Se registrará el consumo y se liberarán las reservas restantes. Esta acción no se puede deshacer.",
+                "fr": "Abandonner cette production ? La consommation enregistrée sera comptabilisée et les réservations restantes libérées. Cette action est irréversible.",
+                "it": "Annullare questa produzione? Verrà registrato il consumo e rilasciate le prenotazioni rimanenti. Questa azione non può essere annullata.",
+                "nl": "Deze productie afbreken? Opgenomen verbruik wordt geboekt en resterende reserveringen worden vrijgegeven. Dit kan niet ongedaan worden gemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.abort_help",
+            "text": {
+                "de": "Die Charge kann nicht abgeschlossen werden. Erfasster Verbrauch wird gebucht und restliche Reservierungen werden freigegeben.",
+                "es": "El lote no puede completarse. Se registra el consumo y se liberan las reservas restantes.",
+                "fr": "Le lot ne peut pas être terminé. La consommation enregistrée est comptabilisée et les réservations restantes sont libérées.",
+                "it": "Il lotto non può essere completato. Il consumo registrato viene contabilizzato e le prenotazioni rimanenti vengono rilasciate.",
+                "nl": "De batch kan niet worden afgerond. Opgenomen verbruik wordt geboekt en resterende reserveringen worden vrijgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.abort_reason",
+            "text": {
+                "de": "Abbruchgrund",
+                "es": "Motivo del aborto",
+                "fr": "Raison de l’abandon",
+                "it": "Motivo dell’annullamento",
+                "nl": "Reden van afbreken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.abort_title",
+            "text": {
+                "de": "Produktion abbrechen",
+                "es": "Abortar producción",
+                "fr": "Abandonner la production",
+                "it": "Annulla produzione",
+                "nl": "Productie afbreken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.aborted",
+            "text": {
+                "de": "Produktion abgebrochen.",
+                "es": "Producción abortada.",
+                "fr": "Production abandonnée.",
+                "it": "Produzione annullata.",
+                "nl": "Productie afgebroken."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.actuals_not_posted",
             "text": {
                 "de": "Als Entwurf gespeichert – es wird noch nichts gebucht.",

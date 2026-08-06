@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Production\AbortProduction;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CompleteProduction;
 use App\Actions\Production\CreateProductionDraft;
@@ -34,6 +35,7 @@ use App\StockReservationStatus;
 use App\Visibility;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -381,6 +383,85 @@ it('completes a production from the production sheet', function (): void {
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::Completed)
         ->and($production->fresh()->outputLot()->sole()->internal_lot_code)->toBe($production->fresh()->batch_number);
+});
+
+it('aborts a running production with reconciliation', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'abort-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    $movementCount = StockMovement::query()->count();
+
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '4000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '30'],
+    ]);
+
+    $aborted = app(AbortProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        reason: 'The batch seized in the mould',
+    );
+
+    expect($aborted->status)->toBe(ProductionRunStatus::Aborted)
+        ->and($aborted->aborted_at)->not->toBeNull()
+        ->and($aborted->aborted_by_user_id)->toBe($fixture['owner']->id)
+        ->and($aborted->abort_reason)->toBe('The batch seized in the mould')
+        ->and($aborted->actual_output_units)->toBeNull();
+
+    // Consumption posted for the recorded actuals only.
+    expect(StockMovement::query()->count())->toBe($movementCount + 2)
+        ->and(StockMovement::query()->where('stock_lot_id', $oilLot->id)->where('type', StockMovementType::ProductionConsumption)->sole()->quantity_delta)
+        ->toBe('-4000.000000000');
+
+    // All active reservations released.
+    expect(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())
+        ->toBe(0);
+});
+
+it('aborts without actuals by releasing reservations only', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'abort-empty-1');
+    $movementCount = StockMovement::query()->count();
+
+    $aborted = app(AbortProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        reason: 'Cancelled before the bench',
+    );
+
+    expect($aborted->status)->toBe(ProductionRunStatus::Aborted)
+        ->and(StockMovement::query()->count())->toBe($movementCount)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())
+        ->toBe(0);
+});
+
+it('rejects aborting outside in-production and rolls back atomically', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'abort-guard-1');
+    $production->update(['status' => ProductionRunStatus::Scheduled]);
+
+    expect(function () use ($fixture, $production): void {
+        app(AbortProduction::class)->handle($fixture['owner'], $production, 'Nope');
+    })->toThrow(ValidationException::class);
+
+    $running = productionExecutionRun($fixture, 'abort-rollback-1');
+    $ingredientRequirement = $running->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $running, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '4000.000000000'],
+    ]);
+    Schema::drop('stock_movements');
+
+    expect(function () use ($fixture, $running): void {
+        app(AbortProduction::class)->handle($fixture['owner'], $running->fresh(), 'Broken');
+    })->toThrow(QueryException::class);
+
+    expect($running->fresh()->status)->toBe(ProductionRunStatus::InProduction)
+        ->and(StockReservation::query()->where('production_run_id', $running->id)->where('status', StockReservationStatus::Active)->count())
+        ->toBe(2);
 });
 
 /**

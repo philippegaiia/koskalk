@@ -130,7 +130,7 @@ foreach ($soapcalcOils as $sIdx => $soapcalcOil) {
     $bestScore = PHP_INT_MIN;
 
     foreach ($mendrulandia as $mIdx => $mendraOil) {
-        $mendraKey = $mendraOil['source_key'] ?? '';
+        $mendraKey = $mendraOil['catalog_key'] ?? '';
         if ($mendraKey === '') {
             continue;
         }

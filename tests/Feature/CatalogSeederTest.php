@@ -156,7 +156,6 @@ it('enriches matching catalog carrier oils with mendrulandia chemistry without d
 
     $coconutOil = Ingredient::query()
         ->with(['sapProfile', 'fattyAcidEntries'])
-        ->where('source_file', $ingredientPath)
         ->where('catalog_key', 'OB4')
         ->firstOrFail();
 
@@ -172,12 +171,10 @@ it('enriches matching catalog carrier oils with mendrulandia chemistry without d
         ->and($coconutOil->soap_inci_naoh_name)->toBeNull()
         ->and($coconutOil->soap_inci_koh_name)->toBeNull()
         ->and(Ingredient::query()
-            ->where('source_file', 'mendrulandia_oils')
             ->where('catalog_key', 'coconut_oil')
             ->exists())->toBeFalse();
 
     $almondOil = Ingredient::query()
-        ->where('source_file', 'mendrulandia_oils')
         ->where('catalog_key', 'almond_oil')
         ->firstOrFail();
 

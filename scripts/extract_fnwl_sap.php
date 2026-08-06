@@ -152,11 +152,11 @@ foreach ($extracted as $entry) {
     $bestBaseLen = 0;
 
     foreach ($oils as $index => $oil) {
-        if (! isset($oil['source_key']) || $oil['source_key'] === null) {
+        if (! isset($oil['catalog_key']) || $oil['catalog_key'] === null) {
             continue;
         }
 
-        $sourceKey = $oil['source_key'];
+        $catalogKey = $oil['catalog_key'];
 
         if (isset($oil['inci_name']) && $oil['inci_name'] !== null && $oil['inci_name'] !== '') {
             if (strcasecmp(trim($oil['inci_name']), trim($entry['inci_name'])) === 0 && $entry['inci_name'] !== '') {
@@ -167,8 +167,8 @@ foreach ($extracted as $entry) {
             }
         }
 
-        $score = getMatchScore($fnwlName, $sourceKey);
-        $baseLen = strlen(extractBaseName($sourceKey));
+        $score = getMatchScore($fnwlName, $catalogKey);
+        $baseLen = strlen(extractBaseName($catalogKey));
         if ($score !== null && ($score > $bestMatchScore || ($score === $bestMatchScore && $baseLen >= $bestBaseLen))) {
             $bestMatchScore = $score;
             $bestMatchIndex = $index;

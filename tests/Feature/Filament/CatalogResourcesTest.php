@@ -70,7 +70,7 @@ it('keeps the entered display name when an admin creates an ingredient', functio
         ->call('create')
         ->assertHasNoFormErrors();
 
-    $ingredient = Ingredient::query()->where('source_code_prefix', 'ADM')->latest('id')->firstOrFail();
+    $ingredient = Ingredient::query()->whereLike('catalog_key', 'ADM-%')->latest('id')->firstOrFail();
 
     expect($ingredient->display_name)->toBe('Grapefruit white')
         ->and($ingredient->catalog_key)->toStartWith('ADM-')

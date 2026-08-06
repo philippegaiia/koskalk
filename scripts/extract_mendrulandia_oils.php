@@ -243,21 +243,21 @@ foreach ($faData as $index => $faEntry) {
         }
     }
 
-    // Generate source_key
-    $sourceKey = strtolower(preg_replace('/[^a-z0-9]/i', '_', $name));
-    $sourceKey = preg_replace('/_+/', '_', $sourceKey);
-    $sourceKey = trim($sourceKey, '_');
-    if ($sourceKey === '') {
-        $sourceKey = "oil_$id";
+    // Generate catalog_key
+    $catalogKey = strtolower(preg_replace('/[^a-z0-9]/i', '_', $name));
+    $catalogKey = preg_replace('/_+/', '_', $catalogKey);
+    $catalogKey = trim($catalogKey, '_');
+    if ($catalogKey === '') {
+        $catalogKey = "oil_$id";
     }
 
     // Fix typo
-    if ($sourceKey === 'chiken_fat') {
-        $sourceKey = 'chicken_fat';
+    if ($catalogKey === 'chiken_fat') {
+        $catalogKey = 'chicken_fat';
     }
 
     $output[] = [
-        'source_key' => $sourceKey,
+        'catalog_key' => $catalogKey,
         'fatty_acids' => $fattyAcids,
         'koh_sap_value' => $kohSapValue,
         'iodine_value' => $iodineValue,
@@ -271,7 +271,7 @@ echo "\nStep 4: Generated ".count($output)." oil entries\n";
 echo "\nSample entries:\n";
 $shown = 0;
 foreach ($output as $entry) {
-    if ($entry['source_key'] === 'castor_oil' || $entry['source_key'] === 'linseed_oil_flax' || $entry['source_key'] === 'coconut_oil') {
+    if ($entry['catalog_key'] === 'castor_oil' || $entry['catalog_key'] === 'linseed_oil_flax' || $entry['catalog_key'] === 'coconut_oil') {
         echo json_encode($entry, JSON_PRETTY_PRINT)."\n\n";
         $shown++;
     }

@@ -78,7 +78,7 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
     expect($copy->icon_image_original_name)->toBeNull();
     expect($copy->info_markdown)->toBe('A popular essential oil.');
     expect($copy->is_active)->toBeTrue();
-    expect($copy->source_file)->toBe('user');
+    expect($copy->catalog_key)->toStartWith('USR-');
     expect($copy->id)->not->toBe($source->id);
 
     $copy->load(['functions', 'allergenEntries', 'ifraCertificates.limits']);

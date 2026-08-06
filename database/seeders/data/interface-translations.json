@@ -10780,6 +10780,105 @@
         },
         {
             "group": "production_bench",
+            "key": "production.issue",
+            "text": {
+                "de": "Ausgeben",
+                "es": "Emitir",
+                "fr": "Sortir",
+                "it": "Emettere",
+                "nl": "Uitgeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.issue_damaged",
+            "text": {
+                "de": "Beschädigt",
+                "es": "Dañado",
+                "fr": "Endommagé",
+                "it": "Danneggiato",
+                "nl": "Beschadigd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.issue_internal_use",
+            "text": {
+                "de": "Interne Verwendung",
+                "es": "Uso interno",
+                "fr": "Usage interne",
+                "it": "Uso interno",
+                "nl": "Intern gebruik"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.issue_kind",
+            "text": {
+                "de": "Grund",
+                "es": "Motivo",
+                "fr": "Raison",
+                "it": "Motivo",
+                "nl": "Reden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.issue_note",
+            "text": {
+                "de": "Notiz",
+                "es": "Nota",
+                "fr": "Note",
+                "it": "Nota",
+                "nl": "Notitie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.issue_quantity",
+            "text": {
+                "de": "Menge",
+                "es": "Cantidad",
+                "fr": "Quantité",
+                "it": "Quantità",
+                "nl": "Hoeveelheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.issue_sample",
+            "text": {
+                "de": "Muster",
+                "es": "Muestra",
+                "fr": "Échantillon",
+                "it": "Campione",
+                "nl": "Monster"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.issue_shipment",
+            "text": {
+                "de": "Versand / Verkauf",
+                "es": "Envío / venta",
+                "fr": "Expédition / vente",
+                "it": "Spedizione / vendita",
+                "nl": "Verzending / verkoop"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.issued",
+            "text": {
+                "de": "Ausstoß ausgegeben.",
+                "es": "Salida emitida.",
+                "fr": "Sortie enregistrée.",
+                "it": "Uscita emessa.",
+                "nl": "Uitvoer uitgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.lots",
             "text": {
                 "de": "Lose",
@@ -10978,6 +11077,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.output_available_from",
+            "text": {
+                "de": "verfügbar ab :date",
+                "es": "disponible a partir de :date",
+                "fr": "disponible à partir du :date",
+                "it": "disponibile dal :date",
+                "nl": "beschikbaar vanaf :date"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.output_intermediate",
             "text": {
                 "de": "Zwischenprodukt (Gramm)",
@@ -11011,6 +11121,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.output_lot",
+            "text": {
+                "de": "Ausgangslos",
+                "es": "Lote de salida",
+                "fr": "Lot de sortie",
+                "it": "Lotto di uscita",
+                "nl": "Uitvoerpartij"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.output_quantity",
             "text": {
                 "de": "Ist-Ausstoßmenge",
@@ -11018,6 +11139,50 @@
                 "fr": "Quantité de sortie réelle",
                 "it": "Quantità di uscita effettiva",
                 "nl": "Werkelijke uitvoerhoeveelheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_quarantined",
+            "text": {
+                "de": "Unter Quarantäne",
+                "es": "En cuarentena",
+                "fr": "En quarantaine",
+                "it": "In quarantena",
+                "nl": "In quarantaine"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_release_help",
+            "text": {
+                "de": "Geben Sie das Los frei, sobald die Reifung abgeschlossen ist, damit es verfügbar wird.",
+                "es": "Libera el lote cuando termine el curado para que esté disponible.",
+                "fr": "Libérez le lot une fois le durcissement terminé pour qu’il devienne disponible.",
+                "it": "Rilascia il lotto quando la stagionatura è completa per renderlo disponibile.",
+                "nl": "Geef de partij vrij zodra de rijping is voltooid zodat deze beschikbaar wordt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_released",
+            "text": {
+                "de": "Ausgangslos freigegeben.",
+                "es": "Lote de salida liberado.",
+                "fr": "Lot de sortie libéré.",
+                "it": "Lotto di uscita rilasciato.",
+                "nl": "Uitvoerpartij vrijgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_released_label",
+            "text": {
+                "de": "Freigegeben",
+                "es": "Liberado",
+                "fr": "Libéré",
+                "it": "Rilasciato",
+                "nl": "Vrijgegeven"
             }
         },
         {
@@ -11205,6 +11370,17 @@
                 "fr": "Proposé",
                 "it": "Proposto",
                 "nl": "Voorgesteld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.release_output",
+            "text": {
+                "de": "Ausgang freigeben",
+                "es": "Liberar salida",
+                "fr": "Libérer la sortie",
+                "it": "Rilascia uscita",
+                "nl": "Uitvoer vrijgeven"
             }
         },
         {

@@ -8,6 +8,8 @@ use App\Actions\Production\AssignProductionTask;
 use App\Actions\Production\CancelProduction;
 use App\Actions\Production\CompleteProduction;
 use App\Actions\Production\CompleteProductionTask;
+use App\Actions\Production\IssueFinishedGoods;
+use App\Actions\Production\ReleaseOutputLot;
 use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\ReopenProductionTask;
 use App\Actions\Production\RescheduleProductionTask;
@@ -20,9 +22,11 @@ use App\Models\Employee;
 use App\Models\Ingredient;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use App\StockMovementType;
 use App\StockReservationStatus;
 use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
@@ -55,6 +59,12 @@ class ProductionDetail extends Component
     public ?string $outputIngredientId = null;
 
     public string $abortReason = '';
+
+    public string $issueKind = 'shipment';
+
+    public string $issueQuantity = '';
+
+    public string $issueNote = '';
 
     public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
@@ -349,6 +359,69 @@ class ProductionDetail extends Component
 
         $this->showAppNotification(__('production_bench.production.aborted'));
         $this->dispatch('production-aborted');
+    }
+
+    public function releaseOutput(): void
+    {
+        $outputLot = $this->production()->outputLot;
+
+        if (! $outputLot instanceof StockLot) {
+            return;
+        }
+
+        try {
+            app(ReleaseOutputLot::class)->handle($this->user(), $outputLot);
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('output', $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.production.output_released'));
+        $this->dispatch('production-output-released');
+    }
+
+    public function issueFinishedGoods(): void
+    {
+        $outputLot = $this->production()->outputLot;
+
+        if (! $outputLot instanceof StockLot) {
+            return;
+        }
+
+        $kind = match ($this->issueKind) {
+            'sample' => StockMovementType::Sample,
+            'damaged' => StockMovementType::Damaged,
+            'internal_use' => StockMovementType::InternalUse,
+            default => StockMovementType::Shipment,
+        };
+
+        try {
+            app(IssueFinishedGoods::class)->handle(
+                actor: $this->user(),
+                outputLot: $outputLot,
+                kind: $kind,
+                quantity: $this->issueQuantity,
+                note: $this->issueNote,
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('output', $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->issueQuantity = '';
+        $this->issueNote = '';
+        $this->showAppNotification(__('production_bench.production.issued'));
+        $this->dispatch('production-output-issued');
     }
 
     public function render(ProductionBenchAccess $access): View

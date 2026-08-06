@@ -245,6 +245,62 @@
         </section>
     @endif
 
+    @if ($production->outputLot !== null)
+        <section aria-labelledby="output-lot-heading" class="sk-card overflow-hidden">
+            <div class="border-b border-[var(--color-line)] p-5 sm:p-6">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h2 id="output-lot-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.output_lot') }}</h2>
+                    <span class="font-mono text-sm font-semibold text-[var(--color-ink-strong)]">{{ $production->outputLot->internal_lot_code }}</span>
+                </div>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">
+                    {{ $production->outputLot->subjectName() }} ·
+                    @if ($production->outputLot->status->value === 'quarantined')
+                        {{ __('production_bench.production.output_quarantined') }}
+                    @else
+                        {{ __('production_bench.production.output_released_label') }}
+                    @endif
+                    @if ($production->outputLot->available_from)
+                        · {{ __('production_bench.production.output_available_from', ['date' => $production->outputLot->available_from->format('Y-m-d')]) }}
+                    @endif
+                </p>
+            </div>
+            @error('output')
+                <p role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</p>
+            @enderror
+            <div class="space-y-4 p-5 sm:p-6">
+                @if ($production->outputLot->status->value === 'quarantined')
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <p class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.output_release_help') }}</p>
+                        <button type="button" wire:click="releaseOutput" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.release_output') }}</button>
+                    </div>
+                @else
+                    <div class="grid gap-4 sm:grid-cols-4">
+                        <label class="block text-sm">
+                            <span class="font-medium">{{ __('production_bench.production.issue_kind') }}</span>
+                            <select wire:model.live="issueKind" @disabled($isReadOnly) class="sk-input mt-1 w-full">
+                                <option value="shipment">{{ __('production_bench.production.issue_shipment') }}</option>
+                                <option value="sample">{{ __('production_bench.production.issue_sample') }}</option>
+                                <option value="damaged">{{ __('production_bench.production.issue_damaged') }}</option>
+                                <option value="internal_use">{{ __('production_bench.production.issue_internal_use') }}</option>
+                            </select>
+                        </label>
+                        <label class="block text-sm">
+                            <span class="font-medium">{{ __('production_bench.production.issue_quantity') }}</span>
+                            <input type="number" inputmode="decimal" min="0" step="any" wire:model.live="issueQuantity" @disabled($isReadOnly) class="sk-input mt-1 w-full font-mono">
+                        </label>
+                        <label class="block text-sm sm:col-span-2">
+                            <span class="font-medium">{{ __('production_bench.production.issue_note') }}</span>
+                            <input type="text" wire:model.live="issueNote" @disabled($isReadOnly) class="sk-input mt-1 w-full">
+                        </label>
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="button" wire:click="issueFinishedGoods" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.issue') }}</button>
+                    </div>
+                @endif
+            </div>
+        </section>
+    @endif
+
     <section aria-labelledby="tasks-detail-heading" class="sk-card overflow-hidden">
         <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="tasks-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.tasks') }}</h2></div>
         @error('task_task') <div role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</div> @enderror

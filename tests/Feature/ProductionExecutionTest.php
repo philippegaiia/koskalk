@@ -4,7 +4,9 @@ use App\Actions\Production\AbortProduction;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CompleteProduction;
 use App\Actions\Production\CreateProductionDraft;
+use App\Actions\Production\IssueFinishedGoods;
 use App\Actions\Production\PrepareProductionStock;
+use App\Actions\Production\ReleaseOutputLot;
 use App\Actions\Production\SaveProductionActuals;
 use App\Actions\Production\StartProduction;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
@@ -462,6 +464,70 @@ it('rejects aborting outside in-production and rolls back atomically', function 
     expect($running->fresh()->status)->toBe(ProductionRunStatus::InProduction)
         ->and(StockReservation::query()->where('production_run_id', $running->id)->where('status', StockReservationStatus::Active)->count())
         ->toBe(2);
+});
+
+it('releases a quarantined output lot and issues finished goods', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'output-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    );
+    $outputLot = $completed->outputLot()->sole();
+
+    // Quarantined: not available for issue.
+    expect($outputLot->status->value)->toBe('quarantined');
+
+    expect(function () use ($fixture, $outputLot): void {
+        app(IssueFinishedGoods::class)->handle($fixture['owner'], $outputLot, StockMovementType::Sample, '1');
+    })->toThrow(ValidationException::class);
+
+    // Release before available_from is rejected.
+    $outputLot->update(['available_from' => now()->addDays(28)->toDateString()]);
+    expect(function () use ($fixture, $outputLot): void {
+        app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot);
+    })->toThrow(ValidationException::class);
+
+    // Clear the future date and release.
+    $outputLot->update(['available_from' => null]);
+    $released = app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot, 'Cured and packed');
+
+    expect($released->status->value)->toBe('released')
+        ->and($released->released_at)->not->toBeNull()
+        ->and($released->released_by_user_id)->toBe($fixture['owner']->id)
+        ->and($released->release_note)->toBe('Cured and packed');
+
+    // Issue movements post against the released lot.
+    $issued = app(IssueFinishedGoods::class)->handle(
+        actor: $fixture['owner'],
+        outputLot: $released,
+        kind: StockMovementType::Shipment,
+        quantity: '10',
+        note: 'First customer order',
+    );
+    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Sample, '2');
+    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Damaged, '1');
+    app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::InternalUse, '3');
+
+    expect($issued->movements()->where('type', StockMovementType::Shipment)->sole()->quantity_delta)->toBe('-10.000000000')
+        ->and($issued->movements()->where('type', StockMovementType::Sample)->sole()->quantity_delta)->toBe('-2.000000000')
+        ->and($issued->movements()->where('type', StockMovementType::Damaged)->sole()->quantity_delta)->toBe('-1.000000000')
+        ->and($issued->movements()->where('type', StockMovementType::InternalUse)->sole()->quantity_delta)->toBe('-3.000000000');
+
+    // Over-issue rejected.
+    expect(function () use ($fixture, $issued): void {
+        app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Shipment, '999');
+    })->toThrow(ValidationException::class);
 });
 
 /**

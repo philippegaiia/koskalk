@@ -63,7 +63,7 @@ it('reserves split ingredient and packaging lots atomically and changes only ava
     ]);
 });
 
-it('keeps every selected production unchanged when one has a shortage', function (): void {
+it('posts available reservations when one selected production has a shortage', function (): void {
     $fixture = productionStockPreparationFixture();
     $covered = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
     $short = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
@@ -71,15 +71,17 @@ it('keeps every selected production unchanged when one has a shortage', function
     productionStockIngredientRequirement($short, $fixture['ingredient'], '100.000000000');
     productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
 
-    expect(fn (): array => app(PrepareProductionStock::class)->handle(
+    $prepared = app(PrepareProductionStock::class)->handle(
         actor: $fixture['owner'],
         productionIds: [$covered->id, $short->id],
         idempotencyKey: 'prepare-short-bulk',
-    ))->toThrow(ValidationException::class);
+    );
 
-    expect($covered->refresh()->status)->toBe(ProductionRunStatus::Scheduled)
-        ->and($short->refresh()->status)->toBe(ProductionRunStatus::Scheduled)
-        ->and(StockReservation::query()->count())->toBe(0);
+    // The covered production is fully reserved; the short one reserves what is
+    // available (20 g) and stays scheduled for a later pass.
+    expect($prepared[0]->status)->toBe(ProductionRunStatus::Reserved)
+        ->and($prepared[1]->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $short->id)->sum('quantity'))->toEqual(20);
 });
 
 it('requires manual allocations to exactly cover a requirement and validates whole packaging units', function (): void {

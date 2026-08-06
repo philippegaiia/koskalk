@@ -7,6 +7,7 @@ use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\IssueFinishedGoods;
 use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\ReleaseOutputLot;
+use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\SaveProductionActuals;
 use App\Actions\Production\SaveProductionJournalEntry;
 use App\Actions\Production\StartProduction;
@@ -566,6 +567,99 @@ it('records journal entries during planning and production, read-only afterwards
     })->toThrow(ValidationException::class);
 });
 
+it('prepares stock partially and completes coverage on a later pass', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'partial-prepare-1',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $fixture['olive']->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($oilLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '5000.000000000',
+    ]);
+    $packagingLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => null,
+        'packaging_item_id' => $fixture['packaging']->id,
+        'unit_kind' => 'count',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($packagingLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '100',
+    ]);
+
+    // Only 5000 g of the 14000 g oil requirement is available: partial.
+    $prepared = app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'partial-prepare-confirm',
+    );
+
+    expect($prepared[0]->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_requirement_id', $ingredientRequirement->id)->sum('quantity'))->toEqual(5000)
+        ->and(StockReservation::query()->where('production_requirement_id', $packagingRequirement->id)->sum('quantity'))->toEqual(100);
+
+    // A later pass with the full stock completes coverage.
+    StockMovement::factory()->for($oilLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '9000.000000000',
+    ]);
+    $completed = app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'partial-prepare-complete',
+    );
+
+    expect($completed[0]->status)->toBe(ProductionRunStatus::Reserved)
+        ->and(StockReservation::query()->where('production_requirement_id', $ingredientRequirement->id)->sum('quantity'))->toEqual(14000);
+});
+
+it('releases reservations per requirement and returns to scheduled when empty', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'partial-release-1', start: false);
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+
+    $released = app(ReleaseProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        productionRequirementId: $ingredientRequirement->id,
+    );
+
+    expect($released->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_requirement_id', $ingredientRequirement->id)->where('status', StockReservationStatus::Active)->count())->toBe(0)
+        ->and(StockReservation::query()->where('production_requirement_id', $packagingRequirement->id)->where('status', StockReservationStatus::Active)->count())->toBe(1);
+
+    $emptied = app(ReleaseProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        production: $released,
+        productionRequirementId: $packagingRequirement->id,
+    );
+
+    expect($emptied->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(0);
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, packaging: PackagingItem}
  */
@@ -651,7 +745,7 @@ function productionExecutionFixture(): array
 /**
  * @param  array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}  $fixture
  */
-function productionExecutionRun(array $fixture, string $idempotencyKey): ProductionRun
+function productionExecutionRun(array $fixture, string $idempotencyKey, bool $start = true): ProductionRun
 {
     $production = app(CreateProductionDraft::class)->handle(
         actor: $fixture['owner'],
@@ -693,6 +787,10 @@ function productionExecutionRun(array $fixture, string $idempotencyKey): Product
         workspace: $fixture['workspace'],
         productionIds: [$production->id],
     );
+
+    if (! $start) {
+        return $production->fresh();
+    }
 
     return app(StartProduction::class)->handle($fixture['owner'], $production->fresh());
 }

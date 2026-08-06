@@ -125,8 +125,28 @@
         <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="requirements-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.requirements') }}</h2></div>
         <div class="divide-y divide-[var(--color-line)]">
             @forelse ($production->requirements as $requirement)
+                @php
+                    $reservedCoverage = '0';
+                    foreach ($requirement->reservations->where('status', \App\StockReservationStatus::Active) as $reservation) {
+                        $reservedCoverage = bcadd($reservedCoverage, (string) $reservation->quantity, 9);
+                    }
+                    $requiredCoverage = $requirement->ingredient_id !== null
+                        ? (string) $requirement->required_mass_grams
+                        : (string) $requirement->required_units;
+                    $coverageShort = bccomp($reservedCoverage, $requiredCoverage, 9) < 0;
+                    $shortAmount = $coverageShort ? bcsub($requiredCoverage, $reservedCoverage, 9) : null;
+                @endphp
                 <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                    <div><p class="font-medium text-[var(--color-ink-strong)]">{{ $requirement->subject_name_snapshot }}</p><p class="text-xs text-[var(--color-ink-soft)]">{{ $requirement->percentage_snapshot ? $requirement->percentage_snapshot.'%' : __('production_bench.production.packaging_requirement') }}</p></div>
+                    <div>
+                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $requirement->subject_name_snapshot }}</p>
+                        <p class="text-xs text-[var(--color-ink-soft)]">
+                            @if ($coverageShort)
+                                {{ __('production_bench.production.coverage_short', ['reserved' => $reservedCoverage, 'required' => $requiredCoverage, 'short' => $shortAmount]) }}
+                            @else
+                                {{ __('production_bench.production.coverage_reserved', ['reserved' => $reservedCoverage, 'required' => $requiredCoverage]) }}
+                            @endif
+                        </p>
+                    </div>
                     <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $requirement->kind->value === 'ingredient' ? $requirement->required_mass_grams.' g' : $requirement->required_units.' '.__('production_bench.inventory.units') }}</p>
                 </div>
             @empty

@@ -10538,6 +10538,28 @@
         },
         {
             "group": "production_bench",
+            "key": "production.coverage_reserved",
+            "text": {
+                "de": "reserviert :reserved von :required",
+                "es": "reservado :reserved de :required",
+                "fr": "réservé :reserved sur :required",
+                "it": "prenotato :reserved di :required",
+                "nl": "gereserveerd :reserved van :required"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.coverage_short",
+            "text": {
+                "de": "reserviert :reserved von :required – fehlen :short",
+                "es": "reservado :reserved de :required — faltan :short",
+                "fr": "réservé :reserved sur :required — manque :short",
+                "it": "prenotato :reserved di :required — mancano :short",
+                "nl": "gereserveerd :reserved van :required — tekort :short"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.create_intro",
             "text": {
                 "de": "Wählen Sie ein Produkt, passen Sie die Charge bei Bedarf an und legen Sie den Produktionstag fest. Der Bestand wird erst später bei der Vorbereitung reserviert.",

@@ -265,12 +265,9 @@ class PrepareProductionStock
                 : $this->proposal->forRequirement($requirement, $this->manualLotIds($manual));
 
             if ($manual === null) {
-                if (bccomp($proposal['missing'], '0', 9) > 0) {
-                    throw ValidationException::withMessages([
-                        'requirements.'.$requirement->id => 'There is not enough eligible stock to prepare this production.',
-                    ]);
-                }
-
+                // Partial preparation is allowed: the available portion of the
+                // FEFO proposal is reserved and the shortfall stays visible
+                // for a later preparation pass.
                 foreach ($proposal['allocations'] as $allocation) {
                     $allocations[] = [
                         'requirement' => $requirement,
@@ -359,9 +356,11 @@ class PrepareProductionStock
             ];
         }
 
-        if (bccomp($total, $proposal['remaining'], 9) !== 0) {
+        // Partial manual preparation is allowed: reserving less than the
+        // remaining requirement leaves the shortfall for a later pass.
+        if (bccomp($total, '0', 9) <= 0) {
             throw ValidationException::withMessages([
-                'allocations' => 'Manual stock allocations must exactly cover the remaining requirement.',
+                'allocations' => 'Choose a quantity greater than zero to reserve.',
             ]);
         }
 

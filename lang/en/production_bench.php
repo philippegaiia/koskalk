@@ -345,6 +345,8 @@ return [
         'prepare_stock_help' => 'Review the suggested lots before confirming. This reduces available stock but never changes physical stock.',
         'prepare_stock_help_short' => 'Review eligible lots and explicitly reserve stock when you are ready.',
         'confirm_prepare_stock' => 'Confirm stock preparation',
+        'coverage_reserved' => 'reserved :reserved of :required',
+        'coverage_short' => 'reserved :reserved of :required — short by :short',
         'confirm_prepare_stock_help' => 'Reservations are posted together. If one production is short, none of the selected productions will change.',
         'stock_prepared_success' => 'Production stock prepared.',
         'release_stock' => 'Release stock',

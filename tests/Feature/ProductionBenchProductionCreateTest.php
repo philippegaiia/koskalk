@@ -245,6 +245,7 @@ function productionCreateRecipe(Workspace $workspace, ProductFamily $family, str
         'visibility' => Visibility::Private,
         'is_current' => $unpublished,
         'batch_mass_grams' => '1000.000000000',
+        'manufacturing_mode' => 'blend_only',
     ]);
 
     return $recipe;

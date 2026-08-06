@@ -340,6 +340,7 @@ function productionTaskSchedulingFixture(): array
         'visibility' => Visibility::Private,
         'is_current' => false,
         'batch_mass_grams' => '1000.000000000',
+        'manufacturing_mode' => 'blend_only',
     ]);
 
     return compact('owner', 'workspace', 'recipe', 'version');

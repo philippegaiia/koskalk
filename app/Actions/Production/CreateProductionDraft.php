@@ -13,6 +13,7 @@ use App\ProductionBasisKind;
 use App\ProductionRunSource;
 use App\ProductionRunStatus;
 use App\Services\MassConverter;
+use App\Services\Production\ProductionFormulaSnapshotBuilder;
 use App\Services\Production\ProductionRequirementBuilder;
 use App\Services\Production\ProductionRunNumberService;
 use App\Services\Production\ProductionWorkingCalendar;
@@ -28,6 +29,7 @@ class CreateProductionDraft
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
+        private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
         private readonly ProductionRequirementBuilder $requirementBuilder,
         private readonly ProductionRunNumberService $numbers,
         private readonly ProductionWorkingCalendar $calendar,
@@ -164,12 +166,22 @@ class CreateProductionDraft
                 expectedUnits: $expectedUnits,
                 recipe: $lockedRecipe,
             );
+            $formulaSnapshot = $this->formulaSnapshotBuilder->build(
+                recipe: $lockedRecipe,
+                version: $publishedVersion,
+                basisQuantityGrams: $basisQuantityGrams,
+                requirements: $requirements,
+            );
             $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 
             $production = ProductionRun::query()->create([
                 'workspace_id' => $lockedWorkspace->id,
                 'recipe_id' => $lockedRecipe->id,
                 'recipe_version_id' => $publishedVersion->id,
+                'recipe_name_snapshot' => $lockedRecipe->name,
+                'source_formula_version_number' => $publishedVersion->version_number,
+                'formula_context_snapshot' => $formulaSnapshot['context'],
+                'formula_snapshot_completed_at' => now(),
                 'production_task_set_id' => $lockedTaskSet?->id,
                 'status' => $status,
                 'source' => $source,
@@ -188,8 +200,9 @@ class CreateProductionDraft
             ]);
 
             $production->requirements()->createMany($requirements->all());
+            $production->formulaLines()->createMany($formulaSnapshot['lines']->all());
 
-            return $production->load('requirements');
+            return $production->load(['requirements', 'formulaLines']);
         }, attempts: 5);
     }
 

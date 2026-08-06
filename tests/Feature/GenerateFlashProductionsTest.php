@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\Production\GenerateFlashProductions;
+use App\Models\Ingredient;
+use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberSetting;
@@ -8,6 +10,8 @@ use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
 use App\Models\Recipe;
+use App\Models\RecipeItem;
+use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
@@ -60,6 +64,17 @@ it('creates one planned production per flash batch with tasks and is idempotent'
         ->and($first->pluck('planned_for')->map(fn ($date): string => $date->toDateString())->all())->toBe(['2026-08-10', '2026-08-10', '2026-08-11'])
         ->and($first->every(fn (ProductionRun $production): bool => $production->tasks()->count() === 1))->toBeTrue()
         ->and(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->next_planning_serial)->toBe(4);
+
+    $firstProduction = $first->first();
+
+    expect($firstProduction->recipe_name_snapshot)->toBe($fixture['recipe']->name)
+        ->and($firstProduction->source_formula_version_number)->toBe($fixture['version']->version_number)
+        ->and($firstProduction->formula_snapshot_completed_at)->not->toBeNull()
+        ->and($firstProduction->formulaLines()->count())->toBe(3)
+        ->and($firstProduction->formulaLines()->where('component', 'ingredient')->count())->toBe(1)
+        ->and($firstProduction->formulaLines()->where('component', 'naoh')->count())->toBe(1)
+        ->and($firstProduction->formulaLines()->where('component', 'water')->count())->toBe(1)
+        ->and($firstProduction->requirements()->count())->toBe(1);
 });
 
 it('leaves generated flash runs unnumbered and does not advance the permanent counter', function (): void {
@@ -195,6 +210,30 @@ function generateFlashFixture(): array
         'visibility' => Visibility::Private,
         'is_current' => false,
     ]);
+    $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    IngredientSapProfile::factory()->create(['ingredient_id' => $ingredient->id, 'koh_sap_value' => 0.188]);
+    $version = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->firstOrFail();
+    $phase = RecipePhase::factory()->for($version)->create([
+        'workspace_id' => $workspace->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Saponified Oils',
+        'slug' => 'saponified_oils',
+        'sort_order' => 1,
+    ]);
+    RecipeItem::factory()->for($version)->for($phase, 'recipePhase')->for($ingredient)->create([
+        'workspace_id' => $workspace->id,
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'position' => 1,
+        'percentage' => '100.0000',
+        'weight' => null,
+    ]);
     $taskType = ProductionTaskType::factory()->for($workspace)->create(['name' => 'Make']);
     $taskSet = ProductionTaskSet::factory()->for($workspace)->create(['name' => 'Flash set']);
     ProductionTaskSetItem::factory()->for($taskSet, 'taskSet')->for($taskType, 'taskType')->create([
@@ -203,5 +242,5 @@ function generateFlashFixture(): array
     ]);
     $taskSet->recipes()->attach($recipe->id, ['is_default' => true]);
 
-    return compact('owner', 'workspace', 'recipe', 'taskSet');
+    return compact('owner', 'workspace', 'recipe', 'version', 'taskSet');
 }

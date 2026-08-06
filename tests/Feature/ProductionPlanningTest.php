@@ -5,9 +5,13 @@ use App\Actions\Production\PlanProduction;
 use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\UpdateProductionPlan;
 use App\MassUnit;
+use App\Models\FattyAcid;
 use App\Models\Ingredient;
+use App\Models\IngredientFattyAcid;
+use App\Models\IngredientSapProfile;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
+use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberSetting;
@@ -489,6 +493,116 @@ it('rejects a published packaging requirement whose catalogue item is missing', 
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}
  */
+it('persists the complete formula snapshot atomically when planning', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'snapshot-plan-1',
+    );
+
+    $duplicate = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'snapshot-plan-1',
+    );
+
+    expect($duplicate->id)->toBe($production->id)
+        ->and($production->recipe_name_snapshot)->toBe($fixture['recipe']->name)
+        ->and($production->source_formula_version_number)->toBe($fixture['version']->version_number)
+        ->and($production->formula_snapshot_completed_at)->not->toBeNull()
+        ->and($production->formula_context_snapshot)->toBe([
+            'calculation_basis' => 'initial_oils',
+            'lye_type' => 'naoh',
+            'superfat_percentage' => 5,
+            'water_mode' => 'percent_of_oils',
+            'water_value' => 38,
+        ])
+        ->and($production->formulaLines()->count())->toBe(4)
+        ->and($production->formulaLines()->where('component', 'ingredient')->pluck('planned_mass_grams')->all())
+        ->toBe(['10500.000000000', '3500.000000000'])
+        ->and($production->formulaLines()->where('component', 'naoh')->count())->toBe(1)
+        ->and($production->formulaLines()->where('component', 'water')->count())->toBe(1)
+        ->and($production->requirements()->where('kind', 'ingredient')->count())->toBe(2)
+        ->and($production->requirements()->where('kind', 'packaging')->count())->toBe(1)
+        ->and($production->requirements()->count())->toBe(3)
+        ->and(ProductionFormulaLine::query()->where('production_run_id', $production->id)->count())->toBe(4);
+});
+
+it('persists the explicitly selected task set at creation', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $taskType = ProductionTaskType::factory()->for($fixture['workspace'])->create(['name' => 'Cure']);
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create(['name' => 'Soap workflow']);
+    ProductionTaskSetItem::factory()->for($taskSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+    $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => false]);
+
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'snapshot-task-set-1',
+        taskSet: $taskSet,
+    );
+
+    expect($production->production_task_set_id)->toBe($taskSet->id)
+        ->and($production->taskSet->is($taskSet))->toBeTrue();
+});
+
+it('rolls back the entire production when the formula snapshot cannot be built', function (): void {
+    $fixture = productionPlanningTask3SoapFixture(withSap: false);
+
+    expect(fn (): ProductionRun => app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'snapshot-rollback-1',
+    ))->toThrow(ValidationException::class);
+
+    expect(ProductionRun::query()->count())->toBe(0)
+        ->and(ProductionFormulaLine::query()->count())->toBe(0)
+        ->and(ProductionRequirement::query()->count())->toBe(0);
+});
+
+it('keeps the production aggregate loadable when the version link is removed', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'snapshot-no-version-1',
+    );
+
+    $production->update(['recipe_version_id' => null]);
+
+    $loaded = ProductionRun::query()->with(['requirements', 'formulaLines'])->findOrFail($production->id);
+
+    expect($loaded->recipe_version_id)->toBeNull()
+        ->and($loaded->displayRecipeName())->toBe($fixture['recipe']->name)
+        ->and($loaded->requirements()->count())->toBe(3)
+        ->and($loaded->formulaLines()->count())->toBe(4);
+});
+
 function productionPlanningTask2Fixture(string $calculationBasis = 'initial_oils', bool $withPublishedVersion = true): array
 {
     $owner = User::factory()->create();
@@ -511,6 +625,9 @@ function productionPlanningTask2Fixture(string $calculationBasis = 'initial_oils
         'visibility' => Visibility::Private,
         'is_current' => $withPublishedVersion ? false : true,
         'batch_mass_grams' => '1000.000000000',
+        // Blend-only formulas have no saponified-oils phase, so the production
+        // snapshot copies ingredient lines without a lye calculation.
+        'manufacturing_mode' => 'blend_only',
     ]);
 
     return compact('owner', 'workspace', 'recipe', 'version');
@@ -526,6 +643,86 @@ function productionPlanningTask2Phase(RecipeVersion $version, Workspace $workspa
         'name' => $name,
         'slug' => str($name)->slug(),
     ]);
+}
+
+/**
+ * A published soap formula with two saponified oils, one packaging plan, and
+ * optional SAP profiles so the production snapshot includes calculated lye.
+ *
+ * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}
+ */
+function productionPlanningTask3SoapFixture(bool $withSap = true): array
+{
+    $fixture = productionPlanningTask2Fixture();
+    $fixture['version']->update([
+        'manufacturing_mode' => 'saponify_in_formula',
+        'calculation_context' => [
+            'editing_mode' => 'percentage',
+            'lye_type' => 'naoh',
+            'koh_purity_percentage' => 90,
+            'dual_lye_koh_percentage' => 40,
+            'superfat' => 5,
+            'oil_weight' => 1000,
+            'oil_unit' => 'g',
+            'mass_grams' => 1000,
+            'totals' => [],
+        ],
+        'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
+    ]);
+
+    $oleic = FattyAcid::factory()->create(['key' => 'oleic-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Oleic']);
+    $lauric = FattyAcid::factory()->create(['key' => 'lauric-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Lauric']);
+
+    $olive = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $coconut = Ingredient::factory()->create(['display_name' => 'Coconut oil']);
+
+    if ($withSap) {
+        IngredientSapProfile::factory()->create(['ingredient_id' => $olive->id, 'koh_sap_value' => 0.188]);
+        IngredientFattyAcid::factory()->create([
+            'ingredient_id' => $olive->id,
+            'fatty_acid_id' => $oleic->id,
+            'percentage' => 100,
+        ]);
+        IngredientSapProfile::factory()->create(['ingredient_id' => $coconut->id, 'koh_sap_value' => 0.19]);
+        IngredientFattyAcid::factory()->create([
+            'ingredient_id' => $coconut->id,
+            'fatty_acid_id' => $lauric->id,
+            'percentage' => 100,
+        ]);
+    }
+
+    $phase = productionPlanningTask2Phase($fixture['version'], $fixture['workspace'], 'Saponified Oils');
+    $phase->update(['slug' => 'saponified_oils']);
+
+    RecipeItem::factory()->for($fixture['version'])->for($phase, 'recipePhase')->for($olive)->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'workspace_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'position' => 1,
+        'percentage' => '75.0000',
+        'weight' => null,
+    ]);
+    RecipeItem::factory()->for($fixture['version'])->for($phase, 'recipePhase')->for($coconut)->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'workspace_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'position' => 2,
+        'percentage' => '25.0000',
+        'weight' => null,
+    ]);
+
+    $packaging = PackagingItem::factory()->for($fixture['workspace'])->create(['name' => 'Soap box']);
+    RecipeVersionPackagingItem::query()->create([
+        'recipe_version_id' => $fixture['version']->id,
+        'packaging_item_id' => $packaging->id,
+        'name' => 'Soap box',
+        'components_per_unit' => '1.000',
+        'position' => 1,
+    ]);
+
+    return $fixture;
 }
 
 function productionPlanningTask2Item(

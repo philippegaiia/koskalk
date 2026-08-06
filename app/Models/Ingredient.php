@@ -25,9 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'public_id',
-    'source_file',
-    'source_key',
-    'source_code_prefix',
+    'catalog_key',
     'category',
     'display_name',
     'inci_name',

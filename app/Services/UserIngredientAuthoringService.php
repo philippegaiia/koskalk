@@ -136,9 +136,7 @@ class UserIngredientAuthoringService
 
             $ingredient = new Ingredient([
                 'public_id' => Arr::get($state, 'public_id'),
-                'source_file' => 'user',
-                'source_key' => $this->ingredientDataEntryService->generateSourceKey('USR', 'user'),
-                'source_code_prefix' => 'USR',
+                'catalog_key' => $this->ingredientDataEntryService->generateCatalogKey('USR'),
                 'owner_type' => OwnerType::Workspace,
                 'owner_id' => $workspace->id,
                 'workspace_id' => $workspace->id,
@@ -212,9 +210,7 @@ class UserIngredientAuthoringService
                 'icon_image_original_name',
             ]);
 
-            $copy->source_file = 'user';
-            $copy->source_key = $this->ingredientDataEntryService->generateSourceKey('USR', 'user');
-            $copy->source_code_prefix = 'USR';
+            $copy->catalog_key = $this->ingredientDataEntryService->generateCatalogKey('USR');
             $copy->owner_type = OwnerType::Workspace;
             $copy->owner_id = $workspace->id;
             $copy->workspace_id = $workspace->id;

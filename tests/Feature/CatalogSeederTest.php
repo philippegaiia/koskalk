@@ -67,7 +67,7 @@ it('seeds the initial catalog from both csv files', function () {
         ->and(Allergen::query()->count())->toBe(2)
         ->and(Ingredient::query()->count())->toBe(2);
 
-    $oliveOil = Ingredient::query()->where('source_key', 'OB1')->firstOrFail();
+    $oliveOil = Ingredient::query()->where('catalog_key', 'OB1')->firstOrFail();
 
     expect($oliveOil->display_name)->toBe('Olive oil virgin')
         ->and($oliveOil->inci_name)->toBe('Olea europaea fruit oil')
@@ -123,8 +123,8 @@ it('classifies imported ingredients by code prefix and does not assume soap elig
 
     $this->seed(IngredientCatalogSeeder::class);
 
-    $oil = Ingredient::query()->where('source_key', 'OB1')->firstOrFail();
-    $essentialOil = Ingredient::query()->where('source_key', 'EO1')->firstOrFail();
+    $oil = Ingredient::query()->where('catalog_key', 'OB1')->firstOrFail();
+    $essentialOil = Ingredient::query()->where('catalog_key', 'EO1')->firstOrFail();
 
     expect($oil->category)->toBe(IngredientCategory::CarrierOil)
         ->and($oil->is_potentially_saponifiable)->toBeTrue()
@@ -157,7 +157,7 @@ it('enriches matching catalog carrier oils with mendrulandia chemistry without d
     $coconutOil = Ingredient::query()
         ->with(['sapProfile', 'fattyAcidEntries'])
         ->where('source_file', $ingredientPath)
-        ->where('source_key', 'OB4')
+        ->where('catalog_key', 'OB4')
         ->firstOrFail();
 
     $coconutOilRows = Ingredient::query()
@@ -173,12 +173,12 @@ it('enriches matching catalog carrier oils with mendrulandia chemistry without d
         ->and($coconutOil->soap_inci_koh_name)->toBeNull()
         ->and(Ingredient::query()
             ->where('source_file', 'mendrulandia_oils')
-            ->where('source_key', 'coconut_oil')
+            ->where('catalog_key', 'coconut_oil')
             ->exists())->toBeFalse();
 
     $almondOil = Ingredient::query()
         ->where('source_file', 'mendrulandia_oils')
-        ->where('source_key', 'almond_oil')
+        ->where('catalog_key', 'almond_oil')
         ->firstOrFail();
 
     expect($almondOil->inci_name)->toBe('Prunus Amygdalus Dulcis (Sweet Almond) Oil')
@@ -203,7 +203,7 @@ it('does not seed platform fragrance oils from the starter catalog', function ()
 
     $this->seed(IngredientCatalogSeeder::class);
 
-    expect(Ingredient::query()->pluck('source_key')->all())
+    expect(Ingredient::query()->pluck('catalog_key')->all())
         ->toBe(['EO1']);
 });
 
@@ -224,8 +224,8 @@ it('classifies botanical and co2 extracts for later aromatic compliance enrichme
 
     $this->seed(IngredientCatalogSeeder::class);
 
-    expect(Ingredient::query()->where('source_key', 'BE1')->firstOrFail()->category)->toBe(IngredientCategory::BotanicalExtract)
-        ->and(Ingredient::query()->where('source_key', 'AR1')->firstOrFail()->category)->toBe(IngredientCategory::Co2Extract);
+    expect(Ingredient::query()->where('catalog_key', 'BE1')->firstOrFail()->category)->toBe(IngredientCategory::BotanicalExtract)
+        ->and(Ingredient::query()->where('catalog_key', 'AR1')->firstOrFail()->category)->toBe(IngredientCategory::Co2Extract);
 });
 
 it('preserves multi-value cas strings and keeps allergen imports out of ingredient tables', function () {

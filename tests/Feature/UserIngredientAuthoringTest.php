@@ -391,8 +391,7 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-EO',
+        'catalog_key' => 'USR-EO',
     ]);
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
@@ -682,8 +681,7 @@ it('normalizes imported CAS and EC check digit padding when saving a user ingred
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-OLIVE',
+        'catalog_key' => 'USR-OLIVE',
         'is_potentially_saponifiable' => true,
     ]);
 

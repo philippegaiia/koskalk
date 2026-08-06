@@ -1,6 +1,6 @@
 [
     {
-        "source_key": "a_ai_oil",
+        "catalog_key": "a_ai_oil",
         "fatty_acids": {
             "lauric": 5,
             "myristic": 2,
@@ -14,7 +14,7 @@
         "ins_value": null
     },
     {
-        "source_key": "almond_oil",
+        "catalog_key": "almond_oil",
         "fatty_acids": {
             "palmitic": 7,
             "palmitoleic": 0.6000000000000001,
@@ -32,7 +32,7 @@
         "inci_name": "Prunus Amygdalus Dulcis (Sweet Almond) Oil"
     },
     {
-        "source_key": "andiroba_oil",
+        "catalog_key": "andiroba_oil",
         "fatty_acids": {
             "palmitic": 28,
             "palmitoleic": 1,
@@ -46,7 +46,7 @@
         "naoh_sap_value": 0.134
     },
     {
-        "source_key": "apricot_oil",
+        "catalog_key": "apricot_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 6,
@@ -65,7 +65,7 @@
         "inci_name": "Prunus Armeniaca (Apricot) Kernel Oil"
     },
     {
-        "source_key": "argan_oil",
+        "catalog_key": "argan_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 13,
@@ -85,7 +85,7 @@
         "inci_name": "Argania Spinosa (Argan) Kernel Oil"
     },
     {
-        "source_key": "avocado_butter",
+        "catalog_key": "avocado_butter",
         "fatty_acids": {
             "palmitic": 21,
             "stearic": 10,
@@ -99,7 +99,7 @@
         "naoh_sap_value": 0.133
     },
     {
-        "source_key": "avocado_oil",
+        "catalog_key": "avocado_oil",
         "fatty_acids": {
             "palmitic": 15,
             "palmitoleic": 6,
@@ -116,7 +116,7 @@
         "inci_name": "Persea Gratissima (Avocado) Oil"
     },
     {
-        "source_key": "babassu_oil",
+        "catalog_key": "babassu_oil",
         "fatty_acids": {
             "caproic": 0.2,
             "caprylic": 5,
@@ -136,7 +136,7 @@
         "inci_name": "Orbignya Oleifera (Babassu) Seed Oil"
     },
     {
-        "source_key": "bacaba_kernel_oil",
+        "catalog_key": "bacaba_kernel_oil",
         "fatty_acids": {
             "palmitic": 25,
             "palmitoleic": 1,
@@ -152,7 +152,7 @@
         "naoh_sap_value": 0.176
     },
     {
-        "source_key": "bacaba_pulp_oil",
+        "catalog_key": "bacaba_pulp_oil",
         "fatty_acids": {
             "palmitic": 23,
             "palmitoleic": 0.8,
@@ -167,7 +167,7 @@
         "ins_value": null
     },
     {
-        "source_key": "bacuri_butter",
+        "catalog_key": "bacuri_butter",
         "fatty_acids": {
             "palmitic": 70,
             "palmitoleic": 6,
@@ -178,7 +178,7 @@
         "ins_value": null
     },
     {
-        "source_key": "baobab_oil",
+        "catalog_key": "baobab_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 27,
@@ -199,7 +199,7 @@
         "inci_name": "Adansonia Digitata (Baobab) Seed Oil"
     },
     {
-        "source_key": "beef_tallow",
+        "catalog_key": "beef_tallow",
         "fatty_acids": {
             "lauric": 0.2,
             "myristic": 3,
@@ -218,7 +218,7 @@
         "naoh_sap_value": 0.143
     },
     {
-        "source_key": "black_cumin_oil",
+        "catalog_key": "black_cumin_oil",
         "fatty_acids": {
             "myristic": 1,
             "palmitic": 13,
@@ -236,7 +236,7 @@
         "inci_name": "Nigella Sativa (Black Cumin) Seed Oil"
     },
     {
-        "source_key": "borago_oil",
+        "catalog_key": "borago_oil",
         "fatty_acids": {
             "palmitic": 10,
             "stearic": 4,
@@ -253,7 +253,7 @@
         "ins_value": null
     },
     {
-        "source_key": "brazil_nut_oil",
+        "catalog_key": "brazil_nut_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 15,
@@ -273,7 +273,7 @@
         "inci_name": "Bertholletia Excelsa (Brazil) Nut Oil"
     },
     {
-        "source_key": "buriti_oil",
+        "catalog_key": "buriti_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 16,
@@ -290,7 +290,7 @@
         "inci_name": "Mauritia Flexuosa (Buriti) Fruit Oil"
     },
     {
-        "source_key": "calendula_oil",
+        "catalog_key": "calendula_oil",
         "fatty_acids": {
             "palmitic": 8,
             "stearic": 3,
@@ -303,7 +303,7 @@
         "ins_value": null
     },
     {
-        "source_key": "camelina_seed_oil",
+        "catalog_key": "camelina_seed_oil",
         "fatty_acids": {
             "palmitic": 6,
             "stearic": 2,
@@ -318,7 +318,7 @@
         "inci_name": "Camelina Sativa (Camelina) Seed Oil"
     },
     {
-        "source_key": "camellia_tea_seed_oil",
+        "catalog_key": "camellia_tea_seed_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 11,
@@ -338,7 +338,7 @@
         "naoh_sap_value": 0.138
     },
     {
-        "source_key": "canola_oil",
+        "catalog_key": "canola_oil",
         "fatty_acids": {
             "palmitic": 4,
             "stearic": 2,
@@ -356,7 +356,7 @@
         "naoh_sap_value": 0.133
     },
     {
-        "source_key": "castor_oil",
+        "catalog_key": "castor_oil",
         "fatty_acids": {
             "palmitic": 2,
             "stearic": 1,
@@ -371,7 +371,7 @@
         "inci_name": "Ricinus Communis (Castor) Seed Oil"
     },
     {
-        "source_key": "cherry_kernel_oil",
+        "catalog_key": "cherry_kernel_oil",
         "fatty_acids": {
             "lauric": 0.4,
             "myristic": 0.8,
@@ -390,7 +390,7 @@
         "inci_name": "Prunus Avium (Cherry) Kernel Oil"
     },
     {
-        "source_key": "chicken_fat",
+        "catalog_key": "chicken_fat",
         "fatty_acids": {
             "myristic": 0.8,
             "palmitic": 22,
@@ -407,7 +407,7 @@
         "naoh_sap_value": 0.139
     },
     {
-        "source_key": "cocoa_butter",
+        "catalog_key": "cocoa_butter",
         "fatty_acids": {
             "caprylic": 0.2,
             "capric": 0.2,
@@ -428,7 +428,7 @@
         "naoh_sap_value": 0.138
     },
     {
-        "source_key": "coconut_oil",
+        "catalog_key": "coconut_oil",
         "fatty_acids": {
             "caproic": 0.2,
             "caprylic": 7,
@@ -449,7 +449,7 @@
         "inci_name": "Cocos Nucifera (Coconut) Oil"
     },
     {
-        "source_key": "copa_ba_oil",
+        "catalog_key": "copa_ba_oil",
         "fatty_acids": {
             "palmitic": 14,
             "stearic": 20,
@@ -464,7 +464,7 @@
         "ins_value": null
     },
     {
-        "source_key": "corn_oil",
+        "catalog_key": "corn_oil",
         "fatty_acids": {
             "caprylic": 4,
             "capric": 7,
@@ -485,7 +485,7 @@
         "naoh_sap_value": 0.137
     },
     {
-        "source_key": "coroba_kernell_oil",
+        "catalog_key": "coroba_kernell_oil",
         "fatty_acids": {
             "caprylic": 4,
             "capric": 5,
@@ -502,7 +502,7 @@
         "ins_value": null
     },
     {
-        "source_key": "cottonseed_oil",
+        "catalog_key": "cottonseed_oil",
         "fatty_acids": {
             "myristic": 0.6000000000000001,
             "palmitic": 20,
@@ -520,7 +520,7 @@
         "naoh_sap_value": 0.138
     },
     {
-        "source_key": "crisco",
+        "catalog_key": "crisco",
         "fatty_acids": {
             "palmitic": 20,
             "stearic": 2,
@@ -533,7 +533,7 @@
         "naoh_sap_value": 0.138
     },
     {
-        "source_key": "cucumber_seed_oil",
+        "catalog_key": "cucumber_seed_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 14,
@@ -553,7 +553,7 @@
         "inci_name": "Cucumis Sativus (Cucumber) Oil"
     },
     {
-        "source_key": "cupuacu_butter",
+        "catalog_key": "cupuacu_butter",
         "fatty_acids": {
             "myristic": 1,
             "palmitic": 9,
@@ -572,7 +572,7 @@
         "inci_name": "Theobroma Grandiflorum (Cupuacu) Seed Butter"
     },
     {
-        "source_key": "duck_fat",
+        "catalog_key": "duck_fat",
         "fatty_acids": {
             "myristic": 0.6000000000000001,
             "palmitic": 21,
@@ -589,7 +589,7 @@
         "naoh_sap_value": 0.138
     },
     {
-        "source_key": "emu_oil",
+        "catalog_key": "emu_oil",
         "fatty_acids": {
             "myristic": 0.4,
             "palmitic": 22,
@@ -605,7 +605,7 @@
         "naoh_sap_value": 0.135
     },
     {
-        "source_key": "evening_primrose_oil",
+        "catalog_key": "evening_primrose_oil",
         "fatty_acids": {
             "palmitic": 6,
             "stearic": 2,
@@ -622,7 +622,7 @@
         "inci_name": "Oenothera Biennis (Evening Primrose) Oil"
     },
     {
-        "source_key": "fractionated_coconut_oil",
+        "catalog_key": "fractionated_coconut_oil",
         "fatty_acids": {
             "caprylic": 96,
             "lauric": 2,
@@ -635,7 +635,7 @@
         "inci_name": "Caprylic\/Capric Triglyceride"
     },
     {
-        "source_key": "grape_seed_oil",
+        "catalog_key": "grape_seed_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 8,
@@ -655,7 +655,7 @@
         "inci_name": "Vitis Vinifera (Grape) Seed Oil, Tocopherol"
     },
     {
-        "source_key": "hazelnut_oil",
+        "catalog_key": "hazelnut_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 6,
@@ -673,7 +673,7 @@
         "inci_name": "Corylus Avellana (Hazel) Seed Oil"
     },
     {
-        "source_key": "hemp_oil",
+        "catalog_key": "hemp_oil",
         "fatty_acids": {
             "palmitic": 6,
             "stearic": 2,
@@ -690,7 +690,7 @@
         "inci_name": "Cannabis Sativa (Hemp) Seed Oil"
     },
     {
-        "source_key": "illipe_butter",
+        "catalog_key": "illipe_butter",
         "fatty_acids": {
             "palmitic": 17,
             "stearic": 44,
@@ -704,7 +704,7 @@
         "naoh_sap_value": 0.132
     },
     {
-        "source_key": "jojoba_oil",
+        "catalog_key": "jojoba_oil",
         "fatty_acids": {
             "palmitoleic": 0.2,
             "oleic": 0.6000000000000001,
@@ -720,7 +720,7 @@
         "inci_name": "Simmondsia chinensis (Jojoba) Seed Oil"
     },
     {
-        "source_key": "karanja_oil",
+        "catalog_key": "karanja_oil",
         "fatty_acids": {
             "palmitic": 12,
             "stearic": 8,
@@ -738,7 +738,7 @@
         "inci_name": "Pongamia Glabra (Karanja) Seed Oil"
     },
     {
-        "source_key": "kokum_butter",
+        "catalog_key": "kokum_butter",
         "fatty_acids": {
             "palmitic": 4,
             "stearic": 54,
@@ -751,7 +751,7 @@
         "naoh_sap_value": 0.135
     },
     {
-        "source_key": "kukui_nut_oil",
+        "catalog_key": "kukui_nut_oil",
         "fatty_acids": {
             "palmitic": 6,
             "stearic": 2,
@@ -766,7 +766,7 @@
         "inci_name": "Aleurites Moluccana (Kukui) Nut Oil"
     },
     {
-        "source_key": "lard",
+        "catalog_key": "lard",
         "fatty_acids": {
             "myristic": 2,
             "palmitic": 27,
@@ -783,7 +783,7 @@
         "naoh_sap_value": 0.141
     },
     {
-        "source_key": "laurel_berries_oil",
+        "catalog_key": "laurel_berries_oil",
         "fatty_acids": {
             "lauric": 27,
             "myristic": 5,
@@ -800,7 +800,7 @@
         "naoh_sap_value": 0.141
     },
     {
-        "source_key": "licuri_coconut_oil",
+        "catalog_key": "licuri_coconut_oil",
         "fatty_acids": {
             "caprylic": 19,
             "capric": 11,
@@ -817,7 +817,7 @@
         "ins_value": null
     },
     {
-        "source_key": "lineseed_oil_flax",
+        "catalog_key": "lineseed_oil_flax",
         "fatty_acids": {
             "palmitic": 6,
             "stearic": 4,
@@ -834,7 +834,7 @@
         "inci_name": "Linum Usitatissimum (Linseed) Seed Oil"
     },
     {
-        "source_key": "macadamia_nut_oil",
+        "catalog_key": "macadamia_nut_oil",
         "fatty_acids": {
             "lauric": 0.2,
             "myristic": 0.8,
@@ -856,7 +856,7 @@
         "inci_name": "Macadamia Integrifolia (Macadamia) Nut Oil"
     },
     {
-        "source_key": "mango_butter",
+        "catalog_key": "mango_butter",
         "fatty_acids": {
             "palmitic": 9,
             "stearic": 39,
@@ -871,7 +871,7 @@
         "ins_value": null
     },
     {
-        "source_key": "mango_oil",
+        "catalog_key": "mango_oil",
         "fatty_acids": {
             "palmitic": 9,
             "stearic": 27,
@@ -888,7 +888,7 @@
         "inci_name": "Mangifera Indica (Mango) Seed Butter"
     },
     {
-        "source_key": "maracuja_passionfruit_oil",
+        "catalog_key": "maracuja_passionfruit_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 9,
@@ -908,7 +908,7 @@
         "inci_name": "Passiflora Edulis (Passionfruit) Seed Oil"
     },
     {
-        "source_key": "marula_oil",
+        "catalog_key": "marula_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 14,
@@ -928,7 +928,7 @@
         "inci_name": "Sclerocarya Birrea (Marula) Kernel Oil"
     },
     {
-        "source_key": "moringa_oil",
+        "catalog_key": "moringa_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 6,
@@ -949,7 +949,7 @@
         "inci_name": "Moringa Oleifera Seed Oil"
     },
     {
-        "source_key": "mowrah_butter",
+        "catalog_key": "mowrah_butter",
         "fatty_acids": {
             "palmitic": 22,
             "stearic": 22,
@@ -963,7 +963,7 @@
         "naoh_sap_value": 0.138
     },
     {
-        "source_key": "murumuru_butter",
+        "catalog_key": "murumuru_butter",
         "fatty_acids": {
             "caproic": 0.2,
             "caprylic": 1,
@@ -982,7 +982,7 @@
         "inci_name": "Astrocaryum Murumuru Seed Butter"
     },
     {
-        "source_key": "mustard_oil",
+        "catalog_key": "mustard_oil",
         "fatty_acids": {
             "palmitic": 2,
             "palmitoleic": 0.2,
@@ -1001,7 +1001,7 @@
         "naoh_sap_value": 0.123
     },
     {
-        "source_key": "neem_tree_oil",
+        "catalog_key": "neem_tree_oil",
         "fatty_acids": {
             "myristic": 1,
             "palmitic": 21,
@@ -1021,7 +1021,7 @@
         "inci_name": "Azadirachta Indica (Neem) Kernel Oil"
     },
     {
-        "source_key": "olive_oil",
+        "catalog_key": "olive_oil",
         "fatty_acids": {
             "palmitic": 14,
             "palmitoleic": 0.6000000000000001,
@@ -1040,7 +1040,7 @@
         "inci_name": "Olea Europaea (Olive) Fruit Oil"
     },
     {
-        "source_key": "olive_pomace_oil",
+        "catalog_key": "olive_pomace_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 13,
@@ -1058,7 +1058,7 @@
         "ins_value": null
     },
     {
-        "source_key": "olive_recycled_oil",
+        "catalog_key": "olive_recycled_oil",
         "fatty_acids": {
             "myristic": 2,
             "palmitic": 12,
@@ -1072,7 +1072,7 @@
         "ins_value": null
     },
     {
-        "source_key": "palm_kernel_oil",
+        "catalog_key": "palm_kernel_oil",
         "fatty_acids": {
             "caproic": 0.4,
             "caprylic": 5,
@@ -1093,7 +1093,7 @@
         "naoh_sap_value": 0.176
     },
     {
-        "source_key": "palm_oil",
+        "catalog_key": "palm_oil",
         "fatty_acids": {
             "lauric": 0.2,
             "myristic": 1,
@@ -1115,7 +1115,7 @@
         "inci_name": "Elaeis guineensis Palm kernel oil"
     },
     {
-        "source_key": "palm_olein",
+        "catalog_key": "palm_olein",
         "fatty_acids": {
             "lauric": 0.2,
             "myristic": 1,
@@ -1134,7 +1134,7 @@
         "ins_value": null
     },
     {
-        "source_key": "patau_oil",
+        "catalog_key": "patau_oil",
         "fatty_acids": {
             "palmitic": 11,
             "palmitoleic": 0.6000000000000001,
@@ -1149,7 +1149,7 @@
         "ins_value": null
     },
     {
-        "source_key": "peach_kernel_oil",
+        "catalog_key": "peach_kernel_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 6,
@@ -1168,7 +1168,7 @@
         "inci_name": "Prunus Persica (Peach) Kernel Oil"
     },
     {
-        "source_key": "peanut_oil",
+        "catalog_key": "peanut_oil",
         "fatty_acids": {
             "palmitic": 9,
             "stearic": 5,
@@ -1185,7 +1185,7 @@
         "naoh_sap_value": 0.137
     },
     {
-        "source_key": "pecan_oil",
+        "catalog_key": "pecan_oil",
         "fatty_acids": {
             "palmitic": 6,
             "palmitoleic": 0.2,
@@ -1202,7 +1202,7 @@
         "naoh_sap_value": 0.135
     },
     {
-        "source_key": "pequi_oil",
+        "catalog_key": "pequi_oil",
         "fatty_acids": {
             "myristic": 0.6000000000000001,
             "palmitic": 44,
@@ -1219,7 +1219,7 @@
         "inci_name": "Caryocar Braziliensis (Pequi) Fruit Oil"
     },
     {
-        "source_key": "pistachio_oil",
+        "catalog_key": "pistachio_oil",
         "fatty_acids": {
             "palmitic": 11,
             "stearic": 1,
@@ -1232,7 +1232,7 @@
         "naoh_sap_value": 0.133
     },
     {
-        "source_key": "poppyseed_oil",
+        "catalog_key": "poppyseed_oil",
         "fatty_acids": {
             "myristic": 0.6000000000000001,
             "palmitic": 9,
@@ -1250,7 +1250,7 @@
         "inci_name": "Papaver Somniferum (Poppy) Seed Oil"
     },
     {
-        "source_key": "pracaxi_oil",
+        "catalog_key": "pracaxi_oil",
         "fatty_acids": {
             "lauric": 1,
             "myristic": 1,
@@ -1267,7 +1267,7 @@
         "ins_value": null
     },
     {
-        "source_key": "pumpkin_seed_oil",
+        "catalog_key": "pumpkin_seed_oil",
         "fatty_acids": {
             "palmitic": 11,
             "stearic": 8,
@@ -1281,7 +1281,7 @@
         "inci_name": "Cucurbita Pepo (Pumpkin) Seed Oil"
     },
     {
-        "source_key": "rice_bran_oil",
+        "catalog_key": "rice_bran_oil",
         "fatty_acids": {
             "myristic": 0.6000000000000001,
             "palmitic": 15,
@@ -1298,7 +1298,7 @@
         "inci_name": "Oryza sativa (Rice) Bran Oil"
     },
     {
-        "source_key": "roasted_coffee_oil",
+        "catalog_key": "roasted_coffee_oil",
         "fatty_acids": {
             "palmitic": 39,
             "stearic": 9,
@@ -1311,7 +1311,7 @@
         "naoh_sap_value": 0.132
     },
     {
-        "source_key": "rosehip_oil",
+        "catalog_key": "rosehip_oil",
         "fatty_acids": {
             "myristic": 0.2,
             "palmitic": 4,
@@ -1331,7 +1331,7 @@
         "inci_name": "Rosa Canina (Rose Hip) Seed Oil"
     },
     {
-        "source_key": "sacha_inchi_oil",
+        "catalog_key": "sacha_inchi_oil",
         "fatty_acids": {
             "myristic": 1,
             "palmitic": 6,
@@ -1347,7 +1347,7 @@
         "inci_name": "Plukenetia Volubilis (Sacha Inchi) Seed Oil"
     },
     {
-        "source_key": "safflower_oil",
+        "catalog_key": "safflower_oil",
         "fatty_acids": {
             "myristic": 0.6000000000000001,
             "palmitic": 5,
@@ -1363,7 +1363,7 @@
         "naoh_sap_value": 0.137
     },
     {
-        "source_key": "safflower_oil_high_oleic",
+        "catalog_key": "safflower_oil_high_oleic",
         "fatty_acids": {
             "palmitic": 5,
             "stearic": 2,
@@ -1377,7 +1377,7 @@
         "inci_name": "Carthamus tinctorus (Safflower) Oil"
     },
     {
-        "source_key": "sal_butter",
+        "catalog_key": "sal_butter",
         "fatty_acids": {
             "palmitic": 6,
             "stearic": 40,
@@ -1391,7 +1391,7 @@
         "naoh_sap_value": 0.132
     },
     {
-        "source_key": "seeds_oil",
+        "catalog_key": "seeds_oil",
         "fatty_acids": {
             "palmitic": 8,
             "stearic": 3,
@@ -1404,7 +1404,7 @@
         "ins_value": null
     },
     {
-        "source_key": "sesame_oil",
+        "catalog_key": "sesame_oil",
         "fatty_acids": {
             "palmitic": 8,
             "stearic": 5,
@@ -1419,7 +1419,7 @@
         "inci_name": "Sesamum Indicum (Sesame) Seed Oil"
     },
     {
-        "source_key": "shea_butter",
+        "catalog_key": "shea_butter",
         "fatty_acids": {
             "palmitic": 7,
             "stearic": 38,
@@ -1434,7 +1434,7 @@
         "inci_name": "Butyrospermum Parkii (Shea) Seed Butter"
     },
     {
-        "source_key": "soy_oil",
+        "catalog_key": "soy_oil",
         "fatty_acids": {
             "lauric": 0.2,
             "myristic": 0.2,
@@ -1455,7 +1455,7 @@
         "naoh_sap_value": 0.137
     },
     {
-        "source_key": "soy_oil_hydrogenated",
+        "catalog_key": "soy_oil_hydrogenated",
         "fatty_acids": {
             "palmitoleic": 11,
             "stearic": 14,
@@ -1468,7 +1468,7 @@
         "inci_name": "Glycine soja (Soybean) Oil"
     },
     {
-        "source_key": "stearine",
+        "catalog_key": "stearine",
         "fatty_acids": {
             "palmitic": 46,
             "stearic": 52,
@@ -1479,7 +1479,7 @@
         "ins_value": null
     },
     {
-        "source_key": "sunflower_oil",
+        "catalog_key": "sunflower_oil",
         "fatty_acids": {
             "palmitic": 6,
             "stearic": 3,
@@ -1495,7 +1495,7 @@
         "naoh_sap_value": 0.135
     },
     {
-        "source_key": "sunflower_oil_high_oleic",
+        "catalog_key": "sunflower_oil_high_oleic",
         "fatty_acids": {
             "palmitic": 4,
             "stearic": 6,
@@ -1509,7 +1509,7 @@
         "inci_name": "Helianthus Annuus (Sunflower) Seed Oil"
     },
     {
-        "source_key": "tallow_cow",
+        "catalog_key": "tallow_cow",
         "fatty_acids": {
             "lauric": 2,
             "myristic": 5,
@@ -1527,7 +1527,7 @@
         "ins_value": null
     },
     {
-        "source_key": "tallow_sheep",
+        "catalog_key": "tallow_sheep",
         "fatty_acids": {
             "caprylic": 1,
             "capric": 1,
@@ -1547,7 +1547,7 @@
         "naoh_sap_value": 0.138
     },
     {
-        "source_key": "tigernut_oil",
+        "catalog_key": "tigernut_oil",
         "fatty_acids": {
             "myristic": 2,
             "palmitic": 14,
@@ -1564,7 +1564,7 @@
         "ins_value": null
     },
     {
-        "source_key": "tucum_kernel_oil",
+        "catalog_key": "tucum_kernel_oil",
         "fatty_acids": {
             "caprylic": 3,
             "lauric": 52,
@@ -1581,7 +1581,7 @@
         "ins_value": null
     },
     {
-        "source_key": "tucum_pulp_oil",
+        "catalog_key": "tucum_pulp_oil",
         "fatty_acids": {
             "caprylic": 2,
             "capric": 1,
@@ -1600,7 +1600,7 @@
         "ins_value": null
     },
     {
-        "source_key": "ucu_ba_oil",
+        "catalog_key": "ucu_ba_oil",
         "fatty_acids": {
             "caprylic": 1,
             "lauric": 18,
@@ -1614,7 +1614,7 @@
         "ins_value": null
     },
     {
-        "source_key": "vegetal_butter_margarine",
+        "catalog_key": "vegetal_butter_margarine",
         "fatty_acids": {
             "caprylic": 0.2,
             "capric": 0.2,
@@ -1635,7 +1635,7 @@
         "ins_value": null
     },
     {
-        "source_key": "walnut_oil",
+        "catalog_key": "walnut_oil",
         "fatty_acids": {
             "palmitic": 7,
             "stearic": 2,
@@ -1651,7 +1651,7 @@
         "inci_name": "Juglans Regia (Walnut) Seed Oil"
     },
     {
-        "source_key": "wheatgerm_oil",
+        "catalog_key": "wheatgerm_oil",
         "fatty_acids": {
             "palmitic": 14,
             "stearic": 4,

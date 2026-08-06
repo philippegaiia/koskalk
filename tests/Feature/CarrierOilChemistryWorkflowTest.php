@@ -30,7 +30,7 @@ it('syncs curated carrier oil chemistry onto existing catalog ingredients', func
     $this->seed(FattyAcidSeeder::class);
 
     $ingredient = Ingredient::factory()->create([
-        'source_key' => 'OB100',
+        'catalog_key' => 'OB100',
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Olive oil',
         'is_potentially_saponifiable' => false,
@@ -50,7 +50,7 @@ it('syncs curated carrier oil chemistry onto existing catalog ingredients', func
 
     $fixturePath = writeCarrierOilChemistryFixture($this->chemistryFixtureDirectory, [
         [
-            'source_key' => 'OB100',
+            'catalog_key' => 'OB100',
             'koh_sap_value' => 0.188,
             'iodine_value' => 86.4,
             'ins_value' => 102.8,
@@ -91,7 +91,7 @@ it('fails fast when chemistry rows do not match an existing carrier oil ingredie
 
     $fixturePath = writeCarrierOilChemistryFixture($this->chemistryFixtureDirectory, [
         [
-            'source_key' => 'OB404',
+            'catalog_key' => 'OB404',
             'koh_sap_value' => 0.188,
             'fatty_acids' => [
                 'oleic' => 70,
@@ -111,7 +111,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
     $oleic = FattyAcid::query()->where('key', 'oleic')->firstOrFail();
 
     $completeOil = Ingredient::factory()->create([
-        'source_key' => 'OB-COMPLETE',
+        'catalog_key' => 'OB-COMPLETE',
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Complete oil',
     ]);
@@ -128,7 +128,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
     ]);
 
     $missingSapOil = Ingredient::factory()->create([
-        'source_key' => 'OB-MISS-SAP',
+        'catalog_key' => 'OB-MISS-SAP',
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Needs sap',
     ]);
@@ -140,7 +140,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
     ]);
 
     $missingFattyAcidOil = Ingredient::factory()->create([
-        'source_key' => 'OB-MISS-FATTY',
+        'catalog_key' => 'OB-MISS-FATTY',
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Needs fatty acids',
     ]);
@@ -151,7 +151,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
     ]);
 
     Ingredient::factory()->create([
-        'source_key' => 'ADD-IGNORE',
+        'catalog_key' => 'ADD-IGNORE',
         'category' => IngredientCategory::Additive,
         'display_name' => 'Plain additive',
     ]);
@@ -163,8 +163,8 @@ it('reports carrier oils that are still missing soap chemistry', function () {
     $output = Artisan::output();
 
     expect($exitCode)->toBe(0)
-        ->and($output)->toContain('"source_key": "OB-MISS-FATTY"')
-        ->and($output)->toContain('"source_key": "OB-MISS-SAP"')
+        ->and($output)->toContain('"catalog_key": "OB-MISS-FATTY"')
+        ->and($output)->toContain('"catalog_key": "OB-MISS-SAP"')
         ->and($output)->toContain('"missing_sap": true')
         ->and($output)->toContain('"missing_fatty_acids": true')
         ->and($output)->not->toContain('OB-COMPLETE')
@@ -173,7 +173,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
 
 it('diffs carrier oils from the common name csv header when columns are reordered', function () {
     Ingredient::factory()->create([
-        'source_key' => 'OB-OLIVE',
+        'catalog_key' => 'OB-OLIVE',
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Olive oil',
     ]);
@@ -203,7 +203,7 @@ it('imports explicit mendrulandia inci names without using the latin lookup fall
     $this->seed(FattyAcidSeeder::class);
 
     $ingredient = Ingredient::factory()->create([
-        'source_key' => 'OB-ALMOND',
+        'catalog_key' => 'OB-ALMOND',
         'category' => IngredientCategory::CarrierOil,
         'display_name' => 'Almond Oil',
         'inci_name' => null,

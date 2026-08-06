@@ -708,9 +708,9 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->where('is_active', true)
             ->when($currentIngredient?->exists, fn ($query) => $query->whereKeyNot($currentIngredient?->getKey()))
             ->get()
-            ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->display_name ?? $ingredient->source_key))
+            ->sortBy(fn (Ingredient $ingredient): string => mb_strtolower($ingredient->display_name ?? $ingredient->catalog_key))
             ->mapWithKeys(function (Ingredient $ingredient): array {
-                $label = $ingredient->display_name ?? $ingredient->source_key;
+                $label = $ingredient->display_name ?? $ingredient->catalog_key;
                 $inciName = $ingredient->inci_name;
 
                 if (filled($inciName)) {

@@ -20,9 +20,7 @@ class CreateIngredient extends CreateRecord
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $data = $this->extractIngredientDataEntryState($data);
-        $data['source_file'] = 'admin';
-        $data['source_code_prefix'] = 'ADM';
-        $data['source_key'] = app(IngredientDataEntryService::class)->generateSourceKey('ADM');
+        $data['catalog_key'] = app(IngredientDataEntryService::class)->generateCatalogKey('ADM');
 
         return $data;
     }

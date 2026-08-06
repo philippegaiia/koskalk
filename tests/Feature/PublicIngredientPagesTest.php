@@ -43,8 +43,7 @@ it('renders the public ingredients index with only the current users private ing
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-OWNED',
+        'catalog_key' => 'USR-OWNED',
     ]);
 
     $hiddenIngredient = Ingredient::factory()->create([
@@ -54,8 +53,7 @@ it('renders the public ingredients index with only the current users private ing
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-HIDDEN',
+        'catalog_key' => 'USR-HIDDEN',
     ]);
 
     $this->actingAs($user)
@@ -111,8 +109,7 @@ it('lets the signed-in user search their ingredient catalog table', function () 
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-GLYCERIN',
+        'catalog_key' => 'USR-GLYCERIN',
     ]);
 
     $clay = Ingredient::factory()->create([
@@ -121,8 +118,7 @@ it('lets the signed-in user search their ingredient catalog table', function () 
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-CLAY',
+        'catalog_key' => 'USR-CLAY',
     ]);
 
     $this->actingAs($user);
@@ -189,8 +185,7 @@ it('allows deleting an unused personal ingredient from the catalog table', funct
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-DELETE',
+        'catalog_key' => 'USR-DELETE',
         'featured_image_path' => 'ingredients/featured-images/delete-me.webp',
         'icon_image_path' => 'ingredients/icons/delete-me.webp',
     ]);
@@ -610,8 +605,7 @@ it('disables deleting a personal ingredient that is already used in costing', fu
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-LOCKED',
+        'catalog_key' => 'USR-LOCKED',
     ]);
 
     $recipe = Recipe::factory()->create([
@@ -661,8 +655,7 @@ it('disables deleting a personal ingredient that is used in a recipe formula', f
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-FORMULA',
+        'catalog_key' => 'USR-FORMULA',
     ]);
 
     $recipe = Recipe::factory()->create([
@@ -966,8 +959,7 @@ it('does not allow editing another users private ingredient', function () {
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
-        'source_key' => 'USR-OTHER',
+        'catalog_key' => 'USR-OTHER',
     ]);
 
     $this->actingAs($user)
@@ -986,8 +978,7 @@ it('shows authenticated users the platform ingredient record in read-only form',
         'ec_number' => '289-995-2',
         'owner_type' => null,
         'owner_id' => null,
-        'source_file' => 'platform',
-        'source_key' => 'PLATFORM-LAVENDER',
+        'catalog_key' => 'PLATFORM-LAVENDER',
         'is_active' => true,
     ]);
     $allergen = Allergen::factory()->create(['inci_name' => 'LINALOOL']);
@@ -1013,8 +1004,7 @@ it('rejects a forced Livewire save of a platform ingredient', function () {
         'display_name' => 'Platform Glycerin',
         'owner_type' => null,
         'owner_id' => null,
-        'source_file' => 'platform',
-        'source_key' => 'PLATFORM-GLYCERIN',
+        'catalog_key' => 'PLATFORM-GLYCERIN',
         'is_active' => true,
     ]);
 
@@ -1036,8 +1026,7 @@ it('does not delete a platform ingredient if a table action call is forced', fun
         'display_name' => 'Platform Glycerin',
         'owner_type' => null,
         'owner_id' => null,
-        'source_file' => 'platform',
-        'source_key' => 'PLATFORM-GLYCERIN',
+        'catalog_key' => 'PLATFORM-GLYCERIN',
     ]);
 
     $this->actingAs($user);
@@ -1112,7 +1101,6 @@ function catalogPrivateIngredient(
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'source_file' => 'user',
     ]);
 }
 

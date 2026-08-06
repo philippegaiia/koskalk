@@ -46,7 +46,7 @@ class ImportCarrierOilChemistryFromMendrulandia extends Command
         $skipped = 0;
 
         foreach ($rows as $row) {
-            $displayName = $this->slugToDisplayName($row['source_key']);
+            $displayName = $this->slugToDisplayName($row['catalog_key']);
 
             if ($csvFilter !== null && ! in_array(Str::lower($displayName), array_map(Str::lower(...), $commonNamesToImport), true)) {
                 $skipped++;
@@ -85,7 +85,7 @@ class ImportCarrierOilChemistryFromMendrulandia extends Command
     }
 
     /**
-     * @return array<int, array{source_key:string, fatty_acids:array<string,float|null>, koh_sap_value:float|null, iodine_value:float|null, ins_value:float|null, inci_name?:string|null}>
+     * @return array<int, array{catalog_key:string, fatty_acids:array<string,float|null>, koh_sap_value:float|null, iodine_value:float|null, ins_value:float|null, inci_name?:string|null}>
      */
     private function rows(string $path): array
     {
@@ -111,7 +111,7 @@ class ImportCarrierOilChemistryFromMendrulandia extends Command
             return [];
         }
 
-        /** @var array<int, array{source_key:string, fatty_acids:array<string,float|null>, koh_sap_value:float|null, iodine_value:float|null, ins_value:float|null}> $decoded */
+        /** @var array<int, array{catalog_key:string, fatty_acids:array<string,float|null>, koh_sap_value:float|null, iodine_value:float|null, ins_value:float|null}> $decoded */
         return $decoded;
     }
 

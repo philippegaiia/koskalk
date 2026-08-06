@@ -78,7 +78,7 @@ class IngredientDataEntryService
         $componentsState = is_array($state['components'] ?? null) ? $state['components'] : [];
 
         $ingredient->fill([
-            'display_name' => $currentVersionState['display_name'] ?? $ingredient->source_key,
+            'display_name' => $currentVersionState['display_name'] ?? $ingredient->catalog_key,
             'inci_name' => $currentVersionState['inci_name'] ?? null,
             'soap_inci_naoh_name' => $currentVersionState['soap_inci_naoh_name'] ?? null,
             'soap_inci_koh_name' => $currentVersionState['soap_inci_koh_name'] ?? null,
@@ -105,17 +105,17 @@ class IngredientDataEntryService
         ]);
     }
 
-    public function generateSourceKey(string $prefix = 'ADM', string $sourceFile = 'admin'): string
+    public function generateCatalogKey(string $prefix = 'ADM'): string
     {
         $normalizedPrefix = Str::upper(trim($prefix)) !== ''
             ? Str::upper(trim($prefix))
             : 'ADM';
 
         do {
-            $sourceKey = sprintf('%s-%s', $normalizedPrefix, Str::upper(Str::random(8)));
-        } while (Ingredient::query()->where('source_file', $sourceFile)->where('source_key', $sourceKey)->exists());
+            $catalogKey = sprintf('%s-%s', $normalizedPrefix, Str::upper(Str::random(8)));
+        } while (Ingredient::query()->where('catalog_key', $catalogKey)->exists());
 
-        return $sourceKey;
+        return $catalogKey;
     }
 
     private function syncSapProfile(

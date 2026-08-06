@@ -4,7 +4,7 @@
 
 **Goal:** Let a small maker plan one or several production batches from a published product, automatically obtain dated follow-up tasks, understand future material demand, and explicitly reserve suitable stock lots only when ready.
 
-**Architecture:** `ProductionRun` is the durable production record. It pins one published `RecipeVersion` and owns immutable-subject, rescalable planning requirements for ingredients and packaging. Reusable batch presets and task sets only prefill a production; generated production tasks snapshot their scheduling inputs. Planned requirements affect forecast demand but not available stock. Separate `StockReservation` rows connect one requirement to one or several lots after an explicit preview and confirmation. The Flash simulator reuses the same planning actions and remains non-persistent until the user confirms dated production rows.
+**Architecture:** `ProductionRun` is the durable production record. It pins one published `RecipeVersion` and owns immutable-subject, rescalable planning requirements for ingredients and packaging. Reusable batch presets and task sets only prefill a production; task sets are applicable to many products, products may have several applicable sets, and generated production tasks snapshot their scheduling inputs. Task-set offsets are signed calendar days relative to the production date, with non-working-day adjustment applied when dates are generated. Planned requirements affect forecast demand but not available stock. Separate `StockReservation` rows connect one requirement to one or several lots after an explicit preview and confirmation. The Flash simulator reuses the same planning actions and remains non-persistent until the user confirms dated production rows.
 
 **Tech Stack:** PHP 8.5, Laravel 13, Livewire 4, Blade, Alpine.js, Tailwind CSS 4, Pest 4, BCMath, PostgreSQL transactions and row locking, Vite 8, and `@event-calendar/core`.
 
@@ -32,11 +32,11 @@ Every `git add` command below is intentionally path-specific. Replace migration 
 - Reservation confirmation is explicit, idempotent, all-or-nothing for the selected productions, and protected by row locks.
 - Cross-workspace references and mutations in a cancelled/read-only Production Bench are rejected.
 - Batch-size presets and task sets are optional conveniences, never prerequisites.
-- Generated tasks snapshot their name, offset, duration, and calculated date; template edits do not rewrite them.
-- The first generated task is the production-date anchor: its offset is always zero and its date always equals the production date.
-- Before production starts, changing the first task date changes the production date, and changing the production date changes the first task date.
-- The first task is never shifted for a weekend or holiday chosen explicitly by the user.
-- Later automatic tasks move forward to the next working day; completed and custom-dated tasks do not move.
+- Generated tasks snapshot their name, signed calendar offset, duration, and calculated date; template edits do not rewrite them.
+- Every applicable task set contains at least one production-day anchor item at offset zero; the earliest chronological task may be preparation at a negative offset.
+- Before production starts, changing the production date recalculates unfinished automatic tasks from their stored offsets; the production-day anchor remains exactly on the production date.
+- When weekends or holidays are configured as non-working, an explicit production date must be a working day rather than being silently moved.
+- Calendar offsets that land on non-working days move backward for preparation and forward for follow-up tasks; completed and custom-dated tasks do not move.
 - Flash simulation does not persist anything. Flash generation creates independent planned productions, without waves, capacity records, or reservations.
 
 ## Status Contract
@@ -267,6 +267,7 @@ git commit -m "feat: add production batch presets"
 - Create: `database/migrations/*_create_production_task_types_table.php`
 - Create: `database/migrations/*_create_production_task_sets_table.php`
 - Create: `database/migrations/*_create_production_task_set_items_table.php`
+- Create: `database/migrations/*_create_production_task_set_recipe_table.php`
 - Create: `database/migrations/*_create_production_tasks_table.php`
 - Create: `database/migrations/*_create_production_holidays_table.php`
 - Create: `database/migrations/*_add_production_planning_defaults.php`
@@ -278,6 +279,7 @@ git commit -m "feat: add production batch presets"
 - Create: `app/Actions/Production/SaveEmployee.php`
 - Create: `app/Actions/Production/SaveProductionTaskType.php`
 - Create: `app/Actions/Production/SaveProductionTaskSet.php`
+- Create: `app/Actions/Production/SyncProductionTaskSetProducts.php`
 - Create: `app/Actions/Production/SaveProductionHoliday.php`
 - Create: `app/Actions/Production/UpdateProductionWorkingCalendar.php`
 - Modify: `app/Models/Workspace.php`
@@ -290,31 +292,32 @@ git commit -m "feat: add production batch presets"
 Cover:
 
 - lightweight employees with first name, last name, and active state only;
-- task types with name, optional default minutes, optional colour, and active state;
-- ordered task-set items with task type, days after production, and optional duration override;
-- the first task-set item being action-constrained to offset zero;
-- an optional default task set on a product;
-- generated task snapshots for name, offset, duration, scheduled date, automatic/custom state, completion, and nullable employee;
+- task types with name, optional default minutes, optional display colour from a small accessible palette, and active state;
+- ordered task-set items with task type, signed calendar-day offset relative to production, and optional duration override;
+- every applicable task set containing at least one production-day anchor at offset zero, while preparation items may use negative offsets;
+- one task set applying to several products and one product having several applicable task sets;
+- at most one default task set per product, with no requirement that a product have a default;
+- generated task snapshots for name, display colour, signed offset, duration, scheduled date, automatic/custom state, completion, and nullable employee;
 - holidays with one date and recurring flag;
 - workspace weekend-working preference;
 - same-workspace constraints and policies.
 
 ### Step 2: Implement schema and relationships
 
-The relative day belongs to `ProductionTaskSetItem`, not `ProductionTaskType` or the task-set header. Copy it to `ProductionTask` as a snapshot at generation time.
+The signed calendar-day offset belongs to `ProductionTaskSetItem`, not `ProductionTaskType` or the task-set header. Copy it and the task type's display colour to `ProductionTask` as snapshots at generation time. A negative offset represents preparation before the production date; a positive offset represents follow-up work.
 
 Employees are not users and have no authentication, payroll, shift, or permission fields.
 
-Add nullable `production_task_set_id` to productions and nullable `default_production_task_set_id` to recipes. Deleting/deactivating setup records must preserve generated production history.
+Add nullable `production_task_set_id` to productions and a workspace-safe task-set/product applicability pivot with an `is_default` flag. Migrate any existing singular recipe default into the pivot, then remove the singular recipe default as a second source of truth and enforce at most one default per product. Deleting/deactivating setup records must preserve generated production history.
 
-Keep setup writes behind small actions that enforce workspace ownership and `ProductionBenchAccess`. `SaveProductionTaskSet` normalizes ordering and forces the first item's offset to zero in one transaction.
+Keep setup writes behind small actions that enforce workspace ownership and `ProductionBenchAccess`. `SaveProductionTaskSet` normalizes ordering and requires at least one item at offset zero in one transaction. `SyncProductionTaskSetProducts` manages applicable products and the optional per-product default without allowing cross-workspace links.
 
 ### Step 3: Verify and commit
 
 ```bash
 php artisan test --compact tests/Feature/ProductionTaskSchemaTest.php
 vendor/bin/pint --dirty --format agent
-git add app/Models/Employee.php app/Models/ProductionTaskType.php app/Models/ProductionTaskSet.php app/Models/ProductionTaskSetItem.php app/Models/ProductionTask.php app/Models/ProductionHoliday.php app/Models/Workspace.php app/Models/Recipe.php app/Models/ProductionRun.php app/Policies/EmployeePolicy.php app/Policies/ProductionTaskTypePolicy.php app/Policies/ProductionTaskSetPolicy.php app/Policies/ProductionTaskPolicy.php app/Policies/ProductionHolidayPolicy.php app/Actions/Production/SaveEmployee.php app/Actions/Production/SaveProductionTaskType.php app/Actions/Production/SaveProductionTaskSet.php app/Actions/Production/SaveProductionHoliday.php app/Actions/Production/UpdateProductionWorkingCalendar.php database/factories/EmployeeFactory.php database/factories/ProductionTaskTypeFactory.php database/factories/ProductionTaskSetFactory.php database/factories/ProductionTaskSetItemFactory.php database/factories/ProductionTaskFactory.php database/factories/ProductionHolidayFactory.php database/migrations/*_create_employees_table.php database/migrations/*_create_production_task_types_table.php database/migrations/*_create_production_task_sets_table.php database/migrations/*_create_production_task_set_items_table.php database/migrations/*_create_production_tasks_table.php database/migrations/*_create_production_holidays_table.php database/migrations/*_add_production_planning_defaults.php tests/Feature/ProductionTaskSchemaTest.php
+git add app/Models/Employee.php app/Models/ProductionTaskType.php app/Models/ProductionTaskSet.php app/Models/ProductionTaskSetItem.php app/Models/ProductionTask.php app/Models/ProductionHoliday.php app/Models/Workspace.php app/Models/Recipe.php app/Models/ProductionRun.php app/Policies/EmployeePolicy.php app/Policies/ProductionTaskTypePolicy.php app/Policies/ProductionTaskSetPolicy.php app/Policies/ProductionTaskPolicy.php app/Policies/ProductionHolidayPolicy.php app/Actions/Production/SaveEmployee.php app/Actions/Production/SaveProductionTaskType.php app/Actions/Production/SaveProductionTaskSet.php app/Actions/Production/SyncProductionTaskSetProducts.php app/Actions/Production/SaveProductionHoliday.php app/Actions/Production/UpdateProductionWorkingCalendar.php database/factories/EmployeeFactory.php database/factories/ProductionTaskTypeFactory.php database/factories/ProductionTaskSetFactory.php database/factories/ProductionTaskSetItemFactory.php database/factories/ProductionTaskFactory.php database/factories/ProductionHolidayFactory.php database/migrations/*_create_employees_table.php database/migrations/*_create_production_task_types_table.php database/migrations/*_create_production_task_sets_table.php database/migrations/*_create_production_task_set_items_table.php database/migrations/*_create_production_task_set_recipe_table.php database/migrations/*_create_production_tasks_table.php database/migrations/*_create_production_holidays_table.php database/migrations/*_add_production_planning_defaults.php tests/Feature/ProductionTaskSchemaTest.php
 git commit -m "feat: add production task setup"
 ```
 
@@ -340,13 +343,16 @@ Stage only the newly created/explicitly modified files; do not stage unrelated m
 
 Prove:
 
-- the first task is always offset zero and exactly equals the chosen production date;
-- an explicit production date on a weekend or holiday is preserved with no automatic shift;
+- every applicable task set has at least one offset-zero production-day anchor;
+- preparation at `-1`, production at `0`, and curing at `+28` produce the expected relative dates;
+- calendar offsets are applied before non-working-day adjustment;
+- a negative offset landing on a configured non-working date moves backward, while a positive offset moves forward;
+- an explicit production date on a configured non-working day is rejected rather than silently shifted;
 - later automatic tasks landing on a configured non-working date move forward;
 - recurring holidays match month/day in later years;
-- changing production date moves the first task and all unfinished automatic later tasks;
-- changing the first task date changes production date and recalculates later automatic tasks;
-- the first task can never become independently custom-dated;
+- changing production date recalculates the production-day anchor, preparation tasks, and all unfinished automatic later tasks from their stored offsets;
+- the production-day anchor can never become independently custom-dated;
+- preparation tasks may precede the production date without changing it;
 - changing a later task marks it custom and later production-date changes do not move it;
 - reset reconnects a custom later task to its stored offset;
 - completed tasks never move;
@@ -356,9 +362,9 @@ Prove:
 
 ### Step 2: Implement the calendar and actions
 
-`ProductionWorkingCalendar` is deterministic and accepts a workspace and date. It exposes whether a date is working and the next working date. Keep date-only arithmetic in the workspace timezone.
+`ProductionWorkingCalendar` is deterministic and accepts a workspace and date. It exposes whether a date is working, the previous/next working date, and the scheduled date for a signed calendar offset. Keep date-only arithmetic in the workspace timezone.
 
-Generate task snapshots during scheduling. Rescheduling locks the production and tasks, applies the two-way first-task anchor, and recalculates only unfinished automatic later tasks.
+Generate task snapshots during scheduling. Rescheduling locks the production and tasks, keeps every offset-zero anchor exactly on the production date, and recalculates only unfinished automatic tasks using calendar arithmetic plus directional non-working-day adjustment. Snapshot task colour along with the other template values.
 
 ### Step 3: Verify and commit
 
@@ -389,7 +395,7 @@ git commit -m "feat: schedule production tasks"
 
 ### Step 1: Write failing Livewire tests
 
-Test workspace-isolated creation/edit/deactivation for employees, task types, task sets and ordered items, recurring holidays, weekend behavior, product defaults, and batch presets. Test server-side validation, accessible labels/errors, and read-only controls.
+Test workspace-isolated creation/edit/deactivation for employees, task types, task sets and ordered items, task-set applicability across several products, recurring holidays, weekend behavior, product defaults, and batch presets. Test the task colour selector and accessible labels/errors, server-side validation, and read-only controls.
 
 ### Step 2: Build the focused setup page
 
@@ -397,7 +403,7 @@ Keep reusable setup outside the routine production form. Use compact sections fo
 
 - batch sizes by product;
 - employees;
-- task types and task sets;
+- task types and task sets, including the product applicability/default assignment and colour swatches;
 - working calendar.
 
 Avoid a generic administration console. Provide clear empty states and examples such as `12 kg oils / 100 units`.
@@ -436,7 +442,8 @@ Cover the routine path:
 Test:
 
 - only products with an accessible published version are selectable;
-- selecting a product loads its default preset and task set when present;
+- selecting a product loads its default preset and only its applicable task sets, with the product default selected when present;
+- changing the product clears an incompatible task-set choice and leaves no task set selectable when none applies;
 - preset values remain editable;
 - no preset is required;
 - soap uses oil quantity and cosmetics use total formula quantity;
@@ -711,7 +718,7 @@ Do not install a Filament wrapper, jQuery calendar, or CDN asset.
 
 ### Step 2: Write failing server-side calendar tests
 
-Cover workspace-scoped event payloads, date ranges, production/task/completed filters, public detail URLs, event type/style metadata, and no mutation endpoint for drag/drop.
+Cover workspace-scoped event payloads, date ranges, production/task/completed filters, preparation tasks before the production date, task colour metadata, public detail URLs, event type/style metadata, and no mutation endpoint for drag/drop.
 
 ### Step 3: Implement Livewire/JavaScript integration
 
@@ -764,7 +771,8 @@ For several product lines, prove calculation of:
 - available, incoming, forecast, and shortage quantities;
 - indicative current material value in workspace currency;
 - missing-price warnings without failure;
-- optional total task duration;
+- optional total task duration, including preparation and follow-up tasks;
+- applicable task-set choices per product, with no task set remaining valid;
 - no database mutation.
 
 ### Step 2: Implement the pure simulation services
@@ -804,10 +812,11 @@ Prove:
 - simulation alone remains non-persistent;
 - confirmation uses the reviewed, individually editable production dates;
 - temporary batches-per-day affects proposals only;
-- weekends/holidays are skipped for automatic proposals but explicitly edited dates are respected;
+- calendar offsets are applied before directional weekend/holiday adjustment for generated tasks;
+- production dates must be working days when the workspace calendar marks them non-working;
 - one independent `Scheduled` production is created per whole batch;
 - every production receives the correct pinned version, requirements, and tasks;
-- the first task equals that production's date;
+- the production-day anchor equals that production's date while preparation may be earlier;
 - generation creates no reservation, wave, line, or capacity record;
 - a duplicate confirmation returns the same productions;
 - any invalid row rolls back all generated productions;
@@ -846,7 +855,7 @@ The integrated test and manual review fixture demonstrate:
 
 1. a product with a published ingredient formula and packaging;
 2. an optional `12 kg / 100 units` preset;
-3. a task set whose first task is production day and whose later tasks avoid non-working dates;
+3. a reusable task set applicable to several products, with preparation before production, a production-day anchor, and a `+28` calendar-day cure task;
 4. planning one production without reserving stock;
 5. planned demand changing Forecast but not Available;
 6. a second production generated through Flash;

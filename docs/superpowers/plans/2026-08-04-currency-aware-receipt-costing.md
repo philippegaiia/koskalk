@@ -4,7 +4,7 @@
 
 **Goal:** Make receipt and inventory costing understandable and safe when supplier prices, workspace costing currency, shipping, duties, VAT and later price corrections differ.
 
-**Architecture:** Keep supplier/PO/receipt amounts in their transaction currency. Convert into the workspace `default_currency` through a cached exchange-rate provider and persist the rate snapshot with the receipt/lot cost. Keep posted receipts immutable; represent later price, shipping, duty and non-recoverable-tax changes as immutable lot-cost adjustments. Production Runs will consume the resulting effective lot cost in the next phase.
+**Architecture:** Keep supplier/PO/receipt amounts in their transaction currency. Convert into the workspace `default_currency` through a cached exchange-rate provider and persist the rate snapshot with the receipt/lot cost. Keep posted receipts immutable; represent later price, shipping, duty and non-recoverable-tax changes as immutable lot-cost adjustments. Bench costing is intentionally locked to the workspace default currency; supplier-currency inputs are converted before they reach current-price projections. Production Runs will consume the resulting effective lot cost in the next phase.
 
 **Tech Stack:** Laravel 13, Eloquent migrations/models/actions, Livewire 4, Pest 4, Tailwind CSS 4, Laravel HTTP client.
 
@@ -87,6 +87,7 @@
 - [ ] Add tests proving Bench rows always receive the workspace costing currency and never a raw supplier-currency number.
 - [ ] Add tests proving recorded production snapshots retain their copied cost when current prices or lot adjustments change.
 - [ ] Update labels/help text to say “costing currency” and clarify that Workbench price edits update the workspace current price.
+- [ ] Keep the Workbench costing-currency control read-only and display the workspace default currency; changing this requires a separate design for alternate costing currencies and conversion semantics.
 - [ ] Keep production lot consumption out of this slice; preserve the existing `raw_material_lot_id` boundary for the next Production Run implementation.
 
 ### Task 6: Improve receipt-entry table readability

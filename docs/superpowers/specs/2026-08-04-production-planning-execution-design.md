@@ -100,21 +100,21 @@ A **task type** is a reusable kind of work. It contains:
 
 - name;
 - optional default duration in minutes;
-- optional display colour;
+- optional display colour selected from a small accessible palette;
 - active/inactive state.
 
 A **task set** is a named, ordered collection of task types. Each task-set item contains:
 
 - task type;
 - sort order;
-- number of days after production;
+- signed calendar-day offset relative to production;
 - optional duration override.
 
-The relative day belongs to the task-set item, not the task type, because the same kind of work may occur at a different delay in another process.
+The relative day belongs to the task-set item, not the task type, because the same kind of work may occur at a different delay in another process. The offset is calendar time: `-1` means the previous calendar day, `0` means production day, and `+28` means twenty-eight calendar days later. When the resulting task date is not a working day, preparation tasks move backward to the previous working day and follow-up tasks move forward to the next working day.
 
-The first item is the production-day anchor. Its relative day is always `0`, and its generated task date is always the production date. It is not shifted away from a configured weekend or holiday because the maker's explicit production date is respected.
+At least one task-set item must have offset `0`; this is the production-day anchor. The first chronological item may instead be a preparation task at `-1` or earlier. Its generated date is still derived from the production date, so adding preparation does not redefine the date on which the batch is made.
 
-A product may have one optional default task set. When the product is selected, that set is preselected but may be replaced or removed for the individual production.
+Task sets are reusable across products. A product may be linked to many applicable task sets, with at most one marked as its default. When the product is selected, the applicable task sets are offered and the default is preselected; the maker may choose another applicable set or no task set for the individual production.
 
 Checkpoint 3 uses one task-set representation only. It does not reproduce Cosmood's legacy dual template structures, task dependencies, bypass reasons, capacity flags, or production-line associations.
 
@@ -128,9 +128,9 @@ Workspace settings define whether weekends are treated as non-working days. Holi
 
 A recurring holiday matches the same month and day each year.
 
-The production date is an explicit user decision. A maker may choose a weekend or holiday; Koskalk shows a warning but does not move or reject the date.
+The production date is the date on which the batch is made. When weekends or holidays are configured as non-working, the production date must be a working day; Koskalk does not silently move an explicit production date. If weekends are configured as working days, no weekend adjustment is applied.
 
-Automatically generated task dates that land on a non-working day move forward to the next working day.
+Automatically generated task dates use calendar-day arithmetic first. A negative offset that lands on a non-working day moves backward to the nearest working day; a positive offset moves forward to the nearest working day. Offset `0` always equals the production date.
 
 ### Planning One Production
 
@@ -146,7 +146,7 @@ The maker enters:
 - optional task set;
 - optional notes.
 
-Selecting the product loads its latest accessible published formula version, formula lines, packaging, default preset, and default task set. The chosen published version is the immutable handoff used by the production.
+Selecting the product loads its latest accessible published formula version, formula lines, packaging, default preset, and applicable task sets with the product default preselected. The chosen published version is the immutable handoff used by the production.
 
 The form shows a compact read-only preview of:
 
@@ -161,18 +161,18 @@ The maker may plan despite shortages. Saving creates the production, its snapsho
 
 ### Generated Production Tasks
 
-Generated tasks snapshot the task name, relative offset, duration, and scheduled date used by that production. Later edits to a reusable task set do not silently rewrite existing productions.
+Generated tasks snapshot the task name, display colour, signed calendar-day offset, duration, and scheduled date used by that production. Later edits to a reusable task set do not silently rewrite existing productions.
 
-The first generated task and the production date are synchronized before production starts:
+The production-day anchor task and the production date are synchronized before production starts:
 
-- changing the production date moves the first task to exactly that date;
-- changing the first task date changes the production date;
-- either change recalculates the other unfinished automatically scheduled tasks;
-- the first task cannot hold an independent custom date.
+- changing the production date recalculates every unfinished automatically scheduled task from its stored offset;
+- the anchor task remains exactly on the production date;
+- the anchor task cannot hold an independent custom date;
+- preparation tasks may therefore appear before the production date without changing the production date itself.
 
 When the production date changes:
 
-- unfinished automatically scheduled tasks are recalculated from their stored offsets;
+- unfinished automatically scheduled tasks are recalculated from their stored calendar offsets and the working-calendar snap rule;
 - completed tasks are never moved;
 - tasks with a custom date are never moved.
 
@@ -357,10 +357,11 @@ The detailed implementation plan may adjust names to existing conventions, but t
 - one requirement has many stock reservations;
 - each stock reservation belongs to one internal stock lot;
 - one requirement has many actual lot consumptions after execution;
-- one Basic production ingredient or packaging line may have many immutable lot-cost snapshots;
+- one Production Bench completion line may have many immutable lot-cost snapshots;
 - a ProductionRun has many generated production tasks;
 - a production task may belong to one employee;
-- a product may have many optional batch-size presets and one optional default task set;
+- a product may have many optional batch-size presets and many applicable task sets, with at most one default;
+- a task set may apply to many products through a workspace-safe applicability relation;
 - a task set has many ordered task-set items;
 - a task-set item belongs to one task type;
 - a workspace has many holidays and employees.
@@ -394,8 +395,10 @@ Shortages may link the maker to purchasing, but they do not create orders automa
 - Flash generation is idempotent against duplicate submission.
 - Generated productions are independent records; there is no hidden wave aggregate.
 - Task-date recalculation never moves completed or custom-dated tasks.
-- The first generated task remains synchronized with the production date and is exempt from non-working-day shifting.
-- Automatic task dates skip configured non-working days; explicit production dates are respected.
+- The production-day anchor remains synchronized with the production date.
+- Each applicable task set contains at least one anchor item at offset `0`; the earliest chronological task may be preparation at a negative offset.
+- Task dates use calendar offsets and snap backward for negative offsets or forward for positive offsets when configured non-working days intervene.
+- Explicit production dates must be working days when the calendar says weekends/holidays are non-working.
 - Reservation confirmation is explicit, lot-specific, transactionally locked, and rejects over-reservation.
 - Multiple reservations may satisfy one requirement; duplicate requirement lines are not used for lot splitting.
 - Starting an unprepared production requires the same visible stock-preparation confirmation.
@@ -412,8 +415,9 @@ The review demonstrates:
 
 - a soap product with `12 kg / 100 units` and `26 kg / 288 units` presets;
 - a product with no preset and manual quantity entry;
-- a default task set generating dates around a weekend and recurring holiday;
-- the first task remaining exactly synchronized with the production date;
+- a reusable task set linked to several products, with one product default and another applicable alternative;
+- preparation at `-1`, production at `0`, and curing at `+28`, with dates around a weekend and recurring holiday;
+- the production-day anchor remaining exactly synchronized with the production date while preparation appears earlier;
 - moving the production date and automatically rescheduling unfinished tasks;
 - manually changing one task date and assigning an employee;
 - List, Month, Week, and Agenda production views;

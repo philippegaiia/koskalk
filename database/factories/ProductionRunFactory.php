@@ -49,6 +49,10 @@ class ProductionRunFactory extends Factory
                     'is_current' => false,
                 ])->id;
             },
+            'recipe_name_snapshot' => null,
+            'source_formula_version_number' => null,
+            'formula_context_snapshot' => null,
+            'formula_snapshot_completed_at' => null,
             'status' => ProductionRunStatus::Draft,
             'source' => ProductionRunSource::Direct,
             'planned_for' => today()->addWeek(),

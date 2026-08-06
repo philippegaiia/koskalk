@@ -3,6 +3,7 @@
 use App\MassUnit;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
@@ -14,6 +15,7 @@ use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
 use App\ProductionBasisKind;
 use App\ProductionBenchEntitlementStatus;
+use App\ProductionFormulaComponent;
 use App\ProductionRequirementKind;
 use App\ProductionRunSource;
 use App\ProductionRunStatus;
@@ -368,6 +370,138 @@ it('authorizes production records by workspace role and active entitlement', fun
     expect(Gate::forUser($owner)->allows('view', $production))->toBeTrue()
         ->and(Gate::forUser($owner)->allows('create', [ProductionRun::class, $workspace]))->toBeFalse()
         ->and(Gate::forUser($editor)->allows('update', $production))->toBeFalse();
+});
+
+it('creates the independent production formula snapshot schema', function (): void {
+    expect(Schema::hasColumns('production_runs', [
+        'recipe_name_snapshot',
+        'source_formula_version_number',
+        'formula_context_snapshot',
+        'formula_snapshot_completed_at',
+    ]))->toBeTrue()
+        ->and(Schema::hasColumns('production_formula_lines', [
+            'production_run_id',
+            'ingredient_id',
+            'recipe_item_id',
+            'component',
+            'subject_name_snapshot',
+            'phase_key_snapshot',
+            'phase_name_snapshot',
+            'basis_percentage_snapshot',
+            'planned_mass_grams',
+            'note_snapshot',
+            'sort_order',
+        ]))->toBeTrue()
+        ->and(Schema::hasColumn('production_requirements', 'note_snapshot'))->toBeTrue();
+});
+
+it('defines the complete formula component enum contract', function (): void {
+    expect(array_column(ProductionFormulaComponent::cases(), 'value'))->toBe([
+        'ingredient',
+        'naoh',
+        'koh',
+        'water',
+    ]);
+});
+
+it('exposes the formula line relationship in the production aggregate', function (): void {
+    $production = ProductionRun::factory()->create();
+
+    $line = ProductionFormulaLine::factory()->for($production, 'productionRun')->create([
+        'component' => ProductionFormulaComponent::Ingredient,
+        'basis_percentage_snapshot' => '25.000000000',
+        'planned_mass_grams' => '2500.000000000',
+    ]);
+
+    expect($production->formulaLines()->sole()->is($line))->toBeTrue()
+        ->and($production->displayRecipeName())->toBe($production->recipe->name);
+});
+
+it('keeps formula snapshots readable after recipe and version deletion', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $recipe = productionPlanningRecipe($workspace);
+    $version = productionPlanningVersion($recipe, $workspace);
+    $ingredient = Ingredient::factory()->create();
+
+    $production = ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($version, 'recipeVersion')
+        ->create([
+            'recipe_name_snapshot' => 'Historical Soap',
+            'source_formula_version_number' => 3,
+            'formula_context_snapshot' => ['lye_type' => 'naoh', 'superfat_percentage' => 5],
+            'formula_snapshot_completed_at' => now(),
+        ]);
+
+    $line = ProductionFormulaLine::factory()->for($production, 'productionRun')->create([
+        'component' => ProductionFormulaComponent::Ingredient,
+        'ingredient_id' => $ingredient->id,
+        'recipe_item_id' => null,
+        'subject_name_snapshot' => $ingredient->display_name,
+        'basis_percentage_snapshot' => '25.000000000',
+        'planned_mass_grams' => '2500.000000000',
+    ]);
+
+    Recipe::withoutGlobalScopes()->findOrFail($recipe->id)->delete();
+
+    $production->refresh();
+
+    expect($production->recipe_id)->toBeNull()
+        ->and($production->recipe_version_id)->toBeNull()
+        ->and($production->displayRecipeName())->toBe('Historical Soap')
+        ->and($production->formulaLines()->count())->toBe(1)
+        ->and($production->formulaLines()->sole()->is($line))->toBeTrue()
+        ->and($production->formulaLines()->sole()->ingredient_id)->toBe($ingredient->id)
+        ->and($production->formulaLines()->sole()->subject_name_snapshot)->toBe($ingredient->display_name);
+
+    $ingredient->delete();
+
+    expect($production->formulaLines()->sole()->ingredient_id)->toBeNull()
+        ->and($production->formulaLines()->sole()->subject_name_snapshot)->toBe($ingredient->display_name);
+});
+
+it('enforces formula line component and quantity integrity', function (): void {
+    $production = ProductionRun::factory()->create();
+
+    expect(fn (): ProductionFormulaLine => ProductionFormulaLine::factory()
+        ->for($production, 'productionRun')
+        ->create(['component' => 'scent']))->toThrow(ValueError::class);
+
+    expect(fn (): bool => DB::table('production_formula_lines')->insert([
+        'production_run_id' => $production->id,
+        'ingredient_id' => null,
+        'recipe_item_id' => null,
+        'component' => 'scent',
+        'subject_name_snapshot' => 'Scent',
+        'phase_key_snapshot' => 'main',
+        'phase_name_snapshot' => 'Main',
+        'basis_percentage_snapshot' => '1.000000000',
+        'planned_mass_grams' => '10.000000000',
+        'note_snapshot' => null,
+        'sort_order' => 1,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]))->toThrow(QueryException::class);
+
+    expect(fn (): ProductionFormulaLine => ProductionFormulaLine::factory()
+        ->for($production, 'productionRun')
+        ->create([
+            'component' => ProductionFormulaComponent::Naoh,
+            'basis_percentage_snapshot' => '0',
+        ]))->toThrow(QueryException::class);
+
+    expect(fn (): ProductionFormulaLine => ProductionFormulaLine::factory()
+        ->for($production, 'productionRun')
+        ->create([
+            'component' => ProductionFormulaComponent::Water,
+            'planned_mass_grams' => '-1',
+        ]))->toThrow(QueryException::class);
+
+    expect(fn (): ProductionFormulaLine => ProductionFormulaLine::factory()
+        ->for($production, 'productionRun')
+        ->create(['sort_order' => 0]))->toThrow(QueryException::class);
 });
 
 function productionPlanningRecipe(Workspace $workspace): Recipe

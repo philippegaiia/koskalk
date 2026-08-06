@@ -3,7 +3,9 @@
 use App\MassUnit;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\ProductionConsumption;
 use App\Models\ProductionFormulaLine;
+use App\Models\ProductionJournalEntry;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
@@ -15,6 +17,7 @@ use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
 use App\ProductionBasisKind;
 use App\ProductionBenchEntitlementStatus;
+use App\ProductionConsumptionKind;
 use App\ProductionFormulaComponent;
 use App\ProductionRequirementKind;
 use App\ProductionRunSource;
@@ -502,6 +505,108 @@ it('enforces formula line component and quantity integrity', function (): void {
     expect(fn (): ProductionFormulaLine => ProductionFormulaLine::factory()
         ->for($production, 'productionRun')
         ->create(['sort_order' => 0]))->toThrow(QueryException::class);
+});
+
+it('creates the production execution schema', function (): void {
+    expect(Schema::hasColumns('production_runs', [
+        'started_at',
+        'started_by_user_id',
+        'completed_at',
+        'completed_by_user_id',
+        'aborted_at',
+        'aborted_by_user_id',
+        'abort_reason',
+        'manufacture_date',
+        'actual_output_units',
+        'actual_output_mass_grams',
+        'cost_currency',
+        'actual_ingredient_total',
+        'actual_packaging_total',
+        'actual_total_cost',
+        'actual_cost_per_unit',
+    ]))->toBeTrue()
+        ->and(Schema::hasColumns('production_consumption', [
+            'production_run_id',
+            'production_requirement_id',
+            'stock_lot_id',
+            'kind',
+            'subject_name_snapshot',
+            'quantity',
+            'unit_snapshot',
+            'price_per_unit',
+            'line_cost',
+            'recorded_by_user_id',
+            'note',
+        ]))->toBeTrue()
+        ->and(Schema::hasColumns('production_journal_entries', [
+            'production_run_id',
+            'body',
+            'created_by_user_id',
+        ]))->toBeTrue()
+        ->and(Schema::hasColumn('stock_lots', 'production_run_id'))->toBeTrue();
+});
+
+it('defines the complete consumption kind enum contract', function (): void {
+    expect(array_column(ProductionConsumptionKind::cases(), 'value'))->toBe([
+        'ingredient',
+        'packaging',
+    ]);
+});
+
+it('exposes the execution relationships on the production aggregate', function (): void {
+    $production = ProductionRun::factory()->create();
+    $consumption = ProductionConsumption::factory()->for($production, 'productionRun')->create();
+    $entry = ProductionJournalEntry::factory()->for($production, 'productionRun')->create();
+
+    expect($production->consumption()->sole()->is($consumption))->toBeTrue()
+        ->and($production->journalEntries()->sole()->is($entry))->toBeTrue()
+        ->and($production->outputLot)->toBeNull();
+});
+
+it('enforces consumption subject, unit, and quantity integrity', function (): void {
+    $production = ProductionRun::factory()->create();
+
+    expect(fn (): ProductionConsumption => ProductionConsumption::factory()
+        ->for($production, 'productionRun')
+        ->create(['kind' => ProductionConsumptionKind::Ingredient, 'unit_snapshot' => 'unit']))
+        ->toThrow(QueryException::class);
+
+    expect(fn (): ProductionConsumption => ProductionConsumption::factory()
+        ->for($production, 'productionRun')
+        ->create(['kind' => ProductionConsumptionKind::Packaging, 'quantity' => '2.5']))
+        ->toThrow(QueryException::class);
+
+    expect(fn (): ProductionConsumption => ProductionConsumption::factory()
+        ->for($production, 'productionRun')
+        ->create(['quantity' => '0']))
+        ->toThrow(QueryException::class);
+
+    expect(fn (): ProductionConsumption => ProductionConsumption::factory()
+        ->for($production, 'productionRun')
+        ->create(['kind' => 'scent']))
+        ->toThrow(ValueError::class);
+});
+
+it('rejects a production with both output kinds recorded', function (): void {
+    $production = ProductionRun::factory()->create();
+
+    expect(fn (): bool => DB::table('production_runs')
+        ->where('id', $production->id)
+        ->update([
+            'actual_output_units' => 10,
+            'actual_output_mass_grams' => '1000.000000000',
+        ]))->toThrow(QueryException::class);
+});
+
+it('cascades consumption and journal rows when a production is deleted', function (): void {
+    $production = ProductionRun::factory()->create();
+    $consumption = ProductionConsumption::factory()->for($production, 'productionRun')->create();
+    $entry = ProductionJournalEntry::factory()->for($production, 'productionRun')->create();
+
+    $production->delete();
+
+    expect(ProductionConsumption::query()->find($consumption->id))->toBeNull()
+        ->and(ProductionJournalEntry::query()->find($entry->id))->toBeNull();
 });
 
 function productionPlanningRecipe(Workspace $workspace): Recipe

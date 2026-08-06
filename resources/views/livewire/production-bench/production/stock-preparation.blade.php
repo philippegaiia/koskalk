@@ -34,7 +34,6 @@
                     <div class="border-b border-[var(--color-line)] bg-[var(--color-panel-muted)] p-5 sm:p-6">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
-                                <p class="font-mono text-xs text-[var(--color-ink-soft)]">{{ $production->public_id }}</p>
                                 <h2 id="prepare-production-{{ $production->id }}" class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</h2>
                             </div>
                             <div class="text-left text-sm sm:text-right">

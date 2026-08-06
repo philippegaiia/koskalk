@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'workspace_id',
@@ -39,6 +40,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'batch_number_serial',
     'batch_number_assigned_at',
     'batch_number_assigned_by_user_id',
+    'started_at',
+    'started_by_user_id',
+    'completed_at',
+    'completed_by_user_id',
+    'aborted_at',
+    'aborted_by_user_id',
+    'abort_reason',
+    'manufacture_date',
+    'actual_output_units',
+    'actual_output_mass_grams',
+    'cost_currency',
+    'actual_ingredient_total',
+    'actual_packaging_total',
+    'actual_total_cost',
+    'actual_cost_per_unit',
     'cancelled_at',
     'cancelled_by_user_id',
     'cancellation_reason',
@@ -123,6 +139,24 @@ class ProductionRun extends Model
             ->orderBy('id');
     }
 
+    public function consumption(): HasMany
+    {
+        return $this->hasMany(ProductionConsumption::class)
+            ->orderBy('id');
+    }
+
+    public function journalEntries(): HasMany
+    {
+        return $this->hasMany(ProductionJournalEntry::class)
+            ->orderBy('created_at')
+            ->orderBy('id');
+    }
+
+    public function outputLot(): HasOne
+    {
+        return $this->hasOne(StockLot::class, 'production_run_id');
+    }
+
     protected function casts(): array
     {
         return [
@@ -139,6 +173,16 @@ class ProductionRun extends Model
             'formula_snapshot_completed_at' => 'datetime',
             'batch_number_serial' => 'integer',
             'batch_number_assigned_at' => 'datetime',
+            'started_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'aborted_at' => 'datetime',
+            'manufacture_date' => 'date',
+            'actual_output_units' => 'integer',
+            'actual_output_mass_grams' => 'decimal:9',
+            'actual_ingredient_total' => 'decimal:9',
+            'actual_packaging_total' => 'decimal:9',
+            'actual_total_cost' => 'decimal:9',
+            'actual_cost_per_unit' => 'decimal:9',
             'cancelled_at' => 'datetime',
         ];
     }

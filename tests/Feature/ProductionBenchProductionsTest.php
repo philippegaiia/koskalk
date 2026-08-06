@@ -50,7 +50,7 @@ it('lists productions with workspace filters and links to their details', functi
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
         ->assertSee('Olive soap')
         ->assertSee('Lavender soap')
-        ->assertSee($fixture['production']->public_id)
+        ->assertSee($fixture['production']->planning_batch_number)
         ->set('search', 'Lavender')
         ->assertSee('Lavender soap')
         ->assertDontSee('Olive soap')
@@ -308,6 +308,19 @@ it('filters the production list by recipe public id from a product link', functi
         ->set('recipeFilter', $fixture['recipe']->public_id)
         ->assertSee('Olive soap')
         ->assertDontSee('Lavender soap');
+});
+
+it('keeps the public id only inside production URLs', function (): void {
+    $fixture = productionListFixture();
+    $publicId = $fixture['production']->public_id;
+
+    $listHtml = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)->html();
+    $detailHtml = Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => (string) $fixture['production']->id])->html();
+
+    foreach ([$listHtml, $detailHtml] as $html) {
+        expect(preg_replace('/href="[^"]*"/', '', $html))->not->toContain($publicId)
+            ->and($html)->toContain($publicId);
+    }
 });
 
 /**

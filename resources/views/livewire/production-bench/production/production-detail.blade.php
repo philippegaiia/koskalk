@@ -16,7 +16,6 @@
             <a href="{{ route('production-bench.production.index') }}" wire:navigate class="text-sm font-medium text-[var(--color-accent-strong)] hover:underline">← {{ __('production_bench.production.back_to_list') }}</a>
             <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1">
                 <p class="sk-eyebrow">{{ $production->displayIdentifier() }}</p>
-                <p class="font-mono text-xs text-[var(--color-ink-soft)]">{{ $production->public_id }}</p>
             </div>
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</h1>
             <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.detail_title') }}</p>

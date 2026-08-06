@@ -64,7 +64,6 @@
                                     <span class="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-accent-strong)]">{{ $production->status->label() }}</span>
                                 </div>
                                 <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                                    <span class="font-mono text-[var(--color-ink-soft)]">{{ $production->public_id }}</span>
                                     <span class="text-[var(--color-ink-soft)]"><span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.planning_reference') }}:</span> <span class="font-mono">{{ $production->planning_batch_number }}</span></span>
                                     @if ($production->batch_number)
                                         <span class="text-[var(--color-ink-soft)]"><span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number') }}:</span> <span class="font-mono font-semibold text-[var(--color-ink-strong)]">{{ $production->batch_number }}</span></span>

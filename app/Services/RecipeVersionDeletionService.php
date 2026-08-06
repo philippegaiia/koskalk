@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Support\RichContentAttachmentPaths;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -34,7 +35,13 @@ class RecipeVersionDeletionService
             $wasPublished = ! $wasCurrent;
             $candidatePaths = RichContentAttachmentPaths::extract($lockedVersion->manufacturing_instructions);
 
-            if ($lockedVersion->productionRuns()->whereNull('formula_snapshot_completed_at')->exists()) {
+            if ($lockedVersion->productionRuns()
+                ->where(function (Builder $query): void {
+                    $query
+                        ->whereNull('formula_snapshot_completed_at')
+                        ->orWhereDoesntHave('formulaLines');
+                })
+                ->exists()) {
                 throw ValidationException::withMessages([
                     'version' => 'This formula version is still needed by an incomplete production snapshot.',
                 ]);
@@ -66,7 +73,14 @@ class RecipeVersionDeletionService
             $versionsToDelete = RecipeVersion::withoutGlobalScopes()
                 ->where('recipe_id', $lockedRecipe->id)
                 ->where('is_current', false)
-                ->whereDoesntHave('productionRuns', fn ($query) => $query->whereNull('formula_snapshot_completed_at'))
+                ->whereDoesntHave('productionRuns', function (Builder $query): void {
+                    $query
+                        ->where(function (Builder $query): void {
+                            $query
+                                ->whereNull('formula_snapshot_completed_at')
+                                ->orWhereDoesntHave('formulaLines');
+                        });
+                })
                 ->orderByDesc('version_number')
                 ->lockForUpdate()
                 ->get()

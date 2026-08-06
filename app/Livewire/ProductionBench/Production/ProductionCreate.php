@@ -168,6 +168,7 @@ class ProductionCreate extends Component
             'isReadOnly' => $access->isReadOnly($workspace),
             'recipes' => Recipe::query()
                 ->where('workspace_id', $workspace->id)
+                ->whereNull('archived_at')
                 ->whereHas('publishedVersions')
                 ->with('productFamily')
                 ->orderBy('name')
@@ -204,6 +205,7 @@ class ProductionCreate extends Component
 
         return Recipe::withoutGlobalScopes()
             ->where('workspace_id', $this->workspace()->id)
+            ->whereNull('archived_at')
             ->whereHas('publishedVersions')
             ->with('productFamily', 'productionTaskSets', 'productionBatchPresets')
             ->find((int) $this->recipeId);

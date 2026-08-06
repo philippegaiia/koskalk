@@ -216,6 +216,7 @@ class FlashProductionSimulator
         if (! array_key_exists($recipeId, $this->recipesById)) {
             $this->recipesById[$recipeId] = Recipe::withoutGlobalScopes()
                 ->where('workspace_id', $workspace->id)
+                ->whereNull('archived_at')
                 ->with('productFamily')
                 ->find($recipeId);
         }

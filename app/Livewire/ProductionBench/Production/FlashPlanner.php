@@ -150,6 +150,7 @@ class FlashPlanner extends Component
             'isReadOnly' => $access->isReadOnly($workspace),
             'recipes' => Recipe::query()
                 ->where('workspace_id', $workspace->id)
+                ->whereNull('archived_at')
                 ->whereHas('publishedVersions')
                 ->orderBy('name')
                 ->get(),
@@ -194,6 +195,7 @@ class FlashPlanner extends Component
 
         $recipe = Recipe::withoutGlobalScopes()
             ->where('workspace_id', $this->workspace()->id)
+            ->whereNull('archived_at')
             ->with([
                 'productionTaskSets' => fn ($query) => $query->where('is_active', true),
                 'productionBatchPresets' => fn ($query) => $query->where('is_active', true),

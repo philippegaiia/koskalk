@@ -57,6 +57,7 @@ class SyncProductionBatchPresetProducts
             $recipeIds = collect($normalizedAssignments)->pluck('recipe_id')->all();
             $recipes = Recipe::withoutGlobalScopes()
                 ->where('workspace_id', $lockedWorkspace->id)
+                ->whereNull('archived_at')
                 ->whereIn('id', $recipeIds)
                 ->lockForUpdate()
                 ->get();

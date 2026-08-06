@@ -33,8 +33,15 @@ class BackfillProductionFormulaSnapshot
                 return true;
             }
 
-            $recipe = Recipe::withoutGlobalScopes()->find($lockedProduction->recipe_id);
-            $version = RecipeVersion::withoutGlobalScopes()->find($lockedProduction->recipe_version_id);
+            $recipe = Recipe::withoutGlobalScopes()
+                ->whereKey($lockedProduction->recipe_id)
+                ->where('workspace_id', $lockedProduction->workspace_id)
+                ->first();
+            $version = RecipeVersion::withoutGlobalScopes()
+                ->whereKey($lockedProduction->recipe_version_id)
+                ->where('recipe_id', $lockedProduction->recipe_id)
+                ->where('workspace_id', $lockedProduction->workspace_id)
+                ->first();
 
             if (! $recipe instanceof Recipe || ! $version instanceof RecipeVersion) {
                 return false;
@@ -74,6 +81,7 @@ class BackfillProductionFormulaSnapshot
                 'formula_context_snapshot' => $snapshot['context'],
                 'formula_snapshot_completed_at' => now(),
             ]);
+            $lockedProduction->formulaLines()->delete();
             $lockedProduction->formulaLines()->createMany($snapshot['lines']->all());
 
             return true;

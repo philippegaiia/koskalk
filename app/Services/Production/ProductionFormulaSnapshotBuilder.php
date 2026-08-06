@@ -120,22 +120,35 @@ class ProductionFormulaSnapshotBuilder
         }
 
         $selected = $lye['selected'] ?? [];
-        $requiredLyeKeys = match ($draft['lyeType'] ?? 'naoh') {
-            'koh' => ['koh_to_weigh'],
-            'dual' => ['naoh_weight', 'koh_to_weigh'],
-            default => ['naoh_weight'],
+        $lyeType = $draft['lyeType'] ?? 'naoh';
+        $naohWeight = (float) ($selected['naoh_weight'] ?? 0);
+        $kohWeight = (float) ($selected['koh_to_weigh'] ?? 0);
+        $waterWeight = (float) ($lye['water']['weight'] ?? 0);
+        $dualKohPercentage = (float) ($selected['dual_lye_koh_percentage'] ?? $draft['dualKohPercentage'] ?? 40);
+        $hasValidLye = match ($lyeType) {
+            'koh' => $kohWeight > 0,
+            'dual' => $dualKohPercentage > 0 && $dualKohPercentage < 100
+                ? $naohWeight > 0 && $kohWeight > 0
+                : $naohWeight > 0 || $kohWeight > 0,
+            default => $naohWeight > 0,
         };
 
-        if (! collect($requiredLyeKeys)->contains(fn (string $key): bool => (float) ($selected[$key] ?? 0) > 0)) {
+        if (! $hasValidLye) {
             throw ValidationException::withMessages([
                 'recipe' => 'The soap formula calculation produced no measurable lye for this production basis.',
+            ]);
+        }
+
+        if ($waterWeight <= 0) {
+            throw ValidationException::withMessages([
+                'recipe' => 'The soap formula calculation produced no measurable water for this production basis.',
             ]);
         }
 
         $candidates = [
             ['component' => ProductionFormulaComponent::Naoh, 'weight' => $selected['naoh_weight'] ?? 0],
             ['component' => ProductionFormulaComponent::Koh, 'weight' => $selected['koh_to_weigh'] ?? 0],
-            ['component' => ProductionFormulaComponent::Water, 'weight' => $lye['water']['weight'] ?? 0],
+            ['component' => ProductionFormulaComponent::Water, 'weight' => $waterWeight],
         ];
 
         $unit = $draft['oilUnit'] ?? 'g';

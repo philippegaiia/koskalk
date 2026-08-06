@@ -131,14 +131,14 @@ class TaskIndex extends Component
         $searchOperator = ProductionTask::query()->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
         $query = ProductionTask::query()
             ->where('workspace_id', $workspace->id)
-            ->with(['productionRun.recipe', 'department', 'employee'])
+            ->with(['productionRun', 'department', 'employee'])
             ->when($this->search !== '', function (Builder $query) use ($searchOperator): void {
                 $search = trim($this->search);
                 $query->where(function (Builder $query) use ($search, $searchOperator): void {
                     $query->where('name_snapshot', $searchOperator, '%'.$search.'%')
                         ->orWhereHas('productionRun', function (Builder $query) use ($search, $searchOperator): void {
                             $query->where('public_id', $searchOperator, '%'.$search.'%')
-                                ->orWhereHas('recipe', fn (Builder $query) => $query->where('name', $searchOperator, '%'.$search.'%'));
+                                ->orWhere('recipe_name_snapshot', $searchOperator, '%'.$search.'%');
                         });
                 });
             })

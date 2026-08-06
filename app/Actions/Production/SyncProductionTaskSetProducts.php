@@ -73,6 +73,7 @@ class SyncProductionTaskSetProducts
 
             $recipes = Recipe::withoutGlobalScopes()
                 ->where('workspace_id', $lockedWorkspace->id)
+                ->whereNull('archived_at')
                 ->whereIn('id', $recipeIds)
                 ->lockForUpdate()
                 ->get();

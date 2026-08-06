@@ -136,6 +136,30 @@ it('blocks permanent deletion while any related production snapshot is incomplet
     expect(Recipe::withoutGlobalScopes()->find($recipe->id))->not->toBeNull();
 });
 
+it('blocks permanent deletion when the completion marker has no formula lines', function (): void {
+    [$user, $recipe, , $publishedVersion] = createRecipeWithDraftAndPublishedVersion();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($publishedVersion, 'recipeVersion')
+        ->create([
+            'recipe_name_snapshot' => $recipe->name,
+            'formula_snapshot_completed_at' => now(),
+        ]);
+    $recipe->update(['archived_at' => now()]);
+
+    actingAs($user)
+        ->delete(route('recipes.destroy', $recipe), [
+            'confirm_name' => $recipe->name,
+        ])
+        ->assertRedirect(route('recipes.index'))
+        ->assertSessionHas('error', __('products.status.delete_blocked_incomplete_snapshot'));
+
+    expect(Recipe::withoutGlobalScopes()->find($recipe->id))->not->toBeNull();
+});
+
 it('permanently deletes a fully snapshotted archived product and keeps production history readable', function (): void {
     [$user, $recipe, , $publishedVersion] = createRecipeWithDraftAndPublishedVersion();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
@@ -269,6 +293,28 @@ it('shows the standard version deleted message when other published versions rem
                 ->where('is_current', false)
                 ->count()
         )->toBe(1);
+});
+
+it('retains a version when a production snapshot is marked complete without formula lines', function (): void {
+    [$user, $recipe, , $publishedVersion] = createRecipeWithDraftAndPublishedVersion();
+    $workspace = Workspace::withoutGlobalScopes()->findOrFail($recipe->workspace_id);
+
+    ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($publishedVersion, 'recipeVersion')
+        ->create([
+            'formula_snapshot_completed_at' => now(),
+        ]);
+
+    actingAs($user)
+        ->delete(route('recipes.versions.destroy', ['recipe' => $recipe, 'version' => $publishedVersion]), [
+            'confirm_name' => $publishedVersion->name,
+        ])
+        ->assertRedirect(route('recipes.index'))
+        ->assertSessionHas('error', 'This formula version is still needed by an incomplete production snapshot.');
+
+    expect(RecipeVersion::withoutGlobalScopes()->find($publishedVersion->id))->not->toBeNull();
 });
 
 it('rejects version deletion when the version belongs to a different recipe', function (): void {

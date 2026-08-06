@@ -90,6 +90,21 @@ it('keeps task search and assignment options inside the active workspace', funct
         ->and($foreign->workspace_id)->toBe($other['workspace']->id);
 });
 
+it('searches retained tasks by their production name snapshot', function (): void {
+    $fixture = productionTaskIndexFixture();
+    $task = productionTaskIndexTask($fixture, 'Historical pour', today()->toDateString());
+    $task->productionRun->forceFill([
+        'recipe_id' => null,
+        'recipe_name_snapshot' => 'Archived soap',
+    ])->save();
+
+    Livewire::actingAs($fixture['owner'])->test(TaskIndex::class)
+        ->set('scope', 'all')
+        ->set('status', 'all')
+        ->set('search', 'Archived soap')
+        ->assertSee('Historical pour');
+});
+
 /** @return array{owner: User, workspace: Workspace} */
 function productionTaskIndexFixture(): array
 {

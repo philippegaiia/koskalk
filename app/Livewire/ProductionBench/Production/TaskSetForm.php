@@ -64,11 +64,13 @@ class TaskSetForm extends Component
             ])
             ->values()
             ->all();
-        $this->selectedRecipeIds = $loadedTaskSet->recipes
+        $activeRecipes = $loadedTaskSet->recipes
+            ->filter(fn (Recipe $recipe): bool => $recipe->archived_at === null);
+        $this->selectedRecipeIds = $activeRecipes
             ->pluck('id')
             ->map(fn (int $id): string => (string) $id)
             ->all();
-        $this->defaultRecipeIds = $loadedTaskSet->recipes
+        $this->defaultRecipeIds = $activeRecipes
             ->filter(fn (Recipe $recipe): bool => (bool) $recipe->pivot->is_default)
             ->pluck('id')
             ->map(fn (int $id): string => (string) $id)
@@ -244,6 +246,7 @@ class TaskSetForm extends Component
             ->get();
         $recipes = Recipe::query()
             ->where('workspace_id', $workspace->id)
+            ->whereNull('archived_at')
             ->whereHas('publishedVersions')
             ->when($search !== '', fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%']))
             ->orderBy('name')

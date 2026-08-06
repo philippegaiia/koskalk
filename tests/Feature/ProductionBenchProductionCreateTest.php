@@ -46,6 +46,14 @@ it('shows only published products and loads an optional default preset and task 
         ->assertSet('taskSetId', (string) $fixture['taskSet']->id);
 });
 
+it('hides archived products from the production selector', function (): void {
+    $fixture = productionCreateFixture();
+    $fixture['recipe']->update(['archived_at' => now()]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->assertDontSee('Workshop soap');
+});
+
 it('loads the only applicable task set when the product has no explicit default', function (): void {
     $fixture = productionCreateFixture();
     $fixture['recipe']->update(['name' => 'New Soap Formula §§']);

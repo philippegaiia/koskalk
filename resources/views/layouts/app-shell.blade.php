@@ -135,7 +135,10 @@
             </div>
         </div>
 
-        <x-app-notification :message="session('status')" />
+        <x-app-notification
+            :message="session('error') ?? session('status')"
+            :type="session('error') ? 'error' : 'success'"
+        />
 
         @filamentScripts
     </body>

@@ -67,6 +67,12 @@ class SaveProductionTaskSet
                         'recipe' => 'The recipe must belong to the production workspace.',
                     ]);
                 }
+
+                if ($lockedRecipe->archived_at !== null) {
+                    throw ValidationException::withMessages([
+                        'recipe' => 'Archived products cannot be assigned to a task set.',
+                    ]);
+                }
             }
 
             $current = null;

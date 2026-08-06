@@ -619,7 +619,7 @@ class SettingsIndex extends Component
             'departments' => Department::query()->where('workspace_id', $workspace->id)->withCount(['employees', 'productionTaskTypes', 'productionTasks'])->orderByDesc('is_active')->orderBy('name')->get(),
             'taskTypes' => ProductionTaskType::query()->where('workspace_id', $workspace->id)->with('department')->orderBy('name')->get(),
             'taskSets' => ProductionTaskSet::query()->where('workspace_id', $workspace->id)->with(['items.taskType', 'recipes'])->orderBy('name')->get(),
-            'recipes' => Recipe::query()->where('workspace_id', $workspace->id)->whereHas('publishedVersions')->orderBy('name')->get(),
+            'recipes' => Recipe::query()->where('workspace_id', $workspace->id)->whereNull('archived_at')->whereHas('publishedVersions')->orderBy('name')->get(),
             'presets' => ProductionBatchPreset::query()->where('workspace_id', $workspace->id)->with('recipes')->orderBy('name')->get(),
             'holidays' => ProductionHoliday::query()->where('workspace_id', $workspace->id)->orderBy('date')->get(),
             'massUnits' => MassUnit::cases(),

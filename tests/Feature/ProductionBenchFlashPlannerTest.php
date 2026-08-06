@@ -59,6 +59,14 @@ it('keeps custom quantity fields available when a product has no saved batch siz
         ->assertSee(__('production_bench.flash.batch_quantity'));
 });
 
+it('hides archived products from the flash planner selector', function (): void {
+    $fixture = flashPlannerFixture();
+    $fixture['recipe']->update(['archived_at' => now()]);
+
+    Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class)
+        ->assertDontSeeHtml('<option value="'.$fixture['recipe']->id.'">Flash product</option>');
+});
+
 it('uses a saved batch size as a fixed preset while keeping an explicit custom option', function (): void {
     $fixture = flashPlannerFixture();
 

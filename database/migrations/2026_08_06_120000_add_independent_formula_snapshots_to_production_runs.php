@@ -120,6 +120,10 @@ return new class extends Migration
         Schema::table('production_requirements', function (Blueprint $table): void {
             $table->dropColumn('note_snapshot');
         });
+
+        if (DB::getDriverName() === 'sqlite') {
+            $this->restoreProductionRequirementIntegrityTriggers();
+        }
     }
 
     private function createFormulaLineValidationTriggers(): void
@@ -301,6 +305,76 @@ return new class extends Migration
             )
             BEGIN
                 SELECT RAISE(ABORT, 'production run values are invalid');
+            END
+        SQL);
+    }
+
+    /**
+     * Recreate the production_requirements triggers lost when SQLite rebuilds
+     * the table while removing note_snapshot during rollback.
+     */
+    private function restoreProductionRequirementIntegrityTriggers(): void
+    {
+        DB::statement(<<<'SQL'
+            CREATE TRIGGER production_requirements_exact_subject_insert
+            BEFORE INSERT ON production_requirements
+            WHEN NOT (
+                (
+                    NEW.kind = 'ingredient'
+                    AND NEW.ingredient_id IS NOT NULL
+                    AND NEW.packaging_item_id IS NULL
+                    AND NEW.required_mass_grams IS NOT NULL
+                    AND NEW.required_mass_grams > 0
+                    AND NEW.required_units IS NULL
+                    AND NEW.recipe_version_packaging_item_id IS NULL
+                    AND NEW.components_per_unit_snapshot IS NULL
+                )
+                OR
+                (
+                    NEW.kind = 'packaging'
+                    AND NEW.ingredient_id IS NULL
+                    AND NEW.packaging_item_id IS NOT NULL
+                    AND NEW.required_mass_grams IS NULL
+                    AND NEW.required_units IS NOT NULL
+                    AND NEW.required_units > 0
+                    AND NEW.required_units = CAST(NEW.required_units AS INTEGER)
+                    AND NEW.recipe_item_id IS NULL
+                    AND NEW.percentage_snapshot IS NULL
+                )
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'production requirement requires one correctly typed subject and quantity');
+            END
+        SQL);
+        DB::statement(<<<'SQL'
+            CREATE TRIGGER production_requirements_exact_subject_update
+            BEFORE UPDATE OF kind, ingredient_id, packaging_item_id, required_mass_grams, required_units, recipe_item_id, recipe_version_packaging_item_id, percentage_snapshot, components_per_unit_snapshot ON production_requirements
+            WHEN NOT (
+                (
+                    NEW.kind = 'ingredient'
+                    AND NEW.ingredient_id IS NOT NULL
+                    AND NEW.packaging_item_id IS NULL
+                    AND NEW.required_mass_grams IS NOT NULL
+                    AND NEW.required_mass_grams > 0
+                    AND NEW.required_units IS NULL
+                    AND NEW.recipe_version_packaging_item_id IS NULL
+                    AND NEW.components_per_unit_snapshot IS NULL
+                )
+                OR
+                (
+                    NEW.kind = 'packaging'
+                    AND NEW.ingredient_id IS NULL
+                    AND NEW.packaging_item_id IS NOT NULL
+                    AND NEW.required_mass_grams IS NULL
+                    AND NEW.required_units IS NOT NULL
+                    AND NEW.required_units > 0
+                    AND NEW.required_units = CAST(NEW.required_units AS INTEGER)
+                    AND NEW.recipe_item_id IS NULL
+                    AND NEW.percentage_snapshot IS NULL
+                )
+            )
+            BEGIN
+                SELECT RAISE(ABORT, 'production requirement requires one correctly typed subject and quantity');
             END
         SQL);
     }

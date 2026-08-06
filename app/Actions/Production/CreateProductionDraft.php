@@ -110,6 +110,12 @@ class CreateProductionDraft
                 ]);
             }
 
+            if ($lockedRecipe->archived_at !== null) {
+                throw ValidationException::withMessages([
+                    'recipe' => 'Archived products cannot be planned.',
+                ]);
+            }
+
             if ($taskSet instanceof ProductionTaskSet
                 && (int) $taskSet->workspace_id !== (int) $lockedWorkspace->id) {
                 throw ValidationException::withMessages([

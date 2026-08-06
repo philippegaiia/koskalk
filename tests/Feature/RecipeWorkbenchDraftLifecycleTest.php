@@ -6,6 +6,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\Plan;
 use App\Models\ProductFamily;
+use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -591,7 +592,7 @@ it('prunes published versions once every referenced production snapshot is compl
         ->firstOrFail();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
 
-    ProductionRun::factory()
+    $production = ProductionRun::factory()
         ->for($workspace)
         ->for($recipe)
         ->for($referencedVersion, 'recipeVersion')
@@ -599,6 +600,7 @@ it('prunes published versions once every referenced production snapshot is compl
             'recipe_name_snapshot' => $recipe->name,
             'formula_snapshot_completed_at' => now(),
         ]);
+    ProductionFormulaLine::factory()->for($production, 'productionRun')->create();
 
     $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula B']), $recipe);
 

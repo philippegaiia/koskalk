@@ -21,7 +21,8 @@ it('mounts the shared notification once in the authenticated app shell', functio
 
     expect($layout)
         ->toContain('<x-app-notification')
-        ->toContain(":message=\"session('status')\"");
+        ->toContain(":message=\"session('error') ?? session('status')\"")
+        ->toContain(":type=\"session('error') ? 'error' : 'success'\"");
 });
 
 it('does not render transient status messages inline in dashboard forms', function (string $view) {

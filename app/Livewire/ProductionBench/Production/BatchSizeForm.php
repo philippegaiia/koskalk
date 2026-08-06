@@ -69,8 +69,13 @@ class BatchSizeForm extends Component
         $this->basisInputUnit = $loadedPreset->basis_input_unit->value;
         $this->expectedUnits = (string) $loadedPreset->expected_units;
         $this->isActive = $loadedPreset->is_active;
-        $this->selectedRecipeIds = $loadedPreset->recipes->pluck('id')->map(fn (int $id): string => (string) $id)->all();
-        $this->defaultRecipeIds = $loadedPreset->recipes
+        $activeRecipes = $loadedPreset->recipes
+            ->filter(fn (Recipe $recipe): bool => $recipe->archived_at === null);
+        $this->selectedRecipeIds = $activeRecipes
+            ->pluck('id')
+            ->map(fn (int $id): string => (string) $id)
+            ->all();
+        $this->defaultRecipeIds = $activeRecipes
             ->filter(fn (Recipe $recipe): bool => (bool) $recipe->pivot->is_default)
             ->pluck('id')
             ->map(fn (int $id): string => (string) $id)
@@ -212,6 +217,7 @@ class BatchSizeForm extends Component
 
         $recipes = Recipe::query()
             ->where('workspace_id', $workspace->id)
+            ->whereNull('archived_at')
             ->whereHas('publishedVersions')
             ->when($search !== '', fn ($query) => $query->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%']))
             ->orderBy('name')

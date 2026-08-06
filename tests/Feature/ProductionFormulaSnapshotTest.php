@@ -82,6 +82,17 @@ it('builds dual-lye soap snapshots with NaOH, KOH, and water lines', function ()
         ->and($snapshot['context']['lye_type'])->toBe('dual');
 });
 
+it('rejects a soap snapshot when recalculation produces no water', function (): void {
+    $fixture = productionFormulaSnapshotFixture('naoh');
+    addSoapFormula($fixture);
+    $fixture['version']->forceFill([
+        'water_settings' => ['mode' => 'percent_of_oils', 'value' => 0],
+    ])->save();
+
+    expect(fn (): array => buildFormulaSnapshot($fixture, '14000.000000000', 100))
+        ->toThrow(ValidationException::class);
+});
+
 it('copies every cosmetic phase ingredient without calculated lye or water', function (): void {
     $fixture = productionFormulaSnapshotFixture('naoh', calculationBasis: 'total_formula');
     $ingredient = Ingredient::factory()->create(['display_name' => 'Emulsifier']);

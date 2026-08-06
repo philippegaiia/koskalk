@@ -42,6 +42,23 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
+it('rejects archived products before creating a production plan', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $fixture['recipe']->update(['archived_at' => now()]);
+
+    expect(fn (): ProductionRun => app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '12',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'archived-product-plan',
+    ))->toThrow(ValidationException::class);
+
+    expect($fixture['workspace']->productionRuns()->count())->toBe(0);
+});
+
 it('scales soap ingredient requirements from the initial oil mass and packaging from expected units', function (): void {
     $fixture = productionPlanningTask2Fixture();
     $oil = Ingredient::factory()->create(['display_name' => 'Olive oil']);

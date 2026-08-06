@@ -19,10 +19,12 @@ use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbookExporter;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RecipeController extends Controller
@@ -448,7 +450,15 @@ class RecipeController extends Controller
                     ->with('error', __('products.status.archive_required'));
             }
 
-            if ($recipe->productionRuns()->whereNull('formula_snapshot_completed_at')->exists()) {
+            $hasIncompleteSnapshot = $recipe->productionRuns()
+                ->where(function (Builder $query): void {
+                    $query
+                        ->whereNull('formula_snapshot_completed_at')
+                        ->orWhereDoesntHave('formulaLines');
+                })
+                ->exists();
+
+            if ($hasIncompleteSnapshot) {
                 return redirect()
                     ->route('recipes.index')
                     ->with('error', __('products.status.delete_blocked_incomplete_snapshot'));

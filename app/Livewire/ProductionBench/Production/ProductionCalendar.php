@@ -124,6 +124,7 @@ class ProductionCalendar extends Component
                 ->whereDate('scheduled_for', '>=', $this->rangeStart)
                 ->whereDate('scheduled_for', '<', $this->rangeEnd)
                 ->when(! $this->showCompleted, fn (Builder $query): Builder => $query->whereNull('completed_at'))
+                ->with('productionRun')
                 ->orderBy('scheduled_for')
                 ->orderBy('id')
                 ->get();

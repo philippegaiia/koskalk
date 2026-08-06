@@ -135,6 +135,45 @@
         </div>
     </section>
 
+    @if ($production->status->value === 'in_production')
+        <section aria-labelledby="actuals-detail-heading" class="sk-card overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-line)] p-5 sm:p-6">
+                <h2 id="actuals-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.actuals_title') }}</h2>
+                <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.actuals_not_posted') }}</span>
+            </div>
+            @error('actuals')
+                <p role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</p>
+            @enderror
+            <div class="divide-y divide-[var(--color-line)]">
+                @forelse ($production->requirements as $requirement)
+                    @php
+                        $actual = $actualRows[(string) $requirement->id]
+                            ?? $defaultActualRows[(string) $requirement->id]
+                            ?? ['quantity' => '', 'note' => null];
+                    @endphp
+                    <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                        <div>
+                            <p class="font-medium text-[var(--color-ink-strong)]">{{ $requirement->subject_name_snapshot }}</p>
+                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $requirement->kind->value === 'ingredient' ? $requirement->required_mass_grams.' g' : $requirement->required_units.' '.__('production_bench.inventory.units') }}</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <input type="number" inputmode="decimal" min="0" step="any" wire:model.live.debounce.500ms="actualRows.{{ $requirement->id }}.quantity" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $requirement->subject_name_snapshot]) }}" @disabled($isReadOnly) class="sk-input w-36 text-right font-mono">
+                            <input type="text" wire:model.live.debounce.500ms="actualRows.{{ $requirement->id }}.note" placeholder="{{ __('production_bench.production.actuals_note_placeholder') }}" @disabled($isReadOnly) class="sk-input w-52 text-sm">
+                        </div>
+                    </div>
+                @empty
+                    <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_requirements') }}</p>
+                @endforelse
+            </div>
+            <div class="flex items-center justify-end gap-3 border-t border-[var(--color-line)] p-4 sm:px-6">
+                @if ($actualsDirty)
+                    <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.actuals_unsaved') }}</span>
+                @endif
+                <button type="button" wire:click="saveActuals" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.actuals_save') }}</button>
+            </div>
+        </section>
+    @endif
+
     <section aria-labelledby="tasks-detail-heading" class="sk-card overflow-hidden">
         <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="tasks-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.tasks') }}</h2></div>
         @error('task_task') <div role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</div> @enderror

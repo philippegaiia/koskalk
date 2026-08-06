@@ -9999,6 +9999,83 @@
         },
         {
             "group": "production_bench",
+            "key": "production.actuals_not_posted",
+            "text": {
+                "de": "Als Entwurf gespeichert – es wird noch nichts gebucht.",
+                "es": "Guardado como borrador: todavía no se registra nada.",
+                "fr": "Enregistré en brouillon – rien n’est encore comptabilisé.",
+                "it": "Salvato come bozza: non viene ancora registrato nulla.",
+                "nl": "Opgeslagen als concept: er wordt nog niets geboekt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.actuals_note_placeholder",
+            "text": {
+                "de": "Notiz",
+                "es": "Nota",
+                "fr": "Note",
+                "it": "Nota",
+                "nl": "Notitie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.actuals_quantity",
+            "text": {
+                "de": "Istmenge von :name",
+                "es": "Cantidad real de :name",
+                "fr": "Quantité réelle de :name",
+                "it": "Quantità effettiva di :name",
+                "nl": "Werkelijke hoeveelheid van :name"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.actuals_save",
+            "text": {
+                "de": "Istmengen speichern",
+                "es": "Guardar cantidades reales",
+                "fr": "Enregistrer les quantités réelles",
+                "it": "Salva quantità effettive",
+                "nl": "Werkelijke hoeveelheden opslaan"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.actuals_saved",
+            "text": {
+                "de": "Istmengen gespeichert.",
+                "es": "Cantidades reales guardadas.",
+                "fr": "Quantités réelles enregistrées.",
+                "it": "Quantità effettive salvate.",
+                "nl": "Werkelijke hoeveelheden opgeslagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.actuals_title",
+            "text": {
+                "de": "Istverbrauch",
+                "es": "Consumo real",
+                "fr": "Consommation réelle",
+                "it": "Consumo effettivo",
+                "nl": "Werkelijk verbruik"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.actuals_unsaved",
+            "text": {
+                "de": "Ungespeicherte Änderungen",
+                "es": "Cambios sin guardar",
+                "fr": "Modifications non enregistrées",
+                "it": "Modifiche non salvate",
+                "nl": "Niet-opgeslagen wijzigingen"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.all_statuses",
             "text": {
                 "de": "Alle Status",

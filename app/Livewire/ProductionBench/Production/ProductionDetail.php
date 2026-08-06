@@ -10,6 +10,7 @@ use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\ReopenProductionTask;
 use App\Actions\Production\RescheduleProductionTask;
 use App\Actions\Production\ResetProductionTaskDate;
+use App\Actions\Production\SaveProductionActuals;
 use App\Actions\Production\StartProduction;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Department;
@@ -19,6 +20,7 @@ use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use App\StockReservationStatus;
 use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -35,6 +37,11 @@ class ProductionDetail extends Component
     public ?string $statusMessage = null;
 
     public string $statusType = 'idle';
+
+    /** @var array<string, array{stock_lot_id?: int|null, quantity: string, note?: string|null}> */
+    public array $actualRows = [];
+
+    public bool $actualsDirty = false;
 
     public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
@@ -241,6 +248,46 @@ class ProductionDetail extends Component
         $this->dispatch('production-stock-released');
     }
 
+    public function updatedActualRows(): void
+    {
+        $this->actualsDirty = true;
+    }
+
+    public function saveActuals(SaveProductionActuals $saveProductionActuals): void
+    {
+        $production = $this->production();
+
+        try {
+            $rows = [];
+
+            foreach ($this->actualRows as $requirementId => $row) {
+                $rows[] = [
+                    'production_requirement_id' => (int) $requirementId,
+                    'stock_lot_id' => isset($row['stock_lot_id']) && $row['stock_lot_id'] !== '' && $row['stock_lot_id'] !== null
+                        ? (int) $row['stock_lot_id']
+                        : null,
+                    'quantity' => (string) ($row['quantity'] ?? '0'),
+                    'note' => isset($row['note']) && $row['note'] !== '' ? $row['note'] : null,
+                ];
+            }
+
+            $saveProductionActuals->handle($this->user(), $production, $rows);
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('actuals', $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->actualRows = $this->actualRowsFromProduction($production->fresh(['requirements', 'consumption']));
+        $this->actualsDirty = false;
+        $this->showAppNotification(__('production_bench.production.actuals_saved'));
+        $this->dispatch('production-actuals-saved');
+    }
+
     public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
@@ -253,12 +300,35 @@ class ProductionDetail extends Component
                 WorkspaceMemberRole::Editor,
             ], true);
 
+        $defaultActualRows = [];
+
+        foreach ($production->requirements as $requirement) {
+            if (isset($this->actualRows[(string) $requirement->id])) {
+                continue;
+            }
+
+            $reservedQuantity = '0';
+            $firstLotId = null;
+
+            foreach ($requirement->reservations->where('status', StockReservationStatus::Active) as $reservation) {
+                $reservedQuantity = bcadd($reservedQuantity, (string) $reservation->quantity, 9);
+                $firstLotId ??= $reservation->stock_lot_id;
+            }
+
+            $defaultActualRows[(string) $requirement->id] = [
+                'stock_lot_id' => $firstLotId,
+                'quantity' => $reservedQuantity,
+                'note' => null,
+            ];
+        }
+
         return view('livewire.production-bench.production.production-detail', [
             'workspace' => $workspace,
             'production' => $production,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,
+            'defaultActualRows' => $defaultActualRows,
             'employees' => Employee::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)
@@ -293,8 +363,26 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['requirements', 'formulaLines', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
+            ->with(['recipe', 'requirements.reservations', 'formulaLines', 'consumption', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
+    }
+
+    /**
+     * @return array<string, array{stock_lot_id: int|null, quantity: string, note: string|null}>
+     */
+    private function actualRowsFromProduction(ProductionRun $production): array
+    {
+        $rows = [];
+
+        foreach ($production->consumption as $consumption) {
+            $rows[(string) $consumption->production_requirement_id] = [
+                'stock_lot_id' => $consumption->stock_lot_id,
+                'quantity' => (string) $consumption->quantity,
+                'note' => $consumption->note,
+            ];
+        }
+
+        return $rows;
     }
 
     private function user(): User

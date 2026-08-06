@@ -146,7 +146,7 @@ The maker enters:
 - optional task set;
 - optional notes.
 
-Selecting the product loads its latest accessible published formula version, formula lines, packaging, default preset, and applicable task sets with the product default preselected. The chosen published version is the immutable handoff used by the production.
+Selecting the product loads its latest accessible published formula version, formula lines, packaging, default preset, and applicable task sets with the product default preselected. The chosen published version is read once to build the production's owned formula snapshot; the production does not permanently depend on the version afterwards. See the [Production Run Formula Snapshot Independence Design](2026-08-06-production-run-formula-snapshot-independence-design.md), which supersedes the earlier permanent-version-pin wording in this section.
 
 The form shows a compact read-only preview of:
 

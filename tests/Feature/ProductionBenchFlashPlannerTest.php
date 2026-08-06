@@ -151,6 +151,7 @@ function flashPlannerFixture(): array
         'workspace_id' => $workspace->id,
         'visibility' => Visibility::Private,
         'is_current' => false,
+        'manufacturing_mode' => 'blend_only',
     ]);
     $preset = ProductionBatchPreset::factory()->for($workspace)->create([
         'basis_quantity_grams' => '12000.000000000',

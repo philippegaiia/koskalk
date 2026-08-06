@@ -4,7 +4,7 @@
 
 **Goal:** Let a small maker plan one or several production batches from a published product, automatically obtain dated follow-up tasks, understand future material demand, and explicitly reserve suitable stock items only when ready.
 
-**Architecture:** `ProductionRun` is the durable production record. It pins one published `RecipeVersion` and owns immutable-subject, rescalable planning requirements for ingredients and packaging. Reusable batch presets and task sets only prefill a production; task sets are applicable to many products, products may have several applicable sets, and generated production tasks snapshot their scheduling inputs. Task-set offsets are signed calendar days relative to the production date, with non-working-day adjustment applied when dates are generated. Planned requirements affect forecast demand but not available stock. Separate `StockReservation` rows connect one requirement to one or several stock items after an explicit preview and confirmation. The Flash simulator is a disposable requirement and budget calculator: it aggregates material quantities and reads current material-price projections for an estimated budget, without reading stock, incoming orders, or reservations, and remains non-persistent until the user confirms dated production rows.
+**Architecture:** `ProductionRun` is the durable production record. It reads one published `RecipeVersion` once to build an owned, complete formula snapshot (including calculated NaOH/KOH/water) and owns immutable-subject, rescalable planning requirements for ingredients and packaging. It does not permanently pin the `RecipeVersion`: snapshot independence is defined by [Production Run Formula Snapshot Independence Design](../specs/2026-08-06-production-run-formula-snapshot-independence-design.md). Reusable batch presets and task sets only prefill a production; task sets are applicable to many products, products may have several applicable sets, and generated production tasks snapshot their scheduling inputs. Task-set offsets are signed calendar days relative to the production date, with non-working-day adjustment applied when dates are generated. Planned requirements affect forecast demand but not available stock. Separate `StockReservation` rows connect one requirement to one or several stock items after an explicit preview and confirmation. The Flash simulator is a disposable requirement and budget calculator: it aggregates material quantities and reads current material-price projections for an estimated budget, without reading stock, incoming orders, or reservations, and remains non-persistent until the user confirms dated production rows.
 
 **Tech Stack:** PHP 8.5, Laravel 13, Livewire 4, Blade, Alpine.js, Tailwind CSS 4, Pest 4, BCMath, PostgreSQL transactions and row locking, Vite 8, and `@event-calendar/core`.
 
@@ -19,12 +19,12 @@ Every `git add` command below is intentionally path-specific. Replace migration 
 ## Product Invariants
 
 - Customer language is **Production** or **Production batch**; the internal model is `ProductionRun`.
-- A production belongs to one workspace, product (`Recipe`), and pinned published `RecipeVersion`.
+- A production belongs to one workspace, product (`Recipe`), and an owned formula snapshot built from one published `RecipeVersion` at creation (version link is transitional and nullable).
 - A later formula publication never rewrites an existing production.
 - Soap productions scale from initial oil mass; cosmetic productions scale from total formula mass.
 - Packaging scales from expected finished units.
 - A production may be planned despite missing current prices or insufficient stock.
-- Draft and planned quantities may be edited before reservation; the pinned product/version never changes.
+- Draft and planned quantities may be edited before reservation; the production rescales its own formula and requirement snapshots and never reopens the product or version.
 - Editing planned quantities rebuilds requirements atomically and is rejected while reservations exist.
 - Planning creates forecast demand only. It does not change physical or available stock.
 - Reservation changes available stock but never physical stock.

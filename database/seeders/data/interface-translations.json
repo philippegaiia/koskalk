@@ -10395,6 +10395,72 @@
         },
         {
             "group": "production_bench",
+            "key": "production.formula.lye_water_phase",
+            "text": {
+                "de": "Lauge-Wasser",
+                "es": "Fase de lejía y agua",
+                "fr": "Phase lessive-eau",
+                "it": "Fase liscivia-acqua",
+                "nl": "Loog-waterfase"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.potassium_hydroxide",
+            "text": {
+                "de": "Kaliumhydroxid",
+                "es": "Hidróxido de potasio",
+                "fr": "Hydroxyde de potassium",
+                "it": "Idrossido di potassio",
+                "nl": "Kaliumhydroxide"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.sodium_hydroxide",
+            "text": {
+                "de": "Natriumhydroxid",
+                "es": "Hidróxido de sodio",
+                "fr": "Hydroxyde de sodium",
+                "it": "Idrossido di sodio",
+                "nl": "Natriumhydroxide"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.source_version",
+            "text": {
+                "de": "Quellformelversion",
+                "es": "Versión de fórmula de origen",
+                "fr": "Version de formule source",
+                "it": "Versione formula sorgente",
+                "nl": "Bronformuleversie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.title",
+            "text": {
+                "de": "Formel",
+                "es": "Fórmula",
+                "fr": "Formule",
+                "it": "Formula",
+                "nl": "Formule"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.water",
+            "text": {
+                "de": "Wasser",
+                "es": "Agua",
+                "fr": "Eau",
+                "it": "Acqua",
+                "nl": "Water"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.from_date",
             "text": {
                 "de": "Von Datum",
@@ -11194,72 +11260,6 @@
                 "fr": "Produit inconnu",
                 "it": "Prodotto sconosciuto",
                 "nl": "Onbekend product"
-            }
-        },
-        {
-            "group": "production_bench",
-            "key": "production.formula.title",
-            "text": {
-                "de": "Formel",
-                "es": "Fórmula",
-                "fr": "Formule",
-                "it": "Formula",
-                "nl": "Formule"
-            }
-        },
-        {
-            "group": "production_bench",
-            "key": "production.formula.source_version",
-            "text": {
-                "de": "Quellformelversion",
-                "es": "Versión de fórmula de origen",
-                "fr": "Version de formule source",
-                "it": "Versione formula sorgente",
-                "nl": "Bronformuleversie"
-            }
-        },
-        {
-            "group": "production_bench",
-            "key": "production.formula.sodium_hydroxide",
-            "text": {
-                "de": "Natriumhydroxid",
-                "es": "Hidróxido de sodio",
-                "fr": "Hydroxyde de sodium",
-                "it": "Idrossido di sodio",
-                "nl": "Natriumhydroxide"
-            }
-        },
-        {
-            "group": "production_bench",
-            "key": "production.formula.potassium_hydroxide",
-            "text": {
-                "de": "Kaliumhydroxid",
-                "es": "Hidróxido de potasio",
-                "fr": "Hydroxyde de potassium",
-                "it": "Idrossido di potassio",
-                "nl": "Kaliumhydroxide"
-            }
-        },
-        {
-            "group": "production_bench",
-            "key": "production.formula.water",
-            "text": {
-                "de": "Wasser",
-                "es": "Agua",
-                "fr": "Eau",
-                "it": "Acqua",
-                "nl": "Water"
-            }
-        },
-        {
-            "group": "production_bench",
-            "key": "production.formula.lye_water_phase",
-            "text": {
-                "de": "Lauge-Wasser",
-                "es": "Fase de lejía y agua",
-                "fr": "Phase lessive-eau",
-                "it": "Fase liscivia-acqua",
-                "nl": "Loog-waterfase"
             }
         },
         {
@@ -14553,6 +14553,17 @@
         },
         {
             "group": "products",
+            "key": "actions.archive",
+            "text": {
+                "de": "Produkt archivieren",
+                "es": "Archivar producto",
+                "fr": "Archiver le produit",
+                "it": "Archivia prodotto",
+                "nl": "Product archiveren"
+            }
+        },
+        {
+            "group": "products",
             "key": "actions.cancel",
             "text": {
                 "de": "Abbrechen",
@@ -14582,116 +14593,6 @@
                 "fr": "Supprimer le produit",
                 "it": "Elimina prodotto",
                 "nl": "Product verwijderen"
-            }
-        },
-        {
-            "group": "products",
-            "key": "actions.archive",
-            "text": {
-                "de": "Produkt archivieren",
-                "es": "Archivar producto",
-                "fr": "Archiver le produit",
-                "it": "Archivia prodotto",
-                "nl": "Product archiveren"
-            }
-        },
-        {
-            "group": "products",
-            "key": "actions.restore",
-            "text": {
-                "de": "Produkt wiederherstellen",
-                "es": "Restaurar producto",
-                "fr": "Restaurer le produit",
-                "it": "Ripristina prodotto",
-                "nl": "Product herstellen"
-            }
-        },
-        {
-            "group": "products",
-            "key": "archiving.heading",
-            "text": {
-                "de": "„:product“ archivieren?",
-                "es": "¿Archivar «:product»?",
-                "fr": "Archiver « :product » ?",
-                "it": "Archiviare «:product»?",
-                "nl": "«:product» archiveren?"
-            }
-        },
-        {
-            "group": "products",
-            "key": "archiving.warning",
-            "text": {
-                "de": "Die aktive Formel verlässt die Werkbank und das Produkt verschwindet aus den neuen Produktionsauswahlen. Die Produktionshistorie bleibt vollständig lesbar und das Produkt kann jederzeit wiederhergestellt werden.",
-                "es": "La fórmula activa sale del banco de trabajo y el producto desaparece de los nuevos selectores de producción. El historial de producción sigue siendo totalmente legible y el producto puede restaurarse en cualquier momento.",
-                "fr": "La formule active quitte le plan de travail et le produit disparaît des nouveaux sélecteurs de production. L’historique de production reste entièrement lisible et le produit peut être restauré à tout moment.",
-                "it": "La formula attiva esce dal banco di lavoro e il prodotto scompare dai nuovi selettori di produzione. La cronologia di produzione rimane completamente leggibile e il prodotto può essere ripristinato in qualsiasi momento.",
-                "nl": "De actieve formule verlaat de werkbank en het product verdwijnt uit de nieuwe productieselectors. De productiegeschiedenis blijft volledig leesbaar en het product kan op elk moment worden hersteld."
-            }
-        },
-        {
-            "group": "products",
-            "key": "deletion.history_note",
-            "text": {
-                "de": "Die Produktionshistorie ist vollständig gespeichert und bleibt lesbar.",
-                "es": "El historial de producción está completamente guardado y sigue siendo legible.",
-                "fr": "L’historique de production est entièrement enregistré et reste lisible.",
-                "it": "La cronologia di produzione è completamente salvata e rimane leggibile.",
-                "nl": "De productiegeschiedenis is volledig opgeslagen en blijft leesbaar."
-            }
-        },
-        {
-            "group": "products",
-            "key": "filters.status.label",
-            "text": {
-                "de": "Status",
-                "es": "Estado",
-                "fr": "Statut",
-                "it": "Stato",
-                "nl": "Status"
-            }
-        },
-        {
-            "group": "products",
-            "key": "filters.status.all",
-            "text": {
-                "de": "Alle Status",
-                "es": "Todos los estados",
-                "fr": "Tous les statuts",
-                "it": "Tutti gli stati",
-                "nl": "Alle statussen"
-            }
-        },
-        {
-            "group": "products",
-            "key": "filters.status.active",
-            "text": {
-                "de": "Aktiv",
-                "es": "Activos",
-                "fr": "Actifs",
-                "it": "Attivi",
-                "nl": "Actief"
-            }
-        },
-        {
-            "group": "products",
-            "key": "filters.status.archived",
-            "text": {
-                "de": "Archiviert",
-                "es": "Archivados",
-                "fr": "Archivés",
-                "it": "Archiviati",
-                "nl": "Gearchiveerd"
-            }
-        },
-        {
-            "group": "products",
-            "key": "card.production_count",
-            "text": {
-                "de": "{0} 0 Produktionen|{1} :count Produktion|[2,*] :count Produktionen",
-                "es": "{0} 0 producciones|{1} :count producción|[2,*] :count producciones",
-                "fr": "{0} 0 productions|{1} :count production|[2,*] :count productions",
-                "it": "{0} 0 produzioni|{1} :count produzione|[2,*] :count produzioni",
-                "nl": "{0} 0 producties|{1} :count productie|[2,*] :count producties"
             }
         },
         {
@@ -14762,6 +14663,17 @@
         },
         {
             "group": "products",
+            "key": "actions.restore",
+            "text": {
+                "de": "Produkt wiederherstellen",
+                "es": "Restaurar producto",
+                "fr": "Restaurer le produit",
+                "it": "Ripristina prodotto",
+                "nl": "Product herstellen"
+            }
+        },
+        {
+            "group": "products",
             "key": "actions.unlock",
             "text": {
                 "de": "Produkt entsperren",
@@ -14791,6 +14703,28 @@
                 "fr": "Voir la formule et la production",
                 "it": "Visualizza formula e produzione",
                 "nl": "Formule en productie bekijken"
+            }
+        },
+        {
+            "group": "products",
+            "key": "archiving.heading",
+            "text": {
+                "de": "„:product“ archivieren?",
+                "es": "¿Archivar «:product»?",
+                "fr": "Archiver « :product » ?",
+                "it": "Archiviare «:product»?",
+                "nl": "«:product» archiveren?"
+            }
+        },
+        {
+            "group": "products",
+            "key": "archiving.warning",
+            "text": {
+                "de": "Die aktive Formel verlässt die Werkbank und das Produkt verschwindet aus den neuen Produktionsauswahlen. Die Produktionshistorie bleibt vollständig lesbar und das Produkt kann jederzeit wiederhergestellt werden.",
+                "es": "La fórmula activa sale del banco de trabajo y el producto desaparece de los nuevos selectores de producción. El historial de producción sigue siendo totalmente legible y el producto puede restaurarse en cualquier momento.",
+                "fr": "La formule active quitte le plan de travail et le produit disparaît des nouveaux sélecteurs de production. L’historique de production reste entièrement lisible et le produit peut être restauré à tout moment.",
+                "it": "La formula attiva esce dal banco di lavoro e il prodotto scompare dai nuovi selettori di produzione. La cronologia di produzione rimane completamente leggibile e il prodotto può essere ripristinato in qualsiasi momento.",
+                "nl": "De actieve formule verlaat de werkbank en het product verdwijnt uit de nieuwe productieselectors. De productiegeschiedenis blijft volledig leesbaar en het product kan op elk moment worden hersteld."
             }
         },
         {
@@ -14861,6 +14795,17 @@
         },
         {
             "group": "products",
+            "key": "card.production_count",
+            "text": {
+                "de": "{0} 0 Produktionen|{1} :count Produktion|[2,*] :count Produktionen",
+                "es": "{0} 0 producciones|{1} :count producción|[2,*] :count producciones",
+                "fr": "{0} 0 productions|{1} :count production|[2,*] :count productions",
+                "it": "{0} 0 produzioni|{1} :count produzione|[2,*] :count produzioni",
+                "nl": "{0} 0 producties|{1} :count productie|[2,*] :count producties"
+            }
+        },
+        {
+            "group": "products",
             "key": "card.updated",
             "text": {
                 "de": "Aktualisiert :time",
@@ -14912,6 +14857,17 @@
                 "fr": "Supprimer « :product » ?",
                 "it": "Eliminare “:product”?",
                 "nl": "‘:product’ verwijderen?"
+            }
+        },
+        {
+            "group": "products",
+            "key": "deletion.history_note",
+            "text": {
+                "de": "Die Produktionshistorie ist vollständig gespeichert und bleibt lesbar.",
+                "es": "El historial de producción está completamente guardado y sigue siendo legible.",
+                "fr": "L’historique de production est entièrement enregistré et reste lisible.",
+                "it": "La cronologia di produzione è completamente salvata e rimane leggibile.",
+                "nl": "De productiegeschiedenis is volledig opgeslagen en blijft leesbaar."
             }
         },
         {
@@ -15037,6 +14993,50 @@
         },
         {
             "group": "products",
+            "key": "filters.status.active",
+            "text": {
+                "de": "Aktiv",
+                "es": "Activos",
+                "fr": "Actifs",
+                "it": "Attivi",
+                "nl": "Actief"
+            }
+        },
+        {
+            "group": "products",
+            "key": "filters.status.all",
+            "text": {
+                "de": "Alle Status",
+                "es": "Todos los estados",
+                "fr": "Tous les statuts",
+                "it": "Tutti gli stati",
+                "nl": "Alle statussen"
+            }
+        },
+        {
+            "group": "products",
+            "key": "filters.status.archived",
+            "text": {
+                "de": "Archiviert",
+                "es": "Archivados",
+                "fr": "Archivés",
+                "it": "Archiviati",
+                "nl": "Gearchiveerd"
+            }
+        },
+        {
+            "group": "products",
+            "key": "filters.status.label",
+            "text": {
+                "de": "Status",
+                "es": "Estado",
+                "fr": "Statut",
+                "it": "Stato",
+                "nl": "Status"
+            }
+        },
+        {
+            "group": "products",
             "key": "filters.type.all",
             "text": {
                 "de": "Alle Typen",
@@ -15125,17 +15125,6 @@
         },
         {
             "group": "products",
-            "key": "status.restored",
-            "text": {
-                "de": "Produkt wiederhergestellt.",
-                "es": "Producto restaurado.",
-                "fr": "Produit restauré.",
-                "it": "Prodotto ripristinato.",
-                "nl": "Product hersteld."
-            }
-        },
-        {
-            "group": "products",
             "key": "status.delete_blocked_incomplete_snapshot",
             "text": {
                 "de": "Dieses Produkt kann noch nicht gelöscht werden, da einige Produktionen weiterhin von seinen Formelversionen abhängen.",
@@ -15187,6 +15176,17 @@
                 "fr": "Produit verrouillé.",
                 "it": "Prodotto bloccato.",
                 "nl": "Product vergrendeld."
+            }
+        },
+        {
+            "group": "products",
+            "key": "status.restored",
+            "text": {
+                "de": "Produkt wiederhergestellt.",
+                "es": "Producto restaurado.",
+                "fr": "Produit restauré.",
+                "it": "Prodotto ripristinato.",
+                "nl": "Product hersteld."
             }
         },
         {

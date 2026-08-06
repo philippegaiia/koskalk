@@ -660,6 +660,27 @@ it('releases reservations per requirement and returns to scheduled when empty', 
         ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(0);
 });
 
+it('shows lifecycle sections appropriate to the run status', function (): void {
+    $fixture = productionExecutionFixture();
+    $reserved = productionExecutionRun($fixture, 'ui-lifecycle-1', start: false);
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $reserved->id])
+        ->assertSee('Start production')
+        ->assertSee('Release stock')
+        ->assertDontSee('Actual consumption')
+        ->assertDontSee('Complete production');
+
+    $started = app(StartProduction::class)->handle($fixture['owner'], $reserved->fresh());
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $started->id])
+        ->assertSee('Actual consumption')
+        ->assertSee('Complete production')
+        ->assertSee('Abort production')
+        ->assertSee('Production journal');
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, packaging: PackagingItem}
  */

@@ -150,6 +150,8 @@ Technical commits continue between these gates, but implementation does not paus
 
 **Detailed plan:** `docs/superpowers/plans/2026-07-28-production-bench-phase-4-execution-costing.md`
 
+**Status:** ✅ Delivered (August 2026) — including the recorded corrections: draft/scheduled deletion, start gate (reserved + permanent number), partial stock preparation and release, and product-subject output lots.
+
 **Outcome:** A reserved run can be started, completed, costed, quarantined, released, and preserved in Production Bench history.
 
 **Scope:**

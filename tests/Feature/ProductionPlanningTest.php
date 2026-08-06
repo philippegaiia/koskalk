@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Production\CreateProductionDraft;
+use App\Actions\Production\GenerateProductionTasks;
 use App\Actions\Production\PlanProduction;
 use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\UpdateProductionPlan;
@@ -726,6 +727,169 @@ it('rejects correction outside draft or scheduled status', function (string $sta
     'cancelled' => [ProductionRunStatus::Cancelled->value],
     'aborted' => [ProductionRunStatus::Aborted->value],
 ]);
+
+it('resolves and pins the product default task set at creation', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $taskType = ProductionTaskType::factory()->for($fixture['workspace'])->create(['name' => 'Cure']);
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create(['name' => 'Default soap workflow']);
+    ProductionTaskSetItem::factory()->for($taskSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+    $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => true]);
+
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'task-default-1',
+    );
+
+    expect($production->production_task_set_id)->toBe($taskSet->id);
+});
+
+it('prefers the explicitly selected applicable task set over the product default', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $taskType = ProductionTaskType::factory()->for($fixture['workspace'])->create(['name' => 'Cure']);
+    $defaultSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create(['name' => 'Default set']);
+    ProductionTaskSetItem::factory()->for($defaultSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+    $defaultSet->recipes()->attach($fixture['recipe']->id, ['is_default' => true]);
+    $explicitSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create(['name' => 'Explicit set']);
+    ProductionTaskSetItem::factory()->for($explicitSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+    $explicitSet->recipes()->attach($fixture['recipe']->id, ['is_default' => false]);
+
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'task-explicit-1',
+        taskSet: $explicitSet,
+    );
+
+    expect($production->production_task_set_id)->toBe($explicitSet->id);
+});
+
+it('leaves the task set null when the product has no default', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'task-null-1',
+    );
+
+    expect($production->production_task_set_id)->toBeNull();
+});
+
+it('generates tasks from the stored set after the product is archived', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $taskType = ProductionTaskType::factory()->for($fixture['workspace'])->create([
+        'name' => 'Cure',
+        'colour' => '#ff8800',
+        'default_duration_minutes' => 45,
+    ]);
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create(['name' => 'Archived-safe set']);
+    ProductionTaskSetItem::factory()->for($taskSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+    ProductionTaskSetItem::factory()->for($taskSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 2,
+        'days_after_production' => 2,
+    ]);
+    $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => true]);
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'task-archived-1',
+        plannedFor: '2026-08-20',
+    );
+
+    $fixture['recipe']->update(['archived_at' => now()]);
+
+    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production);
+    $task = $generated->tasks()->where('days_after_production', 2)->firstOrFail();
+
+    expect($generated->tasks()->count())->toBe(2)
+        ->and($task->name_snapshot)->toBe('Cure')
+        ->and($task->colour_snapshot)->toBe('#ff8800')
+        ->and($task->duration_minutes)->toBe(45)
+        ->and($task->scheduled_for?->toDateString())->toBe('2026-08-24');
+});
+
+it('does not discover a task set attached to the product after creation', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'task-late-default-1',
+        plannedFor: '2026-08-20',
+    );
+    $taskType = ProductionTaskType::factory()->for($fixture['workspace'])->create(['name' => 'Cure']);
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create(['name' => 'Late default']);
+    ProductionTaskSetItem::factory()->for($taskSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+    $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => true]);
+
+    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production);
+
+    expect($generated->production_task_set_id)->toBeNull()
+        ->and($generated->tasks()->count())->toBe(0);
+});
+
+it('degrades without a product lookup when the stored task set was deleted', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $taskType = ProductionTaskType::factory()->for($fixture['workspace'])->create(['name' => 'Cure']);
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create(['name' => 'Doomed set']);
+    ProductionTaskSetItem::factory()->for($taskSet, 'taskSet')->for($taskType, 'taskType')->create([
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+    $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => true]);
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'task-deleted-1',
+        plannedFor: '2026-08-20',
+    );
+
+    $taskSet->delete();
+
+    $generated = app(GenerateProductionTasks::class)->handle($fixture['owner'], $production);
+
+    expect($generated->production_task_set_id)->toBeNull()
+        ->and($generated->tasks()->count())->toBe(0);
+});
 
 function productionPlanningTask2Fixture(string $calculationBasis = 'initial_oils', bool $withPublishedVersion = true): array
 {

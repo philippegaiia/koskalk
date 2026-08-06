@@ -131,6 +131,17 @@ class CreateProductionDraft
                 ]);
             }
 
+            // Resolve and pin the product's active default task set while the
+            // recipe is still locked, so later task generation never needs to
+            // look the product up again.
+            if ($lockedTaskSet === null) {
+                $lockedTaskSet = $lockedRecipe->defaultProductionTaskSets()
+                    ->where('production_task_sets.workspace_id', $lockedWorkspace->id)
+                    ->where('production_task_sets.is_active', true)
+                    ->lockForUpdate()
+                    ->first();
+            }
+
             if ($plannedFor !== null && ! $this->calendar->isWorkingDate($lockedWorkspace, $plannedFor)) {
                 throw ValidationException::withMessages([
                     'planned_for' => 'The production date must be a working day.',

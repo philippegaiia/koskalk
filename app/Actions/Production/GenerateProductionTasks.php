@@ -5,7 +5,6 @@ namespace App\Actions\Production;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\ProductionTaskSet;
-use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\ProductionRunStatus;
@@ -134,35 +133,21 @@ class GenerateProductionTasks
 
     private function resolveTaskSet(ProductionRun $production, Workspace $workspace): ?ProductionTaskSet
     {
-        if ($production->production_task_set_id !== null) {
-            $taskSet = ProductionTaskSet::query()
-                ->where('workspace_id', $workspace->id)
-                ->lockForUpdate()
-                ->find($production->production_task_set_id);
-
-            if ($taskSet === null) {
-                throw ValidationException::withMessages([
-                    'production_task_set' => 'The production task set is not available in this workspace.',
-                ]);
-            }
-
-            return $taskSet;
-        }
-
-        $recipe = Recipe::withoutGlobalScopes()
-            ->where('workspace_id', $workspace->id)
-            ->lockForUpdate()
-            ->find($production->recipe_id);
-
-        if ($recipe === null) {
+        if ($production->production_task_set_id === null) {
             return null;
         }
 
-        $taskSet = $recipe->defaultProductionTaskSets()
+        $taskSet = ProductionTaskSet::query()
             ->where('workspace_id', $workspace->id)
             ->lockForUpdate()
-            ->first();
+            ->find($production->production_task_set_id);
 
-        return $taskSet instanceof ProductionTaskSet ? $taskSet : null;
+        if ($taskSet === null) {
+            throw ValidationException::withMessages([
+                'production_task_set' => 'The production task set is no longer available in this workspace.',
+            ]);
+        }
+
+        return $taskSet;
     }
 }

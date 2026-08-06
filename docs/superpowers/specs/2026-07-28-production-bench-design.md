@@ -416,6 +416,8 @@ Output release is a lot state rather than a second completed-production state.
 
 A draft contains an incomplete operational idea and has no stock effect.
 
+A draft or scheduled run without reservations may be deleted; it has no stock effect and no permanent identity. Deletion is blocked once any reservation exists or a permanent batch number has been assigned.
+
 ### Scheduled
 
 A scheduled run has:
@@ -435,14 +437,14 @@ Scheduling creates forecast demand only. It is allowed even when stock is short.
 
 - selects or proposes ingredient and packaging lots;
 - creates lot-specific reservations;
-- blocks if released available stock is insufficient;
+- blocks only when nothing can be reserved; partial coverage is allowed and can be completed later from stock preparation or the production sheet;
 - reports shortages clearly.
 
-Reservation is not required when a run is first scheduled. Before a run starts, its lots must be selected and sufficient planned quantities must be reserved. Starting an unreserved run performs the same allocation and reservation confirmation.
+Reservation is not required when a run is first scheduled. A run reaches `Reserved` only when every requirement is fully covered. Starting never performs reservation: it requires the `Reserved` state and an assigned permanent batch number.
 
 ### In Production
 
-Starting production freezes the operational plan used at the bench. The operator may record actual quantities, replace selected lots when permitted, add journal entries, and upload documents.
+Starting production requires the `Reserved` state and an assigned permanent batch number. It freezes the operational plan used at the bench. The operator may record actual quantities, replace selected lots when permitted, add journal entries, and upload documents.
 
 ### Completion
 

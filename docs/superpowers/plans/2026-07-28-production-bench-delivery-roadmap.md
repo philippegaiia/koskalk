@@ -150,7 +150,7 @@ Technical commits continue between these gates, but implementation does not paus
 
 **Detailed plan:** `docs/superpowers/plans/2026-07-28-production-bench-phase-4-execution-costing.md`
 
-**Outcome:** A reserved run can be started, completed, costed, quarantined, released, and preserved in Basic production history.
+**Outcome:** A reserved run can be started, completed, costed, quarantined, released, and preserved in Production Bench history.
 
 **Scope:**
 
@@ -164,14 +164,13 @@ Technical commits continue between these gates, but implementation does not paus
 - actual received-lot cost consumption;
 - downstream intermediate cost propagation;
 - atomic completion;
-- linked Basic `ProductionBatch` snapshot;
 - output quarantine, curing/availability date, and release;
 - finished-goods issue movements;
 - rich production journal and attachments.
 
 **Review evidence:**
 
-- completion posts consumption, releases unused reservations, creates one output lot, and creates one Basic snapshot atomically;
+- completion posts consumption, releases unused reservations, creates one output lot, and closes the run atomically;
 - actual over-consumption produces a visible negative balance;
 - adjustment reconciles it without changing history;
 - completed costs remain unchanged after catalog-price updates;

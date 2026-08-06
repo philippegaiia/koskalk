@@ -106,13 +106,11 @@ A finished-unit target never drives formula scaling. Wastage and mold constraint
 
 ### Basic Production History Compatibility
 
-The existing `ProductionBatch` remains the Basic immutable history record.
+The existing `ProductionBatch` remains the Basic immutable history record for customers on lower plans who only keep a trace of what they made. The Production Bench is a separate, independently entitled operational product; the two records are not linked and never reference each other.
 
-The premium operational record is named `ProductionRun` internally and displayed as **Production batch** to customers. Completing a premium run creates and links the existing immutable Basic production snapshot with the actual formula quantities, lot references, packaging quantities, prices, totals, and output.
+The premium operational record is named `ProductionRun` internally and displayed as **Production batch** to customers. It owns its own planned formula snapshot, reservations, actual consumption, output lot, and cost snapshot.
 
-This preserves completed history when Production Bench is disabled and avoids introducing a second concept for historical production truth.
-
-The Basic snapshot schema may gain nullable production-run and output fields so it can represent either finished units or manufactured-intermediate mass. Existing Basic creation, history, and print behavior remain unchanged.
+Completed Production Bench history stays readable through the read-only bench view when the add-on is disabled or cancelled, so no Basic snapshot is created or referenced when a run completes. Existing Basic creation, history, and print behavior remain unchanged, and no Basic schema fields are added for production-run or intermediate-output facts.
 
 ### Code Boundary
 
@@ -133,7 +131,7 @@ Dependencies use constructor injection. Interfaces are reserved for real externa
 
 Production Bench uses the existing Soapkraft database.
 
-Formula references, reservations, lot consumption, cost snapshots, the Basic production snapshot, and output creation must complete atomically. A second database would remove reliable foreign keys and require distributed transactions.
+Formula references, reservations, lot consumption, cost snapshots, and output creation must complete atomically. A second database would remove reliable foreign keys and require distributed transactions.
 
 Isolation comes from:
 
@@ -467,10 +465,9 @@ Completion atomically:
 4. allows actual consumption to exceed reservations and create negative stock;
 5. releases unused reservations;
 6. snapshots actual historical costs;
-7. creates the linked Basic `ProductionBatch`;
-8. creates one output lot;
-9. posts the production-output movement;
-10. closes the production run.
+7. creates one output lot;
+8. posts the production-output movement;
+9. closes the production run.
 
 Either every step succeeds or none succeeds.
 
@@ -794,7 +791,7 @@ The UI should explain recoverable conflicts clearly, reload current state, and p
 - Count-based packaging and finished output reject fractional units.
 - Receipt quantities must be positive.
 - Posted receipts and completed runs cannot be edited directly.
-- A failed completion leaves the run, reservations, movements, output, and Basic snapshot unchanged.
+- A failed completion leaves the run, reservations, movements, and output unchanged.
 - Negative stock is allowed only through explicit actual consumption or adjustment actions and remains visible until reconciled.
 - File uploads validate type, extension, size, and workspace ownership.
 
@@ -829,7 +826,6 @@ Important relational rules:
 - movements reference a lot and source document;
 - reservations reference a released lot and production run;
 - a production run references one published formula version;
-- a completed run references one Basic `ProductionBatch`;
 - a run has exactly one output lot;
 - every received ingredient lot has a unique internal lot code, while its supplier batch/lot reference is nullable and non-unique.
 
@@ -880,7 +876,7 @@ Stock positions are derived from movements and reservations. A projection/cache 
 - finished units never drive formula scaling;
 - start requires lot allocation;
 - completion is atomic;
-- completed run creates one output lot and one Basic snapshot;
+- completed run creates one output lot and closes the run;
 - finished output requires integer units;
 - intermediate output requires mass;
 - intermediate cost propagates to downstream production;

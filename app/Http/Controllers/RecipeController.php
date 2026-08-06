@@ -532,7 +532,14 @@ class RecipeController extends Controller
             abort_unless($request->string('confirm_name')->toString() === $version->name, 403, __('products.validation.confirmation_mismatch'));
         }
 
-        $deletion = $recipeVersionDeletionService->delete($recipe, $version);
+        try {
+            $deletion = $recipeVersionDeletionService->delete($recipe, $version);
+        } catch (ValidationException $exception) {
+            return redirect()
+                ->route('recipes.index')
+                ->with('error', $exception->getMessage());
+        }
+
         $status = $deletion['last_published_deleted']
             ? __('products.status.last_version_deleted')
             : __('products.status.version_deleted');

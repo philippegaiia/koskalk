@@ -6,12 +6,14 @@ use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\Plan;
 use App\Models\ProductFamily;
+use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\MediaStorage;
 use App\Services\RecipeContentPersistenceService;
 use App\Services\RecipeContentUpdater;
@@ -20,6 +22,7 @@ use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Mockery\MockInterface;
 
 uses(RefreshDatabase::class);
@@ -547,6 +550,86 @@ it('keeps the latest save plus three earlier saves for a plan limit of three', f
         ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->orderBy('version_number')->pluck('name')->all())
         ->toBe(['Formula B', 'Formula C', 'Formula D', 'Formula E'])
         ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', true)->count())->toBe(1);
+});
+
+it('retains published versions referenced by incomplete production snapshots during history pruning', function (): void {
+    [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']), $recipe);
+    $referencedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->firstOrFail();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($referencedVersion, 'recipeVersion')
+        ->create();
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula B']), $recipe);
+
+    expect(RecipeVersion::withoutGlobalScopes()->find($referencedVersion->id))->not->toBeNull()
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->pluck('name')->all())
+        ->toBe(['Formula A', 'Formula B']);
+});
+
+it('prunes published versions once every referenced production snapshot is complete', function (): void {
+    [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']), $recipe);
+    $referencedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->firstOrFail();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($referencedVersion, 'recipeVersion')
+        ->create([
+            'recipe_name_snapshot' => $recipe->name,
+            'formula_snapshot_completed_at' => now(),
+        ]);
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula B']), $recipe);
+
+    expect(RecipeVersion::withoutGlobalScopes()->find($referencedVersion->id))->toBeNull()
+        ->and(RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', false)->pluck('name')->all())
+        ->toBe(['Formula B']);
+});
+
+it('blocks manual version deletion while an incomplete production snapshot still references it', function (): void {
+    [$user, $soapFamily, $oil] = recipeHistoryLifecycleContext();
+    $service = app(RecipeWorkbenchService::class);
+    $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
+
+    $service->publish($user, $soapFamily, recipeWorkbenchLifecyclePayload($oil, ['name' => 'Formula A']), $recipe);
+    $referencedVersion = RecipeVersion::withoutGlobalScopes()
+        ->where('recipe_id', $recipe->id)
+        ->where('is_current', false)
+        ->firstOrFail();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($referencedVersion, 'recipeVersion')
+        ->create();
+
+    expect(fn () => app(RecipeVersionDeletionService::class)->delete($recipe, $referencedVersion))
+        ->toThrow(ValidationException::class);
+
+    expect(RecipeVersion::withoutGlobalScopes()->find($referencedVersion->id))->not->toBeNull();
 });
 
 it('deletes media orphaned when the free plan prunes an older saved snapshot', function (): void {

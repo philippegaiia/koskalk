@@ -54,14 +54,17 @@ class GoodsReceiptInputValidator
             'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
             'expires_at' => $input['expires_at'] ?? null,
             'notes' => $input['notes'] ?? null,
+            'manual_exchange_rate' => $input['manual_exchange_rate'] ?? null,
         ], [
             'supplier_batch_number' => ['nullable', 'string', 'max:120'],
             'expires_at' => ['nullable', 'string'],
             'notes' => ['nullable', 'string', 'max:'.self::NotesMaxLength],
+            'manual_exchange_rate' => ['nullable', 'string', 'max:32'],
         ], [], [
             'supplier_batch_number' => "lines.$index.supplier_batch_number",
             'expires_at' => "lines.$index.expires_at",
             'notes' => "lines.$index.notes",
+            'manual_exchange_rate' => "lines.$index.manual_exchange_rate",
         ])->validate();
 
         if (isset($input['expires_at'])) {

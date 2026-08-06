@@ -29,6 +29,7 @@ use App\StockMovementType;
 use App\StockUnitKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -116,6 +117,38 @@ it('reverses a receipt with a compensating movement and restores incoming stock'
         ->and($positions['physical'])->toBe('0.000000000')
         ->and($positions['available'])->toBe('0.000000000')
         ->and($positions['incoming'])->toBe('5000.000000000');
+});
+
+it('uses a manual exchange rate for a purchase-order receipt when the provider is unavailable', function (): void {
+    Http::fake([
+        'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::failedConnection('provider unavailable'),
+    ]);
+
+    [$owner, $order] = purchasingOrder();
+    $line = $order->lines()->sole();
+    $line->supplierListing->update(['currency' => 'USD']);
+    $line->update(['currency' => 'USD']);
+    app(PlacePurchaseOrder::class)->handle($owner, $order);
+
+    $receipt = app(ReceivePurchaseOrder::class)->handle(
+        actor: $owner,
+        order: $order,
+        idempotencyKey: 'manual-rate-order-receipt',
+        deliveryReference: null,
+        lines: [[
+            'order_line' => $line->refresh(),
+            'packs_received' => 1,
+            'actual_quantity' => '5',
+            'actual_unit' => 'kg',
+            'manual_exchange_rate' => '0.9',
+        ]],
+    );
+
+    $receiptLine = $receipt->lines()->with('stockLot')->sole();
+
+    expect($receiptLine->exchange_rate)->toBe('0.900000000000')
+        ->and($receiptLine->exchange_rate_provider)->toBe('manual')
+        ->and($receiptLine->stockLot->exchange_rate_is_manual)->toBeTrue();
 });
 
 it('requires a nonblank reversal reason before creating compensation', function (?string $reason): void {

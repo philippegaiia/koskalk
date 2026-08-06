@@ -17,9 +17,6 @@
         <section class="sk-card overflow-hidden">
             <div class="border-b border-[var(--color-line)] p-6">
                 <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.opening_stock') }}</h2>
-                @if ($savedLotCode)
-                    <p role="status" class="mt-3 text-sm font-medium text-[var(--color-success-strong)]">{{ __('production_bench.inventory.lot_created', ['code' => $savedLotCode]) }}</p>
-                @endif
             </div>
 
             <form wire:submit="createOpeningStock" class="grid gap-5 p-6 md:grid-cols-2 xl:grid-cols-4">

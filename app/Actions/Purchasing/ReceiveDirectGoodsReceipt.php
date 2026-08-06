@@ -42,6 +42,7 @@ class ReceiveDirectGoodsReceipt
      *   receipt_price_amount: string,
      *   receipt_price_unit?: ?string,
      *   currency: string,
+     *   manual_exchange_rate?: ?string,
      *   supplier_batch_number?: ?string,
      *   expires_at?: ?string,
      *   notes?: ?string,
@@ -154,6 +155,7 @@ class ReceiveDirectGoodsReceipt
                         $idempotencyKey,
                         'direct:'.$index,
                     ),
+                    manualRate: $line['manual_exchange_rate'],
                     supplierBatchNumber: $line['supplier_batch_number'],
                     expiresAt: $line['expires_at'],
                     notes: $line['notes'],
@@ -189,6 +191,7 @@ class ReceiveDirectGoodsReceipt
      *   receipt_price_unit: ?string,
      *   purchase_format_price: string,
      *   currency: string,
+     *   manual_exchange_rate: ?string,
      *   supplier_batch_number: ?string,
      *   expires_at: ?string,
      *   notes: ?string,
@@ -294,6 +297,9 @@ class ReceiveDirectGoodsReceipt
             'receipt_price_unit' => $priceUnit,
             'purchase_format_price' => $calculatedPrice['total_price'],
             'currency' => $currency,
+            'manual_exchange_rate' => filled($input['manual_exchange_rate'] ?? null)
+                ? trim((string) $input['manual_exchange_rate'])
+                : null,
             'supplier_batch_number' => $input['supplier_batch_number'] ?? null,
             'expires_at' => $input['expires_at'] ?? null,
             'notes' => $input['notes'] ?? null,

@@ -178,6 +178,26 @@ it('compensates an adjustment with a second immutable record', function (): void
         ->and($lot->costAdjustments()->count())->toBe(2);
 });
 
+it('rejects compensating the same adjustment twice', function (): void {
+    [$owner, $workspace, $lot] = stockAdjustmentContext();
+    $action = app(AddStockLotCostAdjustment::class);
+    $adjustment = $action->handle(
+        actor: $owner,
+        workspace: $workspace,
+        lot: $lot,
+        type: StockLotCostAdjustmentType::PriceCorrection,
+        amount: '12',
+        currency: 'EUR',
+        reason: 'Corrected invoice total',
+    );
+
+    $action->compensate($owner, $workspace, $adjustment, 'First correction reversal');
+
+    expect(fn () => $action->compensate($owner, $workspace, $adjustment, 'Duplicate correction reversal'))
+        ->toThrow(ValidationException::class)
+        ->and($lot->costAdjustments()->count())->toBe(2);
+});
+
 it('reuses the original exchange-rate snapshot when compensating an adjustment', function (): void {
     Http::fake([
         'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::sequence()

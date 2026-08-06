@@ -411,6 +411,23 @@ it('exposes pressed source semantics and locked currencies for both receipt sour
         ->assertSee('Currency is fixed');
 });
 
+it('shows a manual exchange-rate input for cross-currency receipts', function (): void {
+    [$owner, $workspace] = receiptPageWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for(Ingredient::factory())
+        ->create(['currency' => 'USD']);
+
+    Livewire::withQueryParams(['source' => GoodsReceiptSource::Direct->value])
+        ->actingAs($owner)
+        ->test(ReceiptCreate::class)
+        ->set('supplierId', $supplier->id)
+        ->assertSee(__('production_bench.receipt.manual_exchange_rate'))
+        ->assertSeeHtml('data-receipt-manual-rate="'.$listing->id.'"');
+});
+
 it('renders a single-axis editable receipt layout with associated errors and loading feedback', function (): void {
     [$owner, $workspace] = receiptPageWorkspace();
     [$supplier, , $order, $line] = outstandingReceiptOrder($owner, $workspace);

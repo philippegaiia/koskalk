@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\MassUnit;
+use App\Support\NumberLocale;
 use InvalidArgumentException;
 
 class MassConverter
@@ -21,6 +22,20 @@ class MassConverter
         return $this->convert($grams, MassUnit::Gram, $unit);
     }
 
+    public function fromGramsSigned(string|int|float $grams, MassUnit|string $unit): string
+    {
+        $normalized = is_float($grams)
+            ? rtrim(rtrim(sprintf('%.18F', $grams), '0'), '.')
+            : trim((string) $grams);
+        $isNegative = str_starts_with($normalized, '-');
+        $absolute = $isNegative ? substr($normalized, 1) : $normalized;
+        $converted = $this->fromGrams($absolute, $unit);
+
+        return $isNegative && bccomp($converted, '0', self::GuardScale) !== 0
+            ? '-'.$converted
+            : $converted;
+    }
+
     public function convert(
         string|int|float $quantity,
         MassUnit|string $from,
@@ -37,12 +52,11 @@ class MassConverter
 
     private function normalizedQuantity(string|int|float $quantity): string
     {
-        $normalized = is_float($quantity)
-            ? rtrim(rtrim(sprintf('%.18F', $quantity), '0'), '.')
-            : trim((string) $quantity);
+        $normalized = NumberLocale::normalizeDecimalString($quantity);
 
         if (
-            preg_match('/^\d+(?:\.\d+)?$/', $normalized) !== 1
+            $normalized === null
+            || preg_match('/^\d+(?:\.\d+)?$/', $normalized) !== 1
             || bccomp($normalized, '0', self::GuardScale) < 0
         ) {
             throw new InvalidArgumentException('Mass must be a non-negative decimal quantity.');

@@ -51,6 +51,7 @@ class PostGoodsReceiptLine
         string $purchaseFormatPrice,
         string $currency,
         string $movementIdempotencyKey,
+        ?string $manualRate = null,
         ?string $supplierBatchNumber = null,
         ?string $expiresAt = null,
         ?string $notes = null,
@@ -109,6 +110,7 @@ class PostGoodsReceiptLine
                 baseCurrency: $currency,
                 quoteCurrency: $workspace->default_currency,
                 date: $stockedAt,
+                manualRate: $manualRate,
             );
         } catch (InvalidArgumentException $exception) {
             throw ValidationException::withMessages([

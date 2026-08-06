@@ -55,3 +55,13 @@ it('rejects unsupported units', function (): void {
 it('rejects negative quantities', function (): void {
     app(MassConverter::class)->toGrams('-1', MassUnit::Gram);
 })->throws(InvalidArgumentException::class);
+
+it('converts signed balances while preserving their sign', function (): void {
+    expect(app(MassConverter::class)->fromGramsSigned('-1000', MassUnit::Kilogram))
+        ->toBe('-1.000000000');
+});
+
+it('accepts comma decimal input from localized production forms', function (): void {
+    expect(app(MassConverter::class)->toGrams('1,5', MassUnit::Kilogram))
+        ->toBe('1500.000000000');
+});

@@ -256,6 +256,9 @@ class ReceiptCreate extends Component
                 'receipt_price_amount' => (string) $input['receipt_price_amount'],
                 'receipt_price_unit' => filled($input['receipt_price_unit']) ? $input['receipt_price_unit'] : null,
                 'currency' => strtoupper((string) $input['currency']),
+                'manual_exchange_rate' => filled($input['manual_exchange_rate'] ?? null)
+                    ? (string) $input['manual_exchange_rate']
+                    : null,
                 'supplier_batch_number' => filled($input['supplier_batch_number']) ? $input['supplier_batch_number'] : null,
                 'expires_at' => filled($input['expires_at']) ? $input['expires_at'] : null,
                 'notes' => filled($input['notes']) ? $input['notes'] : null,
@@ -293,6 +296,9 @@ class ReceiptCreate extends Component
                 'receipt_price_amount' => (string) $input['receipt_price_amount'],
                 'receipt_price_unit' => filled($input['receipt_price_unit']) ? $input['receipt_price_unit'] : null,
                 'currency' => strtoupper((string) $input['currency']),
+                'manual_exchange_rate' => filled($input['manual_exchange_rate'] ?? null)
+                    ? (string) $input['manual_exchange_rate']
+                    : null,
                 'supplier_batch_number' => filled($input['supplier_batch_number']) ? $input['supplier_batch_number'] : null,
                 'expires_at' => filled($input['expires_at']) ? $input['expires_at'] : null,
                 'notes' => filled($input['notes']) ? $input['notes'] : null,
@@ -317,6 +323,13 @@ class ReceiptCreate extends Component
 
         foreach ($selectedIds as $id) {
             $model = $models->get($id);
+            foreach (['actual_quantity', 'receipt_price_amount', 'manual_exchange_rate'] as $decimalField) {
+                $normalizedDecimal = NumberLocale::normalizeDecimalString($this->lineInputs[$id][$decimalField] ?? null);
+
+                if ($normalizedDecimal !== null) {
+                    $this->lineInputs[$id][$decimalField] = $normalizedDecimal;
+                }
+            }
             $packsRules = ['required', 'integer', 'min:1'];
 
             if ($model instanceof PurchaseOrderLine) {
@@ -333,6 +346,7 @@ class ReceiptCreate extends Component
             $rules["lineInputs.$id.receipt_price_amount"] = ['required', 'numeric', 'gt:0'];
             $rules["lineInputs.$id.receipt_price_unit"] = ['nullable', 'string', 'max:24'];
             $rules["lineInputs.$id.currency"] = ['required', 'string', Rule::in([$model->currency])];
+            $rules["lineInputs.$id.manual_exchange_rate"] = ['nullable', 'numeric', 'gt:0'];
             $rules["lineInputs.$id.supplier_batch_number"] = ['nullable', 'string', 'max:120'];
             $rules["lineInputs.$id.expires_at"] = ['nullable', 'date_format:Y-m-d'];
             $rules["lineInputs.$id.notes"] = ['nullable', 'string', 'max:5000'];
@@ -385,7 +399,7 @@ class ReceiptCreate extends Component
                     app(MassConverter::class)->fromGrams($canonicalQuantity, $actualUnit),
                     minimumDecimals: 2,
                     maximumDecimals: 3,
-                    locale: 'en_US',
+                    locale: $this->user()->number_locale,
                 ),
             'actual_unit' => $actualUnit,
             'receipt_price_basis' => $line->price_basis?->value ?? ListingPriceBasis::TotalPurchaseFormat->value,
@@ -395,10 +409,11 @@ class ReceiptCreate extends Component
                     $priceAmount,
                     minimumDecimals: 2,
                     maximumDecimals: 4,
-                    locale: 'en_US',
+                    locale: $this->user()->number_locale,
                 ),
             'receipt_price_unit' => $line->price_unit,
             'currency' => $line->currency,
+            'manual_exchange_rate' => '',
             'supplier_batch_number' => '',
             'expires_at' => '',
             'notes' => '',
@@ -415,7 +430,7 @@ class ReceiptCreate extends Component
                     $listing->net_quantity,
                     minimumDecimals: 2,
                     maximumDecimals: 3,
-                    locale: 'en_US',
+                    locale: $this->user()->number_locale,
                 ),
             'actual_unit' => $listing->unit_kind === StockUnitKind::Count ? 'count' : $listing->net_unit,
             'receipt_price_basis' => $listing->price_basis->value,
@@ -423,10 +438,11 @@ class ReceiptCreate extends Component
                 $listing->price_amount,
                 minimumDecimals: 2,
                 maximumDecimals: 4,
-                locale: 'en_US',
+                locale: $this->user()->number_locale,
             ),
             'receipt_price_unit' => $listing->price_unit,
             'currency' => $listing->currency,
+            'manual_exchange_rate' => '',
             'supplier_batch_number' => '',
             'expires_at' => '',
             'notes' => '',
@@ -501,7 +517,7 @@ class ReceiptCreate extends Component
                 app(MassConverter::class)->fromGrams($canonicalTotal, (string) $input['actual_unit']),
                 minimumDecimals: 2,
                 maximumDecimals: 3,
-                locale: 'en_US',
+                locale: $this->user()->number_locale,
             );
     }
 

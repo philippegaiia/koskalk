@@ -85,6 +85,13 @@ class NumberLocale
 
     public static function parseDecimalInput(mixed $value): ?float
     {
+        $normalized = self::normalizeDecimalString($value);
+
+        return $normalized === null ? null : (float) $normalized;
+    }
+
+    public static function normalizeDecimalString(mixed $value): ?string
+    {
         $normalized = preg_replace('/[\s\x{00a0}\x{202f}]/u', '', trim((string) $value));
 
         if ($normalized === null || $normalized === '') {
@@ -103,7 +110,7 @@ class NumberLocale
             $normalized = str_replace(',', '.', $normalized);
         }
 
-        return is_numeric($normalized) ? (float) $normalized : null;
+        return preg_match('/^-?\d+(?:\.\d+)?$/', $normalized) === 1 ? $normalized : null;
     }
 
     private static function usesDecimalComma(string $locale): bool

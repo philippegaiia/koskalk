@@ -235,6 +235,49 @@ it('surfaces an unavailable exchange-rate provider as a validation error', funct
         ->and(StockMovement::query()->count())->toBe(0);
 });
 
+it('uses a manual exchange rate when the provider is unavailable', function (): void {
+    Http::fake([
+        'https://api.frankfurter.dev/v2/rate/USD/EUR*' => Http::failedConnection('provider unavailable'),
+    ]);
+
+    [$owner, $workspace, $supplier, $ingredient] = directReceiptContext();
+    $listing = SupplierListing::factory()
+        ->for($workspace)
+        ->for($supplier)
+        ->for($ingredient)
+        ->create([
+            'currency' => 'USD',
+            'net_quantity' => '5',
+            'net_unit' => 'kg',
+            'canonical_quantity_per_purchase_format' => '5000',
+        ]);
+
+    $receipt = app(ReceiveDirectGoodsReceipt::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        idempotencyKey: 'direct-manual-rate',
+        lines: [[
+            'listing' => $listing,
+            'packs_received' => 1,
+            'actual_quantity' => '5',
+            'actual_unit' => 'kg',
+            'receipt_price_basis' => ListingPriceBasis::TotalPurchaseFormat,
+            'receipt_price_amount' => '100',
+            'currency' => 'USD',
+            'manual_exchange_rate' => '0.9',
+        ]],
+        receivedAt: '2026-08-03',
+    );
+
+    $line = $receipt->lines()->with('stockLot')->sole();
+
+    expect($line->exchange_rate)->toBe('0.900000000000')
+        ->and($line->exchange_rate_provider)->toBe('manual')
+        ->and($line->exchange_rate_is_manual)->toBeTrue()
+        ->and($line->stockLot->exchange_rate)->toBe('0.900000000000');
+});
+
 it('returns the original direct receipt when the same submission is retried', function (): void {
     [$owner, $workspace, $supplier, , $listing] = directReceiptContext();
     $arguments = [

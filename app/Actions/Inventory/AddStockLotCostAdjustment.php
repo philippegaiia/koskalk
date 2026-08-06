@@ -88,6 +88,16 @@ class AddStockLotCostAdjustment
                 ]);
             }
 
+            if ($compensatesAdjustmentId !== null && StockLotCostAdjustment::query()
+                ->where('workspace_id', $lockedWorkspace->id)
+                ->where('stock_lot_id', $lockedLot->id)
+                ->where('compensates_adjustment_id', $compensatesAdjustmentId)
+                ->exists()) {
+                throw ValidationException::withMessages([
+                    'compensates_adjustment_id' => 'This adjustment has already been compensated.',
+                ]);
+            }
+
             $rateSnapshot = $this->rateSnapshot(
                 currency: $currency,
                 costingCurrency: $lockedWorkspace->default_currency,

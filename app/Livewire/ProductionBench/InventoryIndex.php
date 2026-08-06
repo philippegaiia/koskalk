@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench;
 use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Actions\Inventory\QuarantineStockLot;
 use App\Actions\Inventory\ReleaseStockLot;
+use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductionRequirement;
@@ -24,6 +25,8 @@ use Livewire\Component;
 
 class InventoryIndex extends Component
 {
+    use InteractsWithAppNotifications;
+
     public ?int $supplierListingId = null;
 
     public string $quantity = '';
@@ -42,7 +45,9 @@ class InventoryIndex extends Component
 
     public string $notes = '';
 
-    public ?string $savedLotCode = null;
+    public ?string $statusMessage = null;
+
+    public string $statusType = 'idle';
 
     public function mount(): void
     {
@@ -97,7 +102,7 @@ class InventoryIndex extends Component
             notes: filled($this->notes) ? $this->notes : null,
         );
 
-        $this->savedLotCode = $lot->internal_lot_code;
+        $this->showAppNotification(__('production_bench.inventory.lot_created', ['code' => $lot->internal_lot_code]));
         $this->reset('supplierListingId', 'quantity', 'pricePerUnit', 'supplierBatchNumber', 'expiresAt', 'notes');
     }
 
@@ -170,7 +175,7 @@ class InventoryIndex extends Component
                     'lot' => $lot,
                     'positions' => collect($stock)->map(
                         fn (string $quantity): string => $lot->ingredient_id !== null
-                            ? number_format((float) $massConverter->fromGrams($quantity, $displayUnit), 2)
+                            ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
                             : number_format((float) $quantity, 0),
                     )->all(),
                 ];
@@ -179,7 +184,7 @@ class InventoryIndex extends Component
             ->map(function (Ingredient|PackagingItem $subject) use ($workspace, $positions, $massConverter, $displayUnit): array {
                 $stock = $positions->forWorkspaceSubject($workspace, $subject);
                 $format = fn (string $quantity): string => $subject instanceof Ingredient
-                    ? number_format((float) $massConverter->fromGrams($quantity, $displayUnit), 2)
+                    ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
                     : number_format((float) $quantity, 0);
 
                 return [

@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Production;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\AssignProductionTask;
 use App\Actions\Production\CancelProduction;
+use App\Actions\Production\CompleteProduction;
 use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\ReopenProductionTask;
@@ -15,6 +16,7 @@ use App\Actions\Production\StartProduction;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Department;
 use App\Models\Employee;
+use App\Models\Ingredient;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\User;
@@ -42,6 +44,14 @@ class ProductionDetail extends Component
     public array $actualRows = [];
 
     public bool $actualsDirty = false;
+
+    public string $outputMode = 'units';
+
+    public string $actualOutputQuantity = '';
+
+    public string $manufactureDate = '';
+
+    public ?string $outputIngredientId = null;
 
     public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
@@ -288,6 +298,34 @@ class ProductionDetail extends Component
         $this->dispatch('production-actuals-saved');
     }
 
+    public function complete(CompleteProduction $completeProduction): void
+    {
+        $production = $this->production();
+
+        try {
+            $completeProduction->handle(
+                actor: $this->user(),
+                production: $production,
+                actualOutputQuantity: $this->actualOutputQuantity,
+                manufactureDate: $this->manufactureDate !== '' ? $this->manufactureDate : now()->toDateString(),
+                outputIngredientId: $this->outputMode === 'intermediate' && $this->outputIngredientId !== null
+                    ? (int) $this->outputIngredientId
+                    : null,
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.production.completed'));
+        $this->dispatch('production-completed');
+    }
+
     public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
@@ -329,6 +367,11 @@ class ProductionDetail extends Component
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,
             'defaultActualRows' => $defaultActualRows,
+            'intermediateIngredients' => Ingredient::query()
+                ->withoutGlobalScopes()
+                ->where(fn ($query) => $query->whereNull('workspace_id')->orWhere('workspace_id', $workspace->id))
+                ->orderBy('display_name')
+                ->get(['id', 'display_name']),
             'employees' => Employee::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)

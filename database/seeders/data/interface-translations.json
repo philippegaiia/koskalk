@@ -10351,6 +10351,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.choose_intermediate",
+            "text": {
+                "de": "Zwischenprodukt auswählen",
+                "es": "Elige el ingrediente intermedio",
+                "fr": "Choisir l’ingrédient intermédiaire",
+                "it": "Scegli l’ingrediente intermedio",
+                "nl": "Kies het tussenproduct"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.choose_lots_manually",
             "text": {
                 "de": "Lose manuell auswählen",
@@ -10369,6 +10380,61 @@
                 "fr": "Choisissez un produit pour prévisualiser ses matières mises à l’échelle.",
                 "it": "Scegli un prodotto per vedere i materiali scalati.",
                 "nl": "Kies een product om de geschaalde materialen te bekijken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.complete",
+            "text": {
+                "de": "Produktion abschließen",
+                "es": "Completar producción",
+                "fr": "Terminer la production",
+                "it": "Completa produzione",
+                "nl": "Productie afronden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.complete_confirm",
+            "text": {
+                "de": "Diese Produktion abschließen? Verbrauch wird gebucht, ungenutzte Reservierungen werden freigegeben und das Ausgangslos wird erstellt. Dies kann nicht rückgängig gemacht werden.",
+                "es": "¿Completar esta producción? Se registrará el consumo, se liberarán las reservas no utilizadas y se creará el lote de salida. Esta acción no se puede deshacer.",
+                "fr": "Terminer cette production ? La consommation sera comptabilisée, les réservations inutilisées libérées et le lot de sortie créé. Cette action est irréversible.",
+                "it": "Completare questa produzione? Verrà registrato il consumo, rilasciate le prenotazioni inutilizzate e creato il lotto di uscita. Questa azione non può essere annullata.",
+                "nl": "Deze productie afronden? Verbruik wordt geboekt, ongebruikte reserveringen worden vrijgegeven en de uitvoerpartij wordt aangemaakt. Dit kan niet ongedaan worden gemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.complete_help",
+            "text": {
+                "de": "Erfassen Sie zuerst die Istmengen für alle Anforderungen und bestätigen Sie dann den Ausstoß.",
+                "es": "Registra primero las cantidades reales de todos los requisitos y luego confirma la producción.",
+                "fr": "Enregistrez d’abord les quantités réelles de chaque besoin, puis confirmez la sortie.",
+                "it": "Registra prima le quantità effettive per ogni requisito, poi conferma l’uscita.",
+                "nl": "Leg eerst de werkelijke hoeveelheden voor elke behoefte vast en bevestig daarna de output."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.complete_title",
+            "text": {
+                "de": "Produktion abschließen",
+                "es": "Completar producción",
+                "fr": "Terminer la production",
+                "it": "Completa produzione",
+                "nl": "Productie afronden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.completed",
+            "text": {
+                "de": "Produktion abgeschlossen.",
+                "es": "Producción completada.",
+                "fr": "Production terminée.",
+                "it": "Produzione completata.",
+                "nl": "Productie afgerond."
             }
         },
         {
@@ -10670,6 +10736,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.manufacture_date",
+            "text": {
+                "de": "Herstellungsdatum",
+                "es": "Fecha de fabricación",
+                "fr": "Date de fabrication",
+                "it": "Data di produzione",
+                "nl": "Fabricagedatum"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.mark_complete",
             "text": {
                 "de": "Als erledigt markieren",
@@ -10831,6 +10908,61 @@
                 "fr": "facultatif",
                 "it": "opzionale",
                 "nl": "optioneel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_intermediate",
+            "text": {
+                "de": "Zwischenprodukt (Gramm)",
+                "es": "Producto intermedio (gramos)",
+                "fr": "Produit intermédiaire (grammes)",
+                "it": "Prodotto intermedio (grammi)",
+                "nl": "Tussenproduct (gram)"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_intermediate_ingredient",
+            "text": {
+                "de": "Zwischenprodukt-Zutat",
+                "es": "Ingrediente intermedio",
+                "fr": "Ingrédient intermédiaire",
+                "it": "Ingrediente intermedio",
+                "nl": "Tussenproduct-ingrediënt"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_kind",
+            "text": {
+                "de": "Ausstoßart",
+                "es": "Tipo de salida",
+                "fr": "Type de sortie",
+                "it": "Tipo di uscita",
+                "nl": "Uitvoertype"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_quantity",
+            "text": {
+                "de": "Ist-Ausstoßmenge",
+                "es": "Cantidad de salida real",
+                "fr": "Quantité de sortie réelle",
+                "it": "Quantità di uscita effettiva",
+                "nl": "Werkelijke uitvoerhoeveelheid"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_units",
+            "text": {
+                "de": "Fertigprodukt (Stück)",
+                "es": "Producto terminado (unidades)",
+                "fr": "Produit fini (unités)",
+                "it": "Prodotto finito (unità)",
+                "nl": "Eindproduct (stuks)"
             }
         },
         {

@@ -174,6 +174,58 @@
         </section>
     @endif
 
+    @if ($production->status->value === 'in_production')
+        <section aria-labelledby="completion-heading" class="sk-card space-y-4 p-5 sm:p-6">
+            <div>
+                <h2 id="completion-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.complete_title') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.complete_help') }}</p>
+            </div>
+            @error('production')
+                <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+            @enderror
+            <div class="grid gap-4 sm:grid-cols-2">
+                <label class="block text-sm">
+                    <span class="font-medium">{{ __('production_bench.production.output_kind') }}</span>
+                    <select wire:model.live="outputMode" @disabled($isReadOnly) class="sk-input mt-1 w-full">
+                        <option value="units">{{ __('production_bench.production.output_units') }}</option>
+                        <option value="intermediate">{{ __('production_bench.production.output_intermediate') }}</option>
+                    </select>
+                </label>
+                <label class="block text-sm">
+                    <span class="font-medium">{{ __('production_bench.production.output_quantity') }}</span>
+                    <input type="number" inputmode="decimal" min="0" step="any" wire:model.live="actualOutputQuantity" @disabled($isReadOnly) class="sk-input mt-1 w-full font-mono">
+                </label>
+                @if ($outputMode === 'intermediate')
+                    <label class="block text-sm">
+                        <span class="font-medium">{{ __('production_bench.production.output_intermediate_ingredient') }}</span>
+                        <select wire:model.live="outputIngredientId" @disabled($isReadOnly) class="sk-input mt-1 w-full">
+                            <option value="">{{ __('production_bench.production.choose_intermediate') }}</option>
+                            @foreach ($intermediateIngredients as $ingredient)
+                                <option value="{{ $ingredient->id }}">{{ $ingredient->display_name }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                @endif
+                <label class="block text-sm">
+                    <span class="font-medium">{{ __('production_bench.production.manufacture_date') }}</span>
+                    <input type="date" wire:model.live="manufactureDate" @disabled($isReadOnly) class="sk-input mt-1 w-full">
+                </label>
+            </div>
+            @error('actual_output_quantity')
+                <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+            @enderror
+            @error('manufacture_date')
+                <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+            @enderror
+            @error('output_ingredient_id')
+                <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+            @enderror
+            <div class="flex justify-end">
+                <button type="button" wire:click="complete" wire:confirm="{{ __('production_bench.production.complete_confirm') }}" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.complete') }}</button>
+            </div>
+        </section>
+    @endif
+
     <section aria-labelledby="tasks-detail-heading" class="sk-card overflow-hidden">
         <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="tasks-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.tasks') }}</h2></div>
         @error('task_task') <div role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</div> @enderror

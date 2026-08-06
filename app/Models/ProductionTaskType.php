@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['workspace_id', 'name', 'default_duration_minutes', 'colour', 'is_active'])]
+#[Fillable(['workspace_id', 'name', 'default_duration_minutes', 'colour', 'department_id', 'is_active'])]
 class ProductionTaskType extends Model
 {
     /** @use HasFactory<ProductionTaskTypeFactory> */
@@ -26,6 +26,11 @@ class ProductionTaskType extends Model
     public function taskSetItems(): HasMany
     {
         return $this->hasMany(ProductionTaskSetItem::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     protected function casts(): array

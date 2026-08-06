@@ -9,16 +9,15 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 #[Fillable([
     'workspace_id',
-    'recipe_id',
     'name',
     'basis_quantity_grams',
     'basis_input_value',
     'basis_input_unit',
     'expected_units',
-    'is_default',
     'is_active',
 ])]
 class ProductionBatchPreset extends Model
@@ -33,9 +32,19 @@ class ProductionBatchPreset extends Model
         return $this->belongsTo(Workspace::class)->withoutGlobalScopes();
     }
 
-    public function recipe(): BelongsTo
+    public function recipes(): BelongsToMany
     {
-        return $this->belongsTo(Recipe::class)->withoutGlobalScopes();
+        return $this->belongsToMany(Recipe::class, 'production_batch_preset_recipe')
+            ->withPivot('is_default')
+            ->withTimestamps()
+            ->withoutGlobalScopes()
+            ->select('recipes.*')
+            ->orderBy('recipes.name');
+    }
+
+    public function defaultRecipes(): BelongsToMany
+    {
+        return $this->recipes()->wherePivot('is_default', true);
     }
 
     protected function casts(): array
@@ -45,7 +54,6 @@ class ProductionBatchPreset extends Model
             'basis_input_value' => 'decimal:9',
             'basis_input_unit' => MassUnit::class,
             'expected_units' => 'integer',
-            'is_default' => 'boolean',
             'is_active' => 'boolean',
         ];
     }

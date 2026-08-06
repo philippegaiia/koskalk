@@ -4,6 +4,7 @@ use App\Actions\Production\SaveEmployee;
 use App\Actions\Production\SaveProductionHoliday;
 use App\Actions\Production\SaveProductionTaskSet;
 use App\Actions\Production\SaveProductionTaskType;
+use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Actions\Production\UpdateProductionWorkingCalendar;
 use App\Models\Employee;
 use App\Models\ProductFamily;
@@ -17,6 +18,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
+use App\Services\Production\ProductionRunNumberService;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -61,7 +63,7 @@ it('saves lightweight employees and task types with optional setup fields', func
     expect($inactive->is_active)->toBeFalse();
 });
 
-it('normalizes task-set ordering and forces its first offset to zero', function (): void {
+it('keeps task-set ordering and requires a production-day anchor', function (): void {
     $fixture = productionTaskSchemaTask4Fixture();
     $anchor = app(SaveProductionTaskType::class)->handle(
         actor: $fixture['owner'],
@@ -80,8 +82,8 @@ it('normalizes task-set ordering and forces its first offset to zero', function 
         workspace: $fixture['workspace'],
         name: 'Soap task set',
         items: [
-            ['task_type_id' => $curing->id, 'days_after_production' => 7, 'duration_minutes' => 1440],
-            ['task_type_id' => $anchor->id, 'days_after_production' => 3, 'duration_minutes' => 60],
+            ['task_type_id' => $curing->id, 'days_after_production' => -1, 'duration_minutes' => 1440],
+            ['task_type_id' => $anchor->id, 'days_after_production' => 0, 'duration_minutes' => 60],
         ],
         recipe: $fixture['recipe'],
         isDefault: true,
@@ -92,11 +94,77 @@ it('normalizes task-set ordering and forces its first offset to zero', function 
     expect($taskSet)->toBeInstanceOf(ProductionTaskSet::class)
         ->and($items)->toHaveCount(2)
         ->and($items[0]->position)->toBe(1)
-        ->and($items[0]->days_after_production)->toBe(0)
+        ->and($items[0]->days_after_production)->toBe(-1)
         ->and($items[0]->production_task_type_id)->toBe($curing->id)
         ->and($items[1]->position)->toBe(2)
-        ->and($items[1]->days_after_production)->toBe(3)
-        ->and($fixture['recipe']->fresh()->defaultProductionTaskSet?->is($taskSet))->toBeTrue();
+        ->and($items[1]->days_after_production)->toBe(0)
+        ->and($fixture['recipe']->fresh()->defaultProductionTaskSets()->first()?->is($taskSet))->toBeTrue();
+});
+
+it('supports preparation offsets and reusable task sets across several products', function (): void {
+    $fixture = productionTaskSchemaTask4Fixture();
+    $otherRecipe = Recipe::factory()->for($fixture['recipe']->productFamily, 'productFamily')->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'workspace_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+    ]);
+    $prepare = app(SaveProductionTaskType::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        name: 'Prepare moulds',
+    );
+    $make = app(SaveProductionTaskType::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        name: 'Make batch',
+    );
+    $cure = app(SaveProductionTaskType::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        name: 'Cure',
+    );
+
+    $taskSet = app(SaveProductionTaskSet::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        name: 'Soap workflow',
+        items: [
+            ['task_type_id' => $prepare->id, 'days_after_production' => -1],
+            ['task_type_id' => $make->id, 'days_after_production' => 0],
+            ['task_type_id' => $cure->id, 'days_after_production' => 28],
+        ],
+    );
+
+    app(SyncProductionTaskSetProducts::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        taskSet: $taskSet,
+        recipeIds: [$fixture['recipe']->id, $otherRecipe->id],
+        defaultRecipeId: $fixture['recipe']->id,
+    );
+
+    $items = $taskSet->fresh()->items;
+
+    expect($items->pluck('days_after_production')->all())->toBe([-1, 0, 28])
+        ->and($taskSet->fresh()->recipes)->toHaveCount(2)
+        ->and($taskSet->fresh()->defaultRecipes()->pluck('id')->all())->toBe([$fixture['recipe']->id]);
+});
+
+it('requires a production-day anchor in every task set', function (): void {
+    $fixture = productionTaskSchemaTask4Fixture();
+    $prepare = app(SaveProductionTaskType::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        name: 'Prepare moulds',
+    );
+
+    expect(fn (): ProductionTaskSet => app(SaveProductionTaskSet::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        name: 'Preparation only',
+        items: [['task_type_id' => $prepare->id, 'days_after_production' => -1]],
+    ))->toThrow(ValidationException::class);
 });
 
 it('stores generated task snapshots and keeps them independent from templates', function (): void {
@@ -123,6 +191,8 @@ it('stores generated task snapshots and keeps them independent from templates', 
         'basis_input_value' => '1.000000000',
         'basis_input_unit' => 'kg',
         'expected_units' => 10,
+        'planning_batch_number' => app(ProductionRunNumberService::class)
+            ->allocatePlanningReference($fixture['workspace']),
         'idempotency_key' => 'schema-task-production',
         'created_by_user_id' => $fixture['owner']->id,
     ]);

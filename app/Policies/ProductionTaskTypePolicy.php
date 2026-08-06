@@ -42,7 +42,11 @@ class ProductionTaskTypePolicy
 
     public function delete(User $user, ProductionTaskType $taskType): bool
     {
-        return false;
+        $workspace = $taskType->workspace;
+
+        return $workspace instanceof Workspace
+            && $this->canDeleteWorkspaceRecords($user, $workspace->id)
+            && $this->productionBenchAccess->isActive($workspace);
     }
 
     public function restore(User $user, ProductionTaskType $taskType): bool

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['workspace_id', 'name', 'is_active'])]
@@ -35,9 +36,19 @@ class ProductionTaskSet extends Model
         return $this->hasMany(ProductionTask::class);
     }
 
-    public function defaultRecipes(): HasMany
+    public function recipes(): BelongsToMany
     {
-        return $this->hasMany(Recipe::class, 'default_production_task_set_id');
+        return $this->belongsToMany(Recipe::class, 'production_task_set_recipe')
+            ->withPivot('is_default')
+            ->withTimestamps()
+            ->withoutGlobalScopes()
+            ->select('recipes.*')
+            ->orderBy('recipes.name');
+    }
+
+    public function defaultRecipes(): BelongsToMany
+    {
+        return $this->recipes()->wherePivot('is_default', true);
     }
 
     protected function casts(): array

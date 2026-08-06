@@ -2,6 +2,7 @@
 
 namespace App\Actions\Production;
 
+use App\Models\Department;
 use App\Models\ProductionTaskType;
 use App\Models\User;
 use App\Models\Workspace;
@@ -21,6 +22,7 @@ class SaveProductionTaskType
         ?string $colour = null,
         bool $isActive = true,
         ?ProductionTaskType $taskType = null,
+        ?int $departmentId = null,
     ): ProductionTaskType {
         $this->access->assertWritable($actor, $workspace);
         $name = trim($name);
@@ -41,9 +43,19 @@ class SaveProductionTaskType
             throw ValidationException::withMessages(['colour' => 'Enter a valid task colour.']);
         }
 
-        return DB::transaction(function () use ($actor, $colour, $defaultDurationMinutes, $isActive, $name, $taskType, $workspace): ProductionTaskType {
+        return DB::transaction(function () use ($actor, $colour, $defaultDurationMinutes, $departmentId, $isActive, $name, $taskType, $workspace): ProductionTaskType {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
             $this->access->assertWritable($actor, $lockedWorkspace);
+
+            if ($departmentId !== null && ! Department::query()
+                ->where('workspace_id', $lockedWorkspace->id)
+                ->whereKey($departmentId)
+                ->where('is_active', true)
+                ->exists()) {
+                throw ValidationException::withMessages([
+                    'department_id' => 'Select an active department from this workspace.',
+                ]);
+            }
             $current = null;
 
             if ($taskType instanceof ProductionTaskType) {
@@ -61,6 +73,7 @@ class SaveProductionTaskType
                 'name' => $name,
                 'default_duration_minutes' => $defaultDurationMinutes,
                 'colour' => $colour,
+                'department_id' => $departmentId,
                 'is_active' => $isActive,
             ];
 

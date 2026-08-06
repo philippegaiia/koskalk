@@ -20,6 +20,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Collection;
@@ -39,7 +40,6 @@ use Illuminate\Support\Collection;
     'featured_image_path',
     'featured_image_original_name',
     'slug',
-    'default_production_task_set_id',
     'archived_at',
     'locked_at',
     'locked_by',
@@ -144,18 +144,39 @@ class Recipe extends Model implements HasRichContent
         return $this->hasMany(ProductionRun::class);
     }
 
-    public function productionBatchPresets(): HasMany
+    public function productionBatchPresets(): BelongsToMany
     {
-        return $this->hasMany(ProductionBatchPreset::class)
-            ->orderByDesc('is_default')
-            ->orderBy('name')
-            ->orderBy('id');
+        return $this->belongsToMany(ProductionBatchPreset::class, 'production_batch_preset_recipe')
+            ->withPivot('is_default')
+            ->withTimestamps()
+            ->withoutGlobalScopes()
+            ->select('production_batch_presets.*')
+            ->orderBy('production_batch_presets.name');
     }
 
-    public function defaultProductionTaskSet(): BelongsTo
+    public function defaultProductionBatchPresets(): BelongsToMany
     {
-        return $this->belongsTo(ProductionTaskSet::class, 'default_production_task_set_id')
-            ->withoutGlobalScopes();
+        return $this->productionBatchPresets()->wherePivot('is_default', true);
+    }
+
+    public function productionTaskSets(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductionTaskSet::class, 'production_task_set_recipe')
+            ->withPivot('is_default')
+            ->withTimestamps()
+            ->withoutGlobalScopes()
+            ->select('production_task_sets.*')
+            ->orderBy('production_task_sets.name');
+    }
+
+    public function defaultProductionTaskSets(): BelongsToMany
+    {
+        return $this->productionTaskSets()->wherePivot('is_default', true);
+    }
+
+    public function defaultProductionTaskSetModel(): ?ProductionTaskSet
+    {
+        return $this->defaultProductionTaskSets()->first();
     }
 
     public function latestPublishedVersion(): HasOne

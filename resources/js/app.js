@@ -6,7 +6,7 @@ import { createMediaLibraryUploader } from './media-library-uploader';
 import { createRecipeContentAutosave } from './recipe-content-autosave';
 import { createRecipeWorkbench } from './recipe-workbench/component';
 import { createSearchCombobox } from './search-combobox';
-import { createProductionCalendar } from './production-calendar';
+import { createProductionCalendar, createProductionCalendarComponent } from './production-calendar';
 
 window.appNotification = createAppNotification;
 window.recipeContentAutosave = createRecipeContentAutosave;
@@ -15,6 +15,7 @@ window.mediaLibraryUploader = createMediaLibraryUploader;
 window.recipeWorkbench = (payload) => createRecipeWorkbench(payload, createDirtyStateRegistry);
 window.searchCombobox = createSearchCombobox;
 window.productionCalendar = createProductionCalendar;
+window.productionCalendarComponent = createProductionCalendarComponent;
 
 const SIDEBAR_STORAGE_KEY = 'koskalk:sidebar-open';
 const DESKTOP_MEDIA_QUERY = '(min-width: 1024px)';

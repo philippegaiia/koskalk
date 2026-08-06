@@ -1,5 +1,6 @@
 @props([
     'purchasing' => false,
+    'productionSetup' => false,
     'compact' => false,
 ])
 
@@ -8,6 +9,8 @@
 
     @if ($purchasing)
         <x-production-bench.purchasing-navigation />
+    @elseif ($productionSetup || request()->routeIs('production-bench.production.settings*'))
+        <x-production-bench.production-settings-navigation />
     @endif
 
     <div @class([

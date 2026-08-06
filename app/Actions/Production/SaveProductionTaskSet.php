@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class SaveProductionTaskSet
 {
-    public function __construct(private readonly ProductionBenchAccess $access) {}
+    public function __construct(
+        private readonly ProductionBenchAccess $access,
+        private readonly SyncProductionTaskSetProducts $syncProducts,
+    ) {}
 
     /**
      * @param  array<int, array{task_type_id?: int, task_type?: ProductionTaskType, days_after_production?: int, duration_minutes?: int|null}>  $items
@@ -106,11 +109,13 @@ class SaveProductionTaskSet
             $current->items()->createMany($normalizedItems);
 
             if ($lockedRecipe instanceof Recipe) {
-                if ($isDefault && $isActive) {
-                    $lockedRecipe->update(['default_production_task_set_id' => $current->id]);
-                } elseif ((int) $lockedRecipe->default_production_task_set_id === (int) $current->id) {
-                    $lockedRecipe->update(['default_production_task_set_id' => null]);
-                }
+                $this->syncProducts->handle(
+                    actor: $actor,
+                    workspace: $lockedWorkspace,
+                    taskSet: $current,
+                    recipeIds: [$lockedRecipe->id],
+                    defaultRecipeId: $isDefault && $isActive ? $lockedRecipe->id : null,
+                );
             }
 
             return $current->fresh('items.taskType');
@@ -136,9 +141,9 @@ class SaveProductionTaskSet
                 ]);
             }
 
-            if (! is_int($days) && ! (is_string($days) && preg_match('/^\d+$/', $days) === 1)) {
+            if (! is_int($days) && ! (is_string($days) && preg_match('/^-?\d+$/', $days) === 1)) {
                 throw ValidationException::withMessages([
-                    "items.{$index}.days_after_production" => 'Days after production must be a whole number.',
+                    "items.{$index}.days_after_production" => 'The relative production day must be a whole number.',
                 ]);
             }
 
@@ -151,9 +156,15 @@ class SaveProductionTaskSet
             $normalized[] = [
                 'production_task_type_id' => (int) $taskTypeId,
                 'position' => $index + 1,
-                'days_after_production' => $index === 0 ? 0 : (int) $days,
+                'days_after_production' => (int) $days,
                 'duration_minutes' => $duration === null ? null : (int) $duration,
             ];
+        }
+
+        if (! collect($normalized)->contains(fn (array $item): bool => $item['days_after_production'] === 0)) {
+            throw ValidationException::withMessages([
+                'items' => 'Add at least one task scheduled on the production day.',
+            ]);
         }
 
         return $normalized;

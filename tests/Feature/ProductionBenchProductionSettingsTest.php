@@ -40,8 +40,8 @@ it('renders the setup workspace and saves employee, task, task set, and calendar
     $taskType = ProductionTaskType::query()->where('workspace_id', $fixture['workspace']->id)->firstOrFail();
 
     $page->set('taskSetName', 'Soap workflow')
-        ->set('taskSetRecipeId', (string) $fixture['recipe']->id)
-        ->set('taskSetIsDefault', true)
+        ->set('taskSetRecipeIds', [(string) $fixture['recipe']->id])
+        ->set('taskSetDefaultRecipeIds', [(string) $fixture['recipe']->id])
         ->set('taskSetItems', [[
             'task_type_id' => $taskType->id,
             'days_after_production' => 0,
@@ -61,7 +61,7 @@ it('renders the setup workspace and saves employee, task, task set, and calendar
     expect($employee->fresh()->first_name)->toBe('Ana')
         ->and($taskType->fresh()->default_duration_minutes)->toBe(45)
         ->and(ProductionTaskSet::query()->where('workspace_id', $fixture['workspace']->id)->first()->name)->toBe('Soap workflow')
-        ->and($fixture['recipe']->fresh()->default_production_task_set_id)->not->toBeNull()
+        ->and($fixture['recipe']->fresh()->defaultProductionTaskSets()->exists())->toBeTrue()
         ->and(ProductionHoliday::query()->where('workspace_id', $fixture['workspace']->id)->first()->is_recurring)->toBeTrue()
         ->and($fixture['workspace']->fresh()->production_works_on_weekends)->toBeTrue();
 });
@@ -71,20 +71,20 @@ it('saves editable batch presets and keeps workspace data isolated', function ()
     $other = productionSettingsFixture();
 
     Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
-        ->set('presetRecipeId', (string) $fixture['recipe']->id)
+        ->set('presetRecipeIds', [(string) $fixture['recipe']->id])
         ->set('presetName', 'Default soap batch')
         ->set('presetBasisInputValue', '12')
         ->set('presetBasisInputUnit', 'kg')
         ->set('presetExpectedUnits', '100')
-        ->set('presetIsDefault', true)
+        ->set('presetDefaultRecipeIds', [(string) $fixture['recipe']->id])
         ->call('savePreset')
         ->assertHasNoErrors();
 
     $preset = ProductionBatchPreset::query()->where('workspace_id', $fixture['workspace']->id)->firstOrFail();
 
-    expect($preset->recipe_id)->toBe($fixture['recipe']->id)
+    expect($preset->recipes()->whereKey($fixture['recipe']->id)->exists())->toBeTrue()
         ->and($preset->basis_quantity_grams)->toBe('12000.000000000')
-        ->and($preset->is_default)->toBeTrue();
+        ->and($preset->fresh()->defaultRecipes()->whereKey($fixture['recipe']->id)->exists())->toBeTrue();
 
     Livewire::actingAs($other['owner'])->test(SettingsIndex::class)
         ->assertDontSee($preset->name);
@@ -109,6 +109,81 @@ it('keeps the setup page read-only when the entitlement is cancelled', function 
 it('has English labels for the setup workspace', function (): void {
     expect(Lang::has('production_bench.settings.title', 'en'))->toBeTrue()
         ->and(Lang::get('production_bench.navigation.production', [], 'en'))->toBe('Production setup');
+});
+
+it('deletes unused templates while protecting task types used by a task set', function (): void {
+    $fixture = productionSettingsFixture();
+    $page = Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class);
+    $taskType = ProductionTaskType::factory()->for($fixture['workspace'])->create();
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create();
+    $taskSet->items()->create([
+        'production_task_type_id' => $taskType->id,
+        'position' => 1,
+        'days_after_production' => 0,
+    ]);
+    $preset = ProductionBatchPreset::factory()->for($fixture['workspace'])->create();
+
+    $page->call('deleteTaskType', $taskType->id)
+        ->assertHasErrors('taskTypeName');
+
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+        ->call('deleteTaskSet', $taskSet->id)
+        ->call('deleteTaskType', $taskType->id)
+        ->call('deletePreset', $preset->id)
+        ->assertHasNoErrors();
+
+    expect(ProductionTaskSet::query()->find($taskSet->id))->toBeNull()
+        ->and(ProductionTaskType::query()->find($taskType->id))->toBeNull()
+        ->and(ProductionBatchPreset::query()->find($preset->id))->toBeNull();
+});
+
+it('deletes employees from the setup list', function (): void {
+    $fixture = productionSettingsFixture();
+    $employee = Employee::factory()->for($fixture['workspace'])->create();
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(SettingsIndex::class)
+        ->call('deleteEmployee', $employee->id)
+        ->assertHasNoErrors();
+
+    expect(Employee::query()->find($employee->id))->toBeNull();
+});
+
+it('organizes production setup into focused submenu routes', function (): void {
+    $fixture = productionSettingsFixture();
+    $sections = [
+        'presets' => 'preset-heading',
+        'employees' => 'employee-heading',
+        'task-types' => 'task-type-heading',
+        'task-sets' => 'task-set-heading',
+        'calendar' => 'holiday-heading',
+    ];
+
+    foreach ($sections as $section => $heading) {
+        $response = $this->actingAs($fixture['owner'])
+            ->get(route("production-bench.production.settings.{$section}"));
+
+        $response->assertOk()
+            ->assertSee("id=\"{$heading}\"", false);
+
+        foreach (array_diff(array_values($sections), [$heading]) as $otherHeading) {
+            $response->assertDontSee("id=\"{$otherHeading}\"", false);
+        }
+    }
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('production-bench.production.settings.employees'))
+        ->assertSeeHtml('lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(13rem,1fr)_auto_auto]')
+        ->assertSeeHtml('lg:self-end')
+        ->assertSeeHtml('lg:pb-5')
+        ->assertDontSeeHtml('max-w-5xl')
+        ->assertDontSeeHtml('lg:grid-cols-2');
+
+    $this->actingAs($fixture['owner'])
+        ->get(route('production-bench.production.settings.task-types'))
+        ->assertSeeHtml('wire:submit="saveTaskType" class="sk-card grid gap-4 p-5"')
+        ->assertDontSeeHtml('sm:grid-cols-2')
+        ->assertDontSeeHtml('lg:grid-cols-2');
 });
 
 /** @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion} */

@@ -2,13 +2,20 @@
 
 namespace App\Livewire\ProductionBench\Production;
 
+use App\Actions\Production\DeleteDepartment;
+use App\Actions\Production\DeleteEmployee;
+use App\Actions\Production\SaveDepartment;
 use App\Actions\Production\SaveEmployee;
 use App\Actions\Production\SaveProductionBatchPreset;
 use App\Actions\Production\SaveProductionHoliday;
 use App\Actions\Production\SaveProductionTaskSet;
 use App\Actions\Production\SaveProductionTaskType;
+use App\Actions\Production\SyncProductionBatchPresetProducts;
+use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Actions\Production\UpdateProductionWorkingCalendar;
+use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\MassUnit;
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionHoliday;
@@ -18,19 +25,39 @@ use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
+use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
 
 class SettingsIndex extends Component
 {
+    use InteractsWithAppNotifications;
+
+    public string $section = 'all';
+
+    public ?string $statusMessage = null;
+
+    public string $statusType = 'idle';
+
     public string $employeeFirstName = '';
 
     public string $employeeLastName = '';
 
+    public string $employeeTitle = '';
+
+    /** @var list<string|int> */
+    public array $employeeDepartmentIds = [];
+
     public bool $employeeIsActive = true;
 
     public ?int $editingEmployeeId = null;
+
+    public string $departmentName = '';
+
+    public bool $departmentIsActive = true;
+
+    public ?int $editingDepartmentId = null;
 
     public string $taskTypeName = '';
 
@@ -38,15 +65,22 @@ class SettingsIndex extends Component
 
     public string $taskTypeColour = '';
 
+    public string|int|null $taskTypeDepartmentId = null;
+
     public bool $taskTypeIsActive = true;
 
     public ?int $editingTaskTypeId = null;
 
     public string $taskSetName = '';
 
-    public string $taskSetRecipeId = '';
+    /** @var list<string|int> */
+    public array $taskSetRecipeIds = [];
 
-    public bool $taskSetIsDefault = false;
+    /** @var list<string|int> */
+    public array $taskSetDefaultRecipeIds = [];
+
+    /** @deprecated Kept as a compatibility alias for older Livewire clients. */
+    public string $taskSetDefaultRecipeId = '';
 
     public bool $taskSetIsActive = true;
 
@@ -55,6 +89,13 @@ class SettingsIndex extends Component
 
     public ?int $editingTaskSetId = null;
 
+    /** @var list<string|int> */
+    public array $presetRecipeIds = [];
+
+    /** @var list<string|int> */
+    public array $presetDefaultRecipeIds = [];
+
+    /** @deprecated Kept as a compatibility alias for older Livewire clients. */
     public string $presetRecipeId = '';
 
     public string $presetName = '';
@@ -65,6 +106,7 @@ class SettingsIndex extends Component
 
     public string $presetExpectedUnits = '';
 
+    /** @deprecated Kept as a compatibility alias for older Livewire clients. */
     public bool $presetIsDefault = false;
 
     public bool $presetIsActive = true;
@@ -81,6 +123,16 @@ class SettingsIndex extends Component
 
     public function mount(): void
     {
+        $this->section = match (true) {
+            request()->routeIs('production-bench.production.settings.presets') => 'presets',
+            request()->routeIs('production-bench.production.settings.departments') => 'departments',
+            request()->routeIs('production-bench.production.settings.employees') => 'employees',
+            request()->routeIs('production-bench.production.settings.task-types') => 'task-types',
+            request()->routeIs('production-bench.production.settings.task-sets') => 'task-sets',
+            request()->routeIs('production-bench.production.settings.calendar') => 'calendar',
+            default => 'all',
+        };
+
         $this->worksOnWeekends = (bool) $this->workspace()->production_works_on_weekends;
         $this->taskSetItems = [$this->emptyTaskSetItem()];
         $this->holidayDate = now()->toDateString();
@@ -91,6 +143,9 @@ class SettingsIndex extends Component
         $this->validate([
             'employeeFirstName' => ['required', 'string', 'max:80'],
             'employeeLastName' => ['required', 'string', 'max:80'],
+            'employeeTitle' => ['nullable', 'string', 'max:120'],
+            'employeeDepartmentIds' => ['array'],
+            'employeeDepartmentIds.*' => ['integer'],
         ]);
 
         try {
@@ -105,6 +160,8 @@ class SettingsIndex extends Component
                 lastName: $this->employeeLastName,
                 isActive: $this->employeeIsActive,
                 employee: $employee,
+                title: $this->employeeTitle,
+                departmentIds: $this->employeeDepartmentIds,
             );
         } catch (ValidationException $exception) {
             $this->surfaceErrors('employee', $exception);
@@ -113,6 +170,7 @@ class SettingsIndex extends Component
         }
 
         $this->resetEmployeeForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-settings-saved');
     }
 
@@ -122,7 +180,94 @@ class SettingsIndex extends Component
         $this->editingEmployeeId = $employee->id;
         $this->employeeFirstName = $employee->first_name;
         $this->employeeLastName = $employee->last_name;
+        $this->employeeTitle = (string) ($employee->title ?? '');
+        $this->employeeDepartmentIds = $employee->departments->pluck('id')->all();
         $this->employeeIsActive = $employee->is_active;
+    }
+
+    public function deleteEmployee(int $employeeId, DeleteEmployee $deleteEmployee): void
+    {
+        $workspace = $this->workspace();
+        $employee = Employee::query()
+            ->where('workspace_id', $workspace->id)
+            ->findOrFail($employeeId);
+
+        try {
+            $deleteEmployee->handle(
+                actor: $this->user(),
+                workspace: $workspace,
+                employee: $employee,
+            );
+        } catch (ValidationException $exception) {
+            $this->surfaceErrors('employee', $exception);
+
+            return;
+        }
+
+        $this->resetEmployeeForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-settings-saved');
+    }
+
+    public function saveDepartment(SaveDepartment $saveDepartment): void
+    {
+        $this->validate([
+            'departmentName' => ['required', 'string', 'max:120'],
+        ]);
+
+        try {
+            $department = $this->editingDepartmentId === null
+                ? null
+                : Department::query()->where('workspace_id', $this->workspace()->id)->findOrFail($this->editingDepartmentId);
+
+            $saveDepartment->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                name: $this->departmentName,
+                isActive: $this->departmentIsActive,
+                department: $department,
+            );
+        } catch (ValidationException $exception) {
+            $this->surfaceErrors('department', $exception);
+
+            return;
+        }
+
+        $this->resetDepartmentForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-settings-saved');
+    }
+
+    public function editDepartment(int $departmentId): void
+    {
+        $department = Department::query()->where('workspace_id', $this->workspace()->id)->findOrFail($departmentId);
+        $this->editingDepartmentId = $department->id;
+        $this->departmentName = $department->name;
+        $this->departmentIsActive = $department->is_active;
+    }
+
+    public function deleteDepartment(int $departmentId, DeleteDepartment $deleteDepartment): void
+    {
+        $workspace = $this->workspace();
+        $department = Department::query()
+            ->where('workspace_id', $workspace->id)
+            ->findOrFail($departmentId);
+
+        try {
+            $deleteDepartment->handle(
+                actor: $this->user(),
+                workspace: $workspace,
+                department: $department,
+            );
+        } catch (ValidationException $exception) {
+            $this->surfaceErrors('department', $exception);
+
+            return;
+        }
+
+        $this->resetDepartmentForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-settings-saved');
     }
 
     public function saveTaskType(SaveProductionTaskType $saveTaskType): void
@@ -131,6 +276,7 @@ class SettingsIndex extends Component
             'taskTypeName' => ['required', 'string', 'max:120'],
             'taskTypeDuration' => ['nullable', 'integer', 'min:0'],
             'taskTypeColour' => ['nullable', 'string', 'max:16'],
+            'taskTypeDepartmentId' => ['nullable', 'integer'],
         ]);
 
         try {
@@ -146,6 +292,7 @@ class SettingsIndex extends Component
                 colour: $this->taskTypeColour === '' ? null : $this->taskTypeColour,
                 isActive: $this->taskTypeIsActive,
                 taskType: $taskType,
+                departmentId: $this->taskTypeDepartmentId === null || $this->taskTypeDepartmentId === '' ? null : (int) $this->taskTypeDepartmentId,
             );
         } catch (ValidationException $exception) {
             $this->surfaceErrors('taskType', $exception);
@@ -154,6 +301,7 @@ class SettingsIndex extends Component
         }
 
         $this->resetTaskTypeForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-settings-saved');
     }
 
@@ -164,7 +312,28 @@ class SettingsIndex extends Component
         $this->taskTypeName = $taskType->name;
         $this->taskTypeDuration = $taskType->default_duration_minutes === null ? '' : (string) $taskType->default_duration_minutes;
         $this->taskTypeColour = (string) ($taskType->colour ?? '');
+        $this->taskTypeDepartmentId = $taskType->department_id;
         $this->taskTypeIsActive = $taskType->is_active;
+    }
+
+    public function deleteTaskType(int $taskTypeId, ProductionBenchAccess $access): void
+    {
+        $workspace = $this->workspace();
+        $access->assertWritable($this->user(), $workspace);
+        $taskType = ProductionTaskType::query()
+            ->where('workspace_id', $workspace->id)
+            ->findOrFail($taskTypeId);
+
+        if ($taskType->taskSetItems()->exists()) {
+            $this->addError('taskTypeName', __('production_bench.settings.task_type_in_use'));
+
+            return;
+        }
+
+        $taskType->delete();
+        $this->resetTaskTypeForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-settings-saved');
     }
 
     public function addTaskSetItem(): void
@@ -182,23 +351,26 @@ class SettingsIndex extends Component
         $this->taskSetItems = array_values($this->taskSetItems);
     }
 
-    public function saveTaskSet(SaveProductionTaskSet $saveTaskSet): void
-    {
+    public function saveTaskSet(
+        SaveProductionTaskSet $saveTaskSet,
+        SyncProductionTaskSetProducts $syncProducts,
+    ): void {
         $this->validate([
             'taskSetName' => ['required', 'string', 'max:120'],
             'taskSetItems' => ['required', 'array', 'min:1'],
             'taskSetItems.*.task_type_id' => ['required', 'integer'],
-            'taskSetItems.*.days_after_production' => ['required', 'integer', 'min:0'],
+            'taskSetItems.*.days_after_production' => ['required', 'integer'],
             'taskSetItems.*.duration_minutes' => ['nullable', 'integer', 'min:0'],
+            'taskSetRecipeIds' => ['array'],
+            'taskSetRecipeIds.*' => ['integer'],
+            'taskSetDefaultRecipeIds' => ['array'],
+            'taskSetDefaultRecipeIds.*' => ['integer'],
         ]);
 
         try {
             $taskSet = $this->editingTaskSetId === null
                 ? null
                 : ProductionTaskSet::query()->where('workspace_id', $this->workspace()->id)->findOrFail($this->editingTaskSetId);
-            $recipe = $this->taskSetRecipeId === ''
-                ? null
-                : Recipe::query()->where('workspace_id', $this->workspace()->id)->findOrFail((int) $this->taskSetRecipeId);
             $items = array_map(
                 fn (array $item): array => [
                     ...$item,
@@ -209,15 +381,37 @@ class SettingsIndex extends Component
                 $this->taskSetItems,
             );
 
-            $saveTaskSet->handle(
+            $savedTaskSet = $saveTaskSet->handle(
                 actor: $this->user(),
                 workspace: $this->workspace(),
                 name: $this->taskSetName,
                 items: $items,
-                recipe: $recipe,
-                isDefault: $this->taskSetIsDefault,
                 isActive: $this->taskSetIsActive,
                 taskSet: $taskSet,
+            );
+
+            $taskSetRecipeIds = collect($this->taskSetRecipeIds)
+                ->merge($this->taskSetDefaultRecipeIds)
+                ->when($this->taskSetDefaultRecipeId !== '', fn ($ids) => $ids->push($this->taskSetDefaultRecipeId))
+                ->map(fn (int|string $id): int => (int) $id)
+                ->filter(fn (int $id): bool => $id > 0)
+                ->unique()
+                ->values();
+            $taskSetDefaultRecipeIds = collect($this->taskSetDefaultRecipeIds)
+                ->when($this->taskSetDefaultRecipeId !== '', fn ($ids) => $ids->push($this->taskSetDefaultRecipeId))
+                ->map(fn (int|string $id): int => (int) $id)
+                ->filter(fn (int $id): bool => $id > 0)
+                ->unique()
+                ->values();
+
+            $syncProducts->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                taskSet: $savedTaskSet,
+                assignments: $taskSetRecipeIds->map(fn (int $recipeId): array => [
+                    'recipe_id' => $recipeId,
+                    'is_default' => $taskSetDefaultRecipeIds->contains($recipeId),
+                ])->all(),
             );
         } catch (ValidationException $exception) {
             $this->surfaceErrors('taskSet', $exception);
@@ -226,6 +420,7 @@ class SettingsIndex extends Component
         }
 
         $this->resetTaskSetForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-settings-saved');
     }
 
@@ -233,7 +428,7 @@ class SettingsIndex extends Component
     {
         $taskSet = ProductionTaskSet::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with('items')
+            ->with(['items', 'recipes', 'defaultRecipes'])
             ->findOrFail($taskSetId);
         $this->editingTaskSetId = $taskSet->id;
         $this->taskSetName = $taskSet->name;
@@ -243,16 +438,40 @@ class SettingsIndex extends Component
             'days_after_production' => $item->days_after_production,
             'duration_minutes' => $item->duration_minutes ?? '',
         ])->all();
-        $this->taskSetRecipeId = (string) Recipe::query()
-            ->where('workspace_id', $this->workspace()->id)
-            ->where('default_production_task_set_id', $taskSet->id)
-            ->value('id');
+        $this->taskSetRecipeIds = $taskSet->recipes->pluck('id')->map(fn (int $id): string => (string) $id)->all();
+        $this->taskSetDefaultRecipeIds = $taskSet->recipes
+            ->filter(fn (Recipe $recipe): bool => (bool) $recipe->pivot->is_default)
+            ->pluck('id')
+            ->map(fn (int $id): string => (string) $id)
+            ->values()
+            ->all();
+        $this->taskSetDefaultRecipeId = (string) ($this->taskSetDefaultRecipeIds[0] ?? '');
     }
 
-    public function savePreset(SaveProductionBatchPreset $savePreset): void
+    public function deleteTaskSet(int $taskSetId, ProductionBenchAccess $access): void
     {
+        $workspace = $this->workspace();
+        $access->assertWritable($this->user(), $workspace);
+        $taskSet = ProductionTaskSet::query()
+            ->where('workspace_id', $workspace->id)
+            ->findOrFail($taskSetId);
+        $taskSet->delete();
+        $this->resetTaskSetForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-settings-saved');
+    }
+
+    public function savePreset(
+        SaveProductionBatchPreset $savePreset,
+        SyncProductionBatchPresetProducts $syncProducts,
+    ): void {
+        $this->presetBasisInputValue = NumberLocale::normalizeDecimalString($this->presetBasisInputValue) ?? $this->presetBasisInputValue;
+
         $this->validate([
-            'presetRecipeId' => ['required', 'integer'],
+            'presetRecipeIds' => ['array'],
+            'presetRecipeIds.*' => ['integer'],
+            'presetDefaultRecipeIds' => ['array'],
+            'presetDefaultRecipeIds.*' => ['integer'],
             'presetName' => ['required', 'string', 'max:120'],
             'presetBasisInputValue' => ['required', 'numeric', 'gt:0'],
             'presetBasisInputUnit' => ['required', 'in:g,kg,oz,lb'],
@@ -260,22 +479,42 @@ class SettingsIndex extends Component
         ]);
 
         try {
-            $recipe = Recipe::query()->where('workspace_id', $this->workspace()->id)->findOrFail((int) $this->presetRecipeId);
             $preset = $this->editingPresetId === null
                 ? null
                 : ProductionBatchPreset::query()->where('workspace_id', $this->workspace()->id)->findOrFail($this->editingPresetId);
 
-            $savePreset->handle(
+            $savedPreset = $savePreset->handle(
                 actor: $this->user(),
                 workspace: $this->workspace(),
-                recipe: $recipe,
                 name: $this->presetName,
                 basisInputValue: $this->presetBasisInputValue,
                 basisInputUnit: $this->presetBasisInputUnit,
                 expectedUnits: $this->presetExpectedUnits,
-                isDefault: $this->presetIsDefault,
                 isActive: $this->presetIsActive,
                 preset: $preset,
+            );
+
+            $presetRecipeIds = collect($this->presetRecipeIds)
+                ->merge($this->presetDefaultRecipeIds)
+                ->when($this->presetRecipeId !== '', fn ($ids) => $ids->push($this->presetRecipeId))
+                ->map(fn (int|string $id): int => (int) $id)
+                ->filter(fn (int $id): bool => $id > 0)
+                ->unique()
+                ->values();
+            $presetDefaultRecipeIds = collect($this->presetDefaultRecipeIds)
+                ->when($this->presetIsDefault && $this->presetRecipeId !== '', fn ($ids) => $ids->push($this->presetRecipeId))
+                ->map(fn (int|string $id): int => (int) $id)
+                ->filter(fn (int $id): bool => $id > 0)
+                ->unique();
+
+            $syncProducts->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                preset: $savedPreset,
+                assignments: $presetRecipeIds->map(fn (int $recipeId): array => [
+                    'recipe_id' => $recipeId,
+                    'is_default' => $presetDefaultRecipeIds->contains($recipeId),
+                ])->all(),
             );
         } catch (ValidationException $exception) {
             $this->surfaceErrors('preset', $exception);
@@ -284,6 +523,7 @@ class SettingsIndex extends Component
         }
 
         $this->resetPresetForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-settings-saved');
     }
 
@@ -291,13 +531,39 @@ class SettingsIndex extends Component
     {
         $preset = ProductionBatchPreset::query()->where('workspace_id', $this->workspace()->id)->findOrFail($presetId);
         $this->editingPresetId = $preset->id;
-        $this->presetRecipeId = (string) $preset->recipe_id;
+        $preset->load('recipes');
+        $this->presetRecipeIds = $preset->recipes->pluck('id')->map(fn (int $id): string => (string) $id)->all();
+        $this->presetDefaultRecipeIds = $preset->recipes
+            ->filter(fn (Recipe $recipe): bool => (bool) $recipe->pivot->is_default)
+            ->pluck('id')
+            ->map(fn (int $id): string => (string) $id)
+            ->values()
+            ->all();
+        $this->presetRecipeId = (string) ($this->presetRecipeIds[0] ?? '');
         $this->presetName = $preset->name;
-        $this->presetBasisInputValue = (string) $preset->basis_input_value;
+        $this->presetBasisInputValue = NumberLocale::formatAdaptiveDecimal(
+            $preset->basis_input_value,
+            0,
+            3,
+            $this->user()->number_locale,
+        );
         $this->presetBasisInputUnit = $preset->basis_input_unit->value;
         $this->presetExpectedUnits = (string) $preset->expected_units;
-        $this->presetIsDefault = $preset->is_default;
+        $this->presetIsDefault = false;
         $this->presetIsActive = $preset->is_active;
+    }
+
+    public function deletePreset(int $presetId, ProductionBenchAccess $access): void
+    {
+        $workspace = $this->workspace();
+        $access->assertWritable($this->user(), $workspace);
+        $preset = ProductionBatchPreset::query()
+            ->where('workspace_id', $workspace->id)
+            ->findOrFail($presetId);
+        $preset->delete();
+        $this->resetPresetForm();
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-settings-saved');
     }
 
     public function saveHoliday(SaveProductionHoliday $saveHoliday): void
@@ -324,6 +590,7 @@ class SettingsIndex extends Component
         $this->holidayName = '';
         $this->holidayDate = now()->toDateString();
         $this->holidayIsRecurring = false;
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-settings-saved');
     }
 
@@ -332,6 +599,8 @@ class SettingsIndex extends Component
         try {
             $workspace = $updateCalendar->handle($this->user(), $this->workspace(), $this->worksOnWeekends);
             $this->worksOnWeekends = (bool) $workspace->production_works_on_weekends;
+            $this->showAppNotification(__('production_bench.settings.saved'));
+            $this->dispatch('production-settings-saved');
         } catch (ValidationException $exception) {
             $this->surfaceErrors('worksOnWeekends', $exception);
         }
@@ -342,14 +611,16 @@ class SettingsIndex extends Component
         $workspace = $this->workspace();
 
         return view('livewire.production-bench.production.settings-index', [
+            'section' => $this->section,
             'workspace' => $workspace,
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
-            'employees' => Employee::query()->where('workspace_id', $workspace->id)->orderBy('last_name')->orderBy('first_name')->get(),
-            'taskTypes' => ProductionTaskType::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),
-            'taskSets' => ProductionTaskSet::query()->where('workspace_id', $workspace->id)->with('items.taskType')->orderBy('name')->get(),
+            'employees' => Employee::query()->where('workspace_id', $workspace->id)->with('departments')->orderBy('last_name')->orderBy('first_name')->get(),
+            'departments' => Department::query()->where('workspace_id', $workspace->id)->withCount(['employees', 'productionTaskTypes', 'productionTasks'])->orderByDesc('is_active')->orderBy('name')->get(),
+            'taskTypes' => ProductionTaskType::query()->where('workspace_id', $workspace->id)->with('department')->orderBy('name')->get(),
+            'taskSets' => ProductionTaskSet::query()->where('workspace_id', $workspace->id)->with(['items.taskType', 'recipes'])->orderBy('name')->get(),
             'recipes' => Recipe::query()->where('workspace_id', $workspace->id)->whereHas('publishedVersions')->orderBy('name')->get(),
-            'presets' => ProductionBatchPreset::query()->where('workspace_id', $workspace->id)->with('recipe')->orderBy('recipe_id')->orderBy('name')->get(),
+            'presets' => ProductionBatchPreset::query()->where('workspace_id', $workspace->id)->with('recipes')->orderBy('name')->get(),
             'holidays' => ProductionHoliday::query()->where('workspace_id', $workspace->id)->orderBy('date')->get(),
             'massUnits' => MassUnit::cases(),
         ]);
@@ -363,27 +634,32 @@ class SettingsIndex extends Component
 
     public function resetEmployeeForm(): void
     {
-        $this->reset(['employeeFirstName', 'employeeLastName', 'editingEmployeeId']);
+        $this->reset(['employeeFirstName', 'employeeLastName', 'employeeTitle', 'employeeDepartmentIds', 'editingEmployeeId']);
         $this->employeeIsActive = true;
+    }
+
+    public function resetDepartmentForm(): void
+    {
+        $this->reset(['departmentName', 'editingDepartmentId']);
+        $this->departmentIsActive = true;
     }
 
     public function resetTaskTypeForm(): void
     {
-        $this->reset(['taskTypeName', 'taskTypeDuration', 'taskTypeColour', 'editingTaskTypeId']);
+        $this->reset(['taskTypeName', 'taskTypeDuration', 'taskTypeColour', 'taskTypeDepartmentId', 'editingTaskTypeId']);
         $this->taskTypeIsActive = true;
     }
 
     public function resetTaskSetForm(): void
     {
-        $this->reset(['taskSetName', 'taskSetRecipeId', 'editingTaskSetId']);
+        $this->reset(['taskSetName', 'taskSetRecipeIds', 'taskSetDefaultRecipeIds', 'taskSetDefaultRecipeId', 'editingTaskSetId']);
         $this->taskSetItems = [$this->emptyTaskSetItem()];
-        $this->taskSetIsDefault = false;
         $this->taskSetIsActive = true;
     }
 
     public function resetPresetForm(): void
     {
-        $this->reset(['presetRecipeId', 'presetName', 'presetBasisInputValue', 'presetExpectedUnits', 'editingPresetId']);
+        $this->reset(['presetRecipeIds', 'presetDefaultRecipeIds', 'presetRecipeId', 'presetName', 'presetBasisInputValue', 'presetExpectedUnits', 'editingPresetId']);
         $this->presetBasisInputUnit = 'kg';
         $this->presetIsDefault = false;
         $this->presetIsActive = true;
@@ -396,6 +672,8 @@ class SettingsIndex extends Component
                 $errorKey = match (true) {
                     $field === 'production_bench' && $prefix === 'employee' => 'employeeFirstName',
                     $field === 'production_bench' => $prefix.'Name',
+                    $field === 'department_id' && $prefix === 'taskType' => 'taskTypeDepartmentId',
+                    $field === 'departments' && $prefix === 'employee' => 'employeeDepartmentIds',
                     $field === 'items' => $prefix.'Items',
                     default => $prefix.ucfirst($field),
                 };

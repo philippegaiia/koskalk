@@ -95,6 +95,11 @@ class Workspace extends Model
         return $this->hasMany(Employee::class);
     }
 
+    public function departments(): HasMany
+    {
+        return $this->hasMany(Department::class);
+    }
+
     public function productionTaskTypes(): HasMany
     {
         return $this->hasMany(ProductionTaskType::class);

@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Models\Employee;
+use App\Models\Department;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Employee>
+ * @extends Factory<Department>
  */
-class EmployeeFactory extends Factory
+class DepartmentFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -18,11 +18,12 @@ class EmployeeFactory extends Factory
      */
     public function definition(): array
     {
+        $name = fake()->unique()->words(2, true);
+
         return [
             'workspace_id' => Workspace::factory(),
-            'first_name' => fake()->firstName(),
-            'last_name' => fake()->lastName(),
-            'title' => null,
+            'name' => $name,
+            'normalized_name' => mb_strtolower($name),
             'is_active' => true,
         ];
     }

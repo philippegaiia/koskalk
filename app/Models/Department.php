@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasPublicId;
-use Database\Factories\EmployeeFactory;
+use Database\Factories\DepartmentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,10 +11,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['workspace_id', 'first_name', 'last_name', 'title', 'is_active'])]
-class Employee extends Model
+#[Fillable(['workspace_id', 'name', 'normalized_name', 'is_active'])]
+class Department extends Model
 {
-    /** @use HasFactory<EmployeeFactory> */
+    /** @use HasFactory<DepartmentFactory> */
     use HasFactory;
 
     use HasPublicId;
@@ -24,15 +24,20 @@ class Employee extends Model
         return $this->belongsTo(Workspace::class)->withoutGlobalScopes();
     }
 
+    public function employees(): BelongsToMany
+    {
+        return $this->belongsToMany(Employee::class, 'department_employee')
+            ->withTimestamps();
+    }
+
+    public function productionTaskTypes(): HasMany
+    {
+        return $this->hasMany(ProductionTaskType::class);
+    }
+
     public function productionTasks(): HasMany
     {
         return $this->hasMany(ProductionTask::class);
-    }
-
-    public function departments(): BelongsToMany
-    {
-        return $this->belongsToMany(Department::class, 'department_employee')
-            ->withTimestamps();
     }
 
     protected function casts(): array

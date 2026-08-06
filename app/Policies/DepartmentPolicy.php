@@ -2,13 +2,13 @@
 
 namespace App\Policies;
 
-use App\Models\ProductionTaskSet;
+use App\Models\Department;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Policies\Concerns\HandlesWorkspaceAuthorization;
 use App\Services\ProductionBenchAccess;
 
-class ProductionTaskSetPolicy
+class DepartmentPolicy
 {
     use HandlesWorkspaceAuthorization;
 
@@ -19,42 +19,43 @@ class ProductionTaskSetPolicy
         return true;
     }
 
-    public function view(User $user, ProductionTaskSet $taskSet): bool
+    public function view(User $user, Department $department): bool
     {
-        $workspace = $taskSet->workspace;
+        $workspace = $department->workspace;
 
         return $workspace instanceof Workspace && $this->canAccessWorkspace($user, $workspace);
     }
 
     public function create(User $user, Workspace $workspace): bool
     {
-        return $this->canEditWorkspaceRecords($user, $workspace->id) && $this->productionBenchAccess->isActive($workspace);
+        return $this->canEditWorkspaceRecords($user, $workspace->id)
+            && $this->productionBenchAccess->isActive($workspace);
     }
 
-    public function update(User $user, ProductionTaskSet $taskSet): bool
+    public function update(User $user, Department $department): bool
     {
-        $workspace = $taskSet->workspace;
+        $workspace = $department->workspace;
 
         return $workspace instanceof Workspace
             && $this->canEditWorkspaceRecords($user, $workspace->id)
             && $this->productionBenchAccess->isActive($workspace);
     }
 
-    public function delete(User $user, ProductionTaskSet $taskSet): bool
+    public function delete(User $user, Department $department): bool
     {
-        $workspace = $taskSet->workspace;
+        $workspace = $department->workspace;
 
         return $workspace instanceof Workspace
             && $this->canDeleteWorkspaceRecords($user, $workspace->id)
             && $this->productionBenchAccess->isActive($workspace);
     }
 
-    public function restore(User $user, ProductionTaskSet $taskSet): bool
+    public function restore(User $user, Department $department): bool
     {
         return false;
     }
 
-    public function forceDelete(User $user, ProductionTaskSet $taskSet): bool
+    public function forceDelete(User $user, Department $department): bool
     {
         return false;
     }

@@ -94,7 +94,6 @@ class ProductionCalendar extends Component
                 ->whereDate('planned_for', '<', $this->rangeEnd)
                 ->whereNotIn('status', [ProductionRunStatus::Draft, ProductionRunStatus::Cancelled])
                 ->when(! $this->showCompleted, fn (Builder $query): Builder => $query->where('status', '!=', ProductionRunStatus::Completed))
-                ->with('recipe')
                 ->orderBy('planned_for')
                 ->orderBy('id')
                 ->get();
@@ -104,7 +103,7 @@ class ProductionCalendar extends Component
 
                 $events[] = [
                     'id' => 'production-'.$production->id,
-                    'title' => trim($production->displayIdentifier().' · '.($production->recipe?->name ?? __('production_bench.production.unknown_product'))),
+                    'title' => trim($production->displayIdentifier().' · '.$production->displayRecipeName()),
                     'start' => $plannedFor,
                     'end' => $production->planned_for->copy()->addDay()->toDateString(),
                     'allDay' => true,
@@ -125,7 +124,6 @@ class ProductionCalendar extends Component
                 ->whereDate('scheduled_for', '>=', $this->rangeStart)
                 ->whereDate('scheduled_for', '<', $this->rangeEnd)
                 ->when(! $this->showCompleted, fn (Builder $query): Builder => $query->whereNull('completed_at'))
-                ->with('productionRun.recipe')
                 ->orderBy('scheduled_for')
                 ->orderBy('id')
                 ->get();
@@ -147,7 +145,7 @@ class ProductionCalendar extends Component
                     'extendedProps' => [
                         'eventType' => 'task',
                         'completed' => $task->completed_at !== null,
-                        'production' => $task->productionRun?->recipe?->name,
+                        'production' => $task->productionRun?->displayRecipeName(),
                         'colour' => $colour,
                         'url' => route('production-bench.production.show', ['productionRun' => $task->productionRun?->public_id]),
                     ],

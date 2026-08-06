@@ -18,7 +18,7 @@
                 <p class="sk-eyebrow">{{ $production->displayIdentifier() }}</p>
                 <p class="font-mono text-xs text-[var(--color-ink-soft)]">{{ $production->public_id }}</p>
             </div>
-            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $production->recipe?->name ?? __('production_bench.production.unknown_product') }}</h1>
+            <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</h1>
             <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.detail_title') }}</p>
         </div>
         <span class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent-strong)]">{{ $production->status->label() }}</span>
@@ -82,11 +82,31 @@
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</p></div>
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.batch_size') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, auth()->user()?->number_locale) }} {{ $production->basis_input_unit->value }}</p></div>
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.expected_units') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->expected_units }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.version') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->recipeVersion?->version_number ?? '—' }}</p></div>
+        <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.formula.source_version') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->source_formula_version_number ?? '—' }}</p></div>
     </section>
 
     @if ($production->notes)
         <p class="sk-card p-5 text-sm text-[var(--color-ink-soft)]">{{ $production->notes }}</p>
+    @endif
+
+    @if ($production->formulaLines->isNotEmpty())
+        <section aria-labelledby="formula-detail-heading" class="sk-card overflow-hidden">
+            <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="formula-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.formula.title') }}</h2></div>
+            @foreach ($production->formulaLines->groupBy('phase_key_snapshot') as $lines)
+                <div class="border-t border-[var(--color-line)] px-5 py-3 sm:px-6"><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ $lines->first()->phase_name_snapshot }}</p></div>
+                <div class="divide-y divide-[var(--color-line)]">
+                    @foreach ($lines as $line)
+                        <div class="flex flex-col gap-1 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                            <div>
+                                <p class="font-medium text-[var(--color-ink-strong)]">{{ $line->subject_name_snapshot }}</p>
+                                <p class="text-xs text-[var(--color-ink-soft)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($line->basis_percentage_snapshot, 0, 3, auth()->user()?->number_locale) }}%{{ $line->note_snapshot ? ' · '.$line->note_snapshot : '' }}</p>
+                            </div>
+                            <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($line->planned_mass_grams, 0, 3, auth()->user()?->number_locale) }} g</p>
+                        </div>
+                    @endforeach
+                </div>
+            @endforeach
+        </section>
     @endif
 
     <section aria-labelledby="requirements-detail-heading" class="sk-card overflow-hidden">

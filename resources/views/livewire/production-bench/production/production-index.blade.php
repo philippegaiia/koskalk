@@ -54,13 +54,13 @@
                 @forelse ($productions as $production)
                     <div class="flex gap-4 px-5 py-5 transition hover:bg-[var(--color-panel-muted)] sm:px-6">
                         <div class="pt-1">
-                            <input type="checkbox" wire:model.live="selectedProductionIds" value="{{ $production->id }}" @disabled(! $canMutate || ! in_array($production->status->value, ['scheduled', 'reserved'], true)) aria-label="{{ __('production_bench.production.select_production', ['name' => $production->recipe?->name ?? __('production_bench.production.unknown_product')]) }}" style="accent-color: var(--color-accent);" class="h-5 w-5 rounded border-[var(--color-line-strong)]">
+                            <input type="checkbox" wire:model.live="selectedProductionIds" value="{{ $production->id }}" @disabled(! $canMutate || ! in_array($production->status->value, ['scheduled', 'reserved'], true)) aria-label="{{ __('production_bench.production.select_production', ['name' => $production->displayRecipeName()]) }}" style="accent-color: var(--color-accent);" class="h-5 w-5 rounded border-[var(--color-line-strong)]">
                         </div>
                         <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="min-w-0 flex-1">
                             <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $production->displayIdentifier() }} · {{ $production->recipe?->name ?? __('production_bench.production.unknown_product') }}</h3>
+                                    <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $production->displayIdentifier() }} · {{ $production->displayRecipeName() }}</h3>
                                     <span class="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-accent-strong)]">{{ $production->status->label() }}</span>
                                 </div>
                                 <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">

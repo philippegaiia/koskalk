@@ -11198,6 +11198,72 @@
         },
         {
             "group": "production_bench",
+            "key": "production.formula.title",
+            "text": {
+                "de": "Formel",
+                "es": "Fórmula",
+                "fr": "Formule",
+                "it": "Formula",
+                "nl": "Formule"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.source_version",
+            "text": {
+                "de": "Quellformelversion",
+                "es": "Versión de fórmula de origen",
+                "fr": "Version de formule source",
+                "it": "Versione formula sorgente",
+                "nl": "Bronformuleversie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.sodium_hydroxide",
+            "text": {
+                "de": "Natriumhydroxid",
+                "es": "Hidróxido de sodio",
+                "fr": "Hydroxyde de sodium",
+                "it": "Idrossido di sodio",
+                "nl": "Natriumhydroxide"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.potassium_hydroxide",
+            "text": {
+                "de": "Kaliumhydroxid",
+                "es": "Hidróxido de potasio",
+                "fr": "Hydroxyde de potassium",
+                "it": "Idrossido di potassio",
+                "nl": "Kaliumhydroxide"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.water",
+            "text": {
+                "de": "Wasser",
+                "es": "Agua",
+                "fr": "Eau",
+                "it": "Acqua",
+                "nl": "Water"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.formula.lye_water_phase",
+            "text": {
+                "de": "Lauge-Wasser",
+                "es": "Fase de lejía y agua",
+                "fr": "Phase lessive-eau",
+                "it": "Fase liscivia-acqua",
+                "nl": "Loog-waterfase"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.upcoming",
             "text": {
                 "de": "Bevorstehend",
@@ -14923,6 +14989,17 @@
                 "fr": "Produits",
                 "it": "Prodotti",
                 "nl": "Producten"
+            }
+        },
+        {
+            "group": "products",
+            "key": "status.delete_blocked_by_production",
+            "text": {
+                "de": "Dieses Produkt kann nicht gelöscht werden, weil es in einer Produktion verwendet wird. Behalte es, um die Produktionshistorie zu erhalten.",
+                "es": "Este producto no se puede eliminar porque se utiliza en una producción. Consérvalo para mantener el historial de producción.",
+                "fr": "Ce produit ne peut pas être supprimé car il est utilisé par une production. Conservez-le pour préserver l’historique de production.",
+                "it": "Questo prodotto non può essere eliminato perché è utilizzato in una produzione. Conservalo per mantenere la cronologia di produzione.",
+                "nl": "Dit product kan niet worden verwijderd omdat het in een productie wordt gebruikt. Bewaar het om de productiegeschiedenis te behouden."
             }
         },
         {

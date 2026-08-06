@@ -5,6 +5,7 @@ use App\Livewire\ProductionBench\Production\ProductionIndex;
 use App\Models\Employee;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
+use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
@@ -14,6 +15,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
+use App\ProductionFormulaComponent;
 use App\ProductionRequirementKind;
 use App\ProductionRunStatus;
 use App\Services\Production\ProductionRunNumberService;
@@ -213,6 +215,73 @@ it('rejects cancellation without a reason and while the bench is read-only', fun
     expect($fixture['production']->fresh()->status)->toBe(ProductionRunStatus::Scheduled);
 });
 
+it('renders list and detail from snapshots after the product is renamed and its version deleted', function (): void {
+    $fixture = productionListFixture();
+    $fixture['recipe']->update(['name' => 'Renamed live product']);
+    RecipeVersion::withoutGlobalScopes()->whereKey($fixture['version']->id)->delete();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee('Olive soap')
+        ->assertDontSee('Renamed live product');
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => (string) $fixture['production']->id])
+        ->assertSee('Olive soap')
+        ->assertDontSee('Renamed live product');
+});
+
+it('groups the formula snapshot by phase on the detail page', function (): void {
+    $fixture = productionListFixture();
+    ProductionFormulaLine::factory()->for($fixture['production'], 'productionRun')->create([
+        'component' => ProductionFormulaComponent::Ingredient,
+        'subject_name_snapshot' => 'Olive oil',
+        'phase_key_snapshot' => 'saponified_oils',
+        'phase_name_snapshot' => 'Saponified Oils',
+        'basis_percentage_snapshot' => '75.000000000',
+        'planned_mass_grams' => '9000.000000000',
+        'sort_order' => 1,
+    ]);
+    ProductionFormulaLine::factory()->for($fixture['production'], 'productionRun')->create([
+        'component' => ProductionFormulaComponent::Naoh,
+        'subject_name_snapshot' => 'Sodium hydroxide',
+        'phase_key_snapshot' => 'lye_water',
+        'phase_name_snapshot' => 'Lye Water',
+        'basis_percentage_snapshot' => '7.500000000',
+        'planned_mass_grams' => '900.000000000',
+        'sort_order' => 2,
+    ]);
+    ProductionFormulaLine::factory()->for($fixture['production'], 'productionRun')->create([
+        'component' => ProductionFormulaComponent::Water,
+        'subject_name_snapshot' => 'Water',
+        'phase_key_snapshot' => 'lye_water',
+        'phase_name_snapshot' => 'Lye Water',
+        'basis_percentage_snapshot' => '30.000000000',
+        'planned_mass_grams' => '3600.000000000',
+        'sort_order' => 3,
+    ]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => (string) $fixture['production']->id])
+        ->assertSee('Formula')
+        ->assertSee('Saponified Oils')
+        ->assertSee('Lye Water')
+        ->assertSee('Olive oil')
+        ->assertSee('Sodium hydroxide')
+        ->assertSee('9000')
+        ->assertDontSee('Formula version');
+});
+
+it('still renders production history after the product is permanently deleted', function (): void {
+    $fixture = productionListFixture();
+    Recipe::withoutGlobalScopes()->whereKey($fixture['recipe']->id)->delete();
+
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => (string) $fixture['production']->id]);
+
+    $page->assertSee('Olive soap')
+        ->assertDontSee('Unknown product');
+
+    expect(ProductionRun::query()->findOrFail($fixture['production']->id)->recipe_id)->toBeNull()
+        ->and(ProductionRun::query()->findOrFail($fixture['production']->id)->displayRecipeName())->toBe('Olive soap');
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, production: ProductionRun}
  */
@@ -259,6 +328,7 @@ function productionListRun(array $fixture, string $name, string $plannedFor, Pro
         'workspace_id' => $fixture['workspace']->id,
         'recipe_id' => $fixture['recipe']->id,
         'recipe_version_id' => $fixture['version']->id,
+        'recipe_name_snapshot' => $name,
         'status' => $status,
         'source' => 'direct',
         'planned_for' => $plannedFor,

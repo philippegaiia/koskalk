@@ -35,7 +35,7 @@
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                                 <p class="font-mono text-xs text-[var(--color-ink-soft)]">{{ $production->public_id }}</p>
-                                <h2 id="prepare-production-{{ $production->id }}" class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $production->recipe?->name ?? __('production_bench.production.unknown_product') }}</h2>
+                                <h2 id="prepare-production-{{ $production->id }}" class="mt-1 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</h2>
                             </div>
                             <div class="text-left text-sm sm:text-right">
                                 <p class="font-medium text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</p>

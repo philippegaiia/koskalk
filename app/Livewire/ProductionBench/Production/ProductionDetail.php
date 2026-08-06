@@ -271,7 +271,7 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'recipeVersion', 'requirements', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
+            ->with(['recipe', 'requirements', 'formulaLines', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
     }
 

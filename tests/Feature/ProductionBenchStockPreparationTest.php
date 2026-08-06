@@ -78,6 +78,17 @@ it('exposes the stock preparation route inside the production bench', function (
 /**
  * @return array{owner: User, workspace: Workspace, ingredient: Ingredient, recipe: Recipe, version: RecipeVersion}
  */
+it('shows the snapshot product name on the stock preparation page', function (): void {
+    $fixture = productionStockPreparationUiFixture();
+    $production = productionStockPreparationUiProduction($fixture, '2026-08-20');
+    $production->update(['recipe_name_snapshot' => 'Historical soap']);
+    $fixture['recipe']->update(['name' => 'Renamed live product']);
+
+    Livewire::actingAs($fixture['owner'])->test(StockPreparation::class, ['productionRun' => (string) $production->id])
+        ->assertSee('Historical soap')
+        ->assertDontSee('Renamed live product');
+});
+
 function productionStockPreparationUiFixture(): array
 {
     $owner = User::factory()->create();
@@ -128,5 +139,6 @@ function productionStockPreparationUiProduction(array $fixture, string $plannedF
         'expected_units' => 100,
         'idempotency_key' => fake()->uuid(),
         'created_by_user_id' => $fixture['owner']->id,
+        'planning_batch_number' => 'T'.str_pad((string) fake()->unique()->numberBetween(1, 99999), 5, '0', STR_PAD_LEFT),
     ]);
 }

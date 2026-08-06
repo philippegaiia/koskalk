@@ -139,6 +139,21 @@ it('dispatches fresh events when a cached calendar page is refreshed', function 
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, production: ProductionRun}
  */
+it('shows snapshot product names in event titles after the live product is renamed', function (): void {
+    $fixture = productionCalendarFixture();
+    $fixture['recipe']->update(['name' => 'Renamed live product']);
+    RecipeVersion::withoutGlobalScopes()->whereKey($fixture['version']->id)->delete();
+
+    $events = Livewire::actingAs($fixture['owner'])->test(ProductionCalendar::class)
+        ->call('setRange', '2026-08-01', '2026-09-01')
+        ->instance()
+        ->events();
+
+    expect(collect($events)->firstWhere('id', 'production-'.$fixture['production']->id)['title'])
+        ->toBe('T00001 · Olive soap')
+        ->and(collect($events)->pluck('title'))->not->toContain('Renamed live product');
+});
+
 function productionCalendarFixture(): array
 {
     $owner = User::factory()->create();
@@ -185,6 +200,7 @@ function productionCalendarProduction(array $fixture, string $plannedFor, Produc
         'workspace_id' => $fixture['workspace']->id,
         'recipe_id' => $fixture['recipe']->id,
         'recipe_version_id' => $fixture['version']->id,
+        'recipe_name_snapshot' => $fixture['recipe']->name,
         'status' => $status,
         'source' => 'direct',
         'planned_for' => $plannedFor,

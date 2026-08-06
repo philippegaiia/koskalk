@@ -96,7 +96,7 @@ class StockPreparation extends Component
         $productions = ProductionRun::query()
             ->where('workspace_id', $workspace->id)
             ->whereIn('id', $this->productionIds)
-            ->with(['recipe', 'requirements.productionRun'])
+            ->with(['requirements.productionRun'])
             ->get()
             ->sortBy(fn (ProductionRun $production): array => [
                 $production->planned_for?->toDateString() === null ? 1 : 0,

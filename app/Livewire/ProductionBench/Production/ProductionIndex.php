@@ -116,15 +116,15 @@ class ProductionIndex extends Component
             ], true);
         $productions = ProductionRun::query()
             ->where('workspace_id', $workspace->id)
-            ->with(['recipe', 'tasks'])
+            ->with(['tasks'])
             ->when($this->search !== '', function (Builder $query): void {
                 $search = trim($this->search);
                 $query->where(function (Builder $nested) use ($search): void {
                     $nested
-                        ->where('public_id', 'like', "%{$search}%")
+                        ->where('recipe_name_snapshot', 'like', "%{$search}%")
+                        ->orWhere('public_id', 'like', "%{$search}%")
                         ->orWhere('planning_batch_number', 'like', "%{$search}%")
-                        ->orWhere('batch_number', 'like', "%{$search}%")
-                        ->orWhereHas('recipe', fn (Builder $recipe): Builder => $recipe->where('name', 'like', "%{$search}%"));
+                        ->orWhere('batch_number', 'like', "%{$search}%");
                 });
             })
             ->when($this->status !== '', fn (Builder $query): Builder => $query->where('status', $this->status))

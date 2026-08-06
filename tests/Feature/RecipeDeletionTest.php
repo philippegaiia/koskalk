@@ -6,11 +6,14 @@ use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\Plan;
 use App\Models\ProductFamily;
+use App\Models\ProductionFormulaLine;
+use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\MediaStorage;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -59,6 +62,106 @@ it('rejects recipe deletion with the wrong confirmation name', function (): void
         ->assertForbidden();
 
     expect(Recipe::withoutGlobalScopes()->find($recipe->id))->not->toBeNull();
+});
+
+it('archives products with production history instead of deleting them', function (): void {
+    [$user, $recipe, , $publishedVersion] = createRecipeWithDraftAndPublishedVersion();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    $production = ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($publishedVersion, 'recipeVersion')
+        ->create();
+
+    actingAs($user)
+        ->post(route('recipes.archive', $recipe))
+        ->assertRedirect(route('recipes.index'))
+        ->assertSessionHas('status', __('products.status.archived'));
+
+    $archived = Recipe::withoutGlobalScopes()->findOrFail($recipe->id);
+
+    expect($archived->archived_at)->not->toBeNull()
+        ->and($archived->productionRuns()->count())->toBe(1)
+        ->and($production->fresh()->recipe_id)->toBe($recipe->id);
+
+    actingAs($user)
+        ->post(route('recipes.restore', $recipe))
+        ->assertRedirect(route('recipes.index'))
+        ->assertSessionHas('status', __('products.status.restored'));
+
+    expect(Recipe::withoutGlobalScopes()->findOrFail($recipe->id)->archived_at)->toBeNull();
+});
+
+it('requires archiving before a product with production history can be permanently deleted', function (): void {
+    [$user, $recipe, , $publishedVersion] = createRecipeWithDraftAndPublishedVersion();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($publishedVersion, 'recipeVersion')
+        ->create();
+
+    actingAs($user)
+        ->delete(route('recipes.destroy', $recipe), [
+            'confirm_name' => $recipe->name,
+        ])
+        ->assertRedirect(route('recipes.index'))
+        ->assertSessionHas('error', __('products.status.archive_required'));
+
+    expect(Recipe::withoutGlobalScopes()->find($recipe->id))->not->toBeNull();
+});
+
+it('blocks permanent deletion while any related production snapshot is incomplete', function (): void {
+    [$user, $recipe, , $publishedVersion] = createRecipeWithDraftAndPublishedVersion();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($publishedVersion, 'recipeVersion')
+        ->create([
+            'formula_snapshot_completed_at' => null,
+        ]);
+    $recipe->update(['archived_at' => now()]);
+
+    actingAs($user)
+        ->delete(route('recipes.destroy', $recipe), [
+            'confirm_name' => $recipe->name,
+        ])
+        ->assertRedirect(route('recipes.index'))
+        ->assertSessionHas('error', __('products.status.delete_blocked_incomplete_snapshot'));
+
+    expect(Recipe::withoutGlobalScopes()->find($recipe->id))->not->toBeNull();
+});
+
+it('permanently deletes a fully snapshotted archived product and keeps production history readable', function (): void {
+    [$user, $recipe, , $publishedVersion] = createRecipeWithDraftAndPublishedVersion();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+
+    $production = ProductionRun::factory()
+        ->for($workspace)
+        ->for($recipe)
+        ->for($publishedVersion, 'recipeVersion')
+        ->create([
+            'recipe_name_snapshot' => $recipe->name,
+            'formula_snapshot_completed_at' => now(),
+        ]);
+    ProductionFormulaLine::factory()->for($production, 'productionRun')->create();
+    $recipe->update(['archived_at' => now()]);
+
+    actingAs($user)
+        ->delete(route('recipes.destroy', $recipe), [
+            'confirm_name' => $recipe->name,
+        ])
+        ->assertRedirect(route('recipes.index'))
+        ->assertSessionHas('status', __('products.status.deleted'));
+
+    expect(Recipe::withoutGlobalScopes()->find($recipe->id))->toBeNull()
+        ->and($production->fresh()->recipe_id)->toBeNull()
+        ->and($production->fresh()->displayRecipeName())->toBe($recipe->name)
+        ->and($production->fresh()->formulaLines()->count())->toBe(1);
 });
 
 it('rejects recipe deletion by an unauthorized user', function (): void {

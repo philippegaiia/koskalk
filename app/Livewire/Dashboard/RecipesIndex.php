@@ -23,6 +23,9 @@ class RecipesIndex extends Component
     #[Url(as: 'type')]
     public string $productTypeFilter = '';
 
+    #[Url(as: 'archived')]
+    public string $archivedFilter = 'active';
+
     public function render(): View
     {
         $currentUser = app(CurrentAppUserResolver::class)->resolve();
@@ -43,10 +46,11 @@ class RecipesIndex extends Component
                     'latestPublishedVersion',
                     'mediaAssetUsages.mediaAsset',
                 ])
-                ->whereNull('archived_at');
+                ->withCount('productionRuns');
+
+            $this->scopeArchiveState($recipesQuery);
 
             $optionRecipes = Recipe::query()
-                ->whereNull('archived_at')
                 ->with([
                     'productFamily',
                     'productType',
@@ -98,7 +102,22 @@ class RecipesIndex extends Component
             'selectedProductType' => $selectedProductType,
             'recipes' => $recipes,
             'searchTerm' => $searchTerm,
+            'archivedFilter' => $this->archivedFilter,
         ]);
+    }
+
+    private function scopeArchiveState(Builder $query): void
+    {
+        match ($this->archivedFilter) {
+            'archived' => $query->whereNotNull('archived_at'),
+            'active' => $query->whereNull('archived_at'),
+            default => null,
+        };
+    }
+
+    public function updatedArchivedFilter(): void
+    {
+        $this->resetPage();
     }
 
     public function updatedProductFamilyFilter(): void
@@ -111,6 +130,7 @@ class RecipesIndex extends Component
         $this->search = '';
         $this->productFamilyFilter = '';
         $this->productTypeFilter = '';
+        $this->archivedFilter = 'active';
     }
 
     /**

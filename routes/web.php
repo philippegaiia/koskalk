@@ -84,6 +84,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
             Route::post('/{recipe}/duplicate', 'duplicate')->name('duplicate');
             Route::post('/{recipe}/lock', 'lock')->name('lock');
             Route::post('/{recipe}/unlock', 'unlock')->name('unlock');
+            Route::post('/{recipe}/archive', 'archive')->name('archive');
+            Route::post('/{recipe}/restore', 'restore')->name('restore');
             Route::post('/{recipe}/production-batches', [ProductionBatchController::class, 'store'])
                 ->middleware('throttle:30,1')
                 ->name('production-batches.store');

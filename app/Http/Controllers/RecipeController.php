@@ -441,6 +441,20 @@ class RecipeController extends Controller
 
         abort_unless($request->string('confirm_name')->toString() === $recipe->name, 403, __('products.validation.confirmation_mismatch'));
 
+        if ($recipe->productionRuns()->exists()) {
+            if ($recipe->archived_at === null) {
+                return redirect()
+                    ->route('recipes.index')
+                    ->with('error', __('products.status.archive_required'));
+            }
+
+            if ($recipe->productionRuns()->whereNull('formula_snapshot_completed_at')->exists()) {
+                return redirect()
+                    ->route('recipes.index')
+                    ->with('error', __('products.status.delete_blocked_incomplete_snapshot'));
+            }
+        }
+
         $mediaPaths = $recipe->mediaPaths();
 
         DB::transaction(function () use ($recipe): void {
@@ -455,6 +469,44 @@ class RecipeController extends Controller
         return redirect()
             ->route('recipes.index')
             ->with('status', __('products.status.deleted'));
+    }
+
+    public function archive(string $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
+    {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+
+        $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
+
+        $this->authorize('update', $recipe);
+
+        if ($recipe->archived_at === null) {
+            $recipe->update(['archived_at' => now()]);
+        }
+
+        return redirect()
+            ->route('recipes.index')
+            ->with('status', __('products.status.archived'));
+    }
+
+    public function restore(string $recipe, CurrentAppUserResolver $currentAppUserResolver): RedirectResponse
+    {
+        $user = $currentAppUserResolver->resolve();
+
+        abort_unless($user !== null, 403);
+
+        $recipe = $this->accessibleRecipe($recipe, $currentAppUserResolver);
+
+        $this->authorize('update', $recipe);
+
+        if ($recipe->archived_at !== null) {
+            $recipe->update(['archived_at' => null]);
+        }
+
+        return redirect()
+            ->route('recipes.index')
+            ->with('status', __('products.status.restored'));
     }
 
     public function destroyVersion(

@@ -51,6 +51,14 @@
                         @endforeach
                     </select>
                 </label>
+                <label class="sk-field">
+                    <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.status.label') }}</span>
+                    <select wire:model.live="archivedFilter" class="sk-select-control">
+                        <option value="active">{{ __('products.filters.status.active') }}</option>
+                        <option value="archived">{{ __('products.filters.status.archived') }}</option>
+                        <option value="">{{ __('products.filters.status.all') }}</option>
+                    </select>
+                </label>
                 @if ($hasFilters)
                     <button type="button" wire:click="clearFilters" class="sk-btn sk-btn-outline shrink-0">
                         {{ __('products.actions.clear_filters') }}
@@ -91,6 +99,7 @@
                     $categoryLabel = $productTypeName ?? $productFamilyName;
                     $thumbnailUrl = $recipe->indexImageUrl() ?? $recipe->productType?->fallbackImageUrl();
                     $isLocked = $recipe->isLocked();
+                    $hasProductionHistory = $recipe->production_runs_count > 0;
                     $fallbackThumbnailClasses = match ($productFamilySlug) {
                         'soap' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
                         default => 'bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]',
@@ -100,7 +109,7 @@
 
                 <article
                     class="sk-card overflow-hidden"
-                    x-data="{ menuOpen: false, deleteOpen: false, confirmText: '', productName: @js($recipe->name) }"
+                    x-data="{ menuOpen: false, deleteOpen: false, archiveOpen: false, confirmText: '', productName: @js($recipe->name) }"
                 >
                     <div class="relative aspect-[4/3] {{ $thumbnailUrl ? '' : $fallbackThumbnailClasses }}">
                         @if ($thumbnailUrl)
@@ -169,9 +178,25 @@
                                         </form>
                                     @endif
                                     <hr class="my-1 border-[var(--color-line)]" />
-                                    <button type="button" @click="deleteOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]">
-                                        {{ __('products.actions.delete') }}
-                                    </button>
+                                    @if ($hasProductionHistory && $recipe->archived_at === null)
+                                        <button type="button" @click="archiveOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+                                            {{ __('products.actions.archive') }}
+                                        </button>
+                                    @elseif ($recipe->archived_at !== null)
+                                        <form method="POST" action="{{ route('recipes.restore', $recipe) }}">
+                                            @csrf
+                                            <button type="submit" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-ink)] hover:bg-[var(--color-panel-strong)]">
+                                                {{ __('products.actions.restore') }}
+                                            </button>
+                                        </form>
+                                        <button type="button" @click="deleteOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]">
+                                            {{ __('products.actions.delete') }}
+                                        </button>
+                                    @else
+                                        <button type="button" @click="deleteOpen = true; menuOpen = false" class="w-full rounded-lg px-3 py-3 text-left text-sm text-[var(--color-danger-strong)] hover:bg-[var(--color-danger-soft)]">
+                                            {{ __('products.actions.delete') }}
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -182,16 +207,43 @@
                         @if ($isLocked)
                             <span class="sk-badge sk-badge-neutral mt-2">{{ __('products.card.locked') }}</span>
                         @endif
+                        @if ($recipe->archived_at !== null)
+                            <span class="sk-badge sk-badge-neutral mt-2">{{ __('products.filters.status.archived') }}</span>
+                        @endif
                         <h4 class="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
                         <p class="mt-1.5 text-xs text-[var(--color-ink-soft)]">
                             {{ __('products.card.updated', ['time' => $recipe->updated_at?->diffForHumans() ?? __('products.card.just_now')]) }}
                         </p>
+                        @if ($hasProductionHistory)
+                            <a href="{{ route('production-bench.production.index', ['recipe' => $recipe->public_id]) }}" wire:navigate class="mt-2 inline-block text-xs font-medium text-[var(--color-accent-strong)] hover:underline">
+                                {{ trans_choice('products.card.production_count', $recipe->production_runs_count, ['count' => $recipe->production_runs_count]) }}
+                            </a>
+                        @endif
+                    </div>
+
+                    <div x-show="archiveOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="archiveOpen = false" role="dialog" aria-modal="true" aria-labelledby="product-archive-heading-{{ $recipe->id }}">
+                        <div class="sk-card w-full max-w-md p-6" @click.stop>
+                            <h3 id="product-archive-heading-{{ $recipe->id }}" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('products.archiving.heading', ['product' => $recipe->name]) }}</h3>
+                            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.archiving.warning') }}</p>
+                            <form method="POST" action="{{ route('recipes.archive', $recipe) }}" class="mt-4">
+                                @csrf
+                                <button type="submit" class="sk-btn w-full bg-[var(--color-danger-strong)] text-white hover:bg-[var(--color-danger)]">
+                                    {{ __('products.actions.archive') }}
+                                </button>
+                            </form>
+                            <button type="button" @click="archiveOpen = false" class="sk-btn sk-btn-outline mt-3 w-full">
+                                {{ __('products.actions.cancel') }}
+                            </button>
+                        </div>
                     </div>
 
                     <div x-show="deleteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="deleteOpen = false" role="dialog" aria-modal="true" aria-labelledby="product-delete-heading-{{ $recipe->id }}">
                         <div class="sk-card w-full max-w-md p-6" @click.stop>
                             <h3 id="product-delete-heading-{{ $recipe->id }}" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('products.deletion.heading', ['product' => $recipe->name]) }}</h3>
                             <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.deletion.warning') }}</p>
+                            @if ($hasProductionHistory)
+                                <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('products.deletion.history_note') }}</p>
+                            @endif
 
                             <button type="button" @click="confirmText = productName" class="sk-btn sk-btn-outline mt-4">
                                 {{ __('products.actions.use_name') }}

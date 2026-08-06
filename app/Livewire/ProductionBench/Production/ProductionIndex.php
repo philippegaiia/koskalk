@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Production;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionRun;
+use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
@@ -12,6 +13,7 @@ use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -27,6 +29,9 @@ class ProductionIndex extends Component
     public string $dateFrom = '';
 
     public string $dateTo = '';
+
+    #[Url(as: 'recipe')]
+    public string $recipeFilter = '';
 
     /** @var list<int> */
     public array $selectedProductionIds = [];
@@ -128,6 +133,19 @@ class ProductionIndex extends Component
                 });
             })
             ->when($this->status !== '', fn (Builder $query): Builder => $query->where('status', $this->status))
+            ->when($this->recipeFilter !== '', function (Builder $query): void {
+                $recipeId = Recipe::withoutGlobalScopes()
+                    ->where('public_id', $this->recipeFilter)
+                    ->value('id');
+
+                if ($recipeId === null) {
+                    $query->whereRaw('0 = 1');
+
+                    return;
+                }
+
+                $query->where('recipe_id', $recipeId);
+            })
             ->when($this->dateFrom !== '', fn (Builder $query): Builder => $query->whereDate('planned_for', '>=', $this->dateFrom))
             ->when($this->dateTo !== '', fn (Builder $query): Builder => $query->whereDate('planned_for', '<=', $this->dateTo))
             ->orderByRaw('planned_for is null')

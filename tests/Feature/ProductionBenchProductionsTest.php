@@ -282,6 +282,34 @@ it('still renders production history after the product is permanently deleted', 
         ->and(ProductionRun::query()->findOrFail($fixture['production']->id)->displayRecipeName())->toBe('Olive soap');
 });
 
+it('filters the production list by recipe public id from a product link', function (): void {
+    $fixture = productionListFixture();
+    $otherRecipe = Recipe::factory()->for($fixture['recipe']->productFamily, 'productFamily')->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'workspace_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Lavender soap',
+    ]);
+    $otherVersion = RecipeVersion::factory()->for($otherRecipe)->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'workspace_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'is_current' => true,
+    ]);
+    productionListRun([
+        ...$fixture,
+        'recipe' => $otherRecipe,
+        'version' => $otherVersion,
+    ], 'Lavender soap', '2026-08-12', ProductionRunStatus::Draft);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->set('recipeFilter', $fixture['recipe']->public_id)
+        ->assertSee('Olive soap')
+        ->assertDontSee('Lavender soap');
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, production: ProductionRun}
  */

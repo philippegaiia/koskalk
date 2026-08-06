@@ -21,6 +21,8 @@ return [
         'duplicate' => 'Duplicate product',
         'lock' => 'Lock product',
         'unlock' => 'Unlock product',
+        'archive' => 'Archive product',
+        'restore' => 'Restore product',
         'delete' => 'Delete product',
         'use_name' => 'Use product name',
         'delete_permanently' => 'Delete permanently',
@@ -41,6 +43,12 @@ return [
             'label' => 'Type',
             'all' => 'All types',
         ],
+        'status' => [
+            'label' => 'Status',
+            'all' => 'All statuses',
+            'active' => 'Active',
+            'archived' => 'Archived',
+        ],
     ],
     'count' => [
         'all' => '{0} 0 products|{1} :count product|[2,*] :count products',
@@ -57,6 +65,7 @@ return [
         'locked' => 'Locked',
         'updated' => 'Updated :time',
         'just_now' => 'just now',
+        'production_count' => '{0} 0 productions|{1} :count production|[2,*] :count productions',
     ],
     'accessibility' => [
         'actions' => 'Actions for :product',
@@ -64,13 +73,22 @@ return [
     'deletion' => [
         'heading' => 'Delete “:product”?',
         'warning' => 'This permanently deletes the product, its current formula, and all saved versions. This cannot be undone.',
+        'history_note' => 'Production history is fully snapshotted and stays readable.',
         'confirmation_placeholder' => 'Enter the product name to confirm',
+    ],
+    'archiving' => [
+        'heading' => 'Archive “:product”?',
+        'warning' => 'The active formula leaves the Workbench and the product disappears from new production selectors. Production history remains fully readable, and the product can be restored at any time.',
     ],
     'status' => [
         'duplicated' => 'Product duplicated.',
         'locked' => 'Product locked.',
         'unlocked' => 'Product unlocked.',
         'deleted' => 'Product deleted.',
+        'archived' => 'Product archived.',
+        'restored' => 'Product restored.',
+        'archive_required' => 'Archive this product before deleting it permanently.',
+        'delete_blocked_incomplete_snapshot' => 'This product cannot be deleted yet because some productions still depend on its formula versions.',
         'version_deleted' => 'Version deleted.',
         'last_version_deleted' => 'Last saved version deleted. This product has no saved versions.',
     ],

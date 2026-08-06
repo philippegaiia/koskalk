@@ -14586,6 +14586,116 @@
         },
         {
             "group": "products",
+            "key": "actions.archive",
+            "text": {
+                "de": "Produkt archivieren",
+                "es": "Archivar producto",
+                "fr": "Archiver le produit",
+                "it": "Archivia prodotto",
+                "nl": "Product archiveren"
+            }
+        },
+        {
+            "group": "products",
+            "key": "actions.restore",
+            "text": {
+                "de": "Produkt wiederherstellen",
+                "es": "Restaurar producto",
+                "fr": "Restaurer le produit",
+                "it": "Ripristina prodotto",
+                "nl": "Product herstellen"
+            }
+        },
+        {
+            "group": "products",
+            "key": "archiving.heading",
+            "text": {
+                "de": "„:product“ archivieren?",
+                "es": "¿Archivar «:product»?",
+                "fr": "Archiver « :product » ?",
+                "it": "Archiviare «:product»?",
+                "nl": "«:product» archiveren?"
+            }
+        },
+        {
+            "group": "products",
+            "key": "archiving.warning",
+            "text": {
+                "de": "Die aktive Formel verlässt die Werkbank und das Produkt verschwindet aus den neuen Produktionsauswahlen. Die Produktionshistorie bleibt vollständig lesbar und das Produkt kann jederzeit wiederhergestellt werden.",
+                "es": "La fórmula activa sale del banco de trabajo y el producto desaparece de los nuevos selectores de producción. El historial de producción sigue siendo totalmente legible y el producto puede restaurarse en cualquier momento.",
+                "fr": "La formule active quitte le plan de travail et le produit disparaît des nouveaux sélecteurs de production. L’historique de production reste entièrement lisible et le produit peut être restauré à tout moment.",
+                "it": "La formula attiva esce dal banco di lavoro e il prodotto scompare dai nuovi selettori di produzione. La cronologia di produzione rimane completamente leggibile e il prodotto può essere ripristinato in qualsiasi momento.",
+                "nl": "De actieve formule verlaat de werkbank en het product verdwijnt uit de nieuwe productieselectors. De productiegeschiedenis blijft volledig leesbaar en het product kan op elk moment worden hersteld."
+            }
+        },
+        {
+            "group": "products",
+            "key": "deletion.history_note",
+            "text": {
+                "de": "Die Produktionshistorie ist vollständig gespeichert und bleibt lesbar.",
+                "es": "El historial de producción está completamente guardado y sigue siendo legible.",
+                "fr": "L’historique de production est entièrement enregistré et reste lisible.",
+                "it": "La cronologia di produzione è completamente salvata e rimane leggibile.",
+                "nl": "De productiegeschiedenis is volledig opgeslagen en blijft leesbaar."
+            }
+        },
+        {
+            "group": "products",
+            "key": "filters.status.label",
+            "text": {
+                "de": "Status",
+                "es": "Estado",
+                "fr": "Statut",
+                "it": "Stato",
+                "nl": "Status"
+            }
+        },
+        {
+            "group": "products",
+            "key": "filters.status.all",
+            "text": {
+                "de": "Alle Status",
+                "es": "Todos los estados",
+                "fr": "Tous les statuts",
+                "it": "Tutti gli stati",
+                "nl": "Alle statussen"
+            }
+        },
+        {
+            "group": "products",
+            "key": "filters.status.active",
+            "text": {
+                "de": "Aktiv",
+                "es": "Activos",
+                "fr": "Actifs",
+                "it": "Attivi",
+                "nl": "Actief"
+            }
+        },
+        {
+            "group": "products",
+            "key": "filters.status.archived",
+            "text": {
+                "de": "Archiviert",
+                "es": "Archivados",
+                "fr": "Archivés",
+                "it": "Archiviati",
+                "nl": "Gearchiveerd"
+            }
+        },
+        {
+            "group": "products",
+            "key": "card.production_count",
+            "text": {
+                "de": "{0} 0 Produktionen|{1} :count Produktion|[2,*] :count Produktionen",
+                "es": "{0} 0 producciones|{1} :count producción|[2,*] :count producciones",
+                "fr": "{0} 0 productions|{1} :count production|[2,*] :count productions",
+                "it": "{0} 0 produzioni|{1} :count produzione|[2,*] :count produzioni",
+                "nl": "{0} 0 producties|{1} :count productie|[2,*] :count producties"
+            }
+        },
+        {
+            "group": "products",
             "key": "actions.delete_permanently",
             "text": {
                 "de": "Endgültig löschen",
@@ -14993,13 +15103,46 @@
         },
         {
             "group": "products",
-            "key": "status.delete_blocked_by_production",
+            "key": "status.archive_required",
             "text": {
-                "de": "Dieses Produkt kann nicht gelöscht werden, weil es in einer Produktion verwendet wird. Behalte es, um die Produktionshistorie zu erhalten.",
-                "es": "Este producto no se puede eliminar porque se utiliza en una producción. Consérvalo para mantener el historial de producción.",
-                "fr": "Ce produit ne peut pas être supprimé car il est utilisé par une production. Conservez-le pour préserver l’historique de production.",
-                "it": "Questo prodotto non può essere eliminato perché è utilizzato in una produzione. Conservalo per mantenere la cronologia di produzione.",
-                "nl": "Dit product kan niet worden verwijderd omdat het in een productie wordt gebruikt. Bewaar het om de productiegeschiedenis te behouden."
+                "de": "Archivieren Sie dieses Produkt, bevor Sie es endgültig löschen.",
+                "es": "Archiva este producto antes de eliminarlo definitivamente.",
+                "fr": "Archivez ce produit avant de le supprimer définitivement.",
+                "it": "Archivia questo prodotto prima di eliminarlo definitivamente.",
+                "nl": "Archiveer dit product voordat u het permanent verwijdert."
+            }
+        },
+        {
+            "group": "products",
+            "key": "status.archived",
+            "text": {
+                "de": "Produkt archiviert.",
+                "es": "Producto archivado.",
+                "fr": "Produit archivé.",
+                "it": "Prodotto archiviato.",
+                "nl": "Product gearchiveerd."
+            }
+        },
+        {
+            "group": "products",
+            "key": "status.restored",
+            "text": {
+                "de": "Produkt wiederhergestellt.",
+                "es": "Producto restaurado.",
+                "fr": "Produit restauré.",
+                "it": "Prodotto ripristinato.",
+                "nl": "Product hersteld."
+            }
+        },
+        {
+            "group": "products",
+            "key": "status.delete_blocked_incomplete_snapshot",
+            "text": {
+                "de": "Dieses Produkt kann noch nicht gelöscht werden, da einige Produktionen weiterhin von seinen Formelversionen abhängen.",
+                "es": "Este producto aún no se puede eliminar porque algunas producciones siguen dependiendo de sus versiones de fórmula.",
+                "fr": "Ce produit ne peut pas encore être supprimé car certaines productions dépendent encore de ses versions de formule.",
+                "it": "Questo prodotto non può ancora essere eliminato perché alcune produzioni dipendono ancora dalle sue versioni di formula.",
+                "nl": "Dit product kan nog niet worden verwijderd omdat sommige producties nog afhankelijk zijn van de formuleversies."
             }
         },
         {

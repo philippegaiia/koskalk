@@ -110,6 +110,7 @@ class ProductionRequirementBuilder
                     'percentage_snapshot' => $this->roundStorage($percentage),
                     'components_per_unit_snapshot' => null,
                     'unit_snapshot' => 'g',
+                    'note_snapshot' => $item->note,
                     'sort_order' => $sortOrder++,
                 ]);
             }
@@ -150,6 +151,7 @@ class ProductionRequirementBuilder
                 'percentage_snapshot' => null,
                 'components_per_unit_snapshot' => $this->roundStorage($componentsPerUnit),
                 'unit_snapshot' => 'unit',
+                'note_snapshot' => $packagingPlan->notes,
                 'sort_order' => $sortOrder++,
             ]);
         }

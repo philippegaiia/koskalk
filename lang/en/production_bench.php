@@ -323,6 +323,15 @@ return [
     'production' => [
         'create_title' => 'Plan production',
         'create_intro' => 'Choose a product, adjust the batch if needed, and set the production date. Stock is only reserved later when you prepare it.',
+        'formula' => [
+            'title' => 'Formula',
+            'source_version' => 'Source formula version',
+            'sodium_hydroxide' => 'Sodium hydroxide',
+            'potassium_hydroxide' => 'Potassium hydroxide',
+            'water' => 'Water',
+            'lye_water_phase' => 'Lye Water',
+        ],
+        'unknown_product' => 'Unknown product',
         'index_title' => 'Productions',
         'index_intro' => 'See planned batches, task dates, and stock preparation in one simple list.',
         'prepare_stock' => 'Prepare stock',

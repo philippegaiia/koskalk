@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'percentage_snapshot',
     'components_per_unit_snapshot',
     'unit_snapshot',
+    'note_snapshot',
     'sort_order',
 ])]
 class ProductionRequirement extends Model

@@ -36,6 +36,7 @@ class ProductionRequirementFactory extends Factory
             'percentage_snapshot' => '10.000000000',
             'components_per_unit_snapshot' => null,
             'unit_snapshot' => 'g',
+            'note_snapshot' => null,
             'sort_order' => 1,
         ];
     }

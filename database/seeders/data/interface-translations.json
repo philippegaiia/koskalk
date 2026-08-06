@@ -10351,6 +10351,72 @@
         },
         {
             "group": "production_bench",
+            "key": "production.delete",
+            "text": {
+                "de": "Produktion löschen",
+                "es": "Eliminar producción",
+                "fr": "Supprimer la production",
+                "it": "Elimina produzione",
+                "nl": "Productie verwijderen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.delete_blocked_numbered",
+            "text": {
+                "de": "Eine Produktion mit permanenter Chargennummer kann nicht gelöscht werden.",
+                "es": "Una producción con número de lote permanente no se puede eliminar.",
+                "fr": "Une production avec un numéro de lot permanent ne peut pas être supprimée.",
+                "it": "Una produzione con numero di lotto permanente non può essere eliminata.",
+                "nl": "Een productie met een permanent batchnummer kan niet worden verwijderd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.delete_blocked_reservations",
+            "text": {
+                "de": "Geben Sie vor dem Löschen dieser Produktion alle Reservierungen frei oder entfernen Sie sie.",
+                "es": "Libera o elimina todas las reservas antes de eliminar esta producción.",
+                "fr": "Libérez ou supprimez toutes les réservations avant de supprimer cette production.",
+                "it": "Rilascia o rimuovi tutte le prenotazioni prima di eliminare questa produzione.",
+                "nl": "Maak alle reserveringen vrij of verwijder ze voordat u deze productie verwijdert."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.delete_blocked_status",
+            "text": {
+                "de": "Es können nur Entwurfs- oder geplante Produktionen ohne Reservierungen gelöscht werden.",
+                "es": "Solo se pueden eliminar producciones en borrador o planificadas sin reservas.",
+                "fr": "Seules les productions en brouillon ou planifiées sans réservation peuvent être supprimées.",
+                "it": "Possono essere eliminate solo le produzioni in bozza o pianificate senza prenotazioni.",
+                "nl": "Alleen concept- of geplande producties zonder reserveringen kunnen worden verwijderd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.delete_confirm",
+            "text": {
+                "de": "Diese Produktion und ihre Planungsdaten löschen? Dies kann nicht rückgängig gemacht werden.",
+                "es": "¿Eliminar esta producción y sus datos de planificación? Esta acción no se puede deshacer.",
+                "fr": "Supprimer cette production et ses données de planification ? Cette action est irréversible.",
+                "it": "Eliminare questa produzione e i suoi dati di pianificazione? Questa azione non può essere annullata.",
+                "nl": "Deze productie en de planningsgegevens verwijderen? Dit kan niet ongedaan worden gemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.deleted",
+            "text": {
+                "de": "Produktion gelöscht.",
+                "es": "Producción eliminada.",
+                "fr": "Production supprimée.",
+                "it": "Produzione eliminata.",
+                "nl": "Productie verwijderd."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.detail_title",
             "text": {
                 "de": "Produktionsdetails",

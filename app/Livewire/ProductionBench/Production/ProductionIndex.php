@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\AssignProductionBatchNumbers;
+use App\Actions\Production\DeleteProductionRun;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
@@ -58,6 +59,28 @@ class ProductionIndex extends Component
     public function updatedDateTo(): void
     {
         $this->resetPage();
+    }
+
+    public function deleteProduction(int $productionId, DeleteProductionRun $deleteProductionRun): void
+    {
+        try {
+            $production = ProductionRun::query()
+                ->where('workspace_id', $this->workspace()->id)
+                ->findOrFail($productionId);
+
+            $deleteProductionRun->handle($this->user(), $production);
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('selectedProductionIds', $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.production.deleted'));
+        $this->dispatch('production-deleted');
     }
 
     public function prepareSelected(): void

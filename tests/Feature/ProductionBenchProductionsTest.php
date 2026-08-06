@@ -310,6 +310,34 @@ it('filters the production list by recipe public id from a product link', functi
         ->assertDontSee('Lavender soap');
 });
 
+it('deletes a deletable run from the list and keeps non-deletable runs', function (): void {
+    $fixture = productionListFixture();
+    $other = productionListRun([...$fixture, 'recipe' => $fixture['recipe'], 'version' => $fixture['version']], 'Olive soap', '2026-08-15', ProductionRunStatus::Draft);
+    $other->update([
+        'batch_number' => 'B-00001',
+        'batch_number_serial' => 1,
+        'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $fixture['owner']->id,
+    ]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->call('deleteProduction', $fixture['production']->id)
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && str_starts_with($payload['message'], __('production_bench.production.deleted'))
+                && $payload['type'] === 'success';
+        });
+
+    expect(ProductionRun::query()->find($fixture['production']->id))->toBeNull()
+        ->and(ProductionRun::query()->find($other->id))->not->toBeNull();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->call('deleteProduction', $other->id)
+        ->assertHasErrors('selectedProductionIds');
+
+    expect(ProductionRun::query()->find($other->id))->not->toBeNull();
+});
+
 it('keeps the public id only inside production URLs', function (): void {
     $fixture = productionListFixture();
     $publicId = $fixture['production']->public_id;

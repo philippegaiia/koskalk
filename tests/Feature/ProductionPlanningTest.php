@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Production\CreateProductionDraft;
+use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\GenerateProductionTasks;
 use App\Actions\Production\PlanProduction;
 use App\Actions\Production\ScheduleProduction;
@@ -16,6 +17,7 @@ use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberSetting;
+use App\Models\ProductionTask;
 use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
@@ -907,6 +909,81 @@ it('degrades without a product lookup when the stored task set was deleted', fun
     expect($generated->production_task_set_id)->toBeNull()
         ->and($generated->tasks()->count())->toBe(0);
 });
+
+it('deletes draft and scheduled runs without reservations or permanent numbers', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $draft = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'delete-draft-1',
+    );
+    $scheduled = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'delete-scheduled-1',
+        status: ProductionRunStatus::Scheduled,
+    );
+
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $draft);
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $scheduled);
+
+    expect(ProductionRun::query()->find($draft->id))->toBeNull()
+        ->and(ProductionRun::query()->find($scheduled->id))->toBeNull()
+        ->and(ProductionFormulaLine::query()->count())->toBe(0)
+        ->and(ProductionRequirement::query()->count())->toBe(0)
+        ->and(ProductionTask::query()->count())->toBe(0);
+});
+
+it('rejects deletion once a permanent number, a reservation, or a terminal status exists', function (string $mutate): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'delete-blocked-'.fake()->unique()->numberBetween(1, 99999),
+    );
+
+    match ($mutate) {
+        'permanent number' => $production->update([
+            'batch_number' => 'B-00001',
+            'batch_number_serial' => 1,
+            'batch_number_assigned_at' => now(),
+            'batch_number_assigned_by_user_id' => $fixture['owner']->id,
+        ]),
+        'reservation' => StockReservation::factory()->create([
+            'workspace_id' => $fixture['workspace']->id,
+            'production_run_id' => $production->id,
+            'production_requirement_id' => $production->requirements()->firstOrFail()->id,
+            'stock_lot_id' => StockLot::factory()->released()->for($fixture['workspace'])->create()->id,
+            'created_by_user_id' => $fixture['owner']->id,
+        ]),
+        default => $production->update(['status' => $mutate]),
+    };
+
+    expect(function () use ($fixture, $production): void {
+        app(DeleteProductionRun::class)->handle($fixture['owner'], $production);
+    })->toThrow(ValidationException::class)
+        ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
+})->with([
+    'permanent number' => ['permanent number'],
+    'reservation' => ['reservation'],
+    'reserved' => [ProductionRunStatus::Reserved->value],
+    'in production' => [ProductionRunStatus::InProduction->value],
+    'completed' => [ProductionRunStatus::Completed->value],
+    'cancelled' => [ProductionRunStatus::Cancelled->value],
+    'aborted' => [ProductionRunStatus::Aborted->value],
+]);
 
 function productionPlanningTask2Fixture(string $calculationBasis = 'initial_oils', bool $withPublishedVersion = true): array
 {

@@ -26,9 +26,12 @@ class ProductionCalendar extends Component
 
     public string $rangeEnd;
 
+    public string $today;
+
     public function mount(): void
     {
         $today = CarbonImmutable::today();
+        $this->today = $today->toDateString();
         $this->rangeStart = $today->startOfMonth()->toDateString();
         $this->rangeEnd = $today->endOfMonth()->addDay()->toDateString();
     }
@@ -44,6 +47,11 @@ class ProductionCalendar extends Component
     }
 
     public function updatedShowCompleted(): void
+    {
+        $this->dispatchCalendarUpdate();
+    }
+
+    public function refreshEvents(): void
     {
         $this->dispatchCalendarUpdate();
     }
@@ -92,17 +100,20 @@ class ProductionCalendar extends Component
                 ->get();
 
             foreach ($productions as $production) {
+                $plannedFor = $production->planned_for->toDateString();
+
                 $events[] = [
                     'id' => 'production-'.$production->id,
                     'title' => trim($production->displayIdentifier().' · '.($production->recipe?->name ?? __('production_bench.production.unknown_product'))),
-                    'start' => $production->planned_for->toDateString(),
+                    'start' => $plannedFor,
+                    'end' => $production->planned_for->copy()->addDay()->toDateString(),
                     'allDay' => true,
-                    'url' => route('production-bench.production.show', ['productionRun' => $production->public_id]),
                     'classNames' => ['production-calendar-production', $production->status === ProductionRunStatus::Completed ? 'production-calendar-completed' : ''],
                     'extendedProps' => [
                         'eventType' => 'production',
                         'status' => $production->status->value,
                         'publicId' => $production->public_id,
+                        'url' => route('production-bench.production.show', ['productionRun' => $production->public_id]),
                     ],
                 ];
             }
@@ -120,17 +131,25 @@ class ProductionCalendar extends Component
                 ->get();
 
             foreach ($tasks as $task) {
+                $colour = preg_match('/^#[0-9a-fA-F]{6}$/', (string) $task->colour_snapshot) === 1
+                    ? strtoupper((string) $task->colour_snapshot)
+                    : null;
+
                 $events[] = [
                     'id' => 'task-'.$task->id,
                     'title' => $task->name_snapshot,
                     'start' => $task->scheduled_for->toDateString(),
+                    'end' => $task->scheduled_for->copy()->addDay()->toDateString(),
                     'allDay' => true,
-                    'url' => route('production-bench.production.show', ['productionRun' => $task->productionRun?->public_id]),
+                    'backgroundColor' => $colour,
+                    'borderColor' => $colour,
                     'classNames' => ['production-calendar-task', $task->completed_at !== null ? 'production-calendar-completed' : ''],
                     'extendedProps' => [
                         'eventType' => 'task',
                         'completed' => $task->completed_at !== null,
                         'production' => $task->productionRun?->recipe?->name,
+                        'colour' => $colour,
+                        'url' => route('production-bench.production.show', ['productionRun' => $task->productionRun?->public_id]),
                     ],
                 ];
             }
@@ -159,7 +178,15 @@ class ProductionCalendar extends Component
 
     private function dispatchCalendarUpdate(): void
     {
-        $this->dispatch('production-calendar-updated', events: $this->events());
+        $this->dispatch(
+            'production-calendar-updated',
+            events: $this->events(),
+            showProductions: $this->showProductions,
+            showTasks: $this->showTasks,
+            showCompleted: $this->showCompleted,
+            rangeStart: $this->rangeStart,
+            rangeEnd: $this->rangeEnd,
+        );
     }
 
     private function user(): User

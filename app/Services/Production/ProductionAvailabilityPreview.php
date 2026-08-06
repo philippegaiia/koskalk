@@ -116,18 +116,16 @@ class ProductionAvailabilityPreview
         if ($taskSet instanceof ProductionTaskSet && $plannedFor !== null && $this->isDate($plannedFor)) {
             $items = $taskSet->items()->with('taskType')->get();
 
-            foreach ($items as $index => $item) {
+            foreach ($items as $item) {
                 if ($item->taskType === null) {
                     continue;
                 }
 
-                $scheduledFor = $index === 0
-                    ? $plannedFor
-                    : $this->calendar->dateAfterProduction(
-                        $workspace,
-                        $plannedFor,
-                        (int) $item->days_after_production,
-                    )->toDateString();
+                $scheduledFor = $this->calendar->dateRelativeToProduction(
+                    $workspace,
+                    $plannedFor,
+                    (int) $item->days_after_production,
+                )->toDateString();
 
                 $preview['tasks'][] = [
                     'name' => $item->taskType->name,
@@ -167,7 +165,7 @@ class ProductionAvailabilityPreview
         }
 
         return number_format(
-            (float) $this->massConverter->fromGrams($quantity, $displayUnit),
+            (float) $this->massConverter->fromGramsSigned($quantity, $displayUnit),
             2,
             '.',
             '',

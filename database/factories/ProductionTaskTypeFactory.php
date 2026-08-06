@@ -23,6 +23,7 @@ class ProductionTaskTypeFactory extends Factory
             'name' => fake()->words(2, true),
             'default_duration_minutes' => null,
             'colour' => null,
+            'department_id' => null,
             'is_active' => true,
         ];
     }

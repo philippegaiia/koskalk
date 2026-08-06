@@ -16,13 +16,6 @@
             @endif
         </header>
 
-        @if ($savedPublicId)
-            <p role="status" class="rounded-xl bg-[var(--color-success-soft)] px-4 py-3 text-sm text-[var(--color-success-strong)]">
-                {{ __('production_bench.production.planned_success') }}
-                <span class="ml-2 font-mono">{{ $savedPublicId }}</span>
-            </p>
-        @endif
-
         <form wire:submit="plan" class="space-y-6">
             <section aria-labelledby="production-details-heading" class="sk-card space-y-5 p-5 sm:p-6">
                 <div>
@@ -163,7 +156,7 @@
             </section>
 
             <div class="flex flex-wrap items-center justify-end gap-3">
-                <a href="{{ route('production-bench.production.settings') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.production.setup_link') }}</a>
+                <a href="{{ route('production-bench.production.settings.presets') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.production.setup_link') }}</a>
                 <button type="submit" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule') }}</button>
             </div>
         </form>

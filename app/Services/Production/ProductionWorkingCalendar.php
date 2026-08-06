@@ -39,14 +39,39 @@ class ProductionWorkingCalendar
         return $candidate;
     }
 
+    public function previousWorkingDate(Workspace $workspace, string|DateTimeInterface $date): CarbonImmutable
+    {
+        $candidate = $this->date($date);
+
+        while (! $this->isWorkingDate($workspace, $candidate)) {
+            $candidate = $candidate->subDay();
+        }
+
+        return $candidate;
+    }
+
+    public function dateRelativeToProduction(
+        Workspace $workspace,
+        string|DateTimeInterface $productionDate,
+        int $daysRelativeToProduction,
+    ): CarbonImmutable {
+        $candidate = $this->date($productionDate)->addDays($daysRelativeToProduction);
+
+        if ($daysRelativeToProduction === 0 || $this->isWorkingDate($workspace, $candidate)) {
+            return $candidate;
+        }
+
+        return $daysRelativeToProduction < 0
+            ? $this->previousWorkingDate($workspace, $candidate)
+            : $this->nextWorkingDate($workspace, $candidate);
+    }
+
     public function dateAfterProduction(
         Workspace $workspace,
         string|DateTimeInterface $productionDate,
         int $daysAfterProduction,
     ): CarbonImmutable {
-        $candidate = $this->date($productionDate)->addDays($daysAfterProduction);
-
-        return $this->nextWorkingDate($workspace, $candidate);
+        return $this->dateRelativeToProduction($workspace, $productionDate, $daysAfterProduction);
     }
 
     private function date(string|DateTimeInterface $date): CarbonImmutable

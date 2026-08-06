@@ -8,12 +8,14 @@ use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionTaskSet;
+use App\Models\ProductionTaskSetItem;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\Workspace;
 use App\ProductionBasisKind;
 use App\Services\MassConverter;
 use App\Services\StockPositionService;
+use App\Support\NumberLocale;
 use Illuminate\Validation\ValidationException;
 
 class FlashProductionSimulator
@@ -22,6 +24,7 @@ class FlashProductionSimulator
         private readonly MassConverter $massConverter,
         private readonly ProductionRequirementBuilder $requirementBuilder,
         private readonly StockPositionService $stockPositions,
+        private readonly FlashProductionLimits $limits,
     ) {}
 
     /**
@@ -33,6 +36,7 @@ class FlashProductionSimulator
         $simulationLines = [];
         $requirements = collect();
         $taskMinutes = 0;
+        $totalWholeBatches = 0;
 
         foreach ($lines as $index => $input) {
             $line = $this->normalizeLine($workspace, $input, $index);
@@ -66,6 +70,8 @@ class FlashProductionSimulator
                 : ProductionBasisKind::OilMass;
             $basisQuantityGrams = $this->massConverter->toGrams($line['basis_input_value'], $line['basis_input_unit']);
             $wholeBatches = (int) ceil($line['desired_units'] / $line['expected_units_per_batch']);
+            $totalWholeBatches += $wholeBatches;
+            $this->limits->assertWithinLimit($totalWholeBatches);
             $expectedUnits = $wholeBatches * $line['expected_units_per_batch'];
             $extraUnits = $expectedUnits - $line['desired_units'];
             $batchRequirements = $this->requirementBuilder->build(
@@ -105,9 +111,11 @@ class FlashProductionSimulator
                 $requirements->put($key, $existing);
             }
 
-            $taskSet = $this->taskSet($workspace, $line['task_set_id'], $index);
+            $taskSet = $this->taskSet($workspace, $recipe, $line['task_set_id'], $index);
             $lineTaskMinutes = $taskSet instanceof ProductionTaskSet
-                ? (int) $taskSet->items()->sum('duration_minutes')
+                ? (int) $taskSet->items->sum(
+                    fn (ProductionTaskSetItem $item): int => (int) ($item->duration_minutes ?? $item->taskType?->default_duration_minutes ?? 0),
+                )
                 : 0;
             $taskMinutes += $lineTaskMinutes * $wholeBatches;
 
@@ -211,6 +219,7 @@ class FlashProductionSimulator
     private function normalizeLine(Workspace $workspace, array $input, int $index): array
     {
         $preset = null;
+        $recipeId = (int) ($input['recipe_id'] ?? 0);
 
         if (filled($input['preset_id'] ?? null)) {
             $preset = ProductionBatchPreset::query()
@@ -223,15 +232,26 @@ class FlashProductionSimulator
                     "lines.{$index}.preset_id" => 'Choose an active batch preset from this workspace.',
                 ]);
             }
+
+            if ($recipeId < 1) {
+                throw ValidationException::withMessages([
+                    "lines.{$index}.recipe_id" => 'Choose a product before choosing a batch size.',
+                ]);
+            }
+
+            if (! $preset->recipes()->whereKey($recipeId)->exists()) {
+                throw ValidationException::withMessages([
+                    "lines.{$index}.preset_id" => 'Choose a batch size applicable to this product.',
+                ]);
+            }
         }
 
-        $recipeId = (int) ($input['recipe_id'] ?? $preset?->recipe_id ?? 0);
         $desiredUnits = $this->positiveWhole($input['desired_units'] ?? null, "lines.{$index}.desired_units");
         $expectedUnits = $this->positiveWhole($input['expected_units_per_batch'] ?? $preset?->expected_units, "lines.{$index}.expected_units_per_batch");
-        $basisValue = trim((string) ($input['basis_input_value'] ?? $preset?->basis_input_value ?? ''));
+        $basisValue = NumberLocale::normalizeDecimalString($input['basis_input_value'] ?? $preset?->basis_input_value ?? '');
         $basisUnitInput = $input['basis_input_unit'] ?? $preset?->basis_input_unit?->value;
 
-        if ($recipeId < 1 || $basisValue === '' || $basisUnitInput === null) {
+        if ($recipeId < 1 || $basisValue === null || $basisUnitInput === null) {
             throw ValidationException::withMessages([
                 "lines.{$index}" => 'Enter a product, batch quantity, and expected units per batch.',
             ]);
@@ -274,7 +294,7 @@ class FlashProductionSimulator
         return (int) $normalized;
     }
 
-    private function taskSet(Workspace $workspace, ?int $taskSetId, int $index): ?ProductionTaskSet
+    private function taskSet(Workspace $workspace, Recipe $recipe, ?int $taskSetId, int $index): ?ProductionTaskSet
     {
         if ($taskSetId === null) {
             return null;
@@ -283,11 +303,18 @@ class FlashProductionSimulator
         $taskSet = ProductionTaskSet::query()
             ->where('workspace_id', $workspace->id)
             ->where('is_active', true)
+            ->with('items.taskType')
             ->find($taskSetId);
 
         if (! $taskSet instanceof ProductionTaskSet) {
             throw ValidationException::withMessages([
                 "lines.{$index}.task_set_id" => 'Choose an active task set from this workspace.',
+            ]);
+        }
+
+        if (! $taskSet->recipes()->whereKey($recipe->id)->exists()) {
+            throw ValidationException::withMessages([
+                "lines.{$index}.task_set_id" => 'Choose a task set applicable to this product.',
             ]);
         }
 

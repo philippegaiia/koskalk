@@ -75,37 +75,53 @@ class GenerateProductionTasks
                 return $lockedProduction->fresh(['requirements', 'tasks']);
             }
 
-            $items = $taskSet->items()->with('taskType')->lockForUpdate()->get();
+            $items = $taskSet->items()->with('taskType.department')->lockForUpdate()->get();
 
             if ($items->isEmpty()) {
                 return $lockedProduction->fresh(['requirements', 'tasks']);
+            }
+
+            if (! $items->contains(fn ($item): bool => (int) $item->days_after_production === 0)) {
+                throw ValidationException::withMessages([
+                    'production_task_set' => 'The task set must include a production-day task.',
+                ]);
             }
 
             if ((int) $lockedProduction->production_task_set_id !== (int) $taskSet->id) {
                 $lockedProduction->update(['production_task_set_id' => $taskSet->id]);
             }
 
-            foreach ($items as $index => $item) {
+            foreach ($items as $item) {
                 if ($item->taskType === null || (int) $item->taskType->workspace_id !== (int) $lockedWorkspace->id) {
                     throw ValidationException::withMessages([
                         'production' => 'Every production task must belong to the active workspace.',
                     ]);
                 }
 
-                $scheduledFor = $index === 0
-                    ? $lockedProduction->planned_for->toDateString()
-                    : $this->calendar->dateAfterProduction(
-                        $lockedWorkspace,
-                        $lockedProduction->planned_for,
-                        (int) $item->days_after_production,
-                    )->toDateString();
+                if ($item->taskType->department_id !== null
+                    && ($item->taskType->department === null
+                        || (int) $item->taskType->department->workspace_id !== (int) $lockedWorkspace->id)) {
+                    throw ValidationException::withMessages([
+                        'production' => 'Every production task department must belong to the active workspace.',
+                    ]);
+                }
+
+                $scheduledFor = $this->calendar->dateRelativeToProduction(
+                    $lockedWorkspace,
+                    $lockedProduction->planned_for,
+                    (int) $item->days_after_production,
+                )->toDateString();
 
                 $lockedProduction->tasks()->create([
                     'workspace_id' => $lockedWorkspace->id,
                     'production_task_set_id' => $taskSet->id,
                     'production_task_set_item_id' => $item->id,
                     'name_snapshot' => $item->taskType->name,
-                    'days_after_production' => $index === 0 ? 0 : $item->days_after_production,
+                    'colour_snapshot' => $item->taskType->colour,
+                    'department_id' => $item->taskType->department?->is_active === true
+                        ? $item->taskType->department_id
+                        : null,
+                    'days_after_production' => $item->days_after_production,
                     'duration_minutes' => $item->duration_minutes ?? $item->taskType->default_duration_minutes,
                     'scheduled_for' => $scheduledFor,
                     'scheduling_mode' => 'automatic',
@@ -139,14 +155,16 @@ class GenerateProductionTasks
             ->lockForUpdate()
             ->find($production->recipe_id);
 
-        if ($recipe === null || $recipe->default_production_task_set_id === null) {
+        if ($recipe === null) {
             return null;
         }
 
-        return ProductionTaskSet::query()
+        $taskSet = $recipe->defaultProductionTaskSets()
             ->where('workspace_id', $workspace->id)
             ->with('items.taskType')
             ->lockForUpdate()
-            ->find($recipe->default_production_task_set_id);
+            ->first();
+
+        return $taskSet instanceof ProductionTaskSet ? $taskSet : null;
     }
 }

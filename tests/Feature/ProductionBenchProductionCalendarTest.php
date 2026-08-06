@@ -22,6 +22,7 @@ it('returns workspace-scoped production and task events for a date range', funct
     $production = $fixture['production'];
     $task = ProductionTask::factory()->for($fixture['workspace'])->for($production, 'productionRun')->create([
         'name_snapshot' => 'Cut and cure',
+        'colour_snapshot' => '#8f5c38',
         'scheduled_for' => '2026-08-21',
     ]);
     $other = productionCalendarFixture();
@@ -36,8 +37,12 @@ it('returns workspace-scoped production and task events for a date range', funct
     expect($events)->toHaveCount(2)
         ->and(collect($events)->pluck('extendedProps.eventType')->sort()->values()->all())->toBe(['production', 'task'])
         ->and(collect($events)->pluck('title')->all())->toContain('T00001 · Olive soap', 'Cut and cure')
-        ->and(collect($events)->pluck('url')->join('|'))->toContain($production->public_id)
-        ->and(collect($events)->pluck('url')->join('|'))->not->toContain($other['production']->public_id)
+        ->and(collect($events)->firstWhere('extendedProps.eventType', 'task')['backgroundColor'])->toBe('#8F5C38')
+        ->and(collect($events)->firstWhere('extendedProps.eventType', 'task')['extendedProps']['colour'])->toBe('#8F5C38')
+        ->and(collect($events)->pluck('extendedProps.url')->join('|'))->toContain($production->public_id)
+        ->and(collect($events)->pluck('extendedProps.url')->join('|'))->not->toContain($other['production']->public_id)
+        ->and(collect($events)->firstWhere('extendedProps.eventType', 'production')['end'])->toBe('2026-08-21')
+        ->and(collect($events)->firstWhere('extendedProps.eventType', 'task')['end'])->toBe('2026-08-22')
         ->and($task->productionRun->is($production))->toBeTrue();
 });
 
@@ -66,7 +71,7 @@ it('uses permanent batch numbers before planning references in production event 
         ->toBe('B-00001-FR · Olive soap')
         ->and(collect($events)->firstWhere('id', 'task-'.$task->id)['title'])
         ->toBe('Cure soap')
-        ->and(collect($events)->firstWhere('id', 'task-'.$task->id)['url'])
+        ->and(collect($events)->firstWhere('id', 'task-'.$task->id)['extendedProps']['url'])
         ->toContain($permanent->public_id);
 });
 
@@ -100,10 +105,35 @@ it('renders the calendar page with month, week, and agenda controls', function (
         ->get(route('production-bench.production.calendar'))
         ->assertOk()
         ->assertSee('Production calendar')
+        ->assertSee('Day')
         ->assertSee('Month')
         ->assertSee('Week')
         ->assertSee('Agenda')
-        ->assertSee('productionCalendar');
+        ->assertSee('productionCalendar')
+        ->assertSee('data-calendar-options')
+        ->assertSee('productionCalendarComponent');
+});
+
+it('dispatches fresh events when a cached calendar page is refreshed', function (): void {
+    $fixture = productionCalendarFixture();
+    $task = ProductionTask::factory()->for($fixture['workspace'])->for($fixture['production'], 'productionRun')->create([
+        'name_snapshot' => 'Cut and cure',
+        'scheduled_for' => '2026-08-21',
+    ]);
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionCalendar::class)
+        ->call('refreshEvents')
+        ->assertDispatched('production-calendar-updated', function (string $event, array $payload) use ($fixture, $task): bool {
+            $events = collect($payload['events'] ?? []);
+
+            return $event === 'production-calendar-updated'
+                && $payload['showProductions'] === true
+                && $payload['showTasks'] === true
+                && $payload['showCompleted'] === false
+                && $events->contains('id', 'production-'.$fixture['production']->id)
+                && $events->contains('id', 'task-'.$task->id);
+        });
 });
 
 /**

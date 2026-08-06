@@ -125,6 +125,29 @@ it('shows subject-level production forecast in the inventory view', function ():
         ->assertSee('0.40');
 });
 
+it('renders negative ingredient forecasts when planned demand exceeds available stock', function (): void {
+    $fixture = productionForecastFixture();
+    $lot = StockLot::factory()->released()->for($fixture['workspace'])->create([
+        'ingredient_id' => $fixture['ingredient']->id,
+        'packaging_item_id' => null,
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '1000.000000000',
+    ]);
+    $production = productionForecastRun($fixture, ProductionRunStatus::Scheduled);
+    ProductionRequirement::factory()->for($production, 'productionRun')->for($fixture['ingredient'])->create([
+        'kind' => ProductionRequirementKind::Ingredient,
+        'required_mass_grams' => '1500.000000000',
+        'required_units' => null,
+    ]);
+
+    Livewire::actingAs($fixture['owner'])->test(InventoryIndex::class)
+        ->assertSee('Production forecast')
+        ->assertSee('-0.50');
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, ingredient: Ingredient, packaging: PackagingItem}
  */

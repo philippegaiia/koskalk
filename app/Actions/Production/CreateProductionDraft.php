@@ -15,6 +15,7 @@ use App\ProductionRunStatus;
 use App\Services\MassConverter;
 use App\Services\Production\ProductionRequirementBuilder;
 use App\Services\Production\ProductionRunNumberService;
+use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -26,6 +27,7 @@ class CreateProductionDraft
         private readonly MassConverter $massConverter,
         private readonly ProductionRequirementBuilder $requirementBuilder,
         private readonly ProductionRunNumberService $numbers,
+        private readonly ProductionWorkingCalendar $calendar,
     ) {}
 
     public function handle(
@@ -122,6 +124,25 @@ class CreateProductionDraft
                 throw ValidationException::withMessages([
                     'production_task_set' => 'Choose an active task set from this workspace.',
                 ]);
+            }
+
+            if ($plannedFor !== null && ! $this->calendar->isWorkingDate($lockedWorkspace, $plannedFor)) {
+                throw ValidationException::withMessages([
+                    'planned_for' => 'The production date must be a working day.',
+                ]);
+            }
+
+            if ($lockedTaskSet instanceof ProductionTaskSet) {
+                $isApplicable = DB::table('production_task_set_recipe')
+                    ->where('production_task_set_id', $lockedTaskSet->id)
+                    ->where('recipe_id', $lockedRecipe->id)
+                    ->exists();
+
+                if (! $isApplicable) {
+                    throw ValidationException::withMessages([
+                        'production_task_set' => 'Choose a task set applicable to this product.',
+                    ]);
+                }
             }
 
             $publishedVersion = RecipeVersion::withoutGlobalScopes()

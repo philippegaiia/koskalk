@@ -25,6 +25,7 @@ class ProductionTaskFactory extends Factory
             'production_task_set_id' => null,
             'production_task_set_item_id' => null,
             'employee_id' => null,
+            'department_id' => null,
             'name_snapshot' => fake()->words(2, true),
             'days_after_production' => 0,
             'duration_minutes' => null,

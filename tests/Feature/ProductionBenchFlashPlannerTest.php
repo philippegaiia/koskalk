@@ -40,11 +40,10 @@ it('renders the flash planner, simulates a line, and previews dates without crea
     $page->call('generate')
         ->assertHasNoErrors()
         ->assertSet('showDatePreview', false)
-        ->assertSee(__('production_bench.flash.generated_success', ['count' => 1]))
+        ->assertDontSee(__('production_bench.flash.generated_success', ['count' => 1]))
         ->assertSee(__('production_bench.flash.celebration_title'));
 
-    expect($page->get('generatedPublicIds'))->toHaveCount(1)
-        ->and($fixture['workspace']->productionRuns()->count())->toBe(1);
+    expect($fixture['workspace']->productionRuns()->count())->toBe(1);
 });
 
 it('allows adding and removing flash product lines', function (): void {
@@ -81,14 +80,14 @@ function flashPlannerFixture(): array
         'visibility' => Visibility::Private,
         'is_current' => false,
     ]);
-    ProductionBatchPreset::factory()->for($workspace)->for($recipe)->create([
+    $preset = ProductionBatchPreset::factory()->for($workspace)->create([
         'basis_quantity_grams' => '12000.000000000',
         'basis_input_value' => '12.000000000',
         'basis_input_unit' => MassUnit::Kilogram,
         'expected_units' => 100,
-        'is_default' => true,
         'is_active' => true,
     ]);
+    $preset->recipes()->attach($recipe->id, ['is_default' => true]);
 
     return compact('owner', 'workspace', 'recipe');
 }

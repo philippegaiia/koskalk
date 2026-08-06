@@ -10,7 +10,10 @@ use Illuminate\Validation\ValidationException;
 
 class FlashDateProposalService
 {
-    public function __construct(private readonly ProductionWorkingCalendar $calendar) {}
+    public function __construct(
+        private readonly ProductionWorkingCalendar $calendar,
+        private readonly FlashProductionLimits $limits,
+    ) {}
 
     /**
      * @param  list<array<string, mixed>>  $lines
@@ -31,6 +34,7 @@ class FlashDateProposalService
         $date = $this->parseDate($firstDate);
         $proposals = [];
         $dayBatchCount = 0;
+        $totalBatches = 0;
 
         foreach ($lines as $line) {
             $batchTotal = (int) ($line['whole_batches'] ?? 0);
@@ -39,6 +43,8 @@ class FlashDateProposalService
                 continue;
             }
 
+            $totalBatches += $batchTotal;
+            $this->limits->assertWithinLimit($totalBatches);
             $taskSet = $this->taskSet($workspace, $line['task_set_id'] ?? null);
 
             for ($batch = 1; $batch <= $batchTotal; $batch++) {
@@ -110,9 +116,10 @@ class FlashDateProposalService
         return $taskSet->items->map(fn ($item): array => [
             'name' => $item->taskType?->name ?? (string) $item->taskType?->key ?? 'Task',
             'scheduled_for' => $this->calendar
-                ->dateAfterProduction($workspace, $productionDate, (int) $item->days_after_production)
+                ->dateRelativeToProduction($workspace, $productionDate, (int) $item->days_after_production)
                 ->toDateString(),
             'days_after_production' => (int) $item->days_after_production,
+            'colour' => $item->taskType?->colour,
             'duration_minutes' => $item->duration_minutes === null ? null : (int) $item->duration_minutes,
         ])->values()->all();
     }

@@ -38,28 +38,25 @@
                 wire:ignore
                 data-production-calendar
                 data-events="{{ json_encode($events, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
+                data-calendar-options="{{ json_encode([
+                    'view' => 'dayGridMonth',
+                    'date' => $today,
+                    'events' => $events,
+                    'headerToolbar' => ['start' => 'prev today next', 'center' => 'title', 'end' => 'dayGridMonth timeGridWeek dayGridDay listWeek'],
+                    'buttonText' => [
+                        'today' => __('production_bench.calendar.today'),
+                        'dayGridMonth' => __('production_bench.calendar.month'),
+                        'timeGridWeek' => __('production_bench.calendar.week'),
+                        'dayGridDay' => __('production_bench.calendar.day'),
+                        'listWeek' => __('production_bench.calendar.agenda'),
+                    ],
+                    'height' => 'auto',
+                    'firstDay' => 1,
+                    'noEventsContent' => __('production_bench.calendar.no_events'),
+                ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) }}"
                 data-range-start="{{ $rangeStart }}"
                 data-range-end="{{ $rangeEnd }}"
-                x-data="{
-                    calendar: null,
-                    init() {
-                        this.calendar = window.productionCalendar($el, {
-                            view: 'dayGridMonth',
-                            date: '{{ $rangeStart }}',
-                            events: JSON.parse($el.dataset.events),
-                            headerToolbar: { left: 'prev today next', center: 'title', right: 'dayGridMonth timeGridWeek listWeek' },
-                            buttonText: { today: '{{ __('production_bench.calendar.today') }}', dayGridMonth: '{{ __('production_bench.calendar.month') }}', timeGridWeek: '{{ __('production_bench.calendar.week') }}', listWeek: '{{ __('production_bench.calendar.agenda') }}' },
-                            height: 'auto',
-                            firstDay: 1,
-                            noEventsContent: '{{ __('production_bench.calendar.no_events') }}',
-                        });
-                        this.cleanup = Livewire.on('production-calendar-updated', ({ events }) => this.calendar?.update(events));
-                    },
-                    destroy() {
-                        this.cleanup?.();
-                        this.calendar?.destroy();
-                    },
-                }"
+                x-data="productionCalendarComponent()"
                 class="production-calendar min-h-[32rem]"
             ></div>
         </section>

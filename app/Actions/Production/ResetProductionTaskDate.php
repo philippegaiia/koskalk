@@ -57,12 +57,13 @@ class ResetProductionTaskDate
                 throw ValidationException::withMessages(['task' => 'Completed tasks must be reopened before their date can be reset.']);
             }
 
-            $firstTaskId = ProductionTask::query()
+            $anchorTaskId = ProductionTask::query()
                 ->where('production_run_id', $production->id)
+                ->where('days_after_production', 0)
                 ->orderBy('id')
                 ->value('id');
 
-            if ((int) $firstTaskId === (int) $lockedTask->id) {
+            if ((int) $anchorTaskId === (int) $lockedTask->id) {
                 throw ValidationException::withMessages(['task' => 'The production task is the date anchor and cannot be reset independently.']);
             }
 
@@ -71,7 +72,7 @@ class ResetProductionTaskDate
             }
 
             $lockedTask->update([
-                'scheduled_for' => $this->calendar->dateAfterProduction(
+                'scheduled_for' => $this->calendar->dateRelativeToProduction(
                     $workspace,
                     $production->planned_for,
                     (int) $lockedTask->days_after_production,

@@ -24,6 +24,7 @@ use App\Services\Production\FlashProductionSimulator;
 use App\StockMovementType;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -87,6 +88,36 @@ it('marks missing current prices explicitly instead of hiding the cost warning',
 
     expect($result['totals']['missing_prices'])->toBe(2)
         ->and(collect($result['requirements'])->every(fn (array $row): bool => $row['missing_price']))->toBeTrue();
+});
+
+it('includes task type default durations when a task item has no override', function (): void {
+    $fixture = flashSimulatorFixture();
+    $fixture['taskSet']->items()->where('position', 2)->firstOrFail()->update(['duration_minutes' => null]);
+
+    $result = app(FlashProductionSimulator::class)->simulate($fixture['workspace'], [[
+        'recipe_id' => $fixture['recipe']->id,
+        'desired_units' => '150',
+        'expected_units_per_batch' => '100',
+        'basis_input_value' => '12',
+        'basis_input_unit' => 'kg',
+        'task_set_id' => $fixture['taskSet']->id,
+    ]]);
+
+    expect($result['lines'][0]['task_minutes'])->toBe(30)
+        ->and($result['totals']['task_minutes'])->toBe(60);
+});
+
+it('rejects flash simulations that exceed the batch limit', function (): void {
+    $fixture = flashSimulatorFixture();
+
+    expect(fn () => app(FlashProductionSimulator::class)->simulate($fixture['workspace'], [[
+        'recipe_id' => $fixture['recipe']->id,
+        'desired_units' => '1001',
+        'expected_units_per_batch' => '1',
+        'basis_input_value' => '12',
+        'basis_input_unit' => 'kg',
+    ]]))
+        ->toThrow(ValidationException::class);
 });
 
 it('proposes working dates and keeps the first task on the production date', function (): void {
@@ -189,6 +220,8 @@ function flashSimulatorFixture(bool $withPrices = true): array
         'days_after_production' => 1,
         'duration_minutes' => 5,
     ]);
+
+    $taskSet->recipes()->attach($recipe->id, ['is_default' => true]);
 
     if ($withPrices) {
         CurrentMaterialPrice::factory()->create([

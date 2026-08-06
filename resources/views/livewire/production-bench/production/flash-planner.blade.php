@@ -34,13 +34,6 @@
             @endif
         </header>
 
-        @if ($generatedPublicIds)
-            <p role="status" class="rounded-xl bg-[var(--color-success-soft)] px-4 py-3 text-sm text-[var(--color-success-strong)]">
-                {{ __('production_bench.flash.generated_success', ['count' => count($generatedPublicIds)]) }}
-                <span class="ml-2 font-mono">{{ implode(', ', $generatedPublicIds) }}</span>
-            </p>
-        @endif
-
         <section aria-labelledby="flash-lines-heading" class="sk-card space-y-5 p-5 sm:p-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
@@ -75,7 +68,7 @@
                                 <span class="text-sm font-medium">{{ __('production_bench.production.preset') }}</span>
                                 <select wire:model.live="lines.{{ $index }}.preset_id" @disabled($isReadOnly || blank($line['recipe_id'])) class="sk-input w-full">
                                     <option value="">{{ __('production_bench.production.no_preset') }}</option>
-                                    @foreach ($presets->where('recipe_id', (int) ($line['recipe_id'] ?? 0)) as $preset)
+                                    @foreach ($presets->filter(fn ($preset): bool => $preset->recipes->contains('id', (int) ($line['recipe_id'] ?? 0))) as $preset)
                                         <option value="{{ $preset->id }}">{{ $preset->name }} · {{ $preset->basis_input_value }} {{ $preset->basis_input_unit->value }} / {{ $preset->expected_units }}</option>
                                     @endforeach
                                 </select>
@@ -108,7 +101,9 @@
                                 <select wire:model.live="lines.{{ $index }}.task_set_id" @disabled($isReadOnly) class="sk-input w-full">
                                     <option value="">{{ __('production_bench.production.no_task_set') }}</option>
                                     @foreach ($taskSets as $taskSet)
-                                        <option value="{{ $taskSet->id }}">{{ $taskSet->name }}</option>
+                                        @if ((int) ($line['recipe_id'] ?? 0) > 0 && $taskSet->recipes->contains('id', (int) $line['recipe_id']))
+                                            <option value="{{ $taskSet->id }}">{{ $taskSet->name }}</option>
+                                        @endif
                                     @endforeach
                                 </select>
                             </label>

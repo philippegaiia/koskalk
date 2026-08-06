@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\PlanProduction;
+use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionTaskSet;
 use App\Models\Recipe;
@@ -11,6 +12,7 @@ use App\Models\Workspace;
 use App\ProductionRunSource;
 use App\Services\Production\ProductionAvailabilityPreview;
 use App\Services\ProductionBenchAccess;
+use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +20,8 @@ use Livewire\Component;
 
 class ProductionCreate extends Component
 {
+    use InteractsWithAppNotifications;
+
     public string $recipeId = '';
 
     public string $presetId = '';
@@ -36,7 +40,9 @@ class ProductionCreate extends Component
 
     public string $idempotencyKey = '';
 
-    public ?string $savedPublicId = null;
+    public ?string $statusMessage = null;
+
+    public string $statusType = 'idle';
 
     public function mount(): void
     {
@@ -56,12 +62,13 @@ class ProductionCreate extends Component
             return;
         }
 
-        $preset = ProductionBatchPreset::query()
-            ->where('workspace_id', $this->workspace()->id)
-            ->where('recipe_id', $recipe->id)
+        $presets = $recipe->productionBatchPresets()
             ->where('is_active', true)
-            ->where('is_default', true)
+            ->get();
+        $preset = $recipe->defaultProductionBatchPresets()
+            ->where('is_active', true)
             ->first();
+        $preset ??= $presets->count() === 1 ? $presets->first() : null;
 
         if ($preset instanceof ProductionBatchPreset) {
             $this->presetId = (string) $preset->id;
@@ -72,10 +79,16 @@ class ProductionCreate extends Component
             $this->reset(['presetId', 'basisInputValue', 'expectedUnits']);
         }
 
-        $taskSet = $recipe->defaultProductionTaskSet;
-        $this->taskSetId = $taskSet instanceof ProductionTaskSet && $taskSet->is_active
-            ? (string) $taskSet->id
-            : '';
+        $taskSets = $recipe->productionTaskSets()
+            ->where('is_active', true)
+            ->get();
+        $taskSet = $recipe->defaultProductionTaskSetModel();
+
+        if (! $taskSet instanceof ProductionTaskSet || ! $taskSet->is_active) {
+            $taskSet = $taskSets->count() === 1 ? $taskSets->first() : null;
+        }
+
+        $this->taskSetId = $taskSet instanceof ProductionTaskSet ? (string) $taskSet->id : '';
     }
 
     public function updatedPresetId(): void
@@ -93,6 +106,8 @@ class ProductionCreate extends Component
 
     public function plan(PlanProduction $planProduction): void
     {
+        $this->basisInputValue = NumberLocale::normalizeDecimalString($this->basisInputValue) ?? $this->basisInputValue;
+
         $this->validate([
             'recipeId' => ['required', 'integer'],
             'basisInputValue' => ['required', 'numeric', 'gt:0'],
@@ -134,8 +149,8 @@ class ProductionCreate extends Component
             return;
         }
 
-        $this->savedPublicId = $production->public_id;
         $this->idempotencyKey = (string) Str::uuid();
+        $this->showAppNotification(__('production_bench.production.planned_success').' '.$production->public_id);
         $this->dispatch('production-planned');
     }
 
@@ -157,19 +172,18 @@ class ProductionCreate extends Component
                 ->with('productFamily')
                 ->orderBy('name')
                 ->get(),
-            'presets' => ProductionBatchPreset::query()
-                ->where('workspace_id', $workspace->id)
-                ->when($recipe instanceof Recipe, fn ($query) => $query->where('recipe_id', $recipe->id))
-                ->where('is_active', true)
-                ->orderByDesc('is_default')
-                ->orderBy('name')
-                ->get(),
-            'taskSets' => ProductionTaskSet::query()
-                ->where('workspace_id', $workspace->id)
-                ->where('is_active', true)
-                ->with('items.taskType')
-                ->orderBy('name')
-                ->get(),
+            'presets' => $recipe instanceof Recipe
+                ? $recipe->productionBatchPresets()
+                    ->where('is_active', true)
+                    ->orderByDesc('production_batch_preset_recipe.is_default')
+                    ->get()
+                : collect(),
+            'taskSets' => $recipe instanceof Recipe
+                ? $recipe->productionTaskSets()
+                    ->where('is_active', true)
+                    ->with('items.taskType')
+                    ->get()
+                : collect(),
             'preview' => $availabilityPreview->for(
                 workspace: $workspace,
                 recipe: $recipe,
@@ -191,7 +205,7 @@ class ProductionCreate extends Component
         return Recipe::withoutGlobalScopes()
             ->where('workspace_id', $this->workspace()->id)
             ->whereHas('publishedVersions')
-            ->with('productFamily', 'defaultProductionTaskSet')
+            ->with('productFamily', 'productionTaskSets', 'productionBatchPresets')
             ->find((int) $this->recipeId);
     }
 
@@ -203,8 +217,8 @@ class ProductionCreate extends Component
 
         return ProductionBatchPreset::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->where('recipe_id', (int) $this->recipeId)
             ->where('is_active', true)
+            ->whereHas('recipes', fn ($query) => $query->whereKey((int) $this->recipeId))
             ->find((int) $this->presetId);
     }
 
@@ -214,8 +228,13 @@ class ProductionCreate extends Component
             return null;
         }
 
-        return ProductionTaskSet::query()
-            ->where('workspace_id', $this->workspace()->id)
+        $recipe = $this->selectedRecipe();
+
+        if (! $recipe instanceof Recipe) {
+            return null;
+        }
+
+        return $recipe->productionTaskSets()
             ->where('is_active', true)
             ->find((int) $this->taskSetId);
     }

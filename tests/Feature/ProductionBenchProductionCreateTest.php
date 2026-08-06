@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Livewire\ProductionBench\Production\ProductionCreate;
 use App\MassUnit;
 use App\Models\Ingredient;
@@ -25,6 +26,7 @@ use App\ProductionRunStatus;
 use App\StockMovementType;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -42,6 +44,32 @@ it('shows only published products and loads an optional default preset and task 
         ->assertSet('expectedUnits', '100')
         ->assertSet('presetId', (string) $fixture['preset']->id)
         ->assertSet('taskSetId', (string) $fixture['taskSet']->id);
+});
+
+it('loads the only applicable task set when the product has no explicit default', function (): void {
+    $fixture = productionCreateFixture();
+    $fixture['recipe']->update(['name' => 'New Soap Formula §§']);
+    DB::table('production_task_set_recipe')
+        ->where('production_task_set_id', $fixture['taskSet']->id)
+        ->where('recipe_id', $fixture['recipe']->id)
+        ->update(['is_default' => false]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->assertSet('taskSetId', (string) $fixture['taskSet']->id);
+});
+
+it('loads the only applicable batch size when the product has no explicit default', function (): void {
+    $fixture = productionCreateFixture();
+    DB::table('production_batch_preset_recipe')
+        ->where('production_batch_preset_id', $fixture['preset']->id)
+        ->where('recipe_id', $fixture['recipe']->id)
+        ->update(['is_default' => false]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->assertSet('presetId', (string) $fixture['preset']->id)
+        ->assertSet('basisInputValue', '12');
 });
 
 it('previews scaled requirements, stock positions, shortages, and task dates without writing a production', function (): void {
@@ -74,7 +102,11 @@ it('allows the user to edit a loaded preset and schedule one planned production'
         ->set('plannedFor', '2026-08-10')
         ->call('plan')
         ->assertHasNoErrors()
-        ->assertSee(__('production_bench.production.planned_success'));
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && str_starts_with($payload['message'], __('production_bench.production.planned_success'))
+                && $payload['type'] === 'success';
+        });
 
     $production = $fixture['recipe']->productionRuns()->firstOrFail();
 
@@ -83,7 +115,8 @@ it('allows the user to edit a loaded preset and schedule one planned production'
         ->and($production->basis_quantity_grams)->toBe('6000.000000000')
         ->and($production->expected_units)->toBe(20)
         ->and($production->tasks()->count())->toBe(2)
-        ->and($page->get('savedPublicId'))->toBe($production->public_id);
+        ->and(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->next_planning_serial)->toBe(2)
+        ->and($page->get('statusMessage'))->toContain($production->public_id);
 });
 
 it('warns about a non-working production date but keeps the date explicit', function (): void {
@@ -160,15 +193,15 @@ function productionCreateFixture(): array
         'original_quantity' => '5',
         'original_unit' => 'kg',
     ]);
-    $preset = ProductionBatchPreset::factory()->for($workspace)->for($recipe)->create([
+    $preset = ProductionBatchPreset::factory()->for($workspace)->create([
         'name' => 'Default soap batch',
         'basis_quantity_grams' => '12000.000000000',
         'basis_input_value' => '12.000000000',
         'basis_input_unit' => MassUnit::Kilogram,
         'expected_units' => 100,
-        'is_default' => true,
         'is_active' => true,
     ]);
+    $preset->recipes()->attach($recipe->id, ['is_default' => true]);
     $taskType = ProductionTaskType::factory()->for($workspace)->create([
         'name' => 'Cure',
         'default_duration_minutes' => 30,
@@ -185,9 +218,13 @@ function productionCreateFixture(): array
         'position' => 2,
         'days_after_production' => 1,
     ]);
-    $recipe->update([
-        'default_production_task_set_id' => $taskSet->id,
-    ]);
+    app(SyncProductionTaskSetProducts::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        taskSet: $taskSet,
+        recipeIds: [$recipe->id],
+        defaultRecipeId: $recipe->id,
+    );
 
     return compact('owner', 'workspace', 'family', 'recipe', 'version', 'ingredient', 'packaging', 'preset', 'taskSet');
 }

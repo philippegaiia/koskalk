@@ -11,6 +11,7 @@ use App\Actions\Production\SaveEmployee;
 use App\Actions\Production\SaveProductionHoliday;
 use App\Actions\Production\SaveProductionTaskSet;
 use App\Actions\Production\SaveProductionTaskType;
+use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
@@ -35,7 +36,6 @@ it('generates an anchored task sequence and skips non-working days after product
     $cure = productionTaskSchedulingType($fixture, 'Cure', 1440);
     $set = productionTaskSchedulingSet($fixture, $pour, $cure, [0, 2]);
 
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
     app(SaveProductionHoliday::class)->handle(
         actor: $fixture['owner'],
         workspace: $fixture['workspace'],
@@ -43,16 +43,76 @@ it('generates an anchored task sequence and skips non-working days after product
         date: '2026-08-17',
     );
 
-    $production = productionTaskSchedulingPlan($fixture, '2026-08-15');
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-14');
     $tasks = $production->tasks()->orderBy('id')->get();
 
     expect($tasks)->toHaveCount(2)
         ->and($tasks[0]->days_after_production)->toBe(0)
-        ->and($tasks[0]->scheduled_for->toDateString())->toBe('2026-08-15')
+        ->and($tasks[0]->scheduled_for->toDateString())->toBe('2026-08-14')
         ->and($tasks[1]->days_after_production)->toBe(2)
         ->and($tasks[1]->scheduled_for->toDateString())->toBe('2026-08-18')
         ->and($tasks[0]->scheduling_mode)->toBe('automatic')
         ->and($tasks[1]->duration_minutes)->toBe(1440);
+});
+
+it('uses calendar offsets with directional working-day snapping', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $prepare = productionTaskSchedulingType($fixture, 'Prepare moulds');
+    $make = productionTaskSchedulingType($fixture, 'Make batch');
+    $cure = productionTaskSchedulingType($fixture, 'Cure');
+    $set = app(SaveProductionTaskSet::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        name: 'Soap workflow',
+        items: [
+            ['task_type_id' => $prepare->id, 'days_after_production' => -1],
+            ['task_type_id' => $make->id, 'days_after_production' => 0],
+            ['task_type_id' => $cure->id, 'days_after_production' => 28],
+        ],
+    );
+    app(SyncProductionTaskSetProducts::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        taskSet: $set,
+        recipeIds: [$fixture['recipe']->id],
+        defaultRecipeId: $fixture['recipe']->id,
+    );
+
+    $production = app(PlanProduction::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: fake()->uuid(),
+        plannedFor: '2026-08-10',
+        taskSet: $set,
+    );
+    $tasks = $production->tasks()->orderBy('id')->get();
+
+    expect($tasks->pluck('days_after_production')->all())->toBe([-1, 0, 28])
+        ->and($tasks[0]->scheduled_for->toDateString())->toBe('2026-08-07')
+        ->and($tasks[1]->scheduled_for->toDateString())->toBe('2026-08-10')
+        ->and($tasks[2]->scheduled_for->toDateString())->toBe('2026-09-07');
+});
+
+it('rejects a non-working production date instead of moving it silently', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $make = productionTaskSchedulingType($fixture, 'Make batch');
+    $set = productionTaskSchedulingSet($fixture, $make, null, [0]);
+
+    expect(fn (): ProductionRun => app(PlanProduction::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: fake()->uuid(),
+        plannedFor: '2026-08-09',
+        taskSet: $set,
+    ))->toThrow(ValidationException::class);
 });
 
 it('matches recurring holidays in later years without shifting the explicit production date', function (): void {
@@ -60,7 +120,6 @@ it('matches recurring holidays in later years without shifting the explicit prod
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
     $cure = productionTaskSchedulingType($fixture, 'Cure');
     $set = productionTaskSchedulingSet($fixture, $pour, $cure, [0, 1]);
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
 
     app(SaveProductionHoliday::class)->handle(
         actor: $fixture['owner'],
@@ -70,10 +129,10 @@ it('matches recurring holidays in later years without shifting the explicit prod
         isRecurring: true,
     );
 
-    $production = productionTaskSchedulingPlan($fixture, '2027-08-17');
+    $production = productionTaskSchedulingPlan($fixture, '2027-08-16');
     $tasks = $production->tasks()->orderBy('id')->get();
 
-    expect($tasks[0]->scheduled_for->toDateString())->toBe('2027-08-17')
+    expect($tasks[0]->scheduled_for->toDateString())->toBe('2027-08-16')
         ->and($tasks[1]->scheduled_for->toDateString())->toBe('2027-08-18');
 });
 
@@ -81,7 +140,6 @@ it('keeps production and the first task synchronized in both directions', functi
     $fixture = productionTaskSchedulingFixture();
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
     $set = productionTaskSchedulingSet($fixture, $pour, null, [0]);
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $first = $production->tasks()->orderBy('id')->firstOrFail();
 
@@ -105,7 +163,6 @@ it('marks later dates custom, resets them, and leaves completed tasks stable', f
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
     $cure = productionTaskSchedulingType($fixture, 'Cure');
     $set = productionTaskSchedulingSet($fixture, $pour, $cure, [0, 2]);
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $tasks = $production->tasks()->orderBy('id')->get();
 
@@ -136,7 +193,6 @@ it('does not move a completed automatic task when the production date changes', 
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
     $cure = productionTaskSchedulingType($fixture, 'Cure', 60);
     $set = productionTaskSchedulingSet($fixture, $pour, $cure, [0, 2]);
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $tasks = $production->tasks()->orderBy('id')->get();
     $completedDate = $tasks[1]->scheduled_for->toDateString();
@@ -159,7 +215,6 @@ it('accepts an active employee and preserves a later deactivated assignment', fu
     );
     $pour = productionTaskSchedulingType($fixture, 'Pour');
     $set = productionTaskSchedulingSet($fixture, $pour, null, [0]);
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $task = $production->tasks()->firstOrFail();
 
@@ -191,7 +246,6 @@ it('does not rewrite generated snapshots when a task template changes', function
     $fixture = productionTaskSchedulingFixture();
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
     $set = productionTaskSchedulingSet($fixture, $pour, null, [0]);
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $task = $production->tasks()->firstOrFail();
 
@@ -203,11 +257,35 @@ it('does not rewrite generated snapshots when a task template changes', function
         ->and($task->fresh()->days_after_production)->toBe(0);
 });
 
+it('snapshots task colour when tasks are generated', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $make = app(SaveProductionTaskType::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        name: 'Make batch',
+        colour: '#8F5C38',
+    );
+    $set = productionTaskSchedulingSet($fixture, $make, null, [0]);
+
+    $production = app(PlanProduction::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: fake()->uuid(),
+        plannedFor: '2026-08-10',
+        taskSet: $set,
+    );
+
+    expect($production->tasks()->firstOrFail()->colour_snapshot)->toBe('#8F5C38');
+});
+
 it('rejects task date mutations after production starts', function (): void {
     $fixture = productionTaskSchedulingFixture();
     $pour = productionTaskSchedulingType($fixture, 'Pour');
     $set = productionTaskSchedulingSet($fixture, $pour, null, [0]);
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
     $task = $production->tasks()->firstOrFail();
     $production->update(['status' => ProductionRunStatus::InProduction]);
@@ -228,7 +306,6 @@ it('does not duplicate tasks when generation is retried', function (): void {
     $fixture = productionTaskSchedulingFixture();
     $pour = productionTaskSchedulingType($fixture, 'Pour');
     $set = productionTaskSchedulingSet($fixture, $pour, null, [0]);
-    $fixture['recipe']->update(['default_production_task_set_id' => $set->id]);
     $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
 
     app(GenerateProductionTasks::class)->handle($fixture['owner'], $production->fresh());
@@ -288,12 +365,22 @@ function productionTaskSchedulingSet(array $fixture, ProductionTaskType $first, 
         $items[] = ['task_type_id' => $second->id, 'days_after_production' => $offsets[1]];
     }
 
-    return app(SaveProductionTaskSet::class)->handle(
+    $taskSet = app(SaveProductionTaskSet::class)->handle(
         actor: $fixture['owner'],
         workspace: $fixture['workspace'],
         name: 'Soap workflow',
         items: $items,
     );
+
+    app(SyncProductionTaskSetProducts::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        taskSet: $taskSet,
+        recipeIds: [$fixture['recipe']->id],
+        defaultRecipeId: $fixture['recipe']->id,
+    );
+
+    return $taskSet->fresh();
 }
 
 /** @param array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion} $fixture */

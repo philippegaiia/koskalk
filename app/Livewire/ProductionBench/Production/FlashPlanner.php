@@ -34,9 +34,6 @@ class FlashPlanner extends Component
 
     public ?string $simulationError = null;
 
-    /** @var list<string> */
-    public array $generatedPublicIds = [];
-
     public function mount(): void
     {
         $this->firstDate = now()->toDateString();
@@ -105,7 +102,7 @@ class FlashPlanner extends Component
         $this->simulationError = null;
 
         try {
-            $productions = $generate->handle(
+            $generate->handle(
                 actor: $this->user(),
                 workspace: $this->workspace(),
                 lines: $this->lines,
@@ -119,10 +116,6 @@ class FlashPlanner extends Component
             return;
         }
 
-        $this->generatedPublicIds = $productions
-            ->map(fn ($production): string => (string) $production->public_id)
-            ->values()
-            ->all();
         $this->idempotencyKey = (string) Str::uuid();
         $this->showDatePreview = false;
         $this->dispatch('flash-productions-generated');
@@ -156,12 +149,13 @@ class FlashPlanner extends Component
             'presets' => ProductionBatchPreset::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)
-                ->with('recipe')
+                ->with('recipes')
                 ->orderBy('name')
                 ->get(),
             'taskSets' => ProductionTaskSet::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)
+                ->with('recipes')
                 ->orderBy('name')
                 ->get(),
             'simulation' => $simulation,
@@ -190,16 +184,17 @@ class FlashPlanner extends Component
             return;
         }
 
-        $preset = ProductionBatchPreset::query()
-            ->where('workspace_id', $this->workspace()->id)
-            ->where('recipe_id', $recipeId)
-            ->where('is_active', true)
-            ->where('is_default', true)
-            ->first();
         $recipe = Recipe::withoutGlobalScopes()
             ->where('workspace_id', $this->workspace()->id)
-            ->with('defaultProductionTaskSet')
+            ->with('productionTaskSets', 'productionBatchPresets')
             ->find($recipeId);
+        $presets = $recipe instanceof Recipe
+            ? $recipe->productionBatchPresets()->where('is_active', true)->get()
+            : collect();
+        $preset = $recipe instanceof Recipe
+            ? $recipe->defaultProductionBatchPresets()->where('is_active', true)->first()
+            : null;
+        $preset ??= $presets->count() === 1 ? $presets->first() : null;
 
         if ($preset instanceof ProductionBatchPreset) {
             $this->lines[$index]['preset_id'] = (string) $preset->id;
@@ -208,8 +203,16 @@ class FlashPlanner extends Component
             $this->lines[$index]['expected_units_per_batch'] = (string) $preset->expected_units;
         }
 
-        if ($recipe instanceof Recipe && $recipe->defaultProductionTaskSet?->is_active) {
-            $this->lines[$index]['task_set_id'] = (string) $recipe->defaultProductionTaskSet->id;
+        $taskSets = $recipe instanceof Recipe
+            ? $recipe->productionTaskSets()->where('is_active', true)->get()
+            : collect();
+        $taskSet = $recipe instanceof Recipe ? $recipe->defaultProductionTaskSetModel() : null;
+        $taskSet ??= $taskSets->count() === 1 ? $taskSets->first() : null;
+
+        if ($taskSet instanceof ProductionTaskSet && $taskSet->is_active) {
+            $this->lines[$index]['task_set_id'] = (string) $taskSet->id;
+        } else {
+            $this->lines[$index]['task_set_id'] = '';
         }
     }
 
@@ -230,7 +233,14 @@ class FlashPlanner extends Component
             return;
         }
 
-        $this->lines[$index]['recipe_id'] = (string) $preset->recipe_id;
+        $recipeId = (int) ($this->lines[$index]['recipe_id'] ?? 0);
+
+        if ($recipeId < 1 || ! $preset->recipes()->whereKey($recipeId)->exists()) {
+            $this->lines[$index]['preset_id'] = '';
+
+            return;
+        }
+
         $this->lines[$index]['basis_input_value'] = $this->displayDecimal((string) $preset->basis_input_value);
         $this->lines[$index]['basis_input_unit'] = $preset->basis_input_unit->value;
         $this->lines[$index]['expected_units_per_batch'] = (string) $preset->expected_units;

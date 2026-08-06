@@ -88,20 +88,26 @@ class RescheduleProductionTask
                 return $lockedTask->fresh(['productionRun', 'employee']);
             }
 
-            $firstTaskId = ProductionTask::query()
+            $anchorTaskId = ProductionTask::query()
                 ->where('production_run_id', $lockedProduction->id)
+                ->where('days_after_production', 0)
                 ->orderBy('id')
                 ->value('id');
 
-            if ((int) $firstTaskId === (int) $lockedTask->id) {
+            if ((int) $anchorTaskId === (int) $lockedTask->id) {
                 if ($lockedTask->completed_at !== null) {
                     throw ValidationException::withMessages([
                         'task' => 'A completed anchor task cannot be rescheduled.',
                     ]);
                 }
 
+                if (! $this->calendar->isWorkingDate($lockedWorkspace, $scheduledFor)) {
+                    throw ValidationException::withMessages([
+                        'scheduled_for' => 'The production date must be a working day.',
+                    ]);
+                }
+
                 $lockedProduction->update(['planned_for' => $scheduledFor]);
-                $lockedTask->days_after_production = 0;
                 $lockedTask->scheduled_for = $scheduledFor;
                 $lockedTask->scheduling_mode = 'automatic';
                 $lockedTask->save();
@@ -119,7 +125,7 @@ class RescheduleProductionTask
                     }
 
                     $laterTask->update([
-                        'scheduled_for' => $this->calendar->dateAfterProduction(
+                        'scheduled_for' => $this->calendar->dateRelativeToProduction(
                             $lockedWorkspace,
                             $scheduledFor,
                             (int) $laterTask->days_after_production,

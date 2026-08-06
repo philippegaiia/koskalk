@@ -145,6 +145,28 @@ it('assigns employees and lets the operator complete or reopen a task', function
         ->and($task->fresh()->employee_id)->toBeNull();
 });
 
+it('rejects invalid employee assignments and displays task operation errors', function (): void {
+    $fixture = productionListFixture();
+    $task = ProductionTask::factory()
+        ->for($fixture['workspace'])
+        ->for($fixture['production'], 'productionRun')
+        ->create(['name_snapshot' => 'Mix oils', 'scheduled_for' => '2026-08-10']);
+
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, [
+        'productionId' => $fixture['production']->id,
+    ]);
+
+    $page->call('assignTask', $task->id, '999999')
+        ->assertHasErrors('task_employee');
+    expect($task->fresh()->employee_id)->toBeNull();
+
+    $fixture['production']->update(['status' => ProductionRunStatus::Completed]);
+
+    $page->call('toggleTask', $task->id)
+        ->assertHasErrors('task_task')
+        ->assertSee('This production task cannot be completed.');
+});
+
 it('cancels draft and scheduled productions with a required reason', function (): void {
     $fixture = productionListFixture();
 

@@ -15,7 +15,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'production_task_set_id',
     'production_task_set_item_id',
     'employee_id',
+    'department_id',
     'name_snapshot',
+    'colour_snapshot',
     'days_after_production',
     'duration_minutes',
     'scheduled_for',
@@ -52,6 +54,11 @@ class ProductionTask extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     protected function casts(): array

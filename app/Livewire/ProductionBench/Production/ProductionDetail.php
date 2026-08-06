@@ -3,11 +3,15 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\AssignProductionBatchNumbers;
+use App\Actions\Production\AssignProductionTask;
 use App\Actions\Production\CancelProduction;
 use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\ReopenProductionTask;
 use App\Actions\Production\RescheduleProductionTask;
+use App\Actions\Production\ResetProductionTaskDate;
+use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Models\Department;
 use App\Models\Employee;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
@@ -21,13 +25,15 @@ use Livewire\Component;
 
 class ProductionDetail extends Component
 {
-    use \App\Livewire\Concerns\InteractsWithAppNotifications;
+    use InteractsWithAppNotifications;
 
     public string $productionId = '';
 
     public string $cancellationReason = '';
 
+    public ?string $statusMessage = null;
 
+    public string $statusType = 'idle';
 
     public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
@@ -37,7 +43,7 @@ class ProductionDetail extends Component
                 workspace: $this->workspace(),
                 productionIds: [(int) $this->productionId],
             );
-        } catch (\Illuminate\Validation\ValidationException $exception) {
+        } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
                     $this->addError(
@@ -56,17 +62,16 @@ class ProductionDetail extends Component
         $this->dispatch('production-batch-numbers-updated');
     }
 
-    public function assignTask(int $taskId, ?string $employeeId, RescheduleProductionTask $rescheduleProductionTask): void
+    public function assignTask(int $taskId, ?string $employeeId, AssignProductionTask $assignProductionTask): void
     {
         try {
-            $employee = filled($employeeId)
-                ? Employee::query()->where('workspace_id', $this->workspace()->id)->find((int) $employeeId)
-                : null;
-            $rescheduleProductionTask->handle(
+            $task = $this->task($taskId);
+
+            $assignProductionTask->handle(
                 actor: $this->user(),
-                task: $this->task($taskId),
-                employee: $employee,
-                clearEmployee: blank($employeeId),
+                task: $task,
+                employeeId: filled($employeeId) ? (int) $employeeId : null,
+                departmentId: $task->department_id,
             );
         } catch (ValidationException $exception) {
             $this->addTaskErrors($exception);
@@ -74,6 +79,28 @@ class ProductionDetail extends Component
             return;
         }
 
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-task-updated');
+    }
+
+    public function assignTaskDepartment(int $taskId, ?string $departmentId, AssignProductionTask $assignProductionTask): void
+    {
+        try {
+            $task = $this->task($taskId);
+
+            $assignProductionTask->handle(
+                actor: $this->user(),
+                task: $task,
+                employeeId: $task->employee_id,
+                departmentId: filled($departmentId) ? (int) $departmentId : null,
+            );
+        } catch (ValidationException $exception) {
+            $this->addTaskErrors($exception);
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-task-updated');
     }
 
@@ -93,6 +120,39 @@ class ProductionDetail extends Component
             return;
         }
 
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-task-updated');
+    }
+
+    public function rescheduleTask(int $taskId, string $scheduledFor, RescheduleProductionTask $rescheduleProductionTask): void
+    {
+        try {
+            $rescheduleProductionTask->handle(
+                actor: $this->user(),
+                task: $this->task($taskId),
+                scheduledFor: $scheduledFor,
+            );
+        } catch (ValidationException $exception) {
+            $this->addTaskErrors($exception);
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-task-updated');
+    }
+
+    public function resetTaskDate(int $taskId, ResetProductionTaskDate $resetProductionTaskDate): void
+    {
+        try {
+            $resetProductionTaskDate->handle($this->user(), $this->task($taskId));
+        } catch (ValidationException $exception) {
+            $this->addTaskErrors($exception);
+
+            return;
+        }
+
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-task-updated');
     }
 
@@ -134,6 +194,7 @@ class ProductionDetail extends Component
         }
 
         $this->cancellationReason = '';
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-cancelled');
     }
 
@@ -154,6 +215,7 @@ class ProductionDetail extends Component
             return;
         }
 
+        $this->showAppNotification(__('production_bench.settings.saved'));
         $this->dispatch('production-stock-released');
     }
 
@@ -181,6 +243,11 @@ class ProductionDetail extends Component
                 ->orderBy('last_name')
                 ->orderBy('first_name')
                 ->get(),
+            'departments' => Department::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
         ]);
     }
 
@@ -204,7 +271,7 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'recipeVersion', 'requirements', 'tasks.employee', 'cancelledBy', 'batchNumberAssignedBy'])
+            ->with(['recipe', 'recipeVersion', 'requirements', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
     }
 

@@ -10,6 +10,7 @@ use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -607,6 +608,25 @@ it('cascades consumption and journal rows when a production is deleted', functio
 
     expect(ProductionConsumption::query()->find($consumption->id))->toBeNull()
         ->and(ProductionJournalEntry::query()->find($entry->id))->toBeNull();
+});
+
+it('allows stock lots for finished products and intermediates as subjects', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $recipe = productionPlanningRecipe($workspace);
+
+    $productLot = StockLot::factory()->for($workspace)->forRecipe()->create([
+        'recipe_id' => $recipe->id,
+        'origin' => 'production_output',
+    ]);
+
+    expect($productLot->recipe_id)->toBe($recipe->id)
+        ->and($productLot->subjectName())->toBe($recipe->name);
+
+    expect(fn (): StockLot => StockLot::factory()->for($workspace)->forRecipe()->create([
+        'recipe_id' => $recipe->id,
+        'ingredient_id' => Ingredient::factory()->create()->id,
+    ]))->toThrow(QueryException::class);
 });
 
 function productionPlanningRecipe(Workspace $workspace): Recipe

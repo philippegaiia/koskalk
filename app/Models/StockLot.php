@@ -21,6 +21,8 @@ use LogicException;
     'workspace_id',
     'ingredient_id',
     'packaging_item_id',
+    'recipe_id',
+    'production_run_id',
     'supplier_listing_id',
     'organic_status',
     'internal_lot_code',
@@ -194,7 +196,18 @@ class StockLot extends Model
     {
         return $this->ingredient?->localizedDisplayName()
             ?? $this->packagingItem?->name
+            ?? $this->recipe?->name
             ?? __('production_bench.inventory.unknown_item');
+    }
+
+    public function recipe(): BelongsTo
+    {
+        return $this->belongsTo(Recipe::class)->withoutGlobalScopes();
+    }
+
+    public function productionRun(): BelongsTo
+    {
+        return $this->belongsTo(ProductionRun::class);
     }
 
     protected function casts(): array

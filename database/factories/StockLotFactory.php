@@ -63,6 +63,17 @@ class StockLotFactory extends Factory
         return $this->state(fn (): array => [
             'ingredient_id' => null,
             'packaging_item_id' => PackagingItemFactory::new(),
+            'recipe_id' => null,
+            'unit_kind' => StockUnitKind::Count,
+        ]);
+    }
+
+    public function forRecipe(): static
+    {
+        return $this->state(fn (): array => [
+            'ingredient_id' => null,
+            'packaging_item_id' => null,
+            'recipe_id' => RecipeFactory::new(),
             'unit_kind' => StockUnitKind::Count,
         ]);
     }

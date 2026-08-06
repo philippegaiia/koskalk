@@ -15,6 +15,7 @@ use App\Actions\Production\ReopenProductionTask;
 use App\Actions\Production\RescheduleProductionTask;
 use App\Actions\Production\ResetProductionTaskDate;
 use App\Actions\Production\SaveProductionActuals;
+use App\Actions\Production\SaveProductionJournalEntry;
 use App\Actions\Production\StartProduction;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Department;
@@ -65,6 +66,8 @@ class ProductionDetail extends Component
     public string $issueQuantity = '';
 
     public string $issueNote = '';
+
+    public string $journalBody = '';
 
     public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
@@ -422,6 +425,29 @@ class ProductionDetail extends Component
         $this->issueNote = '';
         $this->showAppNotification(__('production_bench.production.issued'));
         $this->dispatch('production-output-issued');
+    }
+
+    public function saveJournalEntry(SaveProductionJournalEntry $saveProductionJournalEntry): void
+    {
+        try {
+            $saveProductionJournalEntry->handle(
+                actor: $this->user(),
+                production: $this->production(),
+                body: $this->journalBody,
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->journalBody = '';
+        $this->showAppNotification(__('production_bench.production.journal_added'));
+        $this->dispatch('production-journal-updated');
     }
 
     public function render(ProductionBenchAccess $access): View

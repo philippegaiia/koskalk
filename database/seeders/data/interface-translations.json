@@ -10879,6 +10879,72 @@
         },
         {
             "group": "production_bench",
+            "key": "production.journal",
+            "text": {
+                "de": "Produktionstagebuch",
+                "es": "Diario de producción",
+                "fr": "Journal de production",
+                "it": "Diario di produzione",
+                "nl": "Productiedagboek"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.journal_add",
+            "text": {
+                "de": "Eintrag hinzufügen",
+                "es": "Añadir entrada",
+                "fr": "Ajouter une entrée",
+                "it": "Aggiungi voce",
+                "nl": "Invoer toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.journal_added",
+            "text": {
+                "de": "Tagebucheintrag hinzugefügt.",
+                "es": "Entrada añadida al diario.",
+                "fr": "Entrée ajoutée au journal.",
+                "it": "Voce aggiunta al diario.",
+                "nl": "Dagboeking toegevoegd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.journal_empty",
+            "text": {
+                "de": "Noch keine Tagebucheinträge.",
+                "es": "Aún no hay entradas.",
+                "fr": "Aucune entrée pour l’instant.",
+                "it": "Nessuna voce per ora.",
+                "nl": "Nog geen dagboekingen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.journal_placeholder",
+            "text": {
+                "de": "Temperatur, pH-Wert, Beobachtungen, Abweichungen, Reifungsnotizen…",
+                "es": "Temperatura, pH, observaciones, desviaciones, notas de curado…",
+                "fr": "Température, pH, observations, écarts, notes de durcissement…",
+                "it": "Temperatura, pH, osservazioni, scostamenti, note di stagionatura…",
+                "nl": "Temperatuur, pH, observaties, afwijkingen, rijpingsnotities…"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.journal_unknown_author",
+            "text": {
+                "de": "Unbekannter Autor",
+                "es": "Autor desconocido",
+                "fr": "Auteur inconnu",
+                "it": "Autore sconosciuto",
+                "nl": "Onbekende auteur"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.lots",
             "text": {
                 "de": "Lose",

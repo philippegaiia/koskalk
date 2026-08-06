@@ -8,6 +8,7 @@ use App\Actions\Production\IssueFinishedGoods;
 use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\ReleaseOutputLot;
 use App\Actions\Production\SaveProductionActuals;
+use App\Actions\Production\SaveProductionJournalEntry;
 use App\Actions\Production\StartProduction;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
 use App\MassUnit;
@@ -527,6 +528,41 @@ it('releases a quarantined output lot and issues finished goods', function (): v
     // Over-issue rejected.
     expect(function () use ($fixture, $issued): void {
         app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Shipment, '999');
+    })->toThrow(ValidationException::class);
+});
+
+it('records journal entries during planning and production, read-only afterwards', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'journal-1');
+
+    $saved = app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $production, 'Mixed at 40°C, batter traced after 8 minutes.');
+
+    expect($saved->journalEntries()->count())->toBe(1)
+        ->and($saved->journalEntries()->sole()->body)->toBe('Mixed at 40°C, batter traced after 8 minutes.')
+        ->and($saved->journalEntries()->sole()->created_by_user_id)->toBe($fixture['owner']->id);
+
+    app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $production, 'Added lavender at trace.');
+
+    expect($production->journalEntries()->count())->toBe(2)
+        ->and($production->journalEntries()->first()->body)->toBe('Mixed at 40°C, batter traced after 8 minutes.');
+
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    );
+
+    expect(function () use ($fixture, $completed): void {
+        app(SaveProductionJournalEntry::class)->handle($fixture['owner'], $completed, 'Too late to add.');
     })->toThrow(ValidationException::class);
 });
 

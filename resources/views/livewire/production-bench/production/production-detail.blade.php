@@ -301,6 +301,34 @@
         </section>
     @endif
 
+    <section aria-labelledby="journal-heading" class="sk-card overflow-hidden">
+        <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="journal-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.journal') }}</h2></div>
+        <div class="divide-y divide-[var(--color-line)]">
+            @forelse ($production->journalEntries as $entry)
+                <div class="px-5 py-4 sm:px-6">
+                    <p class="whitespace-pre-line text-sm text-[var(--color-ink-strong)]">{{ $entry->body }}</p>
+                    <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ $entry->created_at?->format('Y-m-d H:i') }} · {{ $entry->createdBy?->name ?? __('production_bench.production.journal_unknown_author') }}</p>
+                </div>
+            @empty
+                <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.journal_empty') }}</p>
+            @endforelse
+        </div>
+        @if ($canMutate && ! in_array($production->status->value, ['completed', 'aborted', 'cancelled'], true))
+            <div class="space-y-3 border-t border-[var(--color-line)] p-5 sm:p-6">
+                <label class="block text-sm">
+                    <span class="sr-only">{{ __('production_bench.production.journal_add') }}</span>
+                    <textarea wire:model="journalBody" rows="3" maxlength="20000" @disabled($isReadOnly) class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.production.journal_placeholder') }}"></textarea>
+                </label>
+                @error('body')
+                    <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+                @enderror
+                <div class="flex justify-end">
+                    <button type="button" wire:click="saveJournalEntry" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_add') }}</button>
+                </div>
+            </div>
+        @endif
+    </section>
+
     <section aria-labelledby="tasks-detail-heading" class="sk-card overflow-hidden">
         <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="tasks-detail-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.tasks') }}</h2></div>
         @error('task_task') <div role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</div> @enderror

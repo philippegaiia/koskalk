@@ -123,6 +123,13 @@ it('shows subject-level production forecast in the inventory view', function ():
         ->assertSee('Production forecast')
         ->assertSee('Olive oil')
         ->assertSee('0.40');
+
+    Livewire::actingAs($fixture['owner'])->test(InventoryIndex::class)
+        ->set('mode', 'requirements')
+        ->assertSee('Material requirements')
+        ->assertSee('Required')
+        ->assertSee('Reserved')
+        ->assertSee('0.60');
 });
 
 it('renders negative ingredient forecasts when planned demand exceeds available stock', function (): void {

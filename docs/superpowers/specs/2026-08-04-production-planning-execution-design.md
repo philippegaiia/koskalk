@@ -58,7 +58,7 @@ same fallback rule. These identifiers belong to Production Bench runs and are in
 
 ### Outcome
 
-A maker can plan a production from a published product, optionally generate several productions through Flash, see all productions and tasks in list or calendar form, understand shortages, and reserve one or several productions against specific stock lots.
+A maker can plan a production from a published product, optionally generate several productions through Flash, see all productions and tasks in list or calendar form, review combined material requirements in Inventory, and reserve one or several productions against specific stock items.
 
 Planning creates forecast demand only. It never changes physical or available stock.
 
@@ -221,12 +221,12 @@ The live, non-persistent simulation calculates:
 - total oil mass or total formula mass;
 - aggregated ingredient requirements;
 - aggregated packaging requirements;
-- available, incoming, forecast, and shortage quantities;
-- indicative current material value;
-- missing-price warnings;
+- current material prices and an estimated material budget;
+- missing-price or mixed-currency notices when a complete combined budget cannot be shown;
+- no available, incoming, forecast, shortage, reservation, or stock calculation;
 - optional task-duration totals when durations are configured.
 
-Indicative value uses the workspace's current material-price projection and costing currency. It does not use or modify immutable received-lot costs.
+The estimated budget uses the workspace's current material-price projections and their recorded currencies. It does not use or modify immutable received-lot costs; a combined total is shown only when all selected prices use the same currency.
 
 The simulation has no stock effect.
 
@@ -421,7 +421,7 @@ The review demonstrates:
 - moving the production date and automatically rescheduling unfinished tasks;
 - manually changing one task date and assigning an employee;
 - List, Month, Week, and Agenda production views;
-- Flash simulation of several products with whole-batch rounding, extra units, aggregate materials, packaging, shortages, value, and task time;
+- Flash simulation of several products with whole-batch rounding, extra units, aggregate material requirements, packaging, and task time; stock coverage is reviewed separately in Inventory → Requirements;
 - review and confirmation of Flash-generated production dates;
 - planning with shortages without reserving stock;
 - bulk stock preparation;

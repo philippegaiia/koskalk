@@ -89,7 +89,7 @@ it('does not mark events draggable for viewers', function (): void {
         ->test(ProductionCalendar::class)
         ->call('setRange', '2026-08-01', '2026-09-01');
 
-    expect($component->instance()->events()->firstWhere('extendedProps.eventType', 'production')['editable'])->toBeFalse();
+    expect(collect($component->instance()->events())->firstWhere('extendedProps.eventType', 'production')['editable'])->toBeFalse();
 });
 ```
 
@@ -291,21 +291,22 @@ use Illuminate\Support\Str;
 - [ ] **Step 2: Run the tests to verify they fail**
 
 Run: `php artisan test --compact tests/Feature/ProductionBenchProductionCalendarTest.php`
-Expected: 6 new tests fail — `moveProduction` does not exist / `editable` key missing.
+Expected: the 6 new Task 2 tests fail — `moveProduction` does not exist / `editable` key missing. (The 2 Task 1 tests pass by now.)
 
 - [ ] **Step 3: Implement the backend changes**
 
 In `app/Livewire/ProductionBench/Production/ProductionCalendar.php`:
 
-Add the import:
+Add the imports:
 
 ```php
 use App\Actions\Production\RescheduleProduction;
+use Illuminate\Auth\Access\AuthorizationException;
 ```
 
-(`ValidationException` is already imported; `AuthorizationException` is handled inside `canWrite`, so no new import is needed here.)
+(`ValidationException` is already imported.)
 
-In `events()`, production loop — add the `editable` key (keep all existing keys):
+In `events()`, production loop — add the `editable` key; keep every existing key and the real title expression (which combines `displayIdentifier()` with the recipe name):
 
 ```php
 $canMove = app(ProductionBenchAccess::class)->canWrite($this->user(), $workspace);
@@ -315,7 +316,7 @@ foreach ($productions as $production) {
 
     $events[] = [
         'id' => 'production-'.$production->id,
-        'title' => $production->recipe?->name ?? __('production_bench.production.unknown_product'),
+        'title' => trim($production->displayIdentifier().' · '.($production->recipe?->name ?? __('production_bench.production.unknown_product'))),
         'start' => $plannedFor,
         'end' => $production->planned_for->copy()->addDay()->toDateString(),
         'allDay' => true,
@@ -355,8 +356,12 @@ public function moveProduction(string $publicId, string $plannedFor): array
 
     try {
         app(RescheduleProduction::class)->handle($this->user(), $production, $plannedFor);
-    } catch (ValidationException $exception) {
-        return ['ok' => false, 'message' => $this->translateMoveError($exception)];
+    } catch (ValidationException | AuthorizationException $exception) {
+        $message = $exception instanceof ValidationException
+            ? $this->translateMoveError($exception)
+            : __('production_bench.calendar.drag_error');
+
+        return ['ok' => false, 'message' => $message];
     }
 
     $this->dispatchCalendarUpdate();
@@ -382,12 +387,15 @@ private function translateMoveError(ValidationException $exception): string
 }
 ```
 
-Note: `planned_for` errors from a calendar drag are always working-day rejections (the date format comes from the calendar itself). Access errors (`production_bench` key) are already translated by `ProductionBenchAccess` and pass through the `default` branch.
+Notes:
+- `planned_for` errors from a calendar drag are always working-day rejections (the date format comes from the calendar itself).
+- Access failures split into two paths: manager-role users in inactive/cancelled workspaces get a `ValidationException` with the `production_bench` key (message already translated by `ProductionBenchAccess`, passes through the `default` branch); viewers get an `AuthorizationException`, mapped to the generic `drag_error`. Both surface as a red toast with the event reverting.
+- The match literals are byte-identical to the messages thrown by `app/Actions/Production/RescheduleProduction.php` (status lock, completed anchor).
 
 - [ ] **Step 4: Run the tests to verify they pass**
 
 Run: `php artisan test --compact tests/Feature/ProductionBenchProductionCalendarTest.php`
-Expected: all tests pass (2 from Task 1 + 6 new + 4 existing = 12).
+Expected: all tests pass (2 from Task 1 + 6 from Task 2 + 5 existing = 13).
 
 - [ ] **Step 5: Pint and commit**
 
@@ -535,7 +543,7 @@ git commit -m "feat: add drag and drop for reschedulable productions on the cale
 
 - [ ] **Step 1: Add the English keys**
 
-In `lang/en/production_bench.php`, in the `'calendar' => [...]` array (alphabetical order):
+In `lang/en/production_bench.php`, in the `'calendar' => [...]` array (the existing array is not strictly alphabetical — insert the new keys grouped together, after `'completed'`):
 
 ```php
 'drag_error' => 'This production could not be moved.',
@@ -547,7 +555,7 @@ In `lang/en/production_bench.php`, in the `'calendar' => [...]` array (alphabeti
 
 - [ ] **Step 2: Add the seeded translations**
 
-In `database/seeders/data/interface-translations.json`, insert five blocks after the `calendar.day` block (alphabetical: `drag_error`, `move_anchor_completed`, `move_locked`, `move_working_day`, `moved`; keep the JSON valid — same 5 languages as neighbouring keys):
+In `database/seeders/data/interface-translations.json`, insert `calendar.drag_error` after the `calendar.day` block and the `move_*`/`moved` blocks between the `calendar.month` and `calendar.no_events` blocks (the seeder order is semantically irrelevant; what matters is valid JSON and no duplicate keys — same 5 languages as neighbouring keys):
 
 ```json
         {
@@ -630,25 +638,24 @@ git commit -m "feat: add calendar drag and drop translations"
 **Files:**
 - Modify: `app/Livewire/ProductionBench/Production/ProductionDetail.php`
 - Modify: `resources/views/livewire/production-bench/production/production-detail.blade.php`
-- Test: `tests/Feature/ProductionBenchProductionDetailTest.php` (or the nearest existing detail-page test file — verify the name with `ls tests/Feature | grep -i detail` before editing)
+- Test: `tests/Feature/ProductionBenchProductionsTest.php` (existing file; mounts `ProductionDetail` with `['productionId' => ...]` and provides the `productionListFixture()` helper)
 
-Context: the detail page currently has `rescheduleTask()` but no way to change the production's own date. The calendar drag is the fast path; this form is the accessible fallback (keyboard, screen reader, touch). Reuse the same action and the same `InteractsWithAppNotifications` pattern used by other components.
+Context: the detail page currently has `rescheduleTask()` but no way to change the production's own date. The calendar drag is the fast path; this form is the accessible fallback (keyboard, screen reader, touch). Reuse the same action and the same `InteractsWithAppNotifications` pattern already used by `ProductionDetail` (it already uses the trait, `$this->user()`, `$this->production()`, and the `addError` + `showAppNotification` error/success pattern — mirror `cancel()`).
 
-- [ ] **Step 1: Check the existing detail test file name**
+Verified conventions in `ProductionDetail` (do not deviate): the class already imports `ValidationException` and `InteractsWithAppNotifications` and uses the trait; `mount(string|int|ProductionRun $productionId)` sets `public string $productionId`; `production()` is a **private method** (not a property); the Livewire test mounts with `['productionId' => $production->id]` and sets fields with `->set(...)` (plain Livewire — no `fillForm`).
 
-Run: `ls tests/Feature | grep -i detail`
-Use the existing file; if none exists, create `tests/Feature/ProductionBenchProductionDetailTest.php` with the same `uses(RefreshDatabase::class)` setup and the detail-page fixture pattern used by `tests/Feature/ProductionBenchProductionsTest.php` (check that file for its fixture helpers first).
+- [ ] **Step 1: Write the failing tests**
 
-- [ ] **Step 2: Write the failing tests**
+Append to `tests/Feature/ProductionBenchProductionsTest.php` (it already has `productionListFixture()`, whose production is planned on `2026-08-10` and whose workspace entitlement is active — verify the helper's returned keys when implementing):
 
 ```php
 it('changes the production date through the detail page form', function (): void {
-    $fixture = productionDetailFixture();
+    $fixture = productionListFixture();
     $production = $fixture['production'];
 
     Livewire::actingAs($fixture['owner'])
-        ->test(ProductionDetail::class, ['productionRun' => $production->public_id])
-        ->fillForm(['changeDate' => '2026-08-27'])
+        ->test(ProductionDetail::class, ['productionId' => $production->id])
+        ->set('changeDate', '2026-08-27')
         ->call('changeProductionDate')
         ->assertDispatched('app-notification')
         ->assertHasNoErrors();
@@ -657,56 +664,62 @@ it('changes the production date through the detail page form', function (): void
 });
 
 it('rejects a non-working day on the detail page form', function (): void {
-    $fixture = productionDetailFixture();
+    $fixture = productionListFixture();
     $production = $fixture['production'];
 
     Livewire::actingAs($fixture['owner'])
-        ->test(ProductionDetail::class, ['productionRun' => $production->public_id])
-        ->fillForm(['changeDate' => '2026-08-16'])
+        ->test(ProductionDetail::class, ['productionId' => $production->id])
+        ->set('changeDate', '2026-08-16')
         ->call('changeProductionDate')
         ->assertHasErrors('changeDate')
         ->assertNotDispatched('app-notification');
 
-    expect($production->fresh()->planned_for->toDateString())->toBe('2026-08-20');
+    expect($production->fresh()->planned_for->toDateString())->toBe('2026-08-10');
 });
 ```
 
-Note: these tests assume `ProductionDetail` is a form-based Livewire page whose shape matches the fixture/pattern of the existing detail tests; **adjust the test to the actual existing detail-page test pattern** (check `tests/Feature/ProductionBenchProductionsTest.php` or the file found in Step 1 first — the mount key may be the public id or a route-bound model, and `fillForm` may be `fill`). The production fixture must place `planned_for` on `2026-08-20` and the workspace must have an active entitlement.
+Notes: `2026-08-27` is a Thursday (working day); `2026-08-16` is a Sunday (rejected); the fixture production stays on `2026-08-10` in the rejection test. If `productionListFixture()`'s workspace entitlement is not active in that helper, add the active entitlement creation to the tests (same pattern as `productionCalendarFixture()`).
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [ ] **Step 2: Run the tests to verify they fail**
 
-Run: `php artisan test --compact tests/Feature/<detail-test-file>.php`
-Expected: failures — `changeProductionDate` does not exist / field missing.
+Run: `php artisan test --compact tests/Feature/ProductionBenchProductionsTest.php`
+Expected: the 2 new tests fail — `changeProductionDate` does not exist.
 
-- [ ] **Step 4: Implement the form**
+- [ ] **Step 3: Implement the form**
 
 In `app/Livewire/ProductionBench/Production/ProductionDetail.php`:
 
-Add imports:
+Add the single new import:
 
 ```php
 use App\Actions\Production\RescheduleProduction;
-use App\Livewire\Concerns\InteractsWithAppNotifications;
-use Illuminate\Validation\ValidationException;
 ```
 
-Add the trait to the class and a form property:
+(`InteractsWithAppNotifications` and `ValidationException` are already imported; the trait is already used.)
+
+Add the form property next to the other public properties:
 
 ```php
-use InteractsWithAppNotifications;
-
 public ?string $changeDate = null;
 ```
 
-Add the method (next to `rescheduleTask`):
+Add the method next to `cancel()` (mirror its error-mapping pattern, which maps the `production`/`planned_for`/`production_bench` keys onto the form field):
 
 ```php
-public function changeProductionDate(RescheduleProduction $reschedule): void
+public function changeProductionDate(RescheduleProduction $rescheduleProduction): void
 {
     try {
-        $reschedule->handle($this->user(), $this->production, $this->changeDate);
+        $rescheduleProduction->handle(
+            actor: $this->user(),
+            production: $this->production(),
+            plannedFor: $this->changeDate,
+        );
     } catch (ValidationException $exception) {
-        $this->addError('changeDate', (string) collect($exception->errors())->flatten()->first());
+        foreach ($exception->errors() as $field => $messages) {
+            foreach ($messages as $message) {
+                $this->addError(in_array($field, ['production', 'planned_for'], true) ? 'changeDate' : $field, $message);
+            }
+        }
 
         return;
     }
@@ -715,18 +728,43 @@ public function changeProductionDate(RescheduleProduction $reschedule): void
 }
 ```
 
-Adjust the exact shape (property name, `user()` helper, `$this->production` accessor) to the existing `ProductionDetail` conventions when implementing — the class already has `rescheduleTask` and its own access pattern to mirror. The `changeDate` field must render as a `<input type="date">` bound with `wire:model` (or the page's existing form convention) in the detail blade, visible only when the production is reschedulable (same status set as the action: draft/scheduled/reserved) and the user can write (`app(ProductionBenchAccess::class)->canWrite($this->user(), $this->production->workspace)`).
+In `resources/views/livewire/production-bench/production/production-detail.blade.php`, add a small form near the planned-date display, using the page's existing input/button classes:
 
-- [ ] **Step 5: Run the tests to verify they pass**
+```blade
+@if (in_array($production->status->value, ['draft', 'scheduled', 'reserved'], true))
+    <form wire:submit="changeProductionDate" class="flex items-end gap-3">
+        <div>
+            <label for="changeDate" class="mb-1 block text-sm font-medium text-[var(--color-ink-strong)]">
+                {{ __('production_bench.calendar.day') }}
+            </label>
+            <input
+                id="changeDate"
+                type="date"
+                wire:model="changeDate"
+                @error('changeDate') aria-invalid="true" @enderror
+                class="rounded-xl border border-[var(--color-line-strong)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]"
+            >
+            @error('changeDate')
+                <p class="mt-1 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+            @enderror
+        </div>
+        <button type="submit" class="sk-btn sk-btn-secondary">{{ __('production_bench.calendar.moved') }}</button>
+    </form>
+@endif
+```
 
-Run: `php artisan test --compact tests/Feature/<detail-test-file>.php`
-Expected: both tests pass.
+Adjust the button label to a dedicated `production.change_date` string if the detail blade does not already have one — do not reuse `calendar.moved` (it is a status message, not a label). Add the label key to `lang/en/production_bench.php` (`'change_date' => 'Change production date'`) and to the JSON seeder (`calendar` group is wrong — use the `production` group where the detail page strings live; check the existing detail-page keys in the JSON seeder first and mirror them). The status values come from `App\ProductionRunStatus` (`draft`/`scheduled`/`reserved`).
 
-- [ ] **Step 6: Pint and commit**
+- [ ] **Step 4: Run the tests to verify they pass**
+
+Run: `php artisan test --compact tests/Feature/ProductionBenchProductionsTest.php`
+Expected: both new tests pass and the existing detail tests stay green.
+
+- [ ] **Step 5: Pint and commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
-git add app/Livewire/ProductionBench/Production/ProductionDetail.php resources/views/livewire/production-bench/production/production-detail.blade.php tests/Feature/<detail-test-file>.php
+git add app/Livewire/ProductionBench/Production/ProductionDetail.php resources/views/livewire/production-bench/production/production-detail.blade.php tests/Feature/ProductionBenchProductionsTest.php lang/en/production_bench.php database/seeders/data/interface-translations.json
 git commit -m "feat: add explicit change-production-date form on the detail page"
 ```
 
@@ -739,7 +777,7 @@ git commit -m "feat: add explicit change-production-date form on the detail page
 
 - [ ] **Step 1: Run the full test suite for the touched areas**
 
-Run: `php artisan test --compact tests/Feature/ProductionBenchProductionCalendarTest.php tests/Feature/ProductionTaskSchedulingTest.php tests/Feature/<detail-test-file>.php`
+Run: `php artisan test --compact tests/Feature/ProductionBenchProductionCalendarTest.php tests/Feature/ProductionTaskSchedulingTest.php tests/Feature/ProductionBenchProductionsTest.php`
 Expected: all tests pass (the scheduling suite proves the action cascade stays intact).
 
 - [ ] **Step 2: Manual browser verification**
@@ -812,6 +850,7 @@ git commit -m "test: add local-date conversion contract test for calendar drag"
 ## Self-review
 
 - **Spec coverage:** drag productions (Task 3 + Task 2 backend); tasks follow via the existing action (Task 2 test asserts cascade + working-day snap); tasks not draggable (Task 2 test); click opens the related production (already shipped; verified in Task 6 step 7); accessible form fallback (Task 5); timezone-safe date conversion (Task 3 `toInputDate`, guarded by Task 7); shared write gating (Task 1); translated failures (Task 2 + Task 4); design-doc supersede note (header).
-- **Reviewer items addressed:** 1 timezone → `toInputDate`; 2 Interaction from core, Task 1 removed; 3 `canWrite` shared gate; 4 `collect()` around `events()`; 5 full `assertReturned` value / callable form; 6 rejection tests assert `ok === false` + no dispatch + additional cases (viewer, unknown id, completed anchor); 7 detail-page fallback form; 8 supersede section + preserved form; 9 translated failure mapping. Smaller items: in-flight drag guard, success toast, drop-does-not-navigate check, touch verification.
-- **Placeholder scan:** no TBD/TODO; every code step shows the exact diff. Task 5 intentionally flags the two places where the existing detail-page conventions must be checked first and adjusted (test file name, mount key, form binding) — those are verification steps, not placeholders.
+- **Reviewer items addressed:** 1 timezone → `toInputDate`; 2 Interaction from core, Task 1 removed; 3 `canWrite` shared gate; 4 `collect()` around `events()` (including the Task 1 viewer test); 5 full `assertReturned` value / callable form; 6 rejection tests assert `ok === false` + no dispatch + additional cases (viewer, unknown id, completed anchor); 7 detail-page fallback form; 8 supersede section + preserved form; 9 translated failure mapping. Smaller items: in-flight drag guard, success toast, drop-does-not-navigate check, touch verification.
+- **Code-review pass:** the second review verified every snippet against the codebase — `canWrite` exception coverage, byte-identical match literals, date arithmetic, `Interaction` export, local-date conversion, Livewire `call()` promise contract, `assertReturned`/`assertNotDispatched`/`assertHasErrors` availability, notification contract, and the Task 5 conventions (mount key `productionId`, `production()` method accessor, `set()` instead of `fillForm`, existing imports/trait, `productionListFixture()`). Its three Important findings (Task 1 viewer test array call, Task 2 title expression, Task 5 shape) and the Minor notes (test counts, JSON placement) are fixed in this revision.
+- **Placeholder scan:** no TBD/TODO; every code step shows the exact diff. The two places where an implementer must confirm reality first are explicit verification steps (Task 5 fixture helper keys/entitlement, and the label-key location in the JSON seeder) — not placeholders.
 - **Type consistency:** `moveProduction(string $publicId, string $plannedFor): array` and return shape `{ok: bool, message: string|null}` are identical in PHP, Pest, and JS (`result?.ok !== true`, `result?.message`). `canWrite(User, Workspace): bool` used by `events()` and referenced in Task 5. Translation keys `calendar.drag_error`, `calendar.move_working_day`, `calendar.move_locked`, `calendar.move_anchor_completed`, `calendar.moved` match across PHP, blade options (`moveError`, `moved`), and the JSON seeder.

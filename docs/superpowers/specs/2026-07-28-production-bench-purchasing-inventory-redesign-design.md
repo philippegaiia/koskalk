@@ -52,8 +52,9 @@ sales, accounting, automatic supplier selection, or ERP-style workflows.
 5. **No fictitious precision.** Receiving a sealed 200 kg drum confirms the drum,
    not a weight the maker cannot practically measure.
 6. **Costing uses the latest known commercial reality.** The latest applicable
-   price entered for an ingredient becomes its indicative formula and Flash
-   Planner price. Historical records retain their own snapshots.
+   price entered for an ingredient informs current formula costing. Historical
+   records retain their own snapshots; Flash planning itself only calculates
+   quantities and does not display or change prices.
 7. **Traceability without paperwork friction.** Internal lot identity is mandatory;
    supplier lot identity and supporting documents are retained when available.
 

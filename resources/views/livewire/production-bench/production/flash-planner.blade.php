@@ -46,6 +46,10 @@
             <div class="space-y-4">
                 @foreach ($lines as $index => $line)
                     <article wire:key="flash-line-{{ $index }}" class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel-muted)] p-4 sm:p-5">
+                        @php
+                            $applicablePresets = $presets->filter(fn ($preset): bool => $preset->recipes->contains('id', (int) ($line['recipe_id'] ?? 0)));
+                            $batchMode = (string) ($line['batch_mode'] ?? 'custom');
+                        @endphp
                         <div class="mb-4 flex items-center justify-between gap-3">
                             <h3 class="font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.flash.product_line', ['number' => $index + 1]) }}</h3>
                             @if (count($lines) > 1)
@@ -53,10 +57,10 @@
                             @endif
                         </div>
 
-                        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                            <label class="space-y-2 md:col-span-2">
-                                <span class="text-sm font-medium">{{ __('production_bench.settings.product') }}</span>
-                                <select wire:model.live="lines.{{ $index }}.recipe_id" @disabled($isReadOnly) class="sk-input w-full">
+                        <div class="grid items-end gap-x-4 gap-y-5 md:grid-cols-2 xl:grid-cols-12">
+                            <label class="space-y-2 md:col-span-2 xl:col-span-5">
+                                <span class="text-sm font-medium">{{ __('production_bench.settings.product') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
+                                <select wire:model.live="lines.{{ $index }}.recipe_id" aria-required="true" @disabled($isReadOnly) class="sk-input w-full">
                                     <option value="">{{ __('production_bench.settings.choose_product') }}</option>
                                     @foreach ($recipes as $recipe)
                                         <option value="{{ $recipe->id }}">{{ $recipe->name }}</option>
@@ -64,39 +68,51 @@
                                 </select>
                             </label>
 
-                            <label class="space-y-2 md:col-span-2">
-                                <span class="text-sm font-medium">{{ __('production_bench.production.preset') }}</span>
-                                <select wire:model.live="lines.{{ $index }}.preset_id" @disabled($isReadOnly || blank($line['recipe_id'])) class="sk-input w-full">
-                                    <option value="">{{ __('production_bench.production.no_preset') }}</option>
-                                    @foreach ($presets->filter(fn ($preset): bool => $preset->recipes->contains('id', (int) ($line['recipe_id'] ?? 0))) as $preset)
-                                        <option value="{{ $preset->id }}">{{ $preset->name }} · {{ $preset->basis_input_value }} {{ $preset->basis_input_unit->value }} / {{ $preset->expected_units }}</option>
-                                    @endforeach
-                                </select>
-                            </label>
-
-                            <label class="space-y-2">
-                                <span class="text-sm font-medium">{{ __('production_bench.flash.desired_units') }}</span>
-                                <input wire:model.live="lines.{{ $index }}.desired_units" type="number" min="1" step="1" inputmode="numeric" @disabled($isReadOnly) class="sk-input w-full font-mono" placeholder="100">
-                            </label>
-
-                            <label class="space-y-2">
-                                <span class="text-sm font-medium">{{ __('production_bench.flash.batch_quantity') }}</span>
-                                <div class="flex gap-2">
-                                    <input wire:model.live="lines.{{ $index }}.basis_input_value" inputmode="decimal" @disabled($isReadOnly) class="sk-input min-w-0 flex-1 font-mono" placeholder="12">
-                                    <select wire:model.live="lines.{{ $index }}.basis_input_unit" @disabled($isReadOnly) class="sk-input w-20">
-                                        @foreach (\App\MassUnit::cases() as $unit)
-                                            <option value="{{ $unit->value }}">{{ $unit->value }}</option>
+                            @if (filled($line['recipe_id'] ?? null) && $applicablePresets->isNotEmpty())
+                                <label class="space-y-2 md:col-span-2 xl:col-span-4">
+                                    <span class="text-sm font-medium">{{ __('production_bench.flash.batch_size') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
+                                    <select wire:model.live="lines.{{ $index }}.batch_mode" aria-required="true" @disabled($isReadOnly) class="sk-input w-full">
+                                        @if ($applicablePresets->count() > 1 && blank($batchMode))
+                                            <option value="">{{ __('production_bench.flash.choose_batch_size') }}</option>
+                                        @endif
+                                        @foreach ($applicablePresets as $preset)
+                                            <option value="{{ $preset->id }}">{{ $preset->name }} · {{ \App\Support\NumberLocale::formatAdaptiveDecimal($preset->basis_input_value, 0, 3, auth()->user()?->number_locale) }} {{ $preset->basis_input_unit->value }} / {{ $preset->expected_units }}</option>
                                         @endforeach
+                                        <option value="custom">{{ __('production_bench.flash.use_custom_quantities') }}</option>
                                     </select>
-                                </div>
+                                </label>
+                            @endif
+
+                            <label class="space-y-2 xl:col-span-3 xl:max-w-36">
+                                <span class="text-sm font-medium">{{ __('production_bench.flash.desired_units') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
+                                <input wire:model.live="lines.{{ $index }}.desired_units" type="number" min="1" step="1" inputmode="numeric" aria-required="true" @disabled($isReadOnly) class="sk-input w-full font-mono" placeholder="100">
                             </label>
 
-                            <label class="space-y-2">
-                                <span class="text-sm font-medium">{{ __('production_bench.flash.units_per_batch') }}</span>
-                                <input wire:model.live="lines.{{ $index }}.expected_units_per_batch" type="number" min="1" step="1" inputmode="numeric" @disabled($isReadOnly) class="sk-input w-full font-mono" placeholder="100">
-                            </label>
+                            @if (filled($line['recipe_id'] ?? null) && $batchMode === 'custom')
+                                <p class="md:col-span-2 xl:col-span-12 border-t border-[var(--color-line)] pt-4 text-sm text-[var(--color-ink-soft)]">
+                                    {{ $applicablePresets->isEmpty() ? __('production_bench.flash.no_batch_sizes') : __('production_bench.flash.custom_quantities_help') }}
+                                </p>
+                                <label class="space-y-2 xl:col-span-4">
+                                    <span class="text-sm font-medium">{{ __('production_bench.flash.batch_quantity') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
+                                    <div class="flex gap-2">
+                                        <input wire:model.live="lines.{{ $index }}.basis_input_value" inputmode="decimal" aria-required="true" @disabled($isReadOnly) class="sk-input min-w-0 flex-1 font-mono" placeholder="12">
+                                        <select wire:model.live="lines.{{ $index }}.basis_input_unit" aria-required="true" @disabled($isReadOnly) class="sk-input w-20">
+                                            @foreach (\App\MassUnit::cases() as $unit)
+                                                <option value="{{ $unit->value }}">{{ $unit->value }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </label>
 
-                            <label class="space-y-2">
+                                <label class="space-y-2 xl:col-span-4">
+                                    <span class="text-sm font-medium">{{ __('production_bench.flash.units_per_batch') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
+                                    <input wire:model.live="lines.{{ $index }}.expected_units_per_batch" type="number" min="1" step="1" inputmode="numeric" aria-required="true" @disabled($isReadOnly) class="sk-input w-full font-mono" placeholder="100">
+                                </label>
+                            @elseif (filled($line['recipe_id'] ?? null) && $batchMode !== '')
+                                <p class="md:col-span-2 xl:col-span-12 border-t border-[var(--color-line)] pt-4 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.batch_size_fixed_help') }}</p>
+                            @endif
+
+                            <label class="space-y-2 md:col-span-2 xl:col-span-5">
                                 <span class="text-sm font-medium">{{ __('production_bench.production.task_set') }} <span class="font-normal text-[var(--color-ink-muted)]">{{ __('production_bench.flash.optional') }}</span></span>
                                 <select wire:model.live="lines.{{ $index }}.task_set_id" @disabled($isReadOnly) class="sk-input w-full">
                                     <option value="">{{ __('production_bench.production.no_task_set') }}</option>
@@ -120,12 +136,12 @@
             </div>
             <div class="grid gap-4 sm:grid-cols-2">
                 <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.production.production_date') }}</span>
-                    <input wire:model.live="firstDate" type="date" @disabled($isReadOnly) class="sk-input w-full">
+                    <span class="text-sm font-medium">{{ __('production_bench.production.production_date') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
+                    <input wire:model.live="firstDate" type="date" aria-required="true" @disabled($isReadOnly) class="sk-input w-full">
                 </label>
                 <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.flash.batches_per_day') }}</span>
-                    <input wire:model.live="batchesPerDay" type="number" min="1" step="1" inputmode="numeric" @disabled($isReadOnly) class="sk-input w-full font-mono">
+                    <span class="text-sm font-medium">{{ __('production_bench.flash.batches_per_day') }} <span aria-hidden="true" class="text-[var(--color-accent)]">*</span></span>
+                    <input wire:model.live="batchesPerDay" type="number" min="1" step="1" inputmode="numeric" aria-required="true" @disabled($isReadOnly) class="sk-input w-full font-mono">
                 </label>
             </div>
             @if ($simulationError)
@@ -138,38 +154,62 @@
 
         @if ($simulation)
             <section aria-labelledby="flash-summary-heading" class="sk-card overflow-hidden">
+                @php($numberLocale = auth()->user()?->number_locale)
                 <div class="border-b border-[var(--color-line)] p-5 sm:p-6">
                     <h2 id="flash-summary-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.flash.summary') }}</h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.flash.summary_help') }}</p>
                 </div>
-                <div class="grid gap-3 border-b border-[var(--color-line)] p-5 sm:grid-cols-2 lg:grid-cols-5 sm:p-6">
-                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.desired_units') }}</span><strong class="mt-1 block font-mono text-lg">{{ $simulation['totals']['desired_units'] }}</strong></div>
-                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.expected_units') }}</span><strong class="mt-1 block font-mono text-lg">{{ $simulation['totals']['expected_units'] }}</strong></div>
-                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.extra_units') }}</span><strong class="mt-1 block font-mono text-lg">{{ $simulation['totals']['extra_units'] }}</strong></div>
-                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.whole_batches') }}</span><strong class="mt-1 block font-mono text-lg">{{ $simulation['totals']['whole_batches'] }}</strong></div>
-                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.task_minutes') }}</span><strong class="mt-1 block font-mono text-lg">{{ $simulation['totals']['task_minutes'] }}</strong></div>
+                <div class="grid gap-3 border-b border-[var(--color-line)] p-5 sm:grid-cols-2 lg:grid-cols-6 sm:p-6">
+                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.desired_units') }}</span><strong class="mt-1 block font-mono text-lg">{{ \App\Support\NumberLocale::formatDecimal($simulation['totals']['desired_units'], 0, $numberLocale) }}</strong></div>
+                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.expected_units') }}</span><strong class="mt-1 block font-mono text-lg">{{ \App\Support\NumberLocale::formatDecimal($simulation['totals']['expected_units'], 0, $numberLocale) }}</strong></div>
+                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.extra_units') }}</span><strong class="mt-1 block font-mono text-lg">{{ \App\Support\NumberLocale::formatDecimal($simulation['totals']['extra_units'], 0, $numberLocale) }}</strong></div>
+                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.whole_batches') }}</span><strong class="mt-1 block font-mono text-lg">{{ \App\Support\NumberLocale::formatDecimal($simulation['totals']['whole_batches'], 0, $numberLocale) }}</strong></div>
+                    <div><span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.task_minutes') }}</span><strong class="mt-1 block font-mono text-lg">{{ \App\Support\NumberLocale::formatDecimal($simulation['totals']['task_minutes'], 0, $numberLocale) }}</strong></div>
+                    <div>
+                        <span class="block text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('production_bench.flash.budget') }}</span>
+                        <strong class="mt-1 block font-mono text-lg">
+                            @if ($simulation['totals']['budget'] !== null)
+                                {{ \App\Support\NumberLocale::formatAdaptiveDecimal($simulation['totals']['budget'], 2, 3, $numberLocale) }} {{ $simulation['totals']['budget_currency'] }}
+                            @else
+                                —
+                            @endif
+                        </strong>
+                    </div>
                 </div>
+                @if ($simulation['totals']['missing_prices'] > 0 || $simulation['totals']['budget_currency'] === null)
+                    <p class="border-b border-[var(--color-line)] bg-[var(--color-panel-muted)] px-5 py-3 text-sm text-[var(--color-ink-soft)] sm:px-6">
+                        {{ $simulation['totals']['missing_prices'] > 0 ? __('production_bench.flash.budget_missing_prices') : __('production_bench.flash.budget_mixed_currencies') }}
+                    </p>
+                @endif
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[760px] text-left text-sm">
+                    <table class="w-full min-w-[900px] text-left text-sm">
                         <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
                             <tr>
                                 <th class="px-5 py-3">{{ __('production_bench.production.material') }}</th>
                                 <th class="px-4 py-3 text-right">{{ __('production_bench.flash.required') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.production.available') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.production.incoming') }}</th>
-                                <th class="px-4 py-3 text-right">{{ __('production_bench.production.shortage') }}</th>
-                                <th class="px-5 py-3 text-right">{{ __('production_bench.flash.indicative_value') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.flash.current_price') }}</th>
+                                <th class="px-5 py-3 text-right">{{ __('production_bench.flash.estimated_cost') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @foreach ($simulation['requirements'] as $requirement)
                                 <tr>
                                     <td class="px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $requirement['subject_name'] }}</td>
-                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $requirement['required'] }} {{ $requirement['unit'] }}</td>
-                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $requirement['available'] }} {{ $requirement['unit'] }}</td>
-                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $requirement['incoming'] }} {{ $requirement['unit'] }}</td>
-                                    <td class="px-4 py-4 text-right font-mono tabular-nums {{ $requirement['shortage'] !== '0.000000000' ? 'text-[var(--color-danger-strong)] font-semibold' : '' }}">{{ $requirement['shortage'] }} {{ $requirement['unit'] }}</td>
-                                    <td class="px-5 py-4 text-right font-mono tabular-nums">{{ $requirement['indicative_value'] ?? __('production_bench.flash.missing_price') }}</td>
+                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($requirement['required_display'], 2, 3, $numberLocale) }} {{ $requirement['display_unit'] }}</td>
+                                    <td class="px-4 py-4 text-right font-mono tabular-nums">
+                                        @if ($requirement['display_unit_price'] !== null)
+                                            {{ \App\Support\NumberLocale::formatAdaptiveDecimal($requirement['display_unit_price'], 2, 3, $numberLocale) }} {{ $requirement['price_currency'] }} / {{ $requirement['display_unit'] === 'unit' ? __('production_bench.common.unit') : $requirement['display_unit'] }}
+                                        @else
+                                            {{ __('production_bench.flash.price_missing') }}
+                                        @endif
+                                    </td>
+                                    <td class="px-5 py-4 text-right font-mono tabular-nums">
+                                        @if ($requirement['estimated_cost'] !== null)
+                                            {{ \App\Support\NumberLocale::formatAdaptiveDecimal($requirement['estimated_cost'], 2, 3, $numberLocale) }} {{ $requirement['price_currency'] }}
+                                        @else
+                                            —
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>

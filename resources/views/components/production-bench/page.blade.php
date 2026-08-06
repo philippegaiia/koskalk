@@ -1,5 +1,6 @@
 @props([
     'purchasing' => false,
+    'inventory' => false,
     'productionSetup' => false,
     'compact' => false,
 ])
@@ -7,7 +8,9 @@
 <div data-production-bench-page class="mx-auto w-full max-w-7xl space-y-6">
     <x-production-bench.navigation />
 
-    @if ($purchasing)
+    @if ($inventory || request()->routeIs('production-bench.inventory*'))
+        <x-production-bench.inventory-navigation />
+    @elseif ($purchasing)
         <x-production-bench.purchasing-navigation />
     @elseif ($productionSetup || request()->routeIs('production-bench.production.settings*'))
         <x-production-bench.production-settings-navigation />

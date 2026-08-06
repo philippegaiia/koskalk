@@ -22,6 +22,9 @@ use Illuminate\Validation\ValidationException;
 
 class CreateProductionDraft
 {
+    /** @var array<int, ?RecipeVersion> */
+    private array $publishedVersionsByRecipe = [];
+
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
@@ -145,13 +148,7 @@ class CreateProductionDraft
                 }
             }
 
-            $publishedVersion = RecipeVersion::withoutGlobalScopes()
-                ->where('recipe_id', $lockedRecipe->id)
-                ->where('workspace_id', $lockedWorkspace->id)
-                ->where('is_current', false)
-                ->orderByDesc('version_number')
-                ->orderByDesc('id')
-                ->first();
+            $publishedVersion = $this->publishedVersionsByRecipe[$lockedRecipe->id] ??= $this->publishedVersion($lockedRecipe, $lockedWorkspace);
 
             if (! $publishedVersion instanceof RecipeVersion) {
                 throw ValidationException::withMessages([
@@ -165,6 +162,7 @@ class CreateProductionDraft
                 basisKind: $basisKind,
                 basisQuantityGrams: $basisQuantityGrams,
                 expectedUnits: $expectedUnits,
+                recipe: $lockedRecipe,
             );
             $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 
@@ -200,6 +198,17 @@ class CreateProductionDraft
         return $recipe->productFamily?->calculation_basis === 'total_formula'
             ? ProductionBasisKind::TotalFormulaMass
             : ProductionBasisKind::OilMass;
+    }
+
+    private function publishedVersion(Recipe $recipe, Workspace $workspace): ?RecipeVersion
+    {
+        return RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $recipe->id)
+            ->where('workspace_id', $workspace->id)
+            ->where('is_current', false)
+            ->orderByDesc('version_number')
+            ->orderByDesc('id')
+            ->first();
     }
 
     private function massUnit(MassUnit|string $unit): MassUnit

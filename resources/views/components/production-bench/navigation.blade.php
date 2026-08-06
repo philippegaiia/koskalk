@@ -1,5 +1,6 @@
 <nav aria-label="Production Bench" class="flex min-w-0 gap-1 border-b border-[var(--color-line)] px-3 sm:px-4">
     @php($productionWorkflowActive = request()->routeIs('production-bench.production.index', 'production-bench.production.show', 'production-bench.production.prepare'))
+    @php($inventoryActive = request()->routeIs('production-bench.inventory*'))
     @foreach ([
         'production-bench.home' => __('production_bench.navigation.home'),
         'production-bench.inventory' => __('production_bench.navigation.inventory'),
@@ -13,13 +14,13 @@
         <a
             href="{{ route($routeName) }}"
             wire:navigate
-                @if ($routeName === 'production-bench.purchasing.suppliers' ? request()->routeIs('production-bench.purchasing.*') : ($routeName === 'production-bench.production.index' ? $productionWorkflowActive : ($routeName === 'production-bench.production.settings.presets' ? request()->routeIs('production-bench.production.settings*') : request()->routeIs($routeName))))
+            @if ($routeName === 'production-bench.purchasing.suppliers' ? request()->routeIs('production-bench.purchasing.*') : ($routeName === 'production-bench.inventory' ? $inventoryActive : ($routeName === 'production-bench.production.index' ? $productionWorkflowActive : ($routeName === 'production-bench.production.settings.presets' ? request()->routeIs('production-bench.production.settings*') : request()->routeIs($routeName)))))
                 aria-current="page"
             @endif
             @class([
                 'whitespace-nowrap border-b-2 px-3 py-3 text-sm font-medium transition sm:px-4',
-                'border-[var(--color-accent)] text-[var(--color-ink-strong)]' => $routeName === 'production-bench.purchasing.suppliers' ? request()->routeIs('production-bench.purchasing.*') : ($routeName === 'production-bench.production.index' ? $productionWorkflowActive : ($routeName === 'production-bench.production.settings.presets' ? request()->routeIs('production-bench.production.settings*') : request()->routeIs($routeName))),
-                'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]' => $routeName === 'production-bench.purchasing.suppliers' ? ! request()->routeIs('production-bench.purchasing.*') : ($routeName === 'production-bench.production.index' ? ! $productionWorkflowActive : ($routeName === 'production-bench.production.settings.presets' ? ! request()->routeIs('production-bench.production.settings*') : ! request()->routeIs($routeName))),
+                'border-[var(--color-accent)] text-[var(--color-ink-strong)]' => $routeName === 'production-bench.purchasing.suppliers' ? request()->routeIs('production-bench.purchasing.*') : ($routeName === 'production-bench.inventory' ? $inventoryActive : ($routeName === 'production-bench.production.index' ? $productionWorkflowActive : ($routeName === 'production-bench.production.settings.presets' ? request()->routeIs('production-bench.production.settings*') : request()->routeIs($routeName)))),
+                'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]' => $routeName === 'production-bench.purchasing.suppliers' ? ! request()->routeIs('production-bench.purchasing.*') : ($routeName === 'production-bench.inventory' ? ! $inventoryActive : ($routeName === 'production-bench.production.index' ? ! $productionWorkflowActive : ($routeName === 'production-bench.production.settings.presets' ? ! request()->routeIs('production-bench.production.settings*') : ! request()->routeIs($routeName)))),
             ])
         >{{ $label }}</a>
     @endforeach

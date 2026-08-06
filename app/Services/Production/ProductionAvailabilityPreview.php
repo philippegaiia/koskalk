@@ -12,6 +12,7 @@ use App\Models\Workspace;
 use App\ProductionBasisKind;
 use App\Services\MassConverter;
 use App\Services\StockPositionService;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class ProductionAvailabilityPreview
@@ -81,17 +82,24 @@ class ProductionAvailabilityPreview
             return $preview;
         }
 
+        $subjectKeys = $requirements->map(fn (array $requirement): string => $requirement['kind'] === 'ingredient'
+            ? 'ingredient:'.$requirement['ingredient_id']
+            : 'packaging:'.$requirement['packaging_item_id'])->values()->all();
+        $subjects = $this->subjectsByKey($requirements);
+        $positionsByKey = $this->stockPositions->forWorkspaceSubjects($workspace, $subjectKeys);
+
         foreach ($requirements as $requirement) {
             $isIngredient = $requirement['kind'] === 'ingredient';
-            $subject = $isIngredient
-                ? Ingredient::withoutGlobalScopes()->find($requirement['ingredient_id'])
-                : PackagingItem::query()->find($requirement['packaging_item_id']);
+            $subject = $subjects[$isIngredient ? 'ingredient:'.$requirement['ingredient_id'] : 'packaging:'.$requirement['packaging_item_id']] ?? null;
 
             if (! $subject instanceof Ingredient && ! $subject instanceof PackagingItem) {
                 continue;
             }
 
-            $positions = $this->stockPositions->forWorkspaceSubject($workspace, $subject);
+            $positions = $positionsByKey[$isIngredient ? 'ingredient:'.$requirement['ingredient_id'] : 'packaging:'.$requirement['packaging_item_id']] ?? [
+                'available' => '0.000000000',
+                'incoming' => '0.000000000',
+            ];
             $requiredCanonical = $isIngredient
                 ? (string) $requirement['required_mass_grams']
                 : (string) $requirement['required_units'];
@@ -142,6 +150,38 @@ class ProductionAvailabilityPreview
     {
         return preg_match('/^\d+(?:\.\d+)?$/', trim($value)) === 1
             && bccomp(trim($value), '0', 18) > 0;
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $requirements
+     * @return array<string, Ingredient|PackagingItem>
+     */
+    private function subjectsByKey(Collection $requirements): array
+    {
+        $ingredientIds = $requirements
+            ->pluck('ingredient_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+        $packagingItemIds = $requirements
+            ->pluck('packaging_item_id')
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $subjects = [];
+
+        foreach (Ingredient::withoutGlobalScopes()->whereIn('id', $ingredientIds)->get() as $ingredient) {
+            $subjects['ingredient:'.$ingredient->id] = $ingredient;
+        }
+
+        foreach (PackagingItem::query()->whereIn('id', $packagingItemIds)->get() as $packagingItem) {
+            $subjects['packaging:'.$packagingItem->id] = $packagingItem;
+        }
+
+        return $subjects;
     }
 
     private function isDate(string $value): bool

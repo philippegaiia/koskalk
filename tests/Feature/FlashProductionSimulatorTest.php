@@ -1,5 +1,7 @@
 <?php
 
+use App\Livewire\ProductionBench\Production\FlashPlanner;
+use App\MassDisplaySystem;
 use App\MassUnit;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
@@ -18,20 +20,27 @@ use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
 use App\Services\Production\FlashDateProposalService;
 use App\Services\Production\FlashProductionSimulator;
 use App\StockMovementType;
 use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-it('simulates multiple product lines, whole batches, aggregate requirements, stock and indicative value without writing', function (): void {
+it('simulates multiple product lines and aggregate material requirements without reading stock or writing', function (): void {
     $fixture = flashSimulatorFixture();
 
     $beforeRuns = $fixture['workspace']->productionRuns()->count();
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = strtolower($query->sql);
+    });
     $result = app(FlashProductionSimulator::class)->simulate($fixture['workspace'], [
         [
             'recipe_id' => $fixture['recipe']->id,
@@ -56,27 +65,47 @@ it('simulates multiple product lines, whole batches, aggregate requirements, sto
         ->expected_units->toBe(300)
         ->extra_units->toBe(130)
         ->whole_batches->toBe(3)
-        ->task_minutes->toBe(45)
-        ->missing_prices->toBe(0);
+        ->task_minutes->toBe(45);
 
     $ingredient = collect($result['requirements'])->firstWhere('ingredient_id', $fixture['ingredient']->id);
     $packaging = collect($result['requirements'])->firstWhere('packaging_item_id', $fixture['packaging']->id);
 
-    expect($ingredient)
-        ->required->toBe('36000.000000000')
-        ->available->toBe('5000.000000000')
-        ->shortage->toBe('31000.000000000')
-        ->indicative_unit_price->toBe('0.010000000000')
-        ->indicative_value->toBe('360.000000000');
-    expect($packaging)
-        ->required->toBe('300.000000000')
-        ->available->toBe('0.000000000')
-        ->shortage->toBe('300.000000000');
+    expect($ingredient['required'])->toBe('36000.000000000')
+        ->and($ingredient)->toHaveKeys(['ingredient_id', 'subject_name', 'required', 'required_display', 'display_unit', 'unit_price', 'display_unit_price', 'price_currency', 'estimated_cost'])
+        ->and($ingredient['required_display'])->toBe('36.000000000')
+        ->and($ingredient['display_unit'])->toBe('kg')
+        ->and($ingredient['display_unit_price'])->toBe('10.000000000')
+        ->and($ingredient['estimated_cost'])->toBe('360.000000000')
+        ->and($ingredient)->not->toHaveKey('available')
+        ->and($ingredient)->not->toHaveKey('incoming')
+        ->and($ingredient)->not->toHaveKey('shortage')
+        ->and($ingredient)->not->toHaveKey('indicative_value');
+    expect($packaging['required'])->toBe('300.000000000')
+        ->and($packaging)->toHaveKeys(['packaging_item_id', 'subject_name', 'required', 'required_display', 'display_unit', 'unit_price', 'display_unit_price', 'price_currency', 'estimated_cost'])
+        ->and($packaging['estimated_cost'])->toBe('300.000000000')
+        ->and($packaging)->not->toHaveKey('available')
+        ->and($packaging)->not->toHaveKey('incoming')
+        ->and($packaging)->not->toHaveKey('shortage')
+        ->and($packaging)->not->toHaveKey('indicative_value');
+
+    expect($result['totals'])
+        ->budget->toBe('660.000000000')
+        ->budget_currency->toBe('EUR')
+        ->missing_prices->toBe(0);
     expect($fixture['workspace']->productionRuns()->count())->toBe($beforeRuns);
+    expect(collect($queries)->filter(fn (string $query): bool => str_starts_with($query, 'select * from "recipes"')))
+        ->toHaveCount(1)
+        ->and(collect($queries)->filter(fn (string $query): bool => str_contains($query, 'production_task_set_recipe')))
+        ->toHaveCount(1);
 });
 
-it('marks missing current prices explicitly instead of hiding the cost warning', function (): void {
+it('reports missing current prices without reading stock coverage', function (): void {
     $fixture = flashSimulatorFixture(withPrices: false);
+    $queries = [];
+
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = strtolower($query->sql);
+    });
 
     $result = app(FlashProductionSimulator::class)->simulate($fixture['workspace'], [[
         'recipe_id' => $fixture['recipe']->id,
@@ -86,8 +115,29 @@ it('marks missing current prices explicitly instead of hiding the cost warning',
         'basis_input_unit' => 'kg',
     ]]);
 
-    expect($result['totals']['missing_prices'])->toBe(2)
-        ->and(collect($result['requirements'])->every(fn (array $row): bool => $row['missing_price']))->toBeTrue();
+    expect($result['totals'])
+        ->budget->toBeNull()
+        ->budget_currency->toBeNull()
+        ->missing_prices->toBe(2)
+        ->and(collect($result['requirements'])->every(fn (array $row): bool => $row['estimated_cost'] === null))->toBeTrue()
+        ->and(collect($queries)->filter(fn (string $query): bool => str_contains($query, 'stock_lots') || str_contains($query, 'stock_movements')))->toBeEmpty();
+});
+
+it('renders a locale-aware budget and display-unit requirements in Flash', function (): void {
+    $fixture = flashSimulatorFixture();
+    $fixture['owner']->update(['number_locale' => 'fr_FR']);
+    $fixture['workspace']->update(['mass_display_system' => MassDisplaySystem::Metric]);
+    Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class)
+        ->set('lines.0.recipe_id', (string) $fixture['recipe']->id)
+        ->set('lines.0.desired_units', '25')
+        ->set('lines.0.basis_input_value', '12,5')
+        ->set('lines.0.basis_input_unit', 'kg')
+        ->set('lines.0.expected_units_per_batch', '100')
+        ->call('previewDates')
+        ->assertSee('12,50 kg')
+        ->assertSee('125,00 EUR')
+        ->assertSee('225,00 EUR')
+        ->assertSee('Make');
 });
 
 it('includes task type default durations when a task item has no override', function (): void {
@@ -151,11 +201,12 @@ it('proposes working dates and keeps the first task on the production date', fun
         ->and($proposals[1]['production_date'])->toBe('2026-08-12');
 });
 
-/** @return array{workspace: Workspace, recipe: Recipe, ingredient: Ingredient, packaging: PackagingItem, taskSet: ProductionTaskSet} */
+/** @return array{owner: User, workspace: Workspace, recipe: Recipe, ingredient: Ingredient, packaging: PackagingItem, taskSet: ProductionTaskSet} */
 function flashSimulatorFixture(bool $withPrices = true): array
 {
     $owner = User::factory()->create();
     $workspace = Workspace::factory()->for($owner, 'owner')->create(['default_currency' => 'EUR']);
+    WorkspaceProductionEntitlement::factory()->for($workspace)->create();
     $family = ProductFamily::factory()->create([
         'calculation_basis' => 'initial_oils',
         'slug' => 'flash-family-'.fake()->unique()->numberBetween(1, 999999),
@@ -240,5 +291,5 @@ function flashSimulatorFixture(bool $withPrices = true): array
         ]);
     }
 
-    return compact('workspace', 'recipe', 'ingredient', 'packaging', 'taskSet');
+    return compact('owner', 'workspace', 'recipe', 'ingredient', 'packaging', 'taskSet');
 }

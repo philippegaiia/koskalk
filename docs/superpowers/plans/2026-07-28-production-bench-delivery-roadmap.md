@@ -126,7 +126,9 @@ Technical commits continue between these gates, but implementation does not paus
 - soap scaling from initial oil mass;
 - cosmetic scaling from total formula mass;
 - material and optional packaging requirements;
+- disposable Flash planning that aggregates material requirements without reading or changing stock;
 - forecast demand;
+- Inventory sections for Stock and Requirements, with Reserved as the user-facing reservation state;
 - explicit FEFO lot proposals;
 - manual lot selection;
 - hard reservations;
@@ -176,7 +178,7 @@ Technical commits continue between these gates, but implementation does not paus
 - intermediate cost flows into a downstream batch;
 - released output becomes available while quarantined output does not.
 
-## Checkpoint 5: Traceability, Flash Planner, and Lifecycle Completion
+## Checkpoint 5: Traceability and Lifecycle Completion
 
 **Detailed plan:** `docs/superpowers/plans/2026-07-28-production-bench-phase-5-traceability-flash.md`
 
@@ -186,11 +188,6 @@ Technical commits continue between these gates, but implementation does not paus
 
 - backward and forward lot genealogy;
 - search by internal lot, supplier batch, production run, ingredient, product, order, or receipt;
-- disposable multi-run Flash Planner;
-- total material requirements;
-- current stock and shortage calculation;
-- total material value and shortage cash estimate using indicative prices;
-- missing-price visibility;
 - print/export;
 - full add-on cancellation, read-only access, resumption, and archive-eligibility metadata;
 - responsive and accessibility polish;
@@ -200,7 +197,7 @@ Technical commits continue between these gates, but implementation does not paus
 
 - a finished lot traces to supplier receipts through any intermediate;
 - a supplier batch traces forward across several deliveries and products;
-- several hypothetical runs aggregate requirements and indicative cash needs without changing stock;
+- material requirements from Flash and direct production planning are visible together in Inventory → Requirements;
 - cancelling and resuming the add-on preserves all state;
 - critical workflows remain usable at tablet widths.
 

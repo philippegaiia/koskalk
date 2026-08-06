@@ -152,6 +152,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->group(function (): void {
             Route::view('/', 'production-bench.home')->name('home');
             Route::view('/inventory', 'production-bench.inventory')->name('inventory');
+            Route::view('/inventory/stock', 'production-bench.inventory-stock')->name('inventory.stock');
+            Route::view('/inventory/requirements', 'production-bench.inventory-requirements')->name('inventory.requirements');
             Route::view('/production', 'production-bench.production.index')->name('production.index');
             Route::view('/production/new', 'production-bench.production.create')->name('production.create');
             Route::view('/production/settings', 'production-bench.production.settings')->name('production.settings');

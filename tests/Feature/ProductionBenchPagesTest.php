@@ -128,6 +128,27 @@ it('renders opening stock and purchasing workspaces', function (): void {
         ->assertDontSeeHtml('class="flex flex-wrap gap-3"');
 });
 
+it('offers clear inventory sections for stock and material requirements', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+
+    $this->actingAs($user)
+        ->get(route('production-bench.inventory.stock'))
+        ->assertOk()
+        ->assertSee('Stock')
+        ->assertSee('Opening stock')
+        ->assertSee('Stock positions')
+        ->assertSee('Requirements');
+
+    $this->get(route('production-bench.inventory.requirements'))
+        ->assertOk()
+        ->assertSee('Requirements')
+        ->assertSee('Required')
+        ->assertSee('Reserved')
+        ->assertSee('Stock');
+});
+
 it('uses unit-of-measure wording for legacy packaging listing validation', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();

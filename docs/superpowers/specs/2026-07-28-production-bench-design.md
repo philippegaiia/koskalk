@@ -788,7 +788,7 @@ The UI should explain recoverable conflicts clearly, reload current state, and p
 - A scheduled run may show shortages without blocking.
 - Reservation reports exact shortages and does not partially reserve silently.
 - Starting an unreserved run requires lot allocation and successful reservation.
-- Missing indicative prices do not block Flash planning; they are clearly identified.
+- Flash planning calculates requirements only; stock coverage and current prices remain in Inventory and costing views.
 - Missing actual lot costs are visible and prevent a false claim of complete actual costing.
 - Invalid or unsupported mass units are rejected at the boundary.
 - Count-based packaging and finished output reject fractional units.
@@ -938,7 +938,7 @@ Schema choices must allow later improvements, but V1 should not prebuild product
 - Available stock never silently includes hard-reserved or quarantined quantities.
 - Every completed output has one production run, one immutable cost snapshot, and traceable input lots.
 - A real consumption variance can create negative stock and be reconciled without rewriting history.
-- The Flash Planner can aggregate several hypothetical runs and estimate total material value and shortage cash needs.
+- The Flash Planner can aggregate several hypothetical runs into one material requirement list without changing stock.
 - Cancelling Production Bench does not break Recipe/Product Bench or delete production records.
 - A customer can resume Production Bench with its operational state intact.
 - The daily interface feels like a focused workshop tool rather than an administrative ERP.

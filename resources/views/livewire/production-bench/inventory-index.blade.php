@@ -1,4 +1,4 @@
-<x-production-bench.page>
+<x-production-bench.page inventory>
     @if (! $isActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.common.inactive') }}</h1>
@@ -10,10 +10,11 @@
         @endif
 
         <header>
-            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.navigation.inventory') }}</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.help') }}</p>
+            <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_title') : ($mode === 'requirements' ? __('production_bench.inventory.requirements_title') : __('production_bench.navigation.inventory')) }}</h1>
+            <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : ($mode === 'requirements' ? __('production_bench.inventory.requirements_help') : __('production_bench.inventory.help')) }}</p>
         </header>
 
+        @if ($mode !== 'requirements')
         <section class="sk-card overflow-hidden">
             <div class="border-b border-[var(--color-line)] p-6">
                 <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.opening_stock') }}</h2>
@@ -78,17 +79,23 @@
                 </div>
             </form>
         </section>
+        @endif
 
+        @if ($mode !== 'stock')
         <section aria-labelledby="production-forecast-heading" class="sk-card overflow-hidden">
             <div class="border-b border-[var(--color-line)] p-6">
-                <h2 id="production-forecast-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.production_forecast') }}</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.production_forecast_help') }}</p>
+                <h2 id="production-forecast-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ $mode === 'requirements' ? __('production_bench.inventory.requirements_title') : __('production_bench.inventory.production_forecast') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $mode === 'requirements' ? __('production_bench.inventory.requirements_help') : __('production_bench.inventory.production_forecast_help') }}</p>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[720px] text-left text-sm">
                     <thead class="bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)]">
                         <tr>
                             <th class="px-5 py-3">{{ __('production_bench.inventory.item_lot') }}</th>
+                            @if ($mode === 'requirements')
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.required') }}</th>
+                                <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.reserved') }}</th>
+                            @endif
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.available') }}</th>
                             <th class="px-4 py-3 text-right">{{ __('production_bench.inventory.incoming') }}</th>
                             <th class="px-5 py-3 text-right">{{ __('production_bench.inventory.forecast') }}</th>
@@ -102,18 +109,24 @@
                                     <p class="font-medium text-[var(--color-ink-strong)]">{{ $subject instanceof \App\Models\Ingredient ? $subject->localizedDisplayName() : $subject->name }}</p>
                                     <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $row['display_unit'] }}</p>
                                 </td>
+                                @if ($mode === 'requirements')
+                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['required'] }}</td>
+                                    <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions']['reserved'] }}</td>
+                                @endif
                                 <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions']['available'] }}</td>
                                 <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $row['positions']['incoming'] }}</td>
                                 <td class="px-5 py-4 text-right font-mono font-semibold tabular-nums">{{ $row['positions']['forecast'] }}</td>
                             </tr>
                         @empty
-                            <tr><td colspan="4" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_forecast') }}</td></tr>
+                            <tr><td colspan="{{ $mode === 'requirements' ? 6 : 4 }}" class="px-6 py-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.no_forecast') }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </section>
+        @endif
 
+        @if ($mode !== 'requirements')
         <section aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
             <div class="flex items-end justify-between gap-4 border-b border-[var(--color-line)] p-6">
                 <h2 id="inventory-positions-heading" class="text-xl font-semibold">{{ __('production_bench.inventory.stock_positions') }}</h2>
@@ -160,5 +173,6 @@
                 </table>
             </div>
         </section>
+        @endif
     @endif
 </x-production-bench.page>

@@ -16,6 +16,9 @@ use Illuminate\Validation\ValidationException;
 
 class GenerateFlashProductions
 {
+    /** @var array<int, ?ProductionTaskSet> */
+    private array $taskSetsById = [];
+
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly FlashProductionSimulator $simulator,
@@ -136,10 +139,16 @@ class GenerateFlashProductions
             return null;
         }
 
+        $id = (int) $taskSetId;
+
+        if (array_key_exists($id, $this->taskSetsById)) {
+            return $this->taskSetsById[$id];
+        }
+
         $taskSet = ProductionTaskSet::query()
             ->where('workspace_id', $workspace->id)
             ->where('is_active', true)
-            ->find((int) $taskSetId);
+            ->find($id);
 
         if (! $taskSet instanceof ProductionTaskSet) {
             throw ValidationException::withMessages([
@@ -147,7 +156,7 @@ class GenerateFlashProductions
             ]);
         }
 
-        return $taskSet;
+        return $this->taskSetsById[$id] = $taskSet;
     }
 
     /** @param array<string, mixed> $line */

@@ -10,6 +10,9 @@ use Illuminate\Validation\ValidationException;
 
 class FlashDateProposalService
 {
+    /** @var array<int, ?ProductionTaskSet> */
+    private array $taskSetsById = [];
+
     public function __construct(
         private readonly ProductionWorkingCalendar $calendar,
         private readonly FlashProductionLimits $limits,
@@ -45,7 +48,9 @@ class FlashDateProposalService
 
             $totalBatches += $batchTotal;
             $this->limits->assertWithinLimit($totalBatches);
-            $taskSet = $this->taskSet($workspace, $line['task_set_id'] ?? null);
+            $taskSet = is_array($line['task_items'] ?? null)
+                ? null
+                : ($line['task_set'] ?? $this->taskSet($workspace, $line['task_set_id'] ?? null));
 
             for ($batch = 1; $batch <= $batchTotal; $batch++) {
                 if ($dayBatchCount >= $batchesPerDay) {
@@ -58,11 +63,13 @@ class FlashDateProposalService
                 $proposals[] = [
                     'line_index' => (int) $line['line_index'],
                     'recipe_id' => (int) $line['recipe_id'],
-                    'recipe_name' => (string) ($line['recipe']->name ?? ''),
+                    'recipe_name' => (string) ($line['recipe_name'] ?? $line['recipe']->name ?? ''),
                     'batch_number' => $batch,
                     'batch_total' => $batchTotal,
                     'production_date' => $date->toDateString(),
-                    'tasks' => $this->tasks($workspace, $date, $taskSet),
+                    'tasks' => is_array($line['task_items'] ?? null)
+                        ? $this->tasksFromItems($workspace, $date, $line['task_items'])
+                        : $this->tasks($workspace, $date, $taskSet),
                 ];
 
                 $dayBatchCount++;
@@ -99,11 +106,19 @@ class FlashDateProposalService
             return null;
         }
 
-        return ProductionTaskSet::query()
+        $id = (int) $taskSetId;
+
+        if (array_key_exists($id, $this->taskSetsById)) {
+            return $this->taskSetsById[$id];
+        }
+
+        $taskSet = ProductionTaskSet::query()
             ->where('workspace_id', $workspace->id)
             ->where('is_active', true)
             ->with('items.taskType')
-            ->find((int) $taskSetId);
+            ->find($id);
+
+        return $this->taskSetsById[$id] = $taskSet;
     }
 
     /** @return list<array<string, mixed>> */
@@ -121,6 +136,20 @@ class FlashDateProposalService
             'days_after_production' => (int) $item->days_after_production,
             'colour' => $item->taskType?->colour,
             'duration_minutes' => $item->duration_minutes === null ? null : (int) $item->duration_minutes,
+        ])->values()->all();
+    }
+
+    /** @param list<array<string, mixed>> $items */
+    private function tasksFromItems(Workspace $workspace, CarbonImmutable $productionDate, array $items): array
+    {
+        return collect($items)->map(fn (array $item): array => [
+            'name' => (string) ($item['name'] ?? 'Task'),
+            'scheduled_for' => $this->calendar
+                ->dateRelativeToProduction($workspace, $productionDate, (int) ($item['days_after_production'] ?? 0))
+                ->toDateString(),
+            'days_after_production' => (int) ($item['days_after_production'] ?? 0),
+            'colour' => $item['colour'] ?? null,
+            'duration_minutes' => $item['duration_minutes'] === null ? null : (int) $item['duration_minutes'],
         ])->values()->all();
     }
 }

@@ -24,6 +24,7 @@ class ProductionRequirementBuilder
         ProductionBasisKind $basisKind,
         string $basisQuantityGrams,
         int $expectedUnits,
+        ?Recipe $recipe = null,
     ): Collection {
         if (bccomp($basisQuantityGrams, '0', self::GuardScale) <= 0 || $expectedUnits < 1) {
             throw ValidationException::withMessages([
@@ -31,15 +32,23 @@ class ProductionRequirementBuilder
             ]);
         }
 
-        $version->load([
-            'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
-            'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
-            'phases.items.ingredient' => fn ($query) => $query->withoutGlobalScopes(),
-            'packagingItems' => fn ($query) => $query->orderBy('position'),
-            'packagingItems.packagingItem' => fn ($query) => $query->withoutGlobalScopes(),
-        ]);
+        $relationsLoaded = $version->relationLoaded('phases')
+            && $version->relationLoaded('packagingItems')
+            && $version->phases->every(fn ($phase): bool => $phase->relationLoaded('items')
+                && $phase->items->every(fn ($item): bool => $item->relationLoaded('ingredient')))
+            && $version->packagingItems->every(fn ($packagingPlan): bool => $packagingPlan->relationLoaded('packagingItem'));
 
-        $recipe = Recipe::withoutGlobalScopes()
+        if (! $relationsLoaded) {
+            $version->load([
+                'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
+                'phases.items' => fn ($query) => $query->withoutGlobalScopes()->orderBy('position'),
+                'phases.items.ingredient' => fn ($query) => $query->withoutGlobalScopes(),
+                'packagingItems' => fn ($query) => $query->orderBy('position'),
+                'packagingItems.packagingItem' => fn ($query) => $query->withoutGlobalScopes(),
+            ]);
+        }
+
+        $recipe ??= Recipe::withoutGlobalScopes()
             ->with('productFamily')
             ->find($version->recipe_id);
 

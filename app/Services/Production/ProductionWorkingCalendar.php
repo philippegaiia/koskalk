@@ -6,9 +6,13 @@ use App\Models\ProductionHoliday;
 use App\Models\Workspace;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
+use Illuminate\Support\Collection;
 
 class ProductionWorkingCalendar
 {
+    /** @var array<int, Collection<int, ProductionHoliday>> */
+    private array $holidaysByWorkspace = [];
+
     public function isWorkingDate(Workspace $workspace, string|DateTimeInterface $date): bool
     {
         $date = $this->date($date);
@@ -17,9 +21,7 @@ class ProductionWorkingCalendar
             return false;
         }
 
-        return ! ProductionHoliday::query()
-            ->where('workspace_id', $workspace->id)
-            ->get(['date', 'is_recurring'])
+        return ! $this->holidays($workspace)
             ->contains(function (ProductionHoliday $holiday) use ($date): bool {
                 $holidayDate = $this->date($holiday->date);
 
@@ -79,5 +81,13 @@ class ProductionWorkingCalendar
         return $date instanceof DateTimeInterface
             ? CarbonImmutable::instance($date)->startOfDay()
             : CarbonImmutable::createFromFormat('!Y-m-d', $date);
+    }
+
+    /** @return Collection<int, ProductionHoliday> */
+    private function holidays(Workspace $workspace): Collection
+    {
+        return $this->holidaysByWorkspace[$workspace->id] ??= ProductionHoliday::query()
+            ->where('workspace_id', $workspace->id)
+            ->get(['date', 'is_recurring']);
     }
 }

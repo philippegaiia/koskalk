@@ -19,13 +19,13 @@ Remove introductions, reassurance, feature explanations, repeated headings, futu
 ## View treatment
 
 - **Home:** show `Production Bench`, the current state, the state-changing action, and factual counters. Use `Quarantined` and `Incoming`; remove explanatory subtitles.
-- **Inventory:** retain the short physical/reserved/available/negative-stock distinction because it prevents stock mistakes. Use `Opening stock`, `Stock positions`, and `No lots.` Remove conversational headings and instructional empty states.
+- **Inventory:** retain the short physical/reserved/available/negative-stock distinction because it prevents stock mistakes. Use `Opening stock`, `Stock positions`, and `No stock items.` Remove conversational headings and instructional empty states.
 - **Suppliers:** use `Suppliers`, `Search`, `Status`, and `Sort`. Keep only operational table labels and actions.
 - **Supplier detail:** keep supplier data, contacts, address, notes, listings, and actions. Avoid duplicated context labels where the supplier name or section already establishes context.
 - **Supplier listings:** use `Supplier listings`, `Search`, `Supplier`, `Type`, and `Status`. Keep purchase and price data.
 - **Forms:** retain the supplier-code format constraint, purchase format example, minimum-order meaning, and calculated price. Remove redundant descriptions and explanatory sentences.
 - **Inactive/read-only:** use `Inactive` and `Read-only. Resume to edit.` Link back with `Production Bench`.
-- **Empty states:** use `No suppliers.`, `No listings.`, and `No lots.`
+- **Empty states:** use `No suppliers.`, `No listings.`, and `No stock items.`
 
 ## Non-goals
 

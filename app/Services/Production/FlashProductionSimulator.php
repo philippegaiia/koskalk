@@ -14,16 +14,27 @@ use App\Models\RecipeVersion;
 use App\Models\Workspace;
 use App\ProductionBasisKind;
 use App\Services\MassConverter;
-use App\Services\StockPositionService;
 use App\Support\NumberLocale;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class FlashProductionSimulator
 {
+    /** @var array<int, ?Recipe> */
+    private array $recipesById = [];
+
+    /** @var array<int, ?RecipeVersion> */
+    private array $versionsByRecipeId = [];
+
+    /** @var array<int, ?ProductionTaskSet> */
+    private array $taskSetsById = [];
+
+    /** @var array<string, bool> */
+    private array $taskSetRecipeApplicability = [];
+
     public function __construct(
         private readonly MassConverter $massConverter,
         private readonly ProductionRequirementBuilder $requirementBuilder,
-        private readonly StockPositionService $stockPositions,
         private readonly FlashProductionLimits $limits,
     ) {}
 
@@ -35,15 +46,13 @@ class FlashProductionSimulator
     {
         $simulationLines = [];
         $requirements = collect();
+        $subjects = [];
         $taskMinutes = 0;
         $totalWholeBatches = 0;
 
         foreach ($lines as $index => $input) {
             $line = $this->normalizeLine($workspace, $input, $index);
-            $recipe = Recipe::withoutGlobalScopes()
-                ->where('workspace_id', $workspace->id)
-                ->with('productFamily')
-                ->find($line['recipe_id']);
+            $recipe = $this->recipe($workspace, $line['recipe_id']);
 
             if (! $recipe instanceof Recipe) {
                 throw ValidationException::withMessages([
@@ -51,13 +60,7 @@ class FlashProductionSimulator
                 ]);
             }
 
-            $version = RecipeVersion::withoutGlobalScopes()
-                ->where('recipe_id', $recipe->id)
-                ->where('workspace_id', $workspace->id)
-                ->where('is_current', false)
-                ->orderByDesc('version_number')
-                ->orderByDesc('id')
-                ->first();
+            $version = $this->version($workspace, $recipe);
 
             if (! $version instanceof RecipeVersion) {
                 throw ValidationException::withMessages([
@@ -79,6 +82,7 @@ class FlashProductionSimulator
                 basisKind: $basisKind,
                 basisQuantityGrams: $basisQuantityGrams,
                 expectedUnits: $line['expected_units_per_batch'],
+                recipe: $recipe,
             );
 
             foreach ($batchRequirements as $requirement) {
@@ -91,6 +95,7 @@ class FlashProductionSimulator
                     : (string) $requirement['required_units'];
 
                 if ($existing === null) {
+                    $subjects[$key] ??= $this->subjectFromVersion($version, $requirement);
                     $requirements->put($key, [
                         'key' => $key,
                         'ingredient_id' => $requirement['ingredient_id'],
@@ -134,24 +139,22 @@ class FlashProductionSimulator
                 'basis_quantity_grams' => $basisQuantityGrams,
                 'basis_kind' => $basisKind,
                 'task_set_id' => $taskSet?->id,
+                'task_set' => $taskSet,
                 'task_minutes' => $lineTaskMinutes,
             ];
         }
 
-        $currentPrices = CurrentMaterialPrice::query()
-            ->where('workspace_id', $workspace->id)
-            ->get()
-            ->keyBy(fn (CurrentMaterialPrice $price): string => $price->ingredient_id !== null
-                ? 'ingredient:'.$price->ingredient_id
-                : 'packaging:'.$price->packaging_item_id);
-        $totalValue = '0.000000000';
-        $shortageValue = '0.000000000';
+        $prices = $this->pricesByKey($workspace, $requirements);
+        $displayMassUnit = $workspace->mass_display_system->priceUnit();
+        $priceCurrencies = collect($prices)->pluck('currency')->filter()->unique()->values();
+        $budgetCurrency = $priceCurrencies->count() === 1
+            ? (string) $priceCurrencies->first()
+            : null;
+        $budget = '0';
         $missingPrices = 0;
 
-        $requirementRows = $requirements->map(function (array $requirement) use ($workspace, $currentPrices, &$missingPrices, &$shortageValue, &$totalValue): array {
-            $subject = $requirement['ingredient_id'] !== null
-                ? Ingredient::withoutGlobalScopes()->find($requirement['ingredient_id'])
-                : PackagingItem::query()->find($requirement['packaging_item_id']);
+        $requirementRows = $requirements->map(function (array $requirement) use ($subjects, $prices, $displayMassUnit, &$budget, &$missingPrices): array {
+            $subject = $subjects[$requirement['key']] ?? null;
 
             if (! $subject instanceof Ingredient && ! $subject instanceof PackagingItem) {
                 throw ValidationException::withMessages([
@@ -159,40 +162,36 @@ class FlashProductionSimulator
                 ]);
             }
 
-            $positions = $this->stockPositions->forWorkspaceSubject($workspace, $subject);
             $required = (string) $requirement['required_canonical'];
-            $available = (string) $positions['available'];
-            $incoming = (string) $positions['incoming'];
-            $shortage = bccomp($required, bcadd($available, $incoming, 9), 9) > 0
-                ? bcsub($required, bcadd($available, $incoming, 9), 9)
-                : '0.000000000';
-            $price = $currentPrices->get($requirement['key']);
-            $priceMatchesWorkspace = $price instanceof CurrentMaterialPrice
-                && strtoupper((string) $price->currency) === strtoupper($workspace->default_currency);
-            $unitPrice = $priceMatchesWorkspace ? (string) $price->price_per_canonical_unit : null;
-            $value = $unitPrice === null ? null : bcmul($required, $unitPrice, 9);
-            $shortageCost = $unitPrice === null ? null : bcmul($shortage, $unitPrice, 9);
+            $price = $prices[$requirement['key']] ?? null;
+            $canonicalUnitPrice = $price?->price_per_canonical_unit;
+            $estimatedCost = null;
 
-            if ($unitPrice === null) {
+            if ($canonicalUnitPrice === null) {
                 $missingPrices++;
             } else {
-                $totalValue = bcadd($totalValue, $value, 9);
-                $shortageValue = bcadd($shortageValue, $shortageCost, 9);
+                $estimatedCost = bcmul($required, (string) $canonicalUnitPrice, 9);
+                $budget = bcadd($budget, $estimatedCost, 9);
             }
 
             return [
                 ...$requirement,
                 'subject' => $subject,
                 'required' => $required,
-                'available' => $available,
-                'incoming' => $incoming,
-                'forecast' => (string) $positions['forecast'],
-                'shortage' => $shortage,
-                'indicative_unit_price' => $unitPrice,
-                'indicative_value' => $value,
-                'shortage_value' => $shortageCost,
-                'price_currency' => $priceMatchesWorkspace ? $workspace->default_currency : null,
-                'missing_price' => $unitPrice === null,
+                'required_display' => $requirement['ingredient_id'] !== null
+                    ? $this->massConverter->fromGrams($required, $displayMassUnit)
+                    : $required,
+                'display_unit' => $requirement['ingredient_id'] !== null
+                    ? $displayMassUnit->value
+                    : 'unit',
+                'unit_price' => $canonicalUnitPrice,
+                'display_unit_price' => $canonicalUnitPrice === null
+                    ? null
+                    : ($requirement['ingredient_id'] !== null
+                        ? bcmul((string) $canonicalUnitPrice, $displayMassUnit->gramsPerUnit(), 9)
+                        : $canonicalUnitPrice),
+                'price_currency' => $price?->currency,
+                'estimated_cost' => $estimatedCost,
             ];
         })->values()->all();
 
@@ -205,11 +204,38 @@ class FlashProductionSimulator
                 'extra_units' => $this->sum($simulationLines, 'extra_units'),
                 'whole_batches' => $this->sum($simulationLines, 'whole_batches'),
                 'task_minutes' => $taskMinutes,
-                'indicative_value' => $totalValue,
-                'shortage_value' => $shortageValue,
+                'budget' => $missingPrices === 0 && $budgetCurrency !== null ? $budget : null,
+                'budget_currency' => $budgetCurrency,
                 'missing_prices' => $missingPrices,
             ],
         ];
+    }
+
+    private function recipe(Workspace $workspace, int $recipeId): ?Recipe
+    {
+        if (! array_key_exists($recipeId, $this->recipesById)) {
+            $this->recipesById[$recipeId] = Recipe::withoutGlobalScopes()
+                ->where('workspace_id', $workspace->id)
+                ->with('productFamily')
+                ->find($recipeId);
+        }
+
+        return $this->recipesById[$recipeId];
+    }
+
+    private function version(Workspace $workspace, Recipe $recipe): ?RecipeVersion
+    {
+        if (! array_key_exists($recipe->id, $this->versionsByRecipeId)) {
+            $this->versionsByRecipeId[$recipe->id] = RecipeVersion::withoutGlobalScopes()
+                ->where('recipe_id', $recipe->id)
+                ->where('workspace_id', $workspace->id)
+                ->where('is_current', false)
+                ->orderByDesc('version_number')
+                ->orderByDesc('id')
+                ->first();
+        }
+
+        return $this->versionsByRecipeId[$recipe->id];
     }
 
     /**
@@ -300,11 +326,21 @@ class FlashProductionSimulator
             return null;
         }
 
-        $taskSet = ProductionTaskSet::query()
-            ->where('workspace_id', $workspace->id)
-            ->where('is_active', true)
-            ->with('items.taskType')
-            ->find($taskSetId);
+        if (array_key_exists($taskSetId, $this->taskSetsById)) {
+            $taskSet = $this->taskSetsById[$taskSetId];
+        } else {
+            $taskSet = ProductionTaskSet::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('is_active', true)
+                ->with('items.taskType')
+                ->find($taskSetId);
+
+            if ($taskSet instanceof ProductionTaskSet) {
+                $this->taskSetsById[$taskSetId] = $taskSet;
+            } else {
+                $this->taskSetsById[$taskSetId] = null;
+            }
+        }
 
         if (! $taskSet instanceof ProductionTaskSet) {
             throw ValidationException::withMessages([
@@ -312,7 +348,13 @@ class FlashProductionSimulator
             ]);
         }
 
-        if (! $taskSet->recipes()->whereKey($recipe->id)->exists()) {
+        $applicabilityKey = $taskSet->id.':'.$recipe->id;
+
+        if (! array_key_exists($applicabilityKey, $this->taskSetRecipeApplicability)) {
+            $this->taskSetRecipeApplicability[$applicabilityKey] = $taskSet->recipes()->whereKey($recipe->id)->exists();
+        }
+
+        if (! $this->taskSetRecipeApplicability[$applicabilityKey]) {
             throw ValidationException::withMessages([
                 "lines.{$index}.task_set_id" => 'Choose a task set applicable to this product.',
             ]);
@@ -330,5 +372,55 @@ class FlashProductionSimulator
     private function zeroAdd(string $value): string
     {
         return bcadd($value, '0', 9);
+    }
+
+    /** @param array<string, mixed> $requirement */
+    private function subjectFromVersion(RecipeVersion $version, array $requirement): Ingredient|PackagingItem|null
+    {
+        if ($requirement['ingredient_id'] !== null) {
+            foreach ($version->phases as $phase) {
+                $item = $phase->items->firstWhere('ingredient_id', $requirement['ingredient_id']);
+
+                if ($item?->ingredient instanceof Ingredient) {
+                    return $item->ingredient;
+                }
+            }
+        }
+
+        if ($requirement['packaging_item_id'] !== null) {
+            return $version->packagingItems
+                ->firstWhere('packaging_item_id', $requirement['packaging_item_id'])
+                ?->packagingItem;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $requirements
+     * @return array<string, CurrentMaterialPrice>
+     */
+    private function pricesByKey(Workspace $workspace, Collection $requirements): array
+    {
+        $ingredientIds = $requirements->pluck('ingredient_id')->filter()->unique()->values()->all();
+        $packagingItemIds = $requirements->pluck('packaging_item_id')->filter()->unique()->values()->all();
+
+        if ($ingredientIds === [] && $packagingItemIds === []) {
+            return [];
+        }
+
+        return CurrentMaterialPrice::query()
+            ->where('workspace_id', $workspace->id)
+            ->where(function ($query) use ($ingredientIds, $packagingItemIds): void {
+                $query->whereIn('ingredient_id', $ingredientIds)
+                    ->orWhereIn('packaging_item_id', $packagingItemIds);
+            })
+            ->get()
+            ->mapWithKeys(fn (CurrentMaterialPrice $price): array => [
+                $price->ingredient_id !== null
+                    ? 'ingredient:'.$price->ingredient_id
+                    : 'packaging:'.$price->packaging_item_id => $price,
+            ])
+            ->all();
     }
 }

@@ -7799,6 +7799,28 @@
         },
         {
             "group": "production_bench",
+            "key": "flash.batch_size",
+            "text": {
+                "de": "Chargengröße",
+                "es": "Tamaño del lote",
+                "fr": "Format du lot",
+                "it": "Formato del lotto",
+                "nl": "Batchgrootte"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.batch_size_fixed_help",
+            "text": {
+                "de": "Menge, Einheit und erwarteter Ausstoß werden durch diese gespeicherte Chargengröße festgelegt.",
+                "es": "La cantidad, la unidad y la producción prevista están fijadas por este tamaño de lote guardado.",
+                "fr": "La quantité, l’unité et le rendement prévu sont fixés par ce format de lot enregistré.",
+                "it": "Quantità, unità e resa prevista sono fissate da questo formato del lotto salvato.",
+                "nl": "De hoeveelheid, eenheid en verwachte opbrengst liggen vast in deze opgeslagen batchgrootte."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "flash.batches_per_day",
             "text": {
                 "de": "Chargen pro Arbeitstag",
@@ -7806,6 +7828,39 @@
                 "fr": "Lots par jour ouvré",
                 "it": "Lotti per giorno lavorativo",
                 "nl": "Batches per werkdag"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.budget",
+            "text": {
+                "de": "Geschätztes Materialbudget",
+                "es": "Presupuesto estimado de materiales",
+                "fr": "Budget matière estimé",
+                "it": "Budget stimato dei materiali",
+                "nl": "Geschat materiaalbudget"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.budget_missing_prices",
+            "text": {
+                "de": "Hinterlegen Sie für jedes Material einen aktuellen Preis, um das vollständige Budget zu sehen.",
+                "es": "Añada un precio actual para cada material para ver el presupuesto completo.",
+                "fr": "Ajoutez un prix actuel pour chaque matière afin de voir le budget complet.",
+                "it": "Inserisci un prezzo corrente per ogni materiale per vedere il budget completo.",
+                "nl": "Voeg voor elk materiaal een actuele prijs toe om het volledige budget te zien."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.budget_mixed_currencies",
+            "text": {
+                "de": "Die ausgewählten Materialpreise verwenden unterschiedliche Währungen; daher wird kein Gesamtbudget angezeigt.",
+                "es": "Los precios de los materiales seleccionados usan distintas monedas, por lo que no se muestra un presupuesto combinado.",
+                "fr": "Les prix des matières sélectionnées utilisent des devises différentes : aucun budget cumulé n’est donc affiché.",
+                "it": "I prezzi dei materiali selezionati usano valute diverse, quindi non viene mostrato un budget complessivo.",
+                "nl": "De geselecteerde materiaalprijzen gebruiken verschillende valuta's; daarom wordt geen gecombineerd budget getoond."
             }
         },
         {
@@ -7828,6 +7883,39 @@
                 "fr": "Plan de production créé",
                 "it": "Piano di produzione creato",
                 "nl": "Productieplan aangemaakt"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.choose_batch_size",
+            "text": {
+                "de": "Gespeicherte Chargengröße auswählen",
+                "es": "Elegir un tamaño de lote guardado",
+                "fr": "Choisir un format de lot enregistré",
+                "it": "Scegli un formato del lotto salvato",
+                "nl": "Opgeslagen batchgrootte kiezen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.current_price",
+            "text": {
+                "de": "Aktueller Preis",
+                "es": "Precio actual",
+                "fr": "Prix actuel",
+                "it": "Prezzo corrente",
+                "nl": "Actuele prijs"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.custom_quantities_help",
+            "text": {
+                "de": "Geben Sie für diese Produktion eine eigene Chargenmenge und den erwarteten Ausstoß ein.",
+                "es": "Introduzca para esta producción una cantidad de lote y una producción prevista personalizadas.",
+                "fr": "Saisissez pour cette production une quantité de lot et un rendement prévisionnel personnalisés.",
+                "it": "Inserisci per questa produzione una quantità del lotto e una resa prevista personalizzate.",
+                "nl": "Voer voor deze productie een aangepaste batchhoeveelheid en verwachte opbrengst in."
             }
         },
         {
@@ -7861,6 +7949,17 @@
                 "fr": "Unités souhaitées",
                 "it": "Unità desiderate",
                 "nl": "Gewenste eenheden"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.estimated_cost",
+            "text": {
+                "de": "Geschätzte Kosten",
+                "es": "Coste estimado",
+                "fr": "Coût estimé",
+                "it": "Costo stimato",
+                "nl": "Geschatte kosten"
             }
         },
         {
@@ -7944,11 +8043,11 @@
             "group": "production_bench",
             "key": "flash.intro",
             "text": {
-                "de": "Probieren Sie mehrere Produkte zusammen aus, sehen Sie sofort die Materialauswirkungen und prüfen Sie die Produktionstermine, bevor etwas erstellt wird.",
-                "es": "Pruebe varios productos juntos, vea el impacto de materiales de inmediato y revise las fechas antes de crear nada.",
-                "fr": "Simulez plusieurs produits ensemble, voyez immédiatement l’impact matière et vérifiez les dates avant toute création.",
-                "it": "Simula più prodotti insieme, visualizza subito l’impatto sui materiali e controlla le date prima di creare qualcosa.",
-                "nl": "Simuleer meerdere producten samen, zie direct de materiaalimpact en controleer productiedata voordat er iets wordt aangemaakt."
+                "de": "Planen Sie mehrere Produkte gemeinsam. Wählen Sie Produkte und Mengen, prüfen Sie das Materialbudget und kontrollieren Sie die vorgeschlagenen Produktionstermine, bevor etwas erstellt wird.",
+                "es": "Planifique varios productos a la vez. Elija los productos y las cantidades, revise el presupuesto de materiales y compruebe las fechas propuestas antes de crear nada.",
+                "fr": "Planifiez plusieurs produits en une seule fois. Choisissez les produits et les quantités, vérifiez le budget matière, puis contrôlez les dates de production proposées avant toute création.",
+                "it": "Pianifica più prodotti insieme. Scegli prodotti e quantità, controlla il budget dei materiali e verifica le date di produzione proposte prima di creare qualsiasi cosa.",
+                "nl": "Plan meerdere producten tegelijk. Kies de producten en aantallen, bekijk het materiaalbudget en controleer de voorgestelde productiedata voordat er iets wordt aangemaakt."
             }
         },
         {
@@ -7964,6 +8063,17 @@
         },
         {
             "group": "production_bench",
+            "key": "flash.no_batch_sizes",
+            "text": {
+                "de": "Für dieses Produkt ist keine gespeicherte Chargengröße verfügbar. Geben Sie unten benutzerdefinierte Mengen ein.",
+                "es": "No hay un tamaño de lote guardado para este producto. Introduzca abajo cantidades personalizadas.",
+                "fr": "Aucun format de lot enregistré n’est disponible pour ce produit. Saisissez des quantités personnalisées ci-dessous.",
+                "it": "Non è disponibile un formato del lotto salvato per questo prodotto. Inserisci qui sotto quantità personalizzate.",
+                "nl": "Voor dit product is geen opgeslagen batchgrootte beschikbaar. Voer hieronder aangepaste hoeveelheden in."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "flash.optional",
             "text": {
                 "de": "optional",
@@ -7971,6 +8081,17 @@
                 "fr": "facultatif",
                 "it": "facoltativo",
                 "nl": "optioneel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.price_missing",
+            "text": {
+                "de": "Preis fehlt",
+                "es": "Falta el precio",
+                "fr": "Prix manquant",
+                "it": "Prezzo mancante",
+                "nl": "Prijs ontbreekt"
             }
         },
         {
@@ -7999,11 +8120,11 @@
             "group": "production_bench",
             "key": "flash.products_help",
             "text": {
-                "de": "Fügen Sie für jedes Produkt eine Zeile hinzu. Vorgaben füllen die übliche Chargengröße, aber alle Werte bleiben änderbar.",
-                "es": "Añada una línea por producto. Los ajustes rellenan el lote habitual, pero todos los valores siguen siendo editables.",
-                "fr": "Ajoutez une ligne par produit. Les préréglages remplissent le lot habituel, mais chaque valeur reste modifiable.",
-                "it": "Aggiungi una riga per ogni prodotto. I preset compilano il lotto abituale, ma ogni valore resta modificabile.",
-                "nl": "Voeg voor elk product een regel toe. Voorinstellingen vullen de gebruikelijke batch in, maar alle waarden blijven aanpasbaar."
+                "de": "Fügen Sie jedes herzustellende Produkt hinzu, wählen Sie dann seine gespeicherte Chargengröße und die gewünschte Stückzahl.",
+                "es": "Añada cada producto que quiera fabricar, elija su tamaño de lote guardado y después el número de unidades.",
+                "fr": "Ajoutez chaque produit à fabriquer, puis choisissez son format de lot enregistré et le nombre d’unités.",
+                "it": "Aggiungi ogni prodotto da realizzare, poi scegli il formato del lotto salvato e il numero di unità.",
+                "nl": "Voeg elk product toe dat je wilt maken, kies daarna de opgeslagen batchgrootte en het aantal eenheden."
             }
         },
         {
@@ -8043,11 +8164,11 @@
             "group": "production_bench",
             "key": "flash.schedule_help",
             "text": {
-                "de": "Wählen Sie den ersten Produktionstermin und die Anzahl der Chargen pro Arbeitstag. Wochenenden und konfigurierte Schließtage werden übersprungen.",
-                "es": "Elija la primera fecha de producción y cuántos lotes se pueden hacer por día laborable. Se omiten fines de semana y cierres configurados.",
-                "fr": "Choisissez la première date de production et le nombre de lots par jour ouvré. Les week-ends et fermetures configurées sont ignorés.",
-                "it": "Scegli la prima data di produzione e quanti lotti realizzare per giorno lavorativo. Weekend e chiusure configurate vengono saltati.",
-                "nl": "Kies de eerste productiedatum en hoeveel batches per werkdag kunnen worden gemaakt. Weekenden en ingestelde sluitingsdagen worden overgeslagen."
+                "de": "Wählen Sie den ersten Produktionstermin und die Chargen pro Arbeitstag. Wochenenden und Feiertage folgen den Einstellungen Ihres Arbeitskalenders.",
+                "es": "Elija la primera fecha de producción y los lotes por día laborable. Los fines de semana y festivos siguen la configuración de su calendario laboral.",
+                "fr": "Choisissez la première date de production et le nombre de lots par jour ouvré. Les week-ends et jours fériés suivent les réglages de votre calendrier de travail.",
+                "it": "Scegli la prima data di produzione e quanti lotti realizzare per giorno lavorativo. Weekend e festività seguono le impostazioni del calendario di lavoro.",
+                "nl": "Kies de eerste productiedatum en hoeveel batches per werkdag kunnen worden gemaakt. Weekenden en feestdagen volgen de instellingen van je werkagenda."
             }
         },
         {
@@ -8103,6 +8224,17 @@
                 "fr": "Unités par lot",
                 "it": "Unità per lotto",
                 "nl": "Eenheden per batch"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "flash.use_custom_quantities",
+            "text": {
+                "de": "Benutzerdefinierte Mengen verwenden",
+                "es": "Usar cantidades personalizadas",
+                "fr": "Utiliser des quantités personnalisées",
+                "it": "Usa quantità personalizzate",
+                "nl": "Aangepaste hoeveelheden gebruiken"
             }
         },
         {
@@ -8186,11 +8318,11 @@
             "group": "production_bench",
             "key": "inventory.add_lot",
             "text": {
-                "de": "Charge hinzufügen",
-                "es": "Añadir lote",
-                "fr": "Ajouter un lot",
-                "it": "Aggiungi lotto",
-                "nl": "Partij toevoegen"
+                "de": "Bestandsartikel hinzufügen",
+                "es": "Añadir artículo de stock",
+                "fr": "Ajouter un article en stock",
+                "it": "Aggiungi articolo a stock",
+                "nl": "Voorraaditem toevoegen"
             }
         },
         {
@@ -8241,11 +8373,11 @@
             "group": "production_bench",
             "key": "inventory.help",
             "text": {
-                "de": "Physisch umfasst Bestände in Quarantäne. Verfügbar schließt Quarantäne und reservierte Bestände aus. Negative Bestände sind zulässig.",
-                "es": "El stock físico incluye el stock en cuarentena. El disponible excluye el stock en cuarentena y reservado. Se permiten saldos negativos.",
-                "fr": "Le stock physique inclut le stock en quarantaine. Le disponible exclut le stock en quarantaine et réservé. Les soldes négatifs sont autorisés.",
-                "it": "Il fisico include le scorte in quarantena. Il disponibile esclude le scorte in quarantena e riservate. Sono ammessi saldi negativi.",
-                "nl": "Fysiek omvat voorraad in quarantaine. Beschikbaar sluit quarantaine en gereserveerde voorraad uit. Negatieve saldi zijn toegestaan."
+                "de": "Physisch umfasst Bestände in Quarantäne. Verfügbar schließt Quarantäne und reservierte Bestände aus. Negative Bestände sind zulässig. Die Bereiche zeigen Bestand, Reservierungen, offene Lieferungen und den Bedarf geplanter Produktionen.",
+                "es": "El stock físico incluye el stock en cuarentena. El disponible excluye el stock en cuarentena y reservado. Se permiten saldos negativos. Las secciones muestran el stock, las reservas, las entradas y las necesidades de producción.",
+                "fr": "Le stock physique inclut le stock en quarantaine. Le disponible exclut le stock en quarantaine et réservé. Les soldes négatifs sont autorisés. Les sections présentent le stock, les réservations, les arrivages et les besoins de production.",
+                "it": "Il fisico include le scorte in quarantena. Il disponibile esclude le scorte in quarantena e riservate. Sono ammessi saldi negativi. Le sezioni mostrano scorte, prenotazioni, arrivi e fabbisogni di produzione.",
+                "nl": "Fysiek omvat voorraad in quarantaine. Beschikbaar sluit quarantaine en gereserveerde voorraad uit. Negatieve saldi zijn toegestaan. De secties tonen voorraad, reserveringen, inkomende leveringen en productiebehoeften."
             }
         },
         {
@@ -8274,22 +8406,22 @@
             "group": "production_bench",
             "key": "inventory.item_lot",
             "text": {
-                "de": "Artikel / Charge",
-                "es": "Artículo / lote",
-                "fr": "Article / lot",
-                "it": "Articolo / lotto",
-                "nl": "Item / partij"
+                "de": "Artikel / Bestandsreferenz",
+                "es": "Artículo / referencia de stock",
+                "fr": "Article / référence de stock",
+                "it": "Articolo / riferimento stock",
+                "nl": "Item / voorraadreferentie"
             }
         },
         {
             "group": "production_bench",
             "key": "inventory.lot_created",
             "text": {
-                "de": "Charge :code erstellt.",
-                "es": "Lote :code creado.",
-                "fr": "Lot :code créé.",
-                "it": "Lotto :code creato.",
-                "nl": "Partij :code aangemaakt."
+                "de": "Bestandsartikel :code erstellt.",
+                "es": "Artículo de stock :code creado.",
+                "fr": "Article en stock :code créé.",
+                "it": "Articolo a stock :code creato.",
+                "nl": "Voorraaditem :code aangemaakt."
             }
         },
         {
@@ -8318,11 +8450,11 @@
             "group": "production_bench",
             "key": "inventory.no_lots",
             "text": {
-                "de": "Keine Chargen.",
-                "es": "No hay lotes.",
-                "fr": "Aucun lot.",
-                "it": "Nessun lotto.",
-                "nl": "Geen partijen."
+                "de": "Keine Bestandsartikel.",
+                "es": "No hay artículos de stock.",
+                "fr": "Aucun article en stock.",
+                "it": "Nessun articolo a stock.",
+                "nl": "Geen voorraaditems."
             }
         },
         {
@@ -8345,6 +8477,17 @@
                 "fr": "facultatif",
                 "it": "facoltativo",
                 "nl": "optioneel"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.overview",
+            "text": {
+                "de": "Übersicht",
+                "es": "Resumen",
+                "fr": "Vue d’ensemble",
+                "it": "Panoramica",
+                "nl": "Overzicht"
             }
         },
         {
@@ -8459,6 +8602,50 @@
         },
         {
             "group": "production_bench",
+            "key": "inventory.required",
+            "text": {
+                "de": "Benötigt",
+                "es": "Necesario",
+                "fr": "Requis",
+                "it": "Necessario",
+                "nl": "Benodigd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.requirements",
+            "text": {
+                "de": "Materialbedarf",
+                "es": "Necesidades",
+                "fr": "Besoins en matières",
+                "it": "Fabbisogno materiali",
+                "nl": "Materiaalbehoefte"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.requirements_help",
+            "text": {
+                "de": "Zeigt den Materialbedarf geplanter Produktionen zusammen mit Bestand, Reservierungen, offenen Bestellungen und der daraus entstehenden Prognose.",
+                "es": "Muestra el material necesario para las producciones planificadas junto con el stock, las reservas, los pedidos pendientes y la previsión resultante.",
+                "fr": "Affiche les matières nécessaires aux productions planifiées avec le stock, les réservations, les commandes en attente et la prévision obtenue.",
+                "it": "Mostra i materiali necessari per le produzioni pianificate insieme a scorte, prenotazioni, ordini in arrivo e previsione risultante.",
+                "nl": "Toont wat geplande producties nodig hebben naast voorraad, reserveringen, openstaande bestellingen en de resulterende prognose."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.requirements_title",
+            "text": {
+                "de": "Materialbedarf",
+                "es": "Necesidades de material",
+                "fr": "Besoins en matières",
+                "it": "Fabbisogno materiali",
+                "nl": "Materiaalbehoefte"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "inventory.reserved",
             "text": {
                 "de": "Reserviert",
@@ -8470,6 +8657,28 @@
         },
         {
             "group": "production_bench",
+            "key": "inventory.stock",
+            "text": {
+                "de": "Bestand",
+                "es": "Stock",
+                "fr": "Stock",
+                "it": "Scorte",
+                "nl": "Voorraad"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.stock_help",
+            "text": {
+                "de": "Erfassen Sie den Anfangsbestand und prüfen Sie jedes Bestandsobjekt mit physischen, reservierten und verfügbaren Mengen.",
+                "es": "Registra el stock inicial y revisa cada artículo con sus cantidades físicas, reservadas y disponibles.",
+                "fr": "Enregistrez le stock initial et consultez chaque article avec ses quantités physiques, réservées et disponibles.",
+                "it": "Registra le scorte iniziali e controlla ogni articolo con quantità fisiche, riservate e disponibili.",
+                "nl": "Leg beginvoorraad vast en bekijk elk voorraaditem met fysieke, gereserveerde en beschikbare hoeveelheden."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "inventory.stock_positions",
             "text": {
                 "de": "Bestandspositionen",
@@ -8477,6 +8686,17 @@
                 "fr": "Positions de stock",
                 "it": "Posizioni di magazzino",
                 "nl": "Voorraadposities"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "inventory.stock_title",
+            "text": {
+                "de": "Bestand",
+                "es": "Stock",
+                "fr": "Stock",
+                "it": "Scorte",
+                "nl": "Voorraad"
             }
         },
         {

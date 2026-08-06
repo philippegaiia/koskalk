@@ -27,6 +27,8 @@ class InventoryIndex extends Component
 {
     use InteractsWithAppNotifications;
 
+    public string $mode = 'overview';
+
     public ?int $supplierListingId = null;
 
     public string $quantity = '';
@@ -123,20 +125,22 @@ class InventoryIndex extends Component
     ): View {
         $workspace = $this->workspace();
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
-        $stockLots = StockLot::query()
-            ->where('workspace_id', $workspace->id)
-            ->with([
-                'ingredient.translations',
-                'packagingItem',
-                'goodsReceiptLine.goodsReceipt.supplier',
-            ])
-            ->withSum('movements', 'quantity_delta')
-            ->withSum([
-                'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', StockReservationStatus::Active),
-            ], 'quantity')
-            ->latest('stocked_at')
-            ->latest('id')
-            ->get();
+        $stockLots = $this->mode === 'requirements'
+            ? collect()
+            : StockLot::query()
+                ->where('workspace_id', $workspace->id)
+                ->with([
+                    'ingredient.translations',
+                    'packagingItem',
+                    'goodsReceiptLine.goodsReceipt.supplier',
+                ])
+                ->withSum('movements', 'quantity_delta')
+                ->withSum([
+                    'reservations as active_reserved_quantity' => fn (Builder $query): Builder => $query->where('status', StockReservationStatus::Active),
+                ], 'quantity')
+                ->latest('stocked_at')
+                ->latest('id')
+                ->get();
         $forecastSubjects = collect();
 
         foreach ($stockLots as $lot) {
@@ -149,23 +153,25 @@ class InventoryIndex extends Component
             }
         }
 
-        ProductionRequirement::query()
-            ->whereHas('productionRun', function (Builder $query) use ($workspace): void {
-                $query
-                    ->where('workspace_id', $workspace->id)
-                    ->whereIn('status', [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved]);
-            })
-            ->with(['ingredient.translations', 'packagingItem'])
-            ->get()
-            ->each(function (ProductionRequirement $requirement) use ($forecastSubjects): void {
-                if ($requirement->ingredient_id !== null && $requirement->ingredient !== null) {
-                    $forecastSubjects->put('ingredient:'.$requirement->ingredient_id, $requirement->ingredient);
-                }
+        if ($this->mode !== 'stock') {
+            ProductionRequirement::query()
+                ->whereHas('productionRun', function (Builder $query) use ($workspace): void {
+                    $query
+                        ->where('workspace_id', $workspace->id)
+                        ->whereIn('status', [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved]);
+                })
+                ->with(['ingredient.translations', 'packagingItem'])
+                ->get()
+                ->each(function (ProductionRequirement $requirement) use ($forecastSubjects): void {
+                    if ($requirement->ingredient_id !== null && $requirement->ingredient !== null) {
+                        $forecastSubjects->put('ingredient:'.$requirement->ingredient_id, $requirement->ingredient);
+                    }
 
-                if ($requirement->packaging_item_id !== null && $requirement->packagingItem !== null) {
-                    $forecastSubjects->put('packaging:'.$requirement->packaging_item_id, $requirement->packagingItem);
-                }
-            });
+                    if ($requirement->packaging_item_id !== null && $requirement->packagingItem !== null) {
+                        $forecastSubjects->put('packaging:'.$requirement->packaging_item_id, $requirement->packagingItem);
+                    }
+                });
+        }
 
         $lots = $stockLots
             ->map(function (StockLot $lot) use ($positions, $massConverter, $displayUnit): array {
@@ -180,17 +186,37 @@ class InventoryIndex extends Component
                     )->all(),
                 ];
             });
+        $positionsByKey = $positions->forWorkspaceSubjects(
+            workspace: $workspace,
+            subjectKeys: $forecastSubjects->keys()->values()->all(),
+            loadedLots: $this->mode === 'requirements' ? null : $stockLots,
+        );
         $forecast = $forecastSubjects
-            ->map(function (Ingredient|PackagingItem $subject) use ($workspace, $positions, $massConverter, $displayUnit): array {
-                $stock = $positions->forWorkspaceSubject($workspace, $subject);
+            ->map(function (Ingredient|PackagingItem $subject) use ($positionsByKey, $massConverter, $displayUnit): array {
+                $key = $subject instanceof Ingredient
+                    ? 'ingredient:'.$subject->id
+                    : 'packaging:'.$subject->id;
+                $stock = $positionsByKey[$key] ?? [
+                    'reserved' => '0.000000000',
+                    'available' => '0.000000000',
+                    'incoming' => '0.000000000',
+                    'forecast' => '0.000000000',
+                ];
                 $format = fn (string $quantity): string => $subject instanceof Ingredient
                     ? number_format((float) $massConverter->fromGramsSigned($quantity, $displayUnit), 2)
                     : number_format((float) $quantity, 0);
+                $required = bcsub(
+                    bcadd($stock['available'], $stock['incoming'], 9),
+                    $stock['forecast'],
+                    9,
+                );
 
                 return [
                     'subject' => $subject,
                     'display_unit' => $subject instanceof Ingredient ? $displayUnit : __('production_bench.inventory.units'),
+                    'required' => $format($required),
                     'positions' => [
+                        'reserved' => $format($stock['reserved']),
                         'available' => $format($stock['available']),
                         'incoming' => $format($stock['incoming']),
                         'forecast' => $format($stock['forecast']),
@@ -199,17 +225,21 @@ class InventoryIndex extends Component
             })
             ->values();
 
-        return view('livewire.production-bench.inventory-index', [
-            'workspace' => $workspace,
-            'isActive' => $access->isActive($workspace),
-            'isReadOnly' => $access->isReadOnly($workspace),
-            'supplierListings' => SupplierListing::query()
+        $supplierListings = $this->mode === 'requirements'
+            ? collect()
+            : SupplierListing::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)
                 ->with(['supplier', 'ingredient.translations', 'packagingItem'])
                 ->orderBy('supplier_id')
                 ->orderBy('purchase_format')
-                ->get(),
+                ->get();
+
+        return view('livewire.production-bench.inventory-index', [
+            'workspace' => $workspace,
+            'isActive' => $access->isActive($workspace),
+            'isReadOnly' => $access->isReadOnly($workspace),
+            'supplierListings' => $supplierListings,
             'lots' => $lots,
             'forecast' => $forecast,
             'displayUnit' => $displayUnit,

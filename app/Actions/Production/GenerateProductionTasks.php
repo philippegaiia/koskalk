@@ -137,7 +137,6 @@ class GenerateProductionTasks
         if ($production->production_task_set_id !== null) {
             $taskSet = ProductionTaskSet::query()
                 ->where('workspace_id', $workspace->id)
-                ->with('items.taskType')
                 ->lockForUpdate()
                 ->find($production->production_task_set_id);
 
@@ -161,7 +160,6 @@ class GenerateProductionTasks
 
         $taskSet = $recipe->defaultProductionTaskSets()
             ->where('workspace_id', $workspace->id)
-            ->with('items.taskType')
             ->lockForUpdate()
             ->first();
 

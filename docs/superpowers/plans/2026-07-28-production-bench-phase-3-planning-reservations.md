@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use `superpowers:executing-plans` to implement this plan task-by-task.
 
-**Goal:** Let a small maker plan one or several production batches from a published product, automatically obtain dated follow-up tasks, understand future material demand, and explicitly reserve suitable stock lots only when ready.
+**Goal:** Let a small maker plan one or several production batches from a published product, automatically obtain dated follow-up tasks, understand future material demand, and explicitly reserve suitable stock items only when ready.
 
-**Architecture:** `ProductionRun` is the durable production record. It pins one published `RecipeVersion` and owns immutable-subject, rescalable planning requirements for ingredients and packaging. Reusable batch presets and task sets only prefill a production; task sets are applicable to many products, products may have several applicable sets, and generated production tasks snapshot their scheduling inputs. Task-set offsets are signed calendar days relative to the production date, with non-working-day adjustment applied when dates are generated. Planned requirements affect forecast demand but not available stock. Separate `StockReservation` rows connect one requirement to one or several lots after an explicit preview and confirmation. The Flash simulator reuses the same planning actions and remains non-persistent until the user confirms dated production rows.
+**Architecture:** `ProductionRun` is the durable production record. It pins one published `RecipeVersion` and owns immutable-subject, rescalable planning requirements for ingredients and packaging. Reusable batch presets and task sets only prefill a production; task sets are applicable to many products, products may have several applicable sets, and generated production tasks snapshot their scheduling inputs. Task-set offsets are signed calendar days relative to the production date, with non-working-day adjustment applied when dates are generated. Planned requirements affect forecast demand but not available stock. Separate `StockReservation` rows connect one requirement to one or several stock items after an explicit preview and confirmation. The Flash simulator is a disposable requirement and budget calculator: it aggregates material quantities and reads current material-price projections for an estimated budget, without reading stock, incoming orders, or reservations, and remains non-persistent until the user confirms dated production rows.
 
 **Tech Stack:** PHP 8.5, Laravel 13, Livewire 4, Blade, Alpine.js, Tailwind CSS 4, Pest 4, BCMath, PostgreSQL transactions and row locking, Vite 8, and `@event-calendar/core`.
 
@@ -37,7 +37,7 @@ Every `git add` command below is intentionally path-specific. Replace migration 
 - Before production starts, changing the production date recalculates unfinished automatic tasks from their stored offsets; the production-day anchor remains exactly on the production date.
 - When weekends or holidays are configured as non-working, an explicit production date must be a working day rather than being silently moved.
 - Calendar offsets that land on non-working days move backward for preparation and forward for follow-up tasks; completed and custom-dated tasks do not move.
-- Flash simulation does not persist anything. Flash generation creates independent planned productions, without waves, capacity records, or reservations.
+- Flash simulation does not persist anything. It calculates the material required and estimated current-price budget for the selected hypothetical batches, without stock coverage. Flash generation creates independent planned productions, without waves, capacity records, or reservations; the resulting requirements are then visible in Inventory → Requirements alongside every other planned production.
 
 ## Status Contract
 
@@ -540,7 +540,7 @@ Equivalent presentation is allowed:
 
 ### Step 2: Implement subject demand projection
 
-Aggregate remaining requirements across `Scheduled` and `Reserved` productions. Keep one source of truth so inventory cards, production previews, reservations, and Flash use the same quantities.
+Aggregate remaining requirements across `Scheduled` and `Reserved` productions. Keep one source of truth so the Inventory → Requirements view, production previews, and reservations use the same persisted quantities. Flash remains hypothetical until confirmation and only aggregates its own selected lines.
 
 Do not mutate stock lots, movements, or current prices.
 
@@ -768,22 +768,21 @@ For several product lines, prove calculation of:
 - preset and manual per-batch configuration;
 - total oil/formula basis;
 - aggregated ingredient and packaging requirements;
-- available, incoming, forecast, and shortage quantities;
-- indicative current material value in workspace currency;
-- missing-price warnings without failure;
+- current material prices and an estimated budget, with an explicit missing-price or mixed-currency notice;
+- no stock coverage, reservation, incoming-order, or forecast calculation;
 - optional total task duration, including preparation and follow-up tasks;
 - applicable task-set choices per product, with no task set remaining valid;
 - no database mutation.
 
 ### Step 2: Implement the pure simulation services
 
-Reuse `ProductionRequirementBuilder`, `ProductionDemandService`, `StockPositionService`, `CurrentMaterialPriceService`, and `ProductionWorkingCalendar`. Current prices are indicative only; never derive Flash value from mutable listing price or alter costing projections.
+Reuse `ProductionRequirementBuilder` and the task/date services. Do not call `ProductionDemandService` or `StockPositionService` from the simulator. Read current material-price projections once for the selected materials to show an estimated budget; do not write them. Stock, reservations, incoming purchase orders, and forecast coverage are shown in Inventory → Requirements, where they are calculated once for all persisted planned productions. Never alter stock or costing projections during simulation.
 
 `FlashDateProposalService` accepts first date and temporary whole batches per working day. It proposes editable dated rows without persisting capacity, waves, or production lines.
 
 ### Step 3: Build the prominent Flash interface
 
-The page first shows the live simulation. **Generate productions** opens a second reviewed date preview. Make whole batches and extra units explicit, and keep missing price separate from stock shortage.
+The page first shows the live simulation, including the estimated material budget and current price status. **Generate productions** opens a second reviewed date preview. Make whole batches and extra units explicit. Do not show stock shortage or coverage here; users review stock, reservations, incoming quantities, and forecast in Inventory → Requirements after creating the productions.
 
 ### Step 4: Verify and commit
 

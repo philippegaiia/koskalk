@@ -66,6 +66,9 @@ class ProductionDetail extends Component
 
     public string $manufactureDate = '';
 
+    // The HTML select sends '' as its no-choice sentinel; typing this ?int
+    // would make the empty value coerce ambiguously across Livewire versions.
+    // The boundary cast happens in complete().
     public ?string $outputIngredientId = null;
 
     public string $abortReason = '';
@@ -373,11 +376,17 @@ class ProductionDetail extends Component
         $production = $this->production();
 
         try {
+            if ($this->manufactureDate === '') {
+                $this->addError('manufacture_date', __('production_bench.production.manufacture_date_required'));
+
+                return;
+            }
+
             $completeProduction->handle(
                 actor: $this->user(),
                 production: $production,
                 actualOutputQuantity: NumberLocale::normalizeDecimalString($this->actualOutputQuantity) ?? $this->actualOutputQuantity,
-                manufactureDate: $this->manufactureDate !== '' ? $this->manufactureDate : now()->toDateString(),
+                manufactureDate: $this->manufactureDate,
                 outputIngredientId: $this->outputMode === 'intermediate' && $this->outputIngredientId !== null
                     ? (int) $this->outputIngredientId
                     : null,

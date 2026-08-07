@@ -680,6 +680,27 @@ it('allows at most one consumption row per requirement and lot', function (): vo
     ]))->toThrow(QueryException::class);
 });
 
+it('allows non-output lots to share the same production run link', function (): void {
+    $production = ProductionRun::factory()->create();
+
+    StockLot::factory()->for($production->workspace)->released()->create([
+        'ingredient_id' => Ingredient::factory()->create()->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'production_run_id' => $production->id,
+        'origin' => 'opening_balance',
+    ]);
+    StockLot::factory()->for($production->workspace)->released()->create([
+        'ingredient_id' => Ingredient::factory()->create()->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'production_run_id' => $production->id,
+        'origin' => 'adjustment',
+    ]);
+
+    expect(StockLot::query()->where('production_run_id', $production->id)->count())->toBe(2);
+});
+
 function productionPlanningRecipe(Workspace $workspace): Recipe
 {
     return Recipe::factory()->create([

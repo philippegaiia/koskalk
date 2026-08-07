@@ -11033,6 +11033,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.manufacture_date_required",
+            "text": {
+                "de": "Wählen Sie das Herstellungsdatum vor dem Abschluss.",
+                "es": "Elige la fecha de fabricación antes de completar.",
+                "fr": "Choisissez la date de fabrication avant de terminer.",
+                "it": "Scegli la data di produzione prima di completare.",
+                "nl": "Kies de fabricagedatum voordat u afrondt."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.mark_complete",
             "text": {
                 "de": "Als erledigt markieren",

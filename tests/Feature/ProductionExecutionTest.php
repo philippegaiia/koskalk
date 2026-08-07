@@ -1166,6 +1166,27 @@ it('sets family and task based ready dates on output lots', function (): void {
     expect($tasked->outputLot()->sole()->available_from?->toDateString())->toBe('2026-09-01');
 });
 
+it('requires the manufacture date before completing from the sheet', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'complete-no-date-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->set('actualOutputQuantity', '95')
+        ->call('complete')
+        ->assertHasErrors('manufacture_date');
+
+    expect($production->fresh()->status)->toBe(ProductionRunStatus::InProduction);
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, packaging: PackagingItem}
  */

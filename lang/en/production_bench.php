@@ -451,6 +451,7 @@ return [
         'expected_units_help' => 'Used to scale packaging requirements.',
         'production_date' => 'Production date',
         'manufacture_date' => 'Manufacture date',
+        'manufacture_date_required' => 'Choose the manufacture date before completing.',
         'production_date_help' => 'Follow-up task dates are calculated from this date.',
         'task_set' => 'Task set',
         'no_task_set' => 'No task set',

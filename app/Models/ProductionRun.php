@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
     'workspace_id',
@@ -155,6 +156,11 @@ class ProductionRun extends Model
     public function outputLot(): HasOne
     {
         return $this->hasOne(StockLot::class, 'production_run_id');
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(ProductionDocument::class, 'documentable');
     }
 
     protected function casts(): array

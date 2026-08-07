@@ -377,6 +377,20 @@
                 <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.journal_empty') }}</p>
             @endforelse
         </div>
+        @if ($production->documents->where('type', \App\ProductionDocumentType::Journal)->isNotEmpty())
+            <div class="border-t border-[var(--color-line)] px-5 py-4 sm:px-6">
+                <ul class="space-y-1 text-sm">
+                    @foreach ($production->documents->where('type', \App\ProductionDocumentType::Journal) as $document)
+                        <li class="flex items-center justify-between gap-3">
+                            <span class="truncate text-[var(--color-ink-soft)]">{{ $document->mediaAsset?->original_filename ?? $document->media_asset_id }}</span>
+                            @if ($document->note)
+                                <span class="text-xs text-[var(--color-ink-muted)]">{{ $document->note }}</span>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         @if (! $mutationLocked && ! in_array($production->status->value, ['completed', 'aborted', 'cancelled'], true))
             <div class="space-y-3 border-t border-[var(--color-line)] p-5 sm:p-6">
                 <label class="block text-sm">
@@ -386,7 +400,15 @@
                 @error('body')
                     <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
                 @enderror
-                <div class="flex justify-end">
+                <div class="flex flex-wrap items-end justify-between gap-3">
+                    <div class="flex min-w-0 flex-1 flex-wrap items-end gap-2">
+                        <label class="block text-sm">
+                            <span class="sr-only">{{ __('production_bench.production.journal_document') }}</span>
+                            <input type="file" wire:model="journalDocumentUpload" accept="image/*,.pdf" class="sk-input text-sm">
+                        </label>
+                        <input type="text" wire:model="journalDocumentNote" placeholder="{{ __('production_bench.production.journal_document_note') }}" class="sk-input w-48 text-sm">
+                        <button type="button" wire:click="attachJournalDocument" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-outline">{{ __('production_bench.production.journal_document_attach') }}</button>
+                    </div>
                     <button type="button" wire:click="saveJournalEntry" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_add') }}</button>
                 </div>
             </div>

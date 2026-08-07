@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Production;
 
+use App\Actions\Inventory\AttachProductionDocument;
 use App\Actions\Production\AbortProduction;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\AssignProductionTask;
@@ -18,6 +19,7 @@ use App\Actions\Production\SaveProductionActuals;
 use App\Actions\Production\SaveProductionJournalEntry;
 use App\Actions\Production\StartProduction;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\MediaAssetType;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\Ingredient;
@@ -26,19 +28,24 @@ use App\Models\ProductionTask;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
+use App\ProductionDocumentType;
 use App\ProductionRunStatus;
+use App\Services\MediaAssetUploadService;
 use App\Services\ProductionBenchAccess;
 use App\StockMovementType;
 use App\StockReservationStatus;
 use App\Support\NumberLocale;
 use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 class ProductionDetail extends Component
 {
     use InteractsWithAppNotifications;
+    use WithFileUploads;
 
     public string $productionId = '';
 
@@ -70,6 +77,11 @@ class ProductionDetail extends Component
     public string $issueNote = '';
 
     public string $journalBody = '';
+
+    /** @var UploadedFile|null */
+    public $journalDocumentUpload = null;
+
+    public string $journalDocumentNote = '';
 
     public function assignBatchNumber(AssignProductionBatchNumbers $assignProductionBatchNumbers): void
     {
@@ -492,6 +504,62 @@ class ProductionDetail extends Component
         $this->dispatch('production-journal-updated');
     }
 
+    public function attachJournalDocument(MediaAssetUploadService $uploads): void
+    {
+        $production = $this->production();
+
+        $validated = $this->validate([
+            'journalDocumentUpload' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp,heic,heif', 'max:10240'],
+            'journalDocumentNote' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $asset = null;
+
+        try {
+            $asset = $uploads->start(
+                $this->user(),
+                $this->workspace(),
+                $validated['journalDocumentUpload'],
+                [MediaAssetType::Image, MediaAssetType::Pdf],
+                processSynchronously: true,
+            )->refresh();
+
+            app(AttachProductionDocument::class)->handle(
+                actor: $this->user(),
+                documentable: $production,
+                asset: $asset,
+                type: ProductionDocumentType::Journal,
+                note: filled($validated['journalDocumentNote'] ?? null) ? trim($validated['journalDocumentNote']) : null,
+            );
+        } catch (\Throwable $exception) {
+            if ($asset !== null && $asset->exists) {
+                try {
+                    $uploads->rollbackUnreferencedUpload($this->user(), $this->workspace(), $asset);
+                } catch (\Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+            }
+
+            if (! $exception instanceof ValidationException) {
+                throw $exception;
+            }
+
+            $errors = $exception->errors();
+
+            if (isset($errors['upload']) || isset($errors['document'])) {
+                throw ValidationException::withMessages([
+                    'journalDocumentUpload' => collect($errors['upload'] ?? $errors['document'])->first(),
+                ]);
+            }
+
+            throw $exception;
+        }
+
+        $this->reset('journalDocumentUpload', 'journalDocumentNote');
+        $this->showAppNotification(__('production_bench.production.journal_document_attached'));
+        $this->dispatch('production-journal-updated');
+    }
+
     public function render(ProductionBenchAccess $access): View
     {
         $workspace = $this->workspace();
@@ -606,7 +674,7 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'requirements.reservations.stockLot', 'formulaLines', 'consumption', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
+            ->with(['recipe', 'requirements.reservations.stockLot', 'formulaLines', 'consumption', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
     }
 

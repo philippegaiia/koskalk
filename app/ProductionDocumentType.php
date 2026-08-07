@@ -13,5 +13,6 @@ enum ProductionDocumentType: string
     case Specification = 'specification';
     case Certificate = 'certificate';
     case Photo = 'photo';
+    case Journal = 'journal';
     case Other = 'other';
 }

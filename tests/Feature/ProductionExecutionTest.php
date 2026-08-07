@@ -39,6 +39,7 @@ use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
 use App\ProductionConsumptionKind;
+use App\ProductionDocumentType;
 use App\ProductionRunStatus;
 use App\StockMovementType;
 use App\StockReservationStatus;
@@ -48,7 +49,9 @@ use App\Visibility;
 use App\WorkspaceMemberRole;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -1077,6 +1080,29 @@ it('shows a live readiness checklist before completion', function (): void {
         ->and(str_contains($html, __('production_bench.production.readiness_coverage').':'))->toBeFalse()
         ->and(str_contains($html, __('production_bench.production.readiness_output').'✗'))->toBeFalse()
         ->and(str_contains($html, __('production_bench.production.readiness_date').'✗'))->toBeFalse();
+});
+
+it('attaches a private journal document to the production', function (): void {
+    Storage::fake(config('media.disk'));
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'journal-doc-1');
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->set('journalDocumentUpload', UploadedFile::fake()->image('batch-photo.jpg'))
+        ->set('journalDocumentNote', 'Mould filled at 09:15')
+        ->call('attachJournalDocument')
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && str_starts_with($payload['message'], __('production_bench.production.journal_document_attached'))
+                && $payload['type'] === 'success';
+        });
+
+    $document = $production->documents()->where('type', ProductionDocumentType::Journal)->sole();
+
+    expect($document->note)->toBe('Mould filled at 09:15')
+        ->and($document->mediaAsset->workspace_id)->toBe($fixture['workspace']->id)
+        ->and($document->mediaAsset->original_filename)->toBe('batch-photo.jpg');
 });
 
 /**

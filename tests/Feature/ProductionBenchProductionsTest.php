@@ -417,3 +417,31 @@ function productionListRun(array $fixture, string $name, string $plannedFor, Pro
         'planning_batch_number' => app(ProductionRunNumberService::class)->allocatePlanningReference($fixture['workspace']),
     ]);
 }
+
+it('does not show a partial-reservation badge for a scheduled run with no reservations', function (): void {
+    $fixture = productionListFixture();
+
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee(__('production_bench.production.status.scheduled'))
+        ->assertDontSee(__('production_bench.production.partially_reserved_short', ['short' => '']));
+});
+
+it('shows a partial-reservation badge only when reservations are short of requirements', function (): void {
+    $fixture = productionListFixture();
+    $requirement = ProductionRequirement::factory()->for($fixture['production'], 'productionRun')->create([
+        'required_mass_grams' => '1000.000000000',
+        'kind' => 'ingredient',
+        'ingredient_id' => Ingredient::factory()->create()->id,
+    ]);
+    StockReservation::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $fixture['production']->id,
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => StockLot::factory()->released()->for($fixture['workspace'])->create()->id,
+        'quantity' => '400.000000000',
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee(__('production_bench.production.partially_reserved_short', ['short' => '600']));
+});

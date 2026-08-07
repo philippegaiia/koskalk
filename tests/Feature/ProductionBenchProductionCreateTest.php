@@ -2,6 +2,7 @@
 
 use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Livewire\ProductionBench\Production\ProductionCreate;
+use App\Livewire\ProductionBench\Production\ProductionDetail;
 use App\Livewire\ProductionBench\Production\ProductionIndex;
 use App\MassUnit;
 use App\Models\Ingredient;
@@ -285,7 +286,7 @@ it('creates a draft production without a date and keeps it scheduleable', functi
 
     // Schedule the draft from the index
     $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
-        ->set('scheduleDate', '2026-09-15')
+        ->set('scheduleDates.'.$production->id, '2026-09-15')
         ->call('scheduleProduction', $production->id)
         ->assertHasNoErrors()
         ->assertDispatched('app-notification');
@@ -313,4 +314,68 @@ it('shows draft as a scheduleable status in the list and does not require a date
 
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
         ->assertSee(__('production_bench.production.schedule_draft'));
+});
+
+it('rejects scheduling a draft on a non-working day and shows the error on the detail banner', function (): void {
+    $fixture = productionCreateFixture();
+    $fixture['workspace']->update(['production_works_on_weekends' => false]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('basisInputValue', '2')
+        ->set('expectedUnits', '15')
+        ->call('saveDraft')
+        ->assertHasNoErrors();
+
+    $production = $fixture['recipe']->productionRuns()->firstOrFail();
+
+    // 2026-08-09 is a Sunday; the workspace does not work weekends.
+    Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => $production->id])
+        ->set('scheduleDate', '2026-08-09')
+        ->call('scheduleProduction')
+        ->assertHasErrors(['scheduleDate'])
+        ->assertSee('The production date must be a working day.');
+
+    expect($production->fresh()->status)->toBe(ProductionRunStatus::Draft);
+});
+
+it('requires a production date when scheduling a draft from the index', function (): void {
+    $fixture = productionCreateFixture();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('basisInputValue', '2')
+        ->set('expectedUnits', '15')
+        ->call('saveDraft')
+        ->assertHasNoErrors();
+
+    $production = $fixture['recipe']->productionRuns()->firstOrFail();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->call('scheduleProduction', $production->id)
+        ->assertHasErrors(['scheduleDate']);
+
+    expect($production->fresh()->status)->toBe(ProductionRunStatus::Draft);
+});
+
+it('schedules a draft from the index with a per-row date and keeps the row value isolated', function (): void {
+    $fixture = productionCreateFixture();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('basisInputValue', '2')
+        ->set('expectedUnits', '15')
+        ->call('saveDraft')
+        ->assertHasNoErrors();
+
+    $production = $fixture['recipe']->productionRuns()->firstOrFail();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->set('scheduleDates.'.$production->id, '2026-09-15')
+        ->call('scheduleProduction', $production->id)
+        ->assertHasNoErrors()
+        ->assertDispatched('app-notification');
+
+    expect($production->fresh()->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and($production->fresh()->planned_for->format('Y-m-d'))->toBe('2026-09-15');
 });

@@ -84,13 +84,26 @@ class ProductionIndex extends Component
         $this->dispatch('production-deleted');
     }
 
-    public string $scheduleDate = '';
+    /** @var array<int, string> */
+    public array $scheduleDates = [];
 
     public function scheduleProduction(int $productionId, ScheduleProduction $scheduleProduction): void
     {
-        $this->validate([
-            'scheduleDate' => ['required', 'date_format:Y-m-d'],
-        ]);
+        try {
+            $this->validate([
+                'scheduleDates.'.$productionId => ['required', 'date_format:Y-m-d'],
+            ]);
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('scheduleDate', $message);
+                }
+            }
+
+            return;
+        }
+
+        $date = $this->scheduleDates[$productionId] ?? '';
 
         try {
             $production = ProductionRun::query()
@@ -100,7 +113,7 @@ class ProductionIndex extends Component
             $scheduleProduction->handle(
                 actor: $this->user(),
                 production: $production,
-                plannedFor: $this->scheduleDate,
+                plannedFor: $date,
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
@@ -112,7 +125,7 @@ class ProductionIndex extends Component
             return;
         }
 
-        $this->scheduleDate = '';
+        unset($this->scheduleDates[$productionId]);
         $this->showAppNotification(__('production_bench.production.planned_success'));
         $this->dispatch('production-scheduled');
     }

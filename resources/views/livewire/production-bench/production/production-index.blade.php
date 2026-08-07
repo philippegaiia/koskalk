@@ -86,7 +86,6 @@
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @foreach ($productions as $production)
                                 @php
-                                    $reservedCount = 0;
                                     $partialShortage = '0';
                                     if ($production->status->value === 'scheduled') {
                                         foreach ($production->requirements as $requirement) {
@@ -98,7 +97,6 @@
                                                 ? (string) $requirement->required_mass_grams
                                                 : (string) $requirement->required_units;
                                             if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
-                                                $reservedCount++;
                                                 $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
                                             }
                                         }
@@ -124,7 +122,7 @@
                                     <td class="px-5 py-4">
                                         <div class="flex flex-wrap items-center gap-1.5">
                                             <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>
-                                            @if ($reservedCount > 0)
+                                            @if ($partialShortage !== '0')
                                                 <span class="inline-block rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['short' => \App\Support\NumberLocale::formatAdaptiveDecimal($partialShortage, 0, 3, auth()->user()?->number_locale)]) }}</span>
                                             @endif
                                         </div>
@@ -136,7 +134,7 @@
                                     <td class="px-5 py-4">
                                         <div class="flex flex-wrap items-center gap-1.5">
                                             @if ($canMutate && $production->status->value === 'draft')
-                                                <input type="date" wire:model="scheduleDate" class="sk-input w-28 py-1 text-xs" @disabled($mutationLocked)>
+                                                <input type="date" wire:model="scheduleDates.{{ $production->id }}" class="sk-input w-28 py-1 text-xs" @disabled($mutationLocked)>
                                                 <button type="button" wire:click="scheduleProduction({{ $production->id }})" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary text-xs">{{ __('production_bench.production.schedule_draft') }}</button>
                                             @endif
                                             @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
@@ -156,7 +154,6 @@
                 <div class="lg:hidden divide-y divide-[var(--color-line)]">
                     @foreach ($productions as $production)
                         @php
-                            $reservedCount = 0;
                             $partialShortage = '0';
                             if ($production->status->value === 'scheduled') {
                                 foreach ($production->requirements as $requirement) {
@@ -168,7 +165,6 @@
                                         ? (string) $requirement->required_mass_grams
                                         : (string) $requirement->required_units;
                                     if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
-                                        $reservedCount++;
                                         $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
                                     }
                                 }
@@ -183,7 +179,7 @@
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $production->displayIdentifier() }} · {{ $production->displayRecipeName() }}</h3>
                                         <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>
-                                        @if ($reservedCount > 0)
+                                        @if ($partialShortage !== '0')
                                             <span class="inline-block rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['short' => \App\Support\NumberLocale::formatAdaptiveDecimal($partialShortage, 0, 3, auth()->user()?->number_locale)]) }}</span>
                                         @endif
                                     </div>
@@ -202,7 +198,7 @@
                                 </a>
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
                                     @if ($canMutate && $production->status->value === 'draft')
-                                        <input type="date" wire:model="scheduleDate" class="sk-input w-28 py-1 text-xs" @disabled($mutationLocked)>
+                                        <input type="date" wire:model="scheduleDates.{{ $production->id }}" class="sk-input w-28 py-1 text-xs" @disabled($mutationLocked)>
                                         <button type="button" wire:click="scheduleProduction({{ $production->id }})" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary text-xs">{{ __('production_bench.production.schedule_draft') }}</button>
                                     @endif
                                     @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))

@@ -16,6 +16,7 @@ class ScheduleProduction
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly GenerateProductionTasks $generateProductionTasks,
+        private readonly ProductionWorkingCalendar $calendar,
     ) {}
 
     public function handle(User $actor, ProductionRun $production, string $plannedFor): ProductionRun
@@ -30,13 +31,13 @@ class ScheduleProduction
 
         $this->access->assertWritable($actor, $workspace);
 
-        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $plannedFor)) {
+        if (! $this->isValidDate($plannedFor)) {
             throw ValidationException::withMessages([
                 'planned_for' => 'The production date must use YYYY-MM-DD format.',
             ]);
         }
 
-        if (! app(ProductionWorkingCalendar::class)->isWorkingDate($workspace, $plannedFor)) {
+        if (! $this->calendar->isWorkingDate($workspace, $plannedFor)) {
             throw ValidationException::withMessages([
                 'planned_for' => 'The production date must be a working day.',
             ]);
@@ -73,5 +74,16 @@ class ScheduleProduction
         }, attempts: 5);
 
         return $this->generateProductionTasks->handle($actor, $scheduled);
+    }
+
+    private function isValidDate(string $date): bool
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) !== 1) {
+            return false;
+        }
+
+        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $date);
+
+        return $parsed !== false && $parsed->format('Y-m-d') === $date;
     }
 }

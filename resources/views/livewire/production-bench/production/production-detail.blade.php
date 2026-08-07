@@ -40,7 +40,12 @@
         <span class="rounded-full bg-[var(--color-{{ $statusColor }}-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-{{ $statusColor }}-strong)]">{{ $production->status->label() }}</span>
         <div class="flex flex-wrap items-center gap-2">
             @if ($production->status->value === 'draft' && $canMutate)
-                <input type="date" wire:model="scheduleDate" required class="sk-input py-1.5 text-sm" @disabled($mutationLocked)>
+                <div class="flex flex-col gap-1">
+                    <input type="date" wire:model="scheduleDate" required class="sk-input py-1.5 text-sm" @disabled($mutationLocked)>
+                    @error('scheduleDate')
+                        <p role="alert" class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p>
+                    @enderror
+                </div>
                 <button type="button" wire:click="scheduleProduction" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule_draft') }}</button>
             @elseif ($production->status->value === 'scheduled' && $canMutate)
                 <a href="{{ route('production-bench.production.prepare', $production) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.prepare_stock') }}</a>

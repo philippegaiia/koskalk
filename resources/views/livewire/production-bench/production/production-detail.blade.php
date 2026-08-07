@@ -171,19 +171,26 @@
             <div class="divide-y divide-[var(--color-line)]">
                 @forelse ($production->requirements as $requirement)
                     @php
-                        $actual = $actualRows[(string) $requirement->id]
-                            ?? $defaultActualRows[(string) $requirement->id]
-                            ?? ['quantity' => '', 'note' => null];
+                        $requirementId = (string) $requirement->id;
+                        $actualRowsForRequirement = $actualRowsByRequirement[$requirementId] ?? [];
                     @endphp
-                    <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                        <div>
+                    <div>
+                        <div class="px-5 pt-4 sm:px-6">
                             <p class="font-medium text-[var(--color-ink-strong)]">{{ $requirement->subject_name_snapshot }}</p>
                             <p class="text-xs text-[var(--color-ink-soft)]">{{ $requirement->kind->value === 'ingredient' ? \App\Support\NumberLocale::formatAdaptiveDecimal($requirement->required_mass_grams, 0, 3, auth()->user()?->number_locale).' g' : \App\Support\NumberLocale::formatDecimal($requirement->required_units, 0, auth()->user()?->number_locale).' '.__('production_bench.inventory.units') }}</p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <input type="number" inputmode="decimal" min="0" step="any" wire:model.live.debounce.500ms="actualRows.{{ $requirement->id }}.quantity" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $requirement->subject_name_snapshot]) }}" @disabled($isReadOnly) class="sk-input w-36 text-right font-mono">
-                            <input type="text" wire:model.live.debounce.500ms="actualRows.{{ $requirement->id }}.note" placeholder="{{ __('production_bench.production.actuals_note_placeholder') }}" @disabled($isReadOnly) class="sk-input w-52 text-sm">
-                        </div>
+                        @foreach ($actualRowsForRequirement as $suffix => $actualRow)
+                            @php
+                                $actualKey = $requirementId.'-'.($actualRow['stock_lot_id'] ?? '');
+                            @endphp
+                            <div class="flex flex-col gap-2 px-5 py-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                                <p class="font-mono text-xs text-[var(--color-ink-soft)]">{{ $actualRow['lot_code'] ?? '—' }}</p>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <input type="number" inputmode="decimal" min="0" step="any" wire:model.live.debounce.500ms="actualRows.{{ $actualKey }}.quantity" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $requirement->subject_name_snapshot]) }}" @disabled($isReadOnly) class="sk-input w-36 text-right font-mono">
+                                    <input type="text" wire:model.live.debounce.500ms="actualRows.{{ $actualKey }}.note" placeholder="{{ __('production_bench.production.actuals_note_placeholder') }}" @disabled($isReadOnly) class="sk-input w-52 text-sm">
+                                </div>
+                            </div>
+                        @endforeach
                     </div>
                 @empty
                     <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_requirements') }}</p>

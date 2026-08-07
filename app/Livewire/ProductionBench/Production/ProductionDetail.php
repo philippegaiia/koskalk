@@ -233,7 +233,8 @@ class ProductionDetail extends Component
         }
 
         foreach ($production->consumption as $consumption) {
-            $this->actualRows[(string) $consumption->production_requirement_id] = [
+            $key = $consumption->production_requirement_id.'-'.($consumption->stock_lot_id ?? '');
+            $this->actualRows[$key] = [
                 'stock_lot_id' => $consumption->stock_lot_id,
                 'quantity' => (string) $consumption->quantity,
                 'note' => $consumption->note,
@@ -318,12 +319,20 @@ class ProductionDetail extends Component
         try {
             $rows = [];
 
-            foreach ($this->actualRows as $requirementId => $row) {
+            foreach ($this->actualRows as $key => $row) {
+                [$requirementId, $lotId] = array_pad(explode('-', (string) $key, 2), 2, '');
+
+                if ($requirementId === '') {
+                    continue;
+                }
+
                 $rows[] = [
                     'production_requirement_id' => (int) $requirementId,
-                    'stock_lot_id' => isset($row['stock_lot_id']) && $row['stock_lot_id'] !== '' && $row['stock_lot_id'] !== null
-                        ? (int) $row['stock_lot_id']
-                        : null,
+                    'stock_lot_id' => $lotId !== ''
+                        ? (int) $lotId
+                        : (isset($row['stock_lot_id']) && $row['stock_lot_id'] !== '' && $row['stock_lot_id'] !== null
+                            ? (int) $row['stock_lot_id']
+                            : null),
                     'quantity' => NumberLocale::normalizeDecimalString($row['quantity'] ?? '') ?? '0',
                     'note' => isset($row['note']) && $row['note'] !== '' ? $row['note'] : null,
                 ];
@@ -495,25 +504,55 @@ class ProductionDetail extends Component
             ], true);
 
         $defaultActualRows = [];
+        $actualRowsByRequirement = [];
 
         foreach ($production->requirements as $requirement) {
-            if (isset($this->actualRows[(string) $requirement->id])) {
-                continue;
-            }
-
-            $reservedQuantity = '0';
-            $firstLotId = null;
+            $requirementId = (string) $requirement->id;
+            $defaults = [];
 
             foreach ($requirement->reservations->where('status', StockReservationStatus::Active) as $reservation) {
-                $reservedQuantity = bcadd($reservedQuantity, (string) $reservation->quantity, 9);
-                $firstLotId ??= $reservation->stock_lot_id;
+                $defaults['-'.$reservation->stock_lot_id] = [
+                    'stock_lot_id' => $reservation->stock_lot_id,
+                    'quantity' => (string) $reservation->quantity,
+                    'note' => null,
+                    'lot_code' => $reservation->stockLot?->internal_lot_code,
+                ];
             }
 
-            $defaultActualRows[(string) $requirement->id] = [
-                'stock_lot_id' => $firstLotId,
-                'quantity' => $reservedQuantity,
-                'note' => null,
-            ];
+            if ($defaults === []) {
+                $defaults['-'] = ['stock_lot_id' => null, 'quantity' => '', 'note' => null, 'lot_code' => null];
+            }
+
+            $defaultActualRows[$requirementId] = $defaults;
+            $merged = $defaults;
+
+            foreach ($this->actualRows as $key => $row) {
+                [$rowRequirementId, $lotId] = array_pad(explode('-', (string) $key, 2), 2, '');
+
+                if ($rowRequirementId !== $requirementId) {
+                    continue;
+                }
+
+                $resolvedLotId = $lotId !== ''
+                    ? (int) $lotId
+                    : ($row['stock_lot_id'] ?? null);
+                $lotCode = $resolvedLotId !== null
+                    ? $production->requirements
+                        ->firstWhere('id', (int) $rowRequirementId)
+                        ?->reservations->firstWhere('stock_lot_id', $resolvedLotId)
+                        ?->stockLot?->internal_lot_code
+                    : null;
+
+                $merged['-'.$lotId] = [
+                    'stock_lot_id' => $resolvedLotId,
+                    'quantity' => $row['quantity'] ?? '',
+                    'note' => $row['note'] ?? null,
+                    'lot_code' => $lotCode,
+                ];
+            }
+
+            ksort($merged);
+            $actualRowsByRequirement[$requirementId] = $merged;
         }
 
         return view('livewire.production-bench.production.production-detail', [
@@ -523,6 +562,7 @@ class ProductionDetail extends Component
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,
             'defaultActualRows' => $defaultActualRows,
+            'actualRowsByRequirement' => $actualRowsByRequirement,
             'intermediateIngredients' => Ingredient::query()
                 ->withoutGlobalScopes()
                 ->where(fn ($query) => $query->whereNull('workspace_id')->orWhere('workspace_id', $workspace->id))
@@ -562,7 +602,7 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'requirements.reservations', 'formulaLines', 'consumption', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
+            ->with(['recipe', 'requirements.reservations.stockLot', 'formulaLines', 'consumption', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
     }
 
@@ -574,7 +614,7 @@ class ProductionDetail extends Component
         $rows = [];
 
         foreach ($production->consumption as $consumption) {
-            $rows[(string) $consumption->production_requirement_id] = [
+            $rows[$consumption->production_requirement_id.'-'.($consumption->stock_lot_id ?? '')] = [
                 'stock_lot_id' => $consumption->stock_lot_id,
                 'quantity' => (string) $consumption->quantity,
                 'note' => $consumption->note,

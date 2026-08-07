@@ -840,10 +840,68 @@ it('shows saved actuals after a page reload instead of reservation defaults', fu
     // Fresh mount (reload) must load the saved actuals, not the defaults.
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
-        ->assertSet('actualRows.'.$ingredientRequirement->id.'.quantity', '9000.000000000')
-        ->assertSet('actualRows.'.$ingredientRequirement->id.'.note', 'From the bench')
-        ->assertSet('actualRows.'.$packagingRequirement->id.'.quantity', '80.000000000')
-        ->assertSet('actualRows.'.$packagingRequirement->id.'.stock_lot_id', (string) $packagingLot->id);
+        ->assertSet('actualRows.'.$ingredientRequirement->id.'-'.$oilLot->id.'.quantity', '9000.000000000')
+        ->assertSet('actualRows.'.$ingredientRequirement->id.'-'.$oilLot->id.'.note', 'From the bench')
+        ->assertSet('actualRows.'.$packagingRequirement->id.'-'.$packagingLot->id.'.quantity', '80.000000000');
+});
+
+it('records and completes actuals from two lots of the same ingredient', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'multi-lot-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $firstLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->orderBy('id')->firstOrFail();
+    $secondLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $fixture['olive']->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($secondLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '6000.000000000',
+    ]);
+    StockReservation::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $production->id,
+        'production_requirement_id' => $ingredientRequirement->id,
+        'stock_lot_id' => $secondLot->id,
+        'quantity' => '6000.000000000',
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+
+    $firstKey = $ingredientRequirement->id.'-'.$firstLot->id;
+    $secondKey = $ingredientRequirement->id.'-'.$secondLot->id;
+
+    // The sheet shows one row per lot with both lot codes.
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->assertSee($firstLot->internal_lot_code)
+        ->assertSee($secondLot->internal_lot_code)
+        ->set('actualRows.'.$firstKey.'.quantity', '8000')
+        ->set('actualRows.'.$secondKey.'.quantity', '6000')
+        ->set('actualRows.'.($packagingRequirement->id.'-'.$packagingLot->id).'.quantity', '98')
+        ->call('saveActuals');
+
+    expect($production->consumption()->where('production_requirement_id', $ingredientRequirement->id)->count())->toBe(2)
+        ->and($production->consumption()->where('stock_lot_id', $firstLot->id)->sole()->quantity)->toBe('8000.000000000')
+        ->and($production->consumption()->where('stock_lot_id', $secondLot->id)->sole()->quantity)->toBe('6000.000000000');
+
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    );
+
+    expect(StockMovement::query()->where('type', StockMovementType::ProductionConsumption)->where('stock_lot_id', $firstLot->id)->sole()->quantity_delta)
+        ->toBe('-8000.000000000')
+        ->and(StockMovement::query()->where('type', StockMovementType::ProductionConsumption)->where('stock_lot_id', $secondLot->id)->sole()->quantity_delta)
+        ->toBe('-6000.000000000')
+        ->and($completed->status)->toBe(ProductionRunStatus::Completed);
 });
 
 /**

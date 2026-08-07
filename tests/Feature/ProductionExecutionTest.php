@@ -824,6 +824,28 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
         ->and($completedB->cost_currency)->toBe('EUR');
 });
 
+it('shows saved actuals after a page reload instead of reservation defaults', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'actuals-reload-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '9000.000000000', 'note' => 'From the bench'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '80'],
+    ]);
+
+    // Fresh mount (reload) must load the saved actuals, not the defaults.
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->assertSet('actualRows.'.$ingredientRequirement->id.'.quantity', '9000.000000000')
+        ->assertSet('actualRows.'.$ingredientRequirement->id.'.note', 'From the bench')
+        ->assertSet('actualRows.'.$packagingRequirement->id.'.quantity', '80.000000000')
+        ->assertSet('actualRows.'.$packagingRequirement->id.'.stock_lot_id', (string) $packagingLot->id);
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, packaging: PackagingItem}
  */

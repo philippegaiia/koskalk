@@ -195,12 +195,14 @@ class ProductionDetail extends Component
     {
         if ($productionId instanceof ProductionRun) {
             $this->productionId = (string) $productionId->id;
+            $this->loadSavedActualRows();
 
             return;
         }
 
         if (is_numeric($productionId)) {
             $this->productionId = (string) $productionId;
+            $this->loadSavedActualRows();
 
             return;
         }
@@ -208,6 +210,35 @@ class ProductionDetail extends Component
         $this->productionId = (string) (ProductionRun::query()
             ->where('public_id', $productionId)
             ->value('id') ?? abort(404));
+        $this->loadSavedActualRows();
+    }
+
+    /**
+     * Load saved actual rows so a page reload never shows reservation
+     * defaults over real bench data.
+     */
+    private function loadSavedActualRows(): void
+    {
+        if ($this->productionId === '') {
+            return;
+        }
+
+        $production = ProductionRun::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->with('consumption')
+            ->find((int) $this->productionId);
+
+        if ($production === null) {
+            return;
+        }
+
+        foreach ($production->consumption as $consumption) {
+            $this->actualRows[(string) $consumption->production_requirement_id] = [
+                'stock_lot_id' => $consumption->stock_lot_id,
+                'quantity' => (string) $consumption->quantity,
+                'note' => $consumption->note,
+            ];
+        }
     }
 
     public function cancel(CancelProduction $cancelProduction): void

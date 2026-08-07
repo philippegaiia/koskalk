@@ -1,4 +1,4 @@
-<x-production-bench.page productionSetup compact>
+<x-production-bench.page productionSetup>
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <p class="sk-eyebrow">{{ __('production_bench.navigation.production') }}</p>

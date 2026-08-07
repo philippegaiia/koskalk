@@ -26,7 +26,7 @@
 @endphp
 
 @section('content')
-<div class="mx-auto grid w-full max-w-6xl gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
+<div class="mx-auto grid w-full max-w-app gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
     <div class="space-y-6">
         <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('account.page.intro') }}</p>
 

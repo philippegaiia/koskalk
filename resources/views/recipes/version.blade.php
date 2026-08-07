@@ -4,7 +4,7 @@
 @section('page_heading', __('formula_documents.title'))
 
 @section('content')
-    <div class="mx-auto max-w-[90rem] space-y-6">
+    <div class="mx-auto max-w-app space-y-6">
         @php
             /** @var array<string, string>|null $currentReplaceConfirmation */
             $currentReplaceConfirmation = session('currentReplaceConfirmation');

@@ -1,4 +1,4 @@
-<x-production-bench.page purchasing compact>
+<x-production-bench.page purchasing>
     <header>
         <p class="sk-eyebrow">{{ $supplier->code }}</p>
         <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.supplier.edit') }}</h1>

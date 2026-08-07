@@ -4,7 +4,7 @@
  $isCarrierOil = ($data['category'] ?? null) === \App\IngredientCategory::CarrierOil->value;
 @endphp
 
-<div class="mx-auto w-full max-w-5xl space-y-6">
+<div class="mx-auto w-full max-w-app space-y-6">
  <section aria-labelledby="ingredient-editor-title">
  <nav aria-label="{{ __('ingredients.editor.common.breadcrumb') }}" class="flex min-h-10 flex-wrap items-center gap-2 text-sm font-medium text-[var(--color-ink-soft)]">
  <a href="{{ route('ingredients.index') }}" wire:navigate class="inline-flex min-h-10 items-center rounded-md text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">

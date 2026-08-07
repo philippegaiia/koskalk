@@ -9,6 +9,10 @@
         Georgia, ui-serif, serif;
     --font-mono: var(--font-numeric);
 
+    /* Authenticated app inner width — was max-w-7xl/1280 (formulas list was 1440).
+       1184 reins in wide displays; on laptops (~1440-1512 CSS px) it never binds. */
+    --container-app: 74rem;
+
     /* Paper + ink (warm apothecary defaults — re-skin every shell) */
     --color-surface: oklch(96.4% 0.016 128);
     --color-sidebar: oklch(95.3% 0.010 87);

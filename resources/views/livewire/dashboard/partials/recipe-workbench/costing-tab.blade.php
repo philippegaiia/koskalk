@@ -207,7 +207,7 @@
  </div>
  </template>
 
-    <x-workflow-action-bar max-width="max-w-7xl" data-costing-save-bar>
+    <x-workflow-action-bar max-width="max-w-app" data-costing-save-bar>
  <x-slot:leading>
  <p class="text-sm text-[var(--color-ink-soft)]" role="status" x-text="costingSaveMessage || t('costing.settings.saved_automatically')"></p>
  </x-slot:leading>

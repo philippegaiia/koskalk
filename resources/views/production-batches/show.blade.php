@@ -15,7 +15,7 @@
 @section('page_heading', 'Production Snapshot')
 
 @section('content')
-    <div class="mx-auto max-w-[90rem] space-y-6">
+    <div class="mx-auto max-w-app space-y-6">
         <section class="sk-card p-5">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="min-w-0">

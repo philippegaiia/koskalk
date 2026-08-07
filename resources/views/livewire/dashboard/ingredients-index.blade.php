@@ -1,5 +1,5 @@
 <div
-    class="mx-auto w-full max-w-7xl space-y-6"
+    class="mx-auto w-full max-w-app space-y-6"
     x-on:ingredient-removal-closed.window="$nextTick(() => (document.getElementById($event.detail.triggerId) ?? document.getElementById('ingredient-catalog-heading'))?.focus())"
 >
     <section class="sk-card p-5 sm:p-6">

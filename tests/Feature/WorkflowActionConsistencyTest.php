@@ -6,12 +6,12 @@ it('uses rectangular mapped actions throughout the recipe workbench', function (
     $packagingModal = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/packaging-catalog-modal.blade.php'));
 
     expect($instructions)
-        ->toContain('<x-workflow-action-bar max-width="max-w-7xl" data-instructions-save-bar>')
+        ->toContain('<x-workflow-action-bar max-width="max-w-app" data-instructions-save-bar>')
         ->toContain('class="sk-btn sk-btn-primary"')
         ->not->toContain('rounded-full')
         ->and($packaging)
         ->toContain('class="sk-btn sk-btn-primary"')
-        ->toContain('<x-workflow-action-bar max-width="max-w-7xl" data-packaging-plan-save-bar>')
+        ->toContain('<x-workflow-action-bar max-width="max-w-app" data-packaging-plan-save-bar>')
         ->not->toContain('rounded-full')
         ->and($packagingModal)
         ->toContain('class="sk-btn sk-btn-ghost"')
@@ -25,12 +25,12 @@ it('provides bottom workflow actions for costing and label output', function ():
     $output = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-tab.blade.php'));
 
     expect($costing)
-        ->toContain('<x-workflow-action-bar max-width="max-w-7xl" data-costing-save-bar>')
+        ->toContain('<x-workflow-action-bar max-width="max-w-app" data-costing-save-bar>')
         ->toContain('@click="persistCosting()"')
         ->toContain('class="sk-btn sk-btn-primary"')
         ->and($output)
         ->toContain('@unless ($isPublicCalculator)')
-        ->toContain('<x-workflow-action-bar max-width="max-w-7xl" data-output-save-bar>')
+        ->toContain('<x-workflow-action-bar max-width="max-w-app" data-output-save-bar>')
         ->toContain('@click="publish()"')
         ->toContain('class="sk-btn sk-btn-primary"');
 });

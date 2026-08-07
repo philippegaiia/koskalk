@@ -229,7 +229,7 @@
 @endif
 
  @unless ($isPublicCalculator)
-        <x-workflow-action-bar max-width="max-w-7xl" data-output-save-bar>
+        <x-workflow-action-bar max-width="max-w-app" data-output-save-bar>
  <x-slot:leading>
  <p x-show="saveMessage" class="text-sm text-[var(--color-ink-soft)]" role="status" x-text="saveMessage"></p>
  </x-slot:leading>

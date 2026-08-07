@@ -1,4 +1,4 @@
-<div class="mx-auto w-full max-w-7xl space-y-6" @if ($hasProcessingAssets) wire:poll.5s.visible @endif>
+<div class="mx-auto w-full max-w-app space-y-6" @if ($hasProcessingAssets) wire:poll.5s.visible @endif>
     <section class="sk-card p-5 sm:p-6">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div data-media-library-summary class="min-w-0 flex-1">

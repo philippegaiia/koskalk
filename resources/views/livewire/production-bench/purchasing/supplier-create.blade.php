@@ -1,4 +1,4 @@
-<x-production-bench.page purchasing compact>
+<x-production-bench.page purchasing>
     <header>
         <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.supplier.new') }}</h1>
     </header>

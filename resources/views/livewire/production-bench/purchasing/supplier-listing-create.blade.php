@@ -1,4 +1,4 @@
-<x-production-bench.page purchasing compact>
+<x-production-bench.page purchasing>
     <header>
         <div>
             @if ($lockedSupplier)

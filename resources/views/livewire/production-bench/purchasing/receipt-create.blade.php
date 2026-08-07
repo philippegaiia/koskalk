@@ -1,4 +1,4 @@
-<x-production-bench.page purchasing compact>
+<x-production-bench.page purchasing>
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <p class="sk-eyebrow">{{ __('production_bench.receipt.workflow') }}</p>

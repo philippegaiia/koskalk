@@ -1,4 +1,4 @@
-<x-production-bench.page purchasing compact>
+<x-production-bench.page purchasing>
     @if ($isReadOnly)
         <p role="status" class="rounded-xl bg-[var(--color-warning-soft)] px-4 py-3 text-sm text-[var(--color-warning-strong)]">{{ __('production_bench.common.read_only') }}</p>
     @endif

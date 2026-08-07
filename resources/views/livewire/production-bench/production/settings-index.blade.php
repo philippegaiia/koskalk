@@ -1,4 +1,4 @@
-<x-production-bench.page productionSetup :compact="! in_array($section, ['employees', 'departments'], true)">
+<x-production-bench.page productionSetup>
     @php($numberLocale = auth()->user()?->number_locale)
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>

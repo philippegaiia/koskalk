@@ -1,4 +1,4 @@
-<div class="mx-auto w-full max-w-5xl space-y-6">
+<div class="mx-auto w-full max-w-app space-y-6">
  <section class="sk-card p-5 sm:p-6">
  <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
  <div class="min-w-0">

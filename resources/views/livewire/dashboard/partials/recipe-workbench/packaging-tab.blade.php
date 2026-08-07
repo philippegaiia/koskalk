@@ -81,7 +81,7 @@
  </template>
  </section>
 
-    <x-workflow-action-bar max-width="max-w-7xl" data-packaging-plan-save-bar>
+    <x-workflow-action-bar max-width="max-w-app" data-packaging-plan-save-bar>
  <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" class="sk-btn sk-btn-primary">
  <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
  </button>

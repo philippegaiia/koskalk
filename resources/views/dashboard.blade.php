@@ -4,7 +4,7 @@
 @section('page_heading', __('dashboard.title'))
 
 @section('content')
-<div class="mx-auto w-full max-w-7xl space-y-8">
+<div class="mx-auto w-full max-w-app space-y-8">
 	<section class="sk-card p-6">
 		<div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 			<div class="min-w-0">

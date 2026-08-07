@@ -4,7 +4,7 @@
 @section('page_heading', 'New Cosmetic Formula')
 
 @section('content')
-    <div class="mx-auto max-w-[90rem] space-y-6">
+    <div class="mx-auto max-w-app space-y-6">
         <section class="sk-card p-6">
             <p class="sk-eyebrow">Cosmetic formula</p>
             <div class="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">

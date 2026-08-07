@@ -1,4 +1,4 @@
-<div class="mx-auto max-w-[90rem] space-y-6">
+<div class="mx-auto max-w-app space-y-6">
     <section class="sk-card p-6" aria-label="{{ __('products.page.aria_label') }}">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="min-w-0">

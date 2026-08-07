@@ -3,7 +3,7 @@
     $isPublicCalculator = request()->routeIs('calculator') && ! (bool) ($workbench['canPersist'] ?? false);
 @endphp
 
-<div x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" @dragover.window="autoScrollDuringRowDrag($event)" class="sk-workbench @container/workbench mx-auto max-w-7xl space-y-6">
+<div x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" @dragover.window="autoScrollDuringRowDrag($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
  <div class="space-y-4">
  @include('livewire.dashboard.partials.recipe-workbench.header')
  @include('livewire.dashboard.partials.recipe-workbench.navigation')

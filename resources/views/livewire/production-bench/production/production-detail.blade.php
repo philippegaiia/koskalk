@@ -1,4 +1,4 @@
-<x-production-bench.page compact>
+<x-production-bench.page>
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.common.inactive') }}</h1>

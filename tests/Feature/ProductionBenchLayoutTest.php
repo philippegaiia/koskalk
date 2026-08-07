@@ -33,7 +33,7 @@ it('uses one stable page shell across production bench routes', function (): voi
         $this->get(route($routeName, $parameters))
             ->assertOk()
             ->assertSeeHtml('data-production-bench-page')
-            ->assertSeeHtml('max-w-7xl');
+            ->assertSeeHtml('max-w-app');
     }
 });
 
@@ -52,10 +52,11 @@ it('reserves the document scrollbar gutter', function (): void {
     expect($stylesheet)->toContain('scrollbar-gutter: stable');
 });
 
-it('keeps compact production bench pages vertically compact', function (): void {
+it('uses one consistent full-width inner across all production bench pages', function (): void {
     $page = file_get_contents(resource_path('views/components/production-bench/page.blade.php'));
 
     expect($page)
-        ->toContain("'space-y-6' => \$compact")
-        ->toContain("'space-y-8' => ! \$compact");
+        ->toContain('space-y-8')
+        ->not->toContain('$compact')
+        ->not->toContain('max-w-5xl');
 });

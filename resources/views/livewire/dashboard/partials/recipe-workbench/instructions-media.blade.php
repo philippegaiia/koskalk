@@ -28,7 +28,7 @@
 
  {{ $this->form }}
 
-    <x-workflow-action-bar max-width="max-w-7xl" data-instructions-save-bar>
+    <x-workflow-action-bar max-width="max-w-app" data-instructions-save-bar>
  <x-slot:leading>
  <p class="text-sm text-[var(--color-ink-soft)]" :class="state === 'failed' ? 'text-[var(--color-danger)]' : 'text-[var(--color-ink-soft)]'" role="status" aria-live="polite" aria-atomic="true" x-text="statusText"></p>
  </x-slot:leading>

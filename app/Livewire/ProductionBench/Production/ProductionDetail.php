@@ -376,18 +376,22 @@ class ProductionDetail extends Component
 
     public function scheduleProduction(ScheduleProduction $scheduleProduction): void
     {
+        $this->validate([
+            'scheduleDate' => ['required', 'date_format:Y-m-d'],
+        ]);
+
         $production = $this->production();
 
         try {
             $scheduleProduction->handle(
                 actor: $this->user(),
                 production: $production,
-                plannedFor: $this->scheduleDate !== '' ? $this->scheduleDate : null,
+                plannedFor: $this->scheduleDate,
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
-                    $this->addError('production', $message);
+                    $this->addError($field === 'planned_for' ? 'scheduleDate' : 'production', $message);
                 }
             }
 
@@ -679,7 +683,7 @@ class ProductionDetail extends Component
                     $reserved = bcadd($reserved, (string) $reservation->quantity, 9);
                 }
 
-                if (bccomp($reserved, $required, 9) < 0) {
+                if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
                     $shortRequirements->push($requirement->subject_name_snapshot);
                     $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
                 }

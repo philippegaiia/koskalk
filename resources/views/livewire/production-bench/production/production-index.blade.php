@@ -5,6 +5,7 @@
             <a href="{{ route('production-bench.home') }}" wire:navigate class="mt-4 inline-block text-sm font-medium text-[var(--color-accent)]">{{ __('production_bench.title') }}</a>
         </section>
     @else
+        @php $mutationLocked = $isReadOnly || ! $canMutate; @endphp
         <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
                 <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
@@ -47,6 +48,9 @@
         @error('selectedProductionIds')
             <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
         @enderror
+        @error('scheduleDate')
+            <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
+        @enderror
 
         <section aria-labelledby="production-list-heading" class="sk-card overflow-hidden">
             <h2 id="production-list-heading" class="sr-only">{{ __('production_bench.production.index_title') }}</h2>
@@ -54,6 +58,16 @@
             @if ($productions->isEmpty())
                 <p class="p-10 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_productions') }}</p>
             @else
+                @php
+                    $statusColorMap = [
+                        'draft' => 'bg-[var(--color-ink-soft)]/10 text-[var(--color-ink-soft)]',
+                        'scheduled' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
+                        'reserved' => 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]',
+                        'in_production' => 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]',
+                        'completed' => 'bg-[var(--color-ink-strong)]/10 text-[var(--color-ink-strong)]',
+                    ];
+                @endphp
+
                 {{-- Desktop table (lg+) --}}
                 <div class="hidden lg:block overflow-x-auto">
                     <table class="min-w-full">
@@ -72,7 +86,8 @@
                         <tbody class="divide-y divide-[var(--color-line)]">
                             @foreach ($productions as $production)
                                 @php
-                                    $shortCount = 0;
+                                    $reservedCount = 0;
+                                    $partialShortage = '0';
                                     if ($production->status->value === 'scheduled') {
                                         foreach ($production->requirements as $requirement) {
                                             $reserved = '0';
@@ -82,19 +97,12 @@
                                             $required = $requirement->ingredient_id !== null
                                                 ? (string) $requirement->required_mass_grams
                                                 : (string) $requirement->required_units;
-                                            if (bccomp($reserved, $required, 9) < 0) {
-                                                $shortCount++;
+                                            if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
+                                                $reservedCount++;
+                                                $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
                                             }
                                         }
                                     }
-                                    $statusColor = match ($production->status->value) {
-                                        'draft' => 'bg-[var(--color-ink-soft)]/10 text-[var(--color-ink-soft)]',
-                                        'scheduled' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
-                                        'reserved' => 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]',
-                                        'in_production' => 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]',
-                                        'completed' => 'bg-[var(--color-ink-strong)]/10 text-[var(--color-ink-strong)]',
-                                        default => 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]',
-                                    };
                                 @endphp
                                 <tr class="transition hover:bg-[var(--color-panel-muted)]">
                                     <td class="px-5 py-4">
@@ -115,9 +123,9 @@
                                     </td>
                                     <td class="px-5 py-4">
                                         <div class="flex flex-wrap items-center gap-1.5">
-                                            <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColor }}">{{ $production->status->label() }}</span>
-                                            @if ($shortCount > 0)
-                                                <span class="inline-block rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['count' => $shortCount]) }}</span>
+                                            <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>
+                                            @if ($reservedCount > 0)
+                                                <span class="inline-block rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['short' => \App\Support\NumberLocale::formatAdaptiveDecimal($partialShortage, 0, 3, auth()->user()?->number_locale)]) }}</span>
                                             @endif
                                         </div>
                                     </td>
@@ -128,9 +136,8 @@
                                     <td class="px-5 py-4">
                                         <div class="flex flex-wrap items-center gap-1.5">
                                             @if ($canMutate && $production->status->value === 'draft')
-                                                <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="sk-btn sk-btn-ghost text-xs">
-                                                    {{ __('production_bench.production.schedule_draft') }}
-                                                </a>
+                                                <input type="date" wire:model="scheduleDate" class="sk-input w-28 py-1 text-xs" @disabled($mutationLocked)>
+                                                <button type="button" wire:click="scheduleProduction({{ $production->id }})" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary text-xs">{{ __('production_bench.production.schedule_draft') }}</button>
                                             @endif
                                             @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
                                                 <button type="button" wire:click.stop="deleteProduction({{ $production->id }})" wire:confirm="{{ __('production_bench.production.delete_confirm') }}" wire:loading.attr="disabled" class="sk-btn sk-btn-danger text-xs">
@@ -149,7 +156,8 @@
                 <div class="lg:hidden divide-y divide-[var(--color-line)]">
                     @foreach ($productions as $production)
                         @php
-                            $shortCount = 0;
+                            $reservedCount = 0;
+                            $partialShortage = '0';
                             if ($production->status->value === 'scheduled') {
                                 foreach ($production->requirements as $requirement) {
                                     $reserved = '0';
@@ -159,19 +167,12 @@
                                     $required = $requirement->ingredient_id !== null
                                         ? (string) $requirement->required_mass_grams
                                         : (string) $requirement->required_units;
-                                    if (bccomp($reserved, $required, 9) < 0) {
-                                        $shortCount++;
+                                    if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
+                                        $reservedCount++;
+                                        $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
                                     }
                                 }
                             }
-                            $statusColor = match ($production->status->value) {
-                                'draft' => 'bg-[var(--color-ink-soft)]/10 text-[var(--color-ink-soft)]',
-                                'scheduled' => 'bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)]',
-                                'reserved' => 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]',
-                                'in_production' => 'bg-[var(--color-success-soft)] text-[var(--color-success-strong)]',
-                                'completed' => 'bg-[var(--color-ink-strong)]/10 text-[var(--color-ink-strong)]',
-                                default => 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]',
-                            };
                         @endphp
                         <div class="flex gap-4 px-5 py-5 transition hover:bg-[var(--color-panel-muted)] sm:px-6">
                             <div class="pt-1">
@@ -181,9 +182,9 @@
                                 <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="block">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $production->displayIdentifier() }} · {{ $production->displayRecipeName() }}</h3>
-                                        <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColor }}">{{ $production->status->label() }}</span>
-                                        @if ($shortCount > 0)
-                                            <span class="inline-block rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['count' => $shortCount]) }}</span>
+                                        <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>
+                                        @if ($reservedCount > 0)
+                                            <span class="inline-block rounded-full bg-[var(--color-warning-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['short' => \App\Support\NumberLocale::formatAdaptiveDecimal($partialShortage, 0, 3, auth()->user()?->number_locale)]) }}</span>
                                         @endif
                                     </div>
                                     <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
@@ -201,9 +202,8 @@
                                 </a>
                                 <div class="mt-3 flex flex-wrap items-center gap-2">
                                     @if ($canMutate && $production->status->value === 'draft')
-                                        <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="sk-btn sk-btn-ghost text-xs">
-                                            {{ __('production_bench.production.schedule_draft') }}
-                                        </a>
+                                        <input type="date" wire:model="scheduleDate" class="sk-input w-28 py-1 text-xs" @disabled($mutationLocked)>
+                                        <button type="button" wire:click="scheduleProduction({{ $production->id }})" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary text-xs">{{ __('production_bench.production.schedule_draft') }}</button>
                                     @endif
                                     @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
                                         <button type="button" wire:click.stop="deleteProduction({{ $production->id }})" wire:confirm="{{ __('production_bench.production.delete_confirm') }}" wire:loading.attr="disabled" class="sk-btn sk-btn-danger text-xs">

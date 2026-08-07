@@ -40,7 +40,7 @@
         <span class="rounded-full bg-[var(--color-{{ $statusColor }}-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-{{ $statusColor }}-strong)]">{{ $production->status->label() }}</span>
         <div class="flex flex-wrap items-center gap-2">
             @if ($production->status->value === 'draft' && $canMutate)
-                <input type="date" wire:model="scheduleDate" class="sk-input py-1.5 text-sm" @disabled($mutationLocked)>
+                <input type="date" wire:model="scheduleDate" required class="sk-input py-1.5 text-sm" @disabled($mutationLocked)>
                 <button type="button" wire:click="scheduleProduction" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule_draft') }}</button>
             @elseif ($production->status->value === 'scheduled' && $canMutate)
                 <a href="{{ route('production-bench.production.prepare', $production) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.prepare_stock') }}</a>
@@ -53,7 +53,7 @@
             @elseif ($production->status->value === 'in_production' && $canMutate)
                 <button type="button" wire:click="complete" wire:confirm="{{ __('production_bench.production.complete_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.complete') }}</button>
             @elseif ($production->status->value === 'completed')
-                <span class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.output_lot') }}</span>
+                <a href="#output-lot-section" class="sk-btn sk-btn-primary">{{ __('production_bench.production.output_lot') }}</a>
             @elseif (in_array($production->status->value, ['cancelled', 'aborted']))
                 <span class="text-sm text-[var(--color-ink-muted)]">{{ $production->status->label() }}</span>
             @endif
@@ -62,7 +62,7 @@
 
     @if ($production->status->value === 'scheduled' && $shortRequirements->isNotEmpty())
         <section class="rounded-xl border border-[var(--color-warning)] bg-[var(--color-warning-soft)] p-4">
-            <p class="font-semibold text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['count' => $shortRequirements->count()]) }}</p>
+            <p class="font-semibold text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['short' => \App\Support\NumberLocale::formatAdaptiveDecimal($partialShortage, 0, 3, auth()->user()?->number_locale)]) }}</p>
             <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $shortRequirements->implode(', ') }}</p>
         </section>
     @endif
@@ -353,7 +353,7 @@
     @endif
 
     @if ($production->outputLot !== null)
-        <section aria-labelledby="output-lot-heading" class="sk-card overflow-hidden">
+        <section id="output-lot-section" aria-labelledby="output-lot-heading" class="sk-card overflow-hidden">
             <div class="border-b border-[var(--color-line)] p-5 sm:p-6">
                 <div class="flex flex-wrap items-center justify-between gap-2">
                     <h2 id="output-lot-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.output_lot') }}</h2>

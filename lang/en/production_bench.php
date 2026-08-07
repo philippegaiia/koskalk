@@ -324,6 +324,7 @@ return [
         'create_title' => 'Plan production',
         'save_as_draft' => 'Save as draft',
         'draft_saved' => 'Draft saved.',
+        'partially_reserved_short' => 'Partially reserved — short by :short',
         'schedule_draft' => 'Schedule',
         'schedule_draft_help' => 'Choose a production date to move this draft to the schedule.',
         'create_intro' => 'Choose a product, adjust the batch if needed, and set the production date. Stock is only reserved later when you prepare it.',
@@ -521,7 +522,7 @@ return [
             'cancelled' => 'Cancelled',
             'aborted' => 'Aborted',
         ],
-        'partially_reserved_short' => 'Partially reserved — short by :count',
+
     ],
     'calendar' => [
         'title' => 'Production calendar',

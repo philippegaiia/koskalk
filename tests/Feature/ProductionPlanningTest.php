@@ -254,10 +254,10 @@ it('schedules a draft and does not allow rescheduling a non-draft', function ():
         idempotencyKey: 'schedule-1',
     );
 
-    $scheduled = app(ScheduleProduction::class)->handle($fixture['owner'], $draft);
+    $scheduled = app(ScheduleProduction::class)->handle($fixture['owner'], $draft, '2026-09-01');
 
     expect($scheduled->status)->toBe(ProductionRunStatus::Scheduled)
-        ->and(fn (): ProductionRun => app(ScheduleProduction::class)->handle($fixture['owner'], $scheduled))
+        ->and(fn () => app(ScheduleProduction::class)->handle($fixture['owner'], $scheduled, '2026-09-02'))
         ->toThrow(ValidationException::class);
 });
 

@@ -88,6 +88,10 @@ class ProductionIndex extends Component
 
     public function scheduleProduction(int $productionId, ScheduleProduction $scheduleProduction): void
     {
+        $this->validate([
+            'scheduleDate' => ['required', 'date_format:Y-m-d'],
+        ]);
+
         try {
             $production = ProductionRun::query()
                 ->where('workspace_id', $this->workspace()->id)
@@ -96,12 +100,12 @@ class ProductionIndex extends Component
             $scheduleProduction->handle(
                 actor: $this->user(),
                 production: $production,
-                plannedFor: $this->scheduleDate !== '' ? $this->scheduleDate : null,
+                plannedFor: $this->scheduleDate,
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
-                    $this->addError('selectedProductionIds', $message);
+                    $this->addError('scheduleDate', $message);
                 }
             }
 

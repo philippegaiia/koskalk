@@ -6,6 +6,7 @@ use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
 use App\ProductionRunStatus;
+use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,7 +18,7 @@ class ScheduleProduction
         private readonly GenerateProductionTasks $generateProductionTasks,
     ) {}
 
-    public function handle(User $actor, ProductionRun $production, ?string $plannedFor = null): ProductionRun
+    public function handle(User $actor, ProductionRun $production, string $plannedFor): ProductionRun
     {
         $workspace = $production->workspace;
 
@@ -28,6 +29,18 @@ class ScheduleProduction
         }
 
         $this->access->assertWritable($actor, $workspace);
+
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $plannedFor)) {
+            throw ValidationException::withMessages([
+                'planned_for' => 'The production date must use YYYY-MM-DD format.',
+            ]);
+        }
+
+        if (! app(ProductionWorkingCalendar::class)->isWorkingDate($workspace, $plannedFor)) {
+            throw ValidationException::withMessages([
+                'planned_for' => 'The production date must be a working day.',
+            ]);
+        }
 
         $scheduled = DB::transaction(function () use ($actor, $production, $plannedFor): ProductionRun {
             $lockedProduction = ProductionRun::query()
@@ -51,14 +64,10 @@ class ScheduleProduction
                 ]);
             }
 
-            if ($plannedFor !== null) {
-                $lockedProduction->update([
-                    'status' => ProductionRunStatus::Scheduled,
-                    'planned_for' => $plannedFor,
-                ]);
-            } else {
-                $lockedProduction->update(['status' => ProductionRunStatus::Scheduled]);
-            }
+            $lockedProduction->update([
+                'status' => ProductionRunStatus::Scheduled,
+                'planned_for' => $plannedFor,
+            ]);
 
             return $lockedProduction->fresh('requirements');
         }, attempts: 5);

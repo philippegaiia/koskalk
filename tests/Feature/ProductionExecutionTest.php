@@ -772,14 +772,69 @@ it('formats production numbers with the user workspace number locale', function 
         ->assertSee($formattedUnits);
 });
 
+it('prices an intermediate output lot per gram and propagates it downstream', function (): void {
+    // Run A produces the intermediate.
+    $fixtureA = productionExecutionFixture();
+    $intermediate = Ingredient::factory()->create(['display_name' => 'Soap base']);
+    $runA = productionExecutionRun($fixtureA, 'inter-a-1');
+    $oilLotA = StockLot::query()->where('ingredient_id', $fixtureA['olive']->id)->firstOrFail();
+    $packagingLotA = StockLot::query()->where('packaging_item_id', $fixtureA['packaging']->id)->firstOrFail();
+    $oilLotA->update(['historical_unit_cost' => '0.012500000', 'currency' => 'EUR']);
+    $packagingLotA->update(['historical_unit_cost' => '0.500000000', 'currency' => 'EUR']);
+    $ingredientRequirementA = $runA->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirementA = $runA->requirements()->where('kind', 'packaging')->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixtureA['owner'], $runA, [
+        ['production_requirement_id' => $ingredientRequirementA->id, 'stock_lot_id' => $oilLotA->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirementA->id, 'stock_lot_id' => $packagingLotA->id, 'quantity' => '98'],
+    ]);
+    $completedA = app(CompleteProduction::class)->handle(
+        actor: $fixtureA['owner'],
+        production: $runA->fresh(),
+        actualOutputQuantity: '12000',
+        manufactureDate: '2026-08-20',
+        outputIngredientId: $intermediate->id,
+    );
+    $intermediateLot = $completedA->outputLot()->sole();
+
+    // 137.50 / 12,000 g = 0.011458333 per gram, in EUR.
+    expect($intermediateLot->historical_unit_cost)->toBe('0.011458333')
+        ->and($intermediateLot->currency)->toBe('EUR')
+        ->and($intermediateLot->costing_currency)->toBe('EUR');
+
+    // Run B consumes the intermediate in the same workspace and prices it
+    // from run A.
+    $fixtureB = productionExecutionFixture($intermediate, $fixtureA['workspace'], $fixtureA['owner']);
+    $runB = productionExecutionRun($fixtureB, 'inter-b-1');
+    $ingredientRequirementB = $runB->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirementB = $runB->requirements()->where('kind', 'packaging')->firstOrFail();
+    $packagingLotB = StockLot::query()->where('packaging_item_id', $fixtureB['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixtureB['owner'], $runB, [
+        ['production_requirement_id' => $ingredientRequirementB->id, 'stock_lot_id' => $intermediateLot->id, 'quantity' => '6000.000000000'],
+        ['production_requirement_id' => $packagingRequirementB->id, 'stock_lot_id' => $packagingLotB->id, 'quantity' => '50'],
+    ]);
+    $completedB = app(CompleteProduction::class)->handle(
+        actor: $fixtureB['owner'],
+        production: $runB->fresh(),
+        actualOutputQuantity: '60',
+        manufactureDate: '2026-08-22',
+    );
+
+    // 6,000 g × €0.011458333 = €68.749998 — never a silent zero.
+    expect($completedB->actual_ingredient_total)->toBe('68.749998000')
+        ->and($completedB->cost_currency)->toBe('EUR');
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, packaging: PackagingItem}
  */
-function productionExecutionFixture(): array
+function productionExecutionFixture(?Ingredient $oil = null, ?Workspace $workspace = null, ?User $owner = null): array
 {
-    $owner = User::factory()->create();
-    $workspace = Workspace::factory()->for($owner, 'owner')->create();
-    WorkspaceProductionEntitlement::factory()->for($workspace)->create();
+    $owner ??= User::factory()->create();
+    $workspace ??= Workspace::factory()->for($owner, 'owner')->create();
+    WorkspaceProductionEntitlement::query()->firstOrCreate(['workspace_id' => $workspace->id], [
+        'status' => 'active',
+        'activated_at' => now(),
+    ]);
     $family = ProductFamily::factory()->create([
         'slug' => 'execution-soap-'.fake()->unique()->numberBetween(1, 999999),
         'calculation_basis' => 'initial_oils',
@@ -815,7 +870,7 @@ function productionExecutionFixture(): array
     ]);
 
     $oleic = FattyAcid::factory()->create(['key' => 'oleic-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Oleic']);
-    $olive = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    $olive = $oil ?? Ingredient::factory()->create(['display_name' => 'Olive oil']);
     IngredientSapProfile::factory()->create(['ingredient_id' => $olive->id, 'koh_sap_value' => 0.188]);
     IngredientFattyAcid::factory()->create([
         'ingredient_id' => $olive->id,

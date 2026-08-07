@@ -117,8 +117,13 @@ class ProductionCompletionService
                 });
 
             // 3. Create the output lot, coded with the permanent batch number.
+            //    Intermediate lots carry the producing batch's cost per gram so
+            //    a downstream production prices them from this batch.
             $isIntermediate = $outputIngredientId !== null;
             $outputQuantity = $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
+            $intermediateCostPerGram = $isIntermediate && bccomp($ingredientTotal, '0', 18) > 0
+                ? bcdiv($ingredientTotal, $outputQuantity, 9)
+                : null;
 
             $outputLot = StockLot::query()->create([
                 'workspace_id' => $workspace->id,
@@ -135,6 +140,10 @@ class ProductionCompletionService
                 'available_from' => null,
                 'released_at' => null,
                 'provenance_complete' => true,
+                'historical_unit_cost' => $intermediateCostPerGram,
+                'costing_unit_cost' => $intermediateCostPerGram,
+                'currency' => $currency,
+                'costing_currency' => $currency,
             ]);
 
             // 4. Post the production-output movement.

@@ -1044,6 +1044,41 @@ it('disables mutation controls for viewer-role members', function (): void {
     expect($m[0] ?? '')->toContain('disabled');
 });
 
+it('shows a live readiness checklist before completion', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'readiness-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+
+    // Nothing recorded: the checklist names the missing requirement.
+    $page = Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id]);
+
+    $page->assertSee('Ready to complete?')
+        ->assertSee(__('production_bench.production.readiness_actuals').': '.$ingredientRequirement->subject_name_snapshot)
+        ->assertSee(__('production_bench.production.readiness_output'));
+
+    // Fill everything: the readiness messages clear.
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+
+    $page = Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->set('actualOutputQuantity', '95')
+        ->set('manufactureDate', '2026-08-20');
+
+    $html = $page->html();
+
+    expect(str_contains($html, __('production_bench.production.readiness_actuals').':'))->toBeFalse()
+        ->and(str_contains($html, __('production_bench.production.readiness_coverage').':'))->toBeFalse()
+        ->and(str_contains($html, __('production_bench.production.readiness_output').'✗'))->toBeFalse()
+        ->and(str_contains($html, __('production_bench.production.readiness_date').'✗'))->toBeFalse();
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, packaging: PackagingItem}
  */

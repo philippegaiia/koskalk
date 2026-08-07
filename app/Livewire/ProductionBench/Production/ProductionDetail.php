@@ -26,6 +26,7 @@ use App\Models\ProductionTask;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
+use App\ProductionRunStatus;
 use App\Services\ProductionBenchAccess;
 use App\StockMovementType;
 use App\StockReservationStatus;
@@ -555,6 +556,8 @@ class ProductionDetail extends Component
             $actualRowsByRequirement[$requirementId] = $merged;
         }
 
+        $completionReadiness = $this->completionReadiness($production);
+
         return view('livewire.production-bench.production.production-detail', [
             'workspace' => $workspace,
             'production' => $production,
@@ -563,6 +566,7 @@ class ProductionDetail extends Component
             'canMutate' => $canMutate,
             'defaultActualRows' => $defaultActualRows,
             'actualRowsByRequirement' => $actualRowsByRequirement,
+            'completionReadiness' => $completionReadiness,
             'intermediateIngredients' => Ingredient::query()
                 ->withoutGlobalScopes()
                 ->where(fn ($query) => $query->whereNull('workspace_id')->orWhere('workspace_id', $workspace->id))
@@ -604,6 +608,67 @@ class ProductionDetail extends Component
             ->where('workspace_id', $this->workspace()->id)
             ->with(['recipe', 'requirements.reservations.stockLot', 'formulaLines', 'consumption', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
+    }
+
+    /**
+     * @return array<string, array{ok: bool, message: string|null}>
+     */
+    private function completionReadiness(ProductionRun $production): array
+    {
+        if ($production->status !== ProductionRunStatus::InProduction) {
+            return [];
+        }
+
+        $missingActuals = $production->requirements
+            ->reject(fn ($requirement): bool => $production->consumption->contains(
+                fn ($consumption): bool => $consumption->production_requirement_id === $requirement->id,
+            ))
+            ->pluck('subject_name_snapshot')
+            ->values();
+
+        $shortRequirements = collect();
+        $activeReservations = $production->requirements
+            ->flatMap->reservations
+            ->where('status', StockReservationStatus::Active);
+
+        foreach ($production->requirements as $requirement) {
+            $required = $requirement->ingredient_id !== null
+                ? (string) $requirement->required_mass_grams
+                : (string) $requirement->required_units;
+            $reserved = '0';
+
+            foreach ($activeReservations->where('production_requirement_id', $requirement->id) as $reservation) {
+                $reserved = bcadd($reserved, (string) $reservation->quantity, 9);
+            }
+
+            if (bccomp($reserved, $required, 9) < 0) {
+                $shortRequirements->push($requirement->subject_name_snapshot);
+            }
+        }
+
+        $unpricedLots = $production->consumption
+            ->map(fn ($consumption): ?string => $consumption->stockLot?->costing_unit_cost === null
+                && $consumption->stockLot?->historical_unit_cost === null
+                    ? $consumption->stockLot?->internal_lot_code
+                    : null)
+            ->filter()
+            ->unique()
+            ->values();
+
+        return [
+            'actuals' => [
+                'ok' => $missingActuals->isEmpty(),
+                'message' => $missingActuals->isEmpty() ? null : $missingActuals->implode(', '),
+            ],
+            'coverage' => [
+                'ok' => $shortRequirements->isEmpty(),
+                'message' => $shortRequirements->isEmpty() ? null : $shortRequirements->implode(', '),
+            ],
+            'output' => ['ok' => $this->actualOutputQuantity !== '', 'message' => null],
+            'date' => ['ok' => $this->manufactureDate !== '', 'message' => null],
+            'number' => ['ok' => $production->batch_number !== null, 'message' => null],
+            'costs' => ['ok' => $unpricedLots->isEmpty(), 'message' => $unpricedLots->isEmpty() ? null : $unpricedLots->implode(', ')],
+        ];
     }
 
     /**

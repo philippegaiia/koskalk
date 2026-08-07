@@ -207,6 +207,38 @@
     @endif
 
     @if ($production->status->value === 'in_production')
+        <section aria-labelledby="readiness-heading" class="sk-card overflow-hidden">
+            <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="readiness-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.readiness_title') }}</h2></div>
+            <ul class="divide-y divide-[var(--color-line)] text-sm">
+                <li class="flex items-start gap-3 px-5 py-3 sm:px-6">
+                    <span class="mt-0.5">{{ $completionReadiness['actuals']['ok'] ? '✓' : '✗' }}</span>
+                    <span>{{ __('production_bench.production.readiness_actuals') }}{{ $completionReadiness['actuals']['message'] ? ': '.$completionReadiness['actuals']['message'] : '' }}</span>
+                </li>
+                <li class="flex items-start gap-3 px-5 py-3 sm:px-6">
+                    <span class="mt-0.5">{{ $completionReadiness['coverage']['ok'] ? '✓' : '✗' }}</span>
+                    <span>{{ __('production_bench.production.readiness_coverage') }}{{ $completionReadiness['coverage']['message'] ? ': '.$completionReadiness['coverage']['message'] : '' }}</span>
+                </li>
+                <li class="flex items-start gap-3 px-5 py-3 sm:px-6">
+                    <span class="mt-0.5">{{ $completionReadiness['output']['ok'] ? '✓' : '✗' }}</span>
+                    <span>{{ __('production_bench.production.readiness_output') }}</span>
+                </li>
+                <li class="flex items-start gap-3 px-5 py-3 sm:px-6">
+                    <span class="mt-0.5">{{ $completionReadiness['date']['ok'] ? '✓' : '✗' }}</span>
+                    <span>{{ __('production_bench.production.readiness_date') }}</span>
+                </li>
+                <li class="flex items-start gap-3 px-5 py-3 sm:px-6">
+                    <span class="mt-0.5">{{ $completionReadiness['number']['ok'] ? '✓' : '✗' }}</span>
+                    <span>{{ __('production_bench.production.readiness_number') }}</span>
+                </li>
+                <li class="flex items-start gap-3 px-5 py-3 sm:px-6">
+                    <span class="mt-0.5">{{ $completionReadiness['costs']['ok'] ? '✓' : '✗' }}</span>
+                    <span>{{ __('production_bench.production.readiness_costs') }}{{ $completionReadiness['costs']['message'] ? ': '.$completionReadiness['costs']['message'] : '' }}</span>
+                </li>
+            </ul>
+        </section>
+    @endif
+
+    @if ($production->status->value === 'in_production')
         <section aria-labelledby="completion-heading" class="sk-card space-y-4 p-5 sm:p-6">
             <div>
                 <h2 id="completion-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.complete_title') }}</h2>

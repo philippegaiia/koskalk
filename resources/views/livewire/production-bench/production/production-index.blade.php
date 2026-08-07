@@ -68,7 +68,7 @@
                                     @if ($production->batch_number)
                                         <span class="text-[var(--color-ink-soft)]"><span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number') }}:</span> <span class="font-mono font-semibold text-[var(--color-ink-strong)]">{{ $production->batch_number }}</span></span>
                                     @endif
-                                    @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true) && $production->batch_number === null)
+                                    @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
                                         <button type="button" wire:click="deleteProduction({{ $production->id }})" wire:confirm="{{ __('production_bench.production.delete_confirm') }}" wire:loading.attr="disabled" class="text-[var(--color-danger-strong)] hover:underline">
                                             {{ __('production_bench.production.delete') }}
                                         </button>

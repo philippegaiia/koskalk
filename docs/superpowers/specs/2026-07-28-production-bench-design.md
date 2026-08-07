@@ -416,7 +416,7 @@ Output release is a lot state rather than a second completed-production state.
 
 A draft contains an incomplete operational idea and has no stock effect.
 
-A draft or scheduled run without reservations may be deleted; it has no stock effect and no permanent identity. Deletion is blocked once any reservation exists or a permanent batch number has been assigned.
+A draft or scheduled run without reservations may be deleted, even when a permanent batch number was already assigned — assigning a number may be a mistake. Deleting a numbered run burns the number: the permanent counter never moves backwards, so the number is never re-issued. Deletion is blocked once any reservation exists.
 
 ### Scheduled
 

@@ -41,6 +41,7 @@ use App\ProductionRunStatus;
 use App\StockMovementType;
 use App\StockReservationStatus;
 use App\Visibility;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -915,7 +916,7 @@ it('degrades without a product lookup when the stored task set was deleted', fun
         ->and($generated->tasks()->count())->toBe(0);
 });
 
-it('deletes draft and scheduled runs without reservations or permanent numbers', function (): void {
+it('deletes draft and scheduled runs without reservations, including numbered runs', function (): void {
     $fixture = productionPlanningTask3SoapFixture();
     $draft = app(CreateProductionDraft::class)->handle(
         actor: $fixture['owner'],
@@ -936,18 +937,80 @@ it('deletes draft and scheduled runs without reservations or permanent numbers',
         idempotencyKey: 'delete-scheduled-1',
         status: ProductionRunStatus::Scheduled,
     );
+    $numbered = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'delete-numbered-1',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+    app(AssignProductionBatchNumbers::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        productionIds: [$numbered->id],
+    );
 
     app(DeleteProductionRun::class)->handle($fixture['owner'], $draft);
     app(DeleteProductionRun::class)->handle($fixture['owner'], $scheduled);
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $numbered->fresh());
 
     expect(ProductionRun::query()->find($draft->id))->toBeNull()
         ->and(ProductionRun::query()->find($scheduled->id))->toBeNull()
+        ->and(ProductionRun::query()->find($numbered->id))->toBeNull()
         ->and(ProductionFormulaLine::query()->count())->toBe(0)
         ->and(ProductionRequirement::query()->count())->toBe(0)
         ->and(ProductionTask::query()->count())->toBe(0);
 });
 
-it('rejects deletion once a permanent number, a reservation, or a terminal status exists', function (string $mutate): void {
+it('burns the permanent batch number when a numbered production is deleted', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $first = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'burn-first-1',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+    app(AssignProductionBatchNumbers::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        productionIds: [$first->id],
+    );
+    $burnedNumber = $first->fresh()->batch_number;
+
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $first->fresh());
+
+    $second = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'burn-second-1',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+    app(AssignProductionBatchNumbers::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        productionIds: [$second->id],
+    );
+
+    expect($second->fresh()->batch_number)->not->toBe($burnedNumber)
+        ->and($second->fresh()->batch_number_serial)->toBeGreaterThan(1)
+        ->and(ProductionRun::query()->where('batch_number', $burnedNumber)->count())->toBe(0);
+});
+
+it('rejects deletion once a reservation or a terminal status exists', function (string $mutate): void {
     $fixture = productionPlanningTask3SoapFixture();
     $production = app(CreateProductionDraft::class)->handle(
         actor: $fixture['owner'],
@@ -960,12 +1023,6 @@ it('rejects deletion once a permanent number, a reservation, or a terminal statu
     );
 
     match ($mutate) {
-        'permanent number' => $production->update([
-            'batch_number' => 'B-00001',
-            'batch_number_serial' => 1,
-            'batch_number_assigned_at' => now(),
-            'batch_number_assigned_by_user_id' => $fixture['owner']->id,
-        ]),
         'reservation' => StockReservation::factory()->create([
             'workspace_id' => $fixture['workspace']->id,
             'production_run_id' => $production->id,
@@ -981,7 +1038,6 @@ it('rejects deletion once a permanent number, a reservation, or a terminal statu
     })->toThrow(ValidationException::class)
         ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
 })->with([
-    'permanent number' => ['permanent number'],
     'reservation' => ['reservation'],
     'reserved' => [ProductionRunStatus::Reserved->value],
     'in production' => [ProductionRunStatus::InProduction->value],
@@ -989,6 +1045,36 @@ it('rejects deletion once a permanent number, a reservation, or a terminal statu
     'cancelled' => [ProductionRunStatus::Cancelled->value],
     'aborted' => [ProductionRunStatus::Aborted->value],
 ]);
+
+it('rejects deleting a numbered run with active reservations at the database boundary', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'delete-trigger-1',
+        status: ProductionRunStatus::Scheduled,
+    );
+    $production->update([
+        'batch_number' => 'B-00001',
+        'batch_number_serial' => 1,
+        'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $fixture['owner']->id,
+    ]);
+    StockReservation::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $production->id,
+        'production_requirement_id' => $production->requirements()->firstOrFail()->id,
+        'stock_lot_id' => StockLot::factory()->released()->for($fixture['workspace'])->create()->id,
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+
+    expect(fn (): ?bool => $production->delete())->toThrow(QueryException::class)
+        ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
+});
 
 it('starts a fully reserved and permanently numbered production', function (): void {
     $fixture = productionPlanningTask3SoapFixture();

@@ -18,8 +18,9 @@ class DeleteProductionRun
     ) {}
 
     /**
-     * Delete a draft or scheduled production that has no reservations and no
-     * permanent batch number. Started and numbered runs are immutable.
+     * Delete a draft or scheduled production that has no reservations. A
+     * permanent batch number alone does not protect a run: assigning one may
+     * be a mistake, and only reserved stock must keep the record.
      */
     public function handle(User $actor, ProductionRun $production): void
     {
@@ -55,12 +56,6 @@ class DeleteProductionRun
             ], true)) {
                 throw ValidationException::withMessages([
                     'production' => __('production_bench.production.delete_blocked_status'),
-                ]);
-            }
-
-            if ($lockedProduction->batch_number !== null) {
-                throw ValidationException::withMessages([
-                    'production' => __('production_bench.production.delete_blocked_numbered'),
                 ]);
             }
 

@@ -10593,17 +10593,6 @@
         },
         {
             "group": "production_bench",
-            "key": "production.delete_blocked_numbered",
-            "text": {
-                "de": "Eine Produktion mit permanenter Chargennummer kann nicht gelöscht werden.",
-                "es": "Una producción con número de lote permanente no se puede eliminar.",
-                "fr": "Une production avec un numéro de lot permanent ne peut pas être supprimée.",
-                "it": "Una produzione con numero di lotto permanente non può essere eliminata.",
-                "nl": "Een productie met een permanent batchnummer kan niet worden verwijderd."
-            }
-        },
-        {
-            "group": "production_bench",
             "key": "production.delete_blocked_reservations",
             "text": {
                 "de": "Geben Sie vor dem Löschen dieser Produktion alle Reservierungen frei oder entfernen Sie sie.",

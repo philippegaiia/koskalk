@@ -11,6 +11,8 @@ use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\StockLot;
+use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
@@ -310,14 +312,16 @@ it('filters the production list by recipe public id from a product link', functi
         ->assertDontSee('Lavender soap');
 });
 
-it('deletes a deletable run from the list and keeps non-deletable runs', function (): void {
+it('deletes a deletable run from the list and keeps reserved runs', function (): void {
     $fixture = productionListFixture();
-    $other = productionListRun([...$fixture, 'recipe' => $fixture['recipe'], 'version' => $fixture['version']], 'Olive soap', '2026-08-15', ProductionRunStatus::Draft);
-    $other->update([
-        'batch_number' => 'B-00001',
-        'batch_number_serial' => 1,
-        'batch_number_assigned_at' => now(),
-        'batch_number_assigned_by_user_id' => $fixture['owner']->id,
+    $other = productionListRun([...$fixture, 'recipe' => $fixture['recipe'], 'version' => $fixture['version']], 'Olive soap', '2026-08-15', ProductionRunStatus::Scheduled);
+    $requirement = ProductionRequirement::factory()->for($other, 'productionRun')->create();
+    StockReservation::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $other->id,
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => StockLot::factory()->released()->for($fixture['workspace'])->create()->id,
+        'created_by_user_id' => $fixture['owner']->id,
     ]);
 
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)

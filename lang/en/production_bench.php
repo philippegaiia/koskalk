@@ -326,7 +326,6 @@ return [
         'delete' => 'Delete production',
         'delete_confirm' => 'Delete this production and its planning data? This cannot be undone.',
         'delete_blocked_status' => 'Only draft or planned productions without reservations can be deleted.',
-        'delete_blocked_numbered' => 'A production with a permanent batch number cannot be deleted.',
         'delete_blocked_reservations' => 'Release or remove all reservations before deleting this production.',
         'deleted' => 'Production deleted.',
         'formula' => [

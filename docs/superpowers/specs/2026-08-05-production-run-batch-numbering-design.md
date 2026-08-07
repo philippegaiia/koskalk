@@ -20,6 +20,7 @@ The two production products retain distinct records and lifecycles:
 - Cancelling Production Bench leaves its professional records read-only and makes them archive-eligible after 48 months. Resuming restores the same Production Bench records.
 - Downgrading does not convert Production Runs into Basic snapshots.
 - Completing a Production Run does not create or link a Basic `production_batches` record.
+- Deleting a permanently numbered Production Run before it starts burns the number: the permanent counter is forward-only, so the number is never re-issued.
 
 This decision supersedes the later execution-specification wording that proposed creating a linked Basic snapshot at Production Run completion.
 

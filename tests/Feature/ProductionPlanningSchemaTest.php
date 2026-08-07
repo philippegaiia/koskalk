@@ -629,6 +629,57 @@ it('allows stock lots for finished products and intermediates as subjects', func
     ]))->toThrow(QueryException::class);
 });
 
+it('enforces completion fields together and non-negative totals at the database', function (): void {
+    $production = ProductionRun::factory()->create();
+
+    expect(fn (): bool => DB::table('production_runs')
+        ->where('id', $production->id)
+        ->update(['completed_at' => now()]))->toThrow(QueryException::class);
+
+    expect(fn (): bool => DB::table('production_runs')
+        ->where('id', $production->id)
+        ->update([
+            'completed_at' => now(),
+            'completed_by_user_id' => 1,
+            'manufacture_date' => '2026-08-20',
+            'actual_ingredient_total' => '0.000000000',
+            'actual_packaging_total' => '0.000000000',
+            'actual_total_cost' => '-1.000000000',
+        ]))->toThrow(QueryException::class);
+});
+
+it('allows at most one output lot per production run', function (): void {
+    $production = ProductionRun::factory()->create();
+    StockLot::factory()->for($production->workspace)->forRecipe()->create([
+        'production_run_id' => $production->id,
+        'origin' => 'production_output',
+    ]);
+
+    expect(fn (): StockLot => StockLot::factory()->for($production->workspace)->forRecipe()->create([
+        'production_run_id' => $production->id,
+        'origin' => 'production_output',
+    ]))->toThrow(QueryException::class);
+});
+
+it('allows at most one consumption row per requirement and lot', function (): void {
+    $production = ProductionRun::factory()->create();
+    $requirement = ProductionRequirement::factory()->for($production, 'productionRun')->create();
+    $lot = StockLot::factory()->for($production->workspace)->released()->create([
+        'ingredient_id' => Ingredient::factory()->create()->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+    ]);
+    ProductionConsumption::factory()->for($production, 'productionRun')->create([
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => $lot->id,
+    ]);
+
+    expect(fn (): ProductionConsumption => ProductionConsumption::factory()->for($production, 'productionRun')->create([
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => $lot->id,
+    ]))->toThrow(QueryException::class);
+});
+
 function productionPlanningRecipe(Workspace $workspace): Recipe
 {
     return Recipe::factory()->create([

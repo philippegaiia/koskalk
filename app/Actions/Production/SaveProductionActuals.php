@@ -98,6 +98,12 @@ class SaveProductionActuals
 
                 $lot = $this->resolveLot($requirement, $row['stock_lot_id'] ?? null, $lockedWorkspace, $index);
 
+                if (! $lot instanceof StockLot) {
+                    throw ValidationException::withMessages([
+                        "rows.{$index}.stock_lot_id" => 'Every actual quantity must reference a stock lot.',
+                    ]);
+                }
+
                 ProductionConsumption::query()->updateOrCreate(
                     [
                         'production_run_id' => $lockedProduction->id,

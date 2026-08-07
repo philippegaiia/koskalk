@@ -364,6 +364,16 @@ class PrepareProductionStock
             ]);
         }
 
+        $required = $requirement->ingredient_id !== null
+            ? (string) $requirement->required_mass_grams
+            : (string) $requirement->required_units;
+
+        if (bccomp($total, $required, 9) > 0) {
+            throw ValidationException::withMessages([
+                'allocations' => 'Manual stock allocations cannot exceed the requirement total.',
+            ]);
+        }
+
         return $allocations;
     }
 

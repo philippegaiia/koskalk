@@ -180,6 +180,17 @@ it('rejects actual rows outside in-production and invalid quantities', function 
     ]);
 
     expect($started->consumption()->count())->toBe(0);
+
+    // A positive quantity without a lot is rejected with a clear message.
+    expect(function () use ($fixture, $started, $packagingRequirement): void {
+        app(SaveProductionActuals::class)->handle($fixture['owner'], $started, [
+            [
+                'production_requirement_id' => $packagingRequirement->id,
+                'stock_lot_id' => null,
+                'quantity' => '5',
+            ],
+        ]);
+    })->toThrow(ValidationException::class);
 });
 
 it('saves actuals from the production sheet', function (): void {

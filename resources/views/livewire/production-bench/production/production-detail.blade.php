@@ -425,14 +425,14 @@
                     <div class="min-w-0">
                         <p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p>
                         <div class="mt-2 flex flex-wrap items-center gap-2">
-                            <select aria-label="{{ __('production_bench.production.choose_department') }}" wire:change="assignTaskDepartment({{ $task->id }}, $event.target.value)" class="sk-input min-w-48 py-1.5 text-sm" @disabled($isReadOnly || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))>
+                            <select aria-label="{{ __('production_bench.production.choose_department') }}" wire:change="assignTaskDepartment({{ $task->id }}, $event.target.value)" class="sk-input min-w-48 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))>
                                 <option value="">{{ __('production_bench.production.choose_department') }}</option>
                                 @foreach ($departments as $department)
                                     <option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>
                                 @endforeach
                             </select>
                             @error('task_department') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
-                            <select aria-label="{{ __('production_bench.production.choose_employee') }}" wire:change="assignTask({{ $task->id }}, $event.target.value)" class="sk-input min-w-48 py-1.5 text-sm" @disabled($isReadOnly || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))>
+                            <select aria-label="{{ __('production_bench.production.choose_employee') }}" wire:change="assignTask({{ $task->id }}, $event.target.value)" class="sk-input min-w-48 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))>
                                 <option value="">{{ __('production_bench.production.choose_employee') }}</option>
                                 @foreach ($employees as $employee)
                                     <option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>
@@ -455,7 +455,7 @@
                             <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $task->scheduled_for->format('Y-m-d') }}</p>
                         @endif
                         @if($task->completed_at) <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.completed_task') }}</span> @endif
-                        <button type="button" wire:click="toggleTask({{ $task->id }})" wire:loading.attr="disabled" @disabled($isReadOnly || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true)) class="sk-btn sk-btn-ghost py-1.5 text-sm">
+                        <button type="button" wire:click="toggleTask({{ $task->id }})" wire:loading.attr="disabled" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true)) class="sk-btn sk-btn-ghost py-1.5 text-sm">
                             {{ $task->completed_at ? __('production_bench.production.reopen_task') : __('production_bench.production.mark_complete') }}
                         </button>
                     </div>

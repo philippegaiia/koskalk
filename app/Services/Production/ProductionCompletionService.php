@@ -239,6 +239,7 @@ class ProductionCompletionService
             }
         }
 
+        // Validation only; the normalized value is recomputed at completion.
         $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
 
         $requirements = $production->requirements()->get();

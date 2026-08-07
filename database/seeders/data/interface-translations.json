@@ -10923,6 +10923,50 @@
         },
         {
             "group": "production_bench",
+            "key": "production.journal_document",
+            "text": {
+                "de": "Tagebuchdokument",
+                "es": "Documento del diario",
+                "fr": "Document du journal",
+                "it": "Documento del diario",
+                "nl": "Dagboekdocument"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.journal_document_attach",
+            "text": {
+                "de": "Anhängen",
+                "es": "Adjuntar",
+                "fr": "Joindre",
+                "it": "Allega",
+                "nl": "Toevoegen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.journal_document_attached",
+            "text": {
+                "de": "Tagebuchdokument angehängt.",
+                "es": "Documento adjuntado al diario.",
+                "fr": "Document joint au journal.",
+                "it": "Documento allegato al diario.",
+                "nl": "Dagboekdocument toegevoegd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.journal_document_note",
+            "text": {
+                "de": "Notiz",
+                "es": "Nota",
+                "fr": "Note",
+                "it": "Nota",
+                "nl": "Notitie"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.journal_empty",
             "text": {
                 "de": "Noch keine Tagebucheinträge.",
@@ -11447,6 +11491,83 @@
                 "fr": "Proposé",
                 "it": "Proposto",
                 "nl": "Voorgesteld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.readiness_actuals",
+            "text": {
+                "de": "Istmengen erfasst",
+                "es": "Cantidades reales registradas",
+                "fr": "Quantités réelles enregistrées",
+                "it": "Quantità effettive registrate",
+                "nl": "Werkelijke hoeveelheden vastgelegd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.readiness_costs",
+            "text": {
+                "de": "Alle Lose bepreist",
+                "es": "Todos los lotes con precio",
+                "fr": "Tous les lots évalués",
+                "it": "Tutti i lotti prezzati",
+                "nl": "Alle partijen geprijsd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.readiness_coverage",
+            "text": {
+                "de": "Bestand reserviert",
+                "es": "Stock reservado",
+                "fr": "Stock réservé",
+                "it": "Scorte prenotate",
+                "nl": "Voorraad gereserveerd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.readiness_date",
+            "text": {
+                "de": "Herstellungsdatum festgelegt",
+                "es": "Fecha de fabricación fijada",
+                "fr": "Date de fabrication définie",
+                "it": "Data di produzione impostata",
+                "nl": "Fabricagedatum ingesteld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.readiness_number",
+            "text": {
+                "de": "Permanente Chargennummer zugewiesen",
+                "es": "Número de lote permanente asignado",
+                "fr": "Numéro de lot permanent attribué",
+                "it": "Numero di lotto permanente assegnato",
+                "nl": "Permanent batchnummer toegekend"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.readiness_output",
+            "text": {
+                "de": "Ausstoßmenge eingegeben",
+                "es": "Cantidad de salida introducida",
+                "fr": "Quantité de sortie saisie",
+                "it": "Quantità di uscita inserita",
+                "nl": "Uitvoerhoeveelheid ingevoerd"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.readiness_title",
+            "text": {
+                "de": "Bereit zum Abschluss?",
+                "es": "¿Lista para completar?",
+                "fr": "Prête à terminer ?",
+                "it": "Pronta per il completamento?",
+                "nl": "Klaar om af te ronden?"
             }
         },
         {

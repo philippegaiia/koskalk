@@ -519,6 +519,8 @@ The journal supports process observations, temperatures, pH, troubleshooting, de
 
 Core inventory, lot, quantity, and release facts remain structured and auditable.
 
+Output lots carry no expiry by default: finished-product lots have no expiry concept, and intermediate output lots may optionally set one when the maker provides it. The ready date governs availability, not expiry.
+
 ## Finished-Goods Issue
 
 V1 does not manage customer or sales orders.

@@ -187,9 +187,14 @@ it('prevents model and mass updates from rewriting assigned identifiers and meta
             'batch_number_assigned_by_user_id' => null,
         ]))->toThrow(QueryException::class)
         ->and(fn (): ?bool => $assigner->delete())
-        ->toThrow(QueryException::class)
-        ->and(fn (): ?bool => $run->fresh()->delete())
         ->toThrow(QueryException::class);
+
+    // A numbered run without reservations is deletable, and its number is
+    // burned with it (the counter never re-issues it).
+    $run->fresh()->delete();
+
+    expect(ProductionRun::query()->find($run->id))->toBeNull()
+        ->and(ProductionRun::query()->where('batch_number', 'B-01001')->count())->toBe(0);
 });
 
 it('keeps planning references immutable before permanent assignment', function (): void {

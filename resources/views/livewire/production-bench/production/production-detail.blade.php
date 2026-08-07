@@ -21,8 +21,51 @@
             <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</h1>
             <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.detail_title') }}</p>
         </div>
-        <span class="rounded-full bg-[var(--color-accent-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-accent-strong)]">{{ $production->status->label() }}</span>
+        @php
+            $statusColorMap = [
+                'draft' => 'ink-soft',
+                'scheduled' => 'accent',
+                'reserved' => 'warning',
+                'in_production' => 'success',
+                'completed' => 'ink-strong',
+                'cancelled' => 'ink-soft',
+                'aborted' => 'ink-soft',
+            ];
+            $statusColor = $statusColorMap[$production->status->value] ?? 'ink-soft';
+        @endphp
+        <span class="rounded-full bg-[var(--color-{{ $statusColor }}-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-{{ $statusColor }}-strong)]">{{ $production->status->label() }}</span>
     </header>
+
+    <section class="sk-card flex flex-wrap items-center justify-between gap-4 p-5">
+        <span class="rounded-full bg-[var(--color-{{ $statusColor }}-soft)] px-3 py-1.5 text-sm font-medium text-[var(--color-{{ $statusColor }}-strong)]">{{ $production->status->label() }}</span>
+        <div class="flex flex-wrap items-center gap-2">
+            @if ($production->status->value === 'draft' && $canMutate)
+                <input type="date" wire:model="scheduleDate" class="sk-input py-1.5 text-sm" @disabled($mutationLocked)>
+                <button type="button" wire:click="scheduleProduction" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule_draft') }}</button>
+            @elseif ($production->status->value === 'scheduled' && $canMutate)
+                <a href="{{ route('production-bench.production.prepare', $production) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.prepare_stock') }}</a>
+            @elseif ($production->status->value === 'reserved' && $canMutate)
+                @if ($production->batch_number === null)
+                    <button type="button" wire:click="assignBatchNumber" wire:confirm="{{ __('production_bench.production.assign_batch_number_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.assign_batch_number') }}</button>
+                @else
+                    <button type="button" wire:click="start" wire:confirm="{{ __('production_bench.production.start_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.start') }}</button>
+                @endif
+            @elseif ($production->status->value === 'in_production' && $canMutate)
+                <button type="button" wire:click="complete" wire:confirm="{{ __('production_bench.production.complete_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.complete') }}</button>
+            @elseif ($production->status->value === 'completed')
+                <span class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.output_lot') }}</span>
+            @elseif (in_array($production->status->value, ['cancelled', 'aborted']))
+                <span class="text-sm text-[var(--color-ink-muted)]">{{ $production->status->label() }}</span>
+            @endif
+        </div>
+    </section>
+
+    @if ($production->status->value === 'scheduled' && $shortRequirements->isNotEmpty())
+        <section class="rounded-xl border border-[var(--color-warning)] bg-[var(--color-warning-soft)] p-4">
+            <p class="font-semibold text-[var(--color-warning-strong)]">{{ __('production_bench.production.partially_reserved_short', ['count' => $shortRequirements->count()]) }}</p>
+            <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $shortRequirements->implode(', ') }}</p>
+        </section>
+    @endif
 
     <section class="sk-card grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4" aria-labelledby="batch-identity-heading">
         <h2 id="batch-identity-heading" class="sr-only">{{ __('production_bench.production.batch_identity') }}</h2>
@@ -304,7 +347,7 @@
                 <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
             @enderror
             <div class="flex justify-end">
-                <button type="button" wire:click="abort" wire:confirm="{{ __('production_bench.production.abort_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-ghost">{{ __('production_bench.production.abort') }}</button>
+                <button type="button" wire:click="abort" wire:confirm="{{ __('production_bench.production.abort_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-danger">{{ __('production_bench.production.abort') }}</button>
             </div>
         </section>
     @endif
@@ -421,30 +464,23 @@
         @error('task_scheduled_for') <div role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</div> @enderror
         <div class="divide-y divide-[var(--color-line)]">
             @forelse ($production->tasks as $task)
-                <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                    <div class="min-w-0">
-                        <p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p>
-                        <div class="mt-2 flex flex-wrap items-center gap-2">
-                            <select aria-label="{{ __('production_bench.production.choose_department') }}" wire:change="assignTaskDepartment({{ $task->id }}, $event.target.value)" class="sk-input min-w-48 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))>
-                                <option value="">{{ __('production_bench.production.choose_department') }}</option>
-                                @foreach ($departments as $department)
-                                    <option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('task_department') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
-                            <select aria-label="{{ __('production_bench.production.choose_employee') }}" wire:change="assignTask({{ $task->id }}, $event.target.value)" class="sk-input min-w-48 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))>
-                                <option value="">{{ __('production_bench.production.choose_employee') }}</option>
-                                @foreach ($employees as $employee)
-                                    <option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>
-                                @endforeach
-                            </select>
-                            @if ($task->employee)
-                                <span class="text-xs text-[var(--color-ink-soft)]">{{ $task->employee->first_name.' '.$task->employee->last_name }}</span>
-                            @endif
-                            @error('task_employee') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-3 sm:justify-end">
+                <div class="flex flex-col gap-2 px-5 py-4 sm:px-6">
+                    <p class="font-medium text-[var(--color-ink-strong)]">{{ $task->name_snapshot }}</p>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select aria-label="{{ __('production_bench.production.choose_department') }}" wire:change="assignTaskDepartment({{ $task->id }}, $event.target.value)" class="sk-input w-40 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))>
+                            <option value="">{{ __('production_bench.production.choose_department') }}</option>
+                            @foreach ($departments as $department)
+                                <option value="{{ $department->id }}" @selected($task->department_id === $department->id)>{{ $department->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('task_department') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
+                        <select aria-label="{{ __('production_bench.production.choose_employee') }}" wire:change="assignTask({{ $task->id }}, $event.target.value)" class="sk-input w-40 py-1.5 text-sm" @disabled($mutationLocked || in_array($production->status->value, ['completed', 'cancelled', 'aborted'], true))>
+                            <option value="">{{ __('production_bench.production.choose_employee') }}</option>
+                            @foreach ($employees as $employee)
+                                <option value="{{ $employee->id }}" @selected($task->employee_id === $employee->id)>{{ $employee->first_name }} {{ $employee->last_name }}</option>
+                            @endforeach
+                        </select>
+                        @error('task_employee') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                         @if ($task->completed_at === null && ! in_array($production->status->value, ['in_production', 'completed', 'cancelled', 'aborted'], true))
                             <label class="sr-only" for="task-date-{{ $task->id }}">{{ __('production_bench.production.task_date') }}</label>
                             <input id="task-date-{{ $task->id }}" type="date" value="{{ $task->scheduled_for->format('Y-m-d') }}" wire:change="rescheduleTask({{ $task->id }}, $event.target.value)" class="sk-input py-1.5 text-sm">
@@ -471,7 +507,7 @@
             <div><h2 id="cancel-production-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.cancel') }}</h2><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.cancel_help') }}</p></div>
             <form wire:submit="cancel" class="space-y-3">
                 <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.cancel_reason') }}</span><textarea wire:model="cancellationReason" rows="2" required @disabled($mutationLocked) class="sk-input mt-1 w-full"></textarea>@error('cancellationReason')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror</label>
-                <button type="submit" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-ghost">{{ __('production_bench.production.cancel') }}</button>
+                <button type="submit" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-danger">{{ __('production_bench.production.cancel') }}</button>
             </form>
         </section>
     @endif

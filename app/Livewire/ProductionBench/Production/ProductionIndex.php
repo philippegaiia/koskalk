@@ -174,7 +174,7 @@ class ProductionIndex extends Component
             ], true);
         $productions = ProductionRun::query()
             ->where('workspace_id', $workspace->id)
-            ->with(['tasks'])
+            ->with(['tasks', 'requirements.reservations'])
             ->when($this->search !== '', function (Builder $query): void {
                 $search = trim($this->search);
                 $query->where(function (Builder $nested) use ($search): void {

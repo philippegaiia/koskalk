@@ -521,6 +521,7 @@ return [
             'cancelled' => 'Cancelled',
             'aborted' => 'Aborted',
         ],
+        'partially_reserved_short' => 'Partially reserved — short by :count',
     ],
     'calendar' => [
         'title' => 'Production calendar',

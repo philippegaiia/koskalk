@@ -661,6 +661,30 @@ class ProductionDetail extends Component
             $actualRowsByRequirement[$requirementId] = $merged;
         }
 
+        $shortRequirements = collect();
+        $partialShortage = '0';
+
+        if ($production->status === ProductionRunStatus::Scheduled) {
+            $activeReservations = $production->requirements
+                ->flatMap->reservations
+                ->where('status', StockReservationStatus::Active);
+
+            foreach ($production->requirements as $requirement) {
+                $required = $requirement->ingredient_id !== null
+                    ? (string) $requirement->required_mass_grams
+                    : (string) $requirement->required_units;
+                $reserved = '0';
+
+                foreach ($activeReservations->where('production_requirement_id', $requirement->id) as $reservation) {
+                    $reserved = bcadd($reserved, (string) $reservation->quantity, 9);
+                }
+
+                if (bccomp($reserved, $required, 9) < 0) {
+                    $shortRequirements->push($requirement->subject_name_snapshot);
+                    $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
+                }
+            }
+        }
         $completionReadiness = $this->completionReadiness($production);
 
         return view('livewire.production-bench.production.production-detail', [
@@ -672,6 +696,8 @@ class ProductionDetail extends Component
             'defaultActualRows' => $defaultActualRows,
             'actualRowsByRequirement' => $actualRowsByRequirement,
             'completionReadiness' => $completionReadiness,
+            'shortRequirements' => $shortRequirements,
+            'partialShortage' => $partialShortage,
             'intermediateIngredients' => Ingredient::query()
                 ->withoutGlobalScopes()
                 ->where(fn ($query) => $query->whereNull('workspace_id')->orWhere('workspace_id', $workspace->id))

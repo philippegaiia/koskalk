@@ -904,6 +904,45 @@ it('records and completes actuals from two lots of the same ingredient', functio
         ->and($completed->status)->toBe(ProductionRunStatus::Completed);
 });
 
+it('rejects completion when lots resolve to mixed currencies', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'mixed-currency-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+
+    // Oil lot: workspace-converted costing values in EUR.
+    $oilLot->update([
+        'historical_unit_cost' => '0.012500000',
+        'currency' => 'USD',
+        'costing_unit_cost' => '0.011000000',
+        'costing_currency' => 'EUR',
+    ]);
+    // Packaging lot: only source-currency historical values in USD (no
+    // workspace costing values) — mixing with EUR.
+    $packagingLot->update([
+        'historical_unit_cost' => '0.500000000',
+        'currency' => 'USD',
+        'costing_unit_cost' => null,
+        'costing_currency' => null,
+    ]);
+
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+
+    expect(function () use ($fixture, $production): void {
+        app(CompleteProduction::class)->handle(
+            actor: $fixture['owner'],
+            production: $production->fresh(),
+            actualOutputQuantity: '95',
+            manufactureDate: '2026-08-20',
+        );
+    })->toThrow(ValidationException::class);
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, packaging: PackagingItem}
  */

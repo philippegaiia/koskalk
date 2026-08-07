@@ -64,6 +64,7 @@ class ProductionCompletionService
             $currency = null;
             $ingredientTotal = '0';
             $packagingTotal = '0';
+            $workspaceDefaultCurrency = strtoupper((string) ($workspace->default_currency ?? ''));
 
             foreach ($consumption as $row) {
                 $lot = StockLot::query()
@@ -73,7 +74,18 @@ class ProductionCompletionService
 
                 $pricePerUnit = $this->pricePerUnit($lot, $row);
                 $lineCost = $this->lineCost($row, $pricePerUnit);
-                $currency ??= $pricePerUnit !== null ? strtoupper((string) ($lot->currency ?? '')) : null;
+
+                if ($pricePerUnit !== null) {
+                    $lineCurrency = $this->lineCurrency($lot, $workspaceDefaultCurrency);
+
+                    if ($currency === null) {
+                        $currency = $lineCurrency;
+                    } elseif ($currency !== $lineCurrency) {
+                        throw ValidationException::withMessages([
+                            'production' => 'Production costing mixes currencies: the lot '.$lot->internal_lot_code.' is priced in '.$lineCurrency.' while the rest of the batch is in '.$currency.'. Correct the lot cost or use the workspace costing values.',
+                        ]);
+                    }
+                }
 
                 if ($row->kind === ProductionConsumptionKind::Ingredient) {
                     $ingredientTotal = bcadd($ingredientTotal, $lineCost, 9);
@@ -280,11 +292,18 @@ class ProductionCompletionService
 
     private function pricePerUnit(StockLot $lot, ProductionConsumption $row): ?string
     {
-        if ($lot->historical_unit_cost === null) {
-            return null;
-        }
+        // Prefer the workspace-converted costing value stored at receipt time;
+        // fall back to the source-currency historical cost.
+        $price = $lot->costing_unit_cost ?? $lot->historical_unit_cost;
 
-        return (string) $lot->historical_unit_cost;
+        return $price === null ? null : (string) $price;
+    }
+
+    private function lineCurrency(StockLot $lot, string $workspaceDefaultCurrency): string
+    {
+        return strtoupper((string) ($lot->costing_unit_cost !== null
+            ? ($lot->costing_currency ?? $workspaceDefaultCurrency)
+            : ($lot->currency ?? '')));
     }
 
     private function lineCost(ProductionConsumption $row, ?string $pricePerUnit): string

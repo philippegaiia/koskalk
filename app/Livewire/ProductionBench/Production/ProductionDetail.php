@@ -29,6 +29,7 @@ use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use App\StockMovementType;
 use App\StockReservationStatus;
+use App\Support\NumberLocale;
 use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\ValidationException;
@@ -292,7 +293,7 @@ class ProductionDetail extends Component
                     'stock_lot_id' => isset($row['stock_lot_id']) && $row['stock_lot_id'] !== '' && $row['stock_lot_id'] !== null
                         ? (int) $row['stock_lot_id']
                         : null,
-                    'quantity' => (string) ($row['quantity'] ?? '0'),
+                    'quantity' => NumberLocale::normalizeDecimalString($row['quantity'] ?? '') ?? '0',
                     'note' => isset($row['note']) && $row['note'] !== '' ? $row['note'] : null,
                 ];
             }
@@ -322,7 +323,7 @@ class ProductionDetail extends Component
             $completeProduction->handle(
                 actor: $this->user(),
                 production: $production,
-                actualOutputQuantity: $this->actualOutputQuantity,
+                actualOutputQuantity: NumberLocale::normalizeDecimalString($this->actualOutputQuantity) ?? $this->actualOutputQuantity,
                 manufactureDate: $this->manufactureDate !== '' ? $this->manufactureDate : now()->toDateString(),
                 outputIngredientId: $this->outputMode === 'intermediate' && $this->outputIngredientId !== null
                     ? (int) $this->outputIngredientId
@@ -408,7 +409,7 @@ class ProductionDetail extends Component
                 actor: $this->user(),
                 outputLot: $outputLot,
                 kind: $kind,
-                quantity: $this->issueQuantity,
+                quantity: NumberLocale::normalizeDecimalString($this->issueQuantity) ?? $this->issueQuantity,
                 note: $this->issueNote,
             );
         } catch (ValidationException $exception) {

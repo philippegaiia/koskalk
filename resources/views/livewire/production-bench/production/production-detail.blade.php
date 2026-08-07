@@ -93,7 +93,7 @@
     <section class="sk-card grid gap-5 p-5 sm:grid-cols-2 lg:grid-cols-4">
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</p></div>
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.batch_size') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, auth()->user()?->number_locale) }} {{ $production->basis_input_unit->value }}</p></div>
-        <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.expected_units') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->expected_units }}</p></div>
+        <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.settings.expected_units') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, auth()->user()?->number_locale) }}</p></div>
         <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.formula.source_version') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->source_formula_version_number ?? '—' }}</p></div>
     </section>
 
@@ -135,19 +135,23 @@
                         : (string) $requirement->required_units;
                     $coverageShort = bccomp($reservedCoverage, $requiredCoverage, 9) < 0;
                     $shortAmount = $coverageShort ? bcsub($requiredCoverage, $reservedCoverage, 9) : null;
+                    $numberLocale = auth()->user()?->number_locale;
+                    $reservedCoverageDisplay = \App\Support\NumberLocale::formatAdaptiveDecimal($reservedCoverage, 0, 3, $numberLocale);
+                    $requiredCoverageDisplay = \App\Support\NumberLocale::formatAdaptiveDecimal($requiredCoverage, 0, 3, $numberLocale);
+                    $shortAmountDisplay = $shortAmount !== null ? \App\Support\NumberLocale::formatAdaptiveDecimal($shortAmount, 0, 3, $numberLocale) : null;
                 @endphp
                 <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div>
                         <p class="font-medium text-[var(--color-ink-strong)]">{{ $requirement->subject_name_snapshot }}</p>
                         <p class="text-xs text-[var(--color-ink-soft)]">
                             @if ($coverageShort)
-                                {{ __('production_bench.production.coverage_short', ['reserved' => $reservedCoverage, 'required' => $requiredCoverage, 'short' => $shortAmount]) }}
+                                {{ __('production_bench.production.coverage_short', ['reserved' => $reservedCoverageDisplay, 'required' => $requiredCoverageDisplay, 'short' => $shortAmountDisplay]) }}
                             @else
-                                {{ __('production_bench.production.coverage_reserved', ['reserved' => $reservedCoverage, 'required' => $requiredCoverage]) }}
+                                {{ __('production_bench.production.coverage_reserved', ['reserved' => $reservedCoverageDisplay, 'required' => $requiredCoverageDisplay]) }}
                             @endif
                         </p>
                     </div>
-                    <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $requirement->kind->value === 'ingredient' ? $requirement->required_mass_grams.' g' : $requirement->required_units.' '.__('production_bench.inventory.units') }}</p>
+                    <p class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $requirement->kind->value === 'ingredient' ? \App\Support\NumberLocale::formatAdaptiveDecimal($requirement->required_mass_grams, 0, 3, auth()->user()?->number_locale).' g' : \App\Support\NumberLocale::formatDecimal($requirement->required_units, 0, auth()->user()?->number_locale).' '.__('production_bench.inventory.units') }}</p>
                 </div>
             @empty
                 <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_requirements') }}</p>
@@ -174,7 +178,7 @@
                     <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                         <div>
                             <p class="font-medium text-[var(--color-ink-strong)]">{{ $requirement->subject_name_snapshot }}</p>
-                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $requirement->kind->value === 'ingredient' ? $requirement->required_mass_grams.' g' : $requirement->required_units.' '.__('production_bench.inventory.units') }}</p>
+                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $requirement->kind->value === 'ingredient' ? \App\Support\NumberLocale::formatAdaptiveDecimal($requirement->required_mass_grams, 0, 3, auth()->user()?->number_locale).' g' : \App\Support\NumberLocale::formatDecimal($requirement->required_units, 0, auth()->user()?->number_locale).' '.__('production_bench.inventory.units') }}</p>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
                             <input type="number" inputmode="decimal" min="0" step="any" wire:model.live.debounce.500ms="actualRows.{{ $requirement->id }}.quantity" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $requirement->subject_name_snapshot]) }}" @disabled($isReadOnly) class="sk-input w-36 text-right font-mono">

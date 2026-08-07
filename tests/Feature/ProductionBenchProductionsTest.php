@@ -114,7 +114,7 @@ it('shows immutable planning snapshots, requirements, tasks, and employee assign
     ])
         ->assertSee('Olive soap')
         ->assertSee('Olive oil')
-        ->assertSee('250.000000000 g')
+        ->assertSee('250 g')
         ->assertSee('Cut and cure')
         ->assertSee('Ana Maker')
         ->assertSee('2026-08-11')

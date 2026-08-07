@@ -73,7 +73,7 @@
                                             @foreach ($requirementProposal['allocations'] as $allocation)
                                                 <div class="flex flex-wrap items-center justify-between gap-2 text-sm">
                                                     <span class="font-mono text-[var(--color-ink-soft)]">{{ $allocation['lot']->internal_lot_code }} · {{ $allocation['lot']->expires_at?->format('Y-m-d') ?? __('production_bench.production.no_expiry') }}</span>
-                                                    <span class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $allocation['quantity'] }}</span>
+                                                    <span class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($allocation['quantity'], 0, 3, auth()->user()?->number_locale) }}</span>
                                                 </div>
                                             @endforeach
                                         </div>
@@ -93,7 +93,7 @@
                                         <div class="mt-3 space-y-3">
                                             @forelse ($requirementProposal['eligible_lots'] as $lotRow)
                                                 <label class="grid gap-2 sm:grid-cols-[1fr_10rem] sm:items-center">
-                                                    <span class="text-sm text-[var(--color-ink-soft)]">{{ $lotRow['lot']->internal_lot_code }} · {{ __('production_bench.production.available_quantity') }} {{ $lotRow['available'] }} · {{ $lotRow['lot']->expires_at?->format('Y-m-d') ?? __('production_bench.production.no_expiry') }}</span>
+                                                    <span class="text-sm text-[var(--color-ink-soft)]">{{ $lotRow['lot']->internal_lot_code }} · {{ __('production_bench.production.available_quantity') }} {{ \App\Support\NumberLocale::formatAdaptiveDecimal($lotRow['available'], 0, 3, auth()->user()?->number_locale) }} · {{ $lotRow['lot']->expires_at?->format('Y-m-d') ?? __('production_bench.production.no_expiry') }}</span>
                                                     <input type="text" inputmode="decimal" wire:model.live.debounce.300ms="manualQuantities.{{ $requirement->id }}.{{ $lotRow['lot']->id }}" class="sk-input w-full" placeholder="0">
                                                 </label>
                                             @empty

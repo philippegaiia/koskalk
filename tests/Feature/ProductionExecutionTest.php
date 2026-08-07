@@ -14,6 +14,7 @@ use App\Actions\Production\StartProduction;
 use App\Actions\Purchasing\ReceiveDirectGoodsReceipt;
 use App\ListingPriceBasis;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
+use App\Livewire\ProductionBench\Production\ProductionIndex;
 use App\MassUnit;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
@@ -41,6 +42,7 @@ use App\ProductionRunStatus;
 use App\StockMovementType;
 use App\StockReservationStatus;
 use App\StockUnitKind;
+use App\Support\NumberLocale;
 use App\Visibility;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -744,6 +746,30 @@ it('prices actual consumption at the received per-gram cost from a real receipt'
     expect($completed->actual_ingredient_total)->toBe('52.083332000')
         ->and($completed->actual_total_cost)->toBe('101.083332000')
         ->and($completed->cost_currency)->toBe('EUR');
+});
+
+it('formats production numbers with the user workspace number locale', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'format-locale-1', start: false);
+    $production->update([
+        'basis_input_value' => '1234.500000000',
+        'expected_units' => 1234,
+    ]);
+    $fixture['owner']->update(['number_locale' => 'fr']);
+
+    $formattedBasis = NumberLocale::formatAdaptiveDecimal('1234.5', 0, 3, 'fr');
+    $formattedUnits = NumberLocale::formatDecimal(1234, 0, 'fr');
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->assertSee($formattedBasis)
+        ->assertSee($formattedUnits)
+        ->assertDontSee('1234.500000000');
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionIndex::class)
+        ->assertSee($formattedBasis)
+        ->assertSee($formattedUnits);
 });
 
 /**

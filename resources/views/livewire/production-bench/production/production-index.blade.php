@@ -102,12 +102,12 @@
                                         }
                                     }
                                 @endphp
-                                <tr class="transition hover:bg-[var(--color-panel-muted)]">
+                                <tr class="cursor-pointer transition hover:bg-[var(--color-panel-muted)]" x-data x-on:click="if (! event.target.closest('a, button, input, select, label')) window.Livewire?.navigate($el.querySelector('a[data-row-link]').href)">
                                     <td class="px-5 py-4">
                                         <input type="checkbox" wire:model.live="selectedProductionIds" value="{{ $production->id }}" @disabled(! $canMutate || ! in_array($production->status->value, ['scheduled', 'reserved'], true)) aria-label="{{ __('production_bench.production.select_production', ['name' => $production->displayRecipeName()]) }}" style="accent-color: var(--color-accent);" class="h-5 w-5 rounded border-[var(--color-line-strong)]">
                                     </td>
                                     <td class="px-5 py-4 min-w-0">
-                                        <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="block">
+                                        <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate data-row-link class="block">
                                             <p class="font-semibold text-[var(--color-ink-strong)]">{{ $production->displayIdentifier() }} · {{ $production->displayRecipeName() }}</p>
                                             <p class="mt-1 text-xs text-[var(--color-ink-soft)]">
                                                 <span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.planning_reference') }}:</span>

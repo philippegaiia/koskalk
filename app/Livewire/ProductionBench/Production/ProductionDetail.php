@@ -667,11 +667,14 @@ class ProductionDetail extends Component
 
         $shortRequirements = collect();
         $partialShortage = '0';
+        $hasActiveReservations = false;
 
-        if ($production->status === ProductionRunStatus::Scheduled) {
+        if (in_array($production->status, [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
             $activeReservations = $production->requirements
                 ->flatMap->reservations
                 ->where('status', StockReservationStatus::Active);
+
+            $hasActiveReservations = $activeReservations->isNotEmpty();
 
             foreach ($production->requirements as $requirement) {
                 $required = $requirement->ingredient_id !== null
@@ -702,6 +705,7 @@ class ProductionDetail extends Component
             'completionReadiness' => $completionReadiness,
             'shortRequirements' => $shortRequirements,
             'partialShortage' => $partialShortage,
+            'hasActiveReservations' => $hasActiveReservations,
             'intermediateIngredients' => Ingredient::query()
                 ->withoutGlobalScopes()
                 ->where(fn ($query) => $query->whereNull('workspace_id')->orWhere('workspace_id', $workspace->id))

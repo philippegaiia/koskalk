@@ -4,6 +4,7 @@ use App\Actions\Production\AbortProduction;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CompleteProduction;
 use App\Actions\Production\CreateProductionDraft;
+use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\IssueFinishedGoods;
 use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\ReleaseOutputLot;
@@ -54,6 +55,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -656,6 +658,74 @@ it('prepares stock partially and completes coverage on a later pass', function (
 
     expect($completed[0]->status)->toBe(ProductionRunStatus::Reserved)
         ->and(StockReservation::query()->where('production_requirement_id', $ingredientRequirement->id)->sum('quantity'))->toEqual(14000);
+});
+
+it('shows the release stock control for a scheduled run with partial reservations and allows deletion after release', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'scheduled-release-ui-1',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+    $oilLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $fixture['olive']->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($oilLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '5000.000000000',
+    ]);
+    $packagingLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => null,
+        'packaging_item_id' => $fixture['packaging']->id,
+        'unit_kind' => 'count',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($packagingLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '100',
+    ]);
+
+    // Partial preparation: only 5000 g of the 14000 g oil requirement is
+    // available, so the run stays scheduled with active reservations.
+    $prepared = app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'scheduled-release-ui-prepare',
+    );
+
+    expect($prepared[0]->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(2);
+
+    // Deletion is blocked while reservations exist…
+    expect(fn () => app(DeleteProductionRun::class)->handle($fixture['owner'], $production->fresh()))
+        ->toThrow(ValidationException::class);
+
+    // …but the detail page offers the release control on a scheduled run.
+    Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => $production->id])
+        ->assertSee(__('production_bench.production.release_stock'))
+        ->call('releaseStock')
+        ->assertHasNoErrors()
+        ->assertDispatched('production-stock-released');
+
+    expect(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(0);
+
+    // After release the run can be deleted.
+    app(DeleteProductionRun::class)->handle($fixture['owner'], $production->fresh());
+
+    expect(ProductionRun::query()->find($production->id))->toBeNull();
 });
 
 it('releases reservations per requirement and returns to scheduled when empty', function (): void {

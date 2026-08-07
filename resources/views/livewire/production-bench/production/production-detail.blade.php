@@ -115,7 +115,7 @@
                 <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.prepare_stock_help_short') }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                @if ($production->status->value === 'reserved')
+                @if ($hasActiveReservations)
                     <button type="button" wire:click="releaseStock" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-ghost">{{ __('production_bench.production.release_stock') }}</button>
                 @endif
                 <a href="{{ route('production-bench.production.prepare', $production) }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.prepare_stock') }}</a>

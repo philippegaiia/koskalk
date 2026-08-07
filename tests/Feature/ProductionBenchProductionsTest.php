@@ -445,3 +445,13 @@ it('shows a partial-reservation badge only when reservations are short of requir
     Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
         ->assertSee(__('production_bench.production.partially_reserved_short', ['short' => '600']));
 });
+
+it('renders a clickable row that navigates to the production detail page', function (): void {
+    $fixture = productionListFixture();
+
+    $html = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)->html();
+
+    expect($html)->toContain('data-row-link')
+        ->and($html)->toContain(route('production-bench.production.show', $fixture['production']))
+        ->and($html)->toContain('window.Livewire?.navigate');
+});

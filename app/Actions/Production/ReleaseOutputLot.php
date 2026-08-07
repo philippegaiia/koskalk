@@ -5,6 +5,7 @@ namespace App\Actions\Production;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Services\ProductionBenchAccess;
+use App\StockLotOrigin;
 use App\StockLotStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -28,6 +29,12 @@ class ReleaseOutputLot
                 ->withoutGlobalScopes()
                 ->lockForUpdate()
                 ->findOrFail($lot->id);
+
+            if ($lockedLot->origin !== StockLotOrigin::ProductionOutput) {
+                throw ValidationException::withMessages([
+                    'lot' => 'Only production output lots can be released.',
+                ]);
+            }
 
             if ($lockedLot->status !== StockLotStatus::Quarantined) {
                 throw ValidationException::withMessages([

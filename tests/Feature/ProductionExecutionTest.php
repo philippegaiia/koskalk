@@ -943,6 +943,83 @@ it('rejects completion when lots resolve to mixed currencies', function (): void
     })->toThrow(ValidationException::class);
 });
 
+it('subtracts downstream reservations when issuing an intermediate lot and rejects foreign lots', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'issue-inter-1');
+    $intermediate = Ingredient::factory()->create(['display_name' => 'Soap base']);
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '12000',
+        manufactureDate: '2026-08-20',
+        outputIngredientId: $intermediate->id,
+    );
+    $intermediateLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
+
+    // A later production reserves 4,000 g of the 12,000 g intermediate.
+    StockReservation::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $production->id,
+        'production_requirement_id' => $ingredientRequirement->id,
+        'stock_lot_id' => $intermediateLot->id,
+        'quantity' => '4000.000000000',
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+
+    // 12,000 physical − 4,000 reserved = 8,000 issuable.
+    app(IssueFinishedGoods::class)->handle($fixture['owner'], $intermediateLot, StockMovementType::Shipment, '8000');
+
+    expect(function () use ($fixture, $intermediateLot): void {
+        app(IssueFinishedGoods::class)->handle($fixture['owner'], $intermediateLot, StockMovementType::Shipment, '1');
+    })->toThrow(ValidationException::class);
+
+    // A non-output lot (opening balance) cannot be released or issued.
+    $openingLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $fixture['olive']->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'origin' => 'opening_balance',
+    ]);
+
+    expect(function () use ($fixture, $openingLot): void {
+        app(ReleaseOutputLot::class)->handle($fixture['owner'], $openingLot);
+    })->toThrow(ValidationException::class)
+        ->and(fn (): StockLot => app(IssueFinishedGoods::class)->handle($fixture['owner'], $openingLot, StockMovementType::Sample, '1'))
+        ->toThrow(ValidationException::class);
+});
+
+it('rejects fractional issue quantities for finished count lots', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'issue-count-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    );
+    $finishedLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
+
+    expect(function () use ($fixture, $finishedLot): void {
+        app(IssueFinishedGoods::class)->handle($fixture['owner'], $finishedLot, StockMovementType::Shipment, '2.5');
+    })->toThrow(ValidationException::class);
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, olive: Ingredient, packaging: PackagingItem}
  */

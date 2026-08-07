@@ -3,10 +3,13 @@
 namespace App\Actions\Production;
 
 use App\Models\StockLot;
+use App\Models\StockReservation;
 use App\Models\User;
 use App\Services\ProductionBenchAccess;
+use App\StockLotOrigin;
 use App\StockLotStatus;
 use App\StockMovementType;
+use App\StockReservationStatus;
 use App\StockUnitKind;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -54,17 +57,39 @@ class IssueFinishedGoods
                 ->lockForUpdate()
                 ->findOrFail($outputLot->id);
 
+            if ($lockedLot->origin !== StockLotOrigin::ProductionOutput) {
+                throw ValidationException::withMessages([
+                    'lot' => 'Only production output lots can be issued.',
+                ]);
+            }
+
             if ($lockedLot->status !== StockLotStatus::Released) {
                 throw ValidationException::withMessages([
                     'lot' => 'Only a released output lot can be issued.',
                 ]);
             }
 
-            $physical = (string) $lockedLot->movements()->sum('quantity_delta');
-
-            if (bccomp($quantity, $physical, 9) > 0) {
+            if ($lockedLot->unit_kind === StockUnitKind::Count && preg_match('/^\d+$/', trim($quantity)) !== 1) {
                 throw ValidationException::withMessages([
-                    'quantity' => 'Not enough available output: '.$physical.' remaining.',
+                    'quantity' => 'Finished product issues must use whole units.',
+                ]);
+            }
+
+            $available = (string) $lockedLot->movements()->sum('quantity_delta');
+
+            // Intermediate output lots are ingredients: active reservations of
+            // later productions reduce what can be issued.
+            if ($lockedLot->ingredient_id !== null) {
+                $reserved = (string) StockReservation::query()
+                    ->where('stock_lot_id', $lockedLot->id)
+                    ->where('status', StockReservationStatus::Active)
+                    ->sum('quantity');
+                $available = bcsub($available, $reserved, 9);
+            }
+
+            if (bccomp($quantity, $available, 9) > 0) {
+                throw ValidationException::withMessages([
+                    'quantity' => 'Not enough available output: '.$available.' remaining.',
                 ]);
             }
 

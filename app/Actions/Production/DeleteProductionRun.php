@@ -35,12 +35,12 @@ class DeleteProductionRun
         $this->access->assertWritable($actor, $workspace);
 
         DB::transaction(function () use ($actor, $production): void {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->find($production->workspace_id);
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($lockedProduction->workspace_id);
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([

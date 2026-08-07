@@ -42,6 +42,9 @@ class SaveProductionJournalEntry
         }
 
         return DB::transaction(function () use ($actor, $body, $production): ProductionRun {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->find($production->workspace_id);
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);

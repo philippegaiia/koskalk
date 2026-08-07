@@ -45,12 +45,12 @@ class ProductionCompletionService
             $outputIngredientId,
             $production,
         ): ProductionRun {
+            $workspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->findOrFail($production->workspace_id);
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
-            $workspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->findOrFail($lockedProduction->workspace_id);
 
             $this->assertCompletable($lockedProduction, $workspace, $actualOutputQuantity, $manufactureDate, $outputIngredientId);
 

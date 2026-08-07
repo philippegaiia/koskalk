@@ -35,6 +35,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
 use App\OwnerType;
 use App\ProductionConsumptionKind;
@@ -44,6 +45,7 @@ use App\StockReservationStatus;
 use App\StockUnitKind;
 use App\Support\NumberLocale;
 use App\Visibility;
+use App\WorkspaceMemberRole;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -1018,6 +1020,28 @@ it('rejects fractional issue quantities for finished count lots', function (): v
     expect(function () use ($fixture, $finishedLot): void {
         app(IssueFinishedGoods::class)->handle($fixture['owner'], $finishedLot, StockMovementType::Shipment, '2.5');
     })->toThrow(ValidationException::class);
+});
+
+it('disables mutation controls for viewer-role members', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'viewer-1', start: false);
+    $viewer = User::factory()->create();
+    WorkspaceMember::factory()->for($fixture['workspace'])->for($viewer)->create([
+        'role' => WorkspaceMemberRole::Viewer,
+    ]);
+
+    $page = Livewire::actingAs($viewer)
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id]);
+
+    // Start, release, complete, and journal controls exist but are disabled.
+    $page->assertSee('Start production')
+        ->assertSee('Release stock')
+        ->assertSeeHtml('wire:click="start"')
+        ->assertSeeHtml('disabled');
+
+    $html = $page->html();
+    preg_match('/wire:click="start"[^>]*/', $html, $m);
+    expect($m[0] ?? '')->toContain('disabled');
 });
 
 /**

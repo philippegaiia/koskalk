@@ -42,12 +42,12 @@ class SaveProductionActuals
         $this->access->assertWritable($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $production, $rows): ProductionRun {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->find($production->workspace_id);
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($lockedProduction->workspace_id);
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([

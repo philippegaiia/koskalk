@@ -32,12 +32,12 @@ class ReleaseProductionStock
         $this->access->assertWritable($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $production, $productionRequirementId): ProductionRun {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->find($production->workspace_id);
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($lockedProduction->workspace_id);
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
@@ -89,6 +89,7 @@ class ReleaseProductionStock
             foreach (StockReservation::query()
                 ->where('production_requirement_id', $requirement->id)
                 ->where('status', StockReservationStatus::Active)
+                ->lockForUpdate()
                 ->get(['quantity']) as $reservation) {
                 $reserved = bcadd($reserved, (string) $reservation->quantity, 9);
             }

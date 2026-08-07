@@ -41,12 +41,12 @@ class AbortProduction
         $this->access->assertWritable($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $production, $reason): ProductionRun {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->findOrFail($production->workspace_id);
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->findOrFail($lockedProduction->workspace_id);
 
             $this->access->assertWritable($actor, $lockedWorkspace);
 

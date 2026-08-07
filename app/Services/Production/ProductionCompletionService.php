@@ -5,6 +5,7 @@ namespace App\Services\Production;
 use App\Models\Ingredient;
 use App\Models\ProductionConsumption;
 use App\Models\ProductionRun;
+use App\Models\ProductionTask;
 use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
@@ -17,6 +18,7 @@ use App\StockLotStatus;
 use App\StockMovementType;
 use App\StockReservationStatus;
 use App\StockUnitKind;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -136,6 +138,7 @@ class ProductionCompletionService
             $intermediateCostPerGram = $isIntermediate && bccomp($ingredientTotal, '0', 18) > 0
                 ? bcdiv($ingredientTotal, $outputQuantity, 9)
                 : null;
+            $availableFrom = $this->readyDate($lockedProduction, $manufactureDate);
 
             $outputLot = StockLot::query()->create([
                 'workspace_id' => $workspace->id,
@@ -149,7 +152,7 @@ class ProductionCompletionService
                 'status' => StockLotStatus::Quarantined,
                 'stocked_at' => $manufactureDate,
                 'expires_at' => null,
-                'available_from' => null,
+                'available_from' => $availableFrom,
                 'released_at' => null,
                 'provenance_complete' => true,
                 'historical_unit_cost' => $intermediateCostPerGram,
@@ -271,6 +274,33 @@ class ProductionCompletionService
                 'production' => 'Every actual quantity must reference a stock lot before completing.',
             ]);
         }
+    }
+
+    private function readyDate(ProductionRun $production, string $manufactureDate): ?string
+    {
+        // Tasks take precedence: the production becomes releasable after the
+        // end of the last task. Query directly: the tasks() relation applies
+        // its own ascending order.
+        $lastTask = ProductionTask::query()
+            ->where('production_run_id', $production->id)
+            ->orderByDesc('scheduled_for')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastTask !== null) {
+            return $lastTask->scheduled_for?->toDateString();
+        }
+
+        // Indicative family default: +21 days for soap, +3 days for cosmetics,
+        // derived from the snapshotted calculation basis. Never user-entered.
+        $calculationBasis = is_array($production->formula_context_snapshot)
+            ? ($production->formula_context_snapshot['calculation_basis'] ?? null)
+            : null;
+        $isCosmetic = $calculationBasis === 'total_formula'
+            || ($calculationBasis === null && $production->basis_kind->value === 'total_formula_mass');
+        $days = $isCosmetic ? 3 : 21;
+
+        return Carbon::parse($manufactureDate)->addDays($days)->toDateString();
     }
 
     private function normalizeOutputQuantity(string $value, bool $isIntermediate): string

@@ -23,6 +23,7 @@ use App\Models\IngredientSapProfile;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
+use App\Models\ProductionTask;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -978,6 +979,7 @@ it('subtracts downstream reservations when issuing an intermediate lot and rejec
         manufactureDate: '2026-08-20',
         outputIngredientId: $intermediate->id,
     );
+    $completed->outputLot()->sole()->update(['available_from' => now()->subDay()->toDateString()]);
     $intermediateLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
 
     // A later production reserves 4,000 g of the 12,000 g intermediate.
@@ -1029,6 +1031,7 @@ it('rejects fractional issue quantities for finished count lots', function (): v
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
     );
+    $completed->outputLot()->sole()->update(['available_from' => now()->subDay()->toDateString()]);
     $finishedLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
 
     expect(function () use ($fixture, $finishedLot): void {
@@ -1114,6 +1117,53 @@ it('attaches a private journal document to the production', function (): void {
     expect($document->note)->toBe('Mould filled at 09:15')
         ->and($document->mediaAsset->workspace_id)->toBe($fixture['workspace']->id)
         ->and($document->mediaAsset->original_filename)->toBe('batch-photo.jpg');
+});
+
+it('sets family and task based ready dates on output lots', function (): void {
+    $completeRun = function (array $fixture, string $key, array $runOverrides = [], array $tasks = []): ProductionRun {
+        $production = productionExecutionRun($fixture, $key);
+        $production->update($runOverrides);
+        $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+        $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+        $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+        $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+        app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+            ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+            ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+        ]);
+
+        foreach ($tasks as $taskDate) {
+            ProductionTask::factory()->for($production, 'productionRun')->create([
+                'workspace_id' => $fixture['workspace']->id,
+                'name_snapshot' => 'Cure',
+                'scheduled_for' => $taskDate,
+            ]);
+        }
+
+        return app(CompleteProduction::class)->handle(
+            actor: $fixture['owner'],
+            production: $production->fresh(),
+            actualOutputQuantity: '95',
+            manufactureDate: '2026-08-20',
+        );
+    };
+
+    $fixture = productionExecutionFixture();
+
+    // Soap, no tasks: +21 days after manufacture.
+    $soap = $completeRun($fixture, 'ready-soap-1');
+    expect($soap->outputLot()->sole()->available_from?->toDateString())->toBe('2026-09-10');
+
+    // Cosmetic basis: +3 days.
+    $cosmetic = $completeRun($fixture, 'ready-cosmetic-1', [
+        'formula_context_snapshot' => ['calculation_basis' => 'total_formula'],
+        'basis_kind' => 'total_formula_mass',
+    ]);
+    expect($cosmetic->outputLot()->sole()->available_from?->toDateString())->toBe('2026-08-23');
+
+    // Tasks override the family default: ready after the last task.
+    $tasked = $completeRun($fixture, 'ready-task-1', [], ['2026-08-25', '2026-09-01']);
+    expect($tasked->outputLot()->sole()->available_from?->toDateString())->toBe('2026-09-01');
 });
 
 /**

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\ProductionBench\Production;
 
+use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\PlanProduction;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionBatchPreset;
@@ -10,6 +11,7 @@ use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\ProductionRunSource;
+use App\ProductionRunStatus;
 use App\Services\Production\ProductionAvailabilityPreview;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
@@ -47,8 +49,8 @@ class ProductionCreate extends Component
     public function mount(): void
     {
         $this->basisInputUnit = $this->workspace()->mass_display_system->priceUnit()->value;
-        $this->plannedFor = now()->toDateString();
         $this->idempotencyKey = (string) Str::uuid();
+
     }
 
     public function updatedRecipeId(): void
@@ -113,7 +115,7 @@ class ProductionCreate extends Component
             'basisInputValue' => ['required', 'numeric', 'gt:0'],
             'basisInputUnit' => ['required', 'in:g,kg,oz,lb'],
             'expectedUnits' => ['required', 'integer', 'min:1'],
-            'plannedFor' => ['required', 'date_format:Y-m-d'],
+            'plannedFor' => ['nullable', 'date_format:Y-m-d'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -134,7 +136,7 @@ class ProductionCreate extends Component
                 basisInputUnit: $this->basisInputUnit,
                 expectedUnits: $this->expectedUnits,
                 idempotencyKey: $this->idempotencyKey,
-                plannedFor: $this->plannedFor,
+                plannedFor: filled($this->plannedFor) ? $this->plannedFor : null,
                 notes: filled($this->notes) ? $this->notes : null,
                 source: ProductionRunSource::Direct,
                 taskSet: $this->selectedTaskSet(),
@@ -151,6 +153,60 @@ class ProductionCreate extends Component
 
         $this->idempotencyKey = (string) Str::uuid();
         $this->showAppNotification(__('production_bench.production.planned_success').' '.$production->public_id);
+        $this->dispatch('production-planned');
+    }
+
+    /**
+     * Save a draft production without a date. Drafts have no stock
+     * effect and no generated tasks — they are scheduling placeholders.
+     */
+    public function saveDraft(CreateProductionDraft $createProductionDraft): void
+    {
+        $this->basisInputValue = NumberLocale::normalizeDecimalString($this->basisInputValue) ?? $this->basisInputValue;
+
+        $this->validate([
+            'recipeId' => ['required', 'integer'],
+            'basisInputValue' => ['required', 'numeric', 'gt:0'],
+            'basisInputUnit' => ['required', 'in:g,kg,oz,lb'],
+            'expectedUnits' => ['required', 'integer', 'min:1'],
+            'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        try {
+            $recipe = $this->selectedRecipe();
+
+            if (! $recipe instanceof Recipe) {
+                throw ValidationException::withMessages([
+                    'recipeId' => __('production_bench.production.select_product'),
+                ]);
+            }
+
+            $production = $createProductionDraft->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                recipe: $recipe,
+                basisInputValue: $this->basisInputValue,
+                basisInputUnit: $this->basisInputUnit,
+                expectedUnits: $this->expectedUnits,
+                idempotencyKey: $this->idempotencyKey,
+                plannedFor: null,
+                notes: filled($this->notes) ? $this->notes : null,
+                source: ProductionRunSource::Direct,
+                status: ProductionRunStatus::Draft,
+                taskSet: $this->selectedTaskSet(),
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError($field === 'recipe' ? 'recipeId' : $field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->idempotencyKey = (string) Str::uuid();
+        $this->showAppNotification(__('production_bench.production.draft_saved').' '.$production->public_id);
         $this->dispatch('production-planned');
     }
 

@@ -2,6 +2,7 @@
 
 use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Livewire\ProductionBench\Production\ProductionCreate;
+use App\Livewire\ProductionBench\Production\ProductionIndex;
 use App\MassUnit;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -258,3 +259,58 @@ function productionCreateRecipe(Workspace $workspace, ProductFamily $family, str
 
     return $recipe;
 }
+
+it('creates a draft production without a date and keeps it scheduleable', function (): void {
+    $fixture = productionCreateFixture();
+
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('basisInputValue', '5')
+        ->set('expectedUnits', '30')
+        ->call('saveDraft')
+        ->assertHasNoErrors()
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && str_starts_with($payload['message'], __('production_bench.production.draft_saved'))
+                && $payload['type'] === 'success';
+        });
+
+    $production = $fixture['recipe']->productionRuns()->firstOrFail();
+
+    expect($production->status)->toBe(ProductionRunStatus::Draft)
+        ->and($production->planned_for)->toBeNull()
+        ->and($production->planning_batch_number)->toBe('T00001')
+        ->and($production->requirements()->count())->toBeGreaterThan(0)
+        ->and($production->tasks()->count())->toBe(0);
+
+    // Schedule the draft from the index
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->set('scheduleDate', '2026-09-15')
+        ->call('scheduleProduction', $production->id)
+        ->assertHasNoErrors()
+        ->assertDispatched('app-notification');
+
+    $production->refresh();
+
+    expect($production->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and($production->planned_for->format('Y-m-d'))->toBe('2026-09-15')
+        ->and($production->tasks()->count())->toBeGreaterThan(0);
+});
+
+it('shows draft as a scheduleable status in the list and does not require a date for creation', function (): void {
+    $fixture = productionCreateFixture();
+
+    $page = Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee(__('production_bench.production.status.draft'))
+        ->assertDontSee(__('production_bench.production.schedule_draft'));
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('basisInputValue', '2')
+        ->set('expectedUnits', '15')
+        ->call('saveDraft')
+        ->assertHasNoErrors();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->assertSee(__('production_bench.production.schedule_draft'));
+});

@@ -322,6 +322,10 @@ return [
     ],
     'production' => [
         'create_title' => 'Plan production',
+        'save_as_draft' => 'Save as draft',
+        'draft_saved' => 'Draft saved.',
+        'schedule_draft' => 'Schedule',
+        'schedule_draft_help' => 'Choose a production date to move this draft to the schedule.',
         'create_intro' => 'Choose a product, adjust the batch if needed, and set the production date. Stock is only reserved later when you prepare it.',
         'delete' => 'Delete production',
         'delete_confirm' => 'Delete this production and its planning data? This cannot be undone.',

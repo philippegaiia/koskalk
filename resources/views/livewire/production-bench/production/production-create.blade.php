@@ -16,7 +16,8 @@
             @endif
         </header>
 
-        <form wire:submit="plan" class="space-y-6">
+        <form class="space-y-6">
+
             <section aria-labelledby="production-details-heading" class="sk-card space-y-5 p-5 sm:p-6">
                 <div>
                     <h2 id="production-details-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.details') }}</h2>
@@ -68,8 +69,8 @@
                     </label>
 
                     <label class="space-y-2">
-                        <span class="text-sm font-medium">{{ __('production_bench.production.production_date') }}</span>
-                        <input wire:model.live="plannedFor" type="date" required @disabled($isReadOnly) class="sk-input w-full">
+                        <input wire:model.live="plannedFor" type="date" @disabled($isReadOnly) class="sk-input w-full">
+
                         <span class="block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.production_date_help') }}</span>
                         @error('plannedFor') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                     </label>
@@ -157,8 +158,10 @@
 
             <div class="flex flex-wrap items-center justify-end gap-3">
                 <a href="{{ route('production-bench.production.settings.presets') }}" wire:navigate class="sk-btn sk-btn-ghost">{{ __('production_bench.production.setup_link') }}</a>
-                <button type="submit" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule') }}</button>
+                <button type="button" wire:click="saveDraft" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-ghost">{{ __('production_bench.production.save_as_draft') }}</button>
+                <button type="button" wire:click="plan" wire:loading.attr="disabled" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.production.schedule') }}</button>
             </div>
+
         </form>
     @endif
 </x-production-bench.page>

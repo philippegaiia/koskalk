@@ -17,7 +17,7 @@ class ScheduleProduction
         private readonly GenerateProductionTasks $generateProductionTasks,
     ) {}
 
-    public function handle(User $actor, ProductionRun $production): ProductionRun
+    public function handle(User $actor, ProductionRun $production, ?string $plannedFor = null): ProductionRun
     {
         $workspace = $production->workspace;
 
@@ -29,7 +29,7 @@ class ScheduleProduction
 
         $this->access->assertWritable($actor, $workspace);
 
-        $scheduled = DB::transaction(function () use ($actor, $production): ProductionRun {
+        $scheduled = DB::transaction(function () use ($actor, $production, $plannedFor): ProductionRun {
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
@@ -51,7 +51,14 @@ class ScheduleProduction
                 ]);
             }
 
-            $lockedProduction->update(['status' => ProductionRunStatus::Scheduled]);
+            if ($plannedFor !== null) {
+                $lockedProduction->update([
+                    'status' => ProductionRunStatus::Scheduled,
+                    'planned_for' => $plannedFor,
+                ]);
+            } else {
+                $lockedProduction->update(['status' => ProductionRunStatus::Scheduled]);
+            }
 
             return $lockedProduction->fresh('requirements');
         }, attempts: 5);

@@ -17,6 +17,7 @@ use App\Actions\Production\RescheduleProductionTask;
 use App\Actions\Production\ResetProductionTaskDate;
 use App\Actions\Production\SaveProductionActuals;
 use App\Actions\Production\SaveProductionJournalEntry;
+use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\StartProduction;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\MediaAssetType;
@@ -369,6 +370,33 @@ class ProductionDetail extends Component
         $this->actualsDirty = false;
         $this->showAppNotification(__('production_bench.production.actuals_saved'));
         $this->dispatch('production-actuals-saved');
+    }
+
+    public string $scheduleDate = '';
+
+    public function scheduleProduction(ScheduleProduction $scheduleProduction): void
+    {
+        $production = $this->production();
+
+        try {
+            $scheduleProduction->handle(
+                actor: $this->user(),
+                production: $production,
+                plannedFor: $this->scheduleDate !== '' ? $this->scheduleDate : null,
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('production', $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->scheduleDate = '';
+        $this->showAppNotification(__('production_bench.production.planned_success'));
+        $this->dispatch('production-scheduled');
     }
 
     public function complete(CompleteProduction $completeProduction): void

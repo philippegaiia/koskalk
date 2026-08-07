@@ -4,6 +4,7 @@ namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\DeleteProductionRun;
+use App\Actions\Production\ScheduleProduction;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
@@ -81,6 +82,35 @@ class ProductionIndex extends Component
 
         $this->showAppNotification(__('production_bench.production.deleted'));
         $this->dispatch('production-deleted');
+    }
+
+    public string $scheduleDate = '';
+
+    public function scheduleProduction(int $productionId, ScheduleProduction $scheduleProduction): void
+    {
+        try {
+            $production = ProductionRun::query()
+                ->where('workspace_id', $this->workspace()->id)
+                ->findOrFail($productionId);
+
+            $scheduleProduction->handle(
+                actor: $this->user(),
+                production: $production,
+                plannedFor: $this->scheduleDate !== '' ? $this->scheduleDate : null,
+            );
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('selectedProductionIds', $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->scheduleDate = '';
+        $this->showAppNotification(__('production_bench.production.planned_success'));
+        $this->dispatch('production-scheduled');
     }
 
     public function prepareSelected(): void

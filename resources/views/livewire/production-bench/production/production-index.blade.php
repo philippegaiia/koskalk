@@ -68,12 +68,16 @@
                                     @if ($production->batch_number)
                                         <span class="text-[var(--color-ink-soft)]"><span class="font-medium text-[var(--color-ink-muted)]">{{ __('production_bench.production.batch_number') }}:</span> <span class="font-mono font-semibold text-[var(--color-ink-strong)]">{{ $production->batch_number }}</span></span>
                                     @endif
+                                    @if ($canMutate && $production->status->value === 'draft')
+                                        <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate class="sk-btn sk-btn-ghost text-xs">
+                                            {{ __('production_bench.production.schedule_draft') }}
+                                        </a>
+                                    @endif
                                     @if ($canMutate && in_array($production->status->value, ['draft', 'scheduled'], true))
                                         <button type="button" wire:click.stop="deleteProduction({{ $production->id }})" wire:confirm="{{ __('production_bench.production.delete_confirm') }}" wire:loading.attr="disabled" class="text-[var(--color-danger-strong)] hover:underline">
                                             {{ __('production_bench.production.delete') }}
                                         </button>
                                     @endif
-                                </div>
                             </div>
                             <dl class="grid grid-cols-2 gap-x-8 gap-y-2 text-sm sm:grid-cols-4">
                                 <div><dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.production_date') }}</dt><dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->planned_for?->format('Y-m-d') ?? '—' }}</dd></div>

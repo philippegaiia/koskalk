@@ -147,7 +147,7 @@ Expected: focused tests PASS.
 
 - [ ] **Step 1: Write failing deletion tests**
 
-Cover: deleting a `draft` run works and removes requirements, formula lines, tasks, and consumption rows; deleting a `scheduled` run without reservations works; deletion is rejected for `reserved`, `in_production`, `completed`, `cancelled`, `aborted` runs; deletion is rejected when any reservation exists; deletion is rejected when a permanent batch number is assigned; the list page exposes a delete action only for deletable runs and confirms before deleting.
+Cover: deleting a `draft` run works and removes requirements, formula lines, tasks, and consumption rows; deleting a `scheduled` run without reservations works; deletion is rejected for `reserved`, `in_production`, `completed`, `cancelled`, `aborted` runs; deletion is rejected when any reservation exists; a numbered run without reservations is deletable and its number is burned; the list page exposes a delete action only for deletable runs and confirms before deleting.
 
 - [ ] **Step 2: Run focused tests and verify RED**
 

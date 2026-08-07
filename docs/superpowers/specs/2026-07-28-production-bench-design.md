@@ -491,6 +491,8 @@ The maker knows the initial oil quantity or total formula quantity from experien
 
 Completion creates the output lot as physically present.
 
+The output lot carries an indicative ready date, never user-entered: **21 days after the production date for soap, 3 days for cosmetics** (derived from the snapshotted calculation basis), or the **last task's scheduled date when the run has tasks** — the production becomes releasable after the end of the last task. Release stays manual and is blocked until the ready date.
+
 A formula/product may provide a default curing or release delay. The output lot stores:
 
 - quarantine status;

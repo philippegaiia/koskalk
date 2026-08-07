@@ -284,11 +284,8 @@ class ProductionCompletionService
             return '0';
         }
 
-        if ($row->kind === ProductionConsumptionKind::Ingredient) {
-            // Ingredient lot prices are per kilogram; consumption is in grams.
-            return bcdiv(bcmul($row->quantity, $pricePerUnit, self::GuardScale), '1000', 9);
-        }
-
+        // Receipts store canonical grams and historical_unit_cost is cost per
+        // gram, so ingredient cost is grams × price-per-gram.
         return bcmul($row->quantity, $pricePerUnit, 9);
     }
 

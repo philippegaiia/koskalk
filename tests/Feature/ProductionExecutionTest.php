@@ -11,6 +11,8 @@ use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\SaveProductionActuals;
 use App\Actions\Production\SaveProductionJournalEntry;
 use App\Actions\Production\StartProduction;
+use App\Actions\Purchasing\ReceiveDirectGoodsReceipt;
+use App\ListingPriceBasis;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
 use App\MassUnit;
 use App\Models\FattyAcid;
@@ -28,6 +30,8 @@ use App\Models\RecipeVersionPackagingItem;
 use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\StockReservation;
+use App\Models\Supplier;
+use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
@@ -36,6 +40,7 @@ use App\ProductionConsumptionKind;
 use App\ProductionRunStatus;
 use App\StockMovementType;
 use App\StockReservationStatus;
+use App\StockUnitKind;
 use App\Visibility;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -200,7 +205,7 @@ it('completes a production atomically with consumption, costs, and an output lot
     $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
     $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
-    $oilLot->update(['historical_unit_cost' => '4.000000000', 'currency' => 'EUR']);
+    $oilLot->update(['historical_unit_cost' => '0.012500000', 'currency' => 'EUR']);
     $packagingLot->update(['historical_unit_cost' => '0.500000000', 'currency' => 'EUR']);
 
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
@@ -221,11 +226,11 @@ it('completes a production atomically with consumption, costs, and an output lot
         ->and($completed->manufacture_date?->toDateString())->toBe('2026-08-20')
         ->and($completed->actual_output_units)->toBe(95)
         ->and($completed->actual_output_mass_grams)->toBeNull()
-        ->and($completed->actual_ingredient_total)->toBe('44.000000000')
+        ->and($completed->actual_ingredient_total)->toBe('137.500000000')
         ->and($completed->actual_packaging_total)->toBe('49.000000000')
-        ->and($completed->actual_total_cost)->toBe('93.000000000')
+        ->and($completed->actual_total_cost)->toBe('186.500000000')
         ->and($completed->cost_currency)->toBe('EUR')
-        ->and($completed->actual_cost_per_unit)->toBe('0.978947368');
+        ->and($completed->actual_cost_per_unit)->toBe('1.963157894');
 
     // Consumption movements posted (negative deltas on the consumed lots).
     $oilMovement = StockMovement::query()
@@ -250,7 +255,7 @@ it('completes a production atomically with consumption, costs, and an output lot
 
     // Costs immutable: later price changes do not alter the snapshot.
     $oilLot->update(['historical_unit_cost' => '99.000000000']);
-    expect($completed->fresh()->actual_ingredient_total)->toBe('44.000000000');
+    expect($completed->fresh()->actual_ingredient_total)->toBe('137.500000000');
 });
 
 it('rejects completion while readiness is missing', function (): void {
@@ -679,6 +684,66 @@ it('shows lifecycle sections appropriate to the run status', function (): void {
         ->assertSee('Complete production')
         ->assertSee('Abort production')
         ->assertSee('Production journal');
+});
+
+it('prices actual consumption at the received per-gram cost from a real receipt', function (): void {
+    $fixture = productionExecutionFixture();
+    $supplier = Supplier::factory()->for($fixture['workspace'])->create();
+    $listing = SupplierListing::factory()
+        ->for($fixture['workspace'])
+        ->for($supplier)
+        ->for($fixture['olive'])
+        ->create([
+            'unit_kind' => StockUnitKind::Mass,
+            'net_quantity' => '5',
+            'net_unit' => 'kg',
+            'canonical_quantity_per_purchase_format' => '5000',
+        ]);
+    $receipt = app(ReceiveDirectGoodsReceipt::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        supplier: $supplier,
+        idempotencyKey: 'receipt-cost-1',
+        lines: [[
+            'listing' => $listing,
+            'packs_received' => 1,
+            'actual_quantity' => '4.8',
+            'actual_unit' => 'kg',
+            'receipt_price_basis' => ListingPriceBasis::PerUnit,
+            'receipt_price_amount' => '12.5',
+            'receipt_price_unit' => 'kg',
+            'currency' => 'EUR',
+        ]],
+        receivedAt: '2026-08-03',
+    );
+    $oilLot = $receipt->lines->sole()->stockLot;
+
+    // The receipt flow prices by the listing net quantity (€12.5/kg × 5 kg
+    // pack = €62.50), giving 62.50 / 4,800 g = 0.013020833 per gram.
+    expect($oilLot->historical_unit_cost)->toBe('0.013020833');
+
+    $production = productionExecutionRun($fixture, 'receipt-cost-prod-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    $packagingLot->update(['historical_unit_cost' => '0.500000000', 'currency' => 'EUR']);
+
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '4000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    );
+
+    // 4,000 g × €0.013020833/g = €52.083332 — not €0.052.
+    expect($completed->actual_ingredient_total)->toBe('52.083332000')
+        ->and($completed->actual_total_cost)->toBe('101.083332000')
+        ->and($completed->cost_currency)->toBe('EUR');
 });
 
 /**

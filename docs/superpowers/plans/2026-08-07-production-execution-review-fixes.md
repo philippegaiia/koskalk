@@ -16,7 +16,7 @@
 
 **Approved product corrections (recorded here; to be reflected in the design doc during execution):**
 
-1. **Ready date** — output lots get `available_from = manufacture_date + 21 days` by default (curing window). Release stays manual and remains blocked until `available_from` (already enforced). This resolves the "curing delay" review item: quarantine + default ready date + manual release. Documented as the curing mechanism; no per-product configuration in this pass.
+1. **Ready date** — output lots get an indicative ready date, never entered by the user: **+21 days after the production date for soap**, **+3 days for cosmetics** (family derived from the snapshotted `calculation_basis`/`basis_kind`). **When the run has tasks, the ready date is the last task's scheduled date instead** — the production becomes releasable after the end of the last task. Release stays manual and remains blocked until `available_from` (already enforced). This resolves the "curing delay" review item: quarantine + family/task-based ready date + manual release.
 2. **Number formatting** — every displayed production number (masses, units, costs, coverage, output, issue quantities, totals) uses the user's workspace number format via `NumberLocale` (decimal separators, thousands grouping) with `auth()->user()?->number_locale`; editable inputs normalize on save with `NumberLocale::normalizeDecimalString` (the convention already used by the planning form).
 
 ---
@@ -34,6 +34,7 @@
 - Every production action locks workspace → run → requirements → lots → reservations in one deterministic order.
 - Completion readiness is visible before submission: missing actuals, coverage, output, manufacture date, batch number, and unpriced lots.
 - Schema invariants are enforced at the database boundary.
+- Output lots carry an indicative ready date: +21 days (soap) / +3 days (cosmetic) after the production date, or the last task's scheduled date when tasks exist. Never user-entered.
 - A deleted production burns its permanent batch number (already implemented); the plan documents reflect it.
 
 ---
@@ -411,7 +412,7 @@ New migration with pgsql CHECKs + sqlite triggers (trigger-preservation discipli
 
 - [ ] **Step 4: Reconcile documentation**
 
-Update the phase-4 plan's Task 2 wording (numbered productions are deletable when unreserved; the number is burned) and the design doc with the ready-date correction (output lots default `available_from = manufacture_date + 21 days`) and the curing-deferral note.
+Update the phase-4 plan's Task 2 wording (numbered productions are deletable when unreserved; the number is burned) and the design doc with the ready-date correction (soap +21 days, cosmetic +3 days, or the last task's date when tasks exist; never user-entered) and the curing-deferral note.
 
 - [ ] **Step 5: Verify Task 11 and commit**
 
@@ -429,14 +430,13 @@ git commit -m "feat: harden production execution invariants"
 **Files:**
 
 - Modify: `app/Services/Production/ProductionCompletionService.php`
-- Modify: `app/Models/StockLot.php` (if a ready-date helper is added)
 - Modify: `resources/views/livewire/production-bench/production/production-detail.blade.php`
 - Modify: `lang/en/production_bench.php`
 - Modify: `tests/Feature/ProductionExecutionTest.php`
 
 - [ ] **Step 1: Write failing ready-date tests**
 
-Completing a production with `manufacture_date = 2026-08-20` creates the output lot with `available_from = 2026-09-10` (21 days later). Release before that date is rejected (existing rule); release on/after succeeds. The output card displays the ready date.
+Completing a soap production (`calculation_basis` oil-based) with `manufacture_date = 2026-08-20` and **no tasks** creates the output lot with `available_from = 2026-09-10` (+21 days). A cosmetic production (total-formula basis) gets `available_from = 2026-08-23` (+3 days). A soap production **with tasks** gets `available_from` equal to the last task's `scheduled_for` date, overriding the family default. Release before `available_from` is rejected (existing rule); on/after succeeds. The output card displays the ready date. No user-entered ready date exists anywhere in the UI.
 
 - [ ] **Step 2: Verify RED**
 
@@ -446,7 +446,7 @@ php artisan test --compact tests/Feature/ProductionExecutionTest.php
 
 - [ ] **Step 3: Implement**
 
-`ProductionCompletionService` sets `available_from = manufacture_date + 21 days` on the output lot (constant, documented as the default curing window; quarantine + manual release remain). Display the ready date on the output card.
+`ProductionCompletionService` derives the ready date: if the run has tasks, `available_from = last task scheduled_for`; otherwise `available_from = manufacture_date + family days`, where family days come from the snapshotted `calculation_basis` (`total_formula` → 3, else → 21), falling back to `basis_kind`. All values are indicative and documented; quarantine + manual release remain. Display the ready date on the output card.
 
 - [ ] **Step 4: Verify Task 12 and commit**
 
@@ -454,7 +454,7 @@ php artisan test --compact tests/Feature/ProductionExecutionTest.php
 php artisan test --compact tests/Feature/ProductionExecutionTest.php
 npm run build
 git add app/Services/Production/ProductionCompletionService.php resources/views/livewire/production-bench/production/production-detail.blade.php lang/en/production_bench.php tests/Feature/ProductionExecutionTest.php
-git commit -m "feat: default ready date on production output lots"
+git commit -m "feat: family and task based ready dates on output lots"
 ```
 
 ---
@@ -520,7 +520,7 @@ git commit -m "docs: finalize production execution review fixes"
 7. Intermediates with reservations cannot be over-issued; finished goods issue freely; count lots reject fractions.
 8. Concurrent completion/cancel/release produce no deadlocks; locks follow one documented order.
 9. Schema invariants reject bad rows at the database boundary; `migrate:rollback` works in order.
-10. Output lots show a ready date 21 days after manufacture; release is blocked until then.
+10. Output lots show a ready date: +21 days (soap) / +3 days (cosmetic) after manufacture, or the last task's date when tasks exist; release is blocked until then.
 11. All displayed numbers follow the user's workspace number format.
 
 ## Explicitly deferred

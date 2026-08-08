@@ -1,6 +1,15 @@
 <?php
 
 use App\Services\SoapCalculationService;
+use Database\Seeders\FattyAcidSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->seed(FattyAcidSeeder::class);
+});
 
 it('derives grouped fatty acid buckets including extended acids', function () {
     $service = new SoapCalculationService;

@@ -2,6 +2,15 @@
 
 use App\Services\SoapCalculationService;
 use App\SoapSap;
+use Database\Seeders\FattyAcidSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->seed(FattyAcidSeeder::class);
+});
 
 it('calculates soap lye, water, glycerine, and quality metrics from oil data', function () {
     $service = new SoapCalculationService;

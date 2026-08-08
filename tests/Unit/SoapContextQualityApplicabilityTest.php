@@ -1,6 +1,15 @@
 <?php
 
 use App\Services\SoapCalculationService;
+use Database\Seeders\FattyAcidSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->seed(FattyAcidSeeder::class);
+});
 
 it('derives bar soap context and keeps bar quality metrics applicable', function () {
     $result = (new SoapCalculationService)->calculate([

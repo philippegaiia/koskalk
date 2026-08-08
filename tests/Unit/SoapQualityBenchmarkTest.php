@@ -1,6 +1,15 @@
 <?php
 
 use App\Services\SoapCalculationService;
+use Database\Seeders\FattyAcidSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->seed(FattyAcidSeeder::class);
+});
 
 it('tracks expected benchmark archetype relationships for koskalk quality metrics', function () {
     $service = new SoapCalculationService;

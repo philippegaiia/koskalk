@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\SoapFattyAcid;
+use App\Models\FattyAcid;
 use App\SoapSap;
 use InvalidArgumentException;
 
@@ -11,6 +11,9 @@ class SoapCalculationService
     private const GLYCERINE_FROM_NAOH_RATIO = 92.09382 / 119.9922;
 
     private const GLYCERINE_FROM_KOH_RATIO = 92.09382 / 168.3168;
+
+    /** @var array<string, float>|null */
+    private ?array $iodineFactorsCache = null;
 
     /**
      * @param  array<int, array{
@@ -652,11 +655,22 @@ class SoapCalculationService
     {
         $iodine = 0.0;
 
-        foreach (SoapFattyAcid::coreSet() as $fattyAcid) {
-            $iodine += ($fattyAcidProfile[$fattyAcid->value] ?? 0.0) * $fattyAcid->iodineFactor();
+        foreach ($fattyAcidProfile as $key => $percentage) {
+            $iodine += $percentage * ($this->iodineFactors()[$key] ?? 0.0);
         }
 
         return $this->roundValue($iodine);
+    }
+
+    /**
+     * @return array<string, float>
+     */
+    private function iodineFactors(): array
+    {
+        return $this->iodineFactorsCache ??= FattyAcid::query()
+            ->pluck('iodine_factor', 'key')
+            ->map(fn (string $factor): float => (float) $factor)
+            ->all();
     }
 
     private function waterFromLyeConcentration(float $concentrationPercentage, float $naohAdjusted): float

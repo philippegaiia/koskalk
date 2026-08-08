@@ -1,6 +1,15 @@
 <?php
 
 use App\Services\SoapCalculationService;
+use Database\Seeders\FattyAcidSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+uses(TestCase::class, RefreshDatabase::class);
+
+beforeEach(function (): void {
+    $this->seed(FattyAcidSeeder::class);
+});
 
 it('applies high superfat as a physical softening and lather penalty', function () {
     $service = new SoapCalculationService;

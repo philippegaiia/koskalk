@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
@@ -7,7 +8,6 @@ use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\StockMovementType;
+use App\Enums\StockUnitKind;
 use App\Models\Concerns\HasPublicId;
-use App\StockMovementType;
-use App\StockUnitKind;
 use Database\Factories\StockMovementFactory;
 use DomainException;
 use Illuminate\Database\Eloquent\Attributes\Fillable;

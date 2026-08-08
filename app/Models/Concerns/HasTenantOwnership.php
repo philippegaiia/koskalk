@@ -2,9 +2,9 @@
 
 namespace App\Models\Concerns;
 
+use App\Enums\OwnerType;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 trait HasTenantOwnership

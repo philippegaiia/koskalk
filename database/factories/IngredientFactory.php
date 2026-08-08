@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\Visibility;
 use App\Models\Ingredient;
-use App\Visibility;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

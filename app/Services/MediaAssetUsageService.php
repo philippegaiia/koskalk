@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\MediaAssetStatus;
-use App\MediaAssetType;
-use App\MediaAssetUsageRole;
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetType;
+use App\Enums\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\PackagingItem;

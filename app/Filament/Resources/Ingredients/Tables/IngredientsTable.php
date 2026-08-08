@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Ingredients\Tables;
 
+use App\Enums\IngredientCategory;
 use App\Filament\Exports\IngredientExporter;
-use App\IngredientCategory;
 use App\Models\Ingredient;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;

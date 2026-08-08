@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\ListingPriceBasis;
-use App\MassUnit;
+use App\Enums\ListingPriceBasis;
+use App\Enums\MassUnit;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 

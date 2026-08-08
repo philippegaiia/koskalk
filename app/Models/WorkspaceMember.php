@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
-use App\WorkspaceMemberRole;
 use Database\Factories\WorkspaceMemberFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

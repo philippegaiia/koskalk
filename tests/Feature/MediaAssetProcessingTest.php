@@ -1,10 +1,10 @@
 <?php
 
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetType;
 use App\Exceptions\MediaAssetProcessingException;
 use App\Jobs\NormalizeMediaAssetJob;
 use App\Jobs\RegenerateMediaAssetConversionsJob;
-use App\MediaAssetStatus;
-use App\MediaAssetType;
 use App\Models\MediaAsset;
 use App\Models\Plan;
 use App\Models\User;

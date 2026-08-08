@@ -2,14 +2,14 @@
 
 namespace App\Livewire\Dashboard;
 
-use App\MassDisplaySystem;
+use App\Enums\MassDisplaySystem;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrencyCatalog;
 use App\Services\LocalePreferenceResolver;
 use App\Support\NumberLocale;
-use App\WorkspaceMemberRole;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Str;

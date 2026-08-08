@@ -1,8 +1,10 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\MediaAssetUsageRole;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Livewire\Dashboard\RecipeWorkbench;
-use App\MediaAssetUsageRole;
 use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
@@ -16,7 +18,6 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
 use App\Services\EntitlementService;
 use App\Services\MediaAssetUsageService;
 use App\Services\MediaStorage;
@@ -26,7 +27,6 @@ use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
 use App\Support\RichContentAttachmentPaths;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;

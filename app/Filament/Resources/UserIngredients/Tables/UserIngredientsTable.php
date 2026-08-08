@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\UserIngredients\Tables;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;

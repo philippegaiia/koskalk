@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
-use App\MassUnit;
+use App\Enums\MassUnit;
+use App\Enums\ProductionBasisKind;
+use App\Enums\ProductionRunSource;
+use App\Enums\ProductionRunStatus;
 use App\Models\Concerns\HasPublicId;
-use App\ProductionBasisKind;
-use App\ProductionRunSource;
-use App\ProductionRunStatus;
 use Database\Factories\ProductionRunFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

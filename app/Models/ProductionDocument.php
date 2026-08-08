@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\ProductionDocumentType;
+use App\Enums\ProductionDocumentType;
 use Database\Factories\ProductionDocumentFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

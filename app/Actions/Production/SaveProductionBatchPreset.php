@@ -2,7 +2,7 @@
 
 namespace App\Actions\Production;
 
-use App\MassUnit;
+use App\Enums\MassUnit;
 use App\Models\ProductionBatchPreset;
 use App\Models\User;
 use App\Models\Workspace;

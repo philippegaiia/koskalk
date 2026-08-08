@@ -2,14 +2,14 @@
 
 namespace Database\Factories;
 
-use App\ListingPriceBasis;
+use App\Enums\ListingPriceBasis;
+use App\Enums\StockLotOrigin;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\SupplierListing;
-use App\StockLotOrigin;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

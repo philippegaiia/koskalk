@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\MassUnit;
+use App\Enums\MassUnit;
 use App\Models\ProductionBatchPreset;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;

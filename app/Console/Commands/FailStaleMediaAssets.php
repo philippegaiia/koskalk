@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\MediaAssetStatus;
+use App\Enums\MediaAssetStatus;
 use App\Models\MediaAsset;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;

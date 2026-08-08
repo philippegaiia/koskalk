@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use App\ListingPriceBasis;
-use App\OrganicStatus;
-use App\StockUnitKind;
+use App\Enums\ListingPriceBasis;
+use App\Enums\OrganicStatus;
+use App\Enums\StockUnitKind;
 use Database\Factories\PurchaseOrderLineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

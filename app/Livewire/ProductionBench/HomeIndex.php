@@ -2,13 +2,13 @@
 
 namespace App\Livewire\ProductionBench;
 
+use App\Enums\PurchaseOrderStatus;
+use App\Enums\StockLotStatus;
 use App\Models\PurchaseOrder;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
-use App\PurchaseOrderStatus;
 use App\Services\ProductionBenchAccess;
-use App\StockLotStatus;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
 

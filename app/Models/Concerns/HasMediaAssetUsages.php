@@ -2,8 +2,8 @@
 
 namespace App\Models\Concerns;
 
-use App\MediaAssetStatus;
-use App\MediaAssetUsageRole;
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use Illuminate\Database\Eloquent\Relations\MorphMany;

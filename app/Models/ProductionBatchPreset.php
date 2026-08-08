@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\MassUnit;
+use App\Enums\MassUnit;
 use App\Models\Concerns\HasPublicId;
 use Database\Factories\ProductionBatchPresetFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;

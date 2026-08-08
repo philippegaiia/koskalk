@@ -2,10 +2,10 @@
 
 namespace App\Policies\Concerns;
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\WorkspaceMemberRole;
 
 trait HandlesWorkspaceAuthorization
 {

@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Enums\StockReservationStatus;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
-use App\StockReservationStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

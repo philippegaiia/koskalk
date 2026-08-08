@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\MassUnit;
+use App\Enums\MassUnit;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\RegulatoryRegime;

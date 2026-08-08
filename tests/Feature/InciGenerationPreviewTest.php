@@ -1,6 +1,6 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\Allergen;
 use App\Models\Ingredient;

@@ -1,7 +1,9 @@
 <?php
 
 use App\Actions\Purchasing\AttachGoodsReceiptDocuments;
-use App\GoodsReceiptStatus;
+use App\Enums\GoodsReceiptStatus;
+use App\Enums\ProductionDocumentType;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\Purchasing\ReceiptDetail;
 use App\Models\GoodsReceipt;
@@ -14,12 +16,10 @@ use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\ProductionDocumentType;
 use App\Services\MediaAssetProcessingService;
 use App\Services\MediaAssetUploadService;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
-use App\WorkspaceMemberRole;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;

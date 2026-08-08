@@ -1,6 +1,6 @@
 <?php
 
-use App\MassDisplaySystem;
+use App\Enums\MassDisplaySystem;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\User;

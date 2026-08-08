@@ -1,6 +1,6 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Livewire\Dashboard\PackagingItemEditor;
 use App\Livewire\ProductionBench\Purchasing\SupplierListingCreate;

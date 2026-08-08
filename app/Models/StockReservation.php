@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\StockReservationStatus;
+use App\Enums\StockReservationStatus;
 use Database\Factories\StockReservationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -176,7 +176,7 @@
             @forelse ($production->requirements as $requirement)
                 @php
                     $reservedCoverage = '0';
-                    foreach ($requirement->reservations->where('status', \App\StockReservationStatus::Active) as $reservation) {
+                    foreach ($requirement->reservations->where('status', \App\Enums\StockReservationStatus::Active) as $reservation) {
                         $reservedCoverage = bcadd($reservedCoverage, (string) $reservation->quantity, 9);
                     }
                     $requiredCoverage = $requirement->ingredient_id !== null
@@ -425,10 +425,10 @@
                 <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.journal_empty') }}</p>
             @endforelse
         </div>
-        @if ($production->documents->where('type', \App\ProductionDocumentType::Journal)->isNotEmpty())
+        @if ($production->documents->where('type', \App\Enums\ProductionDocumentType::Journal)->isNotEmpty())
             <div class="border-t border-[var(--color-line)] px-5 py-4 sm:px-6">
                 <ul class="space-y-1 text-sm">
-                    @foreach ($production->documents->where('type', \App\ProductionDocumentType::Journal) as $document)
+                    @foreach ($production->documents->where('type', \App\Enums\ProductionDocumentType::Journal) as $document)
                         <li class="flex items-center justify-between gap-3">
                             <span class="truncate text-[var(--color-ink-soft)]">{{ $document->mediaAsset?->original_filename ?? $document->media_asset_id }}</span>
                             @if ($document->note)

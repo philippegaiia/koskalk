@@ -2,7 +2,8 @@
 
 namespace App\Services\Production;
 
-use App\MassUnit;
+use App\Enums\MassUnit;
+use App\Enums\ProductionBasisKind;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -12,7 +13,6 @@ use App\Models\ProductionTaskSetItem;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\Workspace;
-use App\ProductionBasisKind;
 use App\Services\MassConverter;
 use App\Support\NumberLocale;
 use Illuminate\Support\Collection;

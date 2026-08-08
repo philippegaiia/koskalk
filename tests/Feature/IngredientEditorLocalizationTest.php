@@ -1,12 +1,12 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Models\Ingredient;
 use App\Models\InterfaceTranslation;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\OwnerType;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;

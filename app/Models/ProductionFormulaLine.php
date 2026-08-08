@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\ProductionFormulaComponent;
+use App\Enums\ProductionFormulaComponent;
 use Database\Factories\ProductionFormulaLineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

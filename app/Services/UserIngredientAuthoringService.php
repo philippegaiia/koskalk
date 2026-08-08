@@ -2,15 +2,15 @@
 
 namespace App\Services;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\IfraCertificateLimit;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
 use App\SoapSap;
 use App\Support\NumberLocale;
-use App\Visibility;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;

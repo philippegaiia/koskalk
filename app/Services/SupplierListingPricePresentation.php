@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use App\DecimalStringFormatter;
-use App\ListingPriceBasis;
+use App\Enums\ListingPriceBasis;
 use App\Models\SupplierListing;
 use App\Models\Workspace;
 

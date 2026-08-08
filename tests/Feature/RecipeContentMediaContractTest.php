@@ -1,8 +1,8 @@
 <?php
 
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetUsageRole;
 use App\Livewire\Dashboard\RecipeWorkbench;
-use App\MediaAssetStatus;
-use App\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\ProductFamily;

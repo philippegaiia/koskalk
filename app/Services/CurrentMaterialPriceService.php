@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\MaterialPriceSource;
+use App\Enums\MaterialPriceSource;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;

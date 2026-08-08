@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\ProcurementStage;
 use App\Models\PurchaseOrder;
-use App\ProcurementStage;
 use App\Support\NumberLocale;
 
 class ProcurementDocumentFormatter

@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RegulatoryRegime;
 use App\Models\User;
-use App\OwnerType;
-use App\Visibility;
 use Illuminate\Support\Str;
 
 class RecipeVersionRecordService

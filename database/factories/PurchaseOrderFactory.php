@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProcurementStage;
+use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProcurementStage;
-use App\PurchaseOrderStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

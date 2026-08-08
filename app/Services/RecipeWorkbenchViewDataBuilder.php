@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\MassDisplaySystem;
+use App\Enums\MassDisplaySystem;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;

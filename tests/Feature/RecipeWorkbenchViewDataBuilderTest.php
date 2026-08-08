@@ -1,6 +1,6 @@
 <?php
 
-use App\MassDisplaySystem;
+use App\Enums\MassDisplaySystem;
 use App\Models\InterfaceTranslation;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;

@@ -30,7 +30,7 @@
                 <span class="text-sm font-medium">{{ __('production_bench.production.status_filter') }}</span>
                 <select wire:model.live="status" class="sk-input w-full">
                     <option value="">{{ __('production_bench.production.all_statuses') }}</option>
-                    @foreach (\App\ProductionRunStatus::cases() as $statusOption)
+                    @foreach (\App\Enums\ProductionRunStatus::cases() as $statusOption)
                         <option value="{{ $statusOption->value }}">{{ $statusOption->label() }}</option>
                     @endforeach
                 </select>
@@ -90,7 +90,7 @@
                                     if ($production->status->value === 'scheduled') {
                                         foreach ($production->requirements as $requirement) {
                                             $reserved = '0';
-                                            foreach ($requirement->reservations->where('status', \App\StockReservationStatus::Active) as $r) {
+                                            foreach ($requirement->reservations->where('status', \App\Enums\StockReservationStatus::Active) as $r) {
                                                 $reserved = bcadd($reserved, (string) $r->quantity, 9);
                                             }
                                             $required = $requirement->ingredient_id !== null
@@ -158,7 +158,7 @@
                             if ($production->status->value === 'scheduled') {
                                 foreach ($production->requirements as $requirement) {
                                     $reserved = '0';
-                                    foreach ($requirement->reservations->where('status', \App\StockReservationStatus::Active) as $r) {
+                                    foreach ($requirement->reservations->where('status', \App\Enums\StockReservationStatus::Active) as $r) {
                                         $reserved = bcadd($reserved, (string) $r->quantity, 9);
                                     }
                                     $required = $requirement->ingredient_id !== null

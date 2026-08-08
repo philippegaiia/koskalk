@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\BetaInvite;
 use App\Models\Plan;
 use App\Models\User;
@@ -7,7 +8,6 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Notifications\BetaWorkspaceInvitation;
 use App\Services\BetaInviteService;
-use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;

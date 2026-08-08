@@ -2,10 +2,10 @@
 
 namespace App\Models\Scopes;
 
+use App\Enums\OwnerType;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\OwnerType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Scope;

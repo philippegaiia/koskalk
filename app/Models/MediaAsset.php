@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\MediaAssetStatus;
-use App\MediaAssetType;
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetType;
 use App\Models\Concerns\HasPublicId;
 use Database\Factories\MediaAssetFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;

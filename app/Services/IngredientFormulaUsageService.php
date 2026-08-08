@@ -2,10 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\RecipeItem;
 use App\Models\User;
-use App\OwnerType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 

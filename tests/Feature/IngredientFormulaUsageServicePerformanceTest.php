@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
@@ -7,7 +8,6 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
-use App\OwnerType;
 use App\Services\IngredientFormulaUsageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

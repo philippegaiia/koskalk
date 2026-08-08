@@ -1,10 +1,10 @@
 <?php
 
+use App\Enums\OrganicStatus;
+use App\Enums\PackagingCategory;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\Workspace;
-use App\OrganicStatus;
-use App\PackagingCategory;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

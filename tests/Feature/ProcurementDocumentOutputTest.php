@@ -1,10 +1,10 @@
 <?php
 
+use App\Enums\ProcurementStage;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProcurementStage;
 use App\Services\ProcurementDocumentFormatter;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\MaterialPriceSource;
+use App\Enums\MaterialPriceSource;
 use Database\Factories\CurrentMaterialPriceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

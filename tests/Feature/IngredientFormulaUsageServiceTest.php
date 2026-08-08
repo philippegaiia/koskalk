@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
 use App\Models\Recipe;
@@ -10,10 +13,7 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\OwnerType;
 use App\Services\IngredientFormulaUsageService;
-use App\Visibility;
-use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

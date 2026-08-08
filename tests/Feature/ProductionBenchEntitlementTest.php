@@ -1,12 +1,12 @@
 <?php
 
+use App\Enums\ProductionBenchEntitlementStatus;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\ProductionBenchEntitlementStatus;
 use App\Services\ProductionBenchAccess;
-use App\WorkspaceMemberRole;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Date;

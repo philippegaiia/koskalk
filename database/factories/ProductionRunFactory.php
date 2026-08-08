@@ -2,15 +2,15 @@
 
 namespace Database\Factories;
 
+use App\Enums\OwnerType;
+use App\Enums\ProductionBasisKind;
+use App\Enums\ProductionRunSource;
+use App\Enums\ProductionRunStatus;
+use App\Enums\Visibility;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\Workspace;
-use App\OwnerType;
-use App\ProductionBasisKind;
-use App\ProductionRunSource;
-use App\ProductionRunStatus;
-use App\Visibility;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

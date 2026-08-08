@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\IfraCertificates\Schemas;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use App\Models\IfraProductCategory;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;

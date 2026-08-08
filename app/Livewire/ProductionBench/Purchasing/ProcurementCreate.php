@@ -4,13 +4,13 @@ namespace App\Livewire\ProductionBench\Purchasing;
 
 use App\Actions\Purchasing\ConvertQuotationToPurchaseOrder;
 use App\Actions\Purchasing\CreatePurchaseOrder;
+use App\Enums\ProcurementStage;
+use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProcurementStage;
-use App\PurchaseOrderStatus;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Illuminate\Validation\Rule;

@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\PackagingCategory;
 use App\Models\PackagingItem;
 use App\Models\Workspace;
-use App\PackagingCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

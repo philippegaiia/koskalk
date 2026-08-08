@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\ProcurementStage;
+use App\Enums\PurchaseOrderStatus;
 use App\Models\Concerns\HasPublicId;
-use App\ProcurementStage;
-use App\PurchaseOrderStatus;
 use Database\Factories\PurchaseOrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

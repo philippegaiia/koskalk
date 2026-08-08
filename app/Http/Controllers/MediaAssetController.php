@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\MediaAssetStatus;
+use App\Enums\MediaAssetStatus;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Http\Request;

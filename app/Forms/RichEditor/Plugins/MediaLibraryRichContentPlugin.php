@@ -2,8 +2,8 @@
 
 namespace App\Forms\RichEditor\Plugins;
 
+use App\Enums\MediaAssetStatus;
 use App\Forms\Components\MediaAssetPicker;
-use App\MediaAssetStatus;
 use App\Models\MediaAsset;
 use App\Models\Recipe;
 use App\Support\RichContentAttachmentPaths;

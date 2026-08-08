@@ -2,11 +2,11 @@
 
 namespace App\Forms\Components;
 
-use App\MediaAssetType;
+use App\Enums\MediaAssetType;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\MediaAsset;
 use App\Models\User;
 use App\Services\EntitlementService;
-use App\WorkspaceMemberRole;
 use Filament\Forms\Components\Concerns\HasFileAttachments;
 use Filament\Forms\Components\Field;
 use Illuminate\Database\Eloquent\Collection;

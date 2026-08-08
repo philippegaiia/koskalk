@@ -2,12 +2,12 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Enums\IngredientCategory;
+use App\Enums\MediaAssetType;
+use App\Enums\MediaAssetUsageRole;
 use App\Forms\Components\MediaAssetPicker;
-use App\IngredientCategory;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
-use App\MediaAssetType;
-use App\MediaAssetUsageRole;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;

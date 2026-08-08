@@ -1,6 +1,6 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;

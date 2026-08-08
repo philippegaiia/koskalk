@@ -1,7 +1,8 @@
 <?php
 
 use App\Actions\Purchasing\AttachGoodsReceiptDocuments;
-use App\MediaAssetStatus;
+use App\Enums\MediaAssetStatus;
+use App\Enums\ProductionDocumentType;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\MediaAsset;
@@ -10,7 +11,6 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProductionDocumentType;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;

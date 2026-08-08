@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetType;
 use App\Exceptions\MediaAssetProcessingException;
-use App\MediaAssetStatus;
-use App\MediaAssetType;
 use App\Models\MediaAsset;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;

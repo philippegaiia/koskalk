@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\MassUnit;
+use App\Enums\MassUnit;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;

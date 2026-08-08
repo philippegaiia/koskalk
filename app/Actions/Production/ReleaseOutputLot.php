@@ -2,11 +2,11 @@
 
 namespace App\Actions\Production;
 
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Services\ProductionBenchAccess;
-use App\StockLotOrigin;
-use App\StockLotStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 

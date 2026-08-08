@@ -1,7 +1,7 @@
 <?php
 
-use App\MassDisplaySystem;
-use App\MassUnit;
+use App\Enums\MassDisplaySystem;
+use App\Enums\MassUnit;
 use App\Services\MassConverter;
 
 it('defines the exact gram factor for each supported mass unit', function (MassUnit $unit, string $factor): void {

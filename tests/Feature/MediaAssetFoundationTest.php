@@ -1,9 +1,10 @@
 <?php
 
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetType;
+use App\Enums\MediaAssetUsageRole;
+use App\Enums\WorkspaceMemberRole;
 use App\Jobs\NormalizeMediaAssetJob;
-use App\MediaAssetStatus;
-use App\MediaAssetType;
-use App\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\MediaLabel;
@@ -14,7 +15,6 @@ use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Services\EntitlementService;
 use App\Services\MediaLabelService;
-use App\WorkspaceMemberRole;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;

@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\Ingredients\Schemas;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;

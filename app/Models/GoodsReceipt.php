@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\GoodsReceiptSource;
-use App\GoodsReceiptStatus;
+use App\Enums\GoodsReceiptSource;
+use App\Enums\GoodsReceiptStatus;
 use App\Models\Concerns\HasPublicId;
 use Database\Factories\GoodsReceiptFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;

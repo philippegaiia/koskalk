@@ -2,7 +2,7 @@
 
 namespace App\Filament\Resources\IngredientAllergenEntries\Schemas;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;

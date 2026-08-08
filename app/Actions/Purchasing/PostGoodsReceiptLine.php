@@ -2,10 +2,15 @@
 
 namespace App\Actions\Purchasing;
 
-use App\GoodsReceiptSource;
-use App\GoodsReceiptStatus;
-use App\ListingPriceBasis;
-use App\MaterialPriceSource;
+use App\Enums\GoodsReceiptSource;
+use App\Enums\GoodsReceiptStatus;
+use App\Enums\ListingPriceBasis;
+use App\Enums\MaterialPriceSource;
+use App\Enums\OwnerType;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
+use App\Enums\StockMovementType;
+use App\Enums\StockUnitKind;
 use App\Models\CurrentMaterialPrice;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
@@ -16,14 +21,9 @@ use App\Models\StockLot;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\ExchangeRateService;
 use App\Services\InternalLotCodeGenerator;
-use App\StockLotOrigin;
-use App\StockLotStatus;
-use App\StockMovementType;
-use App\StockUnitKind;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 

@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\ProductionRequirementKind;
+use App\Enums\ProductionRunStatus;
+use App\Enums\StockMovementType;
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -9,11 +12,8 @@ use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProductionRequirementKind;
-use App\ProductionRunStatus;
 use App\Services\Production\ProductionDemandService;
 use App\Services\StockPositionService;
-use App\StockMovementType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 

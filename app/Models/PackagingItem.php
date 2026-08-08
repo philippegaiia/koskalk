@@ -3,10 +3,10 @@
 namespace App\Models;
 
 use App\Casts\OriginalFilename;
-use App\MediaAssetUsageRole;
+use App\Enums\MediaAssetUsageRole;
+use App\Enums\PackagingCategory;
 use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
-use App\PackagingCategory;
 use App\Services\MediaStorage;
 use Database\Factories\PackagingItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;

@@ -1,12 +1,12 @@
 <?php
 
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\NumberingSettings;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
-use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Lang;
 use Livewire\Livewire;

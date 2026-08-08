@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
-use App\OwnerType;
-use App\Visibility;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

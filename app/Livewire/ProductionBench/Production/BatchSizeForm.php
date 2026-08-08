@@ -4,7 +4,7 @@ namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\SaveProductionBatchPreset;
 use App\Actions\Production\SyncProductionBatchPresetProducts;
-use App\MassUnit;
+use App\Enums\MassUnit;
 use App\Models\ProductionBatchPreset;
 use App\Models\Recipe;
 use App\Models\User;

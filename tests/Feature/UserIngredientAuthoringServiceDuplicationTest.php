@@ -1,15 +1,15 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\User;
-use App\OwnerType;
 use App\Services\UserIngredientAuthoringService;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 

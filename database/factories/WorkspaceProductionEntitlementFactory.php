@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProductionBenchEntitlementStatus;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\ProductionBenchEntitlementStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

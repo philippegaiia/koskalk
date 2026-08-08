@@ -1,13 +1,13 @@
 <?php
 
 use App\Actions\Inventory\AttachProductionDocument;
+use App\Enums\ProductionDocumentType;
 use App\Livewire\ProductionBench\PurchasingIndex;
 use App\Models\MediaAsset;
 use App\Models\ProductionDocument;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProductionDocumentType;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;

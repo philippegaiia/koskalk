@@ -2,14 +2,14 @@
 
 namespace App\Actions\Purchasing;
 
-use App\GoodsReceiptStatus;
+use App\Enums\GoodsReceiptStatus;
+use App\Enums\PurchaseOrderStatus;
+use App\Enums\StockMovementType;
 use App\Models\GoodsReceipt;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Workspace;
-use App\PurchaseOrderStatus;
 use App\Services\ProductionBenchAccess;
-use App\StockMovementType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 

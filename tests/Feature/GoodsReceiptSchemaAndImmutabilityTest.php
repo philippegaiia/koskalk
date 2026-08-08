@@ -1,9 +1,13 @@
 <?php
 
-use App\GoodsReceiptSource;
-use App\GoodsReceiptStatus;
-use App\ListingPriceBasis;
-use App\MaterialPriceSource;
+use App\Enums\GoodsReceiptSource;
+use App\Enums\GoodsReceiptStatus;
+use App\Enums\ListingPriceBasis;
+use App\Enums\MaterialPriceSource;
+use App\Enums\OrganicStatus;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
+use App\Enums\StockUnitKind;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
 use App\Models\PackagingItem;
@@ -11,10 +15,6 @@ use App\Models\StockLot;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\Workspace;
-use App\OrganicStatus;
-use App\StockLotOrigin;
-use App\StockLotStatus;
-use App\StockUnitKind;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;

@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\MediaAssetStatus;
+use App\Enums\MediaAssetStatus;
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\MediaLabel;
@@ -12,7 +13,6 @@ use App\Models\ProductionBatch;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;

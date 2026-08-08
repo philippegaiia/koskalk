@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
-use App\GoodsReceiptSource;
-use App\GoodsReceiptStatus;
+use App\Enums\GoodsReceiptSource;
+use App\Enums\GoodsReceiptStatus;
 use App\Models\GoodsReceipt;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;

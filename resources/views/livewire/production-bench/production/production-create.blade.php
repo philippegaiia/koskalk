@@ -52,7 +52,7 @@
                         <div class="flex gap-2">
                             <input wire:model.live="basisInputValue" inputmode="decimal" required @disabled($isReadOnly) class="sk-input min-w-0 flex-1 font-mono" placeholder="12">
                             <select wire:model.live="basisInputUnit" @disabled($isReadOnly) class="sk-input w-24">
-                                @foreach (\App\MassUnit::cases() as $unit)
+                                @foreach (\App\Enums\MassUnit::cases() as $unit)
                                     <option value="{{ $unit->value }}">{{ $unit->value }}</option>
                                 @endforeach
                             </select>

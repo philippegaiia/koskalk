@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProductionConsumptionKind;
 use App\Models\ProductionConsumption;
 use App\Models\ProductionRun;
-use App\ProductionConsumptionKind;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

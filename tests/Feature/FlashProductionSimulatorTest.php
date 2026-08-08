@@ -1,8 +1,11 @@
 <?php
 
+use App\Enums\MassDisplaySystem;
+use App\Enums\MassUnit;
+use App\Enums\OwnerType;
+use App\Enums\StockMovementType;
+use App\Enums\Visibility;
 use App\Livewire\ProductionBench\Production\FlashPlanner;
-use App\MassDisplaySystem;
-use App\MassUnit;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -21,11 +24,8 @@ use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\OwnerType;
 use App\Services\Production\FlashDateProposalService;
 use App\Services\Production\FlashProductionSimulator;
-use App\StockMovementType;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;

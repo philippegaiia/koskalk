@@ -3,13 +3,13 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\SaveProductionRunNumberSettings;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\ProductionRunNumberService;
 use App\Services\ProductionBenchAccess;
-use App\WorkspaceMemberRole;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;

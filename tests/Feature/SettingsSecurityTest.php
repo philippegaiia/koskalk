@@ -1,12 +1,12 @@
 <?php
 
+use App\Enums\MassDisplaySystem;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\SettingsIndex;
-use App\MassDisplaySystem;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\WorkspaceMemberRole;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;

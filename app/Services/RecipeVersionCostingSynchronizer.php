@@ -2,8 +2,9 @@
 
 namespace App\Services;
 
-use App\MassUnit;
-use App\MaterialPriceSource;
+use App\Enums\MassUnit;
+use App\Enums\MaterialPriceSource;
+use App\Enums\PackagingCategory;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -16,7 +17,6 @@ use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
-use App\PackagingCategory;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;

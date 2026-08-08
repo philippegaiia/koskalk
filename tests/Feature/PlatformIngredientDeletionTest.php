@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
 use App\Models\IngredientTranslation;
@@ -10,10 +12,8 @@ use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\OwnerType;
 use App\Services\MediaStorage;
 use App\Services\PlatformIngredientDeletionService;
-use App\Visibility;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;

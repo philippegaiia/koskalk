@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Livewire\ProductionBench\Production\SettingsIndex;
 use App\Models\Employee;
 use App\Models\ProductFamily;
@@ -12,8 +14,6 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\OwnerType;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Lang;
 use Livewire\Livewire;

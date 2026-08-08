@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
 use Illuminate\Database\Seeder;
 use RuntimeException;

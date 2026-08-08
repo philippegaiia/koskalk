@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\SoapFattyAcid;
+use App\Enums\SoapFattyAcid;
 use App\SoapSap;
 use InvalidArgumentException;
 

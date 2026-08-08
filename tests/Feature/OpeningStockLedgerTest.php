@@ -3,6 +3,8 @@
 use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Actions\Inventory\QuarantineStockLot;
 use App\Actions\Inventory\ReleaseStockLot;
+use App\Enums\StockLotStatus;
+use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\StockMovement;
@@ -11,8 +13,6 @@ use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
-use App\StockLotStatus;
-use App\StockUnitKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 

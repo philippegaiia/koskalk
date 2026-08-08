@@ -1,6 +1,16 @@
 <?php
 
-use App\MassUnit;
+use App\Enums\MassUnit;
+use App\Enums\OwnerType;
+use App\Enums\ProductionBasisKind;
+use App\Enums\ProductionBenchEntitlementStatus;
+use App\Enums\ProductionConsumptionKind;
+use App\Enums\ProductionFormulaComponent;
+use App\Enums\ProductionRequirementKind;
+use App\Enums\ProductionRunSource;
+use App\Enums\ProductionRunStatus;
+use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductionConsumption;
@@ -15,16 +25,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
-use App\OwnerType;
-use App\ProductionBasisKind;
-use App\ProductionBenchEntitlementStatus;
-use App\ProductionConsumptionKind;
-use App\ProductionFormulaComponent;
-use App\ProductionRequirementKind;
-use App\ProductionRunSource;
-use App\ProductionRunStatus;
-use App\Visibility;
-use App\WorkspaceMemberRole;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

@@ -2,11 +2,11 @@
 
 namespace App\Services\Production;
 
+use App\Enums\ProductionBasisKind;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
-use App\ProductionBasisKind;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 

@@ -1,7 +1,7 @@
 @php
  $isPlatformIngredient = $ingredient !== null && $ingredient->owner_type === null;
  $ingredientContext = $ingredient?->display_name ?: __('ingredients.editor.common.new_ingredient');
- $isCarrierOil = ($data['category'] ?? null) === \App\IngredientCategory::CarrierOil->value;
+ $isCarrierOil = ($data['category'] ?? null) === \App\Enums\IngredientCategory::CarrierOil->value;
 @endphp
 
 <div class="mx-auto w-full max-w-app space-y-6">

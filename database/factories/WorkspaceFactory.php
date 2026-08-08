@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\MassDisplaySystem;
+use App\Enums\MassDisplaySystem;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Factories\Factory;

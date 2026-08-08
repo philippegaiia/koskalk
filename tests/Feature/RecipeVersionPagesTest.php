@@ -1,7 +1,10 @@
 <?php
 
-use App\IngredientCategory;
-use App\MediaAssetUsageRole;
+use App\Enums\IngredientCategory;
+use App\Enums\MediaAssetUsageRole;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\InterfaceTranslation;
@@ -17,13 +20,10 @@ use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\OwnerType;
 use App\Services\MediaAssetUsageService;
 use App\Services\RecipeSopSnapshotService;
 use App\Services\RecipeWorkbenchService;
 use App\Support\RichContentAttachmentPaths;
-use App\Visibility;
-use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;

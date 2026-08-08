@@ -1,9 +1,9 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\User;
-use App\OwnerType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;

@@ -1,6 +1,9 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Allergen;
@@ -16,11 +19,8 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\OwnerType;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\MediaStorage;
-use App\Visibility;
-use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;

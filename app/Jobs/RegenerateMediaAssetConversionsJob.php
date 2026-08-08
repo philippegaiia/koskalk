@@ -2,7 +2,7 @@
 
 namespace App\Jobs;
 
-use App\MediaAssetStatus;
+use App\Enums\MediaAssetStatus;
 use App\Models\MediaAsset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;

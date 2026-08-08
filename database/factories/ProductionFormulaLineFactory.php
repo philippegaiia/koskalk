@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProductionFormulaComponent;
 use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRun;
-use App\ProductionFormulaComponent;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

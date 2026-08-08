@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\ProductionBenchEntitlementStatus;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\ProductionBenchEntitlementStatus;
-use App\WorkspaceMemberRole;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;

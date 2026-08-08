@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;

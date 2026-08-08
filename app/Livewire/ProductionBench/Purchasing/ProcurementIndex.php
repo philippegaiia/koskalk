@@ -2,10 +2,10 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
+use App\Enums\ProcurementStage;
 use App\Models\PurchaseOrder;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProcurementStage;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
 use Livewire\Attributes\Locked;

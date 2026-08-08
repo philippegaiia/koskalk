@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
-use App\OwnerType;
-use App\Visibility;
 use Database\Factories\RecipeItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

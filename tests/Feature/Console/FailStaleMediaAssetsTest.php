@@ -1,6 +1,6 @@
 <?php
 
-use App\MediaAssetStatus;
+use App\Enums\MediaAssetStatus;
 use App\Models\MediaAsset;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Testing\RefreshDatabase;

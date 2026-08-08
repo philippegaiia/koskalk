@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\ListingPriceBasis;
+use App\Enums\ListingPriceBasis;
 use Database\Factories\GoodsReceiptLineFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

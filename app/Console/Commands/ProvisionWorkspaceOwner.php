@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\EntitlementService;
-use App\WorkspaceMemberRole;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;

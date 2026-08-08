@@ -1,6 +1,9 @@
 <?php
 
 use App\Actions\Production\GenerateFlashProductions;
+use App\Enums\OwnerType;
+use App\Enums\ProductionRunSource;
+use App\Enums\Visibility;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
@@ -16,9 +19,6 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\OwnerType;
-use App\ProductionRunSource;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 

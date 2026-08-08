@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\OwnerType;
+use App\Enums\ProductionRunStatus;
+use App\Enums\Visibility;
 use App\Livewire\ProductionBench\Production\ProductionCalendar;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
@@ -9,9 +12,6 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
-use App\ProductionRunStatus;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 

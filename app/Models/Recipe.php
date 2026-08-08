@@ -3,16 +3,16 @@
 namespace App\Models;
 
 use App\Casts\OriginalFilename;
-use App\MediaAssetUsageRole;
+use App\Enums\MediaAssetUsageRole;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
-use App\OwnerType;
 use App\Services\MediaStorage;
 use App\Services\RecipeRichContentAttachmentProvider;
 use App\Support\RichContentAttachmentPaths;
-use App\Visibility;
 use Database\Factories\RecipeFactory;
 use Filament\Forms\Components\RichEditor\Models\Concerns\InteractsWithRichContent;
 use Filament\Forms\Components\RichEditor\Models\Contracts\HasRichContent;

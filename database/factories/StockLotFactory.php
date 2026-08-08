@@ -2,12 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
+use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
 use App\Models\StockLot;
 use App\Models\Workspace;
-use App\StockLotOrigin;
-use App\StockLotStatus;
-use App\StockUnitKind;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

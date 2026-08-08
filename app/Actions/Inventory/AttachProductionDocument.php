@@ -2,13 +2,13 @@
 
 namespace App\Actions\Inventory;
 
-use App\MediaAssetStatus;
-use App\MediaAssetType;
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetType;
+use App\Enums\ProductionDocumentType;
 use App\Models\MediaAsset;
 use App\Models\ProductionDocument;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProductionDocumentType;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\ValidationException;

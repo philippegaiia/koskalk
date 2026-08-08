@@ -1,13 +1,13 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Ingredient;
 use App\Models\IngredientTranslation;
 use App\Models\ProductFamily;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\OwnerType;
 use App\Services\IngredientTranslationService;
 use App\Services\RecipeWorkbenchIngredientCatalogBuilder;
 use Illuminate\Database\QueryException;

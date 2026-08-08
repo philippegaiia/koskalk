@@ -1,12 +1,12 @@
 <?php
 
-use App\MaterialPriceSource;
+use App\Enums\MaterialPriceSource;
+use App\Enums\PackagingCategory;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
-use App\PackagingCategory;
 use App\Services\CurrentMaterialPriceService;
 use Tests\TestCase;
 

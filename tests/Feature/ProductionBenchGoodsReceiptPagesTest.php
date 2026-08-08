@@ -1,8 +1,11 @@
 <?php
 
 use App\Actions\Purchasing\ReceivePurchaseOrder;
-use App\GoodsReceiptSource;
-use App\ListingPriceBasis;
+use App\Enums\GoodsReceiptSource;
+use App\Enums\ListingPriceBasis;
+use App\Enums\ProcurementStage;
+use App\Enums\PurchaseOrderStatus;
+use App\Enums\StockUnitKind;
 use App\Livewire\ProductionBench\Purchasing\ReceiptCreate;
 use App\Livewire\ProductionBench\Purchasing\ReceiptDetail;
 use App\Livewire\ProductionBench\Purchasing\ReceiptIndex;
@@ -16,10 +19,7 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProcurementStage;
-use App\PurchaseOrderStatus;
 use App\Services\ProductionBenchAccess;
-use App\StockUnitKind;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 

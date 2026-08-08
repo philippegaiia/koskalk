@@ -2,11 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\OrganicStatus;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
+use App\Enums\StockUnitKind;
 use App\Models\Concerns\HasPublicId;
-use App\OrganicStatus;
-use App\StockLotOrigin;
-use App\StockLotStatus;
-use App\StockUnitKind;
 use Database\Factories\StockLotFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

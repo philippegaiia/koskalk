@@ -1,14 +1,14 @@
 <?php
 
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\InterfaceTranslation;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\OwnerType;
 use App\Services\MediaStorage;
-use App\Visibility;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;

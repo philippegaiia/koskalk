@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\MediaAssetUsageRole;
+use App\Enums\MediaAssetUsageRole;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\Recipe;

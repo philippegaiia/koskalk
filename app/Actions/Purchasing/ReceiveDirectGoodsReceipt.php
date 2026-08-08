@@ -2,9 +2,11 @@
 
 namespace App\Actions\Purchasing;
 
-use App\GoodsReceiptSource;
-use App\GoodsReceiptStatus;
-use App\ListingPriceBasis;
+use App\Enums\GoodsReceiptSource;
+use App\Enums\GoodsReceiptStatus;
+use App\Enums\ListingPriceBasis;
+use App\Enums\OwnerType;
+use App\Enums\StockUnitKind;
 use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -12,12 +14,10 @@ use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
 use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
-use App\StockUnitKind;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 

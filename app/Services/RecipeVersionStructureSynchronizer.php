@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use App\Enums\OwnerType;
 use App\Models\PackagingItem;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
-use App\OwnerType;
 
 class RecipeVersionStructureSynchronizer
 {

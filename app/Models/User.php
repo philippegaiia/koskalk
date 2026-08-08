@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use App\OwnerType;
-use App\WorkspaceMemberRole;
+use App\Enums\OwnerType;
+use App\Enums\WorkspaceMemberRole;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;

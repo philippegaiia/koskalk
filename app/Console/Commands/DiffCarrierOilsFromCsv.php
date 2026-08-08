@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;

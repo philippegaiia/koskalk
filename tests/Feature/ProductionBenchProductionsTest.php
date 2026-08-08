@@ -1,5 +1,10 @@
 <?php
 
+use App\Enums\OwnerType;
+use App\Enums\ProductionFormulaComponent;
+use App\Enums\ProductionRequirementKind;
+use App\Enums\ProductionRunStatus;
+use App\Enums\Visibility;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
 use App\Livewire\ProductionBench\Production\ProductionIndex;
 use App\Models\Employee;
@@ -16,12 +21,7 @@ use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\OwnerType;
-use App\ProductionFormulaComponent;
-use App\ProductionRequirementKind;
-use App\ProductionRunStatus;
 use App\Services\Production\ProductionRunNumberService;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 

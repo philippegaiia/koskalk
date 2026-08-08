@@ -1,14 +1,14 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\MassDisplaySystem;
+use App\Enums\OwnerType;
 use App\Livewire\Dashboard\IngredientsIndex;
-use App\MassDisplaySystem;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\Plan;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
 use App\Services\IngredientFormulaUsageService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;

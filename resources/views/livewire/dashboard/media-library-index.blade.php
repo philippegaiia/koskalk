@@ -238,9 +238,9 @@
                 @foreach ($assets as $asset)
                     <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="sk-card overflow-hidden">
                         <div data-media-card-preview class="relative grid w-full aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
-                            @if ($asset->status === \App\MediaAssetStatus::Ready && $asset->getFirstMedia('master'))
+                            @if ($asset->status === \App\Enums\MediaAssetStatus::Ready && $asset->getFirstMedia('master'))
                                 <img src="{{ route('media.show', [$asset, 'thumbnail']) }}" alt="" class="size-full object-cover" />
-                            @elseif ($asset->status === \App\MediaAssetStatus::Ready && $asset->type === \App\MediaAssetType::Pdf)
+                            @elseif ($asset->status === \App\Enums\MediaAssetStatus::Ready && $asset->type === \App\Enums\MediaAssetType::Pdf)
                                 <div data-media-pdf-placeholder class="grid size-full place-items-center p-6 text-center text-[var(--color-ink-soft)]">
                                     <div>
                                         <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="mx-auto size-12" stroke="currentColor" stroke-width="1.5">
@@ -258,7 +258,7 @@
                                 </div>
                             @endif
 
-                            @if ($asset->status === \App\MediaAssetStatus::Ready && $canUpdateMedia)
+                            @if ($asset->status === \App\Enums\MediaAssetStatus::Ready && $canUpdateMedia)
                                 <button
                                     id="media-asset-settings-{{ $asset->id }}"
                                     data-media-settings-trigger
@@ -303,7 +303,7 @@
                                             {{ trans_choice('media_library.usage', $asset->logical_usages_count, ['count' => $asset->logical_usages_count]) }}
                                             <span aria-hidden="true">›</span>
                                         </button>
-                                        @if ($asset->type === \App\MediaAssetType::Pdf && $asset->status === \App\MediaAssetStatus::Ready)
+                                        @if ($asset->type === \App\Enums\MediaAssetType::Pdf && $asset->status === \App\Enums\MediaAssetStatus::Ready)
                                             <a href="{{ route('media.download', $asset) }}" class="text-[10px] font-medium text-[var(--color-ink-soft)] underline decoration-current/40 underline-offset-2">
                                                 {{ __('media_library.documents.download') }}
                                             </a>
@@ -312,14 +312,14 @@
                                 </div>
                             </div>
 
-                            @if ($asset->status === \App\MediaAssetStatus::Processing)
+                            @if ($asset->status === \App\Enums\MediaAssetStatus::Processing)
                                 <div>
                                     <div class="h-2 overflow-hidden rounded-full bg-[var(--color-field-muted)]">
                                         <div class="h-full rounded-full bg-[var(--color-accent)] transition-all" style="width: {{ $asset->progress }}%"></div>
                                     </div>
                                     <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $asset->progress }}% · {{ __('media_library.processing_stages.'.($asset->processing_stage ?: 'queued')) }}</p>
                                 </div>
-                            @elseif ($asset->status === \App\MediaAssetStatus::Failed)
+                            @elseif ($asset->status === \App\Enums\MediaAssetStatus::Failed)
                                 <p role="alert" class="text-sm leading-6 text-[var(--color-danger-strong)]">{{ $asset->failure_reason }}</p>
                                 @if ($canUpdateMedia || $canDeleteMedia)
                                     <div class="flex flex-wrap gap-2">
@@ -415,7 +415,7 @@
 
                 <div data-media-panel-scroll class="min-h-0 flex-1 overflow-y-auto p-5">
                     @if ($assetPanelTab === 'settings')
-                        @if ($canUpdateMedia && $selectedAsset->status === \App\MediaAssetStatus::Ready)
+                        @if ($canUpdateMedia && $selectedAsset->status === \App\Enums\MediaAssetStatus::Ready)
                             <div class="space-y-6">
                                 <form data-media-panel-section wire:submit="renameFromInput({{ $selectedAsset->id }})" class="space-y-2.5">
                                     <label class="block text-xs font-medium text-[var(--color-ink-soft)]" for="display-name-{{ $selectedAsset->id }}">
@@ -538,7 +538,7 @@
                                     @enderror
                                 </section>
 
-                                @if ($selectedAsset->type === \App\MediaAssetType::Pdf)
+                                @if ($selectedAsset->type === \App\Enums\MediaAssetType::Pdf)
                                     <section data-media-panel-section class="border-t border-[var(--color-line)] pt-5">
                                         <a href="{{ route('media.download', $selectedAsset) }}" class="sk-btn sk-btn-primary">{{ __('media_library.documents.download') }}</a>
                                     </section>
@@ -672,7 +672,7 @@
                     @endif
                 </div>
 
-                @if ($canDeleteMedia && $selectedAsset->status === \App\MediaAssetStatus::Ready)
+                @if ($canDeleteMedia && $selectedAsset->status === \App\Enums\MediaAssetStatus::Ready)
                     <footer class="flex items-center justify-between gap-3 border-t border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4">
                         @if ($selectedDeletionImpact['total'] > 0)
                             <div class="max-w-72 text-[11px] leading-4 text-[var(--color-ink-soft)]">

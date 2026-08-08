@@ -2,11 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Enums\ProductionRequirementKind;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
-use App\ProductionRequirementKind;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

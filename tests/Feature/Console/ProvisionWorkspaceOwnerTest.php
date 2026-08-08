@@ -1,9 +1,9 @@
 <?php
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\WorkspaceMemberRole;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;

@@ -4,12 +4,12 @@ namespace App\Livewire\ProductionBench\Purchasing;
 
 use App\Actions\Purchasing\AttachGoodsReceiptDocuments;
 use App\Actions\Purchasing\ReverseGoodsReceipt;
-use App\GoodsReceiptStatus;
-use App\MediaAssetType;
+use App\Enums\GoodsReceiptStatus;
+use App\Enums\MediaAssetType;
+use App\Enums\ProductionDocumentType;
 use App\Models\GoodsReceipt;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProductionDocumentType;
 use App\Services\MediaAssetUploadService;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;

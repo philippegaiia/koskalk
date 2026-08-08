@@ -3,15 +3,15 @@
 namespace App\Models;
 
 use App\Casts\OriginalFilename;
-use App\IngredientCategory;
-use App\MediaAssetUsageRole;
+use App\Enums\IngredientCategory;
+use App\Enums\MediaAssetUsageRole;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
-use App\OwnerType;
 use App\Services\MediaStorage;
-use App\Visibility;
-use App\WorkspaceMemberRole;
 use Database\Factories\IngredientFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;

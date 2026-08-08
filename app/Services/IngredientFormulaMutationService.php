@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\Visibility;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
@@ -12,7 +13,6 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
-use App\Visibility;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;

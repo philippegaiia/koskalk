@@ -2,7 +2,11 @@
 
 namespace App\Actions\Inventory;
 
-use App\MaterialPriceSource;
+use App\Enums\MaterialPriceSource;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
+use App\Enums\StockMovementType;
+use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\StockLot;
@@ -14,10 +18,6 @@ use App\Services\CurrentMaterialPriceService;
 use App\Services\InternalLotCodeGenerator;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
-use App\StockLotOrigin;
-use App\StockLotStatus;
-use App\StockMovementType;
-use App\StockUnitKind;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;

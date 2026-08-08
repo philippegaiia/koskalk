@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\ListingPriceBasis;
+use App\Enums\ListingPriceBasis;
+use App\Enums\OrganicStatus;
+use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\Workspace;
-use App\OrganicStatus;
-use App\StockUnitKind;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**

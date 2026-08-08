@@ -2,10 +2,10 @@
 
 namespace App\Services\Production;
 
+use App\Enums\ProductionRequirementKind;
 use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
-use App\ProductionRequirementKind;
 use Illuminate\Validation\ValidationException;
 
 class ProductionSnapshotRescaler

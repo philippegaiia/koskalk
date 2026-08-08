@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use App\ListingPriceBasis;
+use App\Enums\ListingPriceBasis;
+use App\Enums\OrganicStatus;
+use App\Enums\StockUnitKind;
 use App\Models\Concerns\HasPublicId;
-use App\OrganicStatus;
-use App\StockUnitKind;
 use Database\Factories\SupplierListingFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

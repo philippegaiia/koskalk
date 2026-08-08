@@ -1,6 +1,9 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\PackagingItem;
@@ -18,14 +21,11 @@ use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\OwnerType;
 use App\Services\PackagingItemAuthoringService;
 use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
-use App\Visibility;
-use App\WorkspaceMemberRole;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 

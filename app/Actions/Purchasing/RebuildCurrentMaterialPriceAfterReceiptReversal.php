@@ -2,8 +2,10 @@
 
 namespace App\Actions\Purchasing;
 
-use App\GoodsReceiptStatus;
-use App\MaterialPriceSource;
+use App\Enums\GoodsReceiptStatus;
+use App\Enums\MaterialPriceSource;
+use App\Enums\PurchaseOrderStatus;
+use App\Enums\StockLotOrigin;
 use App\Models\CurrentMaterialPrice;
 use App\Models\GoodsReceipt;
 use App\Models\GoodsReceiptLine;
@@ -14,9 +16,7 @@ use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\SupplierListing;
 use App\Models\User;
-use App\PurchaseOrderStatus;
 use App\Services\CurrentMaterialPriceService;
-use App\StockLotOrigin;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;

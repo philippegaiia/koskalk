@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ProcurementStage;
 use App\Models\PurchaseOrder;
-use App\ProcurementStage;
 use Illuminate\Contracts\View\View;
 
 class ProcurementDocumentController extends Controller

@@ -1,6 +1,6 @@
 <?php
 
-use App\ListingPriceBasis;
+use App\Enums\ListingPriceBasis;
 use App\Services\SupplierListingPriceCalculator;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;

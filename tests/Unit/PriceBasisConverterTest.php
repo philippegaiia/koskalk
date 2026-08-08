@@ -1,6 +1,6 @@
 <?php
 
-use App\MassUnit;
+use App\Enums\MassUnit;
 use App\Services\PriceBasisConverter;
 
 it('converts canonical prices per kilogram to and from prices per pound', function (): void {

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\ProductionConsumptionKind;
+use App\Enums\ProductionConsumptionKind;
 use Database\Factories\ProductionConsumptionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\MediaAssetUsageRole;
+use App\Enums\MediaAssetUsageRole;
 use Database\Factories\MediaAssetUsageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

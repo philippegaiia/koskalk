@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\OwnerType;
+use App\Enums\ProductionBasisKind;
+use App\Enums\Visibility;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
@@ -14,11 +17,8 @@ use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\OwnerType;
-use App\ProductionBasisKind;
 use App\Services\Production\ProductionFormulaSnapshotBuilder;
 use App\Services\Production\ProductionRequirementBuilder;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;

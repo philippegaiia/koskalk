@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\MediaAssetStatus;
-use App\MediaAssetType;
+use App\Enums\MediaAssetStatus;
+use App\Enums\MediaAssetType;
 use App\Models\MediaAsset;
 use App\Models\User;
 use Illuminate\Http\Request;

@@ -2,10 +2,10 @@
 
 namespace App\Actions\Inventory;
 
+use App\Enums\StockLotStatus;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Services\ProductionBenchAccess;
-use App\StockLotStatus;
 use Illuminate\Support\Facades\DB;
 
 class QuarantineStockLot

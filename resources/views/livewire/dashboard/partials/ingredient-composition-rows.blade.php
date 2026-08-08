@@ -85,7 +85,7 @@
                             aria-invalid="{{ $errors->has('quickComponentCategory') ? 'true' : 'false' }}"
                         >
                             <option value="">{{ __('ingredients.editor.composition.choose_category') }}</option>
-                            @foreach (\App\IngredientCategory::options() as $value => $label)
+                            @foreach (\App\Enums\IngredientCategory::options() as $value => $label)
                                 <option value="{{ $value }}">{{ $label }}</option>
                             @endforeach
                         </select>

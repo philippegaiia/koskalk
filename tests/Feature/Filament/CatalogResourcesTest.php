@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Filament\Resources\Allergens\AllergenResource;
 use App\Filament\Resources\IfraCertificates\IfraCertificateResource;
 use App\Filament\Resources\IfraProductCategories\IfraProductCategoryResource;
@@ -22,7 +25,6 @@ use App\Filament\Resources\UserIngredients\Pages\ListUserIngredients;
 use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\UserResource;
-use App\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\IfraCertificate;
 use App\Models\IfraCertificateLimit;
@@ -44,9 +46,7 @@ use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
-use App\OwnerType;
 use App\Services\MediaStorage;
-use App\Visibility;
 use Database\Seeders\PlanSeeder;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;

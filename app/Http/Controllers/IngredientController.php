@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\MaterialPriceSource;
+use App\Enums\MaterialPriceSource;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;

@@ -1,9 +1,9 @@
 <?php
 
+use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
 use App\Models\Supplier;
 use App\Models\Workspace;
-use App\StockUnitKind;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;

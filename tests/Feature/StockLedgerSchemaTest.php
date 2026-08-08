@@ -1,5 +1,10 @@
 <?php
 
+use App\Enums\ProductionDocumentType;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
+use App\Enums\StockMovementType;
+use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\ProductionDocument;
@@ -7,11 +12,6 @@ use App\Models\StockLot;
 use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\Workspace;
-use App\ProductionDocumentType;
-use App\StockLotOrigin;
-use App\StockLotStatus;
-use App\StockMovementType;
-use App\StockUnitKind;
 use Database\Factories\PackagingItemFactory;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;

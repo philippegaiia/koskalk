@@ -1,6 +1,8 @@
 <?php
 
 use App\Actions\Production\SaveProductionTaskType;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Livewire\ProductionBench\Production\TaskSetForm;
 use App\Livewire\ProductionBench\Production\TaskSetIndex;
 use App\Models\ProductFamily;
@@ -10,8 +12,6 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\OwnerType;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 

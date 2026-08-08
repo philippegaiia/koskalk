@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
@@ -7,8 +9,6 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
-use App\OwnerType;
-use App\Visibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

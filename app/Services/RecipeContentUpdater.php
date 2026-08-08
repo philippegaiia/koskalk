@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\MediaAssetStatus;
+use App\Enums\MediaAssetStatus;
 use App\Models\MediaAsset;
 use App\Models\Recipe;
 use App\Support\RichContentAttachmentPaths;

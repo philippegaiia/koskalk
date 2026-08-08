@@ -2,7 +2,9 @@
 
 use App\Actions\Production\BackfillProductionFormulaSnapshot;
 use App\Actions\Production\CreateProductionDraft;
-use App\MassUnit;
+use App\Enums\MassUnit;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
@@ -19,8 +21,6 @@ use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
-use App\OwnerType;
-use App\Visibility;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 

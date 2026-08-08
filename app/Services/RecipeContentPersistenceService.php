@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\MediaAssetUsageRole;
+use App\Enums\MediaAssetUsageRole;
 use App\Models\Recipe;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;

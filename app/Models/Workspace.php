@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use App\MassDisplaySystem;
+use App\Enums\MassDisplaySystem;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Scopes\OwnedByCurrentTenantScope;
-use App\WorkspaceMemberRole;
 use Database\Factories\WorkspaceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

@@ -1,6 +1,6 @@
 <?php
 
-use App\MaterialPriceSource;
+use App\Enums\MaterialPriceSource;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\User;

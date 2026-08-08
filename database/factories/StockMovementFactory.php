@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\StockMovementType;
 use App\Models\StockLot;
 use App\Models\StockMovement;
-use App\StockMovementType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 

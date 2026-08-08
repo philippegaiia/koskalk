@@ -2,17 +2,17 @@
 
 namespace App\Services;
 
-use App\GoodsReceiptStatus;
+use App\Enums\GoodsReceiptStatus;
+use App\Enums\PurchaseOrderStatus;
+use App\Enums\StockLotStatus;
+use App\Enums\StockReservationStatus;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\PurchaseOrderLine;
 use App\Models\StockLot;
 use App\Models\StockReservation;
 use App\Models\Workspace;
-use App\PurchaseOrderStatus;
 use App\Services\Production\ProductionDemandService;
-use App\StockLotStatus;
-use App\StockReservationStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 

@@ -1,6 +1,9 @@
 <?php
 
-use App\IngredientCategory;
+use App\Enums\IngredientCategory;
+use App\Enums\OwnerType;
+use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
@@ -11,14 +14,11 @@ use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
-use App\OwnerType;
 use App\Services\EntitlementService;
 use App\Services\RecipeVersionRecordService;
 use App\Services\RecipeWorkbenchService;
 use App\Services\UserIngredientAuthoringService;
 use App\Services\WorkspaceProvisioner;
-use App\Visibility;
-use App\WorkspaceMemberRole;
 use Database\Seeders\PlanSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;

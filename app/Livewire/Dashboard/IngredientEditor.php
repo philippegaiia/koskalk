@@ -615,12 +615,14 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return __('ingredients.editor.soap.koh_helper');
         }
 
+        $numberLocale = $this->currentUser()?->number_locale;
+
         return __('ingredients.editor.soap.koh_range', [
-            'minimum' => sprintf('%.6f', $range['minimum']),
-            'maximum' => sprintf('%.6f', $range['maximum']),
-            'professional_minimum' => sprintf('%.1f', $range['minimum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR),
-            'professional_maximum' => sprintf('%.1f', $range['maximum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR),
-            'reference' => sprintf('%.6f', $range['original']),
+            'minimum' => NumberLocale::formatDecimal($range['minimum'], 6, $numberLocale),
+            'maximum' => NumberLocale::formatDecimal($range['maximum'], 6, $numberLocale),
+            'professional_minimum' => NumberLocale::formatDecimal($range['minimum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR, 1, $numberLocale),
+            'professional_maximum' => NumberLocale::formatDecimal($range['maximum'] * SoapSap::PROFESSIONAL_KOH_SAP_DIVISOR, 1, $numberLocale),
+            'reference' => NumberLocale::formatDecimal($range['original'], 6, $numberLocale),
         ]);
     }
 
@@ -635,9 +637,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
             return null;
         }
 
+        $numberLocale = $this->currentUser()?->number_locale;
+
         return __('ingredients.editor.soap.allowed_range', [
-            'minimum' => sprintf('%.1f', $range['minimum']),
-            'maximum' => sprintf('%.1f', $range['maximum']),
+            'minimum' => NumberLocale::formatDecimal($range['minimum'], 1, $numberLocale),
+            'maximum' => NumberLocale::formatDecimal($range['maximum'], 1, $numberLocale),
         ]);
     }
 

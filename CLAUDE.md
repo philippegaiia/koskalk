@@ -104,7 +104,7 @@ Three-tier ingredient model:
 
 ### Ingredient Categories
 
-Defined in `App\IngredientCategory` enum. Only carrier oils can appear in the saponification selection list. An ingredient must be explicitly marked as potentially saponifiable before driving soap math.
+Defined in `App\Enums\IngredientCategory` enum. Only carrier oils can appear in the saponification selection list. An ingredient must be explicitly marked as potentially saponifiable before driving soap math.
 
 ### Product Families
 

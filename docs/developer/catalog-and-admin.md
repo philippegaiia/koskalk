@@ -10,7 +10,7 @@ If a data point affects calculation trust, INCI generation, allergen reporting, 
 
 ## Ingredient categories
 
-The current ingredient category enum is `App\IngredientCategory`.
+The current ingredient category enum is `App\Enums\IngredientCategory`.
 
 Current categories:
 

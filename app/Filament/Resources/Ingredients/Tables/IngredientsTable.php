@@ -72,6 +72,6 @@ class IngredientsTable
             ->defaultSort('catalog_key')
             ->emptyStateHeading('No ingredients yet')
             ->emptyStateDescription('Seed the starter catalog or add a platform ingredient manually.')
-            ->paginated([25, 50, 100]);
+            ->paginated([25, 50, 100, 'all']);
     }
 }

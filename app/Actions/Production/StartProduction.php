@@ -2,8 +2,10 @@
 
 namespace App\Actions\Production;
 
+use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockReservationStatus;
+use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRun;
 use App\Models\StockReservation;
 use App\Models\User;
@@ -69,13 +71,25 @@ class StartProduction
                 ]);
             }
 
+            ProductionFormulaLine::query()
+                ->where('production_run_id', $lockedProduction->id)
+                ->where('component', ProductionFormulaComponent::Water)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->each(function (ProductionFormulaLine $line): void {
+                    if ($line->actual_mass_grams === null) {
+                        $line->update(['actual_mass_grams' => $line->planned_mass_grams]);
+                    }
+                });
+
             $lockedProduction->update([
                 'status' => ProductionRunStatus::InProduction,
                 'started_at' => now(),
                 'started_by_user_id' => $actor->id,
             ]);
 
-            return $lockedProduction->fresh();
+            return $lockedProduction->fresh(['formulaLines']);
         }, attempts: 5);
     }
 

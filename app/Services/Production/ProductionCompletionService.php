@@ -3,6 +3,7 @@
 namespace App\Services\Production;
 
 use App\Enums\ProductionConsumptionKind;
+use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotOrigin;
 use App\Enums\StockLotStatus;
@@ -11,6 +12,8 @@ use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
 use App\Models\ProductionConsumption;
+use App\Models\ProductionFormulaLine;
+use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\StockLot;
@@ -54,6 +57,7 @@ class ProductionCompletionService
                 ->lockForUpdate()
                 ->findOrFail($production->id);
 
+            $this->defaultCalculatedLyeActuals($actor, $lockedProduction);
             $this->assertCompletable($lockedProduction, $workspace, $actualOutputQuantity, $manufactureDate, $outputIngredientId);
 
             $consumption = ProductionConsumption::query()
@@ -243,6 +247,19 @@ class ProductionCompletionService
         $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
 
         $requirements = $production->requirements()->get();
+        $missingWaterActual = ProductionFormulaLine::query()
+            ->where('production_run_id', $production->id)
+            ->where('component', ProductionFormulaComponent::Water)
+            ->where(function ($query): void {
+                $query->whereNull('actual_mass_grams')->orWhere('actual_mass_grams', '<=', 0);
+            })
+            ->exists();
+
+        if ($missingWaterActual) {
+            throw ValidationException::withMessages([
+                'production' => 'Record a positive actual water quantity before completing.',
+            ]);
+        }
 
         if ($requirements->isEmpty()) {
             throw ValidationException::withMessages([
@@ -274,6 +291,58 @@ class ProductionCompletionService
             throw ValidationException::withMessages([
                 'production' => 'Every actual quantity must reference a stock lot before completing.',
             ]);
+        }
+    }
+
+    private function defaultCalculatedLyeActuals(User $actor, ProductionRun $production): void
+    {
+        $lyeLines = ProductionFormulaLine::query()
+            ->where('production_run_id', $production->id)
+            ->whereIn('component', [ProductionFormulaComponent::Naoh, ProductionFormulaComponent::Koh])
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($lyeLines as $line) {
+            $requirement = ProductionRequirement::query()
+                ->where('production_run_id', $production->id)
+                ->where('ingredient_id', $line->ingredient_id)
+                ->first();
+
+            if (! $requirement instanceof ProductionRequirement) {
+                continue;
+            }
+
+            $existingLotIds = ProductionConsumption::query()
+                ->where('production_run_id', $production->id)
+                ->where('production_requirement_id', $requirement->id)
+                ->pluck('stock_lot_id')
+                ->all();
+
+            StockReservation::query()
+                ->where('production_run_id', $production->id)
+                ->where('production_requirement_id', $requirement->id)
+                ->where('status', StockReservationStatus::Active)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->each(function (StockReservation $reservation) use ($actor, $existingLotIds, $production, $requirement): void {
+                    if (in_array($reservation->stock_lot_id, $existingLotIds, true)) {
+                        return;
+                    }
+
+                    ProductionConsumption::query()->create([
+                        'production_run_id' => $production->id,
+                        'production_requirement_id' => $requirement->id,
+                        'stock_lot_id' => $reservation->stock_lot_id,
+                        'kind' => ProductionConsumptionKind::Ingredient,
+                        'subject_name_snapshot' => $requirement->subject_name_snapshot,
+                        'quantity' => $reservation->quantity,
+                        'unit_snapshot' => 'g',
+                        'recorded_by_user_id' => $actor->id,
+                        'note' => null,
+                    ]);
+                });
         }
     }
 

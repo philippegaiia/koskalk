@@ -244,6 +244,18 @@
                 @empty
                     <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.no_requirements') }}</p>
                 @endforelse
+                @foreach ($production->formulaLines->filter(fn ($line): bool => $line->component?->value === 'water') as $line)
+                    <div class="flex flex-col gap-2 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                        <div>
+                            <p class="font-medium text-[var(--color-ink-strong)]">{{ $line->subject_name_snapshot }}</p>
+                            <p class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.formula.not_stock_tracked') }}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" inputmode="decimal" min="0" step="any" wire:model.live.debounce.500ms="calculatedActualRows.{{ $line->id }}.actual_mass_grams" aria-label="{{ __('production_bench.production.actuals_quantity', ['name' => $line->subject_name_snapshot]) }}" @disabled($mutationLocked) class="sk-input w-36 text-right font-mono">
+                            <span class="font-mono text-sm text-[var(--color-ink-soft)]">g</span>
+                        </div>
+                    </div>
+                @endforeach
             </div>
             <div class="flex items-center justify-end gap-3 border-t border-[var(--color-line)] p-4 sm:px-6">
                 @if ($actualsDirty)

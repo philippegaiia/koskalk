@@ -427,6 +427,7 @@ return [
         'assign_batch_number' => 'Assign batch number',
         'actuals_not_posted' => 'Saved as draft — nothing is posted to stock yet.',
         'actuals_note_placeholder' => 'Note',
+        'actuals_not_stock_tracked' => 'Not stock tracked',
         'actuals_quantity' => 'Actual quantity of :name',
         'actuals_save' => 'Save actuals',
         'actuals_saved' => 'Actual quantities saved.',

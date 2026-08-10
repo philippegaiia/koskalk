@@ -3004,52 +3004,112 @@
         {
             "group": "ingredients",
             "key": "editor.admin.classification.active",
-            "text": {"de": "Aktiv", "es": "Activo", "fr": "Actif", "it": "Attivo", "nl": "Actief"}
+            "text": {
+                "de": "Aktiv",
+                "es": "Activo",
+                "fr": "Actif",
+                "it": "Attivo",
+                "nl": "Actief"
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.aromatic_compliance_helper",
-            "text": {"de": "Allergen- und IFRA-Daten bleiben aktiv, auch wenn die Zutat vorübergehend als Sonstiges eingestuft ist.", "es": "Mantiene activos los datos de alérgenos e IFRA aunque el ingrediente esté clasificado temporalmente como Otro.", "fr": "Conserve les données allergènes et IFRA actives même si l’ingrédient est temporairement classé dans Autre.", "it": "Mantiene attivi i dati su allergeni e IFRA anche se l’ingrediente è temporaneamente classificato come Altro.", "nl": "Houdt allergenen- en IFRA-gegevens actief, ook als het ingrediënt tijdelijk als Overig is ingedeeld."}
+            "text": {
+                "de": "Allergen- und IFRA-Daten bleiben aktiv, auch wenn die Zutat vorübergehend als Sonstiges eingestuft ist.",
+                "es": "Mantiene activos los datos de alérgenos e IFRA aunque el ingrediente esté clasificado temporalmente como Otro.",
+                "fr": "Conserve les données allergènes et IFRA actives même si l’ingrédient est temporairement classé dans Autre.",
+                "it": "Mantiene attivi i dati su allergeni e IFRA anche se l’ingrediente è temporaneamente classificato come Altro.",
+                "nl": "Houdt allergenen- en IFRA-gegevens actief, ook als het ingrediënt tijdelijk als Overig is ingedeeld."
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.category",
-            "text": {"de": "Zutatenkategorie", "es": "Categoría del ingrediente", "fr": "Catégorie de l’ingrédient", "it": "Categoria dell’ingrediente", "nl": "Ingrediëntcategorie"}
+            "text": {
+                "de": "Zutatenkategorie",
+                "es": "Categoría del ingrediente",
+                "fr": "Catégorie de l’ingrédient",
+                "it": "Categoria dell’ingrediente",
+                "nl": "Ingrediëntcategorie"
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.category_helper",
-            "text": {"de": "Wähle die Materialfamilie. Fachfunktionen, Seifenfreigabe und Aromakonformität werden separat verwaltet.", "es": "Elige la familia del material. Las funciones especializadas, la aptitud para jabón y la conformidad aromática se gestionan por separado.", "fr": "Choisissez la famille de matière. Les fonctions spécialisées, la validation savon et la conformité aromatique sont gérées séparément.", "it": "Scegli la famiglia del materiale. Funzioni specialistiche, idoneità al sapone e conformità aromatica sono gestite separatamente.", "nl": "Kies de materiaalfamilie. Specialistische functies, zeepvalidatie en aromatische naleving worden apart beheerd."}
+            "text": {
+                "de": "Wähle die Materialfamilie. Fachfunktionen, Seifenfreigabe und Aromakonformität werden separat verwaltet.",
+                "es": "Elige la familia del material. Las funciones especializadas, la aptitud para jabón y la conformidad aromática se gestionan por separado.",
+                "fr": "Choisissez la famille de matière. Les fonctions spécialisées, la validation savon et la conformité aromatique sont gérées séparément.",
+                "it": "Scegli la famiglia del materiale. Funzioni specialistiche, idoneità al sapone e conformità aromatica sono gestite separatamente.",
+                "nl": "Kies de materiaalfamilie. Specialistische functies, zeepvalidatie en aromatische naleving worden apart beheerd."
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.description",
-            "text": {"de": "Lege zuerst die Zutatenfamilie fest. Die Seifenfreigabe bestimmt nur, ob ein Trägeröl die Verseifungsberechnung steuern darf.", "es": "Define primero la familia del ingrediente. La aptitud para jabón solo determina si un aceite portador puede intervenir en el cálculo de saponificación.", "fr": "Définissez d’abord la famille de l’ingrédient. La validation savon détermine uniquement si une huile porteuse peut participer au calcul de saponification.", "it": "Definisci prima la famiglia dell’ingrediente. L’idoneità al sapone determina solo se un olio vettore può partecipare al calcolo di saponificazione.", "nl": "Bepaal eerst de ingrediëntfamilie. Zeepvalidatie bepaalt alleen of een draagolie de verzepingsberekening mag aansturen."}
+            "text": {
+                "de": "Lege zuerst die Zutatenfamilie fest. Die Seifenfreigabe bestimmt nur, ob ein Trägeröl die Verseifungsberechnung steuern darf.",
+                "es": "Define primero la familia del ingrediente. La aptitud para jabón solo determina si un aceite portador puede intervenir en el cálculo de saponificación.",
+                "fr": "Définissez d’abord la famille de l’ingrédient. La validation savon détermine uniquement si une huile porteuse peut participer au calcul de saponification.",
+                "it": "Definisci prima la famiglia dell’ingrediente. L’idoneità al sapone determina solo se un olio vettore può partecipare al calcolo di saponificazione.",
+                "nl": "Bepaal eerst de ingrediëntfamilie. Zeepvalidatie bepaalt alleen of een draagolie de verzepingsberekening mag aansturen."
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.needs_review",
-            "text": {"de": "Prüfung erforderlich", "es": "Requiere revisión", "fr": "Révision requise", "it": "Revisione necessaria", "nl": "Controle nodig"}
+            "text": {
+                "de": "Prüfung erforderlich",
+                "es": "Requiere revisión",
+                "fr": "Révision requise",
+                "it": "Revisione necessaria",
+                "nl": "Controle nodig"
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.needs_review_helper",
-            "text": {"de": "Aktiv lassen, solange importierte Kategorie, Seifenfreigabe oder Konformitätsstatus noch bestätigt werden müssen.", "es": "Déjalo activo mientras deban confirmarse la categoría importada, la aptitud para jabón o el estado de conformidad.", "fr": "Laissez activé tant que la catégorie importée, la validation savon ou le statut de conformité doivent être confirmés.", "it": "Lascialo attivo finché categoria importata, idoneità al sapone o stato di conformità devono essere confermati.", "nl": "Laat dit actief zolang de geïmporteerde categorie, zeepvalidatie of nalevingsstatus nog bevestigd moet worden."}
+            "text": {
+                "de": "Aktiv lassen, solange importierte Kategorie, Seifenfreigabe oder Konformitätsstatus noch bestätigt werden müssen.",
+                "es": "Déjalo activo mientras deban confirmarse la categoría importada, la aptitud para jabón o el estado de conformidad.",
+                "fr": "Laissez activé tant que la catégorie importée, la validation savon ou le statut de conformité doivent être confirmés.",
+                "it": "Lascialo attivo finché categoria importata, idoneità al sapone o stato di conformità devono essere confermati.",
+                "nl": "Laat dit actief zolang de geïmporteerde categorie, zeepvalidatie of nalevingsstatus nog bevestigd moet worden."
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.section",
-            "text": {"de": "Klassifizierung", "es": "Clasificación", "fr": "Classification", "it": "Classificazione", "nl": "Classificatie"}
+            "text": {
+                "de": "Klassifizierung",
+                "es": "Clasificación",
+                "fr": "Classification",
+                "it": "Classificazione",
+                "nl": "Classificatie"
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.soap_trusted_helper",
-            "text": {"de": "Erfordert einen verifizierten KOH-SAP-Wert. Die Materialkategorie steuert diese Fähigkeit nicht.", "es": "Requiere un valor SAP KOH verificado. La categoría del material no controla esta capacidad.", "fr": "Nécessite une valeur SAP KOH vérifiée. La catégorie de matière ne contrôle pas cette capacité.", "it": "Richiede un valore SAP KOH verificato. La categoria del materiale non controlla questa capacità.", "nl": "Vereist een geverifieerde KOH-SAP-waarde. De materiaalcategorie bepaalt deze functie niet."}
+            "text": {
+                "de": "Erfordert einen verifizierten KOH-SAP-Wert. Die Materialkategorie steuert diese Fähigkeit nicht.",
+                "es": "Requiere un valor SAP KOH verificado. La categoría del material no controla esta capacidad.",
+                "fr": "Nécessite une valeur SAP KOH vérifiée. La catégorie de matière ne contrôle pas cette capacité.",
+                "it": "Richiede un valore SAP KOH verificato. La categoria del materiale non controlla questa capacità.",
+                "nl": "Vereist een geverifieerde KOH-SAP-waarde. De materiaalcategorie bepaalt deze functie niet."
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.admin.classification.subcategory_helper",
-            "text": {"de": "Optionale Verfeinerung mit einsteigerfreundlichen Namen neben der fachlichen Klassifizierung.", "es": "Subclasificación opcional que combina nombres comprensibles con una clasificación profesional.", "fr": "Précision facultative associant des noms accessibles à une classification professionnelle.", "it": "Dettaglio facoltativo che affianca nomi semplici alla classificazione professionale.", "nl": "Optionele verfijning met begrijpelijke namen naast de professionele classificatie."}
+            "text": {
+                "de": "Optionale Verfeinerung mit einsteigerfreundlichen Namen neben der fachlichen Klassifizierung.",
+                "es": "Subclasificación opcional que combina nombres comprensibles con una clasificación profesional.",
+                "fr": "Précision facultative associant des noms accessibles à une classification professionnelle.",
+                "it": "Dettaglio facoltativo che affianca nomi semplici alla classificazione professionale.",
+                "nl": "Optionele verfijning met begrijpelijke namen naast de professionele classificatie."
+            }
         },
         {
             "group": "ingredients",
@@ -3780,12 +3840,24 @@
         {
             "group": "ingredients",
             "key": "editor.details.aromatic_compliance",
-            "text": {"de": "Aromatische Konformität erforderlich", "es": "Requiere conformidad aromática", "fr": "Conformité aromatique requise", "it": "Richiede conformità aromatica", "nl": "Aromatische naleving vereist"}
+            "text": {
+                "de": "Aromatische Konformität erforderlich",
+                "es": "Requiere conformidad aromática",
+                "fr": "Conformité aromatique requise",
+                "it": "Richiede conformità aromatica",
+                "nl": "Aromatische naleving vereist"
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.details.aromatic_compliance_helper",
-            "text": {"de": "Aktiviert Allergen- und IFRA-Informationen unabhängig von der Materialkategorie.", "es": "Activa la información de alérgenos e IFRA independientemente de la categoría del material.", "fr": "Active les informations allergènes et IFRA indépendamment de la catégorie de matière.", "it": "Attiva le informazioni su allergeni e IFRA indipendentemente dalla categoria del materiale.", "nl": "Activeert allergenen- en IFRA-informatie onafhankelijk van de materiaalcategorie."}
+            "text": {
+                "de": "Aktiviert Allergen- und IFRA-Informationen unabhängig von der Materialkategorie.",
+                "es": "Activa la información de alérgenos e IFRA independientemente de la categoría del material.",
+                "fr": "Active les informations allergènes et IFRA indépendamment de la catégorie de matière.",
+                "it": "Attiva le informazioni su allergeni e IFRA indipendentemente dalla categoria del materiale.",
+                "nl": "Activeert allergenen- en IFRA-informatie onafhankelijk van de materiaalcategorie."
+            }
         },
         {
             "group": "ingredients",
@@ -3856,12 +3928,24 @@
         {
             "group": "ingredients",
             "key": "editor.details.soap_trusted",
-            "text": {"de": "Für Seifenverseifung freigegeben", "es": "Validado para saponificación", "fr": "Fiable pour la saponification", "it": "Validato per la saponificazione", "nl": "Goedgekeurd voor zeepverzeping"}
+            "text": {
+                "de": "Für Seifenverseifung freigegeben",
+                "es": "Validado para saponificación",
+                "fr": "Fiable pour la saponification",
+                "it": "Validato per la saponificazione",
+                "nl": "Goedgekeurd voor zeepverzeping"
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.details.soap_trusted_helper",
-            "text": {"de": "Nur aktivieren, wenn für genau dieses Material ein verifizierter KOH-SAP-Wert vorliegt.", "es": "Actívalo solo si este material exacto tiene un valor SAP KOH verificado.", "fr": "Activez uniquement si cette matière précise possède une valeur SAP KOH vérifiée.", "it": "Attivalo solo se questo materiale esatto possiede un valore SAP KOH verificato.", "nl": "Alleen activeren als dit exacte materiaal een geverifieerde KOH-SAP-waarde heeft."}
+            "text": {
+                "de": "Nur aktivieren, wenn für genau dieses Material ein verifizierter KOH-SAP-Wert vorliegt.",
+                "es": "Actívalo solo si este material exacto tiene un valor SAP KOH verificado.",
+                "fr": "Activez uniquement si cette matière précise possède une valeur SAP KOH vérifiée.",
+                "it": "Attivalo solo se questo materiale esatto possiede un valore SAP KOH verificato.",
+                "nl": "Alleen activeren als dit exacte materiaal een geverifieerde KOH-SAP-waarde heeft."
+            }
         },
         {
             "group": "ingredients",
@@ -4405,12 +4489,24 @@
         {
             "group": "ingredients",
             "key": "editor.supplier.additional_functions",
-            "text": {"de": "Zusätzliche Funktionen", "es": "Funciones adicionales", "fr": "Fonctions supplémentaires", "it": "Funzioni aggiuntive", "nl": "Aanvullende functies"}
+            "text": {
+                "de": "Zusätzliche Funktionen",
+                "es": "Funciones adicionales",
+                "fr": "Fonctions supplémentaires",
+                "it": "Funzioni aggiuntive",
+                "nl": "Aanvullende functies"
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.supplier.additional_functions_helper",
-            "text": {"de": "Optionale, manuell zugewiesene Funktionen. Die oben verifizierten COSING-Funktionen können hier nicht geändert werden.", "es": "Funciones opcionales asignadas manualmente. Las funciones COSING verificadas no se pueden modificar aquí.", "fr": "Fonctions facultatives attribuées manuellement. Les fonctions COSING vérifiées ci-dessus ne peuvent pas être modifiées ici.", "it": "Funzioni facoltative assegnate manualmente. Le funzioni COSING verificate non possono essere modificate qui.", "nl": "Optionele handmatig toegewezen functies. De geverifieerde COSING-functies hierboven kunnen hier niet worden gewijzigd."}
+            "text": {
+                "de": "Optionale, manuell zugewiesene Funktionen. Die oben verifizierten COSING-Funktionen können hier nicht geändert werden.",
+                "es": "Funciones opcionales asignadas manualmente. Las funciones COSING verificadas no se pueden modificar aquí.",
+                "fr": "Fonctions facultatives attribuées manuellement. Les fonctions COSING vérifiées ci-dessus ne peuvent pas être modifiées ici.",
+                "it": "Funzioni facoltative assegnate manualmente. Le funzioni COSING verificate non possono essere modificate qui.",
+                "nl": "Optionele handmatig toegewezen functies. De geverifieerde COSING-functies hierboven kunnen hier niet worden gewijzigd."
+            }
         },
         {
             "group": "ingredients",
@@ -4492,7 +4588,13 @@
         {
             "group": "ingredients",
             "key": "editor.supplier.none_verified",
-            "text": {"de": "Keine verifiziert", "es": "Ninguna verificada", "fr": "Aucune fonction vérifiée", "it": "Nessuna verificata", "nl": "Geen geverifieerd"}
+            "text": {
+                "de": "Keine verifiziert",
+                "es": "Ninguna verificada",
+                "fr": "Aucune fonction vérifiée",
+                "it": "Nessuna verificata",
+                "nl": "Geen geverifieerd"
+            }
         },
         {
             "group": "ingredients",
@@ -4530,12 +4632,24 @@
         {
             "group": "ingredients",
             "key": "editor.supplier.verified_functions",
-            "text": {"de": "Verifizierte COSING-Funktionen", "es": "Funciones COSING verificadas", "fr": "Fonctions COSING vérifiées", "it": "Funzioni COSING verificate", "nl": "Geverifieerde COSING-functies"}
+            "text": {
+                "de": "Verifizierte COSING-Funktionen",
+                "es": "Funciones COSING verificadas",
+                "fr": "Fonctions COSING vérifiées",
+                "it": "Funzioni COSING verificate",
+                "nl": "Geverifieerde COSING-functies"
+            }
         },
         {
             "group": "ingredients",
             "key": "editor.supplier.verified_functions_helper",
-            "text": {"de": "Schreibgeschützte Funktionen, die vom Plattformkatalog geerbt oder dafür verifiziert wurden.", "es": "Funciones de solo lectura heredadas del catálogo de la plataforma o verificadas para él.", "fr": "Fonctions en lecture seule héritées du catalogue de la plateforme ou vérifiées pour celui-ci.", "it": "Funzioni in sola lettura ereditate dal catalogo della piattaforma o verificate per esso.", "nl": "Alleen-lezen functies die uit de platformcatalogus zijn overgenomen of daarvoor zijn geverifieerd."}
+            "text": {
+                "de": "Schreibgeschützte Funktionen, die vom Plattformkatalog geerbt oder dafür verifiziert wurden.",
+                "es": "Funciones de solo lectura heredadas del catálogo de la plataforma o verificadas para él.",
+                "fr": "Fonctions en lecture seule héritées du catalogue de la plateforme ou vérifiées pour celui-ci.",
+                "it": "Funzioni in sola lettura ereditate dal catalogo della piattaforma o verificate per esso.",
+                "nl": "Alleen-lezen functies die uit de platformcatalogus zijn overgenomen of daarvoor zijn geverifieerd."
+            }
         },
         {
             "group": "ingredients",
@@ -12822,6 +12936,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.actual_used",
+            "text": {
+                "de": "Tatsächlich verwendet",
+                "es": "Uso real",
+                "fr": "Utilisé réellement",
+                "it": "Utilizzato",
+                "nl": "Werkelijk gebruikt"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.actuals_not_posted",
             "text": {
                 "de": "Als Entwurf gespeichert – es wird noch nichts gebucht.",
@@ -12833,6 +12958,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.actuals_not_stock_tracked",
+            "text": {
+                "de": "Nicht bestandsgeführt",
+                "es": "Sin seguimiento de stock",
+                "fr": "Non suivi en stock",
+                "it": "Non tracciato a magazzino",
+                "nl": "Niet als voorraad gevolgd"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.actuals_note_placeholder",
             "text": {
                 "de": "Notiz",
@@ -12840,6 +12976,17 @@
                 "fr": "Note",
                 "it": "Nota",
                 "nl": "Notitie"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.actuals_posted_readonly",
+            "text": {
+                "de": "Gebuchte Ist-Mengen sind schreibgeschützt.",
+                "es": "Las cantidades reales contabilizadas son de solo lectura.",
+                "fr": "Les quantités réelles comptabilisées sont en lecture seule.",
+                "it": "Le quantità effettive registrate sono di sola lettura.",
+                "nl": "Geboekte werkelijke hoeveelheden zijn alleen-lezen."
             }
         },
         {
@@ -13038,6 +13185,28 @@
                 "fr": "Identité du lot",
                 "it": "Identità del lotto",
                 "nl": "Batchidentiteit"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.batch_materials",
+            "text": {
+                "de": "Chargenmaterialien",
+                "es": "Materiales del lote",
+                "fr": "Matières du lot",
+                "it": "Materiali del lotto",
+                "nl": "Batchmaterialen"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.batch_materials_help",
+            "text": {
+                "de": "Geplante Rezeptur, reservierte Lose und Ist-Mengen für diese Charge.",
+                "es": "La fórmula planificada, los lotes reservados y las cantidades reales de este lote.",
+                "fr": "La formule prévue, les lots réservés et les quantités réelles de ce lot.",
+                "it": "Formula prevista, lotti riservati e quantità effettive di questo lotto.",
+                "nl": "De geplande formule, gereserveerde loten en werkelijke hoeveelheden voor deze batch."
             }
         },
         {
@@ -13434,6 +13603,39 @@
                 "fr": "Brouillon sauvegardé.",
                 "it": "Bozza salvata.",
                 "nl": "Concept opgeslagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.early_start_confirm",
+            "text": {
+                "de": "Das geplante Datum ist :date. Diese Produktion vorzeitig starten?",
+                "es": "La fecha planificada es :date. ¿Iniciar esta producción antes?",
+                "fr": "La date prévue est le :date. Démarrer cette production plus tôt ?",
+                "it": "La data pianificata è :date. Avviare questa produzione in anticipo?",
+                "nl": "De geplande datum is :date. Deze productie eerder starten?"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.estimated_ready_date",
+            "text": {
+                "de": "Voraussichtliches Bereitschaftsdatum",
+                "es": "Fecha estimada de disponibilidad",
+                "fr": "Date estimée de disponibilité",
+                "it": "Data stimata di disponibilità",
+                "nl": "Geschatte gereeddatum"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.estimated_ready_date_help",
+            "text": {
+                "de": "Dies ist eine unverbindliche Schätzung. Die manuelle Freigabe bestimmt, wann der Output verfügbar wird.",
+                "es": "Es una estimación orientativa. La liberación manual decide cuándo está disponible el producto.",
+                "fr": "Il s’agit d’une estimation indicative. La libération manuelle détermine quand la production devient disponible.",
+                "it": "È una stima indicativa. Il rilascio manuale decide quando l’output diventa disponibile.",
+                "nl": "Dit is een indicatieve schatting. Handmatige vrijgave bepaalt wanneer de output beschikbaar wordt."
             }
         },
         {
@@ -13977,6 +14179,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.output_actual",
+            "text": {
+                "de": "Tatsächlicher Ausstoß",
+                "es": "Producción real",
+                "fr": "Production réelle",
+                "it": "Produzione effettiva",
+                "nl": "Werkelijke productie"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.output_available_from",
             "text": {
                 "de": "verfügbar ab :date",
@@ -13984,6 +14197,28 @@
                 "fr": "disponible à partir du :date",
                 "it": "disponibile dal :date",
                 "nl": "beschikbaar vanaf :date"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_awaiting_release",
+            "text": {
+                "de": "Wartet auf Freigabe",
+                "es": "Pendiente de liberación",
+                "fr": "En attente de libération",
+                "it": "In attesa di rilascio",
+                "nl": "Wacht op vrijgave"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_estimated_ready",
+            "text": {
+                "de": "voraussichtlich bereit :date",
+                "es": "disponibilidad estimada :date",
+                "fr": "disponibilité estimée :date",
+                "it": "disponibilità stimata :date",
+                "nl": "naar verwachting gereed :date"
             }
         },
         {
@@ -14028,6 +14263,17 @@
                 "fr": "Lot de sortie",
                 "it": "Lotto di uscita",
                 "nl": "Uitvoerpartij"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_planned",
+            "text": {
+                "de": "Geplanter Ausstoß",
+                "es": "Producción planificada",
+                "fr": "Production planifiée",
+                "it": "Produzione pianificata",
+                "nl": "Geplande productie"
             }
         },
         {
@@ -14098,6 +14344,28 @@
         },
         {
             "group": "production_bench",
+            "key": "production.output_variance",
+            "text": {
+                "de": "Abweichung",
+                "es": "Variación",
+                "fr": "Écart",
+                "it": "Scostamento",
+                "nl": "Afwijking"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.output_variance_percentage",
+            "text": {
+                "de": "Ertragsabweichung %",
+                "es": "Variación del rendimiento %",
+                "fr": "Écart de rendement %",
+                "it": "Scostamento di resa %",
+                "nl": "Rendementsafwijking %"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.overdue",
             "text": {
                 "de": "Überfällig",
@@ -14138,6 +14406,17 @@
                 "fr": "% de la formule",
                 "it": "% formula",
                 "nl": "Formule %"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.planned",
+            "text": {
+                "de": "Geplant",
+                "es": "Planificado",
+                "fr": "Prévu",
+                "it": "Pianificato",
+                "nl": "Gepland"
             }
         },
         {
@@ -14362,6 +14641,28 @@
         },
         {
             "group": "production_bench",
+            "key": "production.release_batch",
+            "text": {
+                "de": "Charge freigeben",
+                "es": "Liberar lote",
+                "fr": "Libérer le lot",
+                "it": "Rilascia lotto",
+                "nl": "Batch vrijgeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.release_early_warning",
+            "text": {
+                "de": "Das voraussichtliche Bereitschaftsdatum ist :date. Eine vorzeitige Freigabe ist nach Bestätigung möglich.",
+                "es": "La fecha estimada de disponibilidad es :date. Puede liberar antes tras confirmarlo.",
+                "fr": "La date estimée de disponibilité est le :date. Une libération anticipée est possible après confirmation.",
+                "it": "La data stimata di disponibilità è :date. Puoi rilasciare in anticipo dopo la conferma.",
+                "nl": "De geschatte gereeddatum is :date. Vervroegde vrijgave is mogelijk na bevestiging."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.release_output",
             "text": {
                 "de": "Ausgang freigeben",
@@ -14380,6 +14681,28 @@
                 "fr": "Libérer le stock",
                 "it": "Rilascia scorte",
                 "nl": "Voorraad vrijgeven"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.release_tasks_incomplete",
+            "text": {
+                "de": ":count Produktionsaufgabe(n) sind noch nicht abgeschlossen.",
+                "es": "Quedan :count tarea(s) de producción sin completar.",
+                "fr": ":count tâche(s) de production restent incomplète(s).",
+                "it": ":count attività di produzione non sono ancora completate.",
+                "nl": ":count productietaak/taken zijn nog niet voltooid."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.release_wait_until",
+            "text": {
+                "de": "Die Charge ist ab :date verfügbar.",
+                "es": "El lote estará disponible a partir del :date.",
+                "fr": "Le lot sera disponible à partir du :date.",
+                "it": "Il lotto sarà disponibile dal :date.",
+                "nl": "De batch is beschikbaar vanaf :date."
             }
         },
         {
@@ -14446,6 +14769,17 @@
                 "fr": "Aperçu des matières",
                 "it": "Anteprima materiali",
                 "nl": "Materiaalvoorbeeld"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.reserved_lots",
+            "text": {
+                "de": "Reservierte(s) Los(e)",
+                "es": "Lote(s) reservado(s)",
+                "fr": "Lot(s) réservé(s)",
+                "it": "Lotto/i riservato/i",
+                "nl": "Gereserveerd(e) lot(en)"
             }
         },
         {
@@ -14725,6 +15059,17 @@
         },
         {
             "group": "production_bench",
+            "key": "production.stock_preparation",
+            "text": {
+                "de": "Bestandsvorbereitung",
+                "es": "Preparación de stock",
+                "fr": "Préparation du stock",
+                "it": "Preparazione delle scorte",
+                "nl": "Voorraadvoorbereiding"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "production.stock_prepared_success",
             "text": {
                 "de": "Produktionsbestand vorbereitet.",
@@ -14886,6 +15231,1293 @@
                 "fr": "Utiliser les lots proposés",
                 "it": "Usa lotti suggeriti",
                 "nl": "Voorgestelde partijen gebruiken"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.abort_reason_invalid",
+            "text": {
+                "de": "Geben Sie einen Abbruchgrund mit 1 bis 2000 Zeichen ein.",
+                "es": "Indique un motivo de cancelación de entre 1 y 2000 caracteres.",
+                "fr": "Saisissez un motif d’abandon de 1 à 2000 caractères.",
+                "it": "Inserisci un motivo di annullamento da 1 a 2000 caratteri.",
+                "nl": "Voer een afbreekreden van 1 tot 2000 tekens in."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.abort_running_only",
+            "text": {
+                "de": "Nur eine laufende Produktion kann abgebrochen werden.",
+                "es": "Solo se puede cancelar una producción en curso.",
+                "fr": "Seule une production en cours peut être abandonnée.",
+                "it": "Può essere annullata solo una produzione in corso.",
+                "nl": "Alleen een lopende productie kan worden afgebroken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_calculated_line_duplicate",
+            "text": {
+                "de": "Berechnete Formelzeilen können pro Anfrage nur einmal gespeichert werden.",
+                "es": "Cada línea de fórmula calculada solo puede guardarse una vez por solicitud.",
+                "fr": "Une ligne de formule calculée ne peut être enregistrée qu’une fois par requête.",
+                "it": "Una riga di formula calcolata può essere salvata una sola volta per richiesta.",
+                "nl": "Een berekende formuleregel kan per verzoek maar één keer worden opgeslagen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_calculated_line_invalid",
+            "text": {
+                "de": "Die berechnete Formelzeile gehört nicht zu dieser Produktion.",
+                "es": "La línea de fórmula calculada no pertenece a esta producción.",
+                "fr": "La ligne de formule calculée n’appartient pas à cette production.",
+                "it": "La riga di formula calcolata non appartiene a questa produzione.",
+                "nl": "De berekende formuleregel hoort niet bij deze productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_calculated_water_only",
+            "text": {
+                "de": "Nur die berechnete Wasserzeile kann eine tatsächliche Menge ohne Bestandsführung erhalten.",
+                "es": "Solo la línea de agua calculada puede recibir una cantidad real sin seguimiento de stock.",
+                "fr": "Seule la ligne d’eau calculée peut recevoir une quantité réelle non suivie en stock.",
+                "it": "Solo la riga dell’acqua calcolata può ricevere una quantità effettiva non tracciata a magazzino.",
+                "nl": "Alleen de berekende waterregel kan een werkelijke hoeveelheid zonder voorraadtracking krijgen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_lot_required",
+            "text": {
+                "de": "Jede tatsächliche Menge muss auf ein Bestandslos verweisen.",
+                "es": "Cada cantidad real debe hacer referencia a un lote de stock.",
+                "fr": "Chaque quantité réelle doit faire référence à un lot de stock.",
+                "it": "Ogni quantità effettiva deve fare riferimento a un lotto di magazzino.",
+                "nl": "Elke werkelijke hoeveelheid moet naar een voorraadpartij verwijzen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_packaging_whole",
+            "text": {
+                "de": "Tatsächliche Verpackungsmengen müssen ganze Einheiten sein.",
+                "es": "Las cantidades reales de envases deben ser unidades enteras.",
+                "fr": "Les quantités réelles d’emballage doivent être des unités entières.",
+                "it": "Le quantità effettive di imballaggio devono essere unità intere.",
+                "nl": "Werkelijke verpakkingshoeveelheden moeten hele eenheden zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_quantity_positive_decimal",
+            "text": {
+                "de": "Die tatsächliche Menge muss eine positive Dezimalzahl sein.",
+                "es": "La cantidad real debe ser un valor decimal positivo.",
+                "fr": "La quantité réelle doit être une valeur décimale positive.",
+                "it": "La quantità effettiva deve essere un valore decimale positivo.",
+                "nl": "De werkelijke hoeveelheid moet een positieve decimale waarde zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_requirement_invalid",
+            "text": {
+                "de": "Die Anforderung gehört nicht zu dieser Produktion.",
+                "es": "El requisito no pertenece a esta producción.",
+                "fr": "Le besoin n’appartient pas à cette production.",
+                "it": "Il fabbisogno non appartiene a questa produzione.",
+                "nl": "De behoefte hoort niet bij deze productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_stock_lot_subject_invalid",
+            "text": {
+                "de": "Das Bestandslos entspricht nicht dem Material der Anforderung.",
+                "es": "El lote de stock no corresponde al material del requisito.",
+                "fr": "Le lot de stock ne correspond pas à la matière du besoin.",
+                "it": "Il lotto di magazzino non corrisponde al materiale del fabbisogno.",
+                "nl": "De voorraadpartij komt niet overeen met het materiaal van de behoefte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actual_stock_lot_workspace_invalid",
+            "text": {
+                "de": "Das Bestandslos gehört nicht zu diesem Arbeitsbereich.",
+                "es": "El lote de stock no pertenece a este espacio de trabajo.",
+                "fr": "Le lot de stock n’appartient pas à cet espace de travail.",
+                "it": "Il lotto di magazzino non appartiene a questo spazio di lavoro.",
+                "nl": "De voorraadpartij hoort niet bij deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.actuals_running_only",
+            "text": {
+                "de": "Der tatsächliche Verbrauch kann nur während einer laufenden Produktion erfasst werden.",
+                "es": "El consumo real solo puede registrarse mientras la producción está en curso.",
+                "fr": "La consommation réelle ne peut être enregistrée que pendant une production en cours.",
+                "it": "Il consumo effettivo può essere registrato solo durante una produzione in corso.",
+                "nl": "Het werkelijke verbruik kan alleen tijdens een lopende productie worden vastgelegd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.basis_input_positive",
+            "text": {
+                "de": "Die Produktionsbasis muss größer als null sein.",
+                "es": "La base de producción debe ser mayor que cero.",
+                "fr": "La base de production doit être supérieure à zéro.",
+                "it": "La base di produzione deve essere maggiore di zero.",
+                "nl": "De productiebasis moet groter zijn dan nul."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.basis_input_unit_invalid",
+            "text": {
+                "de": "Wählen Sie eine unterstützte Masseneinheit.",
+                "es": "Elija una unidad de masa compatible.",
+                "fr": "Choisissez une unité de masse prise en charge.",
+                "it": "Scegli un’unità di massa supportata.",
+                "nl": "Kies een ondersteunde massa-eenheid."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.batch_numbers_counter_exhausted",
+            "text": {
+                "de": "Der Zähler für permanente Chargennummern ist für diese Zuweisung erschöpft.",
+                "es": "El contador de números de lote permanentes se ha agotado para esta asignación.",
+                "fr": "Le compteur de numéros de lot permanents est épuisé pour cette attribution.",
+                "it": "Il contatore dei numeri di lotto permanenti è esaurito per questa assegnazione.",
+                "nl": "De teller voor permanente batchnummers is voor deze toewijzing uitgeput."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.batch_numbers_in_use",
+            "text": {
+                "de": "Eine oder mehrere zuzuweisende Chargennummern werden bereits verwendet.",
+                "es": "Uno o varios números de lote que se van a asignar ya están en uso.",
+                "fr": "Un ou plusieurs numéros de lot à attribuer sont déjà utilisés.",
+                "it": "Uno o più numeri di lotto da assegnare sono già in uso.",
+                "nl": "Een of meer toe te wijzen batchnummers zijn al in gebruik."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.batch_numbers_planned_date_required",
+            "text": {
+                "de": "Jede ausgewählte Produktion muss ein Produktionsdatum haben.",
+                "es": "Cada producción seleccionada debe tener una fecha de producción.",
+                "fr": "Chaque production sélectionnée doit avoir une date de production.",
+                "it": "Ogni produzione selezionata deve avere una data di produzione.",
+                "nl": "Elke geselecteerde productie moet een productiedatum hebben."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.batch_numbers_productions_missing",
+            "text": {
+                "de": "Eine oder mehrere ausgewählte Produktionen konnten in diesem Arbeitsbereich nicht gefunden werden.",
+                "es": "Una o varias producciones seleccionadas no se encontraron en este espacio de trabajo.",
+                "fr": "Une ou plusieurs productions sélectionnées sont introuvables dans cet espace de travail.",
+                "it": "Una o più produzioni selezionate non sono state trovate in questo spazio di lavoro.",
+                "nl": "Een of meer geselecteerde producties zijn niet gevonden in deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.batch_numbers_selection_invalid",
+            "text": {
+                "de": "Wählen Sie eine oder mehrere gültige Produktionen.",
+                "es": "Elija una o varias producciones válidas.",
+                "fr": "Choisissez une ou plusieurs productions valides.",
+                "it": "Scegli una o più produzioni valide.",
+                "nl": "Kies één of meer geldige producties."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.batch_numbers_selection_required",
+            "text": {
+                "de": "Wählen Sie mindestens eine Produktion.",
+                "es": "Elija al menos una producción.",
+                "fr": "Choisissez au moins une production.",
+                "it": "Scegli almeno una produzione.",
+                "nl": "Kies minstens één productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.batch_numbers_status_invalid",
+            "text": {
+                "de": "Nur geplante oder vorbereitete Produktionen können Chargennummern erhalten.",
+                "es": "Solo las producciones planificadas o con stock preparado pueden recibir números de lote.",
+                "fr": "Seules les productions planifiées ou avec stock préparé peuvent recevoir des numéros de lot.",
+                "it": "Solo le produzioni pianificate o con stock preparato possono ricevere numeri di lotto.",
+                "nl": "Alleen geplande producties of producties met voorbereide voorraad kunnen batchnummers krijgen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.calculated_actual_positive",
+            "text": {
+                "de": "Die berechnete tatsächliche Menge muss größer als null sein.",
+                "es": "La cantidad real calculada debe ser mayor que cero.",
+                "fr": "La quantité réelle calculée doit être supérieure à zéro.",
+                "it": "La quantità effettiva calcolata deve essere maggiore di zero.",
+                "nl": "De berekende werkelijke hoeveelheid moet groter zijn dan nul."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_actuals_missing",
+            "text": {
+                "de": "Erfassen Sie vor dem Abschluss die tatsächlichen Mengen für alle Anforderungen: :materials.",
+                "es": "Registre las cantidades reales de todos los requisitos antes de completar: :materials.",
+                "fr": "Enregistrez les quantités réelles de tous les besoins avant de terminer : :materials.",
+                "it": "Registra le quantità effettive per tutti i fabbisogni prima di completare: :materials.",
+                "nl": "Leg de werkelijke hoeveelheden voor alle behoeften vast voordat u voltooit: :materials."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_currency_mismatch",
+            "text": {
+                "de": "Die Produktionskalkulation mischt Währungen: Los :lot ist in :lot_currency bewertet, der Rest der Charge in :batch_currency. Korrigieren Sie die Loskosten oder verwenden Sie die Kalkulationswerte des Arbeitsbereichs.",
+                "es": "El cálculo de costes de producción mezcla monedas: el lote :lot está valorado en :lot_currency y el resto del lote de producción en :batch_currency. Corrija el coste del lote o use los valores de costes del espacio de trabajo.",
+                "fr": "Le calcul du coût de production mélange des devises : le lot :lot est valorisé en :lot_currency, tandis que le reste de la production est en :batch_currency. Corrigez le coût du lot ou utilisez les valeurs de coût de l’espace de travail.",
+                "it": "Il calcolo dei costi di produzione usa valute diverse: il lotto :lot è valorizzato in :lot_currency, mentre il resto del lotto di produzione è in :batch_currency. Correggi il costo del lotto o usa i valori di costo dello spazio di lavoro.",
+                "nl": "De productiekostprijs gebruikt meerdere valuta’s: partij :lot is gewaardeerd in :lot_currency en de rest van de batch in :batch_currency. Corrigeer de partijkosten of gebruik de kostprijswaarden van de werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_finished_output_whole",
+            "text": {
+                "de": "Die Fertigproduktmenge muss eine ganze Anzahl von Einheiten sein.",
+                "es": "La salida terminada debe ser un número entero de unidades.",
+                "fr": "La sortie de produit fini doit être un nombre entier d’unités.",
+                "it": "L’output finito deve essere un numero intero di unità.",
+                "nl": "De uitvoer van het eindproduct moet een geheel aantal eenheden zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_intermediate_ingredient_workspace_invalid",
+            "text": {
+                "de": "Das Zwischenprodukt-Ingrediens muss zu diesem Arbeitsbereich gehören.",
+                "es": "El ingrediente intermedio debe pertenecer a este espacio de trabajo.",
+                "fr": "L’ingrédient intermédiaire doit appartenir à cet espace de travail.",
+                "it": "L’ingrediente intermedio deve appartenere a questo spazio di lavoro.",
+                "nl": "Het tusseningrediënt moet bij deze werkruimte horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_manufacture_date_invalid",
+            "text": {
+                "de": "Das Herstellungsdatum muss das Format JJJJ-MM-TT verwenden.",
+                "es": "La fecha de fabricación debe usar el formato AAAA-MM-DD.",
+                "fr": "La date de fabrication doit utiliser le format AAAA-MM-JJ.",
+                "it": "La data di fabbricazione deve usare il formato AAAA-MM-GG.",
+                "nl": "De productiedatum moet het formaat JJJJ-MM-DD gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_permanent_number_required",
+            "text": {
+                "de": "Vor dem Abschluss ist eine permanente Chargennummer erforderlich.",
+                "es": "Se requiere un número de lote permanente antes de completar.",
+                "fr": "Un numéro de lot permanent est requis avant de terminer.",
+                "it": "Prima del completamento è necessario un numero di lotto permanente.",
+                "nl": "Voor voltooiing is een permanent batchnummer vereist."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_requirements_missing",
+            "text": {
+                "de": "Diese Produktion hat keine zu verbrauchenden Anforderungen.",
+                "es": "Esta producción no tiene requisitos que consumir.",
+                "fr": "Cette production ne comporte aucun besoin à consommer.",
+                "it": "Questa produzione non ha fabbisogni da consumare.",
+                "nl": "Deze productie heeft geen behoeften om te verbruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_running_only",
+            "text": {
+                "de": "Nur eine laufende Produktion kann abgeschlossen werden.",
+                "es": "Solo se puede completar una producción en curso.",
+                "fr": "Seule une production en cours peut être terminée.",
+                "it": "Può essere completata solo una produzione in corso.",
+                "nl": "Alleen een lopende productie kan worden voltooid."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.completion_water_actual_positive",
+            "text": {
+                "de": "Erfassen Sie vor dem Abschluss eine positive tatsächliche Wassermenge.",
+                "es": "Registre una cantidad real de agua positiva antes de completar.",
+                "fr": "Enregistrez une quantité réelle d’eau positive avant de terminer.",
+                "it": "Registra una quantità effettiva di acqua positiva prima di completare.",
+                "nl": "Leg een positieve werkelijke waterhoeveelheid vast voordat u voltooit."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.create_idempotency_conflict",
+            "text": {
+                "de": "Dieser Übermittlungsschlüssel wird bereits für eine andere Produktion verwendet.",
+                "es": "Esta clave de envío ya se utiliza para otra producción.",
+                "fr": "Cette clé d’envoi est déjà utilisée pour une autre production.",
+                "it": "Questa chiave di invio è già utilizzata per un’altra produzione.",
+                "nl": "Deze indieningssleutel wordt al voor een andere productie gebruikt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.create_status_invalid",
+            "text": {
+                "de": "In diesem Ablauf können nur Entwurfs- oder geplante Produktionen erstellt werden.",
+                "es": "En este flujo solo se pueden crear producciones en borrador o planificadas.",
+                "fr": "Seules des productions brouillon ou planifiées peuvent être créées dans ce flux.",
+                "it": "In questo flusso possono essere create solo produzioni in bozza o pianificate.",
+                "nl": "In deze workflow kunnen alleen concept- of geplande producties worden gemaakt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.early_release_confirmation",
+            "text": {
+                "de": "Dieser Output ist voraussichtlich am :date bereit. Bestätigen Sie die vorzeitige Freigabe, um ihn jetzt verfügbar zu machen.",
+                "es": "Se estima que este lote estará listo el :date. Confirme la liberación anticipada para hacerlo disponible ahora.",
+                "fr": "La disponibilité de ce lot est estimée au :date. Confirmez la libération anticipée pour le rendre disponible maintenant.",
+                "it": "La disponibilità di questo lotto è stimata per il :date. Conferma il rilascio anticipato per renderlo disponibile ora.",
+                "nl": "Dit lot is naar schatting gereed op :date. Bevestig vervroegde vrijgave om het nu beschikbaar te maken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.estimated_ready_date_invalid",
+            "text": {
+                "de": "Das voraussichtliche Bereitschaftsdatum muss das Format JJJJ-MM-TT verwenden.",
+                "es": "La fecha estimada debe tener el formato AAAA-MM-DD.",
+                "fr": "La date estimée doit utiliser le format AAAA-MM-JJ.",
+                "it": "La data stimata deve usare il formato AAAA-MM-GG.",
+                "nl": "De geschatte gereeddatum moet het formaat JJJJ-MM-DD gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.expected_units_positive_whole",
+            "text": {
+                "de": "Die erwarteten Einheiten müssen eine positive ganze Zahl sein.",
+                "es": "Las unidades esperadas deben ser un número entero positivo.",
+                "fr": "Les unités attendues doivent être un nombre entier positif.",
+                "it": "Le unità previste devono essere un numero intero positivo.",
+                "nl": "De verwachte eenheden moeten een positief geheel getal zijn."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.finished_output_has_no_ingredient",
+            "text": {
+                "de": "Rezepte für Fertigprodukte dürfen nicht auf ein hergestelltes Ingrediens verweisen.",
+                "es": "Las recetas de productos terminados no pueden apuntar a un ingrediente fabricado.",
+                "fr": "Les recettes de produits finis ne peuvent pas pointer vers un ingrédient fabriqué.",
+                "it": "Le ricette di prodotti finiti non possono indicare un ingrediente fabbricato.",
+                "nl": "Recepten voor eindproducten mogen niet naar een vervaardigd ingrediënt verwijzen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.flash_batches_per_day_positive",
+            "text": {
+                "de": "Geben Sie eine positive Anzahl von Chargen pro Tag ein.",
+                "es": "Introduzca un número positivo de lotes por día.",
+                "fr": "Saisissez un nombre positif de lots par jour.",
+                "it": "Inserisci un numero positivo di lotti al giorno.",
+                "nl": "Voer een positief aantal batches per dag in."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.flash_idempotency_conflict",
+            "text": {
+                "de": "Dieser Übermittlungsschlüssel wird bereits für einen anderen Flash-Vorschlag verwendet.",
+                "es": "Esta clave de envío ya se utiliza para otra propuesta flash.",
+                "fr": "Cette clé d’envoi est déjà utilisée pour une autre proposition Flash.",
+                "it": "Questa chiave di invio è già utilizzata per un’altra proposta Flash.",
+                "nl": "Deze indieningssleutel wordt al voor een ander flashvoorstel gebruikt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.flash_idempotency_key_invalid",
+            "text": {
+                "de": "Ein gültiger Flash-Übermittlungsschlüssel ist erforderlich.",
+                "es": "Se requiere una clave de envío flash válida.",
+                "fr": "Une clé d’envoi Flash valide est requise.",
+                "it": "È necessaria una chiave di invio Flash valida.",
+                "nl": "Een geldige flash-indieningssleutel is vereist."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.flash_output_configuration_missing",
+            "text": {
+                "de": "Dem Flash-Vorschlag fehlt die Produktkonfiguration.",
+                "es": "La propuesta flash no incluye la configuración del producto.",
+                "fr": "La proposition Flash ne contient pas la configuration du produit.",
+                "it": "La proposta flash non contiene la configurazione del prodotto.",
+                "nl": "De flashvoorstel mist de productconfiguratie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.flash_products_required",
+            "text": {
+                "de": "Fügen Sie mindestens ein Produkt hinzu, bevor Sie Produktionen erstellen.",
+                "es": "Añada al menos un producto antes de generar producciones.",
+                "fr": "Ajoutez au moins un produit avant de générer des productions.",
+                "it": "Aggiungi almeno un prodotto prima di generare produzioni.",
+                "nl": "Voeg minstens één product toe voordat u producties genereert."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.flash_proposal_stale",
+            "text": {
+                "de": "Der Flash-Vorschlag stimmt nicht mehr mit den ausgewählten Produkten überein.",
+                "es": "La propuesta flash ya no coincide con los productos seleccionados.",
+                "fr": "La proposition Flash ne correspond plus aux produits sélectionnés.",
+                "it": "La proposta Flash non corrisponde più ai prodotti selezionati.",
+                "nl": "Het flashvoorstel komt niet meer overeen met de geselecteerde producten."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.idempotency_key_invalid",
+            "text": {
+                "de": "Ein gültiger Übermittlungsschlüssel ist erforderlich.",
+                "es": "Se requiere una clave de envío válida.",
+                "fr": "Une clé d’envoi valide est requise.",
+                "it": "È necessaria una chiave di invio valida.",
+                "nl": "Een geldige indieningssleutel is vereist."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.issue_finished_whole",
+            "text": {
+                "de": "Ausgaben von Fertigprodukten müssen ganze Einheiten verwenden.",
+                "es": "Las salidas de productos terminados deben usar unidades enteras.",
+                "fr": "Les sorties de produits finis doivent utiliser des unités entières.",
+                "it": "Le uscite dei prodotti finiti devono usare unità intere.",
+                "nl": "Uitgiften van eindproducten moeten hele eenheden gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.issue_kind_invalid",
+            "text": {
+                "de": "Fertigprodukte können nur als Versand, Muster, beschädigt oder interne Verwendung ausgegeben werden.",
+                "es": "Los productos terminados solo pueden emitirse como envío, muestra, dañado o uso interno.",
+                "fr": "Les produits finis ne peuvent être sortis que comme expédition, échantillon, endommagé ou usage interne.",
+                "it": "I prodotti finiti possono essere emessi solo come spedizione, campione, danneggiato o uso interno.",
+                "nl": "Eindproducten kunnen alleen worden uitgegeven als verzending, monster, beschadigd of intern gebruik."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.issue_output_lot_required",
+            "text": {
+                "de": "Nur Produktionsausgabelose können ausgegeben werden.",
+                "es": "Solo se pueden emitir lotes de salida de producción.",
+                "fr": "Seuls les lots de sortie de production peuvent être sortis.",
+                "it": "Possono essere emessi solo lotti di output della produzione.",
+                "nl": "Alleen productie-uitvoerpartijen kunnen worden uitgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.issue_output_released_required",
+            "text": {
+                "de": "Nur ein freigegebenes Ausgabelos kann ausgegeben werden.",
+                "es": "Solo se puede emitir un lote de salida liberado.",
+                "fr": "Seul un lot de sortie libéré peut être sorti.",
+                "it": "Può essere emesso solo un lotto di output rilasciato.",
+                "nl": "Alleen een vrijgegeven uitvoerpartij kan worden uitgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.issue_quantity_positive",
+            "text": {
+                "de": "Die ausgegebene Menge muss größer als null sein.",
+                "es": "La cantidad emitida debe ser mayor que cero.",
+                "fr": "La quantité sortie doit être supérieure à zéro.",
+                "it": "La quantità emessa deve essere maggiore di zero.",
+                "nl": "De uitgegeven hoeveelheid moet groter zijn dan nul."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.issue_quantity_unavailable",
+            "text": {
+                "de": "Nicht genügend verfügbare Ausgabe: :available verbleibend.",
+                "es": "No hay suficiente salida disponible: quedan :available.",
+                "fr": "Sortie disponible insuffisante : il reste :available.",
+                "it": "Output disponibile insufficiente: rimane :available.",
+                "nl": "Niet genoeg beschikbare uitvoer: :available resterend."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.lye_material_missing",
+            "text": {
+                "de": "Das erforderliche Laugenmaterial (:key) fehlt im Zutatenkatalog.",
+                "es": "Falta en el catálogo de ingredientes el material alcalino requerido (:key).",
+                "fr": "La matière alcaline requise (:key) manque au catalogue des ingrédients.",
+                "it": "Il materiale alcalino richiesto (:key) manca dal catalogo ingredienti.",
+                "nl": "Het vereiste loogmateriaal (:key) ontbreekt in de ingrediëntencatalogus."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.manufactured_ingredient_name_invalid",
+            "text": {
+                "de": "Verwenden Sie einen Namen für das hergestellte Ingrediens mit höchstens 255 Zeichen.",
+                "es": "Usa un nombre de ingrediente fabricado de 255 caracteres como máximo.",
+                "fr": "Utilisez un nom d’ingrédient fabriqué de 255 caractères maximum.",
+                "it": "Usa un nome di ingrediente fabbricato di massimo 255 caratteri.",
+                "nl": "Gebruik een naam voor het vervaardigde ingrediënt van maximaal 255 tekens."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.manufactured_ingredient_name_required",
+            "text": {
+                "de": "Geben Sie einen Namen für das hergestellte Ingrediens ein.",
+                "es": "Introduce un nombre para el ingrediente fabricado.",
+                "fr": "Saisissez un nom pour l’ingrédient fabriqué.",
+                "it": "Inserisci un nome per l’ingrediente fabbricato.",
+                "nl": "Voer een naam in voor het vervaardigde ingrediënt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_ingredient_invalid",
+            "text": {
+                "de": "Wählen Sie ein aktives, zu diesem Arbeitsbereich gehörendes hergestelltes Ingrediens.",
+                "es": "Elige un ingrediente fabricado activo que pertenezca a este espacio de trabajo.",
+                "fr": "Choisissez un ingrédient fabriqué actif appartenant à cet espace de travail.",
+                "it": "Scegli un ingrediente fabbricato attivo appartenente a questo spazio di lavoro.",
+                "nl": "Kies een actief vervaardigd ingrediënt dat bij deze werkruimte hoort."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_ingredient_required",
+            "text": {
+                "de": "Wählen Sie das hergestellte Ingrediens, das dieses Rezept erzeugt.",
+                "es": "Elige el ingrediente fabricado que produce esta receta.",
+                "fr": "Choisissez l’ingrédient fabriqué produit par cette recette.",
+                "it": "Scegli l’ingrediente fabbricato prodotto da questa ricetta.",
+                "nl": "Kies het vervaardigde ingrediënt dat dit recept produceert."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_lot_unlinked",
+            "text": {
+                "de": "Das Ausgabelos ist keiner Produktionscharge zugeordnet.",
+                "es": "El lote de salida no está vinculado a una producción.",
+                "fr": "Le lot de sortie n’est lié à aucune production.",
+                "it": "Il lotto di output non è collegato a una produzione.",
+                "nl": "De uitvoerpartij is niet gekoppeld aan een productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_lot_workspace_missing",
+            "text": {
+                "de": "Der Arbeitsbereich des Ausgabeloses konnte nicht gefunden werden.",
+                "es": "No se pudo encontrar el espacio de trabajo del lote de salida.",
+                "fr": "L’espace de travail du lot de sortie est introuvable.",
+                "it": "Impossibile trovare lo spazio di lavoro del lotto di output.",
+                "nl": "De werkruimte van de uitvoerpartij kon niet worden gevonden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_production_missing",
+            "text": {
+                "de": "Die ursprüngliche Produktionscharge konnte nicht gefunden werden.",
+                "es": "No se pudo encontrar la producción de origen.",
+                "fr": "La production d’origine est introuvable.",
+                "it": "Impossibile trovare la produzione di origine.",
+                "nl": "De oorspronkelijke productie kon niet worden gevonden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_quantity_positive",
+            "text": {
+                "de": "Die tatsächliche Ausgabemenge muss größer als null sein.",
+                "es": "La cantidad real de salida debe ser mayor que cero.",
+                "fr": "La quantité de sortie réelle doit être supérieure à zéro.",
+                "it": "La quantità effettiva di output deve essere maggiore di zero.",
+                "nl": "De werkelijke uitvoerhoeveelheid moet groter zijn dan nul."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_release_requires_completed",
+            "text": {
+                "de": "Nur Ausgaben einer abgeschlossenen Produktion können freigegeben werden.",
+                "es": "Solo se puede liberar la salida de una producción completada.",
+                "fr": "Seule la sortie d’une production terminée peut être libérée.",
+                "it": "Può essere rilasciato solo l’output di una produzione completata.",
+                "nl": "Alleen uitvoer van een voltooide productie kan worden vrijgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_release_requires_production_lot",
+            "text": {
+                "de": "Nur Produktionsausgabelose können freigegeben werden.",
+                "es": "Solo se pueden liberar lotes de salida de producción.",
+                "fr": "Seuls les lots de sortie de production peuvent être libérés.",
+                "it": "Possono essere rilasciati solo lotti di output della produzione.",
+                "nl": "Alleen productie-uitvoerpartijen kunnen worden vrijgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_release_requires_quarantined",
+            "text": {
+                "de": "Nur ein Ausgabelos in Quarantäne kann freigegeben werden.",
+                "es": "Solo se puede liberar un lote de salida en cuarentena.",
+                "fr": "Seul un lot de sortie en quarantaine peut être libéré.",
+                "it": "Può essere rilasciato solo un lotto di output in quarantena.",
+                "nl": "Alleen een uitvoerpartij in quarantaine kan worden vrijgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_release_tasks_incomplete",
+            "text": {
+                "de": "Schließen Sie die verbleibenden Produktionsaufgaben ab, bevor Sie diese Ausgabe freigeben: :tasks.",
+                "es": "Complete las tareas de producción restantes antes de liberar esta salida: :tasks.",
+                "fr": "Terminez les tâches de production restantes avant de libérer cette sortie : :tasks.",
+                "it": "Completa le attività di produzione rimanenti prima di rilasciare questo output: :tasks.",
+                "nl": "Voltooi de resterende productietaken voordat u deze uitvoer vrijgeeft: :tasks."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_snapshot_finished_fixed",
+            "text": {
+                "de": "Der Fertigproduktausgang ist durch den Produktions-Schnappschuss festgelegt.",
+                "es": "La salida del producto terminado está fijada por la instantánea de producción.",
+                "fr": "La sortie de produit fini est fixée par l’instantané de production.",
+                "it": "L’output del prodotto finito è fissato dallo snapshot della produzione.",
+                "nl": "De output van het eindproduct ligt vast in de productiesnapshot."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_snapshot_ingredient_fixed",
+            "text": {
+                "de": "Das hergestellte Ausgabe-Ingrediens ist durch den Produktions-Schnappschuss festgelegt.",
+                "es": "El ingrediente fabricado de salida está fijado por la instantánea de producción.",
+                "fr": "L’ingrédient fabriqué de sortie est fixé par l’instantané de production.",
+                "it": "L’ingrediente fabbricato di output è fissato dallo snapshot della produzione.",
+                "nl": "Het vervaardigde outputingrediënt ligt vast in de productiesnapshot."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_snapshot_ingredient_missing",
+            "text": {
+                "de": "Das hergestellte Ausgabe-Ingrediens fehlt im Produktions-Schnappschuss.",
+                "es": "Falta el ingrediente fabricado de salida en la instantánea de producción.",
+                "fr": "L’ingrédient fabriqué de sortie est absent de l’instantané de production.",
+                "it": "L’ingrediente fabbricato di output manca nello snapshot della produzione.",
+                "nl": "Het vervaardigde outputingrediënt ontbreekt in de productiesnapshot."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.output_type_invalid",
+            "text": {
+                "de": "Wählen Sie eine gültige Produktionsausgabeart.",
+                "es": "Elige un tipo de salida de producción válido.",
+                "fr": "Choisissez un type de sortie de production valide.",
+                "it": "Scegli un tipo di output di produzione valido.",
+                "nl": "Kies een geldig productietype voor de output."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.planned_date_format",
+            "text": {
+                "de": "Das Produktionsdatum muss das Format JJJJ-MM-TT verwenden.",
+                "es": "La fecha de producción debe usar el formato AAAA-MM-DD.",
+                "fr": "La date de production doit utiliser le format AAAA-MM-JJ.",
+                "it": "La data di produzione deve usare il formato AAAA-MM-GG.",
+                "nl": "De productiedatum moet het formaat JJJJ-MM-DD gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.planned_date_required",
+            "text": {
+                "de": "Bei der Produktionsplanung ist ein Produktionsdatum erforderlich.",
+                "es": "Se requiere una fecha de producción al planificarla.",
+                "fr": "Une date de production est requise pour planifier la production.",
+                "it": "Per pianificare la produzione è necessaria una data di produzione.",
+                "nl": "Bij het plannen van productie is een productiedatum verplicht."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.planned_date_update_required",
+            "text": {
+                "de": "Beim Aktualisieren einer geplanten Produktion ist ein Produktionsdatum erforderlich.",
+                "es": "Se requiere una fecha de producción al actualizar una producción planificada.",
+                "fr": "Une date de production est requise lors de la mise à jour d’une production planifiée.",
+                "it": "Per aggiornare una produzione pianificata è necessaria una data di produzione.",
+                "nl": "Bij het bijwerken van een geplande productie is een productiedatum verplicht."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.planned_date_working_day",
+            "text": {
+                "de": "Das Produktionsdatum muss auf einen Arbeitstag fallen.",
+                "es": "La fecha de producción debe ser un día laborable.",
+                "fr": "La date de production doit être un jour ouvré.",
+                "it": "La data di produzione deve essere un giorno lavorativo.",
+                "nl": "De productiedatum moet op een werkdag vallen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_allocation_exceeds_requirement",
+            "text": {
+                "de": "Manuelle Bestandszuweisungen dürfen die Gesamtanforderung nicht überschreiten.",
+                "es": "Las asignaciones manuales de stock no pueden superar el total requerido.",
+                "fr": "Les allocations manuelles de stock ne peuvent pas dépasser le total requis.",
+                "it": "Le assegnazioni manuali di magazzino non possono superare il fabbisogno totale.",
+                "nl": "Handmatige voorraadtoewijzingen mogen het totaal van de behoefte niet overschrijden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_allocation_lot_required",
+            "text": {
+                "de": "Wählen Sie mindestens ein Bestandslos für eine manuelle Zuweisung.",
+                "es": "Elija al menos un lote de stock para una asignación manual.",
+                "fr": "Choisissez au moins un lot de stock pour une allocation manuelle.",
+                "it": "Scegli almeno un lotto di magazzino per un’assegnazione manuale.",
+                "nl": "Kies ten minste één voorraadpartij voor een handmatige toewijzing."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_allocations_duplicate_lot",
+            "text": {
+                "de": "Manuelle Bestandszuweisungen dürfen jedes Los nur einmal verwenden.",
+                "es": "Las asignaciones manuales de stock deben usar cada lote una sola vez.",
+                "fr": "Les allocations manuelles de stock doivent utiliser chaque lot une seule fois.",
+                "it": "Le assegnazioni manuali di magazzino devono usare ogni lotto una sola volta.",
+                "nl": "Handmatige voorraadtoewijzingen mogen elke partij slechts één keer gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_allocations_invalid",
+            "text": {
+                "de": "Die manuellen Bestandszuweisungen sind ungültig.",
+                "es": "Las asignaciones manuales de stock no son válidas.",
+                "fr": "Les allocations manuelles de stock ne sont pas valides.",
+                "it": "Le assegnazioni manuali di magazzino non sono valide.",
+                "nl": "De handmatige voorraadtoewijzingen zijn ongeldig."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_idempotency_conflict",
+            "text": {
+                "de": "Dieser Vorbereitungsschlüssel wurde bereits für eine andere Reservierung verwendet.",
+                "es": "Esta clave de preparación ya se utilizó para otra reserva.",
+                "fr": "Cette clé de préparation a déjà été utilisée pour une autre réservation.",
+                "it": "Questa chiave di preparazione è già stata usata per un’altra prenotazione.",
+                "nl": "Deze voorbereidingssleutel is al gebruikt voor een andere reservering."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_idempotency_key_invalid",
+            "text": {
+                "de": "Ein gültiger Vorbereitungsschlüssel ist erforderlich.",
+                "es": "Se requiere una clave de preparación válida.",
+                "fr": "Une clé de préparation valide est requise.",
+                "it": "È richiesta una chiave di preparazione valida.",
+                "nl": "Een geldige voorbereidingssleutel is verplicht."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_identifiers_invalid",
+            "text": {
+                "de": "Die ausgewählten Produktionskennungen sind ungültig.",
+                "es": "Los identificadores de producción seleccionados no son válidos.",
+                "fr": "Les identifiants de production sélectionnés ne sont pas valides.",
+                "it": "Gli identificatori di produzione selezionati non sono validi.",
+                "nl": "De geselecteerde productie-ID’s zijn ongeldig."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_packaging_whole",
+            "text": {
+                "de": "Verpackungsreservierungen müssen ganze Einheiten verwenden.",
+                "es": "Las reservas de envases deben usar unidades enteras.",
+                "fr": "Les réservations d’emballages doivent utiliser des unités entières.",
+                "it": "Le prenotazioni di imballaggi devono usare unità intere.",
+                "nl": "Verpakkingsreserveringen moeten hele eenheden gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_productions_missing",
+            "text": {
+                "de": "Eine oder mehrere ausgewählte Produktionen konnten nicht gefunden werden.",
+                "es": "No se pudo encontrar una o varias producciones seleccionadas.",
+                "fr": "Une ou plusieurs productions sélectionnées sont introuvables.",
+                "it": "Una o più produzioni selezionate non sono state trovate.",
+                "nl": "Een of meer geselecteerde producties zijn niet gevonden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_productions_workspace_mismatch",
+            "text": {
+                "de": "Die ausgewählten Produktionen müssen zum selben Arbeitsbereich gehören.",
+                "es": "Las producciones seleccionadas deben pertenecer al mismo espacio de trabajo.",
+                "fr": "Les productions sélectionnées doivent appartenir au même espace de travail.",
+                "it": "Le produzioni selezionate devono appartenere allo stesso spazio di lavoro.",
+                "nl": "De geselecteerde producties moeten tot dezelfde werkruimte behoren."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_quantity_positive",
+            "text": {
+                "de": "Reservierungsmengen müssen größer als null sein.",
+                "es": "Las cantidades reservadas deben ser mayores que cero.",
+                "fr": "Les quantités réservées doivent être supérieures à zéro.",
+                "it": "Le quantità prenotate devono essere maggiori di zero.",
+                "nl": "Reserveringshoeveelheden moeten groter zijn dan nul."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_requirements_invalid",
+            "text": {
+                "de": "Manuelle Zuweisungen müssen zu den ausgewählten Produktionen gehören.",
+                "es": "Las asignaciones manuales deben pertenecer a las producciones seleccionadas.",
+                "fr": "Les allocations manuelles doivent appartenir aux productions sélectionnées.",
+                "it": "Le assegnazioni manuali devono appartenere alle produzioni selezionate.",
+                "nl": "Handmatige toewijzingen moeten bij de geselecteerde producties horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_selection_required",
+            "text": {
+                "de": "Wählen Sie mindestens eine geplante Produktion.",
+                "es": "Seleccione al menos una producción planificada.",
+                "fr": "Sélectionnez au moins une production planifiée.",
+                "it": "Seleziona almeno una produzione pianificata.",
+                "nl": "Selecteer ten minste één geplande productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.prepare_status_invalid",
+            "text": {
+                "de": "Nur geplante oder bestandvorbereitete Produktionen können Bestand reservieren.",
+                "es": "Solo las producciones planificadas o con stock preparado pueden reservar stock.",
+                "fr": "Seules les productions planifiées ou avec stock préparé peuvent réserver du stock.",
+                "it": "Solo le produzioni pianificate o con scorte preparate possono prenotare stock.",
+                "nl": "Alleen geplande producties of producties met voorbereide voorraad kunnen voorraad reserveren."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.recipe_archived",
+            "text": {
+                "de": "Archivierte Produkte können nicht geplant werden.",
+                "es": "Los productos archivados no se pueden planificar.",
+                "fr": "Les produits archivés ne peuvent pas être planifiés.",
+                "it": "I prodotti archiviati non possono essere pianificati.",
+                "nl": "Gearchiveerde producten kunnen niet worden gepland."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.recipe_published_formula_required",
+            "text": {
+                "de": "Wählen Sie ein Rezept mit einer veröffentlichten Formel.",
+                "es": "Elija una receta con una fórmula publicada.",
+                "fr": "Choisissez une recette avec une formule publiée.",
+                "it": "Scegli una ricetta con una formula pubblicata.",
+                "nl": "Kies een recept met een gepubliceerde formule."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.recipe_workspace_invalid",
+            "text": {
+                "de": "Das Rezept muss zum aktiven Arbeitsbereich gehören.",
+                "es": "La receta debe pertenecer al espacio de trabajo activo.",
+                "fr": "La recette doit appartenir à l’espace de travail actif.",
+                "it": "La ricetta deve appartenere allo spazio di lavoro attivo.",
+                "nl": "Het recept moet bij de actieve werkruimte horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.release_stock_status_invalid",
+            "text": {
+                "de": "Nur geplante oder bestandvorbereitete Produktionen können Bestand freigeben.",
+                "es": "Solo las producciones planificadas o con stock preparado pueden liberar stock.",
+                "fr": "Seules les productions planifiées ou avec stock préparé peuvent libérer le stock.",
+                "it": "Solo le produzioni pianificate o con scorte preparate possono rilasciare lo stock.",
+                "nl": "Alleen geplande producties of producties met voorbereide voorraad kunnen voorraad vrijgeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.reschedule_after_start",
+            "text": {
+                "de": "Das Produktionsdatum kann nach Produktionsbeginn nicht mehr geändert werden.",
+                "es": "La fecha de producción no puede cambiarse una vez iniciada la producción.",
+                "fr": "La date de production ne peut plus être modifiée après le démarrage de la production.",
+                "it": "La data di produzione non può essere modificata dopo l’avvio della produzione.",
+                "nl": "De productiedatum kan niet worden gewijzigd nadat de productie is gestart."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.reschedule_completed_anchor",
+            "text": {
+                "de": "Eine Produktion mit einer abgeschlossenen Ankeraufgabe kann nicht neu geplant werden.",
+                "es": "Una producción con una tarea de referencia completada no puede reprogramarse.",
+                "fr": "Une production dont la tâche d’ancrage est terminée ne peut pas être replanifiée.",
+                "it": "Una produzione con un’attività di riferimento completata non può essere riprogrammata.",
+                "nl": "Een productie met een voltooide ankertaak kan niet opnieuw worden gepland."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.schedule_draft_only",
+            "text": {
+                "de": "Nur Entwurfsproduktionen können geplant werden.",
+                "es": "Solo las producciones en borrador se pueden planificar.",
+                "fr": "Seules les productions à l’état de brouillon peuvent être planifiées.",
+                "it": "Solo le produzioni in bozza possono essere pianificate.",
+                "nl": "Alleen conceptproducties kunnen worden gepland."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.stock_lot_not_available",
+            "text": {
+                "de": "Das Bestandslos ist für diese Produktion nicht freigegeben oder verfügbar.",
+                "es": "El lote de stock no está liberado ni disponible para esta producción.",
+                "fr": "Le lot de stock n’est pas libéré ou disponible pour cette production.",
+                "it": "Il lotto di magazzino non è rilasciato o disponibile per questa produzione.",
+                "nl": "De voorraadpartij is niet vrijgegeven of beschikbaar voor deze productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.stock_lot_quantity_unavailable",
+            "text": {
+                "de": "Ein ausgewähltes Bestandslos hat nicht genügend geeignete Menge.",
+                "es": "Un lote de stock seleccionado no tiene suficiente cantidad disponible.",
+                "fr": "Un lot de stock sélectionné ne dispose pas d’une quantité éligible suffisante.",
+                "it": "Un lotto di magazzino selezionato non ha una quantità idonea sufficiente.",
+                "nl": "Een geselecteerde voorraadpartij heeft niet voldoende geschikte hoeveelheid."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_anchor_reschedule_completed",
+            "text": {
+                "de": "Eine abgeschlossene Ankeraufgabe kann nicht neu geplant werden.",
+                "es": "No se puede reprogramar una tarea de referencia completada.",
+                "fr": "Une tâche d’ancrage terminée ne peut pas être replanifiée.",
+                "it": "Un’attività di riferimento completata non può essere riprogrammata.",
+                "nl": "Een voltooide ankertaak kan niet opnieuw worden gepland."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_anchor_reset_invalid",
+            "text": {
+                "de": "Die Produktionsaufgabe ist der Datumsanker und kann nicht unabhängig zurückgesetzt werden.",
+                "es": "La tarea de producción es el ancla de fecha y no se puede restablecer de forma independiente.",
+                "fr": "La tâche de production est l’ancre de date et ne peut pas être réinitialisée séparément.",
+                "it": "L’attività di produzione è l’ancora della data e non può essere reimpostata separatamente.",
+                "nl": "De productietaak is het datumanker en kan niet afzonderlijk worden hersteld."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_date_change_after_start",
+            "text": {
+                "de": "Aufgabendaten können nach Produktionsbeginn nicht mehr geändert werden.",
+                "es": "Las fechas de las tareas no pueden cambiarse después de iniciar la producción.",
+                "fr": "Les dates des tâches ne peuvent plus être modifiées après le démarrage de la production.",
+                "it": "Le date delle attività non possono essere modificate dopo l’avvio della produzione.",
+                "nl": "Taakdatums kunnen niet worden gewijzigd nadat de productie is gestart."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_date_format",
+            "text": {
+                "de": "Das Aufgabendatum muss das Format JJJJ-MM-TT verwenden.",
+                "es": "La fecha de la tarea debe usar el formato AAAA-MM-DD.",
+                "fr": "La date de la tâche doit utiliser le format AAAA-MM-JJ.",
+                "it": "La data dell’attività deve usare il formato AAAA-MM-GG.",
+                "nl": "De taakdatum moet het formaat JJJJ-MM-DD gebruiken."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_department_workspace_invalid",
+            "text": {
+                "de": "Jede Produktionsaufgabenabteilung muss zum aktiven Arbeitsbereich gehören.",
+                "es": "El departamento de cada tarea de producción debe pertenecer al espacio de trabajo activo.",
+                "fr": "Le service de chaque tâche de production doit appartenir à l’espace de travail actif.",
+                "it": "Il reparto di ogni attività di produzione deve appartenere allo spazio di lavoro attivo.",
+                "nl": "De afdeling van elke productietaak moet bij de actieve werkruimte horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_employee_invalid",
+            "text": {
+                "de": "Wählen Sie einen aktiven Mitarbeitenden aus diesem Arbeitsbereich.",
+                "es": "Elija un empleado activo de este espacio de trabajo.",
+                "fr": "Choisissez un employé actif de cet espace de travail.",
+                "it": "Scegli un dipendente attivo di questo spazio di lavoro.",
+                "nl": "Kies een actieve medewerker uit deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_not_completed",
+            "text": {
+                "de": "Diese Produktionsaufgabe ist nicht abgeschlossen.",
+                "es": "Esta tarea de producción no está completada.",
+                "fr": "Cette tâche de production n’est pas terminée.",
+                "it": "Questa attività di produzione non è completata.",
+                "nl": "Deze productietaak is niet voltooid."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_production_mismatch",
+            "text": {
+                "de": "Die Aufgabe gehört nicht zu dieser Produktion.",
+                "es": "La tarea no pertenece a esta producción.",
+                "fr": "La tâche n’appartient pas à cette production.",
+                "it": "L’attività non appartiene a questa produzione.",
+                "nl": "De taak hoort niet bij deze productie."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_production_missing",
+            "text": {
+                "de": "Die Produktion konnte nicht gefunden werden.",
+                "es": "No se pudo encontrar la producción.",
+                "fr": "La production est introuvable.",
+                "it": "Impossibile trovare la produzione.",
+                "nl": "De productie is niet gevonden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_reopen_after_release",
+            "text": {
+                "de": "Abgeschlossene Produktionsaufgaben können nach Freigabe des Outputs nicht wieder geöffnet werden.",
+                "es": "Las tareas de producción completadas no pueden reabrirse después de liberar la salida.",
+                "fr": "Les tâches de production terminées ne peuvent pas être rouvertes après la libération de la sortie.",
+                "it": "Le attività di produzione completate non possono essere riaperte dopo il rilascio dell’output.",
+                "nl": "Voltooide productietaken kunnen niet opnieuw worden geopend nadat de output is vrijgegeven."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_reopen_not_allowed",
+            "text": {
+                "de": "Diese Produktionsaufgabe kann nicht wieder geöffnet werden.",
+                "es": "Esta tarea de producción no se puede reabrir.",
+                "fr": "Cette tâche de production ne peut pas être rouverte.",
+                "it": "Questa attività di produzione non può essere riaperta.",
+                "nl": "Deze productietaak kan niet opnieuw worden geopend."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_reset_planned_date_required",
+            "text": {
+                "de": "Legen Sie ein Produktionsdatum fest, bevor Sie eine Aufgabe zurücksetzen.",
+                "es": "Establezca una fecha de producción antes de restablecer una tarea.",
+                "fr": "Définissez une date de production avant de réinitialiser une tâche.",
+                "it": "Imposta una data di produzione prima di reimpostare un’attività.",
+                "nl": "Stel een productiedatum in voordat u een taak herstelt."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_reset_reopen_required",
+            "text": {
+                "de": "Abgeschlossene Aufgaben müssen wieder geöffnet werden, bevor ihr Datum zurückgesetzt werden kann.",
+                "es": "Las tareas completadas deben reabrirse antes de restablecer su fecha.",
+                "fr": "Les tâches terminées doivent être rouvertes avant de pouvoir réinitialiser leur date.",
+                "it": "Le attività completate devono essere riaperte prima di poter reimpostare la loro data.",
+                "nl": "Voltooide taken moeten opnieuw worden geopend voordat hun datum kan worden hersteld."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_set_active_workspace_required",
+            "text": {
+                "de": "Wählen Sie einen aktiven Aufgabensatz aus diesem Arbeitsbereich.",
+                "es": "Elija un conjunto de tareas activo de este espacio de trabajo.",
+                "fr": "Choisissez un jeu de tâches actif de cet espace de travail.",
+                "it": "Scegli un set di attività attivo di questo spazio di lavoro.",
+                "nl": "Kies een actieve taakset uit deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_set_product_invalid",
+            "text": {
+                "de": "Wählen Sie einen für dieses Produkt gültigen Aufgabensatz.",
+                "es": "Elija un conjunto de tareas aplicable a este producto.",
+                "fr": "Choisissez un jeu de tâches applicable à ce produit.",
+                "it": "Scegli un set di attività applicabile a questo prodotto.",
+                "nl": "Kies een taakset die op dit product van toepassing is."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_set_unavailable",
+            "text": {
+                "de": "Der Produktionsaufgabensatz ist in diesem Arbeitsbereich nicht mehr verfügbar.",
+                "es": "El conjunto de tareas de producción ya no está disponible en este espacio de trabajo.",
+                "fr": "Le jeu de tâches de production n’est plus disponible dans cet espace de travail.",
+                "it": "Il set di attività di produzione non è più disponibile in questo spazio di lavoro.",
+                "nl": "De productietaakset is niet langer beschikbaar in deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_set_workspace_invalid",
+            "text": {
+                "de": "Wählen Sie einen Aufgabensatz aus dem Produktionsarbeitsbereich.",
+                "es": "Elija un conjunto de tareas del espacio de trabajo de producción.",
+                "fr": "Choisissez un jeu de tâches de l’espace de travail de production.",
+                "it": "Scegli un set di attività dallo spazio di lavoro di produzione.",
+                "nl": "Kies een taakset uit de productiewerkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_workspace_invalid",
+            "text": {
+                "de": "Jede Produktionsaufgabe muss zum aktiven Arbeitsbereich gehören.",
+                "es": "Cada tarea de producción debe pertenecer al espacio de trabajo activo.",
+                "fr": "Chaque tâche de production doit appartenir à l’espace de travail actif.",
+                "it": "Ogni attività di produzione deve appartenere allo spazio di lavoro attivo.",
+                "nl": "Elke productietaak moet bij de actieve werkruimte horen."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_workspace_mismatch",
+            "text": {
+                "de": "Die Aufgabe gehört nicht zu diesem Arbeitsbereich.",
+                "es": "La tarea no pertenece a este espacio de trabajo.",
+                "fr": "La tâche n’appartient pas à cet espace de travail.",
+                "it": "L’attività non appartiene a questo spazio di lavoro.",
+                "nl": "De taak hoort niet bij deze werkruimte."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.task_workspace_missing",
+            "text": {
+                "de": "Der Aufgabenarbeitsbereich konnte nicht gefunden werden.",
+                "es": "No se pudo encontrar el espacio de trabajo de la tarea.",
+                "fr": "L’espace de travail de la tâche est introuvable.",
+                "it": "Impossibile trovare lo spazio di lavoro dell’attività.",
+                "nl": "De werkruimte van de taak is niet gevonden."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.tasks_before_start",
+            "text": {
+                "de": "Aufgaben können nur vor Produktionsbeginn erzeugt werden.",
+                "es": "Las tareas solo pueden generarse antes de iniciar la producción.",
+                "fr": "Les tâches ne peuvent être générées qu’avant le démarrage de la production.",
+                "it": "Le attività possono essere generate solo prima dell’avvio della produzione.",
+                "nl": "Taken kunnen alleen vóór de productiestart worden gegenereerd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.update_active_reservations",
+            "text": {
+                "de": "Eine Produktion mit aktiven Bestandsreservierungen kann nicht geändert werden.",
+                "es": "No se puede cambiar una producción con reservas de stock activas.",
+                "fr": "Une production avec des réservations de stock actives ne peut pas être modifiée.",
+                "it": "Una produzione con prenotazioni di stock attive non può essere modificata.",
+                "nl": "Een productie met actieve voorraadreserveringen kan niet worden gewijzigd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "production.validation.update_status_invalid",
+            "text": {
+                "de": "Nur Entwurfs- oder geplante Produktionen können geändert werden.",
+                "es": "Solo se pueden modificar las producciones en borrador o planificadas.",
+                "fr": "Seules les productions brouillon ou planifiées peuvent être modifiées.",
+                "it": "Solo le produzioni in bozza o pianificate possono essere modificate.",
+                "nl": "Alleen concept- of geplande producties kunnen worden gewijzigd."
             }
         },
         {
@@ -16639,6 +18271,17 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.cosmetic_ready_delay_days",
+            "text": {
+                "de": "Verzögerung der Kosmetikwerkbank (Tage)",
+                "es": "Retraso del banco cosmético (días)",
+                "fr": "Délai de l’atelier cosmétique (jours)",
+                "it": "Ritardo del banco cosmetico (giorni)",
+                "nl": "Vertraging cosmetica-werkbank (dagen)"
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.days_after_production",
             "text": {
                 "de": "Tage relativ zur Produktion",
@@ -17431,6 +19074,39 @@
         },
         {
             "group": "production_bench",
+            "key": "settings.ready_dates",
+            "text": {
+                "de": "Bereitschaftsdaten",
+                "es": "Fechas de disponibilidad",
+                "fr": "Dates de disponibilité",
+                "it": "Date di disponibilità",
+                "nl": "Gereeddatums"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.ready_dates_help",
+            "text": {
+                "de": "Kalendertage zur Schätzung, wann der Output einer abgeschlossenen Produktion bereit ist. Die Schätzung kann im Produktionslauf geprüft und geändert werden.",
+                "es": "Días naturales para estimar cuándo está disponible el producto de una producción completada. La estimación puede revisarse y cambiarse en la producción.",
+                "fr": "Jours calendaires utilisés pour estimer quand la sortie d’une production terminée est disponible. L’estimation peut être vérifiée et modifiée dans la production.",
+                "it": "Giorni di calendario usati per stimare quando l’output di una produzione completata è disponibile. La stima può essere verificata e modificata nella produzione.",
+                "nl": "Kalenderdagen om te schatten wanneer de output van een voltooide productie gereed is. De schatting kan in de productie worden gecontroleerd en gewijzigd."
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.ready_delay_whole_number",
+            "text": {
+                "de": "Geben Sie eine nicht negative ganze Zahl an Tagen ein.",
+                "es": "Introduce un número entero de días no negativo.",
+                "fr": "Saisissez un nombre entier de jours positif ou nul.",
+                "it": "Inserisci un numero intero non negativo di giorni.",
+                "nl": "Voer een niet-negatief geheel aantal dagen in."
+            }
+        },
+        {
+            "group": "production_bench",
             "key": "settings.recurring",
             "text": {
                 "de": "Jedes Jahr",
@@ -17493,6 +19169,17 @@
                 "fr": "Rechercher par nom, tâche ou produit",
                 "it": "Cerca per nome, attività o prodotto",
                 "nl": "Zoeken op naam, taak of product"
+            }
+        },
+        {
+            "group": "production_bench",
+            "key": "settings.soap_ready_delay_days",
+            "text": {
+                "de": "Verzögerung der Seifenwerkbank (Tage)",
+                "es": "Retraso del banco de jabón (días)",
+                "fr": "Délai de l’atelier savon (jours)",
+                "it": "Ritardo del banco sapone (giorni)",
+                "nl": "Vertraging zeepwerkbank (dagen)"
             }
         },
         {
@@ -21831,6 +23518,28 @@
         },
         {
             "group": "workbench",
+            "key": "settings.choose_manufactured_ingredient",
+            "text": {
+                "de": "Ausgabe-Ingrediens",
+                "es": "Ingrediente de salida",
+                "fr": "Ingrédient de sortie",
+                "it": "Ingrediente di output",
+                "nl": "Outputingrediënt"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.create_manufactured_ingredient",
+            "text": {
+                "de": "Erstellen",
+                "es": "Crear",
+                "fr": "Créer",
+                "it": "Crea",
+                "nl": "Maken"
+            }
+        },
+        {
+            "group": "workbench",
             "key": "settings.edit",
             "text": {
                 "de": "Einstellungen bearbeiten",
@@ -21849,6 +23558,17 @@
                 "fr": "Saisir les quantités en",
                 "it": "Inserisci le quantità in",
                 "nl": "Hoeveelheden invoeren als"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.finished_product",
+            "text": {
+                "de": "Fertigprodukt",
+                "es": "Producto terminado",
+                "fr": "Produit fini",
+                "it": "Prodotto finito",
+                "nl": "Eindproduct"
             }
         },
         {
@@ -21886,6 +23606,72 @@
         },
         {
             "group": "workbench",
+            "key": "settings.manufactured_ingredient",
+            "text": {
+                "de": "Hergestelltes Ingrediens",
+                "es": "Ingrediente fabricado",
+                "fr": "Ingrédient fabriqué",
+                "it": "Ingrediente fabbricato",
+                "nl": "Vervaardigd ingrediënt"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.manufactured_ingredient_create_failed",
+            "text": {
+                "de": "Das hergestellte Ingrediens konnte nicht erstellt werden.",
+                "es": "No se pudo crear el ingrediente fabricado.",
+                "fr": "L’ingrédient fabriqué n’a pas pu être créé.",
+                "it": "Non è stato possibile creare l’ingrediente fabbricato.",
+                "nl": "Het vervaardigde ingrediënt kon niet worden aangemaakt."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.manufactured_ingredient_created",
+            "text": {
+                "de": "Hergestelltes Ingrediens erstellt.",
+                "es": "Ingrediente fabricado creado.",
+                "fr": "Ingrédient fabriqué créé.",
+                "it": "Ingrediente fabbricato creato.",
+                "nl": "Vervaardigd ingrediënt aangemaakt."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.manufactured_ingredient_help",
+            "text": {
+                "de": "Das ausgewählte Arbeitsbereich-Ingrediens erhält den hergestellten Bestand, wenn die Produktion abgeschlossen und freigegeben ist.",
+                "es": "El ingrediente seleccionado del espacio de trabajo recibirá el stock fabricado cuando la producción se complete y se libere.",
+                "fr": "L’ingrédient sélectionné de l’espace de travail recevra le stock fabriqué lorsque la production sera terminée et libérée.",
+                "it": "L’ingrediente selezionato dello spazio di lavoro riceverà lo stock fabbricato quando la produzione sarà completata e rilasciata.",
+                "nl": "Het geselecteerde ingrediënt uit de werkruimte ontvangt de vervaardigde voorraad wanneer de productie is voltooid en vrijgegeven."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.manufactured_ingredient_name_required",
+            "text": {
+                "de": "Geben Sie einen Namen für das hergestellte Ingrediens ein.",
+                "es": "Introduce un nombre para el ingrediente fabricado.",
+                "fr": "Saisissez un nom pour l’ingrédient fabriqué.",
+                "it": "Inserisci un nome per l’ingrediente fabbricato.",
+                "nl": "Voer een naam in voor het vervaardigde ingrediënt."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.new_manufactured_ingredient_name",
+            "text": {
+                "de": "Neues hergestelltes Ingrediens erstellen",
+                "es": "Crear un ingrediente fabricado nuevo",
+                "fr": "Créer un nouvel ingrédient fabriqué",
+                "it": "Crea un nuovo ingrediente fabbricato",
+                "nl": "Nieuw vervaardigd ingrediënt aanmaken"
+            }
+        },
+        {
+            "group": "workbench",
             "key": "settings.no_ifra_category",
             "text": {
                 "de": "Keine IFRA-Kategorie ausgewählt",
@@ -21904,6 +23690,61 @@
                 "fr": "Utilisation du produit",
                 "it": "Uso del prodotto",
                 "nl": "Productgebruik"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.production_output",
+            "text": {
+                "de": "Produktionsausgabe",
+                "es": "Salida de producción",
+                "fr": "Sortie de production",
+                "it": "Output della produzione",
+                "nl": "Productie-output"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.production_output_help",
+            "text": {
+                "de": "Wählen Sie, ob dieses Rezept ein Fertigprodukt oder ein wiederverwendbares Bulk-Ingrediens für ein anderes Produkt erzeugt.",
+                "es": "Elige si esta receta produce un producto terminado o un ingrediente a granel reutilizable para otro producto.",
+                "fr": "Choisissez si cette recette produit un produit fini ou un ingrédient vrac réutilisable pour un autre produit.",
+                "it": "Scegli se questa ricetta produce un prodotto finito o un ingrediente sfuso riutilizzabile per un altro prodotto.",
+                "nl": "Kies of dit recept een eindproduct of een herbruikbaar bulk-ingrediënt voor een ander product maakt."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.ready_delay_override",
+            "text": {
+                "de": "Abweichung für Bereitschaftsverzögerung (Tage)",
+                "es": "Excepción del retraso de disponibilidad (días)",
+                "fr": "Délai de disponibilité personnalisé (jours)",
+                "it": "Override del ritardo di disponibilità (giorni)",
+                "nl": "Afwijking gereedheidsvertraging (dagen)"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.ready_delay_override_help",
+            "text": {
+                "de": "Leer lassen, um den Arbeitsbereichstandard für diese Produktfamilie zu verwenden.",
+                "es": "Déjalo vacío para usar el valor predeterminado del espacio de trabajo para esta familia de productos.",
+                "fr": "Laissez vide pour utiliser la valeur par défaut de l’espace de travail pour cette famille de produits.",
+                "it": "Lascia vuoto per usare il valore predefinito dello spazio di lavoro per questa famiglia di prodotti.",
+                "nl": "Laat leeg om de werkruimtestandaard voor deze productfamilie te gebruiken."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "settings.ready_delay_override_placeholder",
+            "text": {
+                "de": "Produktionseinstellungen verwenden",
+                "es": "Usar ajustes de producción",
+                "fr": "Utiliser les paramètres de production",
+                "it": "Usa impostazioni produzione",
+                "nl": "Productie-instellingen gebruiken"
             }
         },
         {

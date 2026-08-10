@@ -39,13 +39,13 @@ class IssueFinishedGoods
             StockMovementType::InternalUse,
         ], true)) {
             throw ValidationException::withMessages([
-                'kind' => 'Finished goods can only be issued as shipment, sample, damaged, or internal use.',
+                'kind' => __('production_bench.production.validation.issue_kind_invalid'),
             ]);
         }
 
         if (preg_match('/^\d+(?:\.\d+)?$/', trim($quantity)) !== 1 || bccomp(trim($quantity), '0', 18) <= 0) {
             throw ValidationException::withMessages([
-                'quantity' => 'The issued quantity must be greater than zero.',
+                'quantity' => __('production_bench.production.validation.issue_quantity_positive'),
             ]);
         }
 
@@ -59,19 +59,19 @@ class IssueFinishedGoods
 
             if ($lockedLot->origin !== StockLotOrigin::ProductionOutput) {
                 throw ValidationException::withMessages([
-                    'lot' => 'Only production output lots can be issued.',
+                    'lot' => __('production_bench.production.validation.issue_output_lot_required'),
                 ]);
             }
 
             if ($lockedLot->status !== StockLotStatus::Released) {
                 throw ValidationException::withMessages([
-                    'lot' => 'Only a released output lot can be issued.',
+                    'lot' => __('production_bench.production.validation.issue_output_released_required'),
                 ]);
             }
 
             if ($lockedLot->unit_kind === StockUnitKind::Count && preg_match('/^\d+$/', trim($quantity)) !== 1) {
                 throw ValidationException::withMessages([
-                    'quantity' => 'Finished product issues must use whole units.',
+                    'quantity' => __('production_bench.production.validation.issue_finished_whole'),
                 ]);
             }
 
@@ -89,7 +89,7 @@ class IssueFinishedGoods
 
             if (bccomp($quantity, $available, 9) > 0) {
                 throw ValidationException::withMessages([
-                    'quantity' => 'Not enough available output: '.$available.' remaining.',
+                    'quantity' => __('production_bench.production.validation.issue_quantity_unavailable', ['available' => $available]),
                 ]);
             }
 

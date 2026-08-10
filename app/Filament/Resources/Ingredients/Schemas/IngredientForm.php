@@ -132,7 +132,7 @@ class IngredientForm
                         TextInput::make('current_version.unit')
                             ->maxLength(64),
                         Toggle::make('current_version.is_manufactured')
-                            ->label('Manufactured')
+                            ->label('Manufactured in-house')
                             ->default(false),
                     ])
                     ->columns([

@@ -41,13 +41,13 @@ class PrepareProductionStock
 
         if ($productionIds === []) {
             throw ValidationException::withMessages([
-                'productions' => 'Select at least one planned production.',
+                'productions' => __('production_bench.production.validation.prepare_selection_required'),
             ]);
         }
 
         if ($idempotencyKey === '' || strlen($idempotencyKey) > 120) {
             throw ValidationException::withMessages([
-                'idempotencyKey' => 'A valid preparation key is required.',
+                'idempotencyKey' => __('production_bench.production.validation.prepare_idempotency_key_invalid'),
             ]);
         }
 
@@ -58,7 +58,7 @@ class PrepareProductionStock
 
         if ($productions->count() !== count($productionIds)) {
             throw ValidationException::withMessages([
-                'productions' => 'One or more selected productions could not be found.',
+                'productions' => __('production_bench.production.validation.prepare_productions_missing'),
             ]);
         }
 
@@ -66,7 +66,7 @@ class PrepareProductionStock
 
         if ($workspaceIds->count() !== 1) {
             throw ValidationException::withMessages([
-                'productions' => 'Selected productions must belong to the same workspace.',
+                'productions' => __('production_bench.production.validation.prepare_productions_workspace_mismatch'),
             ]);
         }
 
@@ -74,14 +74,28 @@ class PrepareProductionStock
 
         if (! $workspace instanceof Workspace) {
             throw ValidationException::withMessages([
-                'production_bench' => 'The production workspace could not be found.',
+                'production_bench' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
         $this->access->assertWritable($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $idempotencyKey, $manualAllocations, $productionIds, $workspace): array {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->whereKey($workspace->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedWorkspace instanceof Workspace) {
+                throw ValidationException::withMessages([
+                    'production_bench' => __('production_bench.production.workspace_missing'),
+                ]);
+            }
+
+            $this->access->assertWritable($actor, $lockedWorkspace);
+
             $lockedProductions = ProductionRun::query()
+                ->where('workspace_id', $lockedWorkspace->id)
                 ->whereIn('id', $productionIds)
                 ->orderBy('id')
                 ->lockForUpdate()
@@ -89,27 +103,15 @@ class PrepareProductionStock
 
             if ($lockedProductions->count() !== count($productionIds)) {
                 throw ValidationException::withMessages([
-                    'productions' => 'One or more selected productions could not be found.',
+                    'productions' => __('production_bench.production.validation.prepare_productions_missing'),
                 ]);
             }
 
-            if ($lockedProductions->contains(fn (ProductionRun $production): bool => (int) $production->workspace_id !== (int) $workspace->id)) {
+            if ($lockedProductions->contains(fn (ProductionRun $production): bool => (int) $production->workspace_id !== (int) $lockedWorkspace->id)) {
                 throw ValidationException::withMessages([
-                    'productions' => 'Selected productions must belong to the same workspace.',
+                    'productions' => __('production_bench.production.validation.prepare_productions_workspace_mismatch'),
                 ]);
             }
-
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($workspace->id);
-
-            if (! $lockedWorkspace instanceof Workspace) {
-                throw ValidationException::withMessages([
-                    'production_bench' => 'The production workspace could not be found.',
-                ]);
-            }
-
-            $this->access->assertWritable($actor, $lockedWorkspace);
 
             $this->assertProductionStatuses($lockedProductions);
 
@@ -160,7 +162,7 @@ class PrepareProductionStock
         foreach ($productionIds as $productionId) {
             if (filter_var($productionId, FILTER_VALIDATE_INT) === false || (int) $productionId < 1) {
                 throw ValidationException::withMessages([
-                    'productions' => 'Selected production identifiers are invalid.',
+                    'productions' => __('production_bench.production.validation.prepare_identifiers_invalid'),
                 ]);
             }
 
@@ -178,7 +180,7 @@ class PrepareProductionStock
         foreach ($productions as $production) {
             if (! in_array($production->status, [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
                 throw ValidationException::withMessages([
-                    'productions' => 'Only planned or stock-prepared productions can reserve stock.',
+                    'productions' => __('production_bench.production.validation.prepare_status_invalid'),
                 ]);
             }
         }
@@ -195,7 +197,7 @@ class PrepareProductionStock
         foreach (array_keys($manualAllocations) as $requirementId) {
             if (! in_array((string) $requirementId, $requirementIds, true)) {
                 throw ValidationException::withMessages([
-                    'requirements' => 'Manual allocations must belong to the selected productions.',
+                    'requirements' => __('production_bench.production.validation.prepare_requirements_invalid'),
                 ]);
             }
         }
@@ -255,6 +257,7 @@ class PrepareProductionStock
     private function buildAllocations(Collection $requirements, array $manualAllocations): array
     {
         $allocations = [];
+        $remainingByLot = [];
 
         foreach ($requirements as $requirement) {
             $manual = array_key_exists((string) $requirement->id, $manualAllocations)
@@ -268,18 +271,40 @@ class PrepareProductionStock
                 // Partial preparation is allowed: the available portion of the
                 // FEFO proposal is reserved and the shortfall stays visible
                 // for a later preparation pass.
-                foreach ($proposal['allocations'] as $allocation) {
+                foreach ($proposal['eligible_lots'] as $eligibleLot) {
+                    if (bccomp($proposal['remaining'], '0', 9) <= 0) {
+                        break;
+                    }
+
+                    $available = $this->remainingLotQuantity(
+                        $eligibleLot['lot'],
+                        $eligibleLot['available'],
+                        $remainingByLot,
+                    );
+
+                    if (bccomp($available, '0', 9) <= 0) {
+                        continue;
+                    }
+
+                    $quantity = bccomp($available, $proposal['remaining'], 9) >= 0
+                        ? $proposal['remaining']
+                        : $available;
                     $allocations[] = [
                         'requirement' => $requirement,
-                        'lot' => $allocation['lot'],
-                        'quantity' => $allocation['quantity'],
+                        'lot' => $eligibleLot['lot'],
+                        'quantity' => $quantity,
                     ];
+                    $this->consumeRemainingLot($eligibleLot['lot'], $quantity, $remainingByLot);
+                    $proposal['remaining'] = bcsub($proposal['remaining'], $quantity, 9);
                 }
 
                 continue;
             }
 
-            $allocations = [...$allocations, ...$this->manualRequirementAllocations($requirement, $manual, $proposal)];
+            $allocations = [
+                ...$allocations,
+                ...$this->manualRequirementAllocations($requirement, $manual, $proposal, $remainingByLot),
+            ];
         }
 
         return $allocations;
@@ -296,7 +321,7 @@ class PrepareProductionStock
         foreach ($manual as $row) {
             if (! is_array($row) || ! array_key_exists('stock_lot_id', $row)) {
                 throw ValidationException::withMessages([
-                    'allocations' => 'Manual stock allocations are invalid.',
+                    'allocations' => __('production_bench.production.validation.prepare_allocations_invalid'),
                 ]);
             }
 
@@ -304,7 +329,7 @@ class PrepareProductionStock
 
             if ($id === false || $id < 1 || in_array($id, $ids, true)) {
                 throw ValidationException::withMessages([
-                    'allocations' => 'Manual stock allocations must use each lot once.',
+                    'allocations' => __('production_bench.production.validation.prepare_allocations_duplicate_lot'),
                 ]);
             }
 
@@ -313,7 +338,7 @@ class PrepareProductionStock
 
         if ($ids === []) {
             throw ValidationException::withMessages([
-                'allocations' => 'Choose at least one stock lot for a manual allocation.',
+                'allocations' => __('production_bench.production.validation.prepare_allocation_lot_required'),
             ]);
         }
 
@@ -323,10 +348,15 @@ class PrepareProductionStock
     /**
      * @param  list<array{stock_lot_id: int|string, quantity: int|float|string}>  $manual
      * @param  array{remaining: string, eligible_lots: list<array{lot: StockLot, available: string}>}  $proposal
+     * @param  array<int, string>  $remainingByLot
      * @return list<array{requirement: ProductionRequirement, lot: StockLot, quantity: string}>
      */
-    private function manualRequirementAllocations(ProductionRequirement $requirement, array $manual, array $proposal): array
-    {
+    private function manualRequirementAllocations(
+        ProductionRequirement $requirement,
+        array $manual,
+        array $proposal,
+        array &$remainingByLot,
+    ): array {
         $availableByLot = collect($proposal['eligible_lots'])->keyBy(fn (array $row): int => $row['lot']->id);
         $total = '0.000000000';
         $allocations = [];
@@ -336,15 +366,27 @@ class PrepareProductionStock
             $quantity = $this->quantity($row['quantity']);
             $available = $availableByLot->get($lotId);
 
-            if ($available === null || bccomp($quantity, $available['available'], 9) > 0) {
+            if ($available === null) {
                 throw ValidationException::withMessages([
-                    'allocations' => 'A selected stock lot does not have enough eligible quantity.',
+                    'allocations' => __('production_bench.production.validation.stock_lot_quantity_unavailable'),
+                ]);
+            }
+
+            $availableQuantity = $this->remainingLotQuantity(
+                $available['lot'],
+                $available['available'],
+                $remainingByLot,
+            );
+
+            if (bccomp($quantity, $availableQuantity, 9) > 0) {
+                throw ValidationException::withMessages([
+                    'allocations' => __('production_bench.production.validation.stock_lot_quantity_unavailable'),
                 ]);
             }
 
             if ($requirement->packaging_item_id !== null && ! preg_match('/^\d+(?:\.0{1,9})?$/', $quantity)) {
                 throw ValidationException::withMessages([
-                    'allocations' => 'Packaging reservations must use whole units.',
+                    'allocations' => __('production_bench.production.validation.prepare_packaging_whole'),
                 ]);
             }
 
@@ -354,27 +396,44 @@ class PrepareProductionStock
                 'lot' => $available['lot'],
                 'quantity' => $quantity,
             ];
+            $this->consumeRemainingLot($available['lot'], $quantity, $remainingByLot);
         }
 
         // Partial manual preparation is allowed: reserving less than the
         // remaining requirement leaves the shortfall for a later pass.
         if (bccomp($total, '0', 9) <= 0) {
             throw ValidationException::withMessages([
-                'allocations' => 'Choose a quantity greater than zero to reserve.',
+                'allocations' => __('production_bench.production.validation.prepare_quantity_positive'),
             ]);
         }
 
-        $required = $requirement->ingredient_id !== null
-            ? (string) $requirement->required_mass_grams
-            : (string) $requirement->required_units;
-
-        if (bccomp($total, $required, 9) > 0) {
+        if (bccomp($total, $proposal['remaining'], 9) > 0) {
             throw ValidationException::withMessages([
-                'allocations' => 'Manual stock allocations cannot exceed the requirement total.',
+                'allocations' => __('production_bench.production.validation.prepare_allocation_exceeds_requirement'),
             ]);
         }
 
         return $allocations;
+    }
+
+    /**
+     * @param  array<int, string>  $remainingByLot
+     */
+    private function remainingLotQuantity(StockLot $lot, string $available, array &$remainingByLot): string
+    {
+        if (! array_key_exists($lot->id, $remainingByLot)) {
+            $remainingByLot[$lot->id] = $available;
+        }
+
+        return $remainingByLot[$lot->id];
+    }
+
+    /**
+     * @param  array<int, string>  $remainingByLot
+     */
+    private function consumeRemainingLot(StockLot $lot, string $quantity, array &$remainingByLot): void
+    {
+        $remainingByLot[$lot->id] = bcsub($remainingByLot[$lot->id], $quantity, 9);
     }
 
     private function quantity(int|float|string $quantity): string
@@ -383,7 +442,7 @@ class PrepareProductionStock
 
         if (preg_match('/^\d+(?:\.\d+)?$/', $normalized) !== 1 || bccomp($normalized, '0', 9) <= 0) {
             throw ValidationException::withMessages([
-                'allocations' => 'Reservation quantities must be greater than zero.',
+                'allocations' => __('production_bench.production.validation.prepare_quantity_positive'),
             ]);
         }
 
@@ -413,7 +472,7 @@ class PrepareProductionStock
             }
 
             throw ValidationException::withMessages([
-                'idempotencyKey' => 'This preparation key was already used for a different reservation.',
+                'idempotencyKey' => __('production_bench.production.validation.prepare_idempotency_conflict'),
             ]);
         }
 

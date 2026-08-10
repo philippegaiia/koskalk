@@ -2,8 +2,9 @@
 
 namespace App\Services\Production;
 
-use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionConsumptionKind;
+use App\Enums\ProductionFormulaComponent;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotOrigin;
 use App\Enums\StockLotStatus;
@@ -11,8 +12,9 @@ use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
-use App\Models\ProductionFormulaLine;
 use App\Models\ProductionConsumption;
+use App\Models\ProductionFormulaLine;
+use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\StockLot;
@@ -29,6 +31,8 @@ class ProductionCompletionService
 {
     private const int GuardScale = 18;
 
+    public function __construct(private readonly ConsumableStockLotPolicy $lotPolicy) {}
+
     /**
      * Complete an in-production run atomically: post consumption movements,
      * release unused reservations, snapshot actual costs, create the output
@@ -40,12 +44,14 @@ class ProductionCompletionService
         ProductionRun $production,
         string $actualOutputQuantity,
         string $manufactureDate,
+        ?string $estimatedReadyOn = null,
         ?int $outputIngredientId = null,
     ): ProductionRun {
         return DB::transaction(function () use (
             $actor,
             $actualOutputQuantity,
             $manufactureDate,
+            $estimatedReadyOn,
             $outputIngredientId,
             $production,
         ): ProductionRun {
@@ -56,7 +62,10 @@ class ProductionCompletionService
                 ->lockForUpdate()
                 ->findOrFail($production->id);
 
-            $this->assertCompletable($lockedProduction, $workspace, $actualOutputQuantity, $manufactureDate, $outputIngredientId);
+            $outputConfiguration = $this->resolveOutputConfiguration($lockedProduction, $outputIngredientId);
+            $resolvedOutputIngredientId = $outputConfiguration['output_ingredient_id'];
+            $this->defaultCalculatedLyeActuals($actor, $lockedProduction);
+            $this->assertCompletable($lockedProduction, $workspace, $actualOutputQuantity, $manufactureDate, $resolvedOutputIngredientId);
 
             $consumption = ProductionConsumption::query()
                 ->where('production_run_id', $lockedProduction->id)
@@ -75,6 +84,7 @@ class ProductionCompletionService
                     ->withoutGlobalScopes()
                     ->lockForUpdate()
                     ->findOrFail($row->stock_lot_id);
+                $this->assertEligibleConsumptionLot($lot, $manufactureDate);
 
                 $pricePerUnit = $this->pricePerUnit($lot, $row);
                 $lineCost = $this->lineCost($row, $pricePerUnit);
@@ -86,7 +96,11 @@ class ProductionCompletionService
                         $currency = $lineCurrency;
                     } elseif ($currency !== $lineCurrency) {
                         throw ValidationException::withMessages([
-                            'production' => 'Production costing mixes currencies: the lot '.$lot->internal_lot_code.' is priced in '.$lineCurrency.' while the rest of the batch is in '.$currency.'. Correct the lot cost or use the workspace costing values.',
+                            'production' => __('production_bench.production.validation.completion_currency_mismatch', [
+                                'lot' => $lot->internal_lot_code,
+                                'lot_currency' => $lineCurrency,
+                                'batch_currency' => $currency,
+                            ]),
                         ]);
                     }
                 }
@@ -135,16 +149,17 @@ class ProductionCompletionService
             // 3. Create the output lot, coded with the permanent batch number.
             //    Intermediate lots carry the producing batch's cost per gram so
             //    a downstream production prices them from this batch.
-            $isIntermediate = $outputIngredientId !== null;
+            $isIntermediate = $outputConfiguration['production_output_type'] === ProductionOutputType::ManufacturedIngredient;
             $outputQuantity = $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
-            $intermediateCostPerGram = $isIntermediate && bccomp($ingredientTotal, '0', 18) > 0
-                ? bcdiv($ingredientTotal, $outputQuantity, 9)
+            $totalCost = bcadd($ingredientTotal, $packagingTotal, 9);
+            $intermediateCostPerGram = $isIntermediate && bccomp($totalCost, '0', 18) > 0
+                ? bcdiv($totalCost, $outputQuantity, 9)
                 : null;
-            $availableFrom = $this->readyDate($lockedProduction, $manufactureDate);
+            $confirmedReadyOn = $this->confirmedReadyOn($lockedProduction, $manufactureDate, $estimatedReadyOn);
 
             $outputLot = StockLot::query()->create([
                 'workspace_id' => $workspace->id,
-                'ingredient_id' => $isIntermediate ? $outputIngredientId : null,
+                'ingredient_id' => $isIntermediate ? $resolvedOutputIngredientId : null,
                 'packaging_item_id' => null,
                 'recipe_id' => $isIntermediate ? null : $lockedProduction->recipe_id,
                 'production_run_id' => $lockedProduction->id,
@@ -154,7 +169,8 @@ class ProductionCompletionService
                 'status' => StockLotStatus::Quarantined,
                 'stocked_at' => $manufactureDate,
                 'expires_at' => null,
-                'available_from' => $availableFrom,
+                'available_from' => null,
+                'estimated_ready_on' => $confirmedReadyOn,
                 'released_at' => null,
                 'provenance_complete' => true,
                 'historical_unit_cost' => $intermediateCostPerGram,
@@ -178,7 +194,6 @@ class ProductionCompletionService
             ]);
 
             // 5. Close the run with the actual cost snapshot.
-            $totalCost = bcadd($ingredientTotal, $packagingTotal, 9);
             $costPerUnit = bccomp($outputQuantity, '0', self::GuardScale) > 0
                 ? bcdiv($totalCost, $outputQuantity, 9)
                 : null;
@@ -188,6 +203,7 @@ class ProductionCompletionService
                 'completed_at' => now(),
                 'completed_by_user_id' => $actor->id,
                 'manufacture_date' => $manufactureDate,
+                'estimated_ready_on' => $confirmedReadyOn,
                 'actual_output_units' => $isIntermediate ? null : (int) $outputQuantity,
                 'actual_output_mass_grams' => $isIntermediate ? $outputQuantity : null,
                 'cost_currency' => $currency ?: null,
@@ -201,6 +217,53 @@ class ProductionCompletionService
         }, attempts: 5);
     }
 
+    /**
+     * @return array{production_output_type: ProductionOutputType, output_ingredient_id: int|null}
+     */
+    private function resolveOutputConfiguration(ProductionRun $production, ?int $legacyOutputIngredientId): array
+    {
+        $outputType = $production->production_output_type;
+
+        if (! $outputType instanceof ProductionOutputType) {
+            return [
+                'production_output_type' => $legacyOutputIngredientId === null
+                    ? ProductionOutputType::FinishedProduct
+                    : ProductionOutputType::ManufacturedIngredient,
+                'output_ingredient_id' => $legacyOutputIngredientId,
+            ];
+        }
+
+        if ($outputType === ProductionOutputType::ManufacturedIngredient) {
+            if ($production->output_ingredient_id === null) {
+                throw ValidationException::withMessages([
+                    'output_ingredient_id' => __('production_bench.production.validation.output_snapshot_ingredient_missing'),
+                ]);
+            }
+
+            if ($legacyOutputIngredientId !== null && $legacyOutputIngredientId !== (int) $production->output_ingredient_id) {
+                throw ValidationException::withMessages([
+                    'output_ingredient_id' => __('production_bench.production.validation.output_snapshot_ingredient_fixed'),
+                ]);
+            }
+
+            return [
+                'production_output_type' => $outputType,
+                'output_ingredient_id' => (int) $production->output_ingredient_id,
+            ];
+        }
+
+        if ($legacyOutputIngredientId !== null) {
+            throw ValidationException::withMessages([
+                'output_ingredient_id' => __('production_bench.production.validation.output_snapshot_finished_fixed'),
+            ]);
+        }
+
+        return [
+            'production_output_type' => $outputType,
+            'output_ingredient_id' => null,
+        ];
+    }
+
     private function assertCompletable(
         ProductionRun $production,
         Workspace $workspace,
@@ -210,19 +273,19 @@ class ProductionCompletionService
     ): void {
         if ($production->status !== ProductionRunStatus::InProduction) {
             throw ValidationException::withMessages([
-                'production' => 'Only a running production can be completed.',
+                'production' => __('production_bench.production.validation.completion_running_only'),
             ]);
         }
 
         if ($production->batch_number === null) {
             throw ValidationException::withMessages([
-                'production' => 'The permanent batch number is required before completion.',
+                'production' => __('production_bench.production.validation.completion_permanent_number_required'),
             ]);
         }
 
         if (! $this->isValidDate($manufactureDate)) {
             throw ValidationException::withMessages([
-                'manufacture_date' => 'The manufacture date must use YYYY-MM-DD format.',
+                'manufacture_date' => __('production_bench.production.validation.completion_manufacture_date_invalid'),
             ]);
         }
 
@@ -236,7 +299,7 @@ class ProductionCompletionService
 
             if (! $ingredient instanceof Ingredient) {
                 throw ValidationException::withMessages([
-                    'output_ingredient_id' => 'The intermediate ingredient must belong to this workspace.',
+                    'output_ingredient_id' => __('production_bench.production.validation.completion_intermediate_ingredient_workspace_invalid'),
                 ]);
             }
         }
@@ -245,7 +308,6 @@ class ProductionCompletionService
         $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
 
         $requirements = $production->requirements()->get();
-
         $missingWaterActual = ProductionFormulaLine::query()
             ->where('production_run_id', $production->id)
             ->where('component', ProductionFormulaComponent::Water)
@@ -256,13 +318,13 @@ class ProductionCompletionService
 
         if ($missingWaterActual) {
             throw ValidationException::withMessages([
-                'production' => 'Record a positive actual water quantity before completing.',
+                'production' => __('production_bench.production.validation.completion_water_actual_positive'),
             ]);
         }
 
         if ($requirements->isEmpty()) {
             throw ValidationException::withMessages([
-                'production' => 'This production has no requirements to consume.',
+                'production' => __('production_bench.production.validation.completion_requirements_missing'),
             ]);
         }
 
@@ -277,7 +339,9 @@ class ProductionCompletionService
 
         if ($missing->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'production' => 'Record actual quantities for every requirement before completing: '.$missing->pluck('subject_name_snapshot')->implode(', ').'.',
+                'production' => __('production_bench.production.validation.completion_actuals_missing', [
+                    'materials' => $missing->pluck('subject_name_snapshot')->implode(', '),
+                ]),
             ]);
         }
 
@@ -288,8 +352,89 @@ class ProductionCompletionService
 
         if ($lotlessRows) {
             throw ValidationException::withMessages([
-                'production' => 'Every actual quantity must reference a stock lot before completing.',
+                'production' => __('production_bench.production.validation.actual_lot_required'),
             ]);
+        }
+    }
+
+    private function confirmedReadyOn(
+        ProductionRun $production,
+        string $manufactureDate,
+        ?string $estimatedReadyOn,
+    ): string {
+        if ($estimatedReadyOn !== null) {
+            if (! $this->isValidDate($estimatedReadyOn)) {
+                throw ValidationException::withMessages([
+                    'estimated_ready_on' => __('production_bench.production.validation.estimated_ready_date_invalid'),
+                ]);
+            }
+
+            return $estimatedReadyOn;
+        }
+
+        if ($production->output_ready_delay_days !== null) {
+            return Carbon::parse($manufactureDate)
+                ->addDays((int) $production->output_ready_delay_days)
+                ->toDateString();
+        }
+
+        return $this->readyDate($production, $manufactureDate);
+    }
+
+    private function assertEligibleConsumptionLot(StockLot $lot, string $manufactureDate): void
+    {
+        $this->lotPolicy->assertConsumable($lot, Carbon::parse($manufactureDate), 'production');
+    }
+
+    private function defaultCalculatedLyeActuals(User $actor, ProductionRun $production): void
+    {
+        $lyeLines = ProductionFormulaLine::query()
+            ->where('production_run_id', $production->id)
+            ->whereIn('component', [ProductionFormulaComponent::Naoh, ProductionFormulaComponent::Koh])
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($lyeLines as $line) {
+            $requirement = ProductionRequirement::query()
+                ->where('production_run_id', $production->id)
+                ->where('ingredient_id', $line->ingredient_id)
+                ->first();
+
+            if (! $requirement instanceof ProductionRequirement) {
+                continue;
+            }
+
+            $existingLotIds = ProductionConsumption::query()
+                ->where('production_run_id', $production->id)
+                ->where('production_requirement_id', $requirement->id)
+                ->pluck('stock_lot_id')
+                ->all();
+
+            StockReservation::query()
+                ->where('production_run_id', $production->id)
+                ->where('production_requirement_id', $requirement->id)
+                ->where('status', StockReservationStatus::Active)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->each(function (StockReservation $reservation) use ($actor, $existingLotIds, $production, $requirement): void {
+                    if (in_array($reservation->stock_lot_id, $existingLotIds, true)) {
+                        return;
+                    }
+
+                    ProductionConsumption::query()->create([
+                        'production_run_id' => $production->id,
+                        'production_requirement_id' => $requirement->id,
+                        'stock_lot_id' => $reservation->stock_lot_id,
+                        'kind' => ProductionConsumptionKind::Ingredient,
+                        'subject_name_snapshot' => $requirement->subject_name_snapshot,
+                        'quantity' => $reservation->quantity,
+                        'unit_snapshot' => 'g',
+                        'recorded_by_user_id' => $actor->id,
+                        'note' => null,
+                    ]);
+                });
         }
     }
 
@@ -324,13 +469,13 @@ class ProductionCompletionService
     {
         if (preg_match('/^\d+(?:\.\d+)?$/', trim($value)) !== 1 || bccomp(trim($value), '0', self::GuardScale) <= 0) {
             throw ValidationException::withMessages([
-                'actual_output_quantity' => 'The actual output quantity must be greater than zero.',
+                'actual_output_quantity' => __('production_bench.production.validation.output_quantity_positive'),
             ]);
         }
 
         if (! $isIntermediate && preg_match('/^\d+$/', trim($value)) !== 1) {
             throw ValidationException::withMessages([
-                'actual_output_quantity' => 'Finished output must be a whole number of units.',
+                'actual_output_quantity' => __('production_bench.production.validation.completion_finished_output_whole'),
             ]);
         }
 

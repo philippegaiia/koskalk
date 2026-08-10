@@ -622,3 +622,27 @@ it('commits every localized destructive media action string', function () {
             ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
     }
 });
+
+it('commits every production lifecycle key for every supported locale', function () {
+    $englishKeys = collect(app(EnglishTranslationSource::class)->all())
+        ->keys()
+        ->filter(fn (string $key): bool => str_starts_with($key, 'production_bench.'))
+        ->map(fn (string $key): string => Str::after($key, 'production_bench.'))
+        ->sort()
+        ->values()
+        ->all();
+    $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'production_bench')
+        ->keyBy('key');
+    $locales = ['de', 'es', 'fr', 'it', 'nl'];
+
+    expect($rows->keys()->sort()->values()->all())->toBe($englishKeys);
+
+    foreach ($rows as $row) {
+        expect(array_keys($row['text']))->toBe($locales);
+
+        foreach ($row['text'] as $translation) {
+            expect(trim($translation))->not->toBe('');
+        }
+    }
+});

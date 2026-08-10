@@ -4,10 +4,9 @@ namespace App\Actions\Production;
 
 use App\Enums\ProductionRunStatus;
 use App\Models\ProductionRun;
-use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Services\Production\ProductionWorkingCalendar;
+use App\Services\Production\ProductionDateRescheduler;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +15,7 @@ class RescheduleProduction
 {
     public function __construct(
         private readonly ProductionBenchAccess $access,
-        private readonly ProductionWorkingCalendar $calendar,
+        private readonly ProductionDateRescheduler $rescheduler,
     ) {}
 
     public function handle(User $actor, ProductionRun $production, string $plannedFor): ProductionRun
@@ -25,7 +24,7 @@ class RescheduleProduction
         $workspace = $production->workspace;
 
         if ($workspace === null) {
-            throw ValidationException::withMessages(['production' => 'The production workspace could not be found.']);
+            throw ValidationException::withMessages(['production' => __('production_bench.production.workspace_missing')]);
         }
 
         $this->access->assertWritable($actor, $workspace);
@@ -35,7 +34,7 @@ class RescheduleProduction
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($lockedProduction->workspace_id);
 
             if ($lockedWorkspace === null) {
-                throw ValidationException::withMessages(['production' => 'The production workspace could not be found.']);
+                throw ValidationException::withMessages(['production' => __('production_bench.production.workspace_missing')]);
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
@@ -46,46 +45,11 @@ class RescheduleProduction
                 ProductionRunStatus::Reserved,
             ], true)) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production date cannot be changed after production starts.',
+                    'production' => __('production_bench.production.validation.reschedule_after_start'),
                 ]);
             }
 
-            if (! $this->calendar->isWorkingDate($lockedWorkspace, $plannedFor)) {
-                throw ValidationException::withMessages([
-                    'planned_for' => 'The production date must be a working day.',
-                ]);
-            }
-
-            $lockedProduction->update(['planned_for' => $plannedFor]);
-            $tasks = ProductionTask::query()
-                ->where('production_run_id', $lockedProduction->id)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get();
-
-            $anchor = $tasks->firstWhere('days_after_production', 0);
-
-            if ($anchor instanceof ProductionTask) {
-                if ($anchor->completed_at !== null) {
-                    throw ValidationException::withMessages([
-                        'production' => 'A production with a completed anchor task cannot be rescheduled.',
-                    ]);
-                }
-
-                foreach ($tasks as $task) {
-                    if ($task->completed_at !== null || $task->scheduling_mode !== 'automatic') {
-                        continue;
-                    }
-
-                    $task->update([
-                        'scheduled_for' => $this->calendar->dateRelativeToProduction(
-                            $lockedWorkspace,
-                            $plannedFor,
-                            (int) $task->days_after_production,
-                        )->toDateString(),
-                    ]);
-                }
-            }
+            $this->rescheduler->rescheduleLocked($lockedWorkspace, $lockedProduction, $plannedFor);
 
             return $lockedProduction->fresh(['requirements', 'tasks']);
         }, attempts: 5);
@@ -102,7 +66,7 @@ class RescheduleProduction
             || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))
             || $parsed->format('Y-m-d') !== $date
         ) {
-            throw ValidationException::withMessages(['planned_for' => 'The production date must use YYYY-MM-DD format.']);
+            throw ValidationException::withMessages(['planned_for' => __('production_bench.production.validation.planned_date_format')]);
         }
     }
 }

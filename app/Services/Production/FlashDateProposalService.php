@@ -3,6 +3,7 @@
 namespace App\Services\Production;
 
 use App\Models\ProductionTaskSet;
+use App\Models\Recipe;
 use App\Models\Workspace;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
@@ -16,11 +17,12 @@ class FlashDateProposalService
     public function __construct(
         private readonly ProductionWorkingCalendar $calendar,
         private readonly FlashProductionLimits $limits,
+        private readonly ProductionReadyDateService $readyDates,
     ) {}
 
     /**
      * @param  list<array<string, mixed>>  $lines
-     * @return list<array{line_index: int, recipe_id: int, recipe_name: string, batch_number: int, batch_total: int, production_date: string, tasks: list<array<string, mixed>>}>
+     * @return list<array{line_index: int, recipe_id: int, recipe_name: string, batch_number: int, batch_total: int, production_date: string, estimated_ready_on: string, tasks: list<array<string, mixed>>}>
      */
     public function propose(
         Workspace $workspace,
@@ -67,6 +69,12 @@ class FlashDateProposalService
                     'batch_number' => $batch,
                     'batch_total' => $batchTotal,
                     'production_date' => $date->toDateString(),
+                    'estimated_ready_on' => $this->estimatedReadyOn(
+                        $workspace,
+                        $line['recipe'] ?? null,
+                        $line['output_ready_delay_days'] ?? null,
+                        $date->toDateString(),
+                    ),
                     'tasks' => is_array($line['task_items'] ?? null)
                         ? $this->tasksFromItems($workspace, $date, $line['task_items'])
                         : $this->tasks($workspace, $date, $taskSet),
@@ -77,6 +85,28 @@ class FlashDateProposalService
         }
 
         return $proposals;
+    }
+
+    private function estimatedReadyOn(
+        Workspace $workspace,
+        mixed $recipe,
+        mixed $delayDays,
+        string $productionDate,
+    ): string {
+        if (is_int($delayDays) || (is_string($delayDays) && preg_match('/^\d+$/', $delayDays) === 1)) {
+            return $this->readyDates->estimatedReadyOn($productionDate, (int) $delayDays);
+        }
+
+        if (! $recipe instanceof Recipe) {
+            throw ValidationException::withMessages([
+                'lines' => __('production_bench.production.validation.flash_output_configuration_missing'),
+            ]);
+        }
+
+        return $this->readyDates->estimatedReadyOn(
+            $productionDate,
+            $this->readyDates->delayDays($recipe, $workspace),
+        );
     }
 
     private function parseDate(string|DateTimeInterface $date): CarbonImmutable

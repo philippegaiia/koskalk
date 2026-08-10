@@ -8,6 +8,8 @@ use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MassConverter;
+use App\Services\Production\ProductionDateRescheduler;
+use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionSnapshotRescaler;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,8 @@ class UpdateProductionPlan
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly ProductionSnapshotRescaler $rescaler,
+        private readonly ProductionReadyDateService $readyDates,
+        private readonly ProductionDateRescheduler $dateRescheduler,
     ) {}
 
     public function handle(
@@ -35,7 +39,7 @@ class UpdateProductionPlan
 
         if ($workspace === null) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -64,7 +68,7 @@ class UpdateProductionPlan
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production workspace could not be found.',
+                    'production' => __('production_bench.production.workspace_missing'),
                 ]);
             }
 
@@ -75,22 +79,42 @@ class UpdateProductionPlan
                 ProductionRunStatus::Scheduled,
             ], true)) {
                 throw ValidationException::withMessages([
-                    'production' => 'Only draft or planned productions can be updated.',
+                    'production' => __('production_bench.production.validation.update_status_invalid'),
+                ]);
+            }
+
+            if ($lockedProduction->status === ProductionRunStatus::Scheduled && $plannedFor === null) {
+                throw ValidationException::withMessages([
+                    'planned_for' => __('production_bench.production.validation.planned_date_update_required'),
                 ]);
             }
 
             $this->assertNoActiveReservations($lockedProduction);
+            $scheduledDateChanged = $lockedProduction->status === ProductionRunStatus::Scheduled
+                && $lockedProduction->planned_for?->toDateString() !== $plannedFor;
+
+            if ($scheduledDateChanged) {
+                $this->dateRescheduler->rescheduleLocked($lockedWorkspace, $lockedProduction, $plannedFor);
+            }
 
             $this->rescaler->rescale($lockedProduction, $basisQuantityGrams, $expectedUnits);
 
-            $lockedProduction->update([
+            $updates = [
                 'basis_quantity_grams' => $basisQuantityGrams,
                 'basis_input_value' => $basisInputValue,
                 'basis_input_unit' => $massUnit,
                 'expected_units' => $expectedUnits,
-                'planned_for' => $plannedFor,
                 'notes' => $notes,
-            ]);
+            ];
+
+            if (! $scheduledDateChanged) {
+                $updates['planned_for'] = $plannedFor;
+                $updates['estimated_ready_on'] = $plannedFor === null || $lockedProduction->output_ready_delay_days === null
+                    ? null
+                    : $this->readyDates->estimatedReadyOn($plannedFor, (int) $lockedProduction->output_ready_delay_days);
+            }
+
+            $lockedProduction->update($updates);
 
             return $lockedProduction->fresh(['requirements', 'formulaLines']);
         }, attempts: 5);
@@ -102,7 +126,7 @@ class UpdateProductionPlan
             return $unit instanceof MassUnit ? $unit : MassUnit::fromInput($unit);
         } catch (\InvalidArgumentException) {
             throw ValidationException::withMessages([
-                'basis_input_unit' => 'Choose a supported mass unit.',
+                'basis_input_unit' => __('production_bench.production.validation.basis_input_unit_invalid'),
             ]);
         }
     }
@@ -114,13 +138,13 @@ class UpdateProductionPlan
             || bccomp(trim($basisInputValue), '0', 18) <= 0
         ) {
             throw ValidationException::withMessages([
-                'basis_input_value' => 'The production basis must be greater than zero.',
+                'basis_input_value' => __('production_bench.production.validation.basis_input_positive'),
             ]);
         }
 
         if ($plannedFor !== null && ! $this->isValidDate($plannedFor)) {
             throw ValidationException::withMessages([
-                'planned_for' => 'The production date must use YYYY-MM-DD format.',
+                'planned_for' => __('production_bench.production.validation.planned_date_format'),
             ]);
         }
     }
@@ -131,7 +155,7 @@ class UpdateProductionPlan
 
         if (preg_match('/^[1-9]\d*$/', $normalized) !== 1) {
             throw ValidationException::withMessages([
-                'expected_units' => 'Expected units must be a positive whole number.',
+                'expected_units' => __('production_bench.production.validation.expected_units_positive_whole'),
             ]);
         }
 
@@ -165,7 +189,7 @@ class UpdateProductionPlan
 
         if ($hasActiveReservations) {
             throw ValidationException::withMessages([
-                'production' => 'A production with active stock reservations cannot be changed.',
+                'production' => __('production_bench.production.validation.update_active_reservations'),
             ]);
         }
     }

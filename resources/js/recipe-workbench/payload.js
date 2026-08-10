@@ -52,6 +52,13 @@ export function serializeDraft(state) {
             notes: row.notes ?? null,
             position: index + 1,
         })),
+        production_output_type: state.productionOutputType ?? 'finished_product',
+        output_ingredient_id: state.outputIngredientId === '' || state.outputIngredientId === null || state.outputIngredientId === undefined
+            ? null
+            : Number(state.outputIngredientId),
+        ready_delay_days: state.readyDelayDays === '' || state.readyDelayDays === null || state.readyDelayDays === undefined
+            ? null
+            : Number(state.readyDelayDays),
     };
 }
 

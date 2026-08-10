@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Production\CompleteProductionTask;
+use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\GenerateProductionTasks;
 use App\Actions\Production\PlanProduction;
 use App\Actions\Production\ReopenProductionTask;
@@ -11,21 +12,30 @@ use App\Actions\Production\SaveEmployee;
 use App\Actions\Production\SaveProductionHoliday;
 use App\Actions\Production\SaveProductionTaskSet;
 use App\Actions\Production\SaveProductionTaskType;
+use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\SyncProductionTaskSetProducts;
+use App\Actions\Production\UpdateProductionPlan;
 use App\Enums\OwnerType;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
+use App\Enums\StockUnitKind;
 use App\Enums\Visibility;
+use App\Models\InterfaceTranslation;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\ProductionTaskSet;
+use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -115,6 +125,37 @@ it('rejects a non-working production date instead of moving it silently', functi
     ))->toThrow(ValidationException::class);
 });
 
+it('returns the catalogued localized message when rescheduling onto a non-working day', function (string $locale): void {
+    $messages = productionTaskSchedulingCatalogueText('planned_date_working_day');
+
+    InterfaceTranslation::query()->firstOrCreate([
+        'group' => 'production_bench',
+        'key' => 'production.validation.planned_date_working_day',
+    ], [
+        'text' => $messages,
+    ]);
+    app()->setLocale($locale);
+
+    $fixture = productionTaskSchedulingFixture();
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
+
+    try {
+        app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-09');
+    } catch (ValidationException $exception) {
+        expect($exception->errors()['planned_for'])->toBe([$messages[$locale]]);
+
+        return;
+    }
+
+    $this->fail('Expected rescheduling onto a non-working day to fail.');
+})->with([
+    'German' => ['de'],
+    'Spanish' => ['es'],
+    'French' => ['fr'],
+    'Italian' => ['it'],
+    'Dutch' => ['nl'],
+]);
+
 it('matches recurring holidays in later years without shifting the explicit production date', function (): void {
     $fixture = productionTaskSchedulingFixture();
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
@@ -158,6 +199,28 @@ it('keeps production and the first task synchronized in both directions', functi
         ->and($first->fresh()->scheduling_mode)->toBe('automatic');
 });
 
+it('reschedules automatic tasks when a scheduled production plan is updated', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
+    $cure = productionTaskSchedulingType($fixture, 'Cure');
+    productionTaskSchedulingSet($fixture, $pour, $cure, [0, 2]);
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
+    $tasks = $production->tasks()->orderBy('id')->get();
+
+    $updated = app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        plannedFor: '2026-08-12',
+    );
+
+    expect($updated->planned_for->toDateString())->toBe('2026-08-12')
+        ->and($tasks[0]->fresh()->scheduled_for->toDateString())->toBe('2026-08-12')
+        ->and($tasks[1]->fresh()->scheduled_for->toDateString())->toBe('2026-08-14');
+});
+
 it('marks later dates custom, resets them, and leaves completed tasks stable', function (): void {
     $fixture = productionTaskSchedulingFixture();
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
@@ -186,6 +249,41 @@ it('marks later dates custom, resets them, and leaves completed tasks stable', f
     app(ReopenProductionTask::class)->handle($fixture['owner'], $tasks[1]->fresh());
 
     expect($tasks[1]->fresh()->completed_at)->toBeNull();
+});
+
+it('reopens a completed task while production output awaits release', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
+    productionTaskSchedulingSet($fixture, $pour, null, [0]);
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
+    $task = $production->tasks()->firstOrFail();
+
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+    $production->update(['status' => ProductionRunStatus::Completed]);
+    productionTaskSchedulingOutputLot($fixture, $production, StockLotStatus::Quarantined);
+
+    $reopened = app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh());
+
+    expect($reopened->completed_at)->toBeNull();
+});
+
+it('does not reopen a production task after output release', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
+    productionTaskSchedulingSet($fixture, $pour, null, [0]);
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
+    $task = $production->tasks()->firstOrFail();
+
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+    $production->update(['status' => ProductionRunStatus::Completed]);
+    productionTaskSchedulingOutputLot($fixture, $production, StockLotStatus::Released);
+
+    expect(fn (): ProductionTask => app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh()))
+        ->toThrow(ValidationException::class)
+        ->and($task->fresh()->completed_at)->not->toBeNull();
+
+    expect(__('production_bench.production.validation.task_reopen_after_release'))
+        ->toBe('Completed production tasks cannot be reopened after output release.');
 });
 
 it('does not move a completed automatic task when the production date changes', function (): void {
@@ -313,6 +411,46 @@ it('does not duplicate tasks when generation is retried', function (): void {
     expect($production->tasks()->count())->toBe(1);
 });
 
+it('rolls back draft scheduling when task generation fails', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $foreign = productionTaskSchedulingFixture();
+    $foreignType = productionTaskSchedulingType($foreign, 'Foreign task');
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create([
+        'is_active' => true,
+    ]);
+    ProductionTaskSetItem::factory()
+        ->for($taskSet, 'taskSet')
+        ->for($foreignType, 'taskType')
+        ->create([
+            'position' => 1,
+            'days_after_production' => 0,
+        ]);
+    $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => true]);
+
+    $draft = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'schedule-task-rollback-1',
+        taskSet: $taskSet,
+    );
+
+    expect(fn (): ProductionRun => app(ScheduleProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $draft,
+        plannedFor: '2026-08-10',
+    ))->toThrow(ValidationException::class);
+
+    $fresh = $draft->fresh();
+    expect($fresh->status)->toBe(ProductionRunStatus::Draft)
+        ->and($fresh->planned_for)->toBeNull()
+        ->and($fresh->estimated_ready_on)->toBeNull()
+        ->and($fresh->tasks()->count())->toBe(0);
+});
+
 /**
  * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}
  */
@@ -397,4 +535,33 @@ function productionTaskSchedulingPlan(array $fixture, string $date): ProductionR
         idempotencyKey: fake()->uuid(),
         plannedFor: $date,
     );
+}
+
+/** @param array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion} $fixture */
+function productionTaskSchedulingOutputLot(array $fixture, ProductionRun $production, StockLotStatus $status): StockLot
+{
+    return StockLot::factory()->for($fixture['workspace'])->create([
+        'ingredient_id' => null,
+        'packaging_item_id' => null,
+        'recipe_id' => $fixture['recipe']->id,
+        'production_run_id' => $production->id,
+        'origin' => StockLotOrigin::ProductionOutput,
+        'unit_kind' => StockUnitKind::Count,
+        'status' => $status,
+        'released_at' => $status === StockLotStatus::Released ? now() : null,
+    ]);
+}
+
+/** @return array<string, string> */
+function productionTaskSchedulingCatalogueText(string $key): array
+{
+    $translation = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->first(fn (array $row): bool => $row['group'] === 'production_bench'
+            && $row['key'] === "production.validation.{$key}");
+
+    if (! is_array($translation) || ! is_array($translation['text'] ?? null)) {
+        throw new LogicException("Missing production translation catalogue entry for [{$key}].");
+    }
+
+    return $translation['text'];
 }

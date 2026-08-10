@@ -6,9 +6,11 @@ use App\Enums\ProductionBasisKind;
 use App\Enums\ProductionBenchEntitlementStatus;
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionFormulaComponent;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRequirementKind;
 use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotOrigin;
 use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
@@ -71,6 +73,43 @@ it('creates the production planning tables with their durable snapshot columns',
             'unit_snapshot',
             'sort_order',
         ]))->toBeTrue();
+});
+
+it('stores production output configuration, readiness estimates, and output settings', function (): void {
+    expect(array_column(ProductionOutputType::cases(), 'value'))->toBe([
+        'finished_product',
+        'manufactured_ingredient',
+    ])
+        ->and(Schema::hasColumns('recipes', [
+            'production_output_type',
+            'output_ingredient_id',
+            'ready_delay_days',
+        ]))->toBeTrue()
+        ->and(Schema::hasColumns('production_runs', [
+            'production_output_type',
+            'output_ingredient_id',
+            'output_ready_delay_days',
+            'estimated_ready_on',
+        ]))->toBeTrue()
+        ->and(Schema::hasColumn('stock_lots', 'estimated_ready_on'))->toBeTrue()
+        ->and(Schema::hasTable('production_output_settings'))->toBeTrue()
+        ->and(Schema::hasTable('production_run_number_issuances'))->toBeTrue();
+});
+
+it('restores output availability when the output configuration migration is rolled back', function (): void {
+    $lot = StockLot::factory()->create([
+        'origin' => StockLotOrigin::ProductionOutput,
+        'available_from' => null,
+        'estimated_ready_on' => '2026-09-10',
+    ]);
+    $migration = require database_path('migrations/2026_08_10_231100_add_output_configuration_to_recipes_runs_and_lots.php');
+
+    $migration->down();
+
+    expect(substr((string) DB::table('stock_lots')->where('id', $lot->id)->value('available_from'), 0, 10))
+        ->toBe('2026-09-10');
+
+    $migration->up();
 });
 
 it('defines the complete production planning enum contract', function (): void {

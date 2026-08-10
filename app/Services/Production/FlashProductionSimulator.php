@@ -36,6 +36,7 @@ class FlashProductionSimulator
         private readonly MassConverter $massConverter,
         private readonly ProductionRequirementBuilder $requirementBuilder,
         private readonly FlashProductionLimits $limits,
+        private readonly ProductionReadyDateService $readyDates,
     ) {}
 
     /**
@@ -140,6 +141,7 @@ class FlashProductionSimulator
                 'basis_kind' => $basisKind,
                 'task_set_id' => $taskSet?->id,
                 'task_set' => $taskSet,
+                'output_ready_delay_days' => $this->readyDates->delayDays($recipe, $workspace),
                 'task_minutes' => $lineTaskMinutes,
             ];
         }

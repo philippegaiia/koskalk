@@ -62,6 +62,7 @@ it('creates one planned production per flash batch with tasks and is idempotent'
         ->and($first->pluck('planning_batch_number')->all())->toBe(['T00001', 'T00002', 'T00003'])
         ->and($second->pluck('planning_batch_number')->all())->toBe(['T00001', 'T00002', 'T00003'])
         ->and($first->pluck('planned_for')->map(fn ($date): string => $date->toDateString())->all())->toBe(['2026-08-10', '2026-08-10', '2026-08-11'])
+        ->and($first->pluck('estimated_ready_on')->map(fn ($date): string => $date->toDateString())->all())->toBe(['2026-08-31', '2026-08-31', '2026-09-01'])
         ->and($first->every(fn (ProductionRun $production): bool => $production->tasks()->count() === 1))->toBeTrue()
         ->and(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->next_planning_serial)->toBe(4);
 
@@ -74,7 +75,7 @@ it('creates one planned production per flash batch with tasks and is idempotent'
         ->and($firstProduction->formulaLines()->where('component', 'ingredient')->count())->toBe(1)
         ->and($firstProduction->formulaLines()->where('component', 'naoh')->count())->toBe(1)
         ->and($firstProduction->formulaLines()->where('component', 'water')->count())->toBe(1)
-        ->and($firstProduction->requirements()->count())->toBe(1);
+        ->and($firstProduction->requirements()->count())->toBe(2);
 });
 
 it('leaves generated flash runs unnumbered and does not advance the permanent counter', function (): void {
@@ -211,6 +212,13 @@ function generateFlashFixture(): array
         'is_current' => false,
     ]);
     $ingredient = Ingredient::factory()->create(['display_name' => 'Olive oil']);
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'display_name' => 'Sodium hydroxide',
+        'inci_name' => 'SODIUM HYDROXIDE',
+        'is_soap_saponification_trusted' => false,
+        'requires_admin_review' => false,
+    ]);
     IngredientSapProfile::factory()->create(['ingredient_id' => $ingredient->id, 'koh_sap_value' => 0.188]);
     $version = RecipeVersion::withoutGlobalScopes()
         ->where('recipe_id', $recipe->id)

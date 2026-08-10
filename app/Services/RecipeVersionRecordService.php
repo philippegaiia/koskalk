@@ -61,6 +61,10 @@ class RecipeVersionRecordService
             $recipe->name = $normalizedPayload['name'];
         }
 
+        $recipe->production_output_type = $normalizedPayload['production_output_type'];
+        $recipe->output_ingredient_id = $normalizedPayload['output_ingredient_id'];
+        $recipe->ready_delay_days = $normalizedPayload['ready_delay_days'];
+
         if ($isCurrent) {
             $recipe->manufacturing_instructions = $normalizedPayload['manufacturing_instructions'] ?? null;
         }

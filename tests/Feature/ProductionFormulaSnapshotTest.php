@@ -9,6 +9,7 @@ use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
+use App\Models\ProductionFormulaLine;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -21,9 +22,20 @@ use App\Services\Production\ProductionFormulaSnapshotBuilder;
 use App\Services\Production\ProductionRequirementBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+it('stores nullable actual mass for calculated formula lines at canonical precision', function (): void {
+    expect(Schema::hasColumn('production_formula_lines', 'actual_mass_grams'))->toBeTrue();
+
+    $line = ProductionFormulaLine::factory()->create([
+        'actual_mass_grams' => '283.125',
+    ]);
+
+    expect($line->actual_mass_grams)->toBe('283.125000000');
+});
 
 it('builds a complete NaOH soap formula snapshot scaled to the production basis', function (): void {
     $fixture = productionFormulaSnapshotFixture('naoh');
@@ -52,7 +64,8 @@ it('builds a complete NaOH soap formula snapshot scaled to the production basis'
         ->and((float) $snapshot['lines']->where('component', 'water')->first()['planned_mass_grams'])->toBeGreaterThan(0)
         ->and($snapshot['lines']->where('component', 'naoh')->first()['phase_key_snapshot'])->toBe('lye_water')
         ->and($snapshot['lines']->where('component', 'water')->first()['phase_key_snapshot'])->toBe('lye_water')
-        ->and($snapshot['lines']->where('component', 'naoh')->first()['ingredient_id'])->toBeNull();
+        ->and($snapshot['lines']->where('component', 'naoh')->first()['ingredient_id'])
+        ->toBe(Ingredient::query()->where('catalog_key', 'CH1')->sole()->id);
 });
 
 it('builds KOH soap snapshots with KOH and water but no NaOH line', function (): void {
@@ -65,6 +78,8 @@ it('builds KOH soap snapshots with KOH and water but no NaOH line', function ():
         ->and($snapshot['lines']->where('component', 'naoh')->count())->toBe(0)
         ->and($snapshot['lines']->where('component', 'water')->count())->toBe(1)
         ->and((float) $snapshot['lines']->where('component', 'koh')->first()['planned_mass_grams'])->toBeGreaterThan(0)
+        ->and($snapshot['lines']->where('component', 'koh')->first()['ingredient_id'])
+        ->toBe(Ingredient::query()->where('catalog_key', 'CH3')->sole()->id)
         ->and($snapshot['context']['lye_type'])->toBe('koh');
 });
 
@@ -79,6 +94,10 @@ it('builds dual-lye soap snapshots with NaOH, KOH, and water lines', function ()
         ->and($snapshot['lines']->where('component', 'water')->count())->toBe(1)
         ->and((float) $snapshot['lines']->where('component', 'naoh')->first()['planned_mass_grams'])->toBeGreaterThan(0)
         ->and((float) $snapshot['lines']->where('component', 'koh')->first()['planned_mass_grams'])->toBeGreaterThan(0)
+        ->and($snapshot['lines']->where('component', 'naoh')->first()['ingredient_id'])
+        ->toBe(Ingredient::query()->where('catalog_key', 'CH1')->sole()->id)
+        ->and($snapshot['lines']->where('component', 'koh')->first()['ingredient_id'])
+        ->toBe(Ingredient::query()->where('catalog_key', 'CH3')->sole()->id)
         ->and($snapshot['context']['lye_type'])->toBe('dual');
 });
 
@@ -271,6 +290,17 @@ function productionFormulaSnapshotFixture(string $lyeType = 'naoh', string $calc
         ],
         'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
     ]);
+
+    if ($calculationBasis !== 'total_formula') {
+        Ingredient::factory()->create([
+            'catalog_key' => 'CH1',
+            'display_name' => 'Sodium hydroxide',
+        ]);
+        Ingredient::factory()->create([
+            'catalog_key' => 'CH3',
+            'display_name' => 'Potassium hydroxide',
+        ]);
+    }
 
     return compact('owner', 'workspace', 'recipe', 'version');
 }

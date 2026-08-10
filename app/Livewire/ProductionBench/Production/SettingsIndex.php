@@ -8,6 +8,7 @@ use App\Actions\Production\SaveDepartment;
 use App\Actions\Production\SaveEmployee;
 use App\Actions\Production\SaveProductionBatchPreset;
 use App\Actions\Production\SaveProductionHoliday;
+use App\Actions\Production\SaveProductionOutputSettings;
 use App\Actions\Production\SaveProductionTaskSet;
 use App\Actions\Production\SaveProductionTaskType;
 use App\Actions\Production\SyncProductionBatchPresetProducts;
@@ -121,6 +122,10 @@ class SettingsIndex extends Component
 
     public bool $worksOnWeekends = false;
 
+    public string $soapReadyDelayDays = '21';
+
+    public string $cosmeticReadyDelayDays = '3';
+
     public function mount(): void
     {
         $this->section = match (true) {
@@ -134,8 +139,32 @@ class SettingsIndex extends Component
         };
 
         $this->worksOnWeekends = (bool) $this->workspace()->production_works_on_weekends;
+        $outputSettings = $this->workspace()->productionOutputSetting;
+        $this->soapReadyDelayDays = (string) ($outputSettings?->soap_ready_delay_days ?? 21);
+        $this->cosmeticReadyDelayDays = (string) ($outputSettings?->cosmetic_ready_delay_days ?? 3);
         $this->taskSetItems = [$this->emptyTaskSetItem()];
         $this->holidayDate = now()->toDateString();
+    }
+
+    public function saveOutputSettings(SaveProductionOutputSettings $saveOutputSettings): void
+    {
+        try {
+            $settings = $saveOutputSettings->handle(
+                actor: $this->user(),
+                workspace: $this->workspace(),
+                soapReadyDelayDays: $this->soapReadyDelayDays,
+                cosmeticReadyDelayDays: $this->cosmeticReadyDelayDays,
+            );
+        } catch (ValidationException $exception) {
+            $this->surfaceErrors('outputSettings', $exception);
+
+            return;
+        }
+
+        $this->soapReadyDelayDays = (string) $settings->soap_ready_delay_days;
+        $this->cosmeticReadyDelayDays = (string) $settings->cosmetic_ready_delay_days;
+        $this->showAppNotification(__('production_bench.settings.saved'));
+        $this->dispatch('production-settings-saved');
     }
 
     public function saveEmployee(SaveEmployee $saveEmployee): void
@@ -671,10 +700,13 @@ class SettingsIndex extends Component
             foreach ($messages as $message) {
                 $errorKey = match (true) {
                     $field === 'production_bench' && $prefix === 'employee' => 'employeeFirstName',
+                    $field === 'production_bench' && $prefix === 'outputSettings' => 'soapReadyDelayDays',
                     $field === 'production_bench' => $prefix.'Name',
                     $field === 'department_id' && $prefix === 'taskType' => 'taskTypeDepartmentId',
                     $field === 'departments' && $prefix === 'employee' => 'employeeDepartmentIds',
                     $field === 'items' => $prefix.'Items',
+                    $field === 'soap_ready_delay_days' && $prefix === 'outputSettings' => 'soapReadyDelayDays',
+                    $field === 'cosmetic_ready_delay_days' && $prefix === 'outputSettings' => 'cosmeticReadyDelayDays',
                     default => $prefix.ucfirst($field),
                 };
 

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberIssuance;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
@@ -10,6 +11,29 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
+
+function issueProductionRunNumber(ProductionRun $run, User $assigner, string $number, int $serial): ProductionRun
+{
+    $assignedAt = now();
+
+    ProductionRunNumberIssuance::query()->create([
+        'workspace_id' => $run->workspace_id,
+        'production_run_id' => $run->id,
+        'batch_number' => $number,
+        'serial' => $serial,
+        'issued_by_user_id' => $assigner->id,
+        'issued_at' => $assignedAt,
+    ]);
+
+    $run->update([
+        'batch_number' => $number,
+        'batch_number_serial' => $serial,
+        'batch_number_assigned_at' => $assignedAt,
+        'batch_number_assigned_by_user_id' => $assigner->id,
+    ]);
+
+    return $run->fresh();
+}
 
 it('stores one numbered-run setting row per workspace with the intended defaults', function (): void {
     $workspace = Workspace::factory()->create();
@@ -48,20 +72,18 @@ it('keeps rendered run identifiers unique within a workspace while isolating wor
     $secondWorkspace = Workspace::factory()->create();
     $assigner = User::factory()->create();
 
-    ProductionRun::factory()->for($firstWorkspace)->create([
-        'planning_batch_number' => 'T00001',
-        'batch_number' => 'B-00001',
-        'batch_number_serial' => 1,
-        'batch_number_assigned_at' => now(),
-        'batch_number_assigned_by_user_id' => $assigner->id,
-    ]);
-    ProductionRun::factory()->for($secondWorkspace)->create([
-        'planning_batch_number' => 'T00001',
-        'batch_number' => 'B-00001',
-        'batch_number_serial' => 1,
-        'batch_number_assigned_at' => now(),
-        'batch_number_assigned_by_user_id' => $assigner->id,
-    ]);
+    issueProductionRunNumber(
+        ProductionRun::factory()->for($firstWorkspace)->create(['planning_batch_number' => 'T00001']),
+        $assigner,
+        'B-00001',
+        1,
+    );
+    issueProductionRunNumber(
+        ProductionRun::factory()->for($secondWorkspace)->create(['planning_batch_number' => 'T00001']),
+        $assigner,
+        'B-00001',
+        1,
+    );
 
     expect(fn (): ProductionRun => ProductionRun::factory()->for($firstWorkspace)->create([
         'planning_batch_number' => 'T00001',
@@ -71,17 +93,74 @@ it('keeps rendered run identifiers unique within a workspace while isolating wor
         ]))->toThrow(QueryException::class);
 });
 
+it('keeps issued permanent identifiers unique in a workspace after the run is deleted', function (): void {
+    $firstWorkspace = Workspace::factory()->create();
+    $secondWorkspace = Workspace::factory()->create();
+
+    ProductionRunNumberIssuance::factory()->for($firstWorkspace)->create([
+        'batch_number' => 'B-00001',
+        'serial' => 1,
+        'production_run_id' => null,
+    ]);
+    ProductionRunNumberIssuance::factory()->for($secondWorkspace)->create([
+        'batch_number' => 'B-00001',
+        'serial' => 1,
+        'production_run_id' => null,
+    ]);
+
+    expect(fn (): ProductionRunNumberIssuance => ProductionRunNumberIssuance::factory()
+        ->for($firstWorkspace)
+        ->create([
+            'batch_number' => 'B-00001',
+            'serial' => 1,
+            'production_run_id' => null,
+        ]))->toThrow(QueryException::class);
+});
+
+it('backfills historic permanent batch number issuances before runs can be deleted', function (): void {
+    if (DB::getDriverName() === 'pgsql') {
+        $this->markTestSkipped('The applied PostgreSQL guard prevents simulating pre-backfill history.');
+    }
+
+    $assigner = User::factory()->create();
+    $run = ProductionRun::factory()->create([
+        'batch_number' => 'B-19991',
+        'batch_number_serial' => 19991,
+        'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $assigner->id,
+    ]);
+
+    $migrationPath = database_path('migrations/2026_08_10_231300_backfill_production_run_number_issuances.php');
+
+    expect(is_file($migrationPath))->toBeTrue();
+
+    $migration = require $migrationPath;
+    $migration->up();
+    $migration->up();
+
+    $issuance = ProductionRunNumberIssuance::query()
+        ->where('workspace_id', $run->workspace_id)
+        ->where('batch_number', 'B-19991')
+        ->sole();
+
+    expect($issuance->production_run_id)->toBe($run->id)
+        ->and($issuance->serial)->toBe(19991)
+        ->and($issuance->issued_by_user_id)->toBe($assigner->id)
+        ->and($issuance->issued_at->equalTo($run->batch_number_assigned_at))->toBeTrue()
+        ->and($run->fresh()->delete())->toBeTrue()
+        ->and($issuance->fresh()->production_run_id)->toBeNull();
+});
+
 it('rejects planning and permanent identifiers that collide across a workspace or on one run', function (): void {
     $workspace = Workspace::factory()->create();
     $assigner = User::factory()->create();
 
-    ProductionRun::factory()->for($workspace)->create([
-        'planning_batch_number' => 'T20000',
-        'batch_number' => 'B20000',
-        'batch_number_serial' => 20000,
-        'batch_number_assigned_at' => now(),
-        'batch_number_assigned_by_user_id' => $assigner->id,
-    ]);
+    issueProductionRunNumber(
+        ProductionRun::factory()->for($workspace)->create(['planning_batch_number' => 'T20000']),
+        $assigner,
+        'B20000',
+        20000,
+    );
 
     expect(fn (): ProductionRun => ProductionRun::factory()->for($workspace)->create([
         'planning_batch_number' => 'B20000',
@@ -168,12 +247,7 @@ it('prevents model and mass updates from rewriting assigned identifiers and meta
     $assigner = User::factory()->create();
     $run = ProductionRun::factory()->create(['planning_batch_number' => 'T01001']);
 
-    $run->update([
-        'batch_number' => 'B-01001',
-        'batch_number_serial' => 1001,
-        'batch_number_assigned_at' => now(),
-        'batch_number_assigned_by_user_id' => $assigner->id,
-    ]);
+    $run = issueProductionRunNumber($run, $assigner, 'B-01001', 1001);
 
     expect($run->fresh()->displayIdentifier())->toBe('B-01001')
         ->and($run->fresh()->batchNumberAssignedBy->is($assigner))->toBeTrue()
@@ -232,20 +306,77 @@ it('enforces permanent number integrity on PostgreSQL', function (): void {
 
     $assigner = User::factory()->create();
     $run = ProductionRun::factory()->create();
-    $run->update([
-        'batch_number' => 'B-22001',
-        'batch_number_serial' => 22001,
-        'batch_number_assigned_at' => now(),
-        'batch_number_assigned_by_user_id' => $assigner->id,
-    ]);
+    $run = issueProductionRunNumber($run, $assigner, 'B-22001', 22001);
 
     expect(fn (): int => ProductionRun::query()->whereKey($run->id)->update([
         'batch_number' => 'B-22002',
     ]))->toThrow(QueryException::class)
         ->and(fn (): int => ProductionRun::query()->whereKey($run->id)->update([
             'batch_number_assigned_at' => now()->addMinute(),
-        ]))->toThrow(QueryException::class)
-        ->and(fn (): ?bool => $run->fresh()->delete())->toThrow(QueryException::class);
+        ]))->toThrow(QueryException::class);
+
+    expect($run->fresh()->delete())->toBeTrue();
+});
+
+it('requires PostgreSQL permanent numbers to match their issuance history', function (): void {
+    if (DB::getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('PostgreSQL-only trigger integration test.');
+    }
+
+    $assigner = User::factory()->create();
+    $run = ProductionRun::factory()->create();
+
+    expect(fn (): int => DB::table('production_runs')->where('id', $run->id)->update([
+        'batch_number' => 'B-22991',
+        'batch_number_serial' => 22991,
+        'batch_number_assigned_at' => now(),
+        'batch_number_assigned_by_user_id' => $assigner->id,
+    ]))->toThrow(QueryException::class);
+
+    $assignedAt = now();
+
+    ProductionRunNumberIssuance::query()->create([
+        'workspace_id' => $run->workspace_id,
+        'production_run_id' => $run->id,
+        'batch_number' => 'B-22991',
+        'serial' => 22991,
+        'issued_by_user_id' => $assigner->id,
+        'issued_at' => $assignedAt,
+    ]);
+
+    expect(DB::table('production_runs')->where('id', $run->id)->update([
+        'batch_number' => 'B-22991',
+        'batch_number_serial' => 22991,
+        'batch_number_assigned_at' => $assignedAt,
+        'batch_number_assigned_by_user_id' => $assigner->id,
+    ]))->toBe(1);
+});
+
+it('keeps PostgreSQL number issuance immutable while foreign-key deletions clear its references', function (): void {
+    if (DB::getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('PostgreSQL-only issuance trigger integration test.');
+    }
+
+    $assigner = User::factory()->create();
+    $run = issueProductionRunNumber(ProductionRun::factory()->create(), $assigner, 'B-22992', 22992);
+    $issuance = ProductionRunNumberIssuance::query()->whereBelongsTo($run, 'productionRun')->sole();
+
+    expect(fn (): int => DB::transaction(fn (): int => DB::table('production_run_number_issuances')->where('id', $issuance->id)->update([
+        'batch_number' => 'B-99999',
+    ])))->toThrow(QueryException::class)
+        ->and(fn (): int => DB::transaction(fn (): int => DB::table('production_run_number_issuances')->where('id', $issuance->id)->update([
+            'production_run_id' => null,
+        ])))->toThrow(QueryException::class)
+        ->and(fn (): int => DB::transaction(fn (): int => DB::table('production_run_number_issuances')->where('id', $issuance->id)->update([
+            'issued_by_user_id' => null,
+        ])))->toThrow(QueryException::class)
+        ->and(fn (): int => DB::transaction(fn (): int => DB::table('production_run_number_issuances')->where('id', $issuance->id)->delete()))
+        ->toThrow(QueryException::class);
+
+    expect($run->delete())->toBeTrue()
+        ->and($issuance->fresh()->production_run_id)->toBeNull()
+        ->and($assigner->delete())->toBeTrue()
+        ->and($issuance->fresh()->issued_by_user_id)->toBeNull();
 });
 
 it('serializes PostgreSQL workspace number writes before cross-field collision checks', function (): void {
@@ -262,7 +393,7 @@ it('serializes PostgreSQL workspace number writes before cross-field collision c
 });
 
 it('ships a forward migration that reapplies production run number hardening', function (): void {
-    $migrationPath = database_path('migrations/2026_08_05_120004_harden_production_run_number_integrity.php');
+    $migrationPath = database_path('migrations/2026_08_10_180000_harden_production_run_reservation_delete_guard.php');
 
     expect(is_file($migrationPath))->toBeTrue();
 
@@ -272,17 +403,14 @@ it('ships a forward migration that reapplies production run number hardening', f
 
     $assigner = User::factory()->create();
     $run = ProductionRun::factory()->create();
-    $run->update([
-        'batch_number' => 'B-24001',
-        'batch_number_serial' => 24001,
-        'batch_number_assigned_at' => now(),
-        'batch_number_assigned_by_user_id' => $assigner->id,
-    ]);
+    $run = issueProductionRunNumber($run, $assigner, 'B-24001', 24001);
 
     expect(fn (): int => ProductionRun::query()->whereKey($run->id)->update([
         'batch_number' => 'B-24002',
     ]))->toThrow(QueryException::class)
-        ->and(fn (): ?bool => $assigner->delete())->toThrow(QueryException::class)
+        ->and(fn (): ?bool => $assigner->delete())->toThrow(QueryException::class);
+
+    expect($run->fresh()->delete())->toBeTrue()
         ->and(fn (): mixed => $migration->down())
         ->toThrow(RuntimeException::class, 'forward-only');
 });

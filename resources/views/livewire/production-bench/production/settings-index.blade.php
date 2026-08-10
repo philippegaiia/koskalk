@@ -25,6 +25,28 @@
     </section>
     @endif
 
+    @if ($section === 'all')
+    <section aria-labelledby="ready-date-heading" class="space-y-4">
+        <div>
+            <h2 id="ready-date-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.ready_dates') }}</h2>
+            <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.ready_dates_help') }}</p>
+        </div>
+        <form wire:submit="saveOutputSettings" class="sk-card grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] lg:items-end">
+            <label class="text-sm">
+                <span class="font-medium">{{ __('production_bench.settings.soap_ready_delay_days') }}</span>
+                <input wire:model="soapReadyDelayDays" type="number" min="0" step="1" class="sk-input mt-1 w-full" @disabled(! $isBenchActive || $isReadOnly)>
+                @error('soapReadyDelayDays')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+            </label>
+            <label class="text-sm">
+                <span class="font-medium">{{ __('production_bench.settings.cosmetic_ready_delay_days') }}</span>
+                <input wire:model="cosmeticReadyDelayDays" type="number" min="0" step="1" class="sk-input mt-1 w-full" @disabled(! $isBenchActive || $isReadOnly)>
+                @error('cosmeticReadyDelayDays')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+            </label>
+            <button type="submit" class="sk-btn sk-btn-primary" @disabled(! $isBenchActive || $isReadOnly)>{{ __('production_bench.common.save_changes') }}</button>
+        </form>
+    </section>
+    @endif
+
     @if (in_array($section, ['all', 'departments'], true))
     <section aria-labelledby="department-heading" class="space-y-4">
         <div>

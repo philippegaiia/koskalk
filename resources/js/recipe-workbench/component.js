@@ -212,6 +212,13 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         finalPlainIngredientList: '',
         finalPlainIngredientListBasisHash: '',
         ingredients: payload.ingredients ?? [],
+        manufacturedIngredients: payload.manufacturedIngredients ?? [],
+        productionOutputType: 'finished_product',
+        outputIngredientId: '',
+        readyDelayDays: '',
+        manufacturedIngredientName: '',
+        manufacturedIngredientStatus: 'idle',
+        manufacturedIngredientMessage: '',
         backendCalculation: initialSnapshot?.calculation ?? null,
         backendLabeling: initialSnapshot?.labeling ?? null,
         backendRestrictions: initialSnapshot?.restrictions ?? null,
@@ -337,6 +344,47 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
 
         toggleFormulaSettings() {
             this.isFormulaSettingsOpen = !this.isFormulaSettingsOpen;
+        },
+
+        async createManufacturedIngredient() {
+            const name = this.manufacturedIngredientName.trim();
+
+            if (name === '') {
+                this.manufacturedIngredientStatus = 'error';
+                this.manufacturedIngredientMessage = this.t('settings.manufactured_ingredient_name_required');
+
+                return;
+            }
+
+            this.manufacturedIngredientStatus = 'saving';
+            this.manufacturedIngredientMessage = '';
+
+            try {
+                const response = await this.$wire.createManufacturedIngredient(name);
+
+                if (!response?.ok || !response.ingredient) {
+                    this.manufacturedIngredientStatus = 'error';
+                    this.manufacturedIngredientMessage = response?.message ?? this.t('settings.manufactured_ingredient_create_failed');
+
+                    return;
+                }
+
+                const ingredient = response.ingredient;
+
+                if (!this.manufacturedIngredients.some((item) => Number(item.id) === Number(ingredient.id))) {
+                    this.manufacturedIngredients = [...this.manufacturedIngredients, ingredient]
+                        .sort((first, second) => first.name.localeCompare(second.name));
+                }
+
+                this.outputIngredientId = String(ingredient.id);
+                this.manufacturedIngredientName = '';
+                this.manufacturedIngredientStatus = 'success';
+                this.manufacturedIngredientMessage = response.message ?? this.t('settings.manufactured_ingredient_created');
+            } catch (error) {
+                void error;
+                this.manufacturedIngredientStatus = 'error';
+                this.manufacturedIngredientMessage = this.t('settings.manufactured_ingredient_create_failed');
+            }
         },
 
         changeOilUnit(nextUnit) {

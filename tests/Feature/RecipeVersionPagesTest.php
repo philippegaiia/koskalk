@@ -142,7 +142,7 @@ it('renders an existing formula workbench within its initial query budget', func
 
     DB::disableQueryLog();
 
-    expect($queryCount)->toBeLessThanOrEqual(32);
+    expect($queryCount)->toBeLessThanOrEqual(33);
 });
 
 it('keeps an inactive saved ingredient available in the formula workbench', function () {

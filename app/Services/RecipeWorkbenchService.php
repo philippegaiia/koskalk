@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\OwnerType;
+use App\Enums\ProductionOutputType;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
@@ -177,6 +179,7 @@ class RecipeWorkbenchService
 
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, false);
         $this->validateIngredientAccess($user, $normalizedPayload);
+        $this->validateOutputConfiguration($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
         $createdRecipe = null;
@@ -229,6 +232,7 @@ class RecipeWorkbenchService
 
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true);
         $this->validateIngredientAccess($user, $normalizedPayload);
+        $this->validateOutputConfiguration($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
         $createdRecipe = null;
@@ -459,6 +463,43 @@ class RecipeWorkbenchService
         if ($ingredientIds->diff($accessibleIngredientIds)->isNotEmpty()) {
             throw ValidationException::withMessages([
                 'phase_items' => 'One or more selected ingredients are no longer available.',
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function validateOutputConfiguration(User $user, array $payload): void
+    {
+        $outputType = ProductionOutputType::from($payload['production_output_type']);
+        $outputIngredientId = $payload['output_ingredient_id'] ?? null;
+
+        if ($outputType === ProductionOutputType::FinishedProduct && $outputIngredientId !== null) {
+            throw ValidationException::withMessages([
+                'output_ingredient_id' => __('production_bench.production.validation.finished_output_has_no_ingredient'),
+            ]);
+        }
+
+        if ($outputType !== ProductionOutputType::ManufacturedIngredient) {
+            return;
+        }
+
+        $workspace = $user->company();
+        $outputIngredient = $workspace === null || $outputIngredientId === null
+            ? null
+            : Ingredient::withoutGlobalScopes()
+                ->where('workspace_id', $workspace->id)
+                ->where('owner_type', OwnerType::Workspace)
+                ->where('is_active', true)
+                ->where('is_manufactured', true)
+                ->find($outputIngredientId);
+
+        if (! $outputIngredient instanceof Ingredient) {
+            throw ValidationException::withMessages([
+                'output_ingredient_id' => $outputIngredientId === null
+                    ? __('production_bench.production.validation.output_ingredient_required')
+                    : __('production_bench.production.validation.output_ingredient_invalid'),
             ]);
         }
     }

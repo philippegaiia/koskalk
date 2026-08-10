@@ -21,13 +21,14 @@ class CompleteProduction
         ProductionRun $production,
         string $actualOutputQuantity,
         string $manufactureDate,
+        ?string $estimatedReadyOn = null,
         ?int $outputIngredientId = null,
     ): ProductionRun {
         $workspace = $production->workspace;
 
         if (! $workspace instanceof Workspace) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -38,6 +39,7 @@ class CompleteProduction
             production: $production,
             actualOutputQuantity: $actualOutputQuantity,
             manufactureDate: $manufactureDate,
+            estimatedReadyOn: $estimatedReadyOn,
             outputIngredientId: $outputIngredientId,
         );
     }

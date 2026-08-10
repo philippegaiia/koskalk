@@ -1,8 +1,10 @@
 <?php
 
+use App\Actions\Ingredients\CreateManufacturedIngredient;
 use App\Enums\IngredientCategory;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
+use App\Enums\ProductionOutputType;
 use App\Enums\Visibility;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\FattyAcid;
@@ -16,6 +18,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\EntitlementService;
@@ -38,6 +41,97 @@ use Symfony\Component\Process\Process;
 use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
+
+it('creates an active workspace manufactured ingredient for inline recipe output setup', function () {
+    $user = User::factory()->create();
+
+    $ingredient = app(CreateManufacturedIngredient::class)->handle($user, 'Turmeric oil macerate');
+
+    expect($ingredient->fresh())
+        ->display_name->toBe('Turmeric oil macerate')
+        ->is_manufactured->toBeTrue()
+        ->is_active->toBeTrue()
+        ->owner_type->toBe(OwnerType::Workspace)
+        ->owner_id->toBe($user->company()->id)
+        ->workspace_id->toBe($user->company()->id)
+        ->visibility->toBe(Visibility::Private)
+        ->and(SupplierListing::query()->where('ingredient_id', $ingredient->id)->count())->toBe(0);
+});
+
+it('exposes the production output controls and workspace manufactured ingredients in the workbench', function () {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    app(CreateManufacturedIngredient::class)->handle($user, 'Turmeric oil macerate');
+
+    $this->actingAs($user)
+        ->get(route('recipes.create', ['family' => 'soap']))
+        ->assertSuccessful()
+        ->assertSee('Production output')
+        ->assertSee('Manufactured ingredient')
+        ->assertSee('Turmeric oil macerate');
+});
+
+it('persists manufactured ingredient output configuration through recipe save, reload, and duplication', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $carrierOil = makeCarrierOilIngredient();
+    $outputIngredient = app(CreateManufacturedIngredient::class)->handle($user, 'Turmeric oil macerate');
+    $payload = workbenchSoapDraftPayload($carrierOil, name: 'Turmeric macerate');
+    $payload['production_output_type'] = ProductionOutputType::ManufacturedIngredient->value;
+    $payload['output_ingredient_id'] = $outputIngredient->id;
+    $payload['ready_delay_days'] = 12;
+
+    $service = app(RecipeWorkbenchService::class);
+    $savedVersion = $service->save($user, $soapFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id);
+    $workbenchPayload = $service->currentVersionPayload($recipe);
+    $duplicateVersion = $service->duplicateRecipe($user, $recipe);
+    $duplicate = Recipe::withoutGlobalScopes()->findOrFail($duplicateVersion->recipe_id);
+
+    expect($recipe->production_output_type)->toBe(ProductionOutputType::ManufacturedIngredient)
+        ->and($recipe->output_ingredient_id)->toBe($outputIngredient->id)
+        ->and($recipe->ready_delay_days)->toBe(12)
+        ->and($workbenchPayload['productionOutputType'])->toBe(ProductionOutputType::ManufacturedIngredient->value)
+        ->and($workbenchPayload['outputIngredientId'])->toBe($outputIngredient->id)
+        ->and($workbenchPayload['readyDelayDays'])->toBe(12)
+        ->and($duplicate->production_output_type)->toBe(ProductionOutputType::ManufacturedIngredient)
+        ->and($duplicate->output_ingredient_id)->toBe($outputIngredient->id)
+        ->and($duplicate->ready_delay_days)->toBe(12);
+});
+
+it('requires a valid manufactured ingredient when a recipe output is configured as manufactured', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['production_output_type'] = ProductionOutputType::ManufacturedIngredient->value;
+
+    expect(fn () => app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload))
+        ->toThrow(ValidationException::class);
+});
+
+it('does not allow a finished product recipe to point at an output ingredient', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $outputIngredient = app(CreateManufacturedIngredient::class)->handle($user, 'Turmeric oil macerate');
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['production_output_type'] = ProductionOutputType::FinishedProduct->value;
+    $payload['output_ingredient_id'] = $outputIngredient->id;
+
+    expect(fn () => app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload))
+        ->toThrow(ValidationException::class);
+});
 
 beforeEach(function () {
     Storage::fake(MediaStorage::recipeDisk());

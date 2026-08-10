@@ -3,6 +3,7 @@
 use App\Actions\Production\AbortProduction;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CompleteProduction;
+use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\IssueFinishedGoods;
@@ -18,7 +19,11 @@ use App\Enums\MassUnit;
 use App\Enums\OwnerType;
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionDocumentType;
+use App\Enums\ProductionFormulaComponent;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
@@ -30,6 +35,7 @@ use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
+use App\Models\InterfaceTranslation;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
@@ -52,12 +58,95 @@ use App\Support\NumberLocale;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('defaults water actuals at start and saves them atomically with lot actuals', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'water-actuals-1', start: false);
+    $waterLine = $production->formulaLines()->where('component', ProductionFormulaComponent::Water)->firstOrFail();
+    $ingredientRequirement = $production->requirements()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    $movementCount = StockMovement::query()->count();
+
+    $started = app(StartProduction::class)->handle($fixture['owner'], $production);
+
+    expect($started->formulaLines()->whereKey($waterLine->id)->firstOrFail()->actual_mass_grams)
+        ->toBe($waterLine->planned_mass_grams)
+        ->and(StockMovement::query()->count())->toBe($movementCount);
+
+    expect(fn () => app(SaveProductionActuals::class)->handle(
+        actor: $fixture['owner'],
+        production: $started,
+        rows: [[
+            'production_requirement_id' => $ingredientRequirement->id,
+            'stock_lot_id' => $oilLot->id,
+            'quantity' => '11000',
+        ]],
+        calculatedRows: [[
+            'production_formula_line_id' => $waterLine->id,
+            'actual_mass_grams' => '0',
+        ]],
+    ))->toThrow(ValidationException::class);
+
+    expect($started->fresh()->consumption()->count())->toBe(0)
+        ->and($started->fresh()->formulaLines()->whereKey($waterLine->id)->firstOrFail()->actual_mass_grams)
+        ->toBe($waterLine->planned_mass_grams);
+
+    $saved = app(SaveProductionActuals::class)->handle(
+        actor: $fixture['owner'],
+        production: $started,
+        rows: [
+            [
+                'production_requirement_id' => $ingredientRequirement->id,
+                'stock_lot_id' => $oilLot->id,
+                'quantity' => '11000',
+            ],
+            [
+                'production_requirement_id' => $packagingRequirement->id,
+                'stock_lot_id' => $packagingLot->id,
+                'quantity' => '98',
+            ],
+        ],
+        calculatedRows: [[
+            'production_formula_line_id' => $waterLine->id,
+            'actual_mass_grams' => '1540.5',
+        ]],
+    );
+
+    expect($saved->formulaLines()->whereKey($waterLine->id)->firstOrFail()->actual_mass_grams)
+        ->toBe('1540.500000000')
+        ->and($saved->consumption()->count())->toBe(2)
+        ->and(StockMovement::query()->where('type', StockMovementType::ProductionConsumption)->count())
+        ->toBe(0);
+});
+
+it('does not start production with a reserved lot that is no longer consumable', function (array $changes): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'start-lot-eligibility-'.fake()->uuid(), start: false);
+    $lot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $waterLine = $production->formulaLines()->where('component', ProductionFormulaComponent::Water)->firstOrFail();
+    $lot->update($changes);
+
+    expect(fn () => app(StartProduction::class)->handle($fixture['owner'], $production))
+        ->toThrow(ValidationException::class)
+        ->and($production->fresh()->status)->toBe(ProductionRunStatus::Reserved)
+        ->and($production->fresh()->started_at)->toBeNull()
+        ->and($waterLine->fresh()->actual_mass_grams)->toBeNull();
+})->with([
+    'quarantined' => [['status' => StockLotStatus::Quarantined]],
+    'not yet available' => [['available_from' => '2026-08-11']],
+    'expired' => [['expires_at' => '2026-08-09']],
+]);
 
 it('records actual consumption during production without posting stock movements', function (): void {
     $fixture = productionExecutionFixture();
@@ -92,6 +181,116 @@ it('records actual consumption during production without posting stock movements
         ->and($ingredientActual->recorded_by_user_id)->toBe($fixture['owner']->id)
         ->and($saved->consumption()->where('production_requirement_id', $packagingRequirement->id)->sole()->quantity)->toBe('98.000000000')
         ->and(StockMovement::query()->count())->toBe($movementCount);
+});
+
+it('rejects actual consumption from quarantined or not-yet-available lots', function (): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
+    $quarantinedFixture = productionExecutionFixture();
+    $quarantinedProduction = productionExecutionRun($quarantinedFixture, 'actuals-eligibility-quarantine');
+    $quarantinedRequirement = $quarantinedProduction->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $quarantinedLot = StockLot::query()->where('ingredient_id', $quarantinedFixture['olive']->id)->firstOrFail();
+    $quarantinedLot->update(['status' => StockLotStatus::Quarantined]);
+
+    expect(fn () => app(SaveProductionActuals::class)->handle($quarantinedFixture['owner'], $quarantinedProduction, [
+        [
+            'production_requirement_id' => $quarantinedRequirement->id,
+            'stock_lot_id' => $quarantinedLot->id,
+            'quantity' => '1',
+        ],
+    ]))->toThrow(ValidationException::class);
+
+    $futureFixture = productionExecutionFixture();
+    $futureProduction = productionExecutionRun($futureFixture, 'actuals-eligibility-future');
+    $futureRequirement = $futureProduction->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $futureLot = StockLot::query()->where('ingredient_id', $futureFixture['olive']->id)->firstOrFail();
+    $futureLot->update(['available_from' => '2026-08-21']);
+
+    expect(fn () => app(SaveProductionActuals::class)->handle($futureFixture['owner'], $futureProduction, [
+        [
+            'production_requirement_id' => $futureRequirement->id,
+            'stock_lot_id' => $futureLot->id,
+            'quantity' => '1',
+        ],
+    ]))->toThrow(ValidationException::class);
+});
+
+it('accepts an actual lot available on the execution date even when it expires before the planned date', function (): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'actuals-execution-date-expiry');
+    $requirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $lot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $lot->update(['expires_at' => '2026-08-12']);
+
+    $saved = app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [[
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => $lot->id,
+        'quantity' => '1',
+    ]]);
+
+    expect($saved->consumption()->where('stock_lot_id', $lot->id)->exists())->toBeTrue();
+});
+
+it('rejects an actual lot that is unavailable on the current execution date', function (): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'actuals-execution-date-availability');
+    $requirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $lot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $lot->update(['available_from' => '2026-08-11']);
+
+    expect(fn () => app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [[
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => $lot->id,
+        'quantity' => '1',
+    ]]))->toThrow(ValidationException::class);
+});
+
+it('rechecks actual lots against the confirmed manufacture date before posting movements', function (): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'actuals-manufacture-date-recheck');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $ingredientLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    $ingredientLot->update(['expires_at' => '2026-08-22']);
+
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        [
+            'production_requirement_id' => $ingredientRequirement->id,
+            'stock_lot_id' => $ingredientLot->id,
+            'quantity' => '11000',
+        ],
+        [
+            'production_requirement_id' => $packagingRequirement->id,
+            'stock_lot_id' => $packagingLot->id,
+            'quantity' => '98',
+        ],
+    ]);
+
+    $movementCount = StockMovement::query()->count();
+    $outputLotCount = StockLot::query()
+        ->where('production_run_id', $production->id)
+        ->where('origin', StockLotOrigin::ProductionOutput)
+        ->count();
+
+    expect(fn () => app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-25',
+    ))->toThrow(ValidationException::class);
+
+    expect(StockMovement::query()->count())->toBe($movementCount)
+        ->and(StockLot::query()
+            ->where('production_run_id', $production->id)
+            ->where('origin', StockLotOrigin::ProductionOutput)
+            ->count())->toBe($outputLotCount);
 });
 
 it('updates and removes actual rows before the terminal action', function (): void {
@@ -196,6 +395,46 @@ it('rejects actual rows outside in-production and invalid quantities', function 
     })->toThrow(ValidationException::class);
 });
 
+it('returns the catalogued localized message when actuals are saved outside production', function (string $locale): void {
+    $messages = productionExecutionCatalogueText('actuals_running_only');
+    InterfaceTranslation::query()->firstOrCreate([
+        'group' => 'production_bench',
+        'key' => 'production.validation.actuals_running_only',
+    ], [
+        'text' => $messages,
+    ]);
+    app()->setLocale($locale);
+
+    $fixture = productionExecutionFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: "localized-actuals-{$locale}",
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+
+    try {
+        app(SaveProductionActuals::class)->handle($fixture['owner'], $production, []);
+    } catch (ValidationException $exception) {
+        expect($exception->errors()['production'])->toBe([$messages[$locale]]);
+
+        return;
+    }
+
+    $this->fail('Expected saving actuals outside production to fail.');
+})->with([
+    'German' => ['de'],
+    'Spanish' => ['es'],
+    'French' => ['fr'],
+    'Italian' => ['it'],
+    'Dutch' => ['nl'],
+]);
+
 it('saves actuals from the production sheet', function (): void {
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'actuals-ui-1');
@@ -204,11 +443,12 @@ it('saves actuals from the production sheet', function (): void {
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
-        ->assertSee('Actual consumption')
+        ->assertSee(__('production_bench.production.actual_used'))
         ->set('actualRows.'.$ingredientRequirement->id.'.stock_lot_id', (string) $oilLot->id)
         ->set('actualRows.'.$ingredientRequirement->id.'.quantity', '10500')
         ->set('actualRows.'.$ingredientRequirement->id.'.note', 'From the bench')
         ->call('saveActuals')
+        ->assertHasNoErrors()
         ->assertDispatched('app-notification', function (string $event, array $payload): bool {
             return $event === 'app-notification'
                 && str_starts_with($payload['message'], __('production_bench.production.actuals_saved'))
@@ -274,9 +514,44 @@ it('completes a production atomically with consumption, costs, and an output lot
         ->and($outputLot->unit_kind->value)->toBe('count')
         ->and($outputLot->movements()->where('type', StockMovementType::ProductionOutput)->sole()->quantity_delta)->toBe('95.000000000');
 
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $completed->id])
+        ->assertSee(__('production_bench.production.output_planned'))
+        ->assertSee('100 unit')
+        ->assertSee(__('production_bench.production.output_actual'))
+        ->assertSee('95 unit')
+        ->assertSee('-5.00%');
+
     // Costs immutable: later price changes do not alter the snapshot.
     $oilLot->update(['historical_unit_cost' => '99.000000000']);
     expect($completed->fresh()->actual_ingredient_total)->toBe('137.500000000');
+});
+
+it('rechecks source lot eligibility before posting completion consumption', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'complete-lot-eligibility-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+
+    $oilLot->update(['status' => StockLotStatus::Quarantined]);
+
+    expect(fn () => app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    ))->toThrow(ValidationException::class);
+
+    expect($production->fresh()->status)->toBe(ProductionRunStatus::InProduction)
+        ->and(StockMovement::query()->where('type', StockMovementType::ProductionConsumption)->count())->toBe(0)
+        ->and(StockLot::query()->where('origin', StockLotOrigin::ProductionOutput)->count())->toBe(0);
 });
 
 it('rejects completion while readiness is missing', function (): void {
@@ -349,7 +624,7 @@ it('rolls back completion atomically when a step fails', function (): void {
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::InProduction)
         ->and(StockMovement::query()->where('type', StockMovementType::ProductionConsumption)->count())->toBe(0)
-        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(2)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(3)
         ->and(StockLot::query()->where('origin', 'production_output')->count())->toBe(0)
         ->and(StockMovement::query()->where('type', StockMovementType::ProductionOutput)->count())->toBe(0);
 });
@@ -362,6 +637,10 @@ it('completes intermediate output in grams against an in-house ingredient', func
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
     $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
     $intermediate = Ingredient::factory()->create(['display_name' => 'Soap base']);
+    $production->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $intermediate->id,
+    ]);
 
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
@@ -384,6 +663,69 @@ it('completes intermediate output in grams against an in-house ingredient', func
         ->and($outputLot->recipe_id)->toBeNull()
         ->and($outputLot->unit_kind->value)->toBe('mass')
         ->and($outputLot->movements()->where('type', StockMovementType::ProductionOutput)->sole()->quantity_delta)->toBe('12000.000000000');
+});
+
+it('completes configured manufactured output from the production snapshot', function (): void {
+    $fixture = productionExecutionFixture();
+    $firstOutput = Ingredient::factory()->for($fixture['workspace'])->create([
+        'display_name' => 'Turmeric oil macerate',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'is_manufactured' => true,
+        'requires_admin_review' => false,
+    ]);
+    $secondOutput = Ingredient::factory()->for($fixture['workspace'])->create([
+        'display_name' => 'Lavender oil macerate',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'is_manufactured' => true,
+        'requires_admin_review' => false,
+    ]);
+    $fixture['recipe']->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $firstOutput->id,
+        'ready_delay_days' => 4,
+    ]);
+
+    $production = productionExecutionRun($fixture, 'complete-configured-intermediate-1');
+
+    expect($production->production_output_type)->toBe(ProductionOutputType::ManufacturedIngredient)
+        ->and($production->output_ingredient_id)->toBe($firstOutput->id)
+        ->and($production->output_ready_delay_days)->toBe(4)
+        ->and($production->estimated_ready_on?->toDateString())->toBe('2026-08-24');
+
+    $fixture['recipe']->update([
+        'output_ingredient_id' => $secondOutput->id,
+        'ready_delay_days' => 30,
+    ]);
+
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '12000',
+        manufactureDate: '2026-08-20',
+        estimatedReadyOn: '2026-08-29',
+    );
+
+    $outputLot = $completed->outputLot()->sole();
+
+    expect($outputLot->ingredient_id)->toBe($firstOutput->id)
+        ->and($outputLot->recipe_id)->toBeNull()
+        ->and($outputLot->unit_kind->value)->toBe('mass')
+        ->and($outputLot->status)->toBe(StockLotStatus::Quarantined)
+        ->and($outputLot->estimated_ready_on?->toDateString())->toBe('2026-08-29')
+        ->and($outputLot->available_from)->toBeNull();
 });
 
 it('completes a production from the production sheet', function (): void {
@@ -491,7 +833,7 @@ it('rejects aborting outside in-production and rolls back atomically', function 
 
     expect($running->fresh()->status)->toBe(ProductionRunStatus::InProduction)
         ->and(StockReservation::query()->where('production_run_id', $running->id)->where('status', StockReservationStatus::Active)->count())
-        ->toBe(2);
+        ->toBe(3);
 });
 
 it('releases a quarantined output lot and issues finished goods', function (): void {
@@ -520,15 +862,18 @@ it('releases a quarantined output lot and issues finished goods', function (): v
         app(IssueFinishedGoods::class)->handle($fixture['owner'], $outputLot, StockMovementType::Sample, '1');
     })->toThrow(ValidationException::class);
 
-    // Release before available_from is rejected.
-    $outputLot->update(['available_from' => now()->addDays(28)->toDateString()]);
+    // Release before the estimate requires explicit confirmation.
+    $outputLot->update(['estimated_ready_on' => now()->addDays(28)->toDateString()]);
     expect(function () use ($fixture, $outputLot): void {
         app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot);
     })->toThrow(ValidationException::class);
 
-    // Clear the future date and release.
-    $outputLot->update(['available_from' => null]);
-    $released = app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot, 'Cured and packed');
+    $released = app(ReleaseOutputLot::class)->handle(
+        actor: $fixture['owner'],
+        lot: $outputLot,
+        note: 'Cured and packed',
+        earlyReleaseConfirmed: true,
+    );
 
     expect($released->status->value)->toBe('released')
         ->and($released->released_at)->not->toBeNull()
@@ -556,6 +901,40 @@ it('releases a quarantined output lot and issues finished goods', function (): v
     expect(function () use ($fixture, $issued): void {
         app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Shipment, '999');
     })->toThrow(ValidationException::class);
+});
+
+it('requires all production tasks to be complete before releasing output', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'output-task-gate-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    );
+    $task = ProductionTask::factory()->for($fixture['workspace'])->for($completed, 'productionRun')->create([
+        'name_snapshot' => 'Final quality check',
+        'scheduled_for' => '2026-08-20',
+        'completed_at' => null,
+    ]);
+    $outputLot = $completed->outputLot()->sole();
+    $outputLot->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
+
+    expect(fn () => app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot))
+        ->toThrow(ValidationException::class);
+
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+
+    expect(app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot)->status)
+        ->toBe(StockLotStatus::Released);
 });
 
 it('records journal entries during planning and production, read-only afterwards', function (): void {
@@ -608,6 +987,9 @@ it('prepares stock partially and completes coverage on a later pass', function (
     );
     $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
     $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $lyeRequirement = $production->requirements()
+        ->where('ingredient_id', Ingredient::query()->where('catalog_key', 'CH1')->sole()->id)
+        ->firstOrFail();
     $oilLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
         'ingredient_id' => $fixture['olive']->id,
         'packaging_item_id' => null,
@@ -631,6 +1013,18 @@ it('prepares stock partially and completes coverage on a later pass', function (
         'workspace_id' => $fixture['workspace']->id,
         'type' => StockMovementType::OpeningBalance,
         'quantity_delta' => '100',
+    ]);
+    $lyeLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $lyeRequirement->ingredient_id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($lyeLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => (string) $lyeRequirement->required_mass_grams,
     ]);
 
     // Only 5000 g of the 14000 g oil requirement is available: partial.
@@ -697,6 +1091,21 @@ it('shows the release stock control for a scheduled run with partial reservation
         'type' => StockMovementType::OpeningBalance,
         'quantity_delta' => '100',
     ]);
+    $lyeRequirement = $production->requirements()
+        ->where('ingredient_id', Ingredient::query()->where('catalog_key', 'CH1')->sole()->id)
+        ->firstOrFail();
+    $lyeLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $lyeRequirement->ingredient_id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($lyeLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => (string) $lyeRequirement->required_mass_grams,
+    ]);
 
     // Partial preparation: only 5000 g of the 14000 g oil requirement is
     // available, so the run stays scheduled with active reservations.
@@ -707,7 +1116,7 @@ it('shows the release stock control for a scheduled run with partial reservation
     );
 
     expect($prepared[0]->status)->toBe(ProductionRunStatus::Scheduled)
-        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(2);
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(3);
 
     // Deletion is blocked while reservations exist…
     expect(fn () => app(DeleteProductionRun::class)->handle($fixture['owner'], $production->fresh()))
@@ -733,6 +1142,9 @@ it('releases reservations per requirement and returns to scheduled when empty', 
     $production = productionExecutionRun($fixture, 'partial-release-1', start: false);
     $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
     $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $lyeRequirement = $production->requirements()
+        ->where('ingredient_id', Ingredient::query()->where('catalog_key', 'CH1')->sole()->id)
+        ->firstOrFail();
 
     $released = app(ReleaseProductionStock::class)->handle(
         actor: $fixture['owner'],
@@ -750,7 +1162,13 @@ it('releases reservations per requirement and returns to scheduled when empty', 
         productionRequirementId: $packagingRequirement->id,
     );
 
-    expect($emptied->status)->toBe(ProductionRunStatus::Scheduled)
+    $fullyReleased = app(ReleaseProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        production: $emptied,
+        productionRequirementId: $lyeRequirement->id,
+    );
+
+    expect($fullyReleased->status)->toBe(ProductionRunStatus::Scheduled)
         ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(0);
 });
 
@@ -769,10 +1187,56 @@ it('shows lifecycle sections appropriate to the run status', function (): void {
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $started->id])
-        ->assertSee('Actual consumption')
+        ->assertSee(__('production_bench.production.actual_used'))
         ->assertSee('Complete production')
         ->assertSee('Abort production')
         ->assertSee('Production journal');
+});
+
+it('requires explicit confirmation before starting ahead of the planned date', function (): void {
+    $this->travelTo('2026-08-10 10:00:00');
+    $fixture = productionExecutionFixture();
+    $reserved = productionExecutionRun($fixture, 'early-start-ui-1', start: false);
+
+    $page = Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $reserved->id])
+        ->call('start')
+        ->assertDispatched('early-start-confirmation-requested', function (string $event, array $payload): bool {
+            return $event === 'early-start-confirmation-requested'
+                && $payload['plannedFor'] === '2026-08-20'
+                && $payload['message'] === __('production_bench.production.early_start_confirm', [
+                    'date' => '2026-08-20',
+                ]);
+        });
+
+    expect($reserved->fresh()->status)->toBe(ProductionRunStatus::Reserved);
+
+    $page->call('confirmEarlyStart')
+        ->assertHasNoErrors()
+        ->assertDispatched('production-started');
+
+    expect($reserved->fresh()->status)->toBe(ProductionRunStatus::InProduction);
+});
+
+it('renders one workflow table with formula, lye, water, packaging, and lifecycle landmarks', function (): void {
+    $fixture = productionExecutionFixture();
+    $reserved = productionExecutionRun($fixture, 'workflow-page-contract-1', start: false);
+
+    $html = Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $reserved->id])
+        ->html();
+
+    expect(substr_count($html, 'data-testid="production-header"'))->toBe(1)
+        ->and(substr_count($html, 'data-testid="production-lifecycle"'))->toBe(1)
+        ->and(substr_count($html, 'data-testid="primary-production-action"'))->toBe(1)
+        ->and(substr_count($html, 'data-testid="batch-materials-table"'))->toBe(1)
+        ->and(str_contains($html, 'data-testid="requirements-detail-heading"'))->toBeFalse()
+        ->and(str_contains($html, 'Sodium hydroxide'))->toBeTrue()
+        ->and(str_contains($html, 'Water'))->toBeTrue()
+        ->and(str_contains($html, 'Olive oil'))->toBeTrue()
+        ->and(str_contains($html, 'Soap box'))->toBeTrue()
+        ->and(str_contains($html, __('production_bench.production.actuals_not_stock_tracked')))->toBeTrue()
+        ->and(str_contains($html, __('production_bench.production.reserved_lots')))->toBeTrue();
 });
 
 it('prices actual consumption at the received per-gram cost from a real receipt', function (): void {
@@ -864,6 +1328,10 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
     $fixtureA = productionExecutionFixture();
     $intermediate = Ingredient::factory()->create(['display_name' => 'Soap base']);
     $runA = productionExecutionRun($fixtureA, 'inter-a-1');
+    $runA->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $intermediate->id,
+    ]);
     $oilLotA = StockLot::query()->where('ingredient_id', $fixtureA['olive']->id)->firstOrFail();
     $packagingLotA = StockLot::query()->where('packaging_item_id', $fixtureA['packaging']->id)->firstOrFail();
     $oilLotA->update(['historical_unit_cost' => '0.012500000', 'currency' => 'EUR']);
@@ -883,10 +1351,15 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
     );
     $intermediateLot = $completedA->outputLot()->sole();
 
-    // 137.50 / 12,000 g = 0.011458333 per gram, in EUR.
-    expect($intermediateLot->historical_unit_cost)->toBe('0.011458333')
+    // €137.50 ingredients + €49.00 packaging / 12,000 g = €0.015541666 per gram.
+    expect($intermediateLot->historical_unit_cost)->toBe('0.015541666')
         ->and($intermediateLot->currency)->toBe('EUR')
         ->and($intermediateLot->costing_currency)->toBe('EUR');
+
+    // Manufactured output must be explicitly released and ready before it
+    // can be consumed by a downstream production.
+    $intermediateLot->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
+    $intermediateLot = app(ReleaseOutputLot::class)->handle($fixtureA['owner'], $intermediateLot);
 
     // Run B consumes the intermediate in the same workspace and prices it
     // from run A.
@@ -906,8 +1379,8 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
         manufactureDate: '2026-08-22',
     );
 
-    // 6,000 g × €0.011458333 = €68.749998 — never a silent zero.
-    expect($completedB->actual_ingredient_total)->toBe('68.749998000')
+    // 6,000 g × €0.015541666 = €93.249996 — never a silent zero.
+    expect($completedB->actual_ingredient_total)->toBe('93.249996000')
         ->and($completedB->cost_currency)->toBe('EUR');
 });
 
@@ -1034,6 +1507,10 @@ it('subtracts downstream reservations when issuing an intermediate lot and rejec
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'issue-inter-1');
     $intermediate = Ingredient::factory()->create(['display_name' => 'Soap base']);
+    $production->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $intermediate->id,
+    ]);
     $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
     $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
@@ -1049,7 +1526,7 @@ it('subtracts downstream reservations when issuing an intermediate lot and rejec
         manufactureDate: '2026-08-20',
         outputIngredientId: $intermediate->id,
     );
-    $completed->outputLot()->sole()->update(['available_from' => now()->subDay()->toDateString()]);
+    $completed->outputLot()->sole()->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
     $intermediateLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
 
     // A later production reserves 4,000 g of the 12,000 g intermediate.
@@ -1101,7 +1578,7 @@ it('rejects fractional issue quantities for finished count lots', function (): v
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
     );
-    $completed->outputLot()->sole()->update(['available_from' => now()->subDay()->toDateString()]);
+    $completed->outputLot()->sole()->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
     $finishedLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
 
     expect(function () use ($fixture, $finishedLot): void {
@@ -1136,8 +1613,12 @@ it('shows a live readiness checklist before completion', function (): void {
     $production = productionExecutionRun($fixture, 'readiness-1');
     $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
     $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $lyeRequirement = $production->requirements()
+        ->where('ingredient_id', Ingredient::query()->where('catalog_key', 'CH1')->sole()->id)
+        ->firstOrFail();
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
     $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    $lyeLot = StockLot::query()->where('ingredient_id', $lyeRequirement->ingredient_id)->firstOrFail();
 
     // Nothing recorded: the checklist names the missing requirement.
     $page = Livewire::actingAs($fixture['owner'])
@@ -1151,6 +1632,7 @@ it('shows a live readiness checklist before completion', function (): void {
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
         ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+        ['production_requirement_id' => $lyeRequirement->id, 'stock_lot_id' => $lyeLot->id, 'quantity' => (string) $lyeRequirement->required_mass_grams],
     ]);
 
     $page = Livewire::actingAs($fixture['owner'])
@@ -1167,7 +1649,9 @@ it('shows a live readiness checklist before completion', function (): void {
 });
 
 it('attaches a private journal document to the production', function (): void {
-    Storage::fake(config('media.disk'));
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    config()->set('media.asset_disk', 'local');
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'journal-doc-1');
 
@@ -1222,18 +1706,18 @@ it('sets family and task based ready dates on output lots', function (): void {
 
     // Soap, no tasks: +21 days after manufacture.
     $soap = $completeRun($fixture, 'ready-soap-1');
-    expect($soap->outputLot()->sole()->available_from?->toDateString())->toBe('2026-09-10');
+    expect($soap->outputLot()->sole()->estimated_ready_on?->toDateString())->toBe('2026-09-10');
 
-    // Cosmetic basis: +3 days.
+    // A later run snapshot is unaffected by changing formula metadata after planning.
     $cosmetic = $completeRun($fixture, 'ready-cosmetic-1', [
         'formula_context_snapshot' => ['calculation_basis' => 'total_formula'],
         'basis_kind' => 'total_formula_mass',
     ]);
-    expect($cosmetic->outputLot()->sole()->available_from?->toDateString())->toBe('2026-08-23');
+    expect($cosmetic->outputLot()->sole()->estimated_ready_on?->toDateString())->toBe('2026-09-10');
 
-    // Tasks override the family default: ready after the last task.
+    // Tasks do not override the snapshot delay; they are a separate release gate.
     $tasked = $completeRun($fixture, 'ready-task-1', [], ['2026-08-25', '2026-09-01']);
-    expect($tasked->outputLot()->sole()->available_from?->toDateString())->toBe('2026-09-01');
+    expect($tasked->outputLot()->sole()->estimated_ready_on?->toDateString())->toBe('2026-09-10');
 });
 
 it('requires the manufacture date before completing from the sheet', function (): void {
@@ -1300,6 +1784,17 @@ function productionExecutionFixture(?Ingredient $oil = null, ?Workspace $workspa
             'totals' => [],
         ],
         'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
+    ]);
+
+    Ingredient::query()->withoutGlobalScopes()->firstOrCreate([
+        'catalog_key' => 'CH1',
+    ], [
+        'display_name' => 'Sodium hydroxide',
+    ]);
+    Ingredient::query()->withoutGlobalScopes()->firstOrCreate([
+        'catalog_key' => 'CH3',
+    ], [
+        'display_name' => 'Potassium hydroxide',
     ]);
 
     $oleic = FattyAcid::factory()->create(['key' => 'oleic-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Oleic']);
@@ -1393,4 +1888,18 @@ function productionExecutionRun(array $fixture, string $idempotencyKey, bool $st
     }
 
     return app(StartProduction::class)->handle($fixture['owner'], $production->fresh());
+}
+
+/** @return array<string, string> */
+function productionExecutionCatalogueText(string $key): array
+{
+    $translation = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->first(fn (array $row): bool => $row['group'] === 'production_bench'
+            && $row['key'] === "production.validation.{$key}");
+
+    if (! is_array($translation) || ! is_array($translation['text'] ?? null)) {
+        throw new LogicException("Missing production translation catalogue entry for [{$key}].");
+    }
+
+    return $translation['text'];
 }

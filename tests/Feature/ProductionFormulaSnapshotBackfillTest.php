@@ -163,6 +163,15 @@ function productionBackfillSoapFixture(): array
         'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
     ]);
 
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'display_name' => 'Sodium hydroxide',
+    ]);
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH3',
+        'display_name' => 'Potassium hydroxide',
+    ]);
+
     $oleic = FattyAcid::factory()->create(['key' => 'oleic-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Oleic']);
     $lauric = FattyAcid::factory()->create(['key' => 'lauric-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Lauric']);
     $olive = Ingredient::factory()->create(['display_name' => 'Olive oil']);

@@ -34,7 +34,7 @@ class RescheduleProductionTask
         $workspace = $task->workspace;
 
         if ($workspace === null) {
-            throw ValidationException::withMessages(['task' => 'The task workspace could not be found.']);
+            throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_workspace_missing')]);
         }
 
         $this->access->assertWritable($actor, $workspace);
@@ -44,13 +44,13 @@ class RescheduleProductionTask
             $lockedProduction = ProductionRun::query()->lockForUpdate()->find($lockedTask->production_run_id);
 
             if ($lockedProduction === null) {
-                throw ValidationException::withMessages(['task' => 'The production could not be found.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_production_missing')]);
             }
 
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($lockedProduction->workspace_id);
 
             if ($lockedWorkspace === null || (int) $lockedTask->workspace_id !== (int) $lockedWorkspace->id) {
-                throw ValidationException::withMessages(['task' => 'The task does not belong to this workspace.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_workspace_mismatch')]);
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
@@ -61,7 +61,7 @@ class RescheduleProductionTask
                 ProductionRunStatus::Reserved,
             ], true)) {
                 throw ValidationException::withMessages([
-                    'task' => 'Task dates cannot be changed after production starts.',
+                    'task' => __('production_bench.production.validation.task_date_change_after_start'),
                 ]);
             }
 
@@ -75,7 +75,7 @@ class RescheduleProductionTask
 
                 if ($candidate === null || ! $candidate->is_active) {
                     throw ValidationException::withMessages([
-                        'employee' => 'Choose an active employee from this workspace.',
+                        'employee' => __('production_bench.production.validation.task_employee_invalid'),
                     ]);
                 }
 
@@ -97,13 +97,13 @@ class RescheduleProductionTask
             if ((int) $anchorTaskId === (int) $lockedTask->id) {
                 if ($lockedTask->completed_at !== null) {
                     throw ValidationException::withMessages([
-                        'task' => 'A completed anchor task cannot be rescheduled.',
+                        'task' => __('production_bench.production.validation.task_anchor_reschedule_completed'),
                     ]);
                 }
 
                 if (! $this->calendar->isWorkingDate($lockedWorkspace, $scheduledFor)) {
                     throw ValidationException::withMessages([
-                        'scheduled_for' => 'The production date must be a working day.',
+                        'scheduled_for' => __('production_bench.production.validation.planned_date_working_day'),
                     ]);
                 }
 
@@ -153,7 +153,7 @@ class RescheduleProductionTask
             || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))
             || $parsed->format('Y-m-d') !== $date
         ) {
-            throw ValidationException::withMessages(['scheduled_for' => 'The task date must use YYYY-MM-DD format.']);
+            throw ValidationException::withMessages(['scheduled_for' => __('production_bench.production.validation.task_date_format')]);
         }
     }
 }

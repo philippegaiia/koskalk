@@ -3,6 +3,7 @@
 use App\Actions\Production\CancelProduction;
 use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\ReleaseProductionStock;
+use App\Actions\Production\RescheduleProduction;
 use App\Actions\Production\UpdateProductionPlan;
 use App\Enums\ProductionRequirementKind;
 use App\Enums\ProductionRunStatus;
@@ -78,10 +79,47 @@ it('posts available reservations when one selected production has a shortage', f
     );
 
     // The covered production is fully reserved; the short one reserves what is
-    // available (20 g) and stays scheduled for a later pass.
+    // still available (10 g) and stays scheduled for a later pass.
     expect($prepared[0]->status)->toBe(ProductionRunStatus::Reserved)
         ->and($prepared[1]->status)->toBe(ProductionRunStatus::Scheduled)
-        ->and(StockReservation::query()->where('production_run_id', $short->id)->sum('quantity'))->toEqual(20);
+        ->and(StockReservation::query()->where('production_run_id', $short->id)->sum('quantity'))->toEqual(10);
+});
+
+it('does not reserve the same lot twice across competing planned productions', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $first = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    $second = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    productionStockIngredientRequirement($first, $fixture['ingredient'], '60.000000000');
+    productionStockIngredientRequirement($second, $fixture['ingredient'], '60.000000000');
+    $lot = productionStockLot($fixture, $fixture['ingredient'], '100.000000000', '2026-08-25');
+
+    app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$first->id, $second->id],
+        idempotencyKey: 'prepare-competing-runs',
+    );
+
+    expect(StockReservation::query()->where('stock_lot_id', $lot->id)->sum('quantity'))->toEqual(100)
+        ->and(StockReservation::query()->where('production_run_id', $first->id)->sum('quantity'))->toEqual(60)
+        ->and(StockReservation::query()->where('production_run_id', $second->id)->sum('quantity'))->toEqual(40);
+});
+
+it('tracks lot availability across competing requirements in one production', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    $firstRequirement = productionStockIngredientRequirement($production, $fixture['ingredient'], '60.000000000');
+    $secondRequirement = productionStockIngredientRequirement($production, $fixture['ingredient'], '60.000000000');
+    $lot = productionStockLot($fixture, $fixture['ingredient'], '100.000000000', '2026-08-25');
+
+    app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'prepare-competing-requirements',
+    );
+
+    expect(StockReservation::query()->where('stock_lot_id', $lot->id)->sum('quantity'))->toEqual(100)
+        ->and(StockReservation::query()->where('production_requirement_id', $firstRequirement->id)->sum('quantity'))->toEqual(60)
+        ->and(StockReservation::query()->where('production_requirement_id', $secondRequirement->id)->sum('quantity'))->toEqual(40);
 });
 
 it('requires manual allocations to exactly cover a requirement and validates whole packaging units', function (): void {
@@ -152,6 +190,56 @@ it('releases reservations without deleting history and returns the production to
         ->and(StockReservation::query()->sole()->released_at)->not->toBeNull();
 });
 
+it('releases prepared stock and returns a production to scheduled when it is rescheduled', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    productionStockIngredientRequirement($production, $fixture['ingredient'], '10.000000000');
+    productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
+
+    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-reschedule');
+
+    $rescheduled = app(RescheduleProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        plannedFor: '2026-08-24',
+    );
+
+    expect($rescheduled->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and($rescheduled->planned_for->toDateString())->toBe('2026-08-24')
+        ->and(StockReservation::query()
+            ->where('production_run_id', $production->id)
+            ->where('status', StockReservationStatus::Active)
+            ->count())->toBe(0)
+        ->and(StockReservation::query()
+            ->where('production_run_id', $production->id)
+            ->where('status', StockReservationStatus::Released)
+            ->count())->toBe(1)
+        ->and(StockReservation::query()->sole()->released_at)->not->toBeNull();
+});
+
+it('releases partial reservations when a scheduled production is rescheduled', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    productionStockIngredientRequirement($production, $fixture['ingredient'], '100.000000000');
+    productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
+
+    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-partial-reschedule');
+
+    expect($production->fresh()->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(1);
+
+    $rescheduled = app(RescheduleProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        plannedFor: '2026-08-24',
+    );
+
+    expect($rescheduled->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(0)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Released)->count())->toBe(1)
+        ->and(StockReservation::query()->sole()->released_at)->not->toBeNull();
+});
+
 it('cancels a reserved production and marks active reservations cancelled', function (): void {
     $fixture = productionStockPreparationFixture();
     $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
@@ -215,6 +303,7 @@ it('keeps released reservation history when a planned production is corrected', 
         basisInputValue: '2',
         basisInputUnit: 'kg',
         expectedUnits: 20,
+        plannedFor: $released->planned_for?->toDateString(),
     );
 
     expect($updated->requirements()->first()->id)->toBe($ingredientRequirement->id)

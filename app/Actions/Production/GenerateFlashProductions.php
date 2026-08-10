@@ -62,7 +62,7 @@ class GenerateFlashProductions
 
             if ($proposals === []) {
                 throw ValidationException::withMessages([
-                    'lines' => 'Add at least one product before generating productions.',
+                    'lines' => __('production_bench.production.validation.flash_products_required'),
                 ]);
             }
 
@@ -87,7 +87,7 @@ class GenerateFlashProductions
 
             if ($existingKeys !== [] && $existingKeys !== $expectedKeys) {
                 throw ValidationException::withMessages([
-                    'idempotency_key' => 'This submission key is already used for a different flash proposal.',
+                    'idempotency_key' => __('production_bench.production.validation.flash_idempotency_conflict'),
                 ]);
             }
 
@@ -96,7 +96,7 @@ class GenerateFlashProductions
 
                 if (! is_array($line)) {
                     throw ValidationException::withMessages([
-                        'lines' => 'The flash proposal no longer matches the selected products.',
+                        'lines' => __('production_bench.production.validation.flash_proposal_stale'),
                     ]);
                 }
 
@@ -108,7 +108,13 @@ class GenerateFlashProductions
                     ->first();
 
                 if ($existing instanceof ProductionRun) {
-                    $this->assertSameRequest($existing, $line, $proposal['production_date'], $taskSet?->id);
+                    $this->assertSameRequest(
+                        $existing,
+                        $line,
+                        $proposal['production_date'],
+                        $proposal['estimated_ready_on'],
+                        $taskSet?->id,
+                    );
                     $productions->push($existing->fresh(['requirements', 'tasks']));
 
                     continue;
@@ -152,7 +158,7 @@ class GenerateFlashProductions
 
         if (! $taskSet instanceof ProductionTaskSet) {
             throw ValidationException::withMessages([
-                'task_set' => 'Choose an active task set from this workspace.',
+                'task_set' => __('production_bench.production.validation.task_set_active_workspace_required'),
             ]);
         }
 
@@ -160,18 +166,24 @@ class GenerateFlashProductions
     }
 
     /** @param array<string, mixed> $line */
-    private function assertSameRequest(ProductionRun $existing, array $line, string $plannedFor, ?int $taskSetId): void
-    {
+    private function assertSameRequest(
+        ProductionRun $existing,
+        array $line,
+        string $plannedFor,
+        string $estimatedReadyOn,
+        ?int $taskSetId,
+    ): void {
         if (
             (int) $existing->recipe_id !== (int) $line['recipe_id']
             || bccomp((string) $existing->basis_input_value, (string) $line['basis_input_value'], 9) !== 0
             || $existing->basis_input_unit !== $line['basis_input_unit']
             || (int) $existing->expected_units !== (int) $line['expected_units_per_batch']
             || $existing->planned_for?->toDateString() !== $plannedFor
+            || $existing->estimated_ready_on?->toDateString() !== $estimatedReadyOn
             || (int) ($existing->production_task_set_id ?? 0) !== (int) ($taskSetId ?? 0)
         ) {
             throw ValidationException::withMessages([
-                'idempotency_key' => 'This submission key is already used for a different flash proposal.',
+                'idempotency_key' => __('production_bench.production.validation.flash_idempotency_conflict'),
             ]);
         }
     }
@@ -190,7 +202,7 @@ class GenerateFlashProductions
     {
         if (trim($key) === '' || strlen($key) > 80) {
             throw ValidationException::withMessages([
-                'idempotency_key' => 'A valid flash submission key is required.',
+                'idempotency_key' => __('production_bench.production.validation.flash_idempotency_key_invalid'),
             ]);
         }
     }
@@ -199,7 +211,7 @@ class GenerateFlashProductions
     {
         if (preg_match('/^[1-9]\d*$/', trim((string) $value)) !== 1) {
             throw ValidationException::withMessages([
-                'batchesPerDay' => 'Enter a positive number of batches per day.',
+                'batchesPerDay' => __('production_bench.production.validation.flash_batches_per_day_positive'),
             ]);
         }
 

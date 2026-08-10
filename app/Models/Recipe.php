@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Casts\OriginalFilename;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
+use App\Enums\ProductionOutputType;
 use App\Enums\Visibility;
 use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
@@ -28,6 +29,9 @@ use Illuminate\Support\Collection;
 #[Fillable([
     'product_family_id',
     'product_type_id',
+    'production_output_type',
+    'output_ingredient_id',
+    'ready_delay_days',
     'owner_type',
     'owner_id',
     'workspace_id',
@@ -83,6 +87,11 @@ class Recipe extends Model implements HasRichContent
     public function productType(): BelongsTo
     {
         return $this->belongsTo(ProductType::class);
+    }
+
+    public function outputIngredient(): BelongsTo
+    {
+        return $this->belongsTo(Ingredient::class, 'output_ingredient_id')->withoutGlobalScopes();
     }
 
     public function brand(): BelongsTo
@@ -309,6 +318,8 @@ class Recipe extends Model implements HasRichContent
     protected function casts(): array
     {
         return [
+            'production_output_type' => ProductionOutputType::class,
+            'ready_delay_days' => 'integer',
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
             'archived_at' => 'datetime',

@@ -1,17 +1,20 @@
 <?php
 
+use App\Actions\Ingredients\CreateManufacturedIngredient;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\GenerateProductionTasks;
 use App\Actions\Production\PlanProduction;
 use App\Actions\Production\PrepareProductionStock;
+use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\StartProduction;
 use App\Actions\Production\UpdateProductionPlan;
 use App\Enums\MassUnit;
 use App\Enums\OwnerType;
 use App\Enums\ProductionBasisKind;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
@@ -65,6 +68,84 @@ it('rejects archived products before creating a production plan', function (): v
     ))->toThrow(ValidationException::class);
 
     expect($fixture['workspace']->productionRuns()->count())->toBe(0);
+});
+
+it('rejects a planned production without a date at the action boundary', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+
+    expect(fn (): ProductionRun => app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '12',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'planned-without-date',
+        plannedFor: null,
+        status: ProductionRunStatus::Scheduled,
+    ))->toThrow(ValidationException::class);
+
+    expect($fixture['workspace']->productionRuns()->count())->toBe(0);
+});
+
+it('snapshots configured output identity and ready dates when planning', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $firstOutput = app(CreateManufacturedIngredient::class)->handle($fixture['owner'], 'Turmeric oil macerate');
+    $secondOutput = app(CreateManufacturedIngredient::class)->handle($fixture['owner'], 'Lavender oil macerate');
+    $fixture['recipe']->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $firstOutput->id,
+        'ready_delay_days' => 4,
+    ]);
+
+    $planned = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '12',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'output-snapshot-planned',
+        plannedFor: '2026-08-20',
+        status: ProductionRunStatus::Scheduled,
+    );
+
+    expect($planned->production_output_type)->toBe(ProductionOutputType::ManufacturedIngredient)
+        ->and($planned->output_ingredient_id)->toBe($firstOutput->id)
+        ->and($planned->output_ready_delay_days)->toBe(4)
+        ->and($planned->estimated_ready_on?->toDateString())->toBe('2026-08-24');
+
+    $fixture['recipe']->update([
+        'output_ingredient_id' => $secondOutput->id,
+        'ready_delay_days' => 30,
+    ]);
+
+    expect($planned->fresh()->output_ingredient_id)->toBe($firstOutput->id)
+        ->and($planned->fresh()->output_ready_delay_days)->toBe(4)
+        ->and($planned->fresh()->estimated_ready_on?->toDateString())->toBe('2026-08-24');
+
+    $fixture['recipe']->update([
+        'output_ingredient_id' => $firstOutput->id,
+        'ready_delay_days' => 4,
+    ]);
+
+    $draft = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '12',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'output-snapshot-draft',
+    );
+
+    expect($draft->estimated_ready_on)->toBeNull()
+        ->and($draft->output_ingredient_id)->toBe($firstOutput->id);
+
+    $scheduled = app(ScheduleProduction::class)->handle($fixture['owner'], $draft, '2026-08-21');
+
+    expect($scheduled->estimated_ready_on?->toDateString())->toBe('2026-08-25')
+        ->and($scheduled->output_ready_delay_days)->toBe(4);
 });
 
 it('scales soap ingredient requirements from the initial oil mass and packaging from expected units', function (): void {
@@ -300,6 +381,57 @@ it('rebuilds requirements only for draft or scheduled productions', function ():
         basisInputUnit: 'kg',
         expectedUnits: 12,
     ))->toThrow(ValidationException::class);
+});
+
+it('does not remove the date from an already scheduled production', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'scheduled-date-required-update',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-09-01',
+    );
+
+    expect(fn (): ProductionRun => app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '2',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        plannedFor: null,
+    ))->toThrow(ValidationException::class)
+        ->and($production->fresh()->planned_for->toDateString())->toBe('2026-09-01');
+});
+
+it('does not accept a non-working date when updating a scheduled production', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'scheduled-weekend-update',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-10',
+    );
+
+    expect(fn (): ProductionRun => app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '2',
+        basisInputUnit: 'kg',
+        expectedUnits: 20,
+        plannedFor: '2026-08-09',
+    ))->toThrow(ValidationException::class)
+        ->and($production->fresh()->planned_for->toDateString())->toBe('2026-08-10')
+        ->and($production->fresh()->basis_quantity_grams)->toBe('1000.000000000');
 });
 
 it('rejects a plan update while active stock reservations exist', function (): void {
@@ -561,9 +693,11 @@ it('persists the complete formula snapshot atomically when planning', function (
         ->toBe(['10500.000000000', '3500.000000000'])
         ->and($production->formulaLines()->where('component', 'naoh')->count())->toBe(1)
         ->and($production->formulaLines()->where('component', 'water')->count())->toBe(1)
-        ->and($production->requirements()->where('kind', 'ingredient')->count())->toBe(2)
+        ->and($production->requirements()->where('kind', 'ingredient')->count())->toBe(3)
         ->and($production->requirements()->where('kind', 'packaging')->count())->toBe(1)
-        ->and($production->requirements()->count())->toBe(3)
+        ->and($production->requirements()->where('ingredient_id', Ingredient::query()->where('catalog_key', 'CH1')->sole()->id)->firstOrFail()->required_mass_grams)
+        ->toBe($production->formulaLines()->where('component', 'naoh')->firstOrFail()->planned_mass_grams)
+        ->and($production->requirements()->count())->toBe(4)
         ->and(ProductionFormulaLine::query()->where('production_run_id', $production->id)->count())->toBe(4);
 });
 
@@ -628,7 +762,7 @@ it('keeps the production aggregate loadable when the version link is removed', f
 
     expect($loaded->recipe_version_id)->toBeNull()
         ->and($loaded->displayRecipeName())->toBe($fixture['recipe']->name)
-        ->and($loaded->requirements()->count())->toBe(3)
+        ->and($loaded->requirements()->count())->toBe(4)
         ->and($loaded->formulaLines()->count())->toBe(4);
 });
 
@@ -678,8 +812,10 @@ it('rescales snapshot quantities in place and keeps reservation history', functi
         ->and($updated->expected_units)->toBe(150)
         ->and($updated->requirements()->pluck('id')->all())->toBe($requirementIds)
         ->and($updated->formulaLines()->pluck('id')->all())->toBe($lineIds)
-        ->and($updated->requirements()->where('kind', 'ingredient')->orderBy('id')->pluck('required_mass_grams')->all())
+        ->and($updated->requirements()->where('kind', 'ingredient')->orderBy('id')->take(2)->pluck('required_mass_grams')->all())
         ->toBe(['15000.000000000', '5000.000000000'])
+        ->and($updated->requirements()->where('kind', 'ingredient')->orderBy('id')->get()->last()->required_mass_grams)
+        ->toBe($updated->formulaLines()->where('component', 'naoh')->firstOrFail()->planned_mass_grams)
         ->and($updated->requirements()->where('kind', 'packaging')->firstOrFail()->required_units)->toBe(150)
         ->and($updated->formulaLines()->where('component', 'ingredient')->orderBy('sort_order')->firstOrFail()->planned_mass_grams)
         ->toBe('15000.000000000')
@@ -721,7 +857,7 @@ it('corrects quantities without the source version or a live recipe lookup', fun
     expect($updated->basis_quantity_grams)->toBe('1500.000000000')
         ->and($updated->expected_units)->toBe(12)
         ->and($updated->recipe_version_id)->toBeNull()
-        ->and($updated->requirements()->count())->toBe(3)
+        ->and($updated->requirements()->count())->toBe(4)
         ->and($updated->formulaLines()->count())->toBe(4);
 });
 
@@ -935,6 +1071,7 @@ it('deletes draft and scheduled runs without reservations, including numbered ru
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 100,
         idempotencyKey: 'delete-scheduled-1',
+        plannedFor: '2026-08-20',
         status: ProductionRunStatus::Scheduled,
     );
     $numbered = app(CreateProductionDraft::class)->handle(
@@ -1056,6 +1193,7 @@ it('rejects deleting a numbered run with active reservations at the database bou
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 100,
         idempotencyKey: 'delete-trigger-1',
+        plannedFor: '2026-08-20',
         status: ProductionRunStatus::Scheduled,
     );
     $production->update([
@@ -1074,6 +1212,108 @@ it('rejects deleting a numbered run with active reservations at the database bou
 
     expect(fn (): ?bool => $production->delete())->toThrow(QueryException::class)
         ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
+});
+
+it('rejects deleting an unnumbered run with active reservations at the database boundary', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'delete-unnumbered-trigger-1',
+        plannedFor: '2026-08-20',
+        status: ProductionRunStatus::Scheduled,
+    );
+    StockReservation::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $production->id,
+        'production_requirement_id' => $production->requirements()->firstOrFail()->id,
+        'stock_lot_id' => StockLot::factory()->released()->for($fixture['workspace'])->create()->id,
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+
+    expect($production->batch_number)->toBeNull()
+        ->and(fn (): ?bool => $production->delete())->toThrow(QueryException::class)
+        ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
+});
+
+it('keeps a partially prepared soap run planned until lye coverage is complete', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'partial-lye-coverage-1',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+    $naoh = Ingredient::query()->where('catalog_key', 'CH1')->sole();
+    $naohRequirement = $production->requirements()->where('ingredient_id', $naoh->id)->firstOrFail();
+
+    $production->requirements->each(function (ProductionRequirement $requirement) use ($fixture, $naohRequirement): void {
+        $quantity = $requirement->id === $naohRequirement->id
+            ? bcdiv((string) $requirement->required_mass_grams, '2', 9)
+            : ($requirement->ingredient_id !== null
+                ? (string) $requirement->required_mass_grams
+                : (string) $requirement->required_units);
+        $lot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+            'ingredient_id' => $requirement->ingredient_id,
+            'packaging_item_id' => $requirement->packaging_item_id,
+            'unit_kind' => $requirement->ingredient_id !== null ? 'mass' : 'count',
+            'expires_at' => '2027-01-01',
+            'released_at' => now(),
+        ]);
+        StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $fixture['workspace']->id,
+            'type' => StockMovementType::OpeningBalance,
+            'quantity_delta' => $quantity,
+        ]);
+    });
+
+    $partial = app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'partial-lye-prepare-1',
+    )[0];
+
+    expect($partial->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_requirement_id', $naohRequirement->id)->sum('quantity'))
+        ->toEqual((float) bcdiv((string) $naohRequirement->required_mass_grams, '2', 9));
+
+    $remainingLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $naoh->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($remainingLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => (string) ((float) $naohRequirement->required_mass_grams / 2),
+    ]);
+
+    $reserved = app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'partial-lye-prepare-2',
+    )[0];
+
+    expect($reserved->status)->toBe(ProductionRunStatus::Reserved)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())
+        ->toBe(5);
+
+    $released = app(ReleaseProductionStock::class)->handle($fixture['owner'], $reserved->fresh());
+
+    expect($released->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())
+        ->toBe(0);
 });
 
 it('starts a fully reserved and permanently numbered production', function (): void {
@@ -1098,6 +1338,7 @@ it('rejects starting before the run is reserved', function (string $status): voi
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 100,
         idempotencyKey: 'start-status-'.fake()->unique()->numberBetween(1, 99999),
+        plannedFor: '2026-08-20',
         status: $status === ProductionRunStatus::Scheduled->value
             ? ProductionRunStatus::Scheduled
             : ProductionRunStatus::Draft,
@@ -1283,6 +1524,15 @@ function productionPlanningTask3SoapFixture(bool $withSap = true): array
             'totals' => [],
         ],
         'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
+    ]);
+
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'display_name' => 'Sodium hydroxide',
+    ]);
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH3',
+        'display_name' => 'Potassium hydroxide',
     ]);
 
     $oleic = FattyAcid::factory()->create(['key' => 'oleic-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Oleic']);

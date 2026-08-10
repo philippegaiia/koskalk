@@ -6,6 +6,7 @@ use App\Enums\ProductionRunStatus;
 use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ class ScheduleProduction
         private readonly ProductionBenchAccess $access,
         private readonly GenerateProductionTasks $generateProductionTasks,
         private readonly ProductionWorkingCalendar $calendar,
+        private readonly ProductionReadyDateService $readyDates,
     ) {}
 
     public function handle(User $actor, ProductionRun $production, string $plannedFor): ProductionRun
@@ -25,7 +27,7 @@ class ScheduleProduction
 
         if ($workspace === null) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -33,17 +35,17 @@ class ScheduleProduction
 
         if (! $this->isValidDate($plannedFor)) {
             throw ValidationException::withMessages([
-                'planned_for' => 'The production date must use YYYY-MM-DD format.',
+                'planned_for' => __('production_bench.production.validation.planned_date_format'),
             ]);
         }
 
         if (! $this->calendar->isWorkingDate($workspace, $plannedFor)) {
             throw ValidationException::withMessages([
-                'planned_for' => 'The production date must be a working day.',
+                'planned_for' => __('production_bench.production.validation.planned_date_working_day'),
             ]);
         }
 
-        $scheduled = DB::transaction(function () use ($actor, $production, $plannedFor): ProductionRun {
+        return DB::transaction(function () use ($actor, $production, $plannedFor): ProductionRun {
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
@@ -53,7 +55,7 @@ class ScheduleProduction
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production workspace could not be found.',
+                    'production' => __('production_bench.production.workspace_missing'),
                 ]);
             }
 
@@ -61,19 +63,26 @@ class ScheduleProduction
 
             if ($lockedProduction->status !== ProductionRunStatus::Draft) {
                 throw ValidationException::withMessages([
-                    'production' => 'Only draft productions can be planned.',
+                    'production' => __('production_bench.production.validation.schedule_draft_only'),
                 ]);
             }
+
+            $estimatedReadyOn = $lockedProduction->output_ready_delay_days === null
+                ? null
+                : $this->readyDates->estimatedReadyOn($plannedFor, (int) $lockedProduction->output_ready_delay_days);
 
             $lockedProduction->update([
                 'status' => ProductionRunStatus::Scheduled,
                 'planned_for' => $plannedFor,
+                'estimated_ready_on' => $estimatedReadyOn,
             ]);
 
-            return $lockedProduction->fresh('requirements');
+            return $this->generateProductionTasks->generateForLockedProduction(
+                actor: $actor,
+                lockedProduction: $lockedProduction,
+                lockedWorkspace: $lockedWorkspace,
+            );
         }, attempts: 5);
-
-        return $this->generateProductionTasks->handle($actor, $scheduled);
     }
 
     private function isValidDate(string $date): bool

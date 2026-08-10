@@ -129,6 +129,30 @@ it('allows the user to edit a loaded preset and schedule one planned production'
         ->and($page->get('statusMessage'))->toContain($production->public_id);
 });
 
+it('requires a production date when planning while keeping drafts date-free', function (): void {
+    $fixture = productionCreateFixture();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('basisInputValue', '6')
+        ->set('expectedUnits', '20')
+        ->set('plannedFor', '')
+        ->call('plan')
+        ->assertHasErrors(['plannedFor' => 'required']);
+
+    expect($fixture['recipe']->productionRuns()->count())->toBe(0);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('basisInputValue', '6')
+        ->set('expectedUnits', '20')
+        ->set('plannedFor', '')
+        ->call('saveDraft')
+        ->assertHasNoErrors();
+
+    expect($fixture['recipe']->productionRuns()->sole()->planned_for)->toBeNull();
+});
+
 it('warns about a non-working production date but keeps the date explicit', function (): void {
     $fixture = productionCreateFixture();
     $fixture['workspace']->update(['production_works_on_weekends' => false]);
@@ -148,6 +172,7 @@ it('keeps the planning form read-only after the bench is cancelled', function ()
 
     Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
         ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('plannedFor', '2026-08-10')
         ->call('plan')
         ->assertHasErrors('production_bench');
 

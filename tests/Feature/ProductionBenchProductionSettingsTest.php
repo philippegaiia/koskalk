@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionHoliday;
+use App\Models\ProductionOutputSetting;
 use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskType;
 use App\Models\Recipe;
@@ -14,6 +15,8 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Production\ProductionReadyDateService;
+use App\Services\WorkspaceProvisioner;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Lang;
 use Livewire\Livewire;
@@ -88,6 +91,88 @@ it('saves editable batch presets and keeps workspace data isolated', function ()
 
     Livewire::actingAs($other['owner'])->test(SettingsIndex::class)
         ->assertDontSee($preset->name);
+});
+
+it('saves ready-date defaults and resolves them by formula family', function (): void {
+    $fixture = productionSettingsFixture();
+    ProductionOutputSetting::factory()->for($fixture['workspace'])->create();
+
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+        ->set('soapReadyDelayDays', '30')
+        ->set('cosmeticReadyDelayDays', '5')
+        ->call('saveOutputSettings')
+        ->assertHasNoErrors();
+
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'slug' => 'settings-cosmetic-'.fake()->unique()->numberBetween(1, 999999),
+        'calculation_basis' => 'total_formula',
+    ]);
+    $cosmeticRecipe = Recipe::factory()->for($cosmeticFamily, 'productFamily')->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'workspace_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+    ]);
+
+    $readyDates = app(ProductionReadyDateService::class);
+
+    expect($fixture['workspace']->fresh()->productionOutputSetting->soap_ready_delay_days)->toBe(30)
+        ->and($readyDates->delayDays($fixture['recipe']->fresh(), $fixture['workspace']->fresh()))->toBe(30)
+        ->and($readyDates->delayDays($cosmeticRecipe, $fixture['workspace']->fresh()))->toBe(5);
+
+    $cosmeticRecipe->update(['ready_delay_days' => 28]);
+
+    expect($readyDates->delayDays($cosmeticRecipe->fresh(), $fixture['workspace']->fresh()))->toBe(28)
+        ->and($readyDates->estimatedReadyOn('2026-08-10', 5))->toBe('2026-08-15');
+});
+
+it('creates default ready-date settings when provisioning a workspace', function (): void {
+    $owner = User::factory()->create();
+
+    $workspace = app(WorkspaceProvisioner::class)->ensureOwnerWorkspace($owner);
+
+    expect($workspace->fresh()->productionOutputSetting->soap_ready_delay_days)->toBe(21)
+        ->and($workspace->fresh()->productionOutputSetting->cosmetic_ready_delay_days)->toBe(3);
+});
+
+it('keeps ready-date settings read-only when the production bench is unavailable', function (): void {
+    $fixture = productionSettingsFixture();
+    $setting = ProductionOutputSetting::factory()->for($fixture['workspace'])->create();
+    $fixture['workspace']->productionEntitlement()->update([
+        'status' => 'cancelled',
+        'cancelled_at' => now(),
+    ]);
+
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+        ->set('soapReadyDelayDays', '30')
+        ->set('cosmeticReadyDelayDays', '5')
+        ->call('saveOutputSettings')
+        ->assertHasErrors('soapReadyDelayDays');
+
+    expect($setting->fresh()->soap_ready_delay_days)->toBe(21)
+        ->and($setting->fresh()->cosmetic_ready_delay_days)->toBe(3);
+});
+
+it('rejects blank, negative, and fractional ready-date settings', function (): void {
+    $fixture = productionSettingsFixture();
+    ProductionOutputSetting::factory()->for($fixture['workspace'])->create();
+
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+        ->set('soapReadyDelayDays', '')
+        ->call('saveOutputSettings')
+        ->assertHasErrors('soapReadyDelayDays');
+
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+        ->set('soapReadyDelayDays', '2.5')
+        ->set('cosmeticReadyDelayDays', '3')
+        ->call('saveOutputSettings')
+        ->assertHasErrors('soapReadyDelayDays');
+
+    Livewire::actingAs($fixture['owner'])->test(SettingsIndex::class)
+        ->set('soapReadyDelayDays', '0')
+        ->set('cosmeticReadyDelayDays', '-1')
+        ->call('saveOutputSettings')
+        ->assertHasErrors('cosmeticReadyDelayDays');
 });
 
 it('keeps the setup page read-only when the entitlement is cancelled', function (): void {

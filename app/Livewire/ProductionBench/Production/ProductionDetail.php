@@ -35,8 +35,10 @@ use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MediaAssetUploadService;
+use App\Services\Production\ProductionDetailPresenter;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
@@ -59,6 +61,9 @@ class ProductionDetail extends Component
     /** @var array<string, array{stock_lot_id?: int|null, quantity: string, note?: string|null}> */
     public array $actualRows = [];
 
+    /** @var array<string, array{actual_mass_grams: string}> */
+    public array $calculatedActualRows = [];
+
     public bool $actualsDirty = false;
 
     public string $outputMode = 'units';
@@ -66,6 +71,8 @@ class ProductionDetail extends Component
     public string $actualOutputQuantity = '';
 
     public string $manufactureDate = '';
+
+    public string $estimatedReadyOn = '';
 
     // The HTML select sends '' as its no-choice sentinel; typing this ?int
     // would make the empty value coerce ambiguously across Livewire versions.
@@ -230,6 +237,27 @@ class ProductionDetail extends Component
         $this->loadSavedActualRows();
     }
 
+    public function updatedManufactureDate(): void
+    {
+        if ($this->estimatedReadyOn !== '' || $this->manufactureDate === '') {
+            return;
+        }
+
+        $production = $this->production();
+
+        if ($production->output_ready_delay_days === null) {
+            return;
+        }
+
+        try {
+            $this->estimatedReadyOn = CarbonImmutable::parse($this->manufactureDate)
+                ->addDays((int) $production->output_ready_delay_days)
+                ->toDateString();
+        } catch (\Throwable) {
+            $this->estimatedReadyOn = '';
+        }
+    }
+
     /**
      * Load saved actual rows so a page reload never shows reservation
      * defaults over real bench data.
@@ -242,7 +270,7 @@ class ProductionDetail extends Component
 
         $production = ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with('consumption')
+            ->with(['consumption', 'requirements.reservations.stockLot', 'formulaLines'])
             ->find((int) $this->productionId);
 
         if ($production === null) {
@@ -255,6 +283,27 @@ class ProductionDetail extends Component
                 'stock_lot_id' => $consumption->stock_lot_id,
                 'quantity' => (string) $consumption->quantity,
                 'note' => $consumption->note,
+            ];
+        }
+
+        foreach ($production->requirements as $requirement) {
+            if ($production->status !== ProductionRunStatus::InProduction) {
+                continue;
+            }
+
+            foreach ($requirement->reservations->where('status', StockReservationStatus::Active) as $reservation) {
+                $key = $requirement->id.'-'.$reservation->stock_lot_id;
+                $this->actualRows[$key] ??= [
+                    'stock_lot_id' => $reservation->stock_lot_id,
+                    'quantity' => (string) $reservation->quantity,
+                    'note' => null,
+                ];
+            }
+        }
+
+        foreach ($production->formulaLines->filter(fn ($line): bool => $line->component?->value === 'water') as $line) {
+            $this->calculatedActualRows[(string) $line->id] = [
+                'actual_mass_grams' => (string) ($line->actual_mass_grams ?? $line->planned_mass_grams),
             ];
         }
     }
@@ -284,10 +333,34 @@ class ProductionDetail extends Component
 
     public function start(StartProduction $startProduction): void
     {
+        $production = $this->production();
+
+        if ($production->planned_for?->isFuture()) {
+            $this->dispatch(
+                'early-start-confirmation-requested',
+                plannedFor: $production->planned_for->format('Y-m-d'),
+                message: __('production_bench.production.early_start_confirm', [
+                    'date' => $production->planned_for->format('Y-m-d'),
+                ]),
+            );
+
+            return;
+        }
+
+        $this->performStart($startProduction, $production);
+    }
+
+    public function confirmEarlyStart(StartProduction $startProduction): void
+    {
+        $this->performStart($startProduction, $this->production());
+    }
+
+    private function performStart(StartProduction $startProduction, ProductionRun $production): void
+    {
         try {
             $startProduction->handle(
                 actor: $this->user(),
-                production: $this->production(),
+                production: $production,
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
@@ -298,6 +371,8 @@ class ProductionDetail extends Component
 
             return;
         }
+
+        $this->loadSavedActualRows();
 
         $this->showAppNotification(__('production_bench.production.started'));
         $this->dispatch('production-started');
@@ -329,6 +404,11 @@ class ProductionDetail extends Component
         $this->actualsDirty = true;
     }
 
+    public function updatedCalculatedActualRows(): void
+    {
+        $this->actualsDirty = true;
+    }
+
     public function saveActuals(SaveProductionActuals $saveProductionActuals): void
     {
         $production = $this->production();
@@ -355,7 +435,17 @@ class ProductionDetail extends Component
                 ];
             }
 
-            $saveProductionActuals->handle($this->user(), $production, $rows);
+            $calculatedRows = [];
+
+            foreach ($this->calculatedActualRows as $lineId => $row) {
+                $calculatedRows[] = [
+                    'production_formula_line_id' => (int) $lineId,
+                    'actual_mass_grams' => NumberLocale::normalizeDecimalString($row['actual_mass_grams'] ?? '')
+                        ?? '0',
+                ];
+            }
+
+            $saveProductionActuals->handle($this->user(), $production, $rows, $calculatedRows);
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
                 foreach ($messages as $message) {
@@ -366,7 +456,9 @@ class ProductionDetail extends Component
             return;
         }
 
-        $this->actualRows = $this->actualRowsFromProduction($production->fresh(['requirements', 'consumption']));
+        $freshProduction = $production->fresh(['requirements', 'consumption', 'formulaLines']);
+        $this->actualRows = $this->actualRowsFromProduction($freshProduction);
+        $this->calculatedActualRows = $this->calculatedActualRowsFromProduction($freshProduction);
         $this->actualsDirty = false;
         $this->showAppNotification(__('production_bench.production.actuals_saved'));
         $this->dispatch('production-actuals-saved');
@@ -419,6 +511,7 @@ class ProductionDetail extends Component
                 production: $production,
                 actualOutputQuantity: NumberLocale::normalizeDecimalString($this->actualOutputQuantity) ?? $this->actualOutputQuantity,
                 manufactureDate: $this->manufactureDate,
+                estimatedReadyOn: $this->estimatedReadyOn !== '' ? $this->estimatedReadyOn : null,
                 outputIngredientId: $this->outputMode === 'intermediate' && $this->outputIngredientId !== null
                     ? (int) $this->outputIngredientId
                     : null,
@@ -461,6 +554,16 @@ class ProductionDetail extends Component
 
     public function releaseOutput(): void
     {
+        $this->performRelease(false);
+    }
+
+    public function confirmEarlyRelease(): void
+    {
+        $this->performRelease(true);
+    }
+
+    private function performRelease(bool $earlyReleaseConfirmed): void
+    {
         $outputLot = $this->production()->outputLot;
 
         if (! $outputLot instanceof StockLot) {
@@ -468,9 +571,22 @@ class ProductionDetail extends Component
         }
 
         try {
-            app(ReleaseOutputLot::class)->handle($this->user(), $outputLot);
+            app(ReleaseOutputLot::class)->handle(
+                actor: $this->user(),
+                lot: $outputLot,
+                earlyReleaseConfirmed: $earlyReleaseConfirmed,
+            );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
+                if ($field === 'early_release_confirmation') {
+                    $this->dispatch(
+                        'early-release-confirmation-requested',
+                        message: (string) $messages[0],
+                    );
+
+                    continue;
+                }
+
                 foreach ($messages as $message) {
                     $this->addError('output', $message);
                 }
@@ -601,10 +717,16 @@ class ProductionDetail extends Component
         $this->dispatch('production-journal-updated');
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionBenchAccess $access, ProductionDetailPresenter $detailPresenter): View
     {
         $workspace = $this->workspace();
         $production = $this->production();
+        $productionDetail = $detailPresenter->present(
+            production: $production,
+            actualRows: $this->actualRows,
+            calculatedActualRows: $this->calculatedActualRows,
+            locale: $this->user()->number_locale,
+        );
         $canMutate = $access->isActive($workspace)
             && ! $access->isReadOnly($workspace)
             && in_array($workspace->roleFor($this->user()), [
@@ -613,99 +735,17 @@ class ProductionDetail extends Component
                 WorkspaceMemberRole::Editor,
             ], true);
 
-        $defaultActualRows = [];
-        $actualRowsByRequirement = [];
-
-        foreach ($production->requirements as $requirement) {
-            $requirementId = (string) $requirement->id;
-            $defaults = [];
-
-            foreach ($requirement->reservations->where('status', StockReservationStatus::Active) as $reservation) {
-                $defaults['-'.$reservation->stock_lot_id] = [
-                    'stock_lot_id' => $reservation->stock_lot_id,
-                    'quantity' => (string) $reservation->quantity,
-                    'note' => null,
-                    'lot_code' => $reservation->stockLot?->internal_lot_code,
-                ];
-            }
-
-            if ($defaults === []) {
-                $defaults['-'] = ['stock_lot_id' => null, 'quantity' => '', 'note' => null, 'lot_code' => null];
-            }
-
-            $defaultActualRows[$requirementId] = $defaults;
-            $merged = $defaults;
-
-            foreach ($this->actualRows as $key => $row) {
-                [$rowRequirementId, $lotId] = array_pad(explode('-', (string) $key, 2), 2, '');
-
-                if ($rowRequirementId !== $requirementId) {
-                    continue;
-                }
-
-                $resolvedLotId = $lotId !== ''
-                    ? (int) $lotId
-                    : ($row['stock_lot_id'] ?? null);
-                $lotCode = $resolvedLotId !== null
-                    ? $production->requirements
-                        ->firstWhere('id', (int) $rowRequirementId)
-                        ?->reservations->firstWhere('stock_lot_id', $resolvedLotId)
-                        ?->stockLot?->internal_lot_code
-                    : null;
-
-                $merged['-'.$lotId] = [
-                    'stock_lot_id' => $resolvedLotId,
-                    'quantity' => $row['quantity'] ?? '',
-                    'note' => $row['note'] ?? null,
-                    'lot_code' => $lotCode,
-                ];
-            }
-
-            ksort($merged);
-            $actualRowsByRequirement[$requirementId] = $merged;
-        }
-
-        $shortRequirements = collect();
-        $partialShortage = '0';
-        $hasActiveReservations = false;
-
-        if (in_array($production->status, [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
-            $activeReservations = $production->requirements
-                ->flatMap->reservations
-                ->where('status', StockReservationStatus::Active);
-
-            $hasActiveReservations = $activeReservations->isNotEmpty();
-
-            foreach ($production->requirements as $requirement) {
-                $required = $requirement->ingredient_id !== null
-                    ? (string) $requirement->required_mass_grams
-                    : (string) $requirement->required_units;
-                $reserved = '0';
-
-                foreach ($activeReservations->where('production_requirement_id', $requirement->id) as $reservation) {
-                    $reserved = bcadd($reserved, (string) $reservation->quantity, 9);
-                }
-
-                if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
-                    $shortRequirements->push($requirement->subject_name_snapshot);
-                    $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
-                }
-            }
-        }
         $completionReadiness = $this->completionReadiness($production);
 
         return view('livewire.production-bench.production.production-detail', [
             'workspace' => $workspace,
             'production' => $production,
+            'productionDetail' => $productionDetail,
+            'outputReconciliation' => $productionDetail['output'],
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,
-            'defaultActualRows' => $defaultActualRows,
-            'actualRowsByRequirement' => $actualRowsByRequirement,
             'completionReadiness' => $completionReadiness,
-            'shortRequirements' => $shortRequirements,
-            'partialShortage' => $partialShortage,
-            'hasActiveReservations' => $hasActiveReservations,
             'intermediateIngredients' => Ingredient::query()
                 ->withoutGlobalScopes()
                 ->where(fn ($query) => $query->whereNull('workspace_id')->orWhere('workspace_id', $workspace->id))
@@ -745,7 +785,7 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'requirements.reservations.stockLot', 'formulaLines', 'consumption', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
+            ->with(['recipe', 'outputIngredient', 'requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'journalEntries.createdBy', 'outputLot', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
     }
 
@@ -764,6 +804,12 @@ class ProductionDetail extends Component
             ))
             ->pluck('subject_name_snapshot')
             ->values();
+        $missingWaterActual = $production->formulaLines
+            ->filter(fn ($line): bool => $line->component?->value === 'water')
+            ->filter(fn ($line): bool => $line->actual_mass_grams === null || bccomp((string) $line->actual_mass_grams, '0', 9) <= 0)
+            ->pluck('subject_name_snapshot')
+            ->values();
+        $missingActuals = $missingActuals->merge($missingWaterActual)->values();
 
         $shortRequirements = collect();
         $activeReservations = $production->requirements
@@ -822,6 +868,26 @@ class ProductionDetail extends Component
                 'stock_lot_id' => $consumption->stock_lot_id,
                 'quantity' => (string) $consumption->quantity,
                 'note' => $consumption->note,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @return array<string, array{actual_mass_grams: string}>
+     */
+    private function calculatedActualRowsFromProduction(ProductionRun $production): array
+    {
+        $rows = [];
+
+        foreach ($production->formulaLines as $line) {
+            if ($line->component?->value !== 'water') {
+                continue;
+            }
+
+            $rows[(string) $line->id] = [
+                'actual_mass_grams' => (string) ($line->actual_mass_grams ?? $line->planned_mass_grams),
             ];
         }
 

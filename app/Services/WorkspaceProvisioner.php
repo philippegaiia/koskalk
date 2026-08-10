@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\WorkspaceMemberRole;
+use App\Models\ProductionOutputSetting;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -47,6 +48,13 @@ class WorkspaceProvisioner
                 ['workspace_id' => $workspace->id, 'user_id' => $user->id],
                 ['role' => WorkspaceMemberRole::Owner->value],
             );
+
+            ProductionOutputSetting::query()->firstOrCreate([
+                'workspace_id' => $workspace->id,
+            ], [
+                'soap_ready_delay_days' => 21,
+                'cosmetic_ready_delay_days' => 3,
+            ]);
 
             return $workspace;
         });

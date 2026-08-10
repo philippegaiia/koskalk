@@ -13,7 +13,9 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MassConverter;
+use App\Services\Production\ProductionCalculatedRequirementBuilder;
 use App\Services\Production\ProductionFormulaSnapshotBuilder;
+use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionRequirementBuilder;
 use App\Services\Production\ProductionRunNumberService;
 use App\Services\Production\ProductionWorkingCalendar;
@@ -30,7 +32,9 @@ class CreateProductionDraft
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
+        private readonly ProductionCalculatedRequirementBuilder $calculatedRequirementBuilder,
         private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly ProductionReadyDateService $readyDates,
         private readonly ProductionRunNumberService $numbers,
         private readonly ProductionWorkingCalendar $calendar,
     ) {}
@@ -53,7 +57,13 @@ class CreateProductionDraft
 
         if (! in_array($status, [ProductionRunStatus::Draft, ProductionRunStatus::Scheduled], true)) {
             throw ValidationException::withMessages([
-                'status' => 'Only draft or planned productions can be created in this workflow.',
+                'status' => __('production_bench.production.validation.create_status_invalid'),
+            ]);
+        }
+
+        if ($status === ProductionRunStatus::Scheduled && $plannedFor === null) {
+            throw ValidationException::withMessages([
+                'planned_for' => __('production_bench.production.validation.planned_date_required'),
             ]);
         }
 
@@ -92,7 +102,7 @@ class CreateProductionDraft
             if ($existing instanceof ProductionRun) {
                 if ($existing->recipe_id !== $recipe->id) {
                     throw ValidationException::withMessages([
-                        'idempotency_key' => 'This submission key is already used for another production.',
+                        'idempotency_key' => __('production_bench.production.validation.create_idempotency_conflict'),
                     ]);
                 }
 
@@ -106,20 +116,20 @@ class CreateProductionDraft
 
             if ((int) $lockedRecipe->workspace_id !== (int) $lockedWorkspace->id) {
                 throw ValidationException::withMessages([
-                    'recipe' => 'The recipe must belong to the active workspace.',
+                    'recipe' => __('production_bench.production.validation.recipe_workspace_invalid'),
                 ]);
             }
 
             if ($lockedRecipe->archived_at !== null) {
                 throw ValidationException::withMessages([
-                    'recipe' => 'Archived products cannot be planned.',
+                    'recipe' => __('production_bench.production.validation.recipe_archived'),
                 ]);
             }
 
             if ($taskSet instanceof ProductionTaskSet
                 && (int) $taskSet->workspace_id !== (int) $lockedWorkspace->id) {
                 throw ValidationException::withMessages([
-                    'production_task_set' => 'Choose a task set from the production workspace.',
+                    'production_task_set' => __('production_bench.production.validation.task_set_workspace_invalid'),
                 ]);
             }
 
@@ -133,7 +143,7 @@ class CreateProductionDraft
 
             if ($taskSet instanceof ProductionTaskSet && $lockedTaskSet === null) {
                 throw ValidationException::withMessages([
-                    'production_task_set' => 'Choose an active task set from this workspace.',
+                    'production_task_set' => __('production_bench.production.validation.task_set_active_workspace_required'),
                 ]);
             }
 
@@ -150,7 +160,7 @@ class CreateProductionDraft
 
             if ($plannedFor !== null && ! $this->calendar->isWorkingDate($lockedWorkspace, $plannedFor)) {
                 throw ValidationException::withMessages([
-                    'planned_for' => 'The production date must be a working day.',
+                    'planned_for' => __('production_bench.production.validation.planned_date_working_day'),
                 ]);
             }
 
@@ -162,7 +172,7 @@ class CreateProductionDraft
 
                 if (! $isApplicable) {
                     throw ValidationException::withMessages([
-                        'production_task_set' => 'Choose a task set applicable to this product.',
+                        'production_task_set' => __('production_bench.production.validation.task_set_product_invalid'),
                     ]);
                 }
             }
@@ -171,7 +181,7 @@ class CreateProductionDraft
 
             if (! $publishedVersion instanceof RecipeVersion) {
                 throw ValidationException::withMessages([
-                    'recipe' => 'Choose a recipe with a published formula.',
+                    'recipe' => __('production_bench.production.validation.recipe_published_formula_required'),
                 ]);
             }
 
@@ -189,12 +199,22 @@ class CreateProductionDraft
                 basisQuantityGrams: $basisQuantityGrams,
                 requirements: $requirements,
             );
+            $requirements = $requirements->concat(
+                $this->calculatedRequirementBuilder->build(
+                    formulaLines: $formulaSnapshot['lines'],
+                    startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
+                ),
+            )->values();
+            $outputSnapshot = $this->readyDates->snapshot($lockedRecipe, $lockedWorkspace, $plannedFor);
             $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 
             $production = ProductionRun::query()->create([
                 'workspace_id' => $lockedWorkspace->id,
                 'recipe_id' => $lockedRecipe->id,
                 'recipe_version_id' => $publishedVersion->id,
+                'production_output_type' => $outputSnapshot['production_output_type'],
+                'output_ingredient_id' => $outputSnapshot['output_ingredient_id'],
+                'output_ready_delay_days' => $outputSnapshot['output_ready_delay_days'],
                 'recipe_name_snapshot' => $lockedRecipe->name,
                 'source_formula_version_number' => $publishedVersion->version_number,
                 'formula_context_snapshot' => $formulaSnapshot['context'],
@@ -203,6 +223,7 @@ class CreateProductionDraft
                 'status' => $status,
                 'source' => $source,
                 'planned_for' => $plannedFor,
+                'estimated_ready_on' => $outputSnapshot['estimated_ready_on'],
                 'basis_kind' => $basisKind,
                 'basis_quantity_grams' => $basisQuantityGrams,
                 'basis_input_value' => $basisInputValue,
@@ -247,7 +268,7 @@ class CreateProductionDraft
             return $unit instanceof MassUnit ? $unit : MassUnit::fromInput($unit);
         } catch (\InvalidArgumentException) {
             throw ValidationException::withMessages([
-                'basis_input_unit' => 'Choose a supported mass unit.',
+                'basis_input_unit' => __('production_bench.production.validation.basis_input_unit_invalid'),
             ]);
         }
     }
@@ -263,19 +284,19 @@ class CreateProductionDraft
             || bccomp(trim($basisInputValue), '0', 18) <= 0
         ) {
             throw ValidationException::withMessages([
-                'basis_input_value' => 'The production basis must be greater than zero.',
+                'basis_input_value' => __('production_bench.production.validation.basis_input_positive'),
             ]);
         }
 
         if (trim($idempotencyKey) === '' || strlen($idempotencyKey) > 120) {
             throw ValidationException::withMessages([
-                'idempotency_key' => 'A valid submission key is required.',
+                'idempotency_key' => __('production_bench.production.validation.idempotency_key_invalid'),
             ]);
         }
 
         if ($plannedFor !== null && ! $this->isValidDate($plannedFor)) {
             throw ValidationException::withMessages([
-                'planned_for' => 'The production date must use YYYY-MM-DD format.',
+                'planned_for' => __('production_bench.production.validation.planned_date_format'),
             ]);
         }
     }
@@ -286,7 +307,7 @@ class CreateProductionDraft
 
         if (preg_match('/^[1-9]\d*$/', $normalized) !== 1) {
             throw ValidationException::withMessages([
-                'expected_units' => 'Expected units must be a positive whole number.',
+                'expected_units' => __('production_bench.production.validation.expected_units_positive_whole'),
             ]);
         }
 

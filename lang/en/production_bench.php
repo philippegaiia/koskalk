@@ -560,7 +560,7 @@ return [
             'stock_lot_not_available' => 'The stock lot is not released and available for this production.',
             'stock_lot_quantity_unavailable' => 'A selected stock lot does not have enough eligible quantity.',
             'task_department_workspace_invalid' => 'Every production task department must belong to the active workspace.',
-            'task_reopen_after_release' => 'Completed production tasks cannot be reopened after production completion or output release.',
+            'task_reopen_after_release' => 'Completed production tasks cannot be reopened after output release.',
             'task_workspace_invalid' => 'Every production task must belong to the active workspace.',
             'tasks_before_start' => 'Tasks can only be generated before production starts.',
         ],

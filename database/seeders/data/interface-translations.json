@@ -12641,11 +12641,11 @@
       "group": "production_bench",
       "key": "production.validation.task_reopen_after_release",
       "text": {
-        "de": "Abgeschlossene Produktionsaufgaben können nach Abschluss der Produktion oder Freigabe des Outputs nicht wieder geöffnet werden.",
-        "es": "Las tareas de producción completadas no pueden reabrirse después de completar la producción o liberar la salida.",
-        "fr": "Les tâches de production terminées ne peuvent pas être rouvertes après la fin de la production ou la libération de la sortie.",
-        "it": "Le attività di produzione completate non possono essere riaperte dopo il completamento della produzione o il rilascio dell’output.",
-        "nl": "Voltooide productietaken kunnen niet opnieuw worden geopend nadat de productie is voltooid of de output is vrijgegeven."
+        "de": "Abgeschlossene Produktionsaufgaben können nach Freigabe des Outputs nicht wieder geöffnet werden.",
+        "es": "Las tareas de producción completadas no pueden reabrirse después de liberar la salida.",
+        "fr": "Les tâches de production terminées ne peuvent pas être rouvertes après la libération de la sortie.",
+        "it": "Le attività di produzione completate non possono essere riaperte dopo il rilascio dell’output.",
+        "nl": "Voltooide productietaken kunnen niet opnieuw worden geopend nadat de output is vrijgegeven."
       }
     },
     {

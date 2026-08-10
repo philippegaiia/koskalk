@@ -352,6 +352,26 @@ it('requires PostgreSQL permanent numbers to match their issuance history', func
     ]))->toBe(1);
 });
 
+it('keeps PostgreSQL number issuance identity immutable while allowing a deleted run link to clear', function (): void {
+    if (DB::getDriverName() !== 'pgsql') {
+        $this->markTestSkipped('PostgreSQL-only issuance trigger integration test.');
+    }
+
+    $run = ProductionRun::factory()->create();
+    $issuance = ProductionRunNumberIssuance::factory()->for($run->workspace)->create([
+        'production_run_id' => $run->id,
+    ]);
+
+    expect(fn (): int => DB::table('production_run_number_issuances')->where('id', $issuance->id)->update([
+        'batch_number' => 'B-99999',
+    ]))->toThrow(QueryException::class)
+        ->and(fn (): int => DB::table('production_run_number_issuances')->where('id', $issuance->id)->delete())
+        ->toThrow(QueryException::class)
+        ->and(DB::table('production_run_number_issuances')->where('id', $issuance->id)->update([
+            'production_run_id' => null,
+        ]))->toBe(1);
+});
+
 it('serializes PostgreSQL workspace number writes before cross-field collision checks', function (): void {
     if (DB::getDriverName() !== 'pgsql') {
         $this->markTestSkipped('PostgreSQL-only trigger locking integration test.');

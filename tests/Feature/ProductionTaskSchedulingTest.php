@@ -248,6 +248,9 @@ it('does not reopen a production task after output release', function (): void {
     expect(fn (): ProductionTask => app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh()))
         ->toThrow(ValidationException::class)
         ->and($task->fresh()->completed_at)->not->toBeNull();
+
+    expect(__('production_bench.production.validation.task_reopen_after_release'))
+        ->toBe('Completed production tasks cannot be reopened after output release.');
 });
 
 it('does not move a completed automatic task when the production date changes', function (): void {

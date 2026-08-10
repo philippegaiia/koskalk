@@ -85,11 +85,26 @@ Changing the product later must not change an existing run's output identity or 
 
 ## Ready-date configuration
 
-Production settings provide a workspace-wide default ready delay in calendar days. Zero means the output is estimated ready on its manufacture date.
+Production settings provide two required workspace defaults in calendar days:
 
-Each product may provide a nullable override. A null product value uses the workspace default; zero explicitly means no delay.
+- Soap workbench ready delay, initialized to 21 days;
+- Cosmetic workbench ready delay, initialized to 3 days.
 
-At planning time, the interface may display an estimated ready date using the planned production date and the snapshotted delay. This estimate is informative and changes with an editable plan date before production starts.
+Zero is valid and means the output is estimated ready on its manufacture date. New workspaces receive the defaults automatically, and existing workspaces are backfilled with the same values.
+
+The applicable default follows the product's formula family/workbench, not words in its name or its commercial category. A soap manufactured from oils through the Soap workbench therefore receives the Soap default. A soap made from soap noodles through the Cosmetic workbench receives the Cosmetic default unless that product has an override.
+
+Each product may provide a nullable override. A null product value uses the workspace default for its formula family; zero explicitly means no delay.
+
+The effective delay follows this precedence:
+
+1. product-specific override;
+2. workspace default for the product's formula family;
+3. platform fallback of 21 days for Soap or 3 days for Cosmetic if settings data is unexpectedly absent.
+
+At planning time, the interface displays an estimated ready date using the planned production date and the snapshotted effective delay. This estimate is informative and changes with an editable plan date before production starts.
+
+Flash date proposals include both the proposed production date and the resulting estimated ready date for every generated batch. Generated productions persist both values automatically; the operator does not open each generated run to provide a date.
 
 At completion, the system calculates the output lot's estimated ready date from the actual manufacture date and the snapshotted delay. The completion form displays that date and allows the professional to change it before completing the run. The stored `estimated_ready_on` date is the operator-confirmed estimate; it is deliberately separate from stock availability.
 
@@ -173,6 +188,10 @@ For Finished product, the section explains that output is tracked in units and p
 
 For Bulk manufactured ingredient, it shows a required searchable ingredient selector and a “Create manufactured ingredient” action. Inline creation asks only for the fields required by the existing private-ingredient workflow and marks the ingredient as manufactured in-house. Full catalogue details remain editable from the Ingredient page.
 
+### Production settings
+
+The production settings page exposes “Default Soap ready delay” and “Default Cosmetic ready delay” as non-negative whole calendar-day values. It explains that the applicable value follows the workbench used to build the formula and that products may override it. The fields are always populated; blank is not a persisted state.
+
 ### Production completion
 
 The operator enters actual output quantity and manufacture date. Output quantity is an integer for finished products and a positive mass for bulk materials.
@@ -200,6 +219,7 @@ Server-side validation must enforce:
 - a required workspace-owned output ingredient for bulk products;
 - no output ingredient for finished products;
 - a non-negative integer ready delay;
+- non-negative required Soap and Cosmetic workspace defaults;
 - a valid estimated ready date at completion;
 - output identity derived from the production snapshot;
 - positive whole-unit output for finished products;
@@ -226,16 +246,18 @@ The current completion-time intermediate selector remains only long enough to co
 
 1. A workspace creates a bulk turmeric macerate product, quick-creates its manufactured ingredient, and publishes a formula using turmeric powder and sunflower oil.
 2. A production run snapshots the bulk output identity and ready delay.
-3. Completion creates one mass-based production-output lot linked to the ingredient, with no supplier listing and one output movement.
-4. The Awaiting release lot is physical but cannot be reserved or consumed.
-5. Release after completing all tasks makes the ingredient lot available without creating a receipt or another movement.
-6. Releasing before the estimated date requires confirmation and succeeds only after confirmation.
-7. A later product reserves and consumes the released macerate lot and inherits its historical cost per gram.
-8. A packaged macerate product consumes the bulk ingredient plus packaging and produces finished units.
-9. The same macerate ingredient may also have supplier listings and purchased lots without conflict.
-10. Purchased and internally produced lots remain distinguishable by origin and provenance.
-11. Changing the product's output configuration does not change already-created production runs.
-12. German, Spanish, French, Italian, and Dutch users receive localized output, readiness, and release messages.
+3. Flash generation assigns production and estimated-ready dates to every proposed batch using the product override or its workbench default.
+4. Completion creates one mass-based production-output lot linked to the ingredient, with no supplier listing and one output movement.
+5. The Awaiting release lot is physical but cannot be reserved or consumed.
+6. Release after completing all tasks makes the ingredient lot available without creating a receipt or another movement.
+7. Releasing before the estimated date requires confirmation and succeeds only after confirmation.
+8. A later product reserves and consumes the released macerate lot and inherits its historical cost per gram.
+9. A packaged macerate product consumes the bulk ingredient plus packaging and produces finished units.
+10. The same macerate ingredient may also have supplier listings and purchased lots without conflict.
+11. Purchased and internally produced lots remain distinguishable by origin and provenance.
+12. Changing the product's output configuration does not change already-created production runs.
+13. A Soap-workbench product defaults to 21 days, while a soap-noodle product built in the Cosmetic workbench defaults to 3 days unless overridden.
+14. German, Spanish, French, Italian, and Dutch users receive localized output, readiness, and release messages.
 
 ## Deferred work
 

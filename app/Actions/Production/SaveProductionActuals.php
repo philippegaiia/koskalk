@@ -5,7 +5,6 @@ namespace App\Actions\Production;
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionRunStatus;
-use App\Enums\StockLotStatus;
 use App\Models\ProductionConsumption;
 use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRequirement;
@@ -13,6 +12,7 @@ use App\Models\ProductionRun;
 use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ConsumableStockLotPolicy;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -21,6 +21,7 @@ class SaveProductionActuals
 {
     public function __construct(
         private readonly ProductionBenchAccess $access,
+        private readonly ConsumableStockLotPolicy $lotPolicy,
     ) {}
 
     /**
@@ -197,15 +198,7 @@ class SaveProductionActuals
             ]);
         }
 
-        $eligibilityDate = $production->planned_for?->toDateString() ?? now()->toDateString();
-
-        if ($lot->status !== StockLotStatus::Released
-            || ($lot->available_from?->toDateString() !== null && $lot->available_from->toDateString() > $eligibilityDate)
-            || ($lot->expires_at?->toDateString() !== null && $lot->expires_at->toDateString() < $eligibilityDate)) {
-            throw ValidationException::withMessages([
-                "rows.{$index}.stock_lot_id" => __('production_bench.production.validation.stock_lot_not_available'),
-            ]);
-        }
+        $this->lotPolicy->assertConsumable($lot, now(), "rows.{$index}.stock_lot_id");
 
         $subjectMatches = $requirement->ingredient_id !== null
             ? $lot->ingredient_id === $requirement->ingredient_id && $lot->packaging_item_id === null

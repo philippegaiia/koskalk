@@ -31,6 +31,8 @@ class ProductionCompletionService
 {
     private const int GuardScale = 18;
 
+    public function __construct(private readonly ConsumableStockLotPolicy $lotPolicy) {}
+
     /**
      * Complete an in-production run atomically: post consumption movements,
      * release unused reservations, snapshot actual costs, create the output
@@ -82,7 +84,7 @@ class ProductionCompletionService
                     ->withoutGlobalScopes()
                     ->lockForUpdate()
                     ->findOrFail($row->stock_lot_id);
-                $this->assertEligibleConsumptionLot($lot, $lockedProduction);
+                $this->assertEligibleConsumptionLot($lot, $manufactureDate);
 
                 $pricePerUnit = $this->pricePerUnit($lot, $row);
                 $lineCost = $this->lineCost($row, $pricePerUnit);
@@ -373,17 +375,9 @@ class ProductionCompletionService
         return $this->readyDate($production, $manufactureDate);
     }
 
-    private function assertEligibleConsumptionLot(StockLot $lot, ProductionRun $production): void
+    private function assertEligibleConsumptionLot(StockLot $lot, string $manufactureDate): void
     {
-        $eligibilityDate = $production->planned_for?->toDateString() ?? now()->toDateString();
-
-        if ($lot->status !== StockLotStatus::Released
-            || ($lot->available_from?->toDateString() !== null && $lot->available_from->toDateString() > $eligibilityDate)
-            || ($lot->expires_at?->toDateString() !== null && $lot->expires_at->toDateString() < $eligibilityDate)) {
-            throw ValidationException::withMessages([
-                'production' => __('production_bench.production.validation.stock_lot_not_available'),
-            ]);
-        }
+        $this->lotPolicy->assertConsumable($lot, Carbon::parse($manufactureDate), 'production');
     }
 
     private function defaultCalculatedLyeActuals(User $actor, ProductionRun $production): void

@@ -191,6 +191,78 @@ it('rejects actual consumption from quarantined or not-yet-available lots', func
     ]))->toThrow(ValidationException::class);
 });
 
+it('accepts an actual lot available on the execution date even when it expires before the planned date', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'actuals-execution-date-expiry');
+    $requirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $lot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $lot->update(['expires_at' => '2026-08-12']);
+
+    $saved = app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [[
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => $lot->id,
+        'quantity' => '1',
+    ]]);
+
+    expect($saved->consumption()->where('stock_lot_id', $lot->id)->exists())->toBeTrue();
+});
+
+it('rejects an actual lot that is unavailable on the current execution date', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'actuals-execution-date-availability');
+    $requirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $lot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $lot->update(['available_from' => '2026-08-11']);
+
+    expect(fn () => app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [[
+        'production_requirement_id' => $requirement->id,
+        'stock_lot_id' => $lot->id,
+        'quantity' => '1',
+    ]]))->toThrow(ValidationException::class);
+});
+
+it('rechecks actual lots against the confirmed manufacture date before posting movements', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'actuals-manufacture-date-recheck');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $ingredientLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    $ingredientLot->update(['expires_at' => '2026-08-22']);
+
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        [
+            'production_requirement_id' => $ingredientRequirement->id,
+            'stock_lot_id' => $ingredientLot->id,
+            'quantity' => '11000',
+        ],
+        [
+            'production_requirement_id' => $packagingRequirement->id,
+            'stock_lot_id' => $packagingLot->id,
+            'quantity' => '98',
+        ],
+    ]);
+
+    $movementCount = StockMovement::query()->count();
+    $outputLotCount = StockLot::query()
+        ->where('production_run_id', $production->id)
+        ->where('origin', StockLotOrigin::ProductionOutput)
+        ->count();
+
+    expect(fn () => app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-25',
+    ))->toThrow(ValidationException::class);
+
+    expect(StockMovement::query()->count())->toBe($movementCount)
+        ->and(StockLot::query()
+            ->where('production_run_id', $production->id)
+            ->where('origin', StockLotOrigin::ProductionOutput)
+            ->count())->toBe($outputLotCount);
+});
+
 it('updates and removes actual rows before the terminal action', function (): void {
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'actuals-2');

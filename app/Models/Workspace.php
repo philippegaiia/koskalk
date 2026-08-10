@@ -85,9 +85,19 @@ class Workspace extends Model
         return $this->hasOne(ProductionRunNumberSetting::class);
     }
 
+    public function productionOutputSetting(): HasOne
+    {
+        return $this->hasOne(ProductionOutputSetting::class);
+    }
+
     public function productionRuns(): HasMany
     {
         return $this->hasMany(ProductionRun::class);
+    }
+
+    public function productionRunNumberIssuances(): HasMany
+    {
+        return $this->hasMany(ProductionRunNumberIssuance::class);
     }
 
     public function employees(): HasMany

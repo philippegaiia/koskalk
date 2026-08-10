@@ -6,6 +6,7 @@ use App\Enums\ProductionBasisKind;
 use App\Enums\ProductionBenchEntitlementStatus;
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionFormulaComponent;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRequirementKind;
 use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
@@ -71,6 +72,27 @@ it('creates the production planning tables with their durable snapshot columns',
             'unit_snapshot',
             'sort_order',
         ]))->toBeTrue();
+});
+
+it('stores production output configuration, readiness estimates, and output settings', function (): void {
+    expect(array_column(ProductionOutputType::cases(), 'value'))->toBe([
+        'finished_product',
+        'manufactured_ingredient',
+    ])
+        ->and(Schema::hasColumns('recipes', [
+            'production_output_type',
+            'output_ingredient_id',
+            'ready_delay_days',
+        ]))->toBeTrue()
+        ->and(Schema::hasColumns('production_runs', [
+            'production_output_type',
+            'output_ingredient_id',
+            'output_ready_delay_days',
+            'estimated_ready_on',
+        ]))->toBeTrue()
+        ->and(Schema::hasColumn('stock_lots', 'estimated_ready_on'))->toBeTrue()
+        ->and(Schema::hasTable('production_output_settings'))->toBeTrue()
+        ->and(Schema::hasTable('production_run_number_issuances'))->toBeTrue();
 });
 
 it('defines the complete production planning enum contract', function (): void {

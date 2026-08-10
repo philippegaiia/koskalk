@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\MassUnit;
 use App\Enums\ProductionBasisKind;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
 use App\Models\Concerns\HasPublicId;
@@ -20,6 +21,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'workspace_id',
     'recipe_id',
     'recipe_version_id',
+    'production_output_type',
+    'output_ingredient_id',
+    'output_ready_delay_days',
+    'estimated_ready_on',
     'recipe_name_snapshot',
     'source_formula_version_number',
     'formula_context_snapshot',
@@ -85,6 +90,11 @@ class ProductionRun extends Model
     public function recipeVersion(): BelongsTo
     {
         return $this->belongsTo(RecipeVersion::class)->withoutGlobalScopes();
+    }
+
+    public function outputIngredient(): BelongsTo
+    {
+        return $this->belongsTo(Ingredient::class, 'output_ingredient_id')->withoutGlobalScopes();
     }
 
     public function createdBy(): BelongsTo
@@ -168,7 +178,10 @@ class ProductionRun extends Model
         return [
             'status' => ProductionRunStatus::class,
             'source' => ProductionRunSource::class,
+            'production_output_type' => ProductionOutputType::class,
             'planned_for' => 'date',
+            'output_ready_delay_days' => 'integer',
+            'estimated_ready_on' => 'date',
             'basis_kind' => ProductionBasisKind::class,
             'basis_quantity_grams' => 'decimal:9',
             'basis_input_value' => 'decimal:9',

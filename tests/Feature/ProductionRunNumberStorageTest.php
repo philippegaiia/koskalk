@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberIssuance;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
@@ -68,6 +69,30 @@ it('keeps rendered run identifiers unique within a workspace while isolating wor
     ]))->toThrow(QueryException::class)
         ->and(fn (): ProductionRun => ProductionRun::factory()->for($firstWorkspace)->create([
             'batch_number' => 'B-00001',
+        ]))->toThrow(QueryException::class);
+});
+
+it('keeps issued permanent identifiers unique in a workspace after the run is deleted', function (): void {
+    $firstWorkspace = Workspace::factory()->create();
+    $secondWorkspace = Workspace::factory()->create();
+
+    ProductionRunNumberIssuance::factory()->for($firstWorkspace)->create([
+        'batch_number' => 'B-00001',
+        'serial' => 1,
+        'production_run_id' => null,
+    ]);
+    ProductionRunNumberIssuance::factory()->for($secondWorkspace)->create([
+        'batch_number' => 'B-00001',
+        'serial' => 1,
+        'production_run_id' => null,
+    ]);
+
+    expect(fn (): ProductionRunNumberIssuance => ProductionRunNumberIssuance::factory()
+        ->for($firstWorkspace)
+        ->create([
+            'batch_number' => 'B-00001',
+            'serial' => 1,
+            'production_run_id' => null,
         ]))->toThrow(QueryException::class);
 });
 

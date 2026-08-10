@@ -82,6 +82,7 @@ class ProductionCompletionService
                     ->withoutGlobalScopes()
                     ->lockForUpdate()
                     ->findOrFail($row->stock_lot_id);
+                $this->assertEligibleConsumptionLot($lot, $lockedProduction);
 
                 $pricePerUnit = $this->pricePerUnit($lot, $row);
                 $lineCost = $this->lineCost($row, $pricePerUnit);
@@ -370,6 +371,19 @@ class ProductionCompletionService
         }
 
         return $this->readyDate($production, $manufactureDate);
+    }
+
+    private function assertEligibleConsumptionLot(StockLot $lot, ProductionRun $production): void
+    {
+        $eligibilityDate = $production->planned_for?->toDateString() ?? now()->toDateString();
+
+        if ($lot->status !== StockLotStatus::Released
+            || ($lot->available_from?->toDateString() !== null && $lot->available_from->toDateString() > $eligibilityDate)
+            || ($lot->expires_at?->toDateString() !== null && $lot->expires_at->toDateString() < $eligibilityDate)) {
+            throw ValidationException::withMessages([
+                'production' => __('production_bench.production.validation.stock_lot_not_available'),
+            ]);
+        }
     }
 
     private function defaultCalculatedLyeActuals(User $actor, ProductionRun $production): void

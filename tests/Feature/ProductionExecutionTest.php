@@ -22,6 +22,7 @@ use App\Enums\ProductionDocumentType;
 use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotOrigin;
 use App\Enums\StockLotStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
@@ -382,6 +383,33 @@ it('completes a production atomically with consumption, costs, and an output lot
     // Costs immutable: later price changes do not alter the snapshot.
     $oilLot->update(['historical_unit_cost' => '99.000000000']);
     expect($completed->fresh()->actual_ingredient_total)->toBe('137.500000000');
+});
+
+it('rechecks source lot eligibility before posting completion consumption', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'complete-lot-eligibility-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+
+    $oilLot->update(['status' => StockLotStatus::Quarantined]);
+
+    expect(fn () => app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    ))->toThrow(ValidationException::class);
+
+    expect($production->fresh()->status)->toBe(ProductionRunStatus::InProduction)
+        ->and(StockMovement::query()->where('type', StockMovementType::ProductionConsumption)->count())->toBe(0)
+        ->and(StockLot::query()->where('origin', StockLotOrigin::ProductionOutput)->count())->toBe(0);
 });
 
 it('rejects completion while readiness is missing', function (): void {

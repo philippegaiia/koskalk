@@ -2,11 +2,18 @@
 
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CancelProduction;
+use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\SaveProductionRunNumberSettings;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockMovementType;
 use App\Enums\WorkspaceMemberRole;
+use App\Models\Ingredient;
+use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberSetting;
+use App\Models\StockLot;
+use App\Models\StockMovement;
+use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -198,6 +205,63 @@ it('scopes locked production rows to the requested workspace', function (): void
 
     expect($lockQuery)->not->toBeNull()
         ->and(str_contains(strtolower($lockQuery), 'workspace_id'))->toBeTrue();
+});
+
+it('locks stock preparation in workspace run requirement lot reservation order', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $ingredient = Ingredient::factory()->create();
+    $run = productionNumberingRun($workspace);
+    $requirement = ProductionRequirement::factory()->create([
+        'production_run_id' => $run->id,
+        'ingredient_id' => $ingredient->id,
+        'packaging_item_id' => null,
+        'required_mass_grams' => '100.000000000',
+        'required_units' => null,
+        'subject_name_snapshot' => $ingredient->display_name,
+    ]);
+    $lot = StockLot::factory()->for($workspace)->released()->create([
+        'ingredient_id' => $ingredient->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+    ]);
+    StockMovement::factory()->for($lot, 'stockLot')->create([
+        'workspace_id' => $workspace->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => '100.000000000',
+    ]);
+    $queries = [];
+
+    DB::listen(function ($query) use (&$queries): void {
+        $sql = strtolower($query->sql);
+
+        if (str_contains($sql, 'for update')) {
+            $queries[] = $sql;
+        }
+    });
+
+    $prepared = app(PrepareProductionStock::class)->handle(
+        actor: $owner,
+        productionIds: [$run->id],
+        idempotencyKey: 'lock-order-prepare',
+    )[0];
+
+    expect($prepared->status)->toBe(ProductionRunStatus::Reserved)
+        ->and(StockReservation::query()->where('production_requirement_id', $requirement->id)->sum('quantity'))
+        ->toEqual(100);
+
+    if (DB::getDriverName() !== 'pgsql') {
+        return;
+    }
+
+    $indexes = collect(['workspaces', 'production_runs', 'production_requirements', 'stock_lots', 'stock_reservations'])
+        ->map(fn (string $table) => collect($queries)->search(fn (string $query): bool => str_contains($query, 'from "'.$table.'"')))
+        ->values();
+
+    expect($indexes->every(fn (int|false $index): bool => $index !== false))->toBeTrue()
+        ->and($indexes->get(0))->toBeLessThan($indexes->get(1))
+        ->and($indexes->get(1))->toBeLessThan($indexes->get(2))
+        ->and($indexes->get(2))->toBeLessThan($indexes->get(3))
+        ->and($indexes->get(3))->toBeLessThan($indexes->get(4));
 });
 
 it('allows owner admin and editor assignment but rejects viewers and inactive access', function (): void {

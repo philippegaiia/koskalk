@@ -81,7 +81,21 @@ class PrepareProductionStock
         $this->access->assertWritable($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $idempotencyKey, $manualAllocations, $productionIds, $workspace): array {
+            $lockedWorkspace = Workspace::withoutGlobalScopes()
+                ->whereKey($workspace->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $lockedWorkspace instanceof Workspace) {
+                throw ValidationException::withMessages([
+                    'production_bench' => 'The production workspace could not be found.',
+                ]);
+            }
+
+            $this->access->assertWritable($actor, $lockedWorkspace);
+
             $lockedProductions = ProductionRun::query()
+                ->where('workspace_id', $lockedWorkspace->id)
                 ->whereIn('id', $productionIds)
                 ->orderBy('id')
                 ->lockForUpdate()
@@ -93,23 +107,11 @@ class PrepareProductionStock
                 ]);
             }
 
-            if ($lockedProductions->contains(fn (ProductionRun $production): bool => (int) $production->workspace_id !== (int) $workspace->id)) {
+            if ($lockedProductions->contains(fn (ProductionRun $production): bool => (int) $production->workspace_id !== (int) $lockedWorkspace->id)) {
                 throw ValidationException::withMessages([
                     'productions' => 'Selected productions must belong to the same workspace.',
                 ]);
             }
-
-            $lockedWorkspace = Workspace::withoutGlobalScopes()
-                ->lockForUpdate()
-                ->find($workspace->id);
-
-            if (! $lockedWorkspace instanceof Workspace) {
-                throw ValidationException::withMessages([
-                    'production_bench' => 'The production workspace could not be found.',
-                ]);
-            }
-
-            $this->access->assertWritable($actor, $lockedWorkspace);
 
             $this->assertProductionStatuses($lockedProductions);
 

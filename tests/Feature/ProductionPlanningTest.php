@@ -6,6 +6,7 @@ use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\GenerateProductionTasks;
 use App\Actions\Production\PlanProduction;
 use App\Actions\Production\PrepareProductionStock;
+use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\StartProduction;
 use App\Actions\Production\UpdateProductionPlan;
@@ -1098,6 +1099,82 @@ it('rejects deleting a numbered run with active reservations at the database bou
 
     expect(fn (): ?bool => $production->delete())->toThrow(QueryException::class)
         ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
+});
+
+it('keeps a partially prepared soap run planned until lye coverage is complete', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'partial-lye-coverage-1',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+    $naoh = Ingredient::query()->where('catalog_key', 'CH1')->sole();
+    $naohRequirement = $production->requirements()->where('ingredient_id', $naoh->id)->firstOrFail();
+
+    $production->requirements->each(function (ProductionRequirement $requirement) use ($fixture, $naohRequirement): void {
+        $quantity = $requirement->id === $naohRequirement->id
+            ? bcdiv((string) $requirement->required_mass_grams, '2', 9)
+            : ($requirement->ingredient_id !== null
+                ? (string) $requirement->required_mass_grams
+                : (string) $requirement->required_units);
+        $lot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+            'ingredient_id' => $requirement->ingredient_id,
+            'packaging_item_id' => $requirement->packaging_item_id,
+            'unit_kind' => $requirement->ingredient_id !== null ? 'mass' : 'count',
+            'expires_at' => '2027-01-01',
+            'released_at' => now(),
+        ]);
+        StockMovement::factory()->for($lot, 'stockLot')->create([
+            'workspace_id' => $fixture['workspace']->id,
+            'type' => StockMovementType::OpeningBalance,
+            'quantity_delta' => $quantity,
+        ]);
+    });
+
+    $partial = app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'partial-lye-prepare-1',
+    )[0];
+
+    expect($partial->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_requirement_id', $naohRequirement->id)->sum('quantity'))
+        ->toEqual((float) bcdiv((string) $naohRequirement->required_mass_grams, '2', 9));
+
+    $remainingLot = StockLot::factory()->for($fixture['workspace'])->released()->create([
+        'ingredient_id' => $naoh->id,
+        'packaging_item_id' => null,
+        'unit_kind' => 'mass',
+        'expires_at' => '2027-01-01',
+        'released_at' => now(),
+    ]);
+    StockMovement::factory()->for($remainingLot, 'stockLot')->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'type' => StockMovementType::OpeningBalance,
+        'quantity_delta' => (string) ((float) $naohRequirement->required_mass_grams / 2),
+    ]);
+
+    $reserved = app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'partial-lye-prepare-2',
+    )[0];
+
+    expect($reserved->status)->toBe(ProductionRunStatus::Reserved)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())
+        ->toBe(5);
+
+    $released = app(ReleaseProductionStock::class)->handle($fixture['owner'], $reserved->fresh());
+
+    expect($released->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())
+        ->toBe(0);
 });
 
 it('starts a fully reserved and permanently numbered production', function (): void {

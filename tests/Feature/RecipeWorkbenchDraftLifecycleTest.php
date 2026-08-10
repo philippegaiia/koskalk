@@ -724,12 +724,12 @@ function grantLifecycleSavedFormulaHistory(User $user, int $limit): void
 function recipeWorkbenchLifecycleOil(array $overrides = []): Ingredient
 {
     return Ingredient::factory()->create(array_merge([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
         'soap_inci_naoh_name' => 'SODIUM OLIVATE',
         'soap_inci_koh_name' => 'POTASSIUM OLIVATE',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ], $overrides));
 }

@@ -13,6 +13,7 @@ export default defineConfig({
                 'resources/js/app.js',
                 'resources/js/print-document.js',
                 'resources/js/public.js',
+                'resources/js/filament/admin/classification-prompt.js',
                 'resources/css/filament/admin/theme.css',
             ],
             refresh: true,

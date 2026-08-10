@@ -15,7 +15,7 @@ uses(RefreshDatabase::class);
 
 it('syncs current carrier oil data from the ingredient entry service', function () {
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'catalog_key' => 'OO1',
         'is_active' => true,
     ]);
@@ -70,9 +70,10 @@ it('syncs current carrier oil data from the ingredient entry service', function 
 
 it('syncs current aromatic allergen data from the ingredient entry service', function () {
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'catalog_key' => 'EO1',
         'is_active' => true,
+        'requires_aromatic_compliance' => true,
     ]);
 
     $linalool = Allergen::factory()->create([
@@ -114,7 +115,7 @@ it('syncs current aromatic allergen data from the ingredient entry service', fun
 
 it('syncs ingredient functions from the ingredient entry service', function () {
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'catalog_key' => 'ADD1',
         'is_active' => true,
     ]);
@@ -150,9 +151,84 @@ it('syncs ingredient functions from the ingredient entry service', function () {
         ->and(app(IngredientDataEntryService::class)->formData($savedIngredient)['function_ids'])->toEqual([$emollient->id, $skinConditioning->id]);
 });
 
+it('preserves CosIng function provenance when a workspace edits its function selection', function () {
+    $ingredient = Ingredient::factory()->create();
+    $cosing = IngredientFunction::factory()->create();
+    $manual = IngredientFunction::factory()->create();
+
+    $ingredient->functions()->attach($cosing, [
+        'source' => 'cosing',
+        'source_reference' => 'CosIng ref 123',
+        'source_checked_at' => now(),
+    ]);
+
+    app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => $ingredient->display_name],
+        'function_ids' => [$cosing->id, $manual->id],
+    ]);
+
+    $assignments = $ingredient->fresh()->functions->keyBy('id');
+
+    expect($assignments[$cosing->id]->pivot->source)->toBe('cosing')
+        ->and($assignments[$cosing->id]->pivot->source_reference)->toBe('CosIng ref 123')
+        ->and($assignments[$manual->id]->pivot->source)->toBe('manual');
+});
+
+it('removes only manual function assignments when a workspace clears its selection', function () {
+    $ingredient = Ingredient::factory()->create();
+    $cosing = IngredientFunction::factory()->create();
+    $manual = IngredientFunction::factory()->create();
+
+    $ingredient->functions()->attach($cosing, ['source' => 'cosing', 'source_reference' => 'CosIng ref']);
+    $ingredient->functions()->attach($manual, ['source' => 'manual']);
+
+    app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => $ingredient->display_name],
+        'function_ids' => [],
+    ]);
+
+    expect($ingredient->fresh()->functions->pluck('id')->all())->toBe([$cosing->id]);
+});
+
+it('preserves specialist records when their form state was not submitted', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => true,
+        'requires_aromatic_compliance' => true,
+    ]);
+    $fattyAcid = FattyAcid::factory()->create();
+    $allergen = Allergen::factory()->create();
+
+    IngredientSapProfile::factory()->create([
+        'ingredient_id' => $ingredient->id,
+        'koh_sap_value' => 0.188,
+    ]);
+    $ingredient->fattyAcidEntries()->create([
+        'fatty_acid_id' => $fattyAcid->id,
+        'percentage' => 71,
+    ]);
+    $ingredient->allergenEntries()->create([
+        'allergen_id' => $allergen->id,
+        'concentration_percent' => 0.4,
+    ]);
+
+    app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => [
+            'display_name' => 'Identity-only edit',
+            'is_active' => true,
+        ],
+    ]);
+
+    $ingredient->refresh();
+
+    expect((float) $ingredient->sapProfile->koh_sap_value)->toBe(0.188)
+        ->and($ingredient->fattyAcidEntries)->toHaveCount(1)
+        ->and($ingredient->allergenEntries)->toHaveCount(1);
+});
+
 it('keeps sap profile reference metrics separate from fatty acid entries', function () {
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'catalog_key' => 'AVO1',
         'is_active' => true,
     ]);
@@ -181,25 +257,25 @@ it('keeps sap profile reference metrics separate from fatty acid entries', funct
 
 it('syncs composite ingredient components from the ingredient entry service', function () {
     $macerate = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'catalog_key' => 'MAC1',
         'is_active' => true,
     ]);
 
     $sunflowerOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'catalog_key' => 'SUN1',
         'is_active' => true,
     ]);
 
     $tocopherol = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'catalog_key' => 'TOC1',
         'is_active' => true,
     ]);
 
     $calendulaExtract = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'catalog_key' => 'CAL1',
         'is_active' => true,
     ]);
@@ -281,7 +357,7 @@ it('syncs composite ingredient components from the ingredient entry service', fu
 
 it('rejects composite components that do not reference catalog ingredients', function () {
     $macerate = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'catalog_key' => 'MAC2',
         'is_active' => true,
     ]);
@@ -305,9 +381,9 @@ it('rejects composite components that do not reference catalog ingredients', fun
     ]))->toThrow(ValidationException::class, 'Composite components must reference existing catalog ingredients.');
 });
 
-it('clears stale dependent data when an ingredient is reclassified', function () {
+it('preserves specialist data when an ingredient is reclassified', function () {
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'catalog_key' => 'REC1',
         'is_active' => true,
     ]);
@@ -353,7 +429,7 @@ it('clears stale dependent data when an ingredient is reclassified', function ()
     ]);
 
     $ingredient->update([
-        'category' => IngredientCategory::Clay,
+        'category' => IngredientCategory::MineralsSaltsPowders,
     ]);
 
     $service->syncCurrentData($ingredient->fresh(), [
@@ -371,19 +447,19 @@ it('clears stale dependent data when an ingredient is reclassified', function ()
 
     $savedIngredient = $savedIngredient->fresh(['sapProfile', 'fattyAcidEntries', 'allergenEntries']);
 
-    expect($savedIngredient->sapProfile)->toBeNull()
-        ->and($savedIngredient->fattyAcidEntries)->toHaveCount(0)
-        ->and($savedIngredient->allergenEntries)->toHaveCount(0);
+    expect($savedIngredient->sapProfile)->not->toBeNull()
+        ->and($savedIngredient->fattyAcidEntries)->toHaveCount(1)
+        ->and($savedIngredient->allergenEntries)->toHaveCount(1);
 });
 
 it('preserves existing per-row source notes when resynced without them', function () {
     $blend = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'catalog_key' => 'BLN1',
         'is_active' => true,
     ]);
     $component = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'catalog_key' => 'CMP1',
         'is_active' => true,
     ]);
@@ -437,10 +513,11 @@ it('clears explicitly blank per-row source notes', function () {
     $allergen = Allergen::factory()->create();
     $component = Ingredient::factory()->create();
     $carrierOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
     ]);
     $essentialOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
     ]);
     $blend = Ingredient::factory()->create();
     $service = app(IngredientDataEntryService::class);

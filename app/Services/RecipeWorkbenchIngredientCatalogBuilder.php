@@ -30,23 +30,15 @@ class RecipeWorkbenchIngredientCatalogBuilder
             ->with([
                 'sapProfile',
                 'fattyAcidEntries.fattyAcid',
+                'mediaAssetUsages.mediaAsset',
                 'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
             ])
             ->where('is_active', true)
             ->accessibleTo($user)
-            ->whereIn('category', [
-                IngredientCategory::CarrierOil->value,
-                IngredientCategory::EssentialOil->value,
-                IngredientCategory::FragranceOil->value,
-                IngredientCategory::BotanicalExtract->value,
-                IngredientCategory::Co2Extract->value,
-                IngredientCategory::Clay->value,
-                IngredientCategory::Glycol->value,
-                IngredientCategory::Colorant->value,
-                IngredientCategory::Preservative->value,
-                IngredientCategory::Additive->value,
-                IngredientCategory::Liquid->value,
-            ])
+            ->whereIn('category', array_map(
+                fn (IngredientCategory $category): string => $category->value,
+                IngredientCategory::cases(),
+            ))
             ->get()
             ->filter(fn (Ingredient $ingredient): bool => $isCosmetic || $ingredient->availableWorkbenchPhases() !== [])
             ->map(function (Ingredient $ingredient) use ($defaultPricesByIngredient): array {

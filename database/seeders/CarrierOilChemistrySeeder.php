@@ -37,7 +37,7 @@ class CarrierOilChemistrySeeder extends Seeder
                 throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] does not match any existing ingredient.");
             }
 
-            if ($ingredient->category !== IngredientCategory::CarrierOil) {
+            if ($ingredient->category !== IngredientCategory::Lipids) {
                 throw new RuntimeException("Carrier oil chemistry row [{$catalogKey}] points to [{$ingredient->display_name}], which is not a carrier oil.");
             }
 
@@ -55,9 +55,9 @@ class CarrierOilChemistrySeeder extends Seeder
 
             $this->syncFattyAcids($ingredient, $fattyAcids, $sourceNotes);
 
-            if (! $ingredient->is_potentially_saponifiable) {
+            if (! $ingredient->is_soap_saponification_trusted) {
                 $ingredient->forceFill([
-                    'is_potentially_saponifiable' => true,
+                    'is_soap_saponification_trusted' => true,
                 ])->save();
             }
         }

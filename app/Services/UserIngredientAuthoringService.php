@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Models\IfraCertificateLimit;
@@ -22,6 +23,7 @@ class UserIngredientAuthoringService
     public function __construct(
         protected IngredientDataEntryService $ingredientDataEntryService,
         protected EntitlementService $entitlementService,
+        protected IngredientFunctionAssignmentService $functionAssignments,
     ) {}
 
     /**
@@ -33,6 +35,9 @@ class UserIngredientAuthoringService
             'ingredient_structure' => 'ingredient',
             'name' => null,
             'category' => null,
+            'subcategory' => null,
+            'is_soap_saponification_trusted' => false,
+            'requires_aromatic_compliance' => false,
             'inci_name' => null,
             'cas_number' => null,
             'ec_number' => null,
@@ -45,6 +50,7 @@ class UserIngredientAuthoringService
             'composition_source_notes' => null,
             'allergen_source_notes' => null,
             'function_ids' => [],
+            'verified_function_names' => [],
             'allergen_entries' => [],
             'components' => [],
             'sap_profile' => [
@@ -80,6 +86,9 @@ class UserIngredientAuthoringService
             'ingredient_structure' => $ingredient->components()->exists() ? 'blend' : 'ingredient',
             'name' => data_get($entryData, 'current_version.display_name'),
             'category' => $ingredient->category?->value,
+            'subcategory' => $ingredient->subcategory?->value,
+            'is_soap_saponification_trusted' => $ingredient->is_soap_saponification_trusted,
+            'requires_aromatic_compliance' => $ingredient->requires_aromatic_compliance,
             'inci_name' => data_get($entryData, 'current_version.inci_name'),
             'cas_number' => data_get($entryData, 'current_version.cas_number'),
             'ec_number' => data_get($entryData, 'current_version.ec_number'),
@@ -92,6 +101,7 @@ class UserIngredientAuthoringService
             'composition_source_notes' => $ingredient->composition_source_notes,
             'allergen_source_notes' => $ingredient->allergen_source_notes,
             'function_ids' => $entryData['function_ids'] ?? [],
+            'verified_function_names' => $entryData['verified_function_names'] ?? [],
             'allergen_entries' => $entryData['allergen_entries'] ?? [],
             'components' => $entryData['components'] ?? [],
             'sap_profile' => [
@@ -143,7 +153,9 @@ class UserIngredientAuthoringService
                 'visibility' => Visibility::Private,
                 'requires_admin_review' => true,
                 'is_active' => true,
-                'is_potentially_saponifiable' => false,
+                'is_soap_saponification_trusted' => false,
+                'requires_aromatic_compliance' => false,
+                'taxonomy_source' => 'workspace_user',
             ]);
 
             $this->fillIngredient($ingredient, $state);
@@ -191,7 +203,7 @@ class UserIngredientAuthoringService
         }
 
         if (
-            $source->category === IngredientCategory::CarrierOil
+            $source->category === IngredientCategory::Lipids
             && $source->sapProfile?->koh_sap_value === null
         ) {
             throw ValidationException::withMessages([
@@ -262,8 +274,7 @@ class UserIngredientAuthoringService
             $entry->replicate()->fill(['ingredient_id' => $copy->id])->save();
         });
 
-        // Functions
-        $copy->functions()->sync($source->functions->pluck('id'));
+        $this->functionAssignments->copyTo($source, $copy);
 
         // IFRA certificates + limits
         $source->ifraCertificates->each(function ($certificate) use ($copy): void {
@@ -314,6 +325,22 @@ class UserIngredientAuthoringService
             $ingredient->category = IngredientCategory::from((string) $category);
         }
 
+        $subcategory = Arr::get($state, 'subcategory');
+        $ingredient->subcategory = $subcategory instanceof IngredientSubcategory
+            ? $subcategory
+            : (is_string($subcategory) ? IngredientSubcategory::tryFrom($subcategory) : null);
+
+        if ($ingredient->subcategory instanceof IngredientSubcategory
+            && $ingredient->subcategory->category() !== $ingredient->category) {
+            throw ValidationException::withMessages([
+                'subcategory' => 'Choose a subcategory belonging to the selected ingredient category.',
+            ]);
+        }
+
+        $ingredient->taxonomy_source = $ingredient->owner_type === null ? 'platform_curated' : 'workspace_user';
+        $ingredient->taxonomy_reviewed_at = null;
+        $ingredient->taxonomy_reviewed_by_user_id = null;
+
         if (array_key_exists('featured_image_path', $state)) {
             $featuredImagePath = Arr::get($state, 'featured_image_path');
             $ingredient->featured_image_path = $featuredImagePath;
@@ -336,11 +363,12 @@ class UserIngredientAuthoringService
         $ingredient->composition_source_notes = Arr::get($state, 'ingredient_structure') === 'blend'
             ? Arr::get($state, 'composition_source_notes')
             : null;
+        $ingredient->is_soap_saponification_trusted = (bool) Arr::get($state, 'is_soap_saponification_trusted', false)
+            && $this->canRetainUserSoapTrust($ingredient);
+        $ingredient->requires_aromatic_compliance = (bool) Arr::get($state, 'requires_aromatic_compliance', false);
         $ingredient->allergen_source_notes = $ingredient->requiresAromaticCompliance()
             ? Arr::get($state, 'allergen_source_notes')
-            : null;
-        $ingredient->is_potentially_saponifiable = $ingredient->category === IngredientCategory::CarrierOil
-            && $this->canRetainUserSoapTrust($ingredient);
+            : $ingredient->allergen_source_notes;
         $ingredient->is_active = true;
     }
 
@@ -380,9 +408,6 @@ class UserIngredientAuthoringService
 
         if ($ingredient->requiresAromaticCompliance()) {
             $this->syncIfraState($ingredient, Arr::get($state, 'ifra', []));
-        } else {
-            $ingredient->allergenEntries()->delete();
-            $ingredient->ifraCertificates()->delete();
         }
 
         return $ingredient->fresh([
@@ -511,8 +536,7 @@ class UserIngredientAuthoringService
         $trustedKohSapValue = $source->sapProfile?->koh_sap_value;
 
         if (
-            $source->category !== IngredientCategory::CarrierOil
-            || ! $source->is_potentially_saponifiable
+            ! $source->is_soap_saponification_trusted
             || $trustedKohSapValue === null
         ) {
             return $sourceData === [] ? null : $sourceData;
@@ -542,7 +566,7 @@ class UserIngredientAuthoringService
      */
     private function validateTrustedKohSapValue(Ingredient $ingredient, array $state): void
     {
-        if (! $this->canRetainUserSoapTrust($ingredient) || $ingredient->category !== IngredientCategory::CarrierOil) {
+        if (! $this->canRetainUserSoapTrust($ingredient)) {
             return;
         }
 
@@ -571,7 +595,7 @@ class UserIngredientAuthoringService
      */
     private function validateTrustedFattyAcidProfile(Ingredient $ingredient, array $state): void
     {
-        if (! $this->canRetainUserSoapTrust($ingredient) || $ingredient->category !== IngredientCategory::CarrierOil) {
+        if (! $this->canRetainUserSoapTrust($ingredient)) {
             return;
         }
 

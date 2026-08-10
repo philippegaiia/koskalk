@@ -161,7 +161,7 @@ it('stores a new private ingredient in the active company workspace', function (
 
     $ingredient = app(UserIngredientAuthoringService::class)->create([
         'name' => 'Company Sodium Citrate',
-        'category' => IngredientCategory::Additive->value,
+        'category' => IngredientCategory::Other->value,
         'inci_name' => 'SODIUM CITRATE',
     ], $subscriber);
 
@@ -185,7 +185,7 @@ it('stores a member private ingredient in their active subscriber workspace', fu
 
     $ingredient = app(UserIngredientAuthoringService::class)->create([
         'name' => 'Subscriber Workspace Ingredient',
-        'category' => IngredientCategory::Additive->value,
+        'category' => IngredientCategory::Other->value,
         'inci_name' => 'SUBSCRIBER WORKSPACE INGREDIENT',
     ], $member);
 
@@ -252,7 +252,7 @@ it('enforces the subscriber private ingredient limit when a company member creat
 
     expect(fn () => app(UserIngredientAuthoringService::class)->create([
         'name' => 'Blocked Company Ingredient',
-        'category' => IngredientCategory::Additive->value,
+        'category' => IngredientCategory::Other->value,
         'inci_name' => 'BLOCKED COMPANY INGREDIENT',
     ], $member))->toThrow(ValidationException::class, '1 private ingredients');
 });
@@ -484,7 +484,7 @@ it('rejects creating a private ingredient when the ingredient plan limit is reac
 
     expect(fn () => app(UserIngredientAuthoringService::class)->create([
         'name' => 'Calendula Flowers',
-        'category' => IngredientCategory::Additive->value,
+        'category' => IngredientCategory::Other->value,
         'inci_name' => 'CALENDULA OFFICINALIS FLOWER',
     ], $user))->toThrow(ValidationException::class, '20 private ingredients');
 });
@@ -559,10 +559,10 @@ it('keeps only one default plan', function () {
 function entitlementCarrierOilIngredient(): Ingredient
 {
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 

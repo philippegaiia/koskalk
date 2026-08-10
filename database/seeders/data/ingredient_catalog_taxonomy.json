@@ -1,0 +1,1175 @@
+{
+    "format": "soapkraft-ingredient-catalog-taxonomy",
+    "version": 2,
+    "assignments": [
+        {
+            "catalog_key": "ADM-ILLF4IRL",
+            "category": "water_solvents_carriers",
+            "subcategory": "water",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "ADM-P8YDYPKK",
+            "category": "soapmaking_alkalis",
+            "subcategory": "sodium_hydroxide",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "ADM-VSBOZPVX",
+            "category": "soapmaking_alkalis",
+            "subcategory": "potassium_hydroxide",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "BE1",
+            "category": "botanicals_extracts",
+            "subcategory": "plant_powders",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "BE2",
+            "category": "botanicals_extracts",
+            "subcategory": "dry_extracts",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "BE3",
+            "category": "minerals_salts_powders",
+            "subcategory": "starches_absorbent_powders",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "BE4",
+            "category": "preservation_stability",
+            "subcategory": "antioxidants",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "BE5",
+            "category": "actives",
+            "subcategory": "other_actives",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "BE6",
+            "category": "botanicals_extracts",
+            "subcategory": "plant_powders",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "CH1",
+            "category": "soapmaking_alkalis",
+            "subcategory": "sodium_hydroxide",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "CH2",
+            "category": "water_solvents_carriers",
+            "subcategory": "water",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "CH3",
+            "category": "soapmaking_alkalis",
+            "subcategory": "potassium_hydroxide",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "CO1",
+            "category": "colourants",
+            "subcategory": "mineral_pigments",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "CO2",
+            "category": "colourants",
+            "subcategory": "mineral_pigments",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "EC1",
+            "category": "minerals_salts_powders",
+            "subcategory": "clays",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "EC2",
+            "category": "colourants",
+            "subcategory": "mineral_pigments",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "EC3",
+            "category": "colourants",
+            "subcategory": "mineral_pigments",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "EO1",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO10",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO11",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO12",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO13",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO14",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO15",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO16",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO17",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO18",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO19",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO2",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO20",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO21",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO22",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO23",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO24",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO25",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO26",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO27",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO28",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO29",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO3",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO30",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO4",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO5",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO6",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO7",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO8",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "EO9",
+            "category": "aromatic_materials",
+            "subcategory": "essential_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": true
+        },
+        {
+            "catalog_key": "ING029",
+            "category": "other",
+            "subcategory": null,
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "ING618",
+            "category": "other",
+            "subcategory": null,
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB1",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB10",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB11",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB12",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB13",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB14",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB15",
+            "category": "waxes",
+            "subcategory": "liquid_waxes",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB16",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB17",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB18",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB19",
+            "category": "botanicals_extracts",
+            "subcategory": "plant_powders",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB2",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB3",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB4",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB5",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB6",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB7",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB8",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "OB9",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "WA1",
+            "category": "waxes",
+            "subcategory": "plant_waxes",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "WA2",
+            "category": "waxes",
+            "subcategory": "plant_waxes",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "almond_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "andiroba_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "apricot_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "argan_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "avocado_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "avocado_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "babassu_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "bacaba_kernel_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "bacaba_pulp_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "bacuri_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "baobab_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "beef_tallow",
+            "category": "lipids",
+            "subcategory": "animal_fats",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "black_cumin_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "borago_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "brazil_nut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "buriti_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "calendula_oil",
+            "category": "botanicals_extracts",
+            "subcategory": "oil_macerates",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "camelina_seed_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "camellia_tea_seed_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "canola_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "castor_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "cherry_kernel_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "chicken_fat",
+            "category": "lipids",
+            "subcategory": "animal_fats",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "cocoa_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "coconut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "copa_ba_oil",
+            "category": "other",
+            "subcategory": null,
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "corn_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "coroba_kernell_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "cottonseed_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "crisco",
+            "category": "lipids",
+            "subcategory": "fractionated_modified_lipids",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "cucumber_seed_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "cupuacu_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "duck_fat",
+            "category": "lipids",
+            "subcategory": "animal_fats",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "emu_oil",
+            "category": "lipids",
+            "subcategory": "animal_fats",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "evening_primrose_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "fractionated_coconut_oil",
+            "category": "lipids",
+            "subcategory": "fractionated_modified_lipids",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "grape_seed_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "hazelnut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "hemp_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "illipe_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "jojoba_oil",
+            "category": "waxes",
+            "subcategory": "liquid_waxes",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "karanja_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "kokum_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "kukui_nut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "lard",
+            "category": "lipids",
+            "subcategory": "animal_fats",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "laurel_berries_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "licuri_coconut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "lineseed_oil_flax",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "macadamia_nut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "mango_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "mango_oil",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "maracuja_passionfruit_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "marula_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "moringa_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "mowrah_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "murumuru_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "mustard_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "neem_tree_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "olive_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "olive_pomace_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "olive_recycled_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "palm_kernel_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "palm_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "palm_olein",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "patau_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "peach_kernel_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "peanut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "pecan_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "pequi_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "pistachio_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "poppyseed_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "pracaxi_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "pumpkin_seed_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "rice_bran_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "roasted_coffee_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "rosehip_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "sacha_inchi_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "safflower_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "safflower_oil_high_oleic",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "sal_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "seeds_oil",
+            "category": "other",
+            "subcategory": null,
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "sesame_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "shea_butter",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "soy_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "soy_oil_hydrogenated",
+            "category": "lipids",
+            "subcategory": "fractionated_modified_lipids",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "stearine",
+            "category": "lipids",
+            "subcategory": "fractionated_modified_lipids",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "sunflower_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "sunflower_oil_high_oleic",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "tallow_cow",
+            "category": "lipids",
+            "subcategory": "animal_fats",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "tallow_sheep",
+            "category": "lipids",
+            "subcategory": "animal_fats",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "tigernut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "tucum_kernel_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "tucum_pulp_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "ucu_ba_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "vegetal_butter_margarine",
+            "category": "lipids",
+            "subcategory": "butters",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "walnut_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": true,
+            "requires_aromatic_compliance": false
+        },
+        {
+            "catalog_key": "wheatgerm_oil",
+            "category": "lipids",
+            "subcategory": "vegetable_oils",
+            "is_soap_saponification_trusted": false,
+            "requires_aromatic_compliance": false
+        }
+    ]
+}

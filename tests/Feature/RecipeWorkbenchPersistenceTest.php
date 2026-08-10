@@ -1006,20 +1006,20 @@ it('preserves ingredient order across draft and saved versions', function () {
 
     $oliveOil = makeCarrierOilIngredient();
     $coconutOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Coconut Oil',
         'inci_name' => 'COCOS NUCIFERA OIL',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
     $spirulina = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Spirulina',
         'inci_name' => 'SPIRULINA PLATENSIS POWDER',
         'is_active' => true,
     ]);
     $oatMilk = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Oat Milk Powder',
         'inci_name' => 'AVENA SATIVA KERNEL FLOUR',
         'is_active' => true,
@@ -1097,14 +1097,14 @@ it('keeps selected zero-quantity ingredients across draft and saved soap version
 
     $oliveOil = makeCarrierOilIngredient();
     $coconutOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Coconut Oil',
         'inci_name' => 'COCOS NUCIFERA OIL',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
     $clay = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Green Clay',
         'inci_name' => 'ILLITE',
         'is_active' => true,
@@ -1183,13 +1183,13 @@ it('rejects inaccessible zero-quantity ingredients before saving soap formulas',
 
     $oliveOil = makeCarrierOilIngredient();
     $privateOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Other User Oil',
         'inci_name' => 'PRIVATE OIL',
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'visibility' => Visibility::Private,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 
@@ -1214,10 +1214,10 @@ it('rejects negative soap formula row values before saving', function () {
 
     $oliveOil = makeCarrierOilIngredient();
     $coconutOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Coconut Oil',
         'inci_name' => 'COCOS NUCIFERA OIL',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 
@@ -1457,6 +1457,131 @@ Object.defineProperty(globalThis, 'navigator', {
 });
 
 assert.equal(await copyText('plain list'), false);
+
+let selectedText = null;
+const fallbackTextArea = {
+    value: '',
+    style: {},
+    setAttribute: () => {},
+    select() { selectedText = this.value; },
+    remove: () => {},
+};
+
+Object.defineProperty(globalThis, 'document', {
+    configurable: true,
+    value: {
+        body: { appendChild: () => {} },
+        createElement: () => fallbackTextArea,
+        execCommand: (command) => command === 'copy',
+    },
+});
+
+Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: {},
+});
+
+assert.equal(await copyText('HTTP fallback list'), true);
+assert.equal(selectedText, 'HTTP fallback list');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('loads the shared classification prompt clipboard component in the admin panel', function (): void {
+    $path = resource_path('js/filament/admin/classification-prompt.js');
+    $source = file_exists($path) ? file_get_contents($path) : '';
+    $view = file_get_contents(resource_path('views/filament/resources/ingredients/classification-prompt.blade.php'));
+
+    expect(file_exists($path))->toBeTrue()
+        ->and($source)->toContain("import { copyText } from '../../recipe-workbench/clipboard.js';")
+        ->and($source)->toContain("document.addEventListener('click'")
+        ->and($source)->toContain("closest('[data-ingredient-classification-copy]')")
+        ->and($source)->not->toContain("document.addEventListener('alpine:init'")
+        ->and($source)->not->toContain('window.Alpine.data')
+        ->and($view)->toContain('data-ingredient-classification-helper')
+        ->and($view)->toContain('data-ingredient-classification-copy')
+        ->and($view)->toContain('data-ingredient-classification-prompt')
+        ->and($view)->not->toContain('x-data="classificationPrompt"');
+});
+
+it('delegates admin classification prompt copy clicks to the shared clipboard utility', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+    .readFileSync('resources/js/filament/admin/classification-prompt.js', 'utf8')
+    .replace(
+        "import { copyText } from '../../recipe-workbench/clipboard.js';",
+        "const copyText = async (value) => { copiedValues.push(value); return true; };",
+    );
+
+const listeners = {};
+const copiedValues = [];
+
+class Element {}
+class HTMLButtonElement extends Element {}
+class HTMLTextAreaElement extends Element {}
+
+globalThis.Element = Element;
+globalThis.HTMLButtonElement = HTMLButtonElement;
+globalThis.HTMLTextAreaElement = HTMLTextAreaElement;
+globalThis.window = { setTimeout: (callback) => callback() };
+globalThis.document = {
+    addEventListener(eventName, callback) {
+        listeners[eventName] = callback;
+    },
+};
+
+eval(source);
+
+assert.equal(typeof listeners.click, 'function');
+
+const failure = {
+    classList: {
+        toggle(className, shouldHide) {
+            assert.equal(className, 'hidden');
+            assert.equal(shouldHide, true);
+        },
+    },
+};
+const prompt = new HTMLTextAreaElement();
+prompt.value = 'Generated ingredient prompt';
+const button = new HTMLButtonElement();
+button.disabled = false;
+button.dataset = {
+    copyLabel: 'Copy prompt',
+    copiedLabel: 'Copied',
+};
+button.textContent = 'Copy prompt';
+button.isConnected = true;
+button.closest = (selector) => {
+    if (selector === '[data-ingredient-classification-copy]') {
+        return button;
+    }
+
+    return {
+        querySelector(query) {
+            return query === '[data-ingredient-classification-prompt]' ? prompt : failure;
+        },
+    };
+};
+
+assert.equal(button instanceof Element, true);
+assert.equal(button instanceof HTMLButtonElement, true);
+assert.equal(prompt instanceof HTMLTextAreaElement, true);
+
+await listeners.click({ target: button });
+
+assert.deepEqual(copiedValues, ['Generated ingredient prompt']);
+assert.equal(button.textContent, 'Copy prompt');
 JS;
 
     $process = Process::fromShellCommandline(
@@ -3382,22 +3507,23 @@ it('exposes workbench phase options for saponifiable oils, additive-only oils, a
     ]);
 
     $trustedCarrierIngredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
-        'is_potentially_saponifiable' => true,
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
     $trustedCarrierIngredient->sapProfile()->create(['koh_sap_value' => 0.188]);
 
     $customCarrierIngredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Custom Fig Oil',
-        'is_potentially_saponifiable' => false,
+        'is_soap_saponification_trusted' => false,
         'is_active' => true,
     ]);
 
     $fragranceIngredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Rose Accord',
+        'requires_aromatic_compliance' => true,
         'is_active' => true,
     ]);
 
@@ -3926,10 +4052,10 @@ JS;
 function makeCarrierOilIngredient(): Ingredient
 {
     return Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 }

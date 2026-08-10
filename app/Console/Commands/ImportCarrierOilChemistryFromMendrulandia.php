@@ -38,7 +38,7 @@ class ImportCarrierOilChemistryFromMendrulandia extends Command
         $fattyAcidIdsByKey = FattyAcid::query()->pluck('id', 'key')->all();
 
         $ingredientsByLowerName = Ingredient::query()
-            ->where('category', IngredientCategory::CarrierOil->value)
+            ->where('category', IngredientCategory::Lipids)
             ->get()
             ->keyBy(fn ($i) => Str::lower($i->display_name));
 
@@ -65,8 +65,10 @@ class ImportCarrierOilChemistryFromMendrulandia extends Command
 
             $this->line("Importing [{$displayName}]...");
 
-            if (! $ingredient->is_potentially_saponifiable) {
-                $ingredient->forceFill(['is_potentially_saponifiable' => true])->save();
+            if (! $ingredient->is_soap_saponification_trusted) {
+                $ingredient->forceFill([
+                    'is_soap_saponification_trusted' => true,
+                ])->save();
             }
 
             if (! filled($ingredient->inci_name) && filled($row['inci_name'] ?? null)) {

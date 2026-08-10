@@ -7,6 +7,9 @@ use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\Plan;
+use App\Models\RecipeVersion;
+use App\Models\RecipeVersionCosting;
+use App\Models\RecipeVersionCostingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\IngredientFormulaUsageService;
@@ -24,7 +27,7 @@ it('shows platform ingredients whether or not the user has priced them', functio
 
     $olive = Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -32,7 +35,7 @@ it('shows platform ingredients whether or not the user has priced them', functio
 
     $coconut = Ingredient::factory()->create([
         'display_name' => 'Coconut Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -69,7 +72,7 @@ it('shows the ingredient price column in the users current default currency', fu
 
     Ingredient::factory()->create([
         'display_name' => 'My Lavender',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'is_active' => true,
@@ -89,7 +92,7 @@ it('displays and edits ingredient prices per pound for a US customary workspace'
     ]);
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -109,6 +112,100 @@ it('displays and edits ingredient prices per pound for a US customary workspace'
         ->where('workspace_id', $user->company()?->id)
         ->where('ingredient_id', $ingredient->id)
         ->value('price_per_canonical_unit'), '1000', 4))->toBe('13.2277');
+});
+
+it('lets a workspace unset its price for a platform ingredient without affecting another workspace', function (): void {
+    $firstOwner = User::factory()->create();
+    $secondOwner = User::factory()->create();
+    $firstWorkspace = Workspace::factory()->for($firstOwner, 'owner')->create();
+    $secondWorkspace = Workspace::factory()->for($secondOwner, 'owner')->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+
+    rememberIngredientPriceForWorkspace($firstOwner, $ingredient, '5.25', 'EUR');
+    rememberIngredientPriceForWorkspace($secondOwner, $ingredient, '7.50', 'EUR');
+
+    actingAs($firstOwner);
+
+    Livewire::test(IngredientsIndex::class)
+        ->call('updateIngredientPrice', $ingredient->id, '')
+        ->assertHasNoErrors('price_'.$ingredient->id);
+
+    expect(CurrentMaterialPrice::query()
+        ->where('workspace_id', $firstWorkspace->id)
+        ->where('ingredient_id', $ingredient->id)
+        ->exists())->toBeFalse()
+        ->and(CurrentMaterialPrice::query()
+            ->where('workspace_id', $secondWorkspace->id)
+            ->where('ingredient_id', $ingredient->id)
+            ->value('price_per_canonical_unit'))->toBe('0.007500000000');
+});
+
+it('marks live costing rows as unpriced when the workspace price is unset', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+    $recipeVersion = RecipeVersion::factory()->create(['workspace_id' => $workspace->id]);
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $recipeVersion->id,
+        'user_id' => $owner->id,
+        'currency' => 'EUR',
+    ]);
+    $costingItem = RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'main',
+        'position' => 1,
+        'price_per_kg' => '5.2500',
+    ]);
+
+    rememberIngredientPriceForWorkspace($owner, $ingredient, '5.25', 'EUR');
+
+    actingAs($owner);
+
+    Livewire::test(IngredientsIndex::class)
+        ->call('updateIngredientPrice', $ingredient->id, '')
+        ->assertHasNoErrors('price_'.$ingredient->id);
+
+    expect($costingItem->fresh()->price_per_kg)->toBeNull();
+});
+
+it('does not change live costing rows when the workspace had no current price to unset', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+    $recipeVersion = RecipeVersion::factory()->create(['workspace_id' => $workspace->id]);
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $recipeVersion->id,
+        'user_id' => $owner->id,
+        'currency' => 'EUR',
+    ]);
+    $costingItem = RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => $ingredient->id,
+        'phase_key' => 'main',
+        'position' => 1,
+        'price_per_kg' => '5.2500',
+    ]);
+
+    actingAs($owner);
+
+    Livewire::test(IngredientsIndex::class)
+        ->call('updateIngredientPrice', $ingredient->id, '')
+        ->assertHasNoErrors('price_'.$ingredient->id);
+
+    expect($costingItem->fresh()->price_per_kg)->toBe('5.2500');
 });
 
 it('renders inline ingredient prices with the users saved English number format', function () {
@@ -135,7 +232,7 @@ it('does not show inactive platform ingredients in the unified table', function 
 
     $active = Ingredient::factory()->create([
         'display_name' => 'Active Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -143,7 +240,7 @@ it('does not show inactive platform ingredients in the unified table', function 
 
     $inactive = Ingredient::factory()->create([
         'display_name' => 'Inactive Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => false,
@@ -161,7 +258,7 @@ it('can filter the unified ingredient table by platform catalog records', functi
 
     $platform = Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -169,7 +266,7 @@ it('can filter the unified ingredient table by platform catalog records', functi
 
     $mine = Ingredient::factory()->create([
         'display_name' => 'My Lavender',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'is_active' => true,
@@ -189,7 +286,7 @@ it('shows user-owned ingredients in the unified table', function () {
 
     Ingredient::factory()->create([
         'display_name' => 'My Lavender',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'is_active' => true,
@@ -197,7 +294,7 @@ it('shows user-owned ingredients in the unified table', function () {
 
     Ingredient::factory()->create([
         'display_name' => 'Other User Oil',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'is_active' => true,
@@ -295,7 +392,7 @@ it('updates a user ingredient price via the price endpoint', function () {
 
     $olive = Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -327,7 +424,7 @@ it('does not allow pricing another users private ingredient through the endpoint
 
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Other User Lavender',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
         'is_active' => true,
@@ -355,7 +452,7 @@ it('uses the users default currency when creating a price via the price endpoint
 
     $olive = Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -383,7 +480,7 @@ it('uses the workspace currency when updating via the price endpoint', function 
 
     $olive = Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -413,7 +510,7 @@ it('uses the users default currency when creating a price from the ingredient ta
 
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'My Lavender',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'is_active' => true,

@@ -22,6 +22,7 @@ class IngredientTranslationFactory extends Factory
             'ingredient_id' => Ingredient::factory(),
             'locale' => 'fr',
             'display_name' => fake()->words(3, true),
+            'saponification_name' => null,
             'info_markdown' => fake()->optional()->paragraph(),
         ];
     }

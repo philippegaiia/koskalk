@@ -126,7 +126,7 @@ it('shows the current users personal ingredient count on the dashboard', functio
     $otherUser = User::factory()->create();
 
     Ingredient::factory()->create([
-        'category' => IngredientCategory::Clay,
+        'category' => IngredientCategory::MineralsSaltsPowders,
         'display_name' => 'French Green Clay',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
@@ -135,7 +135,7 @@ it('shows the current users personal ingredient count on the dashboard', functio
     ]);
 
     Ingredient::factory()->create([
-        'category' => IngredientCategory::Glycol,
+        'category' => IngredientCategory::WaterSolventsCarriers,
         'display_name' => 'Propylene Glycol',
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,

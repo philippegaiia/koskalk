@@ -8,7 +8,7 @@ use App\Models\Workspace;
 
 class LiveCostingPricePropagationService
 {
-    public function ingredientPriceChanged(Workspace $workspace, int $ingredientId, string $pricePerKg, ?int $exceptCostingId = null): void
+    public function ingredientPriceChanged(Workspace $workspace, int $ingredientId, ?string $pricePerKg, ?int $exceptCostingId = null): void
     {
         $query = RecipeVersionCostingItem::query()
             ->where('ingredient_id', $ingredientId)
@@ -19,7 +19,7 @@ class LiveCostingPricePropagationService
         }
 
         $query->update([
-            'price_per_kg' => round((float) $pricePerKg, 4),
+            'price_per_kg' => $pricePerKg === null ? null : round((float) $pricePerKg, 4),
             'updated_at' => now(),
         ]);
     }

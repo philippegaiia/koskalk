@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\IfraCertificates\Schemas;
 
-use App\Enums\IngredientCategory;
 use App\Models\IfraProductCategory;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -29,7 +28,7 @@ class IfraCertificateForm
                             ->relationship(
                                 name: 'ingredient',
                                 titleAttribute: 'display_name',
-                                modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn('category', IngredientCategory::aromaticValues())
+                                modifyQueryUsing: fn (Builder $query): Builder => $query->where('requires_aromatic_compliance', true)
                             )
                             ->searchable()
                             ->preload()

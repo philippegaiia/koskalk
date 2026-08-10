@@ -25,7 +25,7 @@ it('searches platform ingredients for duplication', function () {
 
     Ingredient::factory()->create([
         'display_name' => 'Lavender 40/42',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -33,7 +33,7 @@ it('searches platform ingredients for duplication', function () {
 
     Ingredient::factory()->create([
         'display_name' => 'Peppermint Oil',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -55,7 +55,7 @@ it('creates a workspace-owned copy when duplicating a platform ingredient', func
     $source = Ingredient::factory()->create([
         'display_name' => 'Rosemary Oil',
         'inci_name' => 'ROSMARINUS OFFICINALIS OIL',
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,

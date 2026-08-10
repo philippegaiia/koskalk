@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
+use App\Support\IngredientCatalogTaxonomyDataset;
 use Illuminate\Database\Seeder;
 use RuntimeException;
 
@@ -24,15 +25,11 @@ class IngredientCatalogSeeder extends Seeder
             }
 
             $sourceCodePrefix = $this->sourceCodePrefix($catalogKey);
-            $category = $this->ingredientCategory(
-                $sourceCodePrefix,
-                $this->value($row, 'INCI'),
-                $this->value($row, 'Name'),
-            );
-
-            if ($category === IngredientCategory::FragranceOil) {
+            if ($sourceCodePrefix === 'FR') {
                 continue;
             }
+
+            $taxonomy = app(IngredientCatalogTaxonomyDataset::class)->assignmentFor($catalogKey);
 
             $soapInciNaohName = $this->value($row, 'INCI NaOH');
             $soapInciKohName = $this->value($row, 'INCI KOH');
@@ -44,7 +41,9 @@ class IngredientCatalogSeeder extends Seeder
                     'catalog_key' => $catalogKey,
                 ],
                 [
-                    'category' => $category,
+                    'category' => $taxonomy['category'] ?? IngredientCategory::Other,
+                    'subcategory' => $taxonomy['subcategory'] ?? null,
+                    'taxonomy_source' => $taxonomy === null ? 'import_unclassified' : 'platform_curated',
                     'display_name' => $displayNameEn ?? $displayNameFr ?? $this->value($row, 'INCI') ?? $catalogKey,
                     'inci_name' => $this->value($row, 'INCI'),
                     'soap_inci_naoh_name' => $soapInciNaohName,
@@ -52,7 +51,8 @@ class IngredientCatalogSeeder extends Seeder
                     'cas_number' => $this->value($row, 'CAS'),
                     'ec_number' => $this->value($row, 'EINECS') ?? $this->value($row, 'CAS EINECS'),
                     'unit' => $this->value($row, 'Unit'),
-                    'is_potentially_saponifiable' => $soapInciNaohName !== null || $soapInciKohName !== null,
+                    'is_soap_saponification_trusted' => $taxonomy['is_soap_saponification_trusted'] ?? false,
+                    'requires_aromatic_compliance' => $taxonomy['requires_aromatic_compliance'] ?? false,
                     'requires_admin_review' => true,
                     'is_active' => $this->yesNoToBool($this->value($row, 'Active'), default: true),
                     'is_manufactured' => $this->yesNoToBool($this->value($row, 'Fabriqué'), default: false),
@@ -146,27 +146,6 @@ class IngredientCatalogSeeder extends Seeder
         preg_match('/^[A-Za-z]+/', $sourceKey, $matches);
 
         return $matches[0] ?? null;
-    }
-
-    private function ingredientCategory(?string $sourceCodePrefix, ?string $inciName, ?string $ingredientName): IngredientCategory
-    {
-        $searchText = strtolower(trim(($inciName ?? '').' '.($ingredientName ?? '')));
-
-        return match ($sourceCodePrefix) {
-            'OB' => IngredientCategory::CarrierOil,
-            'EO' => IngredientCategory::EssentialOil,
-            'FR' => IngredientCategory::FragranceOil,
-            'BE' => IngredientCategory::BotanicalExtract,
-            'CO' => IngredientCategory::Colorant,
-            'CH' => str_contains($searchText, 'hydroxide') ? IngredientCategory::Alkali : IngredientCategory::Liquid,
-            default => str_contains($searchText, 'co2') && str_contains($searchText, 'extract')
-                ? IngredientCategory::Co2Extract
-                : (str_contains($searchText, 'extract')
-                    ? IngredientCategory::BotanicalExtract
-                    : (str_contains($searchText, 'preserv')
-                        ? IngredientCategory::Preservative
-                        : IngredientCategory::Additive)),
-        };
     }
 
     private function yesNoToBool(?string $value, bool $default): bool

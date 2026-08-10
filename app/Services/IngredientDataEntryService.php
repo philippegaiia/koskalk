@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Enums\IngredientCategory;
+use App\Enums\IngredientFunctionSource;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientComponent;
@@ -15,6 +15,10 @@ use Illuminate\Validation\ValidationException;
 
 class IngredientDataEntryService
 {
+    public function __construct(
+        private readonly IngredientFunctionAssignmentService $functionAssignments,
+    ) {}
+
     /**
      * @return array<string, mixed>
      */
@@ -26,6 +30,7 @@ class IngredientDataEntryService
                 'inci_name' => $ingredient->inci_name,
                 'soap_inci_naoh_name' => $ingredient->soap_inci_naoh_name,
                 'soap_inci_koh_name' => $ingredient->soap_inci_koh_name,
+                'saponification_name' => $ingredient->saponification_name,
                 'cas_number' => $ingredient->cas_number,
                 'ec_number' => $ingredient->ec_number,
                 'unit' => $ingredient->unit,
@@ -49,10 +54,20 @@ class IngredientDataEntryService
                 ->values()
                 ->all() ?? [],
             'function_ids' => $ingredient->functions()
+                ->wherePivot('source', IngredientFunctionSource::Manual->value)
                 ->orderBy('ingredient_functions.sort_order')
                 ->orderBy('ingredient_functions.name')
                 ->pluck('ingredient_functions.id')
                 ->map(fn (int|string $id): int => (int) $id)
+                ->all(),
+            'verified_function_names' => $ingredient->functions()
+                ->wherePivotIn('source', [
+                    IngredientFunctionSource::CosIng->value,
+                    IngredientFunctionSource::Inherited->value,
+                ])
+                ->orderBy('ingredient_functions.sort_order')
+                ->orderBy('ingredient_functions.name')
+                ->pluck('ingredient_functions.name')
                 ->all(),
             'components' => $ingredient->components
                 ->map(fn (IngredientComponent $entry): array => [
@@ -70,6 +85,11 @@ class IngredientDataEntryService
      */
     public function syncCurrentData(Ingredient $ingredient, array $state): Ingredient
     {
+        $hasSapProfileState = array_key_exists('sap_profile', $state);
+        $hasFattyAcidEntriesState = array_key_exists('fatty_acid_entries', $state);
+        $hasAllergenEntriesState = array_key_exists('allergen_entries', $state);
+        $hasFunctionIdsState = array_key_exists('function_ids', $state);
+        $hasComponentsState = array_key_exists('components', $state);
         $currentVersionState = is_array($state['current_version'] ?? null) ? $state['current_version'] : [];
         $sapProfileState = is_array($state['sap_profile'] ?? null) ? $state['sap_profile'] : [];
         $fattyAcidEntriesState = is_array($state['fatty_acid_entries'] ?? null) ? $state['fatty_acid_entries'] : [];
@@ -82,6 +102,7 @@ class IngredientDataEntryService
             'inci_name' => $currentVersionState['inci_name'] ?? null,
             'soap_inci_naoh_name' => $currentVersionState['soap_inci_naoh_name'] ?? null,
             'soap_inci_koh_name' => $currentVersionState['soap_inci_koh_name'] ?? null,
+            'saponification_name' => $currentVersionState['saponification_name'] ?? null,
             'cas_number' => $currentVersionState['cas_number'] ?? null,
             'ec_number' => $currentVersionState['ec_number'] ?? null,
             'unit' => $currentVersionState['unit'] ?? null,
@@ -92,10 +113,27 @@ class IngredientDataEntryService
         ]);
         $ingredient->save();
 
-        $this->syncSapProfile($ingredient, $sapProfileState, $fattyAcidEntriesState);
-        $this->syncAllergenEntries($ingredient, $allergenEntriesState);
-        $this->syncFunctions($ingredient, $functionIdsState);
-        $this->syncComponents($ingredient, $componentsState);
+        if ($hasSapProfileState || $hasFattyAcidEntriesState) {
+            $this->syncSapProfile(
+                $ingredient,
+                $sapProfileState,
+                $fattyAcidEntriesState,
+                $hasSapProfileState,
+                $hasFattyAcidEntriesState,
+            );
+        }
+
+        if ($hasAllergenEntriesState) {
+            $this->syncAllergenEntries($ingredient, $allergenEntriesState);
+        }
+
+        if ($hasFunctionIdsState) {
+            $this->syncFunctions($ingredient, $functionIdsState);
+        }
+
+        if ($hasComponentsState) {
+            $this->syncComponents($ingredient, $componentsState);
+        }
 
         return $ingredient->fresh([
             'sapProfile',
@@ -122,10 +160,11 @@ class IngredientDataEntryService
         Ingredient $ingredient,
         array $sapProfileState,
         array $fattyAcidEntriesState,
+        bool $syncSapProfile,
+        bool $syncFattyAcids,
     ): void {
-        if ($ingredient->category !== IngredientCategory::CarrierOil) {
-            $this->clearSapProfileData($ingredient);
-
+        if (! $ingredient->is_soap_saponification_trusted
+            && ! $this->hasMeaningfulSapState($sapProfileState, $fattyAcidEntriesState)) {
             return;
         }
 
@@ -133,13 +172,17 @@ class IngredientDataEntryService
             'ingredient_id' => $ingredient->id,
         ]);
 
-        if ($sapProfile->exists || $this->hasMeaningfulSapState($sapProfileState, $fattyAcidEntriesState)) {
+        if ($syncSapProfile && ($sapProfile->exists || $this->hasMeaningfulSapState($sapProfileState, $fattyAcidEntriesState))) {
             $sapProfile->ingredient_id = $ingredient->id;
             $sapProfile->koh_sap_value = $sapProfileState['koh_sap_value'] ?? null;
             $sapProfile->iodine_value = $sapProfileState['iodine_value'] ?? null;
             $sapProfile->ins_value = $sapProfileState['ins_value'] ?? null;
             $sapProfile->source_notes = $sapProfileState['source_notes'] ?? null;
             $sapProfile->save();
+        }
+
+        if (! $syncFattyAcids) {
+            return;
         }
 
         $existingFattyAcidSources = IngredientFattyAcid::query()
@@ -173,10 +216,6 @@ class IngredientDataEntryService
         array $allergenEntriesState,
     ): void {
         if (! $ingredient->requiresAromaticCompliance()) {
-            IngredientAllergenEntry::query()
-                ->where('ingredient_id', $ingredient->id)
-                ->delete();
-
             return;
         }
 
@@ -216,7 +255,7 @@ class IngredientDataEntryService
             ->values();
 
         if ($functionIds->isEmpty()) {
-            $ingredient->functions()->sync([]);
+            $this->functionAssignments->syncManual($ingredient, []);
 
             return;
         }
@@ -227,7 +266,7 @@ class IngredientDataEntryService
             ->map(fn (int|string $id): int => (int) $id)
             ->all();
 
-        $ingredient->functions()->sync($validFunctionIds);
+        $this->functionAssignments->syncManual($ingredient, $validFunctionIds);
     }
 
     private function hasMeaningfulSapState(array $sapProfileState, array $fattyAcidEntriesState): bool

@@ -19,8 +19,8 @@ it('renders the recipes page for signed-in users', function () {
     ]);
 
     Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
-        'is_potentially_saponifiable' => true,
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => true,
     ]);
 
     $this->actingAs(User::factory()->create())
@@ -37,12 +37,12 @@ it('renders the soap workbench with filtered catalog data for signed-in users', 
     ]);
 
     $carrierOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'Olea europaea fruit oil',
         'soap_inci_naoh_name' => 'Sodium olivate',
         'soap_inci_koh_name' => 'Potassium olivate',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
 
     IngredientSapProfile::factory()
@@ -52,7 +52,7 @@ it('renders the soap workbench with filtered catalog data for signed-in users', 
         ]);
 
     $essentialOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'Lavandula angustifolia oil',
     ]);
@@ -81,7 +81,7 @@ it('shows private user ingredients in the workbench only for their owner', funct
     $otherUser = User::factory()->create();
 
     $privateIngredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Private Sodium Lactate',
         'inci_name' => 'SODIUM LACTATE',
         'owner_type' => OwnerType::User,

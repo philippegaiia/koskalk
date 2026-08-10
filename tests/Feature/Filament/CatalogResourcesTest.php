@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Filament\Resources\Allergens\AllergenResource;
@@ -64,7 +65,8 @@ it('keeps the entered display name when an admin creates an ingredient', functio
 
     Livewire::test(CreateIngredient::class)
         ->fillForm([
-            'category' => IngredientCategory::EssentialOil->value,
+            'category' => IngredientCategory::AromaticMaterials->value,
+            'subcategory' => IngredientSubcategory::EssentialOils->value,
             'current_version.display_name' => 'Grapefruit white',
         ])
         ->call('create')
@@ -75,6 +77,85 @@ it('keeps the entered display name when an admin creates an ingredient', functio
     expect($ingredient->display_name)->toBe('Grapefruit white')
         ->and($ingredient->catalog_key)->toStartWith('ADM-')
         ->and(IngredientResource::getRecordTitle($ingredient))->toBe('Grapefruit white');
+});
+
+it('generates an ingredient classification prompt from unsaved admin create state', function (): void {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+
+    Livewire::test(CreateIngredient::class)
+        ->set('data.current_version.display_name', 'Sodium levulinate')
+        ->set('data.current_version.inci_name', 'SODIUM LEVULINATE')
+        ->set('data.current_version.cas_number', '19856-23-6')
+        ->set('data.current_version.ec_number', '243-378-4')
+        ->call('generateIngredientClassificationPrompt')
+        ->assertDontSee('data-ingredient-classification-copy disabled', escape: false)
+        ->assertSet('generatedIngredientClassificationPrompt', function (?string $prompt): bool {
+            return is_string($prompt)
+                && str_contains($prompt, '"name": "Sodium levulinate"')
+                && str_contains($prompt, '"inci_name": "SODIUM LEVULINATE"')
+                && str_contains($prompt, '"cas_number": "19856-23-6"')
+                && str_contains($prompt, '"ec_number": "243-378-4"')
+                && str_contains($prompt, 'Answer in: English (en).');
+        });
+});
+
+it('shows the manual classification helper on admin ingredient create and edit forms', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(CreateIngredient::class)
+        ->assertSeeText('Classification helper')
+        ->assertSeeText('Generate a prompt from the current unsaved identity fields. Paste it into an external AI assistant, then enter any useful result manually.')
+        ->assertSeeText('Generate prompt')
+        ->assertSeeText('Copy prompt')
+        ->assertSee('data-ingredient-classification-copy', escape: false)
+        ->assertSee('disabled', escape: false);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->assertSeeText('Classification helper')
+        ->assertSeeText('Generate prompt')
+        ->assertSeeText('Copy prompt')
+        ->assertSee('data-ingredient-classification-copy', escape: false)
+        ->assertSee('disabled', escape: false);
+});
+
+it('generates an ingredient classification prompt from unsaved admin edit state', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'display_name' => 'Original name',
+        'inci_name' => 'ORIGINAL INCI',
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->set('data.current_version.display_name', 'Edited unsaved name')
+        ->set('data.current_version.inci_name', 'EDITED UNSAVED INCI')
+        ->call('generateIngredientClassificationPrompt')
+        ->assertSet('generatedIngredientClassificationPrompt', function (?string $prompt): bool {
+            return is_string($prompt)
+                && str_contains($prompt, '"name": "Edited unsaved name"')
+                && str_contains($prompt, '"inci_name": "EDITED UNSAVED INCI"')
+                && ! str_contains($prompt, '"name": "Original name"');
+        });
+
+    expect($ingredient->refresh()->display_name)->toBe('Original name');
+});
+
+it('requires an identity before generating an admin ingredient classification prompt', function (): void {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+
+    Livewire::test(CreateIngredient::class)
+        ->call('generateIngredientClassificationPrompt')
+        ->assertNotified('Enter an ingredient name or INCI before generating the prompt.')
+        ->assertSet('generatedIngredientClassificationPrompt', null);
 });
 
 it('keeps original upload names in the admin ingredient form state', function () {
@@ -189,9 +270,9 @@ it('renders the catalog list resources in the admin panel', function () {
     $user = User::factory()->admin()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'catalog_key' => 'OB1',
     ]);
 
@@ -207,14 +288,15 @@ it('renders the catalog list resources in the admin panel', function () {
     $this->get(IngredientResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Olive Oil')
-        ->assertSee('Carrier Oil');
+        ->assertSee('Oils, butters &amp; fats', false);
 
     $this->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Soap Chemistry')
         ->assertSee('Fatty acid profile')
         ->assertSee('Ingredient guidance')
-        ->assertSee('EU / COSING functions');
+        ->assertSee('Verified COSING functions')
+        ->assertSee('Additional functions');
 
     $this->get(IngredientSapProfileResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
@@ -328,16 +410,22 @@ it('lets admins save platform ingredient translations in Filament', function () 
     $admin = User::factory()->admin()->create();
     SupportedLocale::factory()->create(['code' => 'fr', 'name' => 'French']);
     $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'subcategory' => IngredientSubcategory::VegetableOils,
         'display_name' => 'Olive Oil',
+        'saponification_name' => 'Olive',
+        'is_soap_saponification_trusted' => true,
     ]);
 
     $this->actingAs($admin);
 
     Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
         ->fillForm([
+            'current_version.saponification_name' => 'Olive fruit',
             'translations' => [[
                 'locale' => 'fr',
                 'display_name' => 'Huile d’olive',
+                'saponification_name' => 'Olive',
                 'info_markdown' => 'Conseils en français',
             ]],
         ])
@@ -348,11 +436,14 @@ it('lets admins save platform ingredient translations in Filament', function () 
         ->whereBelongsTo($ingredient)
         ->where('locale', 'fr')
         ->firstOrFail()
-        ->only(['display_name', 'info_markdown']))
+        ->only(['display_name', 'saponification_name', 'info_markdown']))
         ->toBe([
             'display_name' => 'Huile d’olive',
+            'saponification_name' => 'Olive',
             'info_markdown' => 'Conseils en français',
         ]);
+
+    expect($ingredient->refresh()->saponification_name)->toBe('Olive fruit');
 });
 
 it('validates ingredient translations before saving canonical ingredient data', function () {
@@ -474,7 +565,7 @@ it('does not expose private ingredients through the platform translation editor'
 
 it('keeps composite component ingredient options current within the request', function () {
     $oliveOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'catalog_key' => 'OIL-OLIVE',
         'is_active' => true,
@@ -488,7 +579,7 @@ it('keeps composite component ingredient options current within the request', fu
     expect($firstOptions)->toHaveKey($oliveOil->id);
 
     $coconutOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Coconut Oil',
         'catalog_key' => 'OIL-COCONUT',
         'is_active' => true,
@@ -512,7 +603,7 @@ it('keeps composite component ingredient options current within the request', fu
 it('offers a read-only view action on the ingredient admin table', function () {
     $user = User::factory()->admin()->create();
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'is_active' => true,
     ]);
@@ -558,7 +649,8 @@ it('renders the catalog create forms in the admin panel', function () {
         ->assertSee('Guidance &amp; Media', false)
         ->assertSee('Ingredient guidance')
         ->assertSee('Ingredient image')
-        ->assertSee('EU / COSING functions')
+        ->assertSee('Verified COSING functions')
+        ->assertSee('Additional functions')
         ->assertSee('Composite Components')
         ->assertDontSee('Internal Metadata');
 
@@ -774,7 +866,7 @@ it('renders the compliance resources in the admin panel', function () {
     $user = User::factory()->admin()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'catalog_key' => 'EO1',
     ]);

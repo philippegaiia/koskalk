@@ -31,9 +31,9 @@ it('syncs curated carrier oil chemistry onto existing catalog ingredients', func
 
     $ingredient = Ingredient::factory()->create([
         'catalog_key' => 'OB100',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive oil',
-        'is_potentially_saponifiable' => false,
+        'is_soap_saponification_trusted' => false,
     ]);
 
     IngredientSapProfile::factory()->create([
@@ -73,7 +73,7 @@ it('syncs curated carrier oil chemistry onto existing catalog ingredients', func
         ->sortKeys()
         ->all();
 
-    expect($freshIngredient->is_potentially_saponifiable)->toBeTrue()
+    expect($freshIngredient->is_soap_saponification_trusted)->toBeTrue()
         ->and((float) $freshIngredient->sapProfile->koh_sap_value)->toBe(0.188)
         ->and((float) $freshIngredient->sapProfile->iodine_value)->toBe(86.4)
         ->and((float) $freshIngredient->sapProfile->ins_value)->toBe(102.8)
@@ -112,7 +112,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
 
     $completeOil = Ingredient::factory()->create([
         'catalog_key' => 'OB-COMPLETE',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Complete oil',
     ]);
 
@@ -129,7 +129,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
 
     $missingSapOil = Ingredient::factory()->create([
         'catalog_key' => 'OB-MISS-SAP',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Needs sap',
     ]);
 
@@ -141,7 +141,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
 
     $missingFattyAcidOil = Ingredient::factory()->create([
         'catalog_key' => 'OB-MISS-FATTY',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Needs fatty acids',
     ]);
 
@@ -152,7 +152,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
 
     Ingredient::factory()->create([
         'catalog_key' => 'ADD-IGNORE',
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Plain additive',
     ]);
 
@@ -174,7 +174,7 @@ it('reports carrier oils that are still missing soap chemistry', function () {
 it('diffs carrier oils from the common name csv header when columns are reordered', function () {
     Ingredient::factory()->create([
         'catalog_key' => 'OB-OLIVE',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive oil',
     ]);
 
@@ -204,7 +204,7 @@ it('imports explicit mendrulandia inci names without using the latin lookup fall
 
     $ingredient = Ingredient::factory()->create([
         'catalog_key' => 'OB-ALMOND',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Almond Oil',
         'inci_name' => null,
         'soap_inci_naoh_name' => null,

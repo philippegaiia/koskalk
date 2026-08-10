@@ -354,10 +354,10 @@ it('falls back to the latest saved version when no working draft exists', functi
 function recipeWorkbenchCarrierOil(array $overrides = []): Ingredient
 {
     return Ingredient::factory()->create(array_merge([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ], $overrides));
 }
@@ -365,7 +365,7 @@ function recipeWorkbenchCarrierOil(array $overrides = []): Ingredient
 function recipeWorkbenchAdditive(array $overrides = []): Ingredient
 {
     return Ingredient::factory()->create(array_merge([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Kaolin',
         'inci_name' => 'KAOLIN',
         'is_active' => true,

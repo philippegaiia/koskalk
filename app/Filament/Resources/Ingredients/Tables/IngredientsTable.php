@@ -34,7 +34,7 @@ class IngredientsTable
                 TextColumn::make('category')
                     ->badge()
                     ->sortable(),
-                IconColumn::make('is_potentially_saponifiable')
+                IconColumn::make('is_soap_saponification_trusted')
                     ->label('Soap oil')
                     ->boolean(),
                 IconColumn::make('requires_admin_review')
@@ -51,8 +51,8 @@ class IngredientsTable
             ->filters([
                 SelectFilter::make('category')
                     ->multiple()
-                    ->options(IngredientCategory::class),
-                TernaryFilter::make('is_potentially_saponifiable')
+                    ->options(IngredientCategory::options()),
+                TernaryFilter::make('is_soap_saponification_trusted')
                     ->label('Trusted for soap saponification'),
                 TernaryFilter::make('requires_admin_review')
                     ->label('Requires review'),

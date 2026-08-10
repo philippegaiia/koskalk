@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Ingredients\Schemas;
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
@@ -20,10 +21,10 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Validation\Rule;
@@ -35,33 +36,53 @@ class IngredientForm
     {
         return $schema
             ->components([
-                Section::make('Classification')
-                    ->description('Define the ingredient family first. Soap-specific trust only controls whether a carrier oil can drive saponification math.')
+                Section::make(__('ingredients.editor.admin.classification.section'))
+                    ->description(__('ingredients.editor.admin.classification.description'))
                     ->icon(Heroicon::Squares2x2)
                     ->schema([
-                        ToggleButtons::make('category')
-                            ->label('Ingredient category')
-                            ->options(IngredientCategory::class)
-                            ->disableOptionWhen(fn (string $value): bool => $value === IngredientCategory::FragranceOil->value)
-                            ->helperText('Platform data usually avoids supplier-specific fragrance oils, even though user-created fragrance oils remain a core workflow.')
+                        Select::make('category')
+                            ->label(__('ingredients.editor.admin.classification.category'))
+                            ->options(IngredientCategory::options())
+                            ->searchable()
+                            ->helperText(__('ingredients.editor.admin.classification.category_helper'))
                             ->live()
                             ->required()
                             ->rules([Rule::enum(IngredientCategory::class)])
-                            ->inline()
                             ->columnSpanFull(),
-                        Toggle::make('is_potentially_saponifiable')
-                            ->label('Trusted for soap saponification')
-                            ->helperText('This only unlocks the ingredient as an oil to saponify. It does not block additive use or non-soap cosmetic use.')
+                        Select::make('subcategory')
+                            ->label(__('ingredients.editor.details.subcategory'))
+                            ->options(fn (Get $get): array => IngredientSubcategory::optionsFor($get('category')))
+                            ->searchable()
+                            ->live()
+                            ->required(fn (Get $get): bool => ! static::isCategory($get('category'), IngredientCategory::Other))
+                            ->helperText(__('ingredients.editor.admin.classification.subcategory_helper'))
+                            ->columnSpanFull(),
+                        Toggle::make('is_soap_saponification_trusted')
+                            ->label(__('ingredients.editor.details.soap_trusted'))
+                            ->helperText(__('ingredients.editor.admin.classification.soap_trusted_helper'))
+                            ->default(false),
+                        Toggle::make('requires_aromatic_compliance')
+                            ->label(__('ingredients.editor.details.aromatic_compliance'))
+                            ->helperText(__('ingredients.editor.admin.classification.aromatic_compliance_helper'))
                             ->default(false),
                         Toggle::make('requires_admin_review')
-                            ->label('Needs review')
-                            ->helperText('Keep this enabled when the imported category, soap trust, or compliance status still needs confirmation.')
+                            ->label(__('ingredients.editor.admin.classification.needs_review'))
+                            ->helperText(__('ingredients.editor.admin.classification.needs_review_helper'))
                             ->default(true),
                         Toggle::make('is_active')
-                            ->label('Active')
+                            ->label(__('ingredients.editor.admin.classification.active'))
                             ->default(true),
+                        TextEntry::make('verified_function_names')
+                            ->label(__('ingredients.editor.supplier.verified_functions'))
+                            ->state(fn (?Ingredient $record): string => $record?->functions()
+                                ->wherePivotIn('source', ['cosing', 'inherited'])
+                                ->orderBy('ingredient_functions.sort_order')
+                                ->pluck('ingredient_functions.name')
+                                ->implode(', ') ?: __('ingredients.editor.supplier.none_verified'))
+                            ->helperText(__('ingredients.editor.supplier.verified_functions_helper'))
+                            ->columnSpanFull(),
                         Select::make('function_ids')
-                            ->label('EU / COSING functions')
+                            ->label(__('ingredients.editor.supplier.additional_functions'))
                             ->multiple()
                             ->searchable()
                             ->preload()
@@ -71,7 +92,7 @@ class IngredientForm
                                 ->orderBy('name')
                                 ->pluck('name', 'id')
                                 ->all())
-                            ->helperText('Optional official ingredient functions. One ingredient can carry multiple COSING functions.')
+                            ->helperText(__('ingredients.editor.supplier.additional_functions_helper'))
                             ->columnSpanFull(),
                     ])
                     ->columns([
@@ -92,11 +113,16 @@ class IngredientForm
                         TextInput::make('current_version.soap_inci_naoh_name')
                             ->label('Soap INCI NaOH')
                             ->maxLength(255)
-                            ->visible(fn (Get $get): bool => static::isCategory($get('category'), IngredientCategory::CarrierOil)),
+                            ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted')),
                         TextInput::make('current_version.soap_inci_koh_name')
                             ->label('Soap INCI KOH')
                             ->maxLength(255)
-                            ->visible(fn (Get $get): bool => static::isCategory($get('category'), IngredientCategory::CarrierOil)),
+                            ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted')),
+                        TextInput::make('current_version.saponification_name')
+                            ->label('Saponification name')
+                            ->helperText('English source name used in summaries such as “Saponified oils (coconut, olive)”.')
+                            ->maxLength(255)
+                            ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted')),
                         TextInput::make('current_version.cas_number')
                             ->label('CAS number')
                             ->maxLength(255),
@@ -112,6 +138,8 @@ class IngredientForm
                     ->columns([
                         'md' => 2,
                     ]),
+                View::make('filament.resources.ingredients.classification-prompt')
+                    ->columnSpanFull(),
                 Section::make('Guidance & Media')
                     ->description('Use a concise markdown field for advice-ready notes, plus a main ingredient image and an optional compact icon for selectors.')
                     ->icon(Heroicon::DocumentText)
@@ -208,6 +236,10 @@ class IngredientForm
                                     ->label('Translated display name')
                                     ->maxLength(255)
                                     ->helperText('Leave empty to show the English name.'),
+                                TextInput::make('saponification_name')
+                                    ->label('Translated saponification name')
+                                    ->maxLength(255)
+                                    ->helperText('For example, “coco” in a saponified-oils summary.'),
                                 MarkdownEditor::make('info_markdown')
                                     ->label('Translated guidance')
                                     ->helperText('Leave empty to show the English guidance.')
@@ -227,7 +259,7 @@ class IngredientForm
                 Section::make('Soap Chemistry')
                     ->description('For carrier oils and butters, keep the current SAP, optional iodine and INS references, and fatty-acid profile directly on the ingredient workflow.')
                     ->icon(Heroicon::Beaker)
-                    ->visible(fn (Get $get): bool => static::isCategory($get('category'), IngredientCategory::CarrierOil))
+                    ->visible(fn (Get $get): bool => static::isCategory($get('category'), IngredientCategory::Lipids))
                     ->schema([
                         TextInput::make('sap_profile.koh_sap_value')
                             ->label('KOH SAP')
@@ -447,7 +479,7 @@ class IngredientForm
             return $state === $category;
         }
 
-        return $state === $category->value;
+        return IngredientCategory::tryFrom((string) $state) === $category;
     }
 
     private static function isAromaticCategory(mixed $state): bool
@@ -456,6 +488,6 @@ class IngredientForm
             $state = $state->value;
         }
 
-        return in_array($state, IngredientCategory::aromaticValues(), true);
+        return IngredientCategory::tryFrom((string) $state) === IngredientCategory::AromaticMaterials;
     }
 }

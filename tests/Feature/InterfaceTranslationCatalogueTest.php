@@ -3,6 +3,7 @@
 use App\Models\InterfaceTranslation;
 use App\Models\User;
 use App\Services\Translations\EnglishTranslationSource;
+use App\Services\Translations\InterfaceTranslationCatalogue;
 use App\Services\Translations\SyncInterfaceTranslations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
@@ -61,6 +62,38 @@ it('commits a complete reviewed translation for every owned interface key', func
                 ->not->toBe('', "Missing {$locale} translation for {$fullKey} ({$english})");
         }
     }
+});
+
+it('commits the reviewed classification helper description in every supported locale', function (): void {
+    $catalogue = app(InterfaceTranslationCatalogue::class)
+        ->read(database_path('seeders/data/interface-translations.json'));
+    $description = collect($catalogue['translations'])
+        ->first(fn (array $row): bool => $row['group'] === 'ingredients'
+            && $row['key'] === 'editor.classification_prompt.description');
+
+    expect($description['text'] ?? null)->toBe([
+        'de' => 'Erzeuge einen Prompt für Klassifizierung, Identitätsprüfung und kurze fachliche Hinweise. Gib zuerst den Namen der Zutat oder die INCI-Bezeichnung ein.',
+        'es' => 'Genera un prompt para la clasificación, la revisión de identificadores y notas profesionales breves. Introduce primero el nombre del ingrediente o el INCI.',
+        'fr' => 'Générez un prompt pour le classement, la vérification des identifiants et de brèves notes professionnelles. Saisissez d’abord le nom de l’ingrédient ou son INCI.',
+        'it' => 'Genera un prompt per la classificazione, la verifica degli identificatori e brevi note professionali. Inserisci prima il nome dell’ingrediente o l’INCI.',
+        'nl' => 'Genereer een prompt voor classificatie, controle van identificatiegegevens en korte professionele notities. Vul eerst de ingrediëntnaam of INCI in.',
+    ]);
+});
+
+it('commits the reviewed preservatives and preservation boosters label', function (): void {
+    $catalogue = app(InterfaceTranslationCatalogue::class)
+        ->read(database_path('seeders/data/interface-translations.json'));
+    $label = collect($catalogue['translations'])
+        ->first(fn (array $row): bool => $row['group'] === 'ingredients'
+            && $row['key'] === 'subcategories.preservatives.label');
+
+    expect($label['text'] ?? null)->toBe([
+        'de' => 'Konservierungsmittel & Konservierungsverstärker',
+        'es' => 'Conservantes y potenciadores de la conservación',
+        'fr' => 'Conservateurs et boosters de conservation',
+        'it' => 'Conservanti e coadiuvanti della conservazione',
+        'nl' => 'Conserveermiddelen en conserveringsboosters',
+    ]);
 });
 
 it('exports a deterministic human-reviewable catalogue without database metadata', function () {
@@ -268,6 +301,38 @@ it('rejects malformed catalogue data before writing anything', function (string 
         ],
     ], JSON_THROW_ON_ERROR)],
 ]);
+
+it('rejects catalogue translations that are not sorted by group and key', function (): void {
+    ($this->writeCatalogue)([
+        [
+            'group' => 'public',
+            'key' => 'navigation.product',
+            'text' => [
+                'de' => 'Produkt',
+                'es' => 'Producto',
+                'fr' => 'Produit',
+                'it' => 'Prodotto',
+                'nl' => 'Product',
+            ],
+        ],
+        [
+            'group' => 'auth',
+            'key' => 'login.heading',
+            'text' => [
+                'de' => 'Anmelden',
+                'es' => 'Iniciar sesión',
+                'fr' => 'Connexion',
+                'it' => 'Accedi',
+                'nl' => 'Inloggen',
+            ],
+        ],
+    ]);
+
+    $this->artisan('translations:catalogue:import', [
+        '--path' => $this->cataloguePath,
+        '--mode' => 'authoritative',
+    ])->assertFailed();
+});
 
 it('rejects catalogue values that change named placeholders', function () {
     ($this->writeCatalogue)([

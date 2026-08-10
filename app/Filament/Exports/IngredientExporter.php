@@ -32,7 +32,7 @@ class IngredientExporter extends Exporter
             ExportColumn::make('visibility'),
             ExportColumn::make('workspace.name')
                 ->label(__('Workspace')),
-            ExportColumn::make('is_potentially_saponifiable'),
+            ExportColumn::make('is_soap_saponification_trusted'),
             ExportColumn::make('is_manufactured'),
             ExportColumn::make('is_active'),
             ExportColumn::make('requires_admin_review'),

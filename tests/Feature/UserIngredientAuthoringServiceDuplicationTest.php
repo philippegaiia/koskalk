@@ -22,7 +22,7 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
     $ifraCategory = IfraProductCategory::factory()->create(['is_active' => true]);
 
     $source = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender 40/42',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'notes' => 'Supplier-neutral catalogue note',
@@ -31,7 +31,7 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
         'owner_type' => null,
         'owner_id' => null,
         'visibility' => Visibility::Public,
-        'is_potentially_saponifiable' => false,
+        'is_soap_saponification_trusted' => false,
         'featured_image_path' => 'ingredients/featured-images/lavender.webp',
         'featured_image_original_name' => 'Lavender portrait.webp',
         'icon_image_path' => 'ingredients/icons/lavender.webp',
@@ -101,13 +101,14 @@ it('duplicates a carrier oil with SAP profile and fatty acids', function () {
     $palmitic = FattyAcid::factory()->create(['key' => 'palmitic', 'name' => 'Palmitic']);
 
     $source = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
+        'saponification_name' => 'Olive',
         'cas_number' => '8001-25-00',
         'ec_number' => '232-277-00',
         'owner_type' => null,
         'owner_id' => null,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 
@@ -125,7 +126,8 @@ it('duplicates a carrier oil with SAP profile and fatty acids', function () {
     $service = app(UserIngredientAuthoringService::class);
     $copy = $service->duplicate($source, $user);
 
-    expect($copy->is_potentially_saponifiable)->toBeTrue();
+    expect($copy->is_soap_saponification_trusted)->toBeTrue();
+    expect($copy->saponification_name)->toBe('Olive');
     expect($copy->cas_number)->toBe('8001-25-0');
     expect($copy->ec_number)->toBe('232-277-0');
     expect($copy->sapProfile)->not->toBeNull();
@@ -142,11 +144,11 @@ it('prevents duplicated carrier oil KOH SAP edits outside the trusted range', fu
     $user = User::factory()->create();
 
     $source = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'owner_type' => null,
         'owner_id' => null,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 
@@ -161,7 +163,7 @@ it('prevents duplicated carrier oil KOH SAP edits outside the trusted range', fu
 
     expect(fn () => $service->update($copy, [
         'name' => 'Olive Oil',
-        'category' => IngredientCategory::CarrierOil->value,
+        'category' => IngredientCategory::Lipids->value,
         'inci_name' => $copy->inci_name,
         'sap_profile' => [
             'koh_sap_value' => 0.195,
@@ -174,10 +176,10 @@ it('prevents duplicated carrier oil KOH SAP edits outside the trusted range', fu
 it('refuses to duplicate a carrier oil without a KOH SAP value', function () {
     $user = User::factory()->create();
     $source = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Incomplete platform oil',
         'owner_type' => null,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
 
     expect(fn () => app(UserIngredientAuthoringService::class)->duplicate($source, $user))
@@ -190,10 +192,10 @@ it('validates duplicated carrier oil fatty acids against trusted ranges and tota
     $trace = FattyAcid::factory()->create(['key' => 'trace', 'name' => 'Trace']);
     $palmitic = FattyAcid::factory()->create(['key' => 'palmitic', 'name' => 'Palmitic']);
     $source = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Trusted oil',
         'owner_type' => null,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
     $source->sapProfile()->create(['koh_sap_value' => 0.188]);
     $source->fattyAcidEntries()->createMany([
@@ -234,13 +236,13 @@ it('duplicates a composite ingredient with components', function () {
 
     $component = Ingredient::factory()->create([
         'display_name' => 'Base oil component',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'is_active' => true,
     ]);
 
     $source = Ingredient::factory()->create([
         'display_name' => 'Soap base blend',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -283,7 +285,7 @@ it('duplicates parent-level source notes for composition and allergens', functio
     $allergen = Allergen::factory()->create();
 
     $source = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Aromatic blend',
         'owner_type' => null,
         'owner_id' => null,

@@ -142,10 +142,12 @@ class IngredientFormulaMutationService
             $query->whereNotIn($ingredient->getQualifiedKeyName(), $ancestorIds);
         }
 
-        if ($ingredient->category !== null && in_array($ingredient->category, IngredientCategory::aromaticCases(), true)) {
-            $query->whereIn('category', IngredientCategory::aromaticValues());
+        if ($ingredient->category === IngredientCategory::AromaticMaterials) {
+            $query->where('category', IngredientCategory::AromaticMaterials);
         } else {
-            $query->where('category', $ingredient->category?->value);
+            $query->whereIn('category', $ingredient->category === null
+                ? []
+                : [$ingredient->category->value]);
         }
 
         $candidates = $query
@@ -154,7 +156,7 @@ class IngredientFormulaMutationService
             ->get();
 
         if (
-            $ingredient->category !== IngredientCategory::CarrierOil
+            $ingredient->category !== IngredientCategory::Lipids
             || ! $this->requiresSoapCarrier($ingredient, $dependencyGraph['ingredient_ids'])
         ) {
             return $candidates;
@@ -297,7 +299,7 @@ class IngredientFormulaMutationService
     /** @param Collection<int, int> $ingredientIds */
     private function requiresSoapCarrier(Ingredient $ingredient, Collection $ingredientIds): bool
     {
-        return $ingredient->category === IngredientCategory::CarrierOil
+        return $ingredient->category === IngredientCategory::Lipids
             && RecipeItem::withoutGlobalScopes()
                 ->whereIn('ingredient_id', $ingredientIds)
                 ->whereHas('recipePhase', fn (Builder $phaseQuery): Builder => $phaseQuery
@@ -571,16 +573,15 @@ class IngredientFormulaMutationService
             return false;
         }
 
-        if ($ingredient->category !== null && in_array($ingredient->category, IngredientCategory::aromaticCases(), true)) {
-            return $replacement->category !== null
-                && in_array($replacement->category, IngredientCategory::aromaticCases(), true);
+        if ($ingredient->category === IngredientCategory::AromaticMaterials) {
+            return $replacement->category === IngredientCategory::AromaticMaterials;
         }
 
         if ($ingredient->category !== $replacement->category) {
             return false;
         }
 
-        if ($ingredient->category !== IngredientCategory::CarrierOil || ! $requiresSoapCarrier) {
+        if ($ingredient->category !== IngredientCategory::Lipids || ! $requiresSoapCarrier) {
             return true;
         }
 

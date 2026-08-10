@@ -1,5 +1,6 @@
 import './bootstrap';
 import { createAppNotification } from './app-notification';
+import { createClassificationPrompt } from './classification-prompt';
 import { createDirtyStateRegistry } from './dirty-state-registry';
 import { createMediaAssetPicker } from './media-asset-picker';
 import { createMediaLibraryUploader } from './media-library-uploader';
@@ -9,6 +10,7 @@ import { createSearchCombobox } from './search-combobox';
 import { createProductionCalendar, createProductionCalendarComponent } from './production-calendar';
 
 window.appNotification = createAppNotification;
+window.classificationPrompt = createClassificationPrompt;
 window.recipeContentAutosave = createRecipeContentAutosave;
 window.mediaAssetPicker = createMediaAssetPicker;
 window.mediaLibraryUploader = createMediaLibraryUploader;

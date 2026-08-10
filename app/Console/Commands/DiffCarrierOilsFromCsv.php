@@ -65,7 +65,7 @@ class DiffCarrierOilsFromCsv extends Command
         sort($csvNames);
 
         $dbNames = Ingredient::query()
-            ->where('category', IngredientCategory::CarrierOil->value)
+            ->where('category', IngredientCategory::Lipids)
             ->pluck('display_name')
             ->sort()
             ->values()

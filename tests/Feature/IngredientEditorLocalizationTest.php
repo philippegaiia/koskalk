@@ -40,7 +40,16 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSeeText('Choose Blend when this ingredient is made from several ingredients.')
         ->assertSeeText('Identifiers and functions')
         ->assertDontSeeText('Certified organic')
-        ->assertSeeText('EU CosIng functions')
+        ->assertSeeText('Verified COSING functions')
+        ->assertSeeText('Additional functions')
+        ->assertSeeText('Ask an AI assistant to classify this ingredient')
+        ->assertSeeText('Generate a prompt for classification, identifier review, and concise professional notes. Enter an ingredient name or INCI first.')
+        ->assertSeeText('Generate prompt')
+        ->assertSeeText('Copy prompt')
+        ->assertSee('data-classification-prompt-copy', escape: false)
+        ->assertSee('disabled', escape: false)
+        ->assertDontSeeText('Classify the cosmetic or soapmaking ingredient below.')
+        ->assertDontSeeText('"name": null')
         ->assertSeeText('Images and notes')
         ->assertSeeText('Add ingredient')
         ->assertDontSeeText('Create a personal ingredient')
@@ -72,9 +81,7 @@ it('explains how a private carrier oil can be used in saponification', function 
     $this->actingAs($user);
 
     Livewire::test(IngredientEditor::class)
-        ->set('data.category', IngredientCategory::CarrierOil->value)
-        ->assertSeeText('Using this oil in saponification')
-        ->assertSeeText('A carrier oil created from scratch can be added to a formula, but it cannot be selected for saponification. To use it as a saponified oil, duplicate the matching Soapkraft carrier oil and edit your copy.')
+        ->set('data.is_soap_saponification_trusted', true)
         ->assertSeeText('Saponification values')
         ->assertSeeText('Add the values used to calculate this oil in soap formulas.')
         ->assertSeeText('Enter the KOH SAP as 245 or 0.245. The NaOH SAP is calculated automatically.')
@@ -95,6 +102,15 @@ it('loads ingredient editor interface copy from the database', function () {
         'editor.details.type.label' => 'Type d’ingrédient',
         'editor.details.type.single' => 'Ingrédient simple',
         'editor.details.type.blend' => 'Mélange',
+        'editor.details.soap_trusted' => 'Fiable pour la saponification',
+        'editor.details.soap_trusted_helper' => 'Activez uniquement avec une valeur SAP KOH vérifiée.',
+        'editor.details.aromatic_compliance' => 'Conformité aromatique requise',
+        'editor.details.aromatic_compliance_helper' => 'Active les informations allergènes et IFRA.',
+        'editor.supplier.verified_functions' => 'Fonctions COSING vérifiées',
+        'editor.supplier.none_verified' => 'Aucune fonction vérifiée',
+        'editor.supplier.verified_functions_helper' => 'Fonctions officielles en lecture seule.',
+        'editor.supplier.additional_functions' => 'Fonctions supplémentaires',
+        'editor.classification_prompt.description' => 'Générez un prompt pour le classement, la vérification des identifiants et de brèves notes professionnelles. Saisissez d’abord le nom de l’ingrédient ou son INCI.',
         'editor.actions.create' => 'Ajouter l’ingrédient',
     ] as $key => $translation) {
         InterfaceTranslation::query()->create([
@@ -114,6 +130,14 @@ it('loads ingredient editor interface copy from the database', function () {
         ->assertSeeText('Type d’ingrédient')
         ->assertSeeText('Ingrédient simple')
         ->assertSeeText('Mélange')
+        ->assertSeeText('Fiable pour la saponification')
+        ->assertSeeText('Activez uniquement avec une valeur SAP KOH vérifiée.')
+        ->assertSeeText('Conformité aromatique requise')
+        ->assertSeeText('Active les informations allergènes et IFRA.')
+        ->assertSeeText('Fonctions COSING vérifiées')
+        ->assertSeeText('Fonctions officielles en lecture seule.')
+        ->assertSeeText('Fonctions supplémentaires')
+        ->assertSeeText('Générez un prompt pour le classement, la vérification des identifiants et de brèves notes professionnelles. Saisissez d’abord le nom de l’ingrédient ou son INCI.')
         ->assertSeeText('Ajouter l’ingrédient');
 });
 
@@ -123,7 +147,7 @@ it('loads the saved ingredient status from the database', function () {
     $user = User::factory()->create(['locale' => 'fr']);
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Glycérine',
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'is_active' => true,

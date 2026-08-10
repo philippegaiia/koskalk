@@ -49,7 +49,7 @@ it('returns newly created catalog items to a preselected supplier listing', func
         'supplier' => $supplier->public_id,
     ])->test(IngredientEditor::class)
         ->set('data.name', 'Green clay')
-        ->set('data.category', IngredientCategory::Clay->value)
+        ->set('data.category', IngredientCategory::MineralsSaltsPowders->value)
         ->call('save')
         ->assertHasNoErrors()
         ->assertRedirect();

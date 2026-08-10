@@ -43,15 +43,15 @@ class CarrierOilSeeder extends Seeder
                     'catalog_key' => $catalogKey,
                 ],
                 [
-                    'category' => IngredientCategory::CarrierOil,
+                    'category' => IngredientCategory::Lipids,
                     'display_name' => $displayName,
-                    'is_potentially_saponifiable' => true,
+                    'is_soap_saponification_trusted' => true,
                 ]
             );
 
             $ingredient->forceFill([
-                'category' => IngredientCategory::CarrierOil,
-                'is_potentially_saponifiable' => true,
+                'category' => IngredientCategory::Lipids,
+                'is_soap_saponification_trusted' => true,
             ]);
 
             if (empty($ingredient->inci_name) && $row['inci_name'] !== null) {
@@ -174,7 +174,7 @@ class CarrierOilSeeder extends Seeder
     private function ingredientsByDisplayName(): Collection
     {
         return Ingredient::query()
-            ->where('category', IngredientCategory::CarrierOil)
+            ->where('category', IngredientCategory::Lipids)
             ->get()
             ->groupBy(fn (Ingredient $ingredient): string => $this->normalizeDisplayName($ingredient->display_name));
     }

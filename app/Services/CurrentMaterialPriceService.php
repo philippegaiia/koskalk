@@ -96,6 +96,35 @@ class CurrentMaterialPriceService
         return $currentPrice;
     }
 
+    public function forgetIngredient(Workspace $workspace, Ingredient $ingredient, User $actor): void
+    {
+        if (! $workspace->hasMember($actor)) {
+            throw ValidationException::withMessages([
+                'workspace' => 'The active workspace is not accessible.',
+            ]);
+        }
+
+        $forgotPrice = DB::transaction(function () use ($workspace, $ingredient): bool {
+            $currentPrice = CurrentMaterialPrice::query()
+                ->where('workspace_id', $workspace->id)
+                ->where('ingredient_id', $ingredient->id)
+                ->lockForUpdate()
+                ->first();
+
+            return $currentPrice?->delete() ?? false;
+        });
+
+        if (! $forgotPrice) {
+            return;
+        }
+
+        $this->liveCostingPricePropagationService->ingredientPriceChanged(
+            $workspace,
+            $ingredient->id,
+            null,
+        );
+    }
+
     public function restoreIngredientProjection(
         Workspace $workspace,
         Ingredient $ingredient,
@@ -124,7 +153,7 @@ class CurrentMaterialPriceService
             $workspace,
             $ingredient->id,
             $currentPrice === null
-                ? '0'
+                ? null
                 : bcmul($currentPrice->price_per_canonical_unit, '1000', 12),
         );
 

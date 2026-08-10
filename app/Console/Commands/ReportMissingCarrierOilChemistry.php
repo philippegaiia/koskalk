@@ -60,7 +60,7 @@ class ReportMissingCarrierOilChemistry extends Command
     private function missingCarrierOils(): Collection
     {
         return Ingredient::query()
-            ->where('category', IngredientCategory::CarrierOil->value)
+            ->where('category', IngredientCategory::Lipids)
             ->with([
                 'sapProfile:id,ingredient_id,koh_sap_value',
                 'fattyAcidEntries:id,ingredient_id',

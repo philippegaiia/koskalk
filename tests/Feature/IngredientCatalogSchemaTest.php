@@ -18,6 +18,22 @@ it('uses a stable catalog key without retaining import path identity', function 
         ->and(Schema::hasColumn((new Ingredient)->getTable(), 'source_code_prefix'))->toBeFalse();
 });
 
+it('uses the explicit taxonomy and capability schema without the legacy soap flag', function (): void {
+    $table = (new Ingredient)->getTable();
+
+    expect(Schema::hasColumns($table, [
+        'category',
+        'subcategory',
+        'taxonomy_source',
+        'taxonomy_reviewed_at',
+        'taxonomy_reviewed_by_user_id',
+        'cosing_reference',
+        'is_soap_saponification_trusted',
+        'requires_aromatic_compliance',
+    ]))->toBeTrue()
+        ->and(Schema::hasColumn($table, 'is_potentially_saponifiable'))->toBeFalse();
+});
+
 it('does not automatically seed either legacy ingredient catalog', function () {
     $databaseSeeder = new class extends DatabaseSeeder
     {

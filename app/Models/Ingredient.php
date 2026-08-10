@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\OriginalFilename;
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetUsageRole;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
@@ -27,10 +28,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'public_id',
     'catalog_key',
     'category',
+    'subcategory',
+    'taxonomy_source',
+    'taxonomy_reviewed_at',
+    'taxonomy_reviewed_by_user_id',
+    'cosing_reference',
     'display_name',
     'inci_name',
     'soap_inci_naoh_name',
     'soap_inci_koh_name',
+    'saponification_name',
     'cas_number',
     'ec_number',
     'notes',
@@ -39,7 +46,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'owner_id',
     'workspace_id',
     'visibility',
-    'is_potentially_saponifiable',
+    'is_soap_saponification_trusted',
+    'requires_aromatic_compliance',
     'requires_admin_review',
     'is_active',
     'is_manufactured',
@@ -88,6 +96,11 @@ class Ingredient extends Model
     public function localizedDisplayName(?string $locale = null): ?string
     {
         return $this->localizedPlatformValue('display_name', $locale, $this->display_name);
+    }
+
+    public function localizedSaponificationName(?string $locale = null): ?string
+    {
+        return $this->localizedPlatformValue('saponification_name', $locale, $this->saponification_name);
     }
 
     public function localizedInfoMarkdown(?string $locale = null): ?string
@@ -139,6 +152,12 @@ class Ingredient extends Model
     public function functions(): BelongsToMany
     {
         return $this->belongsToMany(IngredientFunction::class, 'ingredient_function_ingredient')
+            ->withPivot([
+                'source',
+                'source_reference',
+                'source_checked_at',
+                'assigned_by_user_id',
+            ])
             ->withTimestamps()
             ->orderBy('ingredient_functions.sort_order')
             ->orderBy('ingredient_functions.name');
@@ -263,8 +282,7 @@ class Ingredient extends Model
 
     public function canDriveSoapSaponification(): bool
     {
-        return $this->category === IngredientCategory::CarrierOil
-            && $this->is_potentially_saponifiable
+        return $this->is_soap_saponification_trusted
             && $this->sapProfile?->koh_sap_value !== null;
     }
 
@@ -275,8 +293,7 @@ class Ingredient extends Model
 
     public function requiresAromaticCompliance(): bool
     {
-        return $this->category !== null
-            && in_array($this->category->value, IngredientCategory::aromaticValues(), true);
+        return $this->requires_aromatic_compliance;
     }
 
     /**
@@ -288,24 +305,15 @@ class Ingredient extends Model
             return ['fragrance'];
         }
 
-        if ($this->category === IngredientCategory::CarrierOil) {
-            return $this->canDriveSoapSaponification()
-                ? ['saponified_oils', 'additives']
-                : ['additives'];
+        if ($this->canDriveSoapSaponification()) {
+            return ['saponified_oils', 'additives'];
         }
 
-        if (in_array($this->category, [
-            IngredientCategory::BotanicalExtract,
-            IngredientCategory::Clay,
-            IngredientCategory::Glycol,
-            IngredientCategory::Colorant,
-            IngredientCategory::Preservative,
-            IngredientCategory::Additive,
-        ], true)) {
-            return ['additives'];
+        if ($this->category === IngredientCategory::SoapmakingAlkalis) {
+            return [];
         }
 
-        return [];
+        return ['additives'];
     }
 
     public function preferredWorkbenchPhase(): ?string
@@ -376,9 +384,12 @@ class Ingredient extends Model
     {
         return [
             'category' => IngredientCategory::class,
+            'subcategory' => IngredientSubcategory::class,
+            'taxonomy_reviewed_at' => 'datetime',
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
-            'is_potentially_saponifiable' => 'bool',
+            'is_soap_saponification_trusted' => 'bool',
+            'requires_aromatic_compliance' => 'bool',
             'requires_admin_review' => 'bool',
             'is_active' => 'bool',
             'is_manufactured' => 'bool',

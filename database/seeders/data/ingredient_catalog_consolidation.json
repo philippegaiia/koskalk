@@ -1,0 +1,12 @@
+{
+    "format": "soapkraft-ingredient-catalog-consolidation",
+    "version": 1,
+    "decisions": [
+        {"action": "review", "source_catalog_key": "ING029", "reason": "Obvious platform test row; no dependencies found in the audit."},
+        {"action": "review", "source_catalog_key": "ING618", "reason": "Obvious platform test row; no dependencies found in the audit."},
+        {"action": "review", "source_catalog_key": "ADM-ILLF4IRL", "target_catalog_key": "CH2", "reason": "Water duplicate; reconcile references and workspace prices before applying."},
+        {"action": "review", "source_catalog_key": "ADM-P8YDYPKK", "target_catalog_key": "CH1", "reason": "Sodium hydroxide duplicate; reconcile references before applying."},
+        {"action": "review", "source_catalog_key": "ADM-VSBOZPVX", "target_catalog_key": "CH3", "reason": "Potassium hydroxide duplicate; reconcile references before applying."},
+        {"action": "review", "source_catalog_key": "EO26", "target_catalog_key": "EO25", "reason": "Ravintsara duplicate; verify supplier grade before applying."}
+    ]
+}

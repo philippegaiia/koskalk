@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Ingredients\Pages;
 
 use App\Filament\Resources\Ingredients\IngredientResource;
+use App\Filament\Resources\Ingredients\Pages\Concerns\InteractsWithIngredientClassificationPrompt;
 use App\Filament\Resources\Ingredients\Pages\Concerns\InteractsWithIngredientDataEntry;
 use App\Models\Ingredient;
 use App\Models\User;
@@ -17,6 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class EditIngredient extends EditRecord
 {
+    use InteractsWithIngredientClassificationPrompt;
     use InteractsWithIngredientDataEntry;
 
     protected static string $resource = IngredientResource::class;

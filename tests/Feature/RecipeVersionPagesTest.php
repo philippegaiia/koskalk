@@ -743,7 +743,7 @@ it('labels cosmetic formula sheet quantity as total batch quantity', function ()
         'calculation_basis' => 'total_formula',
     ]);
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Glycerin',
         'inci_name' => 'GLYCERIN',
         'is_active' => true,
@@ -1474,12 +1474,12 @@ function createRecipeWithTwoDistinctSavedVersions(?User $user = null): array
     ]);
     $oliveOil = makeSavedRecipeIngredient();
     $coconutOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Coconut Oil',
         'inci_name' => 'COCOS NUCIFERA OIL',
         'soap_inci_naoh_name' => 'SODIUM COCOATE',
         'soap_inci_koh_name' => 'POTASSIUM COCOATE',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 
@@ -1552,12 +1552,12 @@ function recipeWorkbookXml(string $content): string
 function makeSavedRecipeIngredient(): Ingredient
 {
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
         'soap_inci_naoh_name' => 'SODIUM OLIVATE',
         'soap_inci_koh_name' => 'POTASSIUM OLIVATE',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 

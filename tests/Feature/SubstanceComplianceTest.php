@@ -209,10 +209,10 @@ it('flags prohibited whole ingredients independently from constituent accumulati
 function substanceWorkbenchOil(array $overrides = []): Ingredient
 {
     return Ingredient::factory()->create(array_merge([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ], $overrides));
 }
@@ -220,7 +220,7 @@ function substanceWorkbenchOil(array $overrides = []): Ingredient
 function substanceWorkbenchAromatic(array $overrides = []): Ingredient
 {
     return Ingredient::factory()->create(array_merge([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Aromatic Oil',
         'inci_name' => 'AROMATIC OIL',
         'is_active' => true,

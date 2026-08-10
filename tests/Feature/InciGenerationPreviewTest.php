@@ -24,7 +24,7 @@ it('returns a generated ingredient list and declaration details in the live prev
 
     $oliveOil = makeSoapOilIngredient();
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'is_active' => true,
@@ -98,7 +98,7 @@ it('calculates declaration percentages on the cured soap basis', function () {
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
     ]);
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Super Oil',
         'inci_name' => 'LAVANDULA HYBRIDA OIL',
         'is_active' => true,
@@ -159,7 +159,7 @@ it('uses each oil SAP value when assigning theoretical soap salt mass', function
         'soap_inci_koh_name' => 'POTASSIUM COCOATE',
     ], 0.257);
     $fragrance = Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Unscented Base',
         'inci_name' => 'PARFUM',
         'is_active' => true,
@@ -219,13 +219,13 @@ it('generates a plain-language soap ingredient list starting with saponified oil
         'soap_inci_koh_name' => 'POTASSIUM SHEA BUTTERATE',
     ]);
     $greenClay = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Green Clay',
         'inci_name' => 'ILLITE',
         'is_active' => true,
     ]);
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'is_active' => true,
@@ -273,7 +273,7 @@ it('suppresses duplicate declaration rows when the ingredient list already names
 
     $oliveOil = makeSoapOilIngredient();
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'is_active' => true,
@@ -318,7 +318,7 @@ it('replaces an explicit ingredient label with the grouped eu declaration label 
 
     $oliveOil = makeSoapOilIngredient();
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'is_active' => true,
@@ -360,19 +360,19 @@ it('expands composite aromatics into child inci rows and child-derived declarati
 
     $oliveOil = makeSoapOilIngredient();
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'is_active' => true,
     ]);
     $orangeOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Orange Essential Oil',
         'inci_name' => 'CITRUS AURANTIUM DULCIS PEEL OIL',
         'is_active' => true,
     ]);
     $fragranceBlend = Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Orange Blend',
         'inci_name' => 'LAVANDER ORANGE BLEND',
         'is_active' => true,
@@ -440,7 +440,7 @@ it('screens allergen declarations through the selected regulatory regime mapping
 
     $oliveOil = makeSoapOilIngredient();
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'is_active' => true,
@@ -508,7 +508,7 @@ it('does not fall back to every recorded allergen when the selected regime has n
 
     $oliveOil = makeSoapOilIngredient();
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'is_active' => true,
@@ -554,19 +554,19 @@ it('batches ingredient graph loading for composite aromatics', function () {
 
     $oliveOil = makeSoapOilIngredient();
     $lavenderOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Essential Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'is_active' => true,
     ]);
     $orangeOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Orange Essential Oil',
         'inci_name' => 'CITRUS AURANTIUM DULCIS PEEL OIL',
         'is_active' => true,
     ]);
     $fragranceBlend = Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Orange Blend',
         'inci_name' => 'LAVENDER ORANGE BLEND',
         'is_active' => true,
@@ -623,7 +623,7 @@ it('splits each saponified oil into soap and theoretical superfat rows', functio
     $component->mount();
 
     $payload = soapDraftPayloadWithFragrance($oliveOil, Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Unscented Base',
         'inci_name' => 'PARFUM',
         'is_active' => true,
@@ -676,7 +676,7 @@ it('splits dual lye saponified oils into separate sodium and potassium rows', fu
     $component->mount();
 
     $payload = soapDraftPayloadWithFragrance($oliveOil, Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Unscented Base',
         'inci_name' => 'PARFUM',
         'is_active' => true,
@@ -738,7 +738,7 @@ it('marks merged rows as mixed when soap and superfat labels collapse to the sam
     $component->mount();
 
     $payload = soapDraftPayloadWithFragrance($oliveOil, Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Unscented Base',
         'inci_name' => 'PARFUM',
         'is_active' => true,
@@ -761,12 +761,12 @@ it('marks merged rows as mixed when soap and superfat labels collapse to the sam
 function makeSoapOilIngredient(array $overrides = [], float $kohSapValue = 0.188): Ingredient
 {
     $ingredient = Ingredient::factory()->create(array_merge([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
         'soap_inci_naoh_name' => 'SODIUM OLIVATE',
         'soap_inci_koh_name' => 'POTASSIUM OLIVATE',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ], $overrides));
 

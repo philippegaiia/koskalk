@@ -41,9 +41,9 @@ it('indexes reverse composite dependency lookups', function (): void {
 
 it('uses bounded deadlock retries for both ingredient mutation transactions', function (): void {
     $user = User::factory()->create();
-    $replacementSource = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement Source');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement');
-    $removalSource = privateMutationIngredient($user, IngredientCategory::Additive, 'Removal Source');
+    $replacementSource = privateMutationIngredient($user, IngredientCategory::Other, 'Replacement Source');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'Replacement');
+    $removalSource = privateMutationIngredient($user, IngredientCategory::Other, 'Removal Source');
 
     $database = Mockery::mock(DatabaseManager::class);
     $database
@@ -68,10 +68,10 @@ it('eager loads localized names for visible blocked composite ingredients', func
     SupportedLocale::factory()->create(['code' => 'fr']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Source');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Source');
     $translatedNames = collect(range(1, 3))->map(function (int $number) use ($source): string {
         $parent = Ingredient::factory()->create([
-            'category' => IngredientCategory::Additive,
+            'category' => IngredientCategory::Other,
             'display_name' => 'Platform Composite '.$number,
         ]);
         IngredientComponent::factory()->create([
@@ -105,7 +105,7 @@ it('eager loads localized names for visible blocked composite ingredients', func
 
 it('counts distinct formulas across current backup and archived versions', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::EssentialOil, 'Lavender');
+    $source = privateMutationIngredient($user, IngredientCategory::AromaticMaterials, 'Lavender');
     $recipe = privateMutationRecipe($user, 'Lavender Soap');
 
     $currentVersion = privateMutationVersion($user, $recipe, isCurrent: true, versionNumber: 3);
@@ -131,7 +131,7 @@ it('counts distinct formulas across current backup and archived versions', funct
 it('separates editable and inaccessible formulas without leaking inaccessible records', function (): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Silk');
 
     $editableRecipe = privateMutationRecipe($user, 'Editable Formula');
     privateMutationItem($user, $source, privateMutationVersion($user, $editableRecipe));
@@ -185,7 +185,7 @@ it('reuses policy decisions for formulas with the same authorization context', f
     WorkspaceMember::factory()->for($singleWorkspace)->for($singleUser)->create([
         'role' => WorkspaceMemberRole::Viewer,
     ]);
-    $singleSource = privateMutationIngredient($singleUser, IngredientCategory::Additive, 'Single Source');
+    $singleSource = privateMutationIngredient($singleUser, IngredientCategory::Other, 'Single Source');
     workspaceMutationRecipeWithItem($singleWorkspace, $singleSource, 'Single Formula');
 
     $repeatedUser = User::factory()->create();
@@ -193,7 +193,7 @@ it('reuses policy decisions for formulas with the same authorization context', f
     WorkspaceMember::factory()->for($repeatedWorkspace)->for($repeatedUser)->create([
         'role' => WorkspaceMemberRole::Viewer,
     ]);
-    $repeatedSource = privateMutationIngredient($repeatedUser, IngredientCategory::Additive, 'Repeated Source');
+    $repeatedSource = privateMutationIngredient($repeatedUser, IngredientCategory::Other, 'Repeated Source');
 
     foreach (range(1, 3) as $formulaNumber) {
         workspaceMutationRecipeWithItem($repeatedWorkspace, $repeatedSource, "Repeated Formula {$formulaNumber}");
@@ -226,18 +226,18 @@ it('reuses policy decisions for formulas with the same authorization context', f
 
 it('allows replacements across the aromatic category family', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::EssentialOil, 'Lavender');
-    $essentialOil = privateMutationIngredient($user, IngredientCategory::EssentialOil, 'Lavandin Super');
+    $source = privateMutationIngredient($user, IngredientCategory::AromaticMaterials, 'Lavender');
+    $essentialOil = privateMutationIngredient($user, IngredientCategory::AromaticMaterials, 'Lavandin Super');
     $fragranceOil = Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Fragrance',
     ]);
     $co2Extract = Ingredient::factory()->create([
-        'category' => IngredientCategory::Co2Extract,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender CO2',
     ]);
     $clay = Ingredient::factory()->create([
-        'category' => IngredientCategory::Clay,
+        'category' => IngredientCategory::MineralsSaltsPowders,
         'display_name' => 'White Clay',
     ]);
 
@@ -255,10 +255,10 @@ it('loads localized replacement names without candidate-count query growth', fun
     SupportedLocale::factory()->create(['code' => 'fr']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::EssentialOil, 'Original Lavender');
+    $source = privateMutationIngredient($user, IngredientCategory::AromaticMaterials, 'Original Lavender');
     $translatedNames = collect(range(1, 5))->map(function (int $number): string {
         $ingredient = Ingredient::factory()->create([
-            'category' => IngredientCategory::FragranceOil,
+            'category' => IngredientCategory::AromaticMaterials,
             'display_name' => 'Fragrance '.$number,
         ]);
         $translatedName = 'Parfum '.$number;
@@ -291,9 +291,9 @@ it('loads localized replacement names without candidate-count query growth', fun
 
 it('restricts ordinary replacements to the same category', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Clay, 'Rose Clay');
-    $clay = Ingredient::factory()->create(['category' => IngredientCategory::Clay]);
-    $additive = Ingredient::factory()->create(['category' => IngredientCategory::Additive]);
+    $source = privateMutationIngredient($user, IngredientCategory::MineralsSaltsPowders, 'Rose Clay');
+    $clay = Ingredient::factory()->create(['category' => IngredientCategory::MineralsSaltsPowders]);
+    $additive = Ingredient::factory()->create(['category' => IngredientCategory::Other]);
 
     $candidateIds = app(IngredientFormulaMutationService::class)
         ->replacementCandidates($user, $source)
@@ -306,18 +306,18 @@ it('restricts ordinary replacements to the same category', function (): void {
 
 it('requires a soap eligible carrier replacement when the source is used in saponified oils', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Olive Oil');
+    $source = privateMutationIngredient($user, IngredientCategory::Lipids, 'Olive Oil');
     $recipe = privateMutationRecipe($user, 'Soap Formula');
     $version = privateMutationVersion($user, $recipe);
     privateMutationItem($user, $source, $version, phaseSlug: 'saponified_oils');
 
     $carrierWithoutSap = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
-        'is_potentially_saponifiable' => true,
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => true,
     ]);
     $carrierWithSap = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
-        'is_potentially_saponifiable' => true,
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => true,
     ]);
     IngredientSapProfile::factory()->for($carrierWithSap)->create(['koh_sap_value' => 0.19]);
 
@@ -332,17 +332,17 @@ it('requires a soap eligible carrier replacement when the source is used in sapo
 
 it('allows a non sap carrier replacement outside saponified oils', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Jojoba Oil');
+    $source = privateMutationIngredient($user, IngredientCategory::Lipids, 'Jojoba Oil');
     $recipe = privateMutationRecipe($user, 'Anhydrous Formula');
     $version = privateMutationVersion($user, $recipe);
     privateMutationItem($user, $source, $version, phaseSlug: 'additives');
 
     $carrierWithoutSap = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
-        'is_potentially_saponifiable' => false,
+        'category' => IngredientCategory::Lipids,
+        'is_soap_saponification_trusted' => false,
     ]);
     $nonCarrier = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
     ]);
 
     $service = app(IngredientFormulaMutationService::class);
@@ -357,14 +357,14 @@ it('allows a non sap carrier replacement outside saponified oils', function (): 
 it('returns only active accessible replacement candidates', function (): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Source Additive');
-    $ownedCandidate = privateMutationIngredient($user, IngredientCategory::Additive, 'Owned Candidate');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Source Additive');
+    $ownedCandidate = privateMutationIngredient($user, IngredientCategory::Other, 'Owned Candidate');
     $platformCandidate = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Platform Candidate',
     ]);
-    $inactiveCandidate = privateMutationIngredient($user, IngredientCategory::Additive, 'Inactive Candidate', false);
-    $inaccessibleCandidate = privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Other Private Candidate');
+    $inactiveCandidate = privateMutationIngredient($user, IngredientCategory::Other, 'Inactive Candidate', false);
+    $inaccessibleCandidate = privateMutationIngredient($otherUser, IngredientCategory::Other, 'Other Private Candidate');
 
     $candidateIds = app(IngredientFormulaMutationService::class)
         ->replacementCandidates($user, $source)
@@ -377,10 +377,10 @@ it('returns only active accessible replacement candidates', function (): void {
 
 it('replaces direct composite components while preserving metadata and invalidating nested formula versions', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Extract');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'New Extract');
-    $directParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Direct Blend');
-    $nestedParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Nested Blend');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Old Extract');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'New Extract');
+    $directParent = privateMutationIngredient($user, IngredientCategory::Other, 'Direct Blend');
+    $nestedParent = privateMutationIngredient($user, IngredientCategory::Other, 'Nested Blend');
     $component = IngredientComponent::factory()->create([
         'ingredient_id' => $directParent->id,
         'component_ingredient_id' => $source->id,
@@ -423,17 +423,17 @@ it('replaces direct composite components while preserving metadata and invalidat
 
 it('requires a soap eligible carrier when an ancestor composite is used in saponified oils', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Old Carrier');
-    $parent = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Carrier Blend');
+    $source = privateMutationIngredient($user, IngredientCategory::Lipids, 'Old Carrier');
+    $parent = privateMutationIngredient($user, IngredientCategory::Lipids, 'Carrier Blend');
     IngredientComponent::factory()->create([
         'ingredient_id' => $parent->id,
         'component_ingredient_id' => $source->id,
     ]);
     $version = privateMutationVersion($user, privateMutationRecipe($user, 'Composite Soap'));
     privateMutationItem($user, $parent, $version, phaseSlug: 'saponified_oils');
-    $carrierWithoutSap = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Wax Carrier');
-    $carrierWithSap = privateMutationIngredient($user, IngredientCategory::CarrierOil, 'Soap Carrier');
-    $carrierWithSap->update(['is_potentially_saponifiable' => true]);
+    $carrierWithoutSap = privateMutationIngredient($user, IngredientCategory::Lipids, 'Wax Carrier');
+    $carrierWithSap = privateMutationIngredient($user, IngredientCategory::Lipids, 'Soap Carrier');
+    $carrierWithSap->update(['is_soap_saponification_trusted' => true]);
     IngredientSapProfile::factory()->for($carrierWithSap)->create(['koh_sap_value' => 0.19]);
 
     $service = app(IngredientFormulaMutationService::class);
@@ -447,10 +447,10 @@ it('requires a soap eligible carrier when an ancestor composite is used in sapon
 
 it('removes direct composite rows while retaining ancestor ingredients and unrelated components', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Obsolete Extract');
-    $other = privateMutationIngredient($user, IngredientCategory::Additive, 'Stable Extract');
-    $directParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Direct Blend');
-    $nestedParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Nested Blend');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Obsolete Extract');
+    $other = privateMutationIngredient($user, IngredientCategory::Other, 'Stable Extract');
+    $directParent = privateMutationIngredient($user, IngredientCategory::Other, 'Direct Blend');
+    $nestedParent = privateMutationIngredient($user, IngredientCategory::Other, 'Nested Blend');
     $removedComponent = IngredientComponent::factory()->create([
         'ingredient_id' => $directParent->id,
         'component_ingredient_id' => $source->id,
@@ -480,9 +480,9 @@ it('removes direct composite rows while retaining ancestor ingredients and unrel
 
 it('rejects an ancestor composite as replacement and rolls back all state', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Source');
-    $directParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Direct Blend');
-    $nestedParent = privateMutationIngredient($user, IngredientCategory::Additive, 'Nested Blend');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Source');
+    $directParent = privateMutationIngredient($user, IngredientCategory::Other, 'Direct Blend');
+    $nestedParent = privateMutationIngredient($user, IngredientCategory::Other, 'Nested Blend');
     $component = IngredientComponent::factory()->create([
         'ingredient_id' => $directParent->id,
         'component_ingredient_id' => $source->id,
@@ -517,11 +517,11 @@ it('blocks inaccessible composite dependencies without leaking names or mutating
 
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Private Source');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Private Source');
     $source->update(['featured_image_path' => 'ingredients/private-source.webp']);
     Storage::disk('public')->put($source->featured_image_path, 'image');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement');
-    $secretParent = privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Secret Composite Name');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'Replacement');
+    $secretParent = privateMutationIngredient($otherUser, IngredientCategory::Other, 'Secret Composite Name');
     $component = IngredientComponent::factory()->create([
         'ingredient_id' => $secretParent->id,
         'component_ingredient_id' => $source->id,
@@ -557,8 +557,8 @@ it('blocks inaccessible composite dependencies without leaking names or mutating
 
 it('replaces an ingredient across current backup archived and costing-only versions without changing formula rows', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::EssentialOil, 'Lavender');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Co2Extract, 'Lavender CO2');
+    $source = privateMutationIngredient($user, IngredientCategory::AromaticMaterials, 'Lavender');
+    $replacement = privateMutationIngredient($user, IngredientCategory::AromaticMaterials, 'Lavender CO2');
     rememberIngredientPriceForWorkspace($user, $replacement, 84.75);
 
     $recipe = privateMutationRecipe($user, 'Lavender Soap');
@@ -622,8 +622,8 @@ it('replaces an ingredient across current backup archived and costing-only versi
 
 it('clears costing prices when the user has no remembered replacement price', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Additive');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'New Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Old Additive');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'New Additive');
     $version = privateMutationVersion($user, privateMutationRecipe($user, 'Costed Formula'));
     $costingItem = privateMutationCostingItem($user, $source, $version);
     $costingItem->update(['price_per_kg' => 22.50]);
@@ -638,9 +638,9 @@ it('clears costing prices when the user has no remembered replacement price', fu
 it('uses the formula workspace replacement price for every costing row', function (): void {
     $formulaOwner = User::factory()->create();
     $otherCostingOwner = User::factory()->create();
-    $source = privateMutationIngredient($formulaOwner, IngredientCategory::Additive, 'Old Additive');
+    $source = privateMutationIngredient($formulaOwner, IngredientCategory::Other, 'Old Additive');
     $replacement = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Platform Replacement',
     ]);
     $version = privateMutationVersion($formulaOwner, privateMutationRecipe($formulaOwner, 'Shared Costed Formula'));
@@ -662,14 +662,14 @@ it('rolls back every change and keeps media when the replacement is incompatible
     config(['media.disk' => 'public']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Clay, 'Rose Clay');
+    $source = privateMutationIngredient($user, IngredientCategory::MineralsSaltsPowders, 'Rose Clay');
     $source->update([
         'featured_image_path' => 'ingredients/featured-images/rose-clay.webp',
         'icon_image_path' => 'ingredients/icons/rose-clay.webp',
     ]);
     Storage::disk('public')->put($source->featured_image_path, 'featured');
     Storage::disk('public')->put($source->icon_image_path, 'icon');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'Silk');
     $version = privateMutationVersion($user, privateMutationRecipe($user, 'Clay Soap'));
     $version->update(generatedIngredientListState());
     $item = privateMutationItem($user, $source, $version);
@@ -694,14 +694,14 @@ it('keeps database state and media when ingredient deletion fails before commit'
     config(['media.disk' => 'public']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Undeletable Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Undeletable Additive');
     $source->update([
         'featured_image_path' => 'ingredients/featured-images/undeletable.webp',
         'icon_image_path' => 'ingredients/icons/undeletable.webp',
     ]);
     Storage::disk('public')->put($source->featured_image_path, 'featured');
     Storage::disk('public')->put($source->icon_image_path, 'icon');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement Additive');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'Replacement Additive');
     $version = privateMutationVersion($user, privateMutationRecipe($user, 'Protected Formula'));
     $version->update(generatedIngredientListState());
     $item = privateMutationItem($user, $source, $version);
@@ -727,8 +727,8 @@ it('keeps database state and media when ingredient deletion fails before commit'
 
 it('refuses replacement for a non-owner workspace formula without reporting its name', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Tussah Silk');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Silk');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'Tussah Silk');
     $workspace = Workspace::factory()->create();
     WorkspaceMember::factory()->for($workspace)->for($user)->create(['role' => WorkspaceMemberRole::Viewer]);
     $blockedRecipe = workspaceMutationRecipeWithItem($workspace, $source, 'Blocked Workspace Formula');
@@ -745,8 +745,8 @@ it('refuses replacement for a non-owner workspace formula without reporting its 
 it('refuses replacement for an inaccessible formula without leaking its name', function (): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Tussah Silk');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Silk');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'Tussah Silk');
     $secretRecipe = privateMutationRecipe($otherUser, 'Secret Competitor Formula');
     privateMutationItem($otherUser, $source, privateMutationVersion($otherUser, $secretRecipe));
 
@@ -761,8 +761,8 @@ it('refuses replacement for an inaccessible formula without leaking its name', f
 
 it('allows a workspace owner to replace an owned ingredient in their formula', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Tussah Silk');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Silk');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'Tussah Silk');
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     $recipe = workspaceMutationRecipeWithItem($workspace, $source, 'Editable Workspace Formula');
 
@@ -780,9 +780,9 @@ it('refuses replacing a platform ingredient or an ingredient owned by another us
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $source = $ownership === 'platform'
-        ? Ingredient::factory()->create(['category' => IngredientCategory::Additive])
-        : privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Other User Ingredient');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'Replacement');
+        ? Ingredient::factory()->create(['category' => IngredientCategory::Other])
+        : privateMutationIngredient($otherUser, IngredientCategory::Other, 'Other User Ingredient');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'Replacement');
     $version = privateMutationVersion($user, privateMutationRecipe($user, 'Formula'));
     $item = privateMutationItem($user, $source, $version);
 
@@ -797,10 +797,10 @@ it('refuses replacing a platform ingredient or an ingredient owned by another us
 it('revalidates replacement activity accessibility and identity inside the transaction', function (string $invalidReplacement): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Source');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Source');
     $replacement = match ($invalidReplacement) {
-        'inactive' => privateMutationIngredient($user, IngredientCategory::Additive, 'Inactive', false),
-        'inaccessible' => privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Inaccessible'),
+        'inactive' => privateMutationIngredient($user, IngredientCategory::Other, 'Inactive', false),
+        'inaccessible' => privateMutationIngredient($otherUser, IngredientCategory::Other, 'Inaccessible'),
         'source' => $source,
     };
     $version = privateMutationVersion($user, privateMutationRecipe($user, 'Formula'));
@@ -819,14 +819,14 @@ it('deletes ingredient media after a successful replacement', function (): void 
     config(['media.disk' => 'public']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Old Additive');
     $source->update([
         'featured_image_path' => 'ingredients/featured-images/old.webp',
         'icon_image_path' => 'ingredients/icons/old.webp',
     ]);
     Storage::disk('public')->put($source->featured_image_path, 'featured');
     Storage::disk('public')->put($source->icon_image_path, 'icon');
-    $replacement = privateMutationIngredient($user, IngredientCategory::Additive, 'New Additive');
+    $replacement = privateMutationIngredient($user, IngredientCategory::Other, 'New Additive');
 
     app(IngredientFormulaMutationService::class)
         ->replaceEverywhereAndDelete($user, $source, $replacement);
@@ -838,8 +838,8 @@ it('deletes ingredient media after a successful replacement', function (): void 
 
 it('removes an ingredient from current backup archived and costing-only versions while preserving formulas and unrelated rows', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Additive');
-    $unrelatedIngredient = privateMutationIngredient($user, IngredientCategory::Additive, 'Kept Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Old Additive');
+    $unrelatedIngredient = privateMutationIngredient($user, IngredientCategory::Other, 'Kept Additive');
 
     $recipe = privateMutationRecipe($user, 'Current Formula');
     $currentVersion = privateMutationVersion($user, $recipe, isCurrent: true, versionNumber: 3);
@@ -890,7 +890,7 @@ it('removes an ingredient from current backup archived and costing-only versions
 
 it('keeps a formula and version when the removed ingredient was their only row', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Only Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Only Additive');
     $recipe = privateMutationRecipe($user, 'Single Row Formula');
     $version = privateMutationVersion($user, $recipe);
     privateMutationItem($user, $source, $version);
@@ -907,7 +907,7 @@ it('refuses removal for a non-owner workspace formula without reporting its name
     config(['media.disk' => 'public']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Silk');
     $source->update([
         'featured_image_path' => 'ingredients/featured-images/blocked-removal.webp',
         'icon_image_path' => 'ingredients/icons/blocked-removal.webp',
@@ -939,7 +939,7 @@ it('refuses removal for a non-owner workspace formula without reporting its name
 it('refuses removal for an inaccessible formula without leaking its name', function (): void {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Silk');
     $secretRecipe = privateMutationRecipe($otherUser, 'Secret Removal Formula');
     privateMutationItem($otherUser, $source, privateMutationVersion($otherUser, $secretRecipe));
 
@@ -954,7 +954,7 @@ it('refuses removal for an inaccessible formula without leaking its name', funct
 
 it('allows a workspace owner to remove an owned ingredient from their formula', function (): void {
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Silk');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Silk');
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     $recipe = workspaceMutationRecipeWithItem($workspace, $source, 'Editable Removal Formula');
 
@@ -972,9 +972,9 @@ it('refuses removing a platform ingredient another users ingredient or a stale i
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $source = match ($ownership) {
-        'platform' => Ingredient::factory()->create(['category' => IngredientCategory::Additive]),
-        'other user' => privateMutationIngredient($otherUser, IngredientCategory::Additive, 'Other User Ingredient'),
-        'stale' => tap(privateMutationIngredient($user, IngredientCategory::Additive, 'Deleted Ingredient'))->delete(),
+        'platform' => Ingredient::factory()->create(['category' => IngredientCategory::Other]),
+        'other user' => privateMutationIngredient($otherUser, IngredientCategory::Other, 'Other User Ingredient'),
+        'stale' => tap(privateMutationIngredient($user, IngredientCategory::Other, 'Deleted Ingredient'))->delete(),
     };
     $item = null;
     $costingItem = null;
@@ -1011,7 +1011,7 @@ it('deletes ingredient media after a successful remove everywhere operation', fu
     config(['media.disk' => 'public']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Old Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Old Additive');
     $source->update([
         'featured_image_path' => 'ingredients/featured-images/remove-old.webp',
         'icon_image_path' => 'ingredients/icons/remove-old.webp',
@@ -1031,7 +1031,7 @@ it('waits for the outer transaction to commit before deleting ingredient media',
     config(['media.disk' => 'public']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Nested Transaction Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Nested Transaction Additive');
     $source->update([
         'featured_image_path' => 'ingredients/featured-images/nested-transaction.webp',
         'icon_image_path' => 'ingredients/icons/nested-transaction.webp',
@@ -1056,7 +1056,7 @@ it('rolls back remove everywhere changes and retains media when ingredient delet
     config(['media.disk' => 'public']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Undeletable Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Undeletable Additive');
     $source->update([
         'featured_image_path' => 'ingredients/featured-images/remove-undeletable.webp',
         'icon_image_path' => 'ingredients/icons/remove-undeletable.webp',
@@ -1090,7 +1090,7 @@ it('retains ingredient data and media when an outer transaction rolls back the r
     config(['media.disk' => 'public']);
 
     $user = User::factory()->create();
-    $source = privateMutationIngredient($user, IngredientCategory::Additive, 'Outer Rollback Additive');
+    $source = privateMutationIngredient($user, IngredientCategory::Other, 'Outer Rollback Additive');
     $source->update(['featured_image_path' => 'ingredients/featured-images/outer-rollback.webp']);
     Storage::disk('public')->put($source->featured_image_path, 'featured');
     $version = privateMutationVersion($user, privateMutationRecipe($user, 'Outer Rollback Formula'));

@@ -23,6 +23,12 @@ class IngredientFunction extends Model
     public function ingredients(): BelongsToMany
     {
         return $this->belongsToMany(Ingredient::class, 'ingredient_function_ingredient')
+            ->withPivot([
+                'source',
+                'source_reference',
+                'source_checked_at',
+                'assigned_by_user_id',
+            ])
             ->withTimestamps();
     }
 

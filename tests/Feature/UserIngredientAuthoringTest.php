@@ -20,6 +20,49 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
+it('generates a classification prompt from the latest ingredient identity', function (): void {
+    $user = User::factory()->create();
+    IngredientFunction::factory()->create(['key' => 'humectant', 'name' => 'Humectant', 'is_active' => true]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class)
+        ->set('data.name', 'Vegetable glycerin')
+        ->set('data.inci_name', 'GLYCERIN')
+        ->set('data.cas_number', '56-81-5');
+
+    $component
+        ->call('generateClassificationPrompt')
+        ->assertSet('generatedClassificationPrompt', function (?string $prompt): bool {
+            return is_string($prompt)
+                && str_contains($prompt, '"name": "Vegetable glycerin"')
+                && str_contains($prompt, '"inci_name": "GLYCERIN"')
+                && str_contains($prompt, '"cas_number": "56-81-5"')
+                && ! str_contains($prompt, '"name": null');
+        })
+        ->assertSeeText('Current ingredient:')
+        ->assertSeeText('Copy prompt')
+        ->assertDontSee('data-classification-prompt-copy disabled', escape: false);
+
+    expect($component->get('generatedClassificationPrompt'))
+        ->toContain('Answer in: English (en).');
+});
+
+it('requires a name or INCI before generating the classification prompt', function (): void {
+    $user = User::factory()->create();
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class)
+        ->call('generateClassificationPrompt')
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && $payload['type'] === 'error'
+                && $payload['message'] === 'Enter an ingredient name or INCI before generating the prompt.';
+        })
+        ->assertSet('generatedClassificationPrompt', null);
+});
+
 beforeEach(function () {
     Storage::fake(MediaStorage::publicDisk());
     Storage::fake(MediaStorage::userDisk());
@@ -34,15 +77,15 @@ it('creates a minimal private user ingredient from the public editor', function 
 
     expect(method_exists($component->instance(), 'mountAction'))->toBeTrue();
 
-    $component->assertDontSee('Using this oil in saponification');
+    $component->assertDontSee('Soap chemistry');
 
     $component
-        ->set('data.category', IngredientCategory::CarrierOil->value)
-        ->assertSee('Using this oil in saponification');
+        ->set('data.is_soap_saponification_trusted', true)
+        ->assertSee('Soap chemistry');
 
     $component
         ->set('data.name', 'French Green Clay')
-        ->set('data.category', IngredientCategory::Clay->value)
+        ->set('data.category', IngredientCategory::MineralsSaltsPowders->value)
         ->set('data.inci_name', 'ILLITE')
         ->set('data.cas_number', '1332-58-7')
         ->set('data.ec_number', '310-194-1')
@@ -57,7 +100,7 @@ it('creates a minimal private user ingredient from the public editor', function 
 
     expect($ingredient)->not->toBeNull()
         ->and($ingredient->visibility)->toBe(Visibility::Private)
-        ->and($ingredient->is_potentially_saponifiable)->toBeFalse()
+        ->and($ingredient->is_soap_saponification_trusted)->toBeFalse()
         ->and($ingredient->display_name)->toBe('French Green Clay')
         ->and($ingredient->inci_name)->toBe('ILLITE')
         ->and($ingredient->cas_number)->toBe('1332-58-7')
@@ -86,15 +129,16 @@ it('shows composition only when the user chooses a blend', function () {
         ->assertSee('Add ingredient');
 });
 
-it('shows category-specific tabs while creating an ingredient', function () {
+it('shows specialist tabs from explicit capabilities while creating an ingredient', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     Livewire::test(IngredientEditor::class)
-        ->set('data.category', IngredientCategory::CarrierOil->value)
+        ->set('data.is_soap_saponification_trusted', true)
         ->assertSee('Soap chemistry')
         ->assertDontSee('Compliance')
-        ->set('data.category', IngredientCategory::EssentialOil->value)
+        ->set('data.is_soap_saponification_trusted', false)
+        ->set('data.requires_aromatic_compliance', true)
         ->assertSee('Compliance')
         ->assertDontSee('Soap chemistry');
 });
@@ -113,7 +157,7 @@ it('saves a blend composition and its source from the custom editor rows', funct
 
     Livewire::test(IngredientEditor::class)
         ->set('data.name', 'My Blend')
-        ->set('data.category', IngredientCategory::CarrierOil->value)
+        ->set('data.category', IngredientCategory::Lipids->value)
         ->set('data.ingredient_structure', 'blend')
         ->call('addComponent', $componentIngredient->id)
         ->set('data.components.0.percentage_in_parent', '100,0')
@@ -175,7 +219,7 @@ it('quick creates an active private ingredient and immediately adds it to the co
     Livewire::test(IngredientEditor::class)
         ->set('data.ingredient_structure', 'blend')
         ->set('quickComponentName', 'Calendula Flowers')
-        ->set('quickComponentCategory', IngredientCategory::BotanicalExtract->value)
+        ->set('quickComponentCategory', IngredientCategory::BotanicalsExtracts->value)
         ->call('createAndAddComponent')
         ->assertHasNoErrors()
         ->assertSet('quickComponentName', '')
@@ -229,7 +273,7 @@ it('shows the plan limit when quick ingredient creation is rejected', function (
     Livewire::test(IngredientEditor::class)
         ->set('data.ingredient_structure', 'blend')
         ->set('quickComponentName', 'Calendula Flowers')
-        ->set('quickComponentCategory', IngredientCategory::BotanicalExtract->value)
+        ->set('quickComponentCategory', IngredientCategory::BotanicalsExtracts->value)
         ->call('createAndAddComponent')
         ->assertHasErrors(['plan'])
         ->assertSee('Your current plan allows 20 private ingredients.');
@@ -247,7 +291,7 @@ it('does not quick create an ingredient when the composition is full', function 
             'percentage_in_parent' => 5,
         ]))
         ->set('quickComponentName', 'Overflow Ingredient')
-        ->set('quickComponentCategory', IngredientCategory::Additive->value)
+        ->set('quickComponentCategory', IngredientCategory::Other->value)
         ->call('createAndAddComponent')
         ->assertHasErrors(['data.components']);
 
@@ -267,14 +311,14 @@ it('rejects an empty blend and components inaccessible to the author', function 
 
     expect(fn () => $service->create([
         'name' => 'Empty Blend',
-        'category' => IngredientCategory::Additive->value,
+        'category' => IngredientCategory::Other->value,
         'ingredient_structure' => 'blend',
         'components' => [],
     ], $user))->toThrow(ValidationException::class, 'Add at least one component');
 
     expect(fn () => $service->create([
         'name' => 'Tampered Blend',
-        'category' => IngredientCategory::Additive->value,
+        'category' => IngredientCategory::Other->value,
         'ingredient_structure' => 'blend',
         'components' => [[
             'component_ingredient_id' => $privateIngredient->id,
@@ -294,7 +338,7 @@ it('rejects inactive blend components during server-side persistence validation'
 
     expect(fn () => app(UserIngredientAuthoringService::class)->create([
         'name' => 'Inactive Component Blend',
-        'category' => IngredientCategory::Additive->value,
+        'category' => IngredientCategory::Other->value,
         'ingredient_structure' => 'blend',
         'components' => [[
             'component_ingredient_id' => $inactiveIngredient->id,
@@ -309,7 +353,8 @@ it('persists the parent allergen declaration source for aromatic user ingredient
 
     $ingredient = app(UserIngredientAuthoringService::class)->create([
         'name' => 'Lavender EO',
-        'category' => IngredientCategory::EssentialOil->value,
+        'category' => IngredientCategory::AromaticMaterials->value,
+        'requires_aromatic_compliance' => true,
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'allergen_source_notes' => 'IFRA allergen statement',
         'allergen_entries' => [
@@ -326,7 +371,7 @@ it('persists an optional ingredient icon separately from the main image', functi
     $user = User::factory()->create();
     $ingredient = app(UserIngredientAuthoringService::class)->create([
         'name' => 'Green Clay',
-        'category' => IngredientCategory::Clay->value,
+        'category' => IngredientCategory::MineralsSaltsPowders->value,
         'featured_image_path' => 'ingredients/featured-images/green-clay.webp',
         'featured_image_original_name' => 'Green clay portrait.webp',
         'icon_image_path' => 'ingredients/icons/green-clay-icon.webp',
@@ -341,7 +386,7 @@ it('persists an optional ingredient icon separately from the main image', functi
 
     $updated = app(UserIngredientAuthoringService::class)->update($ingredient, [
         'name' => 'French Green Clay',
-        'category' => IngredientCategory::Clay->value,
+        'category' => IngredientCategory::MineralsSaltsPowders->value,
         'featured_image_path' => 'ingredients/featured-images/french-green-clay.webp',
         'featured_image_original_name' => 'French green clay portrait.webp',
         'icon_image_path' => 'ingredients/icons/french-green-clay-icon.webp',
@@ -385,18 +430,19 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
     ]);
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Rose Essential Oil',
         'inci_name' => 'ROSA DAMASCENA FLOWER OIL',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'catalog_key' => 'USR-EO',
+        'requires_aromatic_compliance' => true,
     ]);
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->set('data.name', 'Rose Essential Oil')
-        ->set('data.category', IngredientCategory::EssentialOil->value)
+        ->set('data.category', IngredientCategory::AromaticMaterials->value)
         ->set('data.inci_name', 'ROSA DAMASCENA FLOWER OIL')
         ->set('data.function_ids', [$skinConditioning->id, $perfuming->id])
         ->set('data.allergen_entries', [
@@ -441,12 +487,12 @@ it('accepts comma decimals throughout user soap chemistry fields', function () {
     $user = User::factory()->create();
     $fattyAcid = FattyAcid::factory()->create(['is_active' => true]);
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'User chemistry oil',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
 
     $this->actingAs($user);
@@ -473,11 +519,11 @@ it('accepts comma decimals throughout user soap chemistry fields', function () {
 it('derives the same NaOH SAP from decimal and professional KOH notation', function () {
     $user = User::factory()->create(['number_locale' => 'fr_FR']);
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
 
     $this->actingAs($user);
@@ -498,11 +544,11 @@ it('derives the same NaOH SAP from decimal and professional KOH notation', funct
 it('returns professional KOH notation to the canonical decimal scale', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
 
     $this->actingAs($user);
@@ -515,10 +561,11 @@ it('returns professional KOH notation to the canonical decimal scale', function 
 it('keeps invalid KOH input visible so validation can explain it', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
+        'is_soap_saponification_trusted' => true,
     ]);
 
     $this->actingAs($user);
@@ -535,9 +582,9 @@ it('shows one live fatty acid profile total without repeating the total rule on 
     $oleic = FattyAcid::factory()->create(['name' => 'Oleic', 'is_active' => true]);
     $lauric = FattyAcid::factory()->create(['name' => 'Lauric', 'is_active' => true]);
     $source = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
     $source->sapProfile()->create(['koh_sap_value' => 0.18]);
     $source->fattyAcidEntries()->createMany([
@@ -565,7 +612,7 @@ it('presents fatty acid entries to one decimal without changing untouched stored
     $user = User::factory()->create();
     $fattyAcid = FattyAcid::factory()->create(['is_active' => true]);
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
@@ -594,10 +641,10 @@ it('presents fatty acid entries to one decimal without changing untouched stored
 it('shows trusted KOH validation errors in the customer ingredient form without partially saving', function () {
     $user = User::factory()->create();
     $source = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Platform olive oil',
         'owner_type' => null,
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
     $source->sapProfile()->create(['koh_sap_value' => 0.188]);
     $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
@@ -620,13 +667,13 @@ it('creates missing composite components as private ingredients before they are 
 
     $component = $service->createInlineComponent([
         'name' => 'Calendula Flowers',
-        'category' => IngredientCategory::Additive->value,
+        'category' => IngredientCategory::Other->value,
         'inci_name' => 'CALENDULA OFFICINALIS FLOWER',
     ], $user);
 
     $macerate = $service->create([
         'name' => 'Calendula Macerate',
-        'category' => IngredientCategory::CarrierOil->value,
+        'category' => IngredientCategory::Lipids->value,
         'inci_name' => 'HELIANTHUS ANNUUS SEED OIL, CALENDULA OFFICINALIS FLOWER',
         'components' => [
             [
@@ -652,7 +699,7 @@ it('keeps user carrier oils out of the soap saponification lane', function () {
 
     $ingredient = app(UserIngredientAuthoringService::class)->create([
         'name' => 'My experimental oil',
-        'category' => IngredientCategory::CarrierOil->value,
+        'category' => IngredientCategory::Lipids->value,
         'inci_name' => 'EXPERIMENTAL OIL',
         'sap_profile' => [
             'koh_sap_value' => 0.188,
@@ -662,7 +709,7 @@ it('keeps user carrier oils out of the soap saponification lane', function () {
         'fatty_acid_entries' => [],
     ], $user);
 
-    expect($ingredient->is_potentially_saponifiable)->toBeFalse()
+    expect($ingredient->is_soap_saponification_trusted)->toBeFalse()
         ->and($ingredient->availableWorkbenchPhases())
         ->toContain('additives')
         ->not->toContain('saponified_oils');
@@ -673,7 +720,7 @@ it('normalizes imported CAS and EC check digit padding when saving a user ingred
     $this->actingAs($user);
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive oil virgin',
         'inci_name' => 'Olea europaea fruit oil',
         'cas_number' => '8001-25-00',
@@ -682,12 +729,12 @@ it('normalizes imported CAS and EC check digit padding when saving a user ingred
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'catalog_key' => 'USR-OLIVE',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
     ]);
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
         ->set('data.name', 'Olive oil virgin')
-        ->set('data.category', IngredientCategory::CarrierOil->value)
+        ->set('data.category', IngredientCategory::Lipids->value)
         ->set('data.inci_name', 'Olea europaea fruit oil')
         ->set('data.cas_number', '8001-25-00')
         ->set('data.ec_number', '232-277-00')

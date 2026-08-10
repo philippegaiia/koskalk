@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Models\Allergen;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
@@ -106,7 +107,7 @@ it('updates existing ingredient rows without duplicating them on reseed', functi
     expect(Ingredient::query()->count())->toBe(1);
 });
 
-it('classifies imported ingredients by code prefix and does not assume soap eligibility without soap names', function () {
+it('classifies imported ingredients from the canonical taxonomy without granting soap trust from soap names', function () {
     [, $ingredientPath] = writeCatalogFixtures(
         $this->catalogFixtureDirectory,
         allergenRows: [
@@ -126,12 +127,35 @@ it('classifies imported ingredients by code prefix and does not assume soap elig
     $oil = Ingredient::query()->where('catalog_key', 'OB1')->firstOrFail();
     $essentialOil = Ingredient::query()->where('catalog_key', 'EO1')->firstOrFail();
 
-    expect($oil->category)->toBe(IngredientCategory::CarrierOil)
-        ->and($oil->is_potentially_saponifiable)->toBeTrue()
+    expect($oil->category)->toBe(IngredientCategory::Lipids)
+        ->and($oil->subcategory)->toBe(IngredientSubcategory::VegetableOils)
+        ->and($oil->is_soap_saponification_trusted)->toBeFalse()
         ->and($oil->requires_admin_review)->toBeTrue()
         ->and($oil->isAvailableForInitialSoapCalculation())->toBeFalse()
-        ->and($essentialOil->category)->toBe(IngredientCategory::EssentialOil)
-        ->and($essentialOil->is_potentially_saponifiable)->toBeFalse();
+        ->and($essentialOil->category)->toBe(IngredientCategory::AromaticMaterials)
+        ->and($essentialOil->requires_aromatic_compliance)->toBeTrue()
+        ->and($essentialOil->is_soap_saponification_trusted)->toBeFalse();
+});
+
+it('keeps imported rows outside the canonical taxonomy in Other for admin review', function (): void {
+    [, $ingredientPath] = writeCatalogFixtures(
+        $this->catalogFixtureDirectory,
+        allergenRows: [['Nom INCI (à étiqueter)', 'Numéro CAS (International)', 'Numéro CE (Européen)', '', '']],
+        ingredientRows: [
+            ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
+            ['NEW999', 'Novel extract', '', 'kg', '', '0.000', 'Yes', 'No', 'Novel extract', 'Sodium novelate', '', '', '', '', 'Novel extract'],
+        ],
+    );
+    config()->set('catalog-imports.ingredients.path', $ingredientPath);
+
+    $this->seed(IngredientCatalogSeeder::class);
+
+    $ingredient = Ingredient::query()->where('catalog_key', 'NEW999')->sole();
+
+    expect($ingredient->category)->toBe(IngredientCategory::Other)
+        ->and($ingredient->subcategory)->toBeNull()
+        ->and($ingredient->is_soap_saponification_trusted)->toBeFalse()
+        ->and($ingredient->requires_admin_review)->toBeTrue();
 });
 
 it('enriches matching catalog carrier oils with mendrulandia chemistry without duplicating them or inventing soap inci names', function () {
@@ -164,7 +188,7 @@ it('enriches matching catalog carrier oils with mendrulandia chemistry without d
         ->filter(fn (Ingredient $ingredient): bool => strtolower((string) $ingredient->display_name) === 'coconut oil');
 
     expect($coconutOilRows)->toHaveCount(1)
-        ->and($coconutOil->is_potentially_saponifiable)->toBeTrue()
+        ->and($coconutOil->is_soap_saponification_trusted)->toBeTrue()
         ->and((float) $coconutOil->sapProfile->koh_sap_value)->toBe(0.257)
         ->and($coconutOil->sapProfile->source_notes)->toBe('Mendrulandia oils [coconut_oil]')
         ->and($coconutOil->fattyAcidEntries)->not->toBeEmpty()
@@ -204,7 +228,7 @@ it('does not seed platform fragrance oils from the starter catalog', function ()
         ->toBe(['EO1']);
 });
 
-it('classifies botanical and co2 extracts for later aromatic compliance enrichment', function () {
+it('uses canonical metadata for known botanicals and leaves unknown imports for review', function () {
     [, $ingredientPath] = writeCatalogFixtures(
         $this->catalogFixtureDirectory,
         allergenRows: [
@@ -221,8 +245,8 @@ it('classifies botanical and co2 extracts for later aromatic compliance enrichme
 
     $this->seed(IngredientCatalogSeeder::class);
 
-    expect(Ingredient::query()->where('catalog_key', 'BE1')->firstOrFail()->category)->toBe(IngredientCategory::BotanicalExtract)
-        ->and(Ingredient::query()->where('catalog_key', 'AR1')->firstOrFail()->category)->toBe(IngredientCategory::Co2Extract);
+    expect(Ingredient::query()->where('catalog_key', 'BE1')->firstOrFail()->category)->toBe(IngredientCategory::BotanicalsExtracts)
+        ->and(Ingredient::query()->where('catalog_key', 'AR1')->firstOrFail()->category)->toBe(IngredientCategory::Other);
 });
 
 it('preserves multi-value cas strings and keeps allergen imports out of ingredient tables', function () {

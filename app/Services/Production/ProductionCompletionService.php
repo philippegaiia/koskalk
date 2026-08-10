@@ -2,6 +2,7 @@
 
 namespace App\Services\Production;
 
+use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotOrigin;
@@ -10,6 +11,7 @@ use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Models\Ingredient;
+use App\Models\ProductionFormulaLine;
 use App\Models\ProductionConsumption;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
@@ -243,6 +245,20 @@ class ProductionCompletionService
         $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
 
         $requirements = $production->requirements()->get();
+
+        $missingWaterActual = ProductionFormulaLine::query()
+            ->where('production_run_id', $production->id)
+            ->where('component', ProductionFormulaComponent::Water)
+            ->where(function ($query): void {
+                $query->whereNull('actual_mass_grams')->orWhere('actual_mass_grams', '<=', 0);
+            })
+            ->exists();
+
+        if ($missingWaterActual) {
+            throw ValidationException::withMessages([
+                'production' => 'Record a positive actual water quantity before completing.',
+            ]);
+        }
 
         if ($requirements->isEmpty()) {
             throw ValidationException::withMessages([

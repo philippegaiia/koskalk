@@ -1286,12 +1286,12 @@ function productionSnapshotSoapRecipe(): array
 function productionSnapshotIngredient(): Ingredient
 {
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
         'soap_inci_naoh_name' => 'SODIUM OLIVATE',
         'soap_inci_koh_name' => 'POTASSIUM OLIVATE',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 

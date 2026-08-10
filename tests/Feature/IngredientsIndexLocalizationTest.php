@@ -20,7 +20,7 @@ it('uses the approved Soapkraft and customer ingredient terminology', function (
 
     Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => null,
         'owner_id' => null,
         'is_active' => true,
@@ -47,7 +47,7 @@ it('loads ingredient index interface copy from the database', function () {
 
     Ingredient::factory()->create([
         'display_name' => 'Huile d’olive',
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'is_active' => true,

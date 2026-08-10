@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\IngredientAllergenEntries\Schemas;
 
-use App\Enums\IngredientCategory;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -25,7 +24,7 @@ class IngredientAllergenEntryForm
                             ->relationship(
                                 name: 'ingredient',
                                 titleAttribute: 'display_name',
-                                modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn('category', IngredientCategory::aromaticValues())
+                                modifyQueryUsing: fn (Builder $query): Builder => $query->where('requires_aromatic_compliance', true)
                             )
                             ->searchable()
                             ->preload()

@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Data\IngredientClassificationPromptInput;
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetType;
 use App\Enums\MediaAssetUsageRole;
 use App\Forms\Components\MediaAssetPicker;
@@ -16,6 +18,7 @@ use App\Models\IngredientFunction;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
+use App\Services\IngredientClassificationPromptBuilder;
 use App\Services\MediaAssetUsageService;
 use App\Services\UserIngredientAuthoringService;
 use App\SoapSap;
@@ -28,6 +31,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\TextEntry;
@@ -81,6 +85,34 @@ class IngredientEditor extends Component implements HasActions, HasForms
     public string $quickComponentName = '';
 
     public ?string $quickComponentCategory = null;
+
+    public ?string $generatedClassificationPrompt = null;
+
+    public function generateClassificationPrompt(IngredientClassificationPromptBuilder $builder): void
+    {
+        $name = trim((string) ($this->data['name'] ?? ''));
+        $inciName = trim((string) ($this->data['inci_name'] ?? ''));
+
+        if ($name === '' && $inciName === '') {
+            $this->showAppNotification(
+                __('ingredients.editor.classification_prompt.identity_required'),
+                'error',
+            );
+
+            return;
+        }
+
+        $this->generatedClassificationPrompt = $builder->build(
+            new IngredientClassificationPromptInput(
+                name: $this->data['name'] ?? null,
+                inciName: $this->data['inci_name'] ?? null,
+                casNumber: $this->data['cas_number'] ?? null,
+                ecNumber: $this->data['ec_number'] ?? null,
+                supplierNotes: $this->data['notes'] ?? null,
+                responseLocale: app()->getLocale(),
+            ),
+        );
+    }
 
     public function mount(
         ?Ingredient $ingredient,
@@ -345,8 +377,23 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->helperText(__('ingredients.editor.details.type.helper')),
                                         Select::make('category')
                                             ->label(__('ingredients.editor.details.category'))
-                                            ->options(IngredientCategory::class)
+                                            ->options(IngredientCategory::options())
                                             ->required()
+                                            ->rules([Rule::enum(IngredientCategory::class)])
+                                            ->live(),
+                                        Select::make('subcategory')
+                                            ->label(__('ingredients.editor.details.subcategory'))
+                                            ->options(fn (Get $get): array => IngredientSubcategory::optionsFor($get('category')))
+                                            ->searchable()
+                                            ->live()
+                                            ->helperText(__('ingredients.editor.details.subcategory_helper')),
+                                        Toggle::make('is_soap_saponification_trusted')
+                                            ->label(__('ingredients.editor.details.soap_trusted'))
+                                            ->helperText(__('ingredients.editor.details.soap_trusted_helper'))
+                                            ->live(),
+                                        Toggle::make('requires_aromatic_compliance')
+                                            ->label(__('ingredients.editor.details.aromatic_compliance'))
+                                            ->helperText(__('ingredients.editor.details.aromatic_compliance_helper'))
                                             ->live(),
                                         TextInput::make('inci_name')
                                             ->label(__('ingredients.editor.details.inci'))
@@ -371,8 +418,13 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->label(__('ingredients.editor.supplier.ec_number'))
                                             ->maxLength(255)
                                             ->placeholder(__('ingredients.editor.supplier.ec_placeholder')),
+                                        TextEntry::make('verified_function_names')
+                                            ->label(__('ingredients.editor.supplier.verified_functions'))
+                                            ->formatStateUsing(fn (mixed $state): string => collect(is_array($state) ? $state : [])->implode(', ') ?: __('ingredients.editor.supplier.none_verified'))
+                                            ->belowContent(__('ingredients.editor.supplier.verified_functions_helper'))
+                                            ->columnSpanFull(),
                                         Select::make('function_ids')
-                                            ->label(__('ingredients.editor.supplier.functions'))
+                                            ->label(__('ingredients.editor.supplier.additional_functions'))
                                             ->multiple()
                                             ->searchable()
                                             ->preload()
@@ -422,7 +474,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ->columnSpanFull(),
                             ]),
                         Tab::make(__('ingredients.editor.tabs.soap_chemistry'))
-                            ->visible(fn (Get $get): bool => static::isCarrierOilCategory($get('category')))
+                            ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted'))
                             ->schema([
                                 Section::make(__('ingredients.editor.soap.section'))
                                     ->description(__('ingredients.editor.soap.description'))
@@ -502,7 +554,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ]),
                             ]),
                         Tab::make(__('ingredients.editor.tabs.compliance'))
-                            ->visible(fn (Get $get): bool => static::isPublicAromaticCategory($get('category')))
+                            ->visible(fn (Get $get): bool => (bool) $get('requires_aromatic_compliance'))
                             ->schema([
                                 Section::make(__('ingredients.editor.compliance.allergens.section'))
                                     ->description(__('ingredients.editor.compliance.allergens.description'))
@@ -838,25 +890,12 @@ class IngredientEditor extends Component implements HasActions, HasForms
             && ($ingredient->owner_type === null || ! ($user instanceof User) || ! $ingredient->isEditableBy($user));
     }
 
-    private static function isPublicAromaticCategory(mixed $state): bool
+    private static function isCategory(mixed $state, IngredientCategory $expected): bool
     {
         if ($state instanceof IngredientCategory) {
-            $state = $state->value;
+            return $state === $expected;
         }
 
-        return in_array($state, [
-            IngredientCategory::EssentialOil->value,
-            IngredientCategory::FragranceOil->value,
-            IngredientCategory::Co2Extract->value,
-        ], true);
-    }
-
-    private static function isCarrierOilCategory(mixed $state): bool
-    {
-        if ($state instanceof IngredientCategory) {
-            return $state === IngredientCategory::CarrierOil;
-        }
-
-        return $state === IngredientCategory::CarrierOil->value;
+        return IngredientCategory::tryFrom((string) $state) === $expected;
     }
 }

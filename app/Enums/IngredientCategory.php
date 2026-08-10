@@ -10,90 +10,75 @@ use Filament\Support\Contracts\HasLabel;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 
+/**
+ * The user-facing ingredient taxonomy.
+ *
+ * Legacy database values are converted by the taxonomy migration bridge, so
+ * runtime code handles only canonical values.
+ */
 enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, HasLabel
 {
-    case CarrierOil = 'carrier_oil';
-    case EssentialOil = 'essential_oil';
-    case FragranceOil = 'fragrance_oil';
-    case BotanicalExtract = 'botanical_extract';
-    case Co2Extract = 'co2_extract';
-    case Clay = 'clay';
-    case Glycol = 'glycol';
-    case Colorant = 'colorant';
-    case Preservative = 'preservative';
-    case Additive = 'additive';
-    case Alkali = 'alkali';
-    case Liquid = 'liquid';
+    case Lipids = 'lipids';
+    case Waxes = 'waxes';
+    case Hydrocarbons = 'hydrocarbons';
+    case Silicones = 'silicones';
+    case FattyDerivatives = 'fatty_derivatives';
+    case Surfactants = 'surfactants';
+    case Emulsifiers = 'emulsifiers';
+    case HumectantsPolyols = 'humectants_polyols';
+    case WaterSolventsCarriers = 'water_solvents_carriers';
+    case RheologyModifiers = 'rheology_modifiers';
+    case FunctionalPolymers = 'functional_polymers';
+    case MineralsSaltsPowders = 'minerals_salts_powders';
+    case Actives = 'actives';
+    case BotanicalsExtracts = 'botanicals_extracts';
+    case AromaticMaterials = 'aromatic_materials';
+    case Colourants = 'colourants';
+    case PreservationStability = 'preservation_stability';
+    case PhAdjustersBuffers = 'ph_adjusters_buffers';
+    case SoapmakingAlkalis = 'soapmaking_alkalis';
+    case ExfoliantsAbrasives = 'exfoliants_abrasives';
+    case BasesBlendsPremixes = 'bases_blends_premixes';
+    case Other = 'other';
 
     public function getLabel(): string|Htmlable|null
     {
-        return match ($this) {
-            self::CarrierOil => 'Carrier Oil',
-            self::EssentialOil => 'Essential Oil',
-            self::FragranceOil => 'Fragrance Oil',
-            self::BotanicalExtract => 'Botanical Extract',
-            self::Co2Extract => 'CO2 Extract',
-            self::Clay => 'Clay',
-            self::Glycol => 'Glycol',
-            self::Colorant => 'Colorant',
-            self::Preservative => 'Preservative',
-            self::Additive => 'Additive',
-            self::Alkali => 'Alkali',
-            self::Liquid => 'Liquid',
-        };
+        return __(sprintf('ingredients.categories.%s.label', $this->value));
+    }
+
+    public function getDescription(): string|Htmlable|null
+    {
+        return __(sprintf('ingredients.categories.%s.description', $this->value));
     }
 
     public function getColor(): string|array|null
     {
         return match ($this) {
-            self::CarrierOil => 'success',
-            self::EssentialOil => 'warning',
-            self::FragranceOil => 'danger',
-            self::BotanicalExtract => 'emerald',
-            self::Co2Extract => 'teal',
-            self::Clay => 'gray',
-            self::Glycol => 'blue',
-            self::Colorant => 'info',
-            self::Preservative => 'primary',
-            self::Additive => 'gray',
-            self::Alkali => 'danger',
-            self::Liquid => 'blue',
+            self::Lipids, self::Waxes, self::Hydrocarbons => 'success',
+            self::Silicones, self::FattyDerivatives => 'teal',
+            self::Surfactants, self::Emulsifiers => 'info',
+            self::HumectantsPolyols, self::WaterSolventsCarriers => 'blue',
+            self::RheologyModifiers, self::FunctionalPolymers => 'primary',
+            self::MineralsSaltsPowders, self::Colourants => 'gray',
+            self::Actives, self::BotanicalsExtracts => 'emerald',
+            self::AromaticMaterials => 'warning',
+            self::PreservationStability, self::PhAdjustersBuffers, self::SoapmakingAlkalis => 'danger',
+            self::ExfoliantsAbrasives, self::BasesBlendsPremixes, self::Other => 'gray',
         };
     }
 
     public function getIcon(): string|BackedEnum|Htmlable|null
     {
         return match ($this) {
-            self::CarrierOil => Heroicon::CubeTransparent,
-            self::EssentialOil => Heroicon::Sparkles,
-            self::FragranceOil => Heroicon::Fire,
-            self::BotanicalExtract => Heroicon::Sun,
-            self::Co2Extract => Heroicon::Beaker,
-            self::Clay => Heroicon::Swatch,
-            self::Glycol => Heroicon::Beaker,
-            self::Colorant => Heroicon::Swatch,
-            self::Preservative => Heroicon::ShieldCheck,
-            self::Additive => Heroicon::ArchiveBox,
-            self::Alkali => Heroicon::Beaker,
-            self::Liquid => Heroicon::Cloud,
-        };
-    }
-
-    public function getDescription(): string|Htmlable|null
-    {
-        return match ($this) {
-            self::CarrierOil => 'Carrier oils and butters used in the initial saponification calculation.',
-            self::EssentialOil => 'Essential oils that may contribute allergen declarations.',
-            self::FragranceOil => 'User-added fragrance oils that are not seeded in the platform catalog.',
-            self::BotanicalExtract => 'Botanical extracts used like functional additives or specialty actives.',
-            self::Co2Extract => 'CO2 extracts and similar aromatic specialty extracts that require compliance data.',
-            self::Clay => 'Clays and mineral powders used as functional additives or color contributors.',
-            self::Glycol => 'Glycols and similar liquid carriers used in non-soap cosmetic systems.',
-            self::Colorant => 'Clays, micas, pigments, and other color additives.',
-            self::Preservative => 'Preservatives used in non-soap cosmetic systems.',
-            self::Additive => 'General additives such as salts, sugars, botanicals, and functional extras.',
-            self::Alkali => 'Alkalis such as sodium hydroxide or potassium hydroxide.',
-            self::Liquid => 'Water and other liquid carriers used in the formula.',
+            self::Lipids, self::Waxes, self::Hydrocarbons, self::FattyDerivatives => Heroicon::CubeTransparent,
+            self::Silicones, self::Emulsifiers, self::RheologyModifiers, self::FunctionalPolymers => Heroicon::Beaker,
+            self::Surfactants, self::PreservationStability => Heroicon::ShieldCheck,
+            self::HumectantsPolyols, self::WaterSolventsCarriers => Heroicon::Cloud,
+            self::MineralsSaltsPowders, self::Colourants, self::ExfoliantsAbrasives => Heroicon::Swatch,
+            self::Actives, self::BotanicalsExtracts => Heroicon::Sun,
+            self::AromaticMaterials => Heroicon::Sparkles,
+            self::PhAdjustersBuffers, self::SoapmakingAlkalis => Heroicon::Beaker,
+            self::BasesBlendsPremixes, self::Other => Heroicon::ArchiveBox,
         };
     }
 
@@ -108,25 +93,10 @@ enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, Ha
     }
 
     /**
-     * @return array<int, self>
+     * @return array<int, IngredientSubcategory>
      */
-    public static function aromaticCases(): array
+    public function subcategories(): array
     {
-        return [
-            self::EssentialOil,
-            self::FragranceOil,
-            self::Co2Extract,
-        ];
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public static function aromaticValues(): array
-    {
-        return array_map(
-            fn (self $category): string => $category->value,
-            self::aromaticCases(),
-        );
+        return IngredientSubcategory::forCategory($this);
     }
 }

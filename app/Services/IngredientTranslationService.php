@@ -12,7 +12,7 @@ use Illuminate\Validation\ValidationException;
 class IngredientTranslationService
 {
     /**
-     * @return array<int, array{locale: string, display_name: string|null, info_markdown: string|null}>
+     * @return array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null}>
      */
     public function formData(Ingredient $ingredient): array
     {
@@ -22,10 +22,11 @@ class IngredientTranslationService
 
         return $ingredient->translations()
             ->orderBy('locale')
-            ->get(['locale', 'display_name', 'info_markdown'])
+            ->get(['locale', 'display_name', 'saponification_name', 'info_markdown'])
             ->map(fn ($translation): array => [
                 'locale' => $translation->locale,
                 'display_name' => $translation->display_name,
+                'saponification_name' => $translation->saponification_name,
                 'info_markdown' => $translation->info_markdown,
             ])
             ->all();
@@ -63,6 +64,7 @@ class IngredientTranslationService
                     ['locale' => $row['locale']],
                     [
                         'display_name' => $row['display_name'],
+                        'saponification_name' => $row['saponification_name'],
                         'info_markdown' => $row['info_markdown'],
                     ],
                 );
@@ -72,7 +74,7 @@ class IngredientTranslationService
 
     /**
      * @param  array<int, array<string, mixed>>  $rows
-     * @return array<int, array{locale: string, display_name: string|null, info_markdown: string|null}>
+     * @return array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null}>
      */
     public function validateRows(array $rows): array
     {
@@ -95,6 +97,7 @@ class IngredientTranslationService
                         ->where(fn ($query) => $query->where('code', '!=', 'en')),
                 ],
                 'translations.*.display_name' => ['nullable', 'string', 'max:255'],
+                'translations.*.saponification_name' => ['nullable', 'string', 'max:255'],
                 'translations.*.info_markdown' => ['nullable', 'string'],
             ],
         );
@@ -105,7 +108,11 @@ class IngredientTranslationService
                     continue;
                 }
 
-                if (($row['display_name'] ?? null) === null && ($row['info_markdown'] ?? null) === null) {
+                if (
+                    ($row['display_name'] ?? null) === null
+                    && ($row['saponification_name'] ?? null) === null
+                    && ($row['info_markdown'] ?? null) === null
+                ) {
                     $validator->errors()->add(
                         "translations.{$index}.display_name",
                         'Enter a translated name or translated guidance.',
@@ -114,7 +121,7 @@ class IngredientTranslationService
             }
         });
 
-        /** @var array{translations: array<int, array{locale: string, display_name: string|null, info_markdown: string|null}>} $validated */
+        /** @var array{translations: array<int, array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null}>} $validated */
         $validated = $validator->validate();
 
         return $validated['translations'];
@@ -122,13 +129,14 @@ class IngredientTranslationService
 
     /**
      * @param  array<string, mixed>  $row
-     * @return array{locale: string, display_name: string|null, info_markdown: string|null}
+     * @return array{locale: string, display_name: string|null, saponification_name: string|null, info_markdown: string|null}
      */
     private function normalizeRow(array $row): array
     {
         return [
             'locale' => trim((string) ($row['locale'] ?? '')),
             'display_name' => $this->normalizeText($row['display_name'] ?? null),
+            'saponification_name' => $this->normalizeText($row['saponification_name'] ?? null),
             'info_markdown' => $this->normalizeText($row['info_markdown'] ?? null),
         ];
     }

@@ -37,7 +37,7 @@ it('renders the public ingredients index with only the current users private ing
     $otherUser = User::factory()->create();
 
     $ownedIngredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'My Glycerin',
         'inci_name' => 'GLYCERIN',
         'owner_type' => OwnerType::User,
@@ -47,7 +47,7 @@ it('renders the public ingredients index with only the current users private ing
     ]);
 
     $hiddenIngredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Hidden Glycerin',
         'inci_name' => 'GLYCERIN',
         'owner_type' => OwnerType::User,
@@ -104,7 +104,7 @@ it('lets the signed-in user search their ingredient catalog table', function () 
     $user = User::factory()->create();
 
     $glycerin = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'My Glycerin',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
@@ -113,7 +113,7 @@ it('lets the signed-in user search their ingredient catalog table', function () 
     ]);
 
     $clay = Ingredient::factory()->create([
-        'category' => IngredientCategory::Clay,
+        'category' => IngredientCategory::MineralsSaltsPowders,
         'display_name' => 'White Clay',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
@@ -134,7 +134,7 @@ it('lets the signed-in user search their ingredient catalog table', function () 
 it('renders user-owned ingredient pictures through the authenticated media route', function () {
     $user = User::factory()->create();
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Sodium Citrate',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
@@ -180,7 +180,7 @@ it('allows deleting an unused personal ingredient from the catalog table', funct
     $user = User::factory()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Disposable Ingredient',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
@@ -214,9 +214,9 @@ it('allows deleting an unused personal ingredient from the catalog table', funct
 
 it('uses the complex removal dialog for a composite only dependency', function () {
     $user = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Nested Extract');
-    $replacement = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Replacement Extract');
-    $parent = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Private Blend');
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Nested Extract');
+    $replacement = catalogPrivateIngredient($user, IngredientCategory::Other, 'Replacement Extract');
+    $parent = catalogPrivateIngredient($user, IngredientCategory::Other, 'Private Blend');
     IngredientComponent::factory()->create([
         'ingredient_id' => $parent->id,
         'component_ingredient_id' => $source->id,
@@ -244,10 +244,10 @@ it('uses the complex removal dialog for a composite only dependency', function (
 
 it('shows and blocks a visible composite dependency that cannot be edited', function () {
     $user = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Protected Extract');
-    $replacement = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Replacement Extract');
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Protected Extract');
+    $replacement = catalogPrivateIngredient($user, IngredientCategory::Other, 'Replacement Extract');
     $platformParent = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Platform Protected Blend',
         'owner_type' => null,
         'owner_id' => null,
@@ -281,9 +281,9 @@ it('shows and blocks a visible composite dependency that cannot be edited', func
 
 it('discloses formula usage reached through nested composite ingredients', function () {
     $user = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Nested Source');
-    $directParent = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Direct Parent');
-    $nestedParent = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Nested Parent');
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Nested Source');
+    $directParent = catalogPrivateIngredient($user, IngredientCategory::Other, 'Direct Parent');
+    $nestedParent = catalogPrivateIngredient($user, IngredientCategory::Other, 'Nested Parent');
     IngredientComponent::factory()->create([
         'ingredient_id' => $directParent->id,
         'component_ingredient_id' => $source->id,
@@ -312,12 +312,12 @@ it('returns to the first catalog page after deleting the only item on page two',
     foreach (range(1, 25) as $number) {
         catalogPrivateIngredient(
             $user,
-            IngredientCategory::Additive,
+            IngredientCategory::Other,
             sprintf('Catalog Ingredient %02d', $number),
         );
     }
 
-    $lastIngredient = catalogPrivateIngredient($user, IngredientCategory::Additive, 'ZZ Remove Me');
+    $lastIngredient = catalogPrivateIngredient($user, IngredientCategory::Other, 'ZZ Remove Me');
 
     $this->actingAs($user);
 
@@ -337,13 +337,13 @@ it('returns to the first catalog page after deleting the only item on page two',
 
 it('opens a used ingredient decision dialog with compatible replacements', function () {
     $user = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::EssentialOil, 'Lavender Essential Oil');
+    $source = catalogPrivateIngredient($user, IngredientCategory::AromaticMaterials, 'Lavender Essential Oil');
     $compatible = Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Fragrance',
     ]);
     $incompatible = Ingredient::factory()->create([
-        'category' => IngredientCategory::Clay,
+        'category' => IngredientCategory::MineralsSaltsPowders,
         'display_name' => 'White Clay',
     ]);
     catalogFormulaUsage($user, $source, 'Evening Soap');
@@ -379,18 +379,18 @@ it('opens a used ingredient decision dialog with compatible replacements', funct
 it('shows authorized replacement candidates in one reusable searchable combobox', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::EssentialOil, 'Original Lavender');
+    $source = catalogPrivateIngredient($user, IngredientCategory::AromaticMaterials, 'Original Lavender');
     $lavender = Ingredient::factory()->create([
-        'category' => IngredientCategory::FragranceOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Lavender Fragrance',
     ]);
     $bergamot = Ingredient::factory()->create([
-        'category' => IngredientCategory::Co2Extract,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Bergamot CO2',
     ]);
-    $inaccessible = catalogPrivateIngredient($otherUser, IngredientCategory::EssentialOil, 'Secret Lavender');
+    $inaccessible = catalogPrivateIngredient($otherUser, IngredientCategory::AromaticMaterials, 'Secret Lavender');
     $incompatible = Ingredient::factory()->create([
-        'category' => IngredientCategory::Clay,
+        'category' => IngredientCategory::MineralsSaltsPowders,
         'display_name' => 'Lavender Clay',
     ]);
     catalogFormulaUsage($user, $source, 'Searchable Formula');
@@ -430,7 +430,7 @@ it('shows authorized replacement candidates in one reusable searchable combobox'
 
 it('closes a stale ingredient dialog and shows a persistent page error', function () {
     $user = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Vanishing Additive');
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Vanishing Additive');
 
     $this->actingAs($user);
 
@@ -455,8 +455,8 @@ it('closes a stale ingredient dialog and shows a persistent page error', functio
 
 it('replaces a used ingredient everywhere and closes the dialog', function () {
     $user = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Old Additive');
-    $replacement = catalogPrivateIngredient($user, IngredientCategory::Additive, 'New Additive');
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Old Additive');
+    $replacement = catalogPrivateIngredient($user, IngredientCategory::Other, 'New Additive');
     [, , $recipeItem] = catalogFormulaUsage($user, $source, 'Updated Formula');
 
     $this->actingAs($user);
@@ -481,7 +481,7 @@ it('replaces a used ingredient everywhere and closes the dialog', function () {
 
 it('removes a used ingredient everywhere and closes the dialog', function () {
     $user = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Obsolete Additive');
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Obsolete Additive');
     [, , $recipeItem] = catalogFormulaUsage($user, $source, 'Reduced Formula');
 
     $this->actingAs($user);
@@ -506,8 +506,8 @@ it('blocks automatic removal when affected formulas cannot all be edited without
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
     $workspaceOwner = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Shared Additive');
-    $replacement = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Replacement Additive');
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Shared Additive');
+    $replacement = catalogPrivateIngredient($user, IngredientCategory::Other, 'Replacement Additive');
     $workspace = Workspace::factory()->for($workspaceOwner, 'owner')->create();
     WorkspaceMember::factory()->for($workspace)->for($user)->create([
         'role' => WorkspaceMemberRole::Viewer,
@@ -571,8 +571,8 @@ it('blocks automatic removal when affected formulas cannot all be edited without
 it('refuses tampered ingredient and replacement identifiers', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $source = catalogPrivateIngredient($user, IngredientCategory::Additive, 'Owned Additive');
-    $otherSource = catalogPrivateIngredient($otherUser, IngredientCategory::Additive, 'Other Private Additive');
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Owned Additive');
+    $otherSource = catalogPrivateIngredient($otherUser, IngredientCategory::Other, 'Other Private Additive');
     catalogFormulaUsage($user, $source, 'Protected Formula');
 
     $this->actingAs($user);
@@ -600,7 +600,7 @@ it('disables deleting a personal ingredient that is already used in costing', fu
     $user = User::factory()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Locked Ingredient',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
@@ -650,7 +650,7 @@ it('disables deleting a personal ingredient that is used in a recipe formula', f
     $user = User::factory()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'In-Formula Ingredient',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
@@ -954,7 +954,7 @@ it('does not allow editing another users private ingredient', function () {
     $otherUser = User::factory()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Other User Ingredient',
         'owner_type' => OwnerType::User,
         'owner_id' => $otherUser->id,
@@ -971,7 +971,7 @@ it('shows authenticated users the platform ingredient record in read-only form',
     $user = User::factory()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::EssentialOil,
+        'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Platform Lavender Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'cas_number' => '8000-28-0',
@@ -1022,7 +1022,7 @@ it('does not delete a platform ingredient if a table action call is forced', fun
     $user = User::factory()->create();
 
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Platform Glycerin',
         'owner_type' => null,
         'owner_id' => null,
@@ -1158,7 +1158,7 @@ it('renders the public ingredient create page for signed in users', function () 
 
 it('uses the ingredient name as compact edit-page context', function () {
     $user = User::factory()->create();
-    $ingredient = catalogPrivateIngredient($user, IngredientCategory::Additive, 'My Glycerin');
+    $ingredient = catalogPrivateIngredient($user, IngredientCategory::Other, 'My Glycerin');
 
     $this->actingAs($user)
         ->get(route('ingredients.edit', $ingredient))
@@ -1191,7 +1191,7 @@ it('keeps one compact non-obstructing create action visible in the ingredient ed
 
 it('keeps one compact non-obstructing save action visible in the ingredient editor', function () {
     $user = User::factory()->create();
-    $ingredient = catalogPrivateIngredient($user, IngredientCategory::Additive, 'My Glycerin');
+    $ingredient = catalogPrivateIngredient($user, IngredientCategory::Other, 'My Glycerin');
 
     $response = $this->actingAs($user)
         ->get(route('ingredients.edit', $ingredient))

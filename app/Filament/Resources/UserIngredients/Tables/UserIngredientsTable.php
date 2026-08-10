@@ -50,7 +50,7 @@ class UserIngredientsTable
             ->filters([
                 SelectFilter::make('category')
                     ->multiple()
-                    ->options(IngredientCategory::class),
+                    ->options(IngredientCategory::options()),
                 Filter::make('missing_inci')
                     ->label('Missing INCI')
                     ->query(fn (Builder $query): Builder => $query->where(

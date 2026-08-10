@@ -136,10 +136,10 @@ it('reads the cosmetic costing basis from Alpine component state', function () {
 function makeCostingContentCarrierOilIngredient(): Ingredient
 {
     return Ingredient::factory()->create([
-        'category' => IngredientCategory::CarrierOil,
+        'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
-        'is_potentially_saponifiable' => true,
+        'is_soap_saponification_trusted' => true,
         'is_active' => true,
     ]);
 }

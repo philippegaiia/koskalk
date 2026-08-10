@@ -206,6 +206,18 @@ class IngredientsIndex extends Component
             return;
         }
 
+        $this->resetErrorBag('price_'.$id);
+
+        if (blank($value)) {
+            app(CurrentMaterialPriceService::class)->forgetIngredient(
+                workspace: $workspace,
+                ingredient: $ingredient,
+                actor: $user,
+            );
+
+            return;
+        }
+
         $normalizedValue = NumberLocale::parseDecimalInput($value);
         $validator = Validator::make(
             ['price' => $normalizedValue],

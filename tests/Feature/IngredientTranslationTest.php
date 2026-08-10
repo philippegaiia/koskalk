@@ -20,11 +20,14 @@ use Livewire\Livewire;
 uses(RefreshDatabase::class);
 
 it('stores ingredient translations in a dedicated constrained table', function () {
+    expect(Schema::hasColumn('ingredients', 'saponification_name'))->toBeTrue();
+
     expect(Schema::hasColumns('ingredient_translations', [
         'id',
         'ingredient_id',
         'locale',
         'display_name',
+        'saponification_name',
         'info_markdown',
         'created_at',
         'updated_at',
@@ -75,6 +78,7 @@ it('resolves translated ingredient fields with English fallback', function () {
     SupportedLocale::factory()->create(['code' => 'fr']);
     $ingredient = Ingredient::factory()->create([
         'display_name' => 'Olive Oil',
+        'saponification_name' => 'Olive',
         'info_markdown' => 'English guidance',
     ]);
     IngredientTranslation::factory()
@@ -82,15 +86,19 @@ it('resolves translated ingredient fields with English fallback', function () {
         ->create([
             'locale' => 'fr',
             'display_name' => 'Huile d’olive',
+            'saponification_name' => 'Olive',
             'info_markdown' => 'Conseils en français',
         ]);
 
     expect($ingredient->localizedDisplayName('fr'))->toBe('Huile d’olive')
+        ->and($ingredient->localizedSaponificationName('fr'))->toBe('Olive')
         ->and($ingredient->localizedInfoMarkdown('fr'))->toBe('Conseils en français')
         ->and($ingredient->localizedDisplayName('fr_FR'))->toBe('Huile d’olive')
         ->and($ingredient->localizedDisplayName('de'))->toBe('Olive Oil')
+        ->and($ingredient->localizedSaponificationName('de'))->toBe('Olive')
         ->and($ingredient->localizedInfoMarkdown('de'))->toBe('English guidance')
-        ->and($ingredient->localizedDisplayName('en'))->toBe('Olive Oil');
+        ->and($ingredient->localizedDisplayName('en'))->toBe('Olive Oil')
+        ->and($ingredient->localizedSaponificationName('en'))->toBe('Olive');
 });
 
 it('falls back when a translated field is empty', function () {
@@ -147,6 +155,7 @@ it('normalizes and synchronizes platform ingredient translations', function () {
         [
             'locale' => 'fr',
             'display_name' => '  Huile d’olive  ',
+            'saponification_name' => '  Olive  ',
             'info_markdown' => '   ',
         ],
     ]);
@@ -156,16 +165,19 @@ it('normalizes and synchronizes platform ingredient translations', function () {
         ->and($ingredient->translations()->firstOrFail()->only([
             'locale',
             'display_name',
+            'saponification_name',
             'info_markdown',
         ]))->toBe([
             'locale' => 'fr',
             'display_name' => 'Huile d’olive',
+            'saponification_name' => 'Olive',
             'info_markdown' => null,
         ])
         ->and(app(IngredientTranslationService::class)->formData($ingredient))->toBe([
             [
                 'locale' => 'fr',
                 'display_name' => 'Huile d’olive',
+                'saponification_name' => 'Olive',
                 'info_markdown' => null,
             ],
         ]);
@@ -214,11 +226,11 @@ it('delivers localized platform names to the recipe workbench with English fallb
         'name' => 'Soap',
     ]);
     $translatedIngredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Olive Powder',
     ]);
     $fallbackIngredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Sea Salt',
     ]);
     IngredientTranslation::factory()
@@ -245,7 +257,7 @@ it('keeps private ingredient names authored in localized workbench catalogs', fu
         'name' => 'Soap',
     ]);
     $ingredient = Ingredient::factory()->create([
-        'category' => IngredientCategory::Additive,
+        'category' => IngredientCategory::Other,
         'display_name' => 'Mon argile',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
@@ -269,7 +281,7 @@ it('eager loads workbench translations in one catalog query', function () {
     ]);
     $ingredients = Ingredient::factory()
         ->count(3)
-        ->create(['category' => IngredientCategory::Additive]);
+        ->create(['category' => IngredientCategory::Other]);
 
     $ingredients->each(fn (Ingredient $ingredient) => IngredientTranslation::factory()
         ->for($ingredient)

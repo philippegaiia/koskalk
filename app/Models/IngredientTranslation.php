@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'ingredient_id',
     'locale',
     'display_name',
+    'saponification_name',
     'info_markdown',
 ])]
 class IngredientTranslation extends Model

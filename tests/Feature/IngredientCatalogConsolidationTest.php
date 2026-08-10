@@ -1,0 +1,167 @@
+<?php
+
+use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
+use App\Models\CurrentMaterialPrice;
+use App\Models\Ingredient;
+use App\Models\RecipeItem;
+use App\Models\Workspace;
+use App\Services\IngredientCatalogConsolidationService;
+use App\Support\IngredientCatalogConsolidationDataset;
+use App\Support\IngredientCatalogTaxonomyDataset;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+function consolidationServiceFor(array $decisions): IngredientCatalogConsolidationService
+{
+    $dataset = Mockery::mock(IngredientCatalogConsolidationDataset::class);
+    $dataset->shouldReceive('all')->andReturn($decisions);
+
+    return new IngredientCatalogConsolidationService(
+        app(IngredientCatalogTaxonomyDataset::class),
+        $dataset,
+    );
+}
+
+it('previews exact catalog-key taxonomy without mutating platform ingredients', function () {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'OB1',
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Olive oil virgin',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'owner_type' => null,
+    ]);
+
+    $this->artisan('ingredients:consolidate-catalog', ['--json' => true])->assertSuccessful();
+
+    expect(app(IngredientCatalogConsolidationService::class)->preview()->firstWhere('catalog_key', 'OB1'))
+        ->toMatchArray(['to' => 'lipids', 'subcategory' => 'vegetable_oils', 'status' => 'ready']);
+
+    expect($ingredient->fresh()->category)->toBe(IngredientCategory::Lipids)
+        ->and($ingredient->fresh()->subcategory)->toBeNull();
+});
+
+it('applies exact taxonomy metadata without deleting records or specialist chemistry', function () {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'OB1',
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Olive oil virgin',
+        'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
+        'owner_type' => null,
+        'is_soap_saponification_trusted' => true,
+    ]);
+    $ingredient->sapProfile()->create(['koh_sap_value' => 0.18]);
+
+    app(IngredientCatalogConsolidationService::class)->applyMetadata();
+
+    $ingredient = $ingredient->fresh(['sapProfile']);
+
+    expect($ingredient->category)->toBe(IngredientCategory::Lipids)
+        ->and($ingredient->subcategory)->toBe(IngredientSubcategory::VegetableOils)
+        ->and($ingredient->taxonomy_source)->toBe('platform_curated')
+        ->and($ingredient->is_soap_saponification_trusted)->toBeFalse()
+        ->and($ingredient->sapProfile)->not->toBeNull();
+});
+
+it('refuses destructive consolidation while review decisions remain unresolved', function (): void {
+    Ingredient::factory()->create([
+        'catalog_key' => 'ING029',
+        'owner_type' => null,
+    ]);
+
+    $this->artisan('ingredients:consolidate-catalog', ['--apply' => true])
+        ->expectsOutputToContain('Unresolved consolidation decisions')
+        ->assertFailed();
+
+    expect(Ingredient::query()->where('catalog_key', 'ING029')->exists())->toBeTrue();
+});
+
+it('reports unknown catalog keys instead of guessing from names or INCI', function () {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'OB-TEST',
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Grape Seed Oil',
+        'inci_name' => 'VITIS VINIFERA SEED OIL, TOCOPHEROL',
+        'owner_type' => null,
+    ]);
+
+    expect(app(IngredientCatalogConsolidationService::class)->preview()->firstWhere('catalog_key', 'OB-TEST'))
+        ->toMatchArray(['to' => null, 'subcategory' => null, 'status' => 'missing_metadata']);
+
+    $this->artisan('ingredients:consolidate-catalog', ['--apply' => true])
+        ->assertFailed();
+
+    expect($ingredient->fresh()->category)->toBe(IngredientCategory::Lipids);
+});
+
+it('contains exact reviewed corrections for known catalog errors', function (string $catalogKey, string $category, string $subcategory): void {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => $catalogKey,
+        'category' => IngredientCategory::Other,
+        'owner_type' => null,
+    ]);
+
+    expect(app(IngredientCatalogConsolidationService::class)->preview()->firstWhere('catalog_key', $catalogKey))
+        ->toMatchArray(['to' => $category, 'subcategory' => $subcategory, 'status' => 'ready']);
+})->with([
+    ['BE4', 'preservation_stability', 'antioxidants'],
+    ['BE6', 'botanicals_extracts', 'plant_powders'],
+    ['OB19', 'botanicals_extracts', 'plant_powders'],
+    ['CH1', 'soapmaking_alkalis', 'sodium_hydroxide'],
+    ['CH3', 'soapmaking_alkalis', 'potassium_hydroxide'],
+    ['EC2', 'colourants', 'mineral_pigments'],
+    ['EC3', 'colourants', 'mineral_pigments'],
+]);
+
+it('merges an approved duplicate transactionally and preserves workspace ownership of prices', function (): void {
+    $workspace = Workspace::factory()->create();
+    $source = Ingredient::factory()->create(['catalog_key' => 'EO26', 'owner_type' => null]);
+    $target = Ingredient::factory()->create(['catalog_key' => 'EO25', 'owner_type' => null]);
+    $recipeItem = RecipeItem::factory()->create(['ingredient_id' => $source->id]);
+    $price = CurrentMaterialPrice::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'price_per_canonical_unit' => '0.001000000000',
+    ]);
+
+    $result = consolidationServiceFor([[
+        'action' => 'merge_into',
+        'source_catalog_key' => 'EO26',
+        'target_catalog_key' => 'EO25',
+        'reason' => 'Test-approved duplicate.',
+    ]])->apply();
+
+    expect($result['merged'])->toBe(1)
+        ->and($recipeItem->fresh()->ingredient_id)->toBe($target->id)
+        ->and($price->fresh()->ingredient_id)->toBe($target->id)
+        ->and(Ingredient::query()->whereKey($source->id)->exists())->toBeFalse();
+});
+
+it('rolls back an approved merge when workspace prices conflict', function (): void {
+    $workspace = Workspace::factory()->create();
+    $source = Ingredient::factory()->create(['catalog_key' => 'EO26', 'owner_type' => null]);
+    $target = Ingredient::factory()->create(['catalog_key' => 'EO25', 'owner_type' => null]);
+    $recipeItem = RecipeItem::factory()->create(['ingredient_id' => $source->id]);
+
+    CurrentMaterialPrice::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $source->id,
+        'price_per_canonical_unit' => '0.001000000000',
+    ]);
+    CurrentMaterialPrice::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $target->id,
+        'price_per_canonical_unit' => '0.002000000000',
+    ]);
+
+    expect(fn () => consolidationServiceFor([[
+        'action' => 'merge_into',
+        'source_catalog_key' => 'EO26',
+        'target_catalog_key' => 'EO25',
+        'reason' => 'Test-approved duplicate.',
+    ]])->apply())->toThrow(RuntimeException::class, 'workspace price conflict');
+
+    expect($recipeItem->fresh()->ingredient_id)->toBe($source->id)
+        ->and(Ingredient::query()->whereKey($source->id)->exists())->toBeTrue();
+});

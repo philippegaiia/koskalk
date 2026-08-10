@@ -78,6 +78,8 @@ When production starts, actual-use inputs default to the reserved lots and reser
 
 Completion posts actual consumption movements, releases unused active reservations, creates the output lot, snapshots cost, and moves the run to Completed atomically.
 
+Planned output and actual output remain distinct. For finished products, the operator enters the actual integer units produced at completion; producing 283 units from a plan of 288 is valid. The production page displays planned output, actual output, and their signed quantity/percentage variance. Manufactured intermediates use the equivalent planned-versus-actual mass comparison. Output variance is a factual yield result and is not automatically classified as waste.
+
 Abort posts any recorded actual consumption, releases the remainder, records the reason, and moves the run to Aborted atomically.
 
 ### Cancellation and deletion
@@ -231,6 +233,10 @@ Production mutations use the canonical lock order:
 - Batch release with pending tasks reports the incomplete task names or count.
 - All mutation failures leave status, reservations, movements, tasks, actuals, and output unchanged.
 
+## Localization
+
+Every new customer-facing term uses translation keys rather than hardcoded Blade or PHP text. Lifecycle labels, action labels, confirmations, validation messages, unified-table headings, stock/release explanations, output variance labels, and empty states are added to every supported locale. Tests assert locale-file key parity so a new English key cannot ship without its translations.
+
 ## Verification
 
 Automated tests cover:
@@ -262,3 +268,13 @@ Focused tests run first during test-driven implementation, followed by the relat
 - configurable water inventory tracking;
 - configurable QC templates or laboratory workflows;
 - rewriting existing production history.
+
+### Future production reconciliation
+
+A later design will introduce explicit production wastage and recoverable by-products, following the operational concepts proven in Cosmood without coupling them to this page redesign. It must distinguish at least:
+
+- permanently lost material/output;
+- reusable recovered material;
+- sellable secondary output.
+
+That future workflow must record quantity, unit, reason, operator, production stage, cost treatment, and—when material remains usable—a destination stock lot and auditable stock movement. Planned-versus-actual output variance alone never creates a wastage record.

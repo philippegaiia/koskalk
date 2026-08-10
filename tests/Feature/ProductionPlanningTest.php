@@ -321,6 +321,31 @@ it('rebuilds requirements only for draft or scheduled productions', function ():
     ))->toThrow(ValidationException::class);
 });
 
+it('does not remove the date from an already scheduled production', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'scheduled-date-required-update',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-09-01',
+    );
+
+    expect(fn (): ProductionRun => app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '2',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        plannedFor: null,
+    ))->toThrow(ValidationException::class)
+        ->and($production->fresh()->planned_for->toDateString())->toBe('2026-09-01');
+});
+
 it('rejects a plan update while active stock reservations exist', function (): void {
     $fixture = productionPlanningTask2Fixture();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Reserved oil']);

@@ -252,6 +252,7 @@ it('keeps released reservation history when a planned production is corrected', 
         basisInputValue: '2',
         basisInputUnit: 'kg',
         expectedUnits: 20,
+        plannedFor: $released->planned_for?->toDateString(),
     );
 
     expect($updated->requirements()->first()->id)->toBe($ingredientRequirement->id)

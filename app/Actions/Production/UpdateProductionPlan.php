@@ -79,6 +79,12 @@ class UpdateProductionPlan
                 ]);
             }
 
+            if ($lockedProduction->status === ProductionRunStatus::Scheduled && $plannedFor === null) {
+                throw ValidationException::withMessages([
+                    'planned_for' => 'A production date is required when updating a planned production.',
+                ]);
+            }
+
             $this->assertNoActiveReservations($lockedProduction);
 
             $this->rescaler->rescale($lockedProduction, $basisQuantityGrams, $expectedUnits);

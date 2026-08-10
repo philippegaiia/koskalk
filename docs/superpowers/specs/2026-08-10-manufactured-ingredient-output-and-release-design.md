@@ -236,7 +236,7 @@ All new validation and confirmation text must be translated in English, German, 
 
 Existing products default to Finished product output unless reliable current data proves that they were configured as intermediate output. Existing production runs keep their current behavior and output history.
 
-Add `estimated_ready_on` to output lots for the advisory date. Existing production-output `available_from` values are copied into `estimated_ready_on`. New production output no longer uses `available_from` as an automatic availability gate; release status is authoritative. Procurement or legacy workflows that still need a hard availability date remain outside this change and must not be silently reinterpreted.
+Add `estimated_ready_on` to output lots for the advisory date. Existing production-output `available_from` values are copied into `estimated_ready_on`, then cleared from `available_from`, so an explicitly early-released historical output cannot remain blocked by the old hard-date gate. New production output leaves `available_from` null; release status is authoritative. Purchased, opening, or other legacy lots that still need a hard availability date keep their existing `available_from` values and behavior.
 
 Existing ingredients with `is_manufactured = true` remain eligible for product linking. The migration must not create supplier listings or duplicate ingredients.
 

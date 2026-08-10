@@ -171,8 +171,8 @@ it('rejects invalid employee assignments and displays task operation errors', fu
     expect($task->fresh()->completed_at)->not->toBeNull();
 
     $page->call('toggleTask', $task->id)
-        ->assertHasNoErrors();
-    expect($task->fresh()->completed_at)->toBeNull();
+        ->assertHasErrors('task_task');
+    expect($task->fresh()->completed_at)->not->toBeNull();
 });
 
 it('cancels draft and scheduled productions with a required reason', function (): void {

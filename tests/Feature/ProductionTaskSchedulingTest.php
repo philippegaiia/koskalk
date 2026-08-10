@@ -188,6 +188,20 @@ it('marks later dates custom, resets them, and leaves completed tasks stable', f
     expect($tasks[1]->fresh()->completed_at)->toBeNull();
 });
 
+it('does not reopen tasks after the production has been completed', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
+    productionTaskSchedulingSet($fixture, $pour, null, [0]);
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
+    $task = $production->tasks()->firstOrFail();
+
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+    $production->update(['status' => ProductionRunStatus::Completed]);
+
+    expect(fn (): ProductionTask => app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh()))
+        ->toThrow(ValidationException::class);
+});
+
 it('does not move a completed automatic task when the production date changes', function (): void {
     $fixture = productionTaskSchedulingFixture();
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);

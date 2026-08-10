@@ -71,7 +71,8 @@ class ProductionFormulaSnapshotBuilder
         $sortOrder = 1;
 
         foreach ($requirements as $requirement) {
-            if (($requirement['kind'] ?? null) !== 'ingredient') {
+            if (($requirement['kind'] ?? null) !== 'ingredient'
+                || ($requirement['recipe_item_id'] ?? null) === null) {
                 continue;
             }
 

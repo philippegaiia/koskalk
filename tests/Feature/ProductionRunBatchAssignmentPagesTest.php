@@ -22,6 +22,7 @@ uses(RefreshDatabase::class);
 
 it('shows a planning reference and assigns one permanent number from the production detail', function (): void {
     $fixture = productionBatchAssignmentFixture();
+    $fixture['production']->update(['status' => ProductionRunStatus::Reserved]);
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => $fixture['production']->id])

@@ -10065,6 +10065,17 @@
     },
     {
       "group": "production_bench",
+      "key": "production.actual_used",
+      "text": {
+        "de": "Tatsächlich verwendet",
+        "es": "Uso real",
+        "fr": "Utilisé réellement",
+        "it": "Utilizzato",
+        "nl": "Werkelijk gebruikt"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.actuals_not_posted",
       "text": {
         "de": "Als Entwurf gespeichert – es wird noch nichts gebucht.",
@@ -10076,6 +10087,17 @@
     },
     {
       "group": "production_bench",
+      "key": "production.actuals_not_stock_tracked",
+      "text": {
+        "de": "Nicht bestandsgeführt",
+        "es": "Sin seguimiento de stock",
+        "fr": "Non suivi en stock",
+        "it": "Non tracciato a magazzino",
+        "nl": "Niet als voorraad gevolgd"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.actuals_note_placeholder",
       "text": {
         "de": "Notiz",
@@ -10083,6 +10105,17 @@
         "fr": "Note",
         "it": "Nota",
         "nl": "Notitie"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.actuals_posted_readonly",
+      "text": {
+        "de": "Gebuchte Ist-Mengen sind schreibgeschützt.",
+        "es": "Las cantidades reales contabilizadas son de solo lectura.",
+        "fr": "Les quantités réelles comptabilisées sont en lecture seule.",
+        "it": "Le quantità effettive registrate sono di sola lettura.",
+        "nl": "Geboekte werkelijke hoeveelheden zijn alleen-lezen."
       }
     },
     {
@@ -10281,6 +10314,28 @@
         "fr": "Identité du lot",
         "it": "Identità del lotto",
         "nl": "Batchidentiteit"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.batch_materials",
+      "text": {
+        "de": "Chargenmaterialien",
+        "es": "Materiales del lote",
+        "fr": "Matières du lot",
+        "it": "Materiali del lotto",
+        "nl": "Batchmaterialen"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.batch_materials_help",
+      "text": {
+        "de": "Geplante Rezeptur, reservierte Lose und Ist-Mengen für diese Charge.",
+        "es": "La fórmula planificada, los lotes reservados y las cantidades reales de este lote.",
+        "fr": "La formule prévue, les lots réservés et les quantités réelles de ce lot.",
+        "it": "Formula prevista, lotti riservati e quantità effettive di questo lotto.",
+        "nl": "De geplande formule, gereserveerde loten en werkelijke hoeveelheden voor deze batch."
       }
     },
     {
@@ -10677,6 +10732,17 @@
         "fr": "Brouillon sauvegardé.",
         "it": "Bozza salvata.",
         "nl": "Concept opgeslagen."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.early_start_confirm",
+      "text": {
+        "de": "Das geplante Datum ist :date. Diese Produktion vorzeitig starten?",
+        "es": "La fecha planificada es :date. ¿Iniciar esta producción antes?",
+        "fr": "La date prévue est le :date. Démarrer cette production plus tôt ?",
+        "it": "La data pianificata è :date. Avviare questa produzione in anticipo?",
+        "nl": "De geplande datum is :date. Deze productie eerder starten?"
       }
     },
     {
@@ -11220,6 +11286,17 @@
     },
     {
       "group": "production_bench",
+      "key": "production.output_actual",
+      "text": {
+        "de": "Tatsächlicher Ausstoß",
+        "es": "Producción real",
+        "fr": "Production réelle",
+        "it": "Produzione effettiva",
+        "nl": "Werkelijke productie"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.output_available_from",
       "text": {
         "de": "verfügbar ab :date",
@@ -11271,6 +11348,17 @@
         "fr": "Lot de sortie",
         "it": "Lotto di uscita",
         "nl": "Uitvoerpartij"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.output_planned",
+      "text": {
+        "de": "Geplanter Ausstoß",
+        "es": "Producción planificada",
+        "fr": "Production planifiée",
+        "it": "Produzione pianificata",
+        "nl": "Geplande productie"
       }
     },
     {
@@ -11341,6 +11429,28 @@
     },
     {
       "group": "production_bench",
+      "key": "production.output_variance",
+      "text": {
+        "de": "Abweichung",
+        "es": "Variación",
+        "fr": "Écart",
+        "it": "Scostamento",
+        "nl": "Afwijking"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.output_variance_percentage",
+      "text": {
+        "de": "Ertragsabweichung %",
+        "es": "Variación del rendimiento %",
+        "fr": "Écart de rendement %",
+        "it": "Scostamento di resa %",
+        "nl": "Rendementsafwijking %"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.overdue",
       "text": {
         "de": "Überfällig",
@@ -11381,6 +11491,17 @@
         "fr": "% de la formule",
         "it": "% formula",
         "nl": "Formule %"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.planned",
+      "text": {
+        "de": "Geplant",
+        "es": "Planificado",
+        "fr": "Prévu",
+        "it": "Pianificato",
+        "nl": "Gepland"
       }
     },
     {
@@ -11605,6 +11726,17 @@
     },
     {
       "group": "production_bench",
+      "key": "production.release_batch",
+      "text": {
+        "de": "Charge freigeben",
+        "es": "Liberar lote",
+        "fr": "Libérer le lot",
+        "it": "Rilascia lotto",
+        "nl": "Batch vrijgeven"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.release_output",
       "text": {
         "de": "Ausgang freigeben",
@@ -11623,6 +11755,28 @@
         "fr": "Libérer le stock",
         "it": "Rilascia scorte",
         "nl": "Voorraad vrijgeven"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.release_tasks_incomplete",
+      "text": {
+        "de": ":count Produktionsaufgabe(n) sind noch nicht abgeschlossen.",
+        "es": "Quedan :count tarea(s) de producción sin completar.",
+        "fr": ":count tâche(s) de production restent incomplète(s).",
+        "it": ":count attività di produzione non sono ancora completate.",
+        "nl": ":count productietaak/taken zijn nog niet voltooid."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.release_wait_until",
+      "text": {
+        "de": "Die Charge ist ab :date verfügbar.",
+        "es": "El lote estará disponible a partir del :date.",
+        "fr": "Le lot sera disponible à partir du :date.",
+        "it": "Il lotto sarà disponibile dal :date.",
+        "nl": "De batch is beschikbaar vanaf :date."
       }
     },
     {
@@ -11689,6 +11843,17 @@
         "fr": "Aperçu des matières",
         "it": "Anteprima materiali",
         "nl": "Materiaalvoorbeeld"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.reserved_lots",
+      "text": {
+        "de": "Reservierte(s) Los(e)",
+        "es": "Lote(s) reservado(s)",
+        "fr": "Lot(s) réservé(s)",
+        "it": "Lotto/i riservato/i",
+        "nl": "Gereserveerd(e) lot(en)"
       }
     },
     {
@@ -11968,6 +12133,17 @@
     },
     {
       "group": "production_bench",
+      "key": "production.stock_preparation",
+      "text": {
+        "de": "Bestandsvorbereitung",
+        "es": "Preparación de stock",
+        "fr": "Préparation du stock",
+        "it": "Preparazione delle scorte",
+        "nl": "Voorraadvoorbereiding"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.stock_prepared_success",
       "text": {
         "de": "Produktionsbestand vorbereitet.",
@@ -12129,6 +12305,28 @@
         "fr": "Utiliser les lots proposés",
         "it": "Usa lotti suggeriti",
         "nl": "Voorgestelde partijen gebruiken"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.lye_material_missing",
+      "text": {
+        "de": "Das erforderliche Laugenmaterial (:key) fehlt im Zutatenkatalog.",
+        "es": "Falta en el catálogo de ingredientes el material alcalino requerido (:key).",
+        "fr": "La matière alcaline requise (:key) manque au catalogue des ingrédients.",
+        "it": "Il materiale alcalino richiesto (:key) manca dal catalogo ingredienti.",
+        "nl": "Het vereiste loogmateriaal (:key) ontbreekt in de ingrediëntencatalogus."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.planned_date_required",
+      "text": {
+        "de": "Bei der Produktionsplanung ist ein Produktionsdatum erforderlich.",
+        "es": "Se requiere una fecha de producción al planificarla.",
+        "fr": "Une date de production est requise pour planifier la production.",
+        "it": "Per pianificare la produzione è necessaria una data di produzione.",
+        "nl": "Bij het plannen van productie is een productiedatum verplicht."
       }
     },
     {

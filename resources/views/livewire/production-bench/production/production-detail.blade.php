@@ -387,6 +387,14 @@
                         · {{ __('production_bench.production.output_available_from', ['date' => $production->outputLot->available_from->format('Y-m-d')]) }}
                     @endif
                 </p>
+                @if ($outputReconciliation['actual'] !== null)
+                    <div class="mt-4 grid gap-3 border-t border-[var(--color-line)] pt-4 text-sm sm:grid-cols-4">
+                        <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.output_planned') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $outputReconciliation['planned'] }} {{ $outputReconciliation['unit'] }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.output_actual') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $outputReconciliation['actual'] }} {{ $outputReconciliation['unit'] }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.output_variance') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $outputReconciliation['variance'] }} {{ $outputReconciliation['unit'] }}</p></div>
+                        <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.output_variance_percentage') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $outputReconciliation['variance_percentage'] !== null ? $outputReconciliation['variance_percentage'].'%' : '—' }}</p></div>
+                    </div>
+                @endif
             </div>
             @error('output')
                 <p role="alert" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-danger-strong)] sm:px-6">{{ $message }}</p>

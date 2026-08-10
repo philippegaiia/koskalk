@@ -338,6 +338,14 @@ it('completes a production atomically with consumption, costs, and an output lot
         ->and($outputLot->unit_kind->value)->toBe('count')
         ->and($outputLot->movements()->where('type', StockMovementType::ProductionOutput)->sole()->quantity_delta)->toBe('95.000000000');
 
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $completed->id])
+        ->assertSee(__('production_bench.production.output_planned'))
+        ->assertSee('100 unit')
+        ->assertSee(__('production_bench.production.output_actual'))
+        ->assertSee('95 unit')
+        ->assertSee('-5.00%');
+
     // Costs immutable: later price changes do not alter the snapshot.
     $oilLot->update(['historical_unit_cost' => '99.000000000']);
     expect($completed->fresh()->actual_ingredient_total)->toBe('137.500000000');

@@ -35,6 +35,7 @@ use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MediaAssetUploadService;
+use App\Services\Production\ProductionOutputReconciliation;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
@@ -644,7 +645,7 @@ class ProductionDetail extends Component
         $this->dispatch('production-journal-updated');
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionBenchAccess $access, ProductionOutputReconciliation $outputReconciliation): View
     {
         $workspace = $this->workspace();
         $production = $this->production();
@@ -751,6 +752,7 @@ class ProductionDetail extends Component
         return view('livewire.production-bench.production.production-detail', [
             'workspace' => $workspace,
             'production' => $production,
+            'outputReconciliation' => $outputReconciliation->forProduction($production),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,

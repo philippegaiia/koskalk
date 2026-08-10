@@ -257,6 +257,7 @@ class PrepareProductionStock
     private function buildAllocations(Collection $requirements, array $manualAllocations): array
     {
         $allocations = [];
+        $remainingByLot = [];
 
         foreach ($requirements as $requirement) {
             $manual = array_key_exists((string) $requirement->id, $manualAllocations)
@@ -270,18 +271,40 @@ class PrepareProductionStock
                 // Partial preparation is allowed: the available portion of the
                 // FEFO proposal is reserved and the shortfall stays visible
                 // for a later preparation pass.
-                foreach ($proposal['allocations'] as $allocation) {
+                foreach ($proposal['eligible_lots'] as $eligibleLot) {
+                    if (bccomp($proposal['remaining'], '0', 9) <= 0) {
+                        break;
+                    }
+
+                    $available = $this->remainingLotQuantity(
+                        $eligibleLot['lot'],
+                        $eligibleLot['available'],
+                        $remainingByLot,
+                    );
+
+                    if (bccomp($available, '0', 9) <= 0) {
+                        continue;
+                    }
+
+                    $quantity = bccomp($available, $proposal['remaining'], 9) >= 0
+                        ? $proposal['remaining']
+                        : $available;
                     $allocations[] = [
                         'requirement' => $requirement,
-                        'lot' => $allocation['lot'],
-                        'quantity' => $allocation['quantity'],
+                        'lot' => $eligibleLot['lot'],
+                        'quantity' => $quantity,
                     ];
+                    $this->consumeRemainingLot($eligibleLot['lot'], $quantity, $remainingByLot);
+                    $proposal['remaining'] = bcsub($proposal['remaining'], $quantity, 9);
                 }
 
                 continue;
             }
 
-            $allocations = [...$allocations, ...$this->manualRequirementAllocations($requirement, $manual, $proposal)];
+            $allocations = [
+                ...$allocations,
+                ...$this->manualRequirementAllocations($requirement, $manual, $proposal, $remainingByLot),
+            ];
         }
 
         return $allocations;
@@ -325,10 +348,15 @@ class PrepareProductionStock
     /**
      * @param  list<array{stock_lot_id: int|string, quantity: int|float|string}>  $manual
      * @param  array{remaining: string, eligible_lots: list<array{lot: StockLot, available: string}>}  $proposal
+     * @param  array<int, string>  $remainingByLot
      * @return list<array{requirement: ProductionRequirement, lot: StockLot, quantity: string}>
      */
-    private function manualRequirementAllocations(ProductionRequirement $requirement, array $manual, array $proposal): array
-    {
+    private function manualRequirementAllocations(
+        ProductionRequirement $requirement,
+        array $manual,
+        array $proposal,
+        array &$remainingByLot,
+    ): array {
         $availableByLot = collect($proposal['eligible_lots'])->keyBy(fn (array $row): int => $row['lot']->id);
         $total = '0.000000000';
         $allocations = [];
@@ -338,7 +366,19 @@ class PrepareProductionStock
             $quantity = $this->quantity($row['quantity']);
             $available = $availableByLot->get($lotId);
 
-            if ($available === null || bccomp($quantity, $available['available'], 9) > 0) {
+            if ($available === null) {
+                throw ValidationException::withMessages([
+                    'allocations' => 'A selected stock lot does not have enough eligible quantity.',
+                ]);
+            }
+
+            $availableQuantity = $this->remainingLotQuantity(
+                $available['lot'],
+                $available['available'],
+                $remainingByLot,
+            );
+
+            if (bccomp($quantity, $availableQuantity, 9) > 0) {
                 throw ValidationException::withMessages([
                     'allocations' => 'A selected stock lot does not have enough eligible quantity.',
                 ]);
@@ -356,6 +396,7 @@ class PrepareProductionStock
                 'lot' => $available['lot'],
                 'quantity' => $quantity,
             ];
+            $this->consumeRemainingLot($available['lot'], $quantity, $remainingByLot);
         }
 
         // Partial manual preparation is allowed: reserving less than the
@@ -366,17 +407,33 @@ class PrepareProductionStock
             ]);
         }
 
-        $required = $requirement->ingredient_id !== null
-            ? (string) $requirement->required_mass_grams
-            : (string) $requirement->required_units;
-
-        if (bccomp($total, $required, 9) > 0) {
+        if (bccomp($total, $proposal['remaining'], 9) > 0) {
             throw ValidationException::withMessages([
                 'allocations' => 'Manual stock allocations cannot exceed the requirement total.',
             ]);
         }
 
         return $allocations;
+    }
+
+    /**
+     * @param  array<int, string>  $remainingByLot
+     */
+    private function remainingLotQuantity(StockLot $lot, string $available, array &$remainingByLot): string
+    {
+        if (! array_key_exists($lot->id, $remainingByLot)) {
+            $remainingByLot[$lot->id] = $available;
+        }
+
+        return $remainingByLot[$lot->id];
+    }
+
+    /**
+     * @param  array<int, string>  $remainingByLot
+     */
+    private function consumeRemainingLot(StockLot $lot, string $quantity, array &$remainingByLot): void
+    {
+        $remainingByLot[$lot->id] = bcsub($remainingByLot[$lot->id], $quantity, 9);
     }
 
     private function quantity(int|float|string $quantity): string

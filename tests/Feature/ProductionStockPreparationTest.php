@@ -78,10 +78,47 @@ it('posts available reservations when one selected production has a shortage', f
     );
 
     // The covered production is fully reserved; the short one reserves what is
-    // available (20 g) and stays scheduled for a later pass.
+    // still available (10 g) and stays scheduled for a later pass.
     expect($prepared[0]->status)->toBe(ProductionRunStatus::Reserved)
         ->and($prepared[1]->status)->toBe(ProductionRunStatus::Scheduled)
-        ->and(StockReservation::query()->where('production_run_id', $short->id)->sum('quantity'))->toEqual(20);
+        ->and(StockReservation::query()->where('production_run_id', $short->id)->sum('quantity'))->toEqual(10);
+});
+
+it('does not reserve the same lot twice across competing planned productions', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $first = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    $second = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    productionStockIngredientRequirement($first, $fixture['ingredient'], '60.000000000');
+    productionStockIngredientRequirement($second, $fixture['ingredient'], '60.000000000');
+    $lot = productionStockLot($fixture, $fixture['ingredient'], '100.000000000', '2026-08-25');
+
+    app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$first->id, $second->id],
+        idempotencyKey: 'prepare-competing-runs',
+    );
+
+    expect(StockReservation::query()->where('stock_lot_id', $lot->id)->sum('quantity'))->toEqual(100)
+        ->and(StockReservation::query()->where('production_run_id', $first->id)->sum('quantity'))->toEqual(60)
+        ->and(StockReservation::query()->where('production_run_id', $second->id)->sum('quantity'))->toEqual(40);
+});
+
+it('tracks lot availability across competing requirements in one production', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    $firstRequirement = productionStockIngredientRequirement($production, $fixture['ingredient'], '60.000000000');
+    $secondRequirement = productionStockIngredientRequirement($production, $fixture['ingredient'], '60.000000000');
+    $lot = productionStockLot($fixture, $fixture['ingredient'], '100.000000000', '2026-08-25');
+
+    app(PrepareProductionStock::class)->handle(
+        actor: $fixture['owner'],
+        productionIds: [$production->id],
+        idempotencyKey: 'prepare-competing-requirements',
+    );
+
+    expect(StockReservation::query()->where('stock_lot_id', $lot->id)->sum('quantity'))->toEqual(100)
+        ->and(StockReservation::query()->where('production_requirement_id', $firstRequirement->id)->sum('quantity'))->toEqual(60)
+        ->and(StockReservation::query()->where('production_requirement_id', $secondRequirement->id)->sum('quantity'))->toEqual(40);
 });
 
 it('requires manual allocations to exactly cover a requirement and validates whole packaging units', function (): void {

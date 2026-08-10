@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\MassUnit;
+use App\Enums\ProductionOutputType;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -118,6 +119,9 @@ class RecipeWorkbenchVersionPayloadMapper
                 ])
                 ->values()
                 ->all(),
+            'productionOutputType' => ($version->recipe?->production_output_type ?? ProductionOutputType::FinishedProduct)->value,
+            'outputIngredientId' => $version->recipe?->output_ingredient_id,
+            'readyDelayDays' => $version->recipe?->ready_delay_days,
             'catalogReview' => $catalogReview,
         ];
     }

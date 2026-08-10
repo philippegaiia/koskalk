@@ -65,6 +65,15 @@ export function draftStateFromDraft(draft, currentState) {
             }))
             : currentState.packagingPlanRows,
         catalogReview: draft.catalogReview ?? currentState.catalogReview,
+        productionOutputType: ['finished_product', 'manufactured_ingredient'].includes(draft.productionOutputType)
+            ? draft.productionOutputType
+            : currentState.productionOutputType,
+        outputIngredientId: draft.outputIngredientId === null || draft.outputIngredientId === undefined || draft.outputIngredientId === ''
+            ? ''
+            : String(draft.outputIngredientId),
+        readyDelayDays: draft.readyDelayDays === null || draft.readyDelayDays === undefined || draft.readyDelayDays === ''
+            ? ''
+            : number(draft.readyDelayDays),
     };
 
     if (Object.hasOwn(draft, 'selectedIfraProductCategoryId')) {

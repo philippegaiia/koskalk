@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Enums\MassDisplaySystem;
+use App\Enums\OwnerType;
+use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RegulatoryRegime;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Support\NumberLocale;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Translation\Translator;
@@ -47,6 +50,7 @@ class RecipeWorkbenchViewDataBuilder
             'savedDraft' => $savedDraft,
             'phases' => $this->recipeWorkbenchService->phaseBlueprints($productFamily),
             'ingredients' => $ingredients,
+            'manufacturedIngredients' => $this->manufacturedIngredients($user),
             'ifraProductCategories' => $this->recipeWorkbenchIfraOptionsBuilder->categories($productFamily),
             'regulatoryRegimes' => $this->regulatoryRegimes(),
             'defaultIfraProductCategoryId' => $productFamily->slug === 'cosmetic'
@@ -205,6 +209,31 @@ class RecipeWorkbenchViewDataBuilder
             ->map(fn (ProductType $productType): array => $this->productTypeData($productType))
             ->filter()
             ->values()
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{id: int, name: string}>
+     */
+    private function manufacturedIngredients(?User $user): array
+    {
+        $workspace = $user?->company();
+
+        if (! $workspace instanceof Workspace) {
+            return [];
+        }
+
+        return Ingredient::withoutGlobalScopes()
+            ->where('workspace_id', $workspace->id)
+            ->where('owner_type', OwnerType::Workspace)
+            ->where('is_active', true)
+            ->where('is_manufactured', true)
+            ->orderBy('display_name')
+            ->get(['id', 'display_name'])
+            ->map(fn (Ingredient $ingredient): array => [
+                'id' => $ingredient->id,
+                'name' => $ingredient->display_name,
+            ])
             ->all();
     }
 }

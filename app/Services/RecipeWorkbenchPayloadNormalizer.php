@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\MassUnit;
+use App\Enums\ProductionOutputType;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\RegulatoryRegime;
@@ -33,7 +34,10 @@ class RecipeWorkbenchPayloadNormalizer
      *     water_settings: array{mode: string, value: float},
      *     calculation_context: array<string, mixed>,
      *     phases: array<int, array<string, mixed>>,
-     *     packaging_items: array<int, array<string, mixed>>
+     *     packaging_items: array<int, array<string, mixed>>,
+     *     production_output_type: string,
+     *     output_ingredient_id: int|null,
+     *     ready_delay_days: int|null
      * }
      */
     public function normalize(array $payload, ?ProductFamily $productFamily = null, bool $requireComplete = true): array
@@ -117,6 +121,7 @@ class RecipeWorkbenchPayloadNormalizer
                 ];
             }, $normalizedRecipe['phases']),
             'packaging_items' => $this->normalizePackagingItems($payload['packaging_items'] ?? []),
+            ...$this->normalizeOutputConfiguration($payload),
         ];
     }
 
@@ -137,7 +142,10 @@ class RecipeWorkbenchPayloadNormalizer
      *     water_settings: array<string, mixed>,
      *     calculation_context: array<string, mixed>,
      *     phases: array<int, array<string, mixed>>,
-     *     packaging_items: array<int, array<string, mixed>>
+     *     packaging_items: array<int, array<string, mixed>>,
+     *     production_output_type: string,
+     *     output_ingredient_id: int|null,
+     *     ready_delay_days: int|null
      * }
      */
     private function normalizeCosmetic(array $payload, ?ProductFamily $productFamily, bool $requireComplete): array
@@ -248,6 +256,55 @@ class RecipeWorkbenchPayloadNormalizer
             ],
             'phases' => $normalizedPhases,
             'packaging_items' => $this->normalizePackagingItems($payload['packaging_items'] ?? []),
+            ...$this->normalizeOutputConfiguration($payload),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{production_output_type: string, output_ingredient_id: int|null, ready_delay_days: int|null}
+     */
+    private function normalizeOutputConfiguration(array $payload): array
+    {
+        $outputType = ProductionOutputType::tryFrom((string) ($payload['production_output_type'] ?? ProductionOutputType::FinishedProduct->value));
+
+        if (! $outputType instanceof ProductionOutputType) {
+            throw ValidationException::withMessages([
+                'production_output_type' => __('production_bench.production.validation.output_type_invalid'),
+            ]);
+        }
+
+        $rawOutputIngredientId = $payload['output_ingredient_id'] ?? null;
+        $outputIngredientId = $rawOutputIngredientId;
+        $outputIngredientId = $outputIngredientId === null || $outputIngredientId === ''
+            ? null
+            : (is_numeric($outputIngredientId) && (int) $outputIngredientId > 0 ? (int) $outputIngredientId : null);
+
+        if ($rawOutputIngredientId !== null
+            && $rawOutputIngredientId !== ''
+            && $outputIngredientId === null) {
+            throw ValidationException::withMessages([
+                'output_ingredient_id' => __('production_bench.production.validation.output_ingredient_invalid'),
+            ]);
+        }
+
+        $readyDelayDays = $payload['ready_delay_days'] ?? null;
+
+        if ($readyDelayDays === '') {
+            $readyDelayDays = null;
+        }
+
+        if ($readyDelayDays !== null
+            && (! is_numeric($readyDelayDays) || (int) $readyDelayDays < 0 || (float) $readyDelayDays !== (float) (int) $readyDelayDays)) {
+            throw ValidationException::withMessages([
+                'ready_delay_days' => __('production_bench.settings.ready_delay_whole_number'),
+            ]);
+        }
+
+        return [
+            'production_output_type' => $outputType->value,
+            'output_ingredient_id' => $outputIngredientId,
+            'ready_delay_days' => $readyDelayDays === null ? null : (int) $readyDelayDays,
         ];
     }
 

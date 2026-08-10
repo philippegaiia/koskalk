@@ -532,6 +532,12 @@ return [
         'validation' => [
             'planned_date_required' => 'A production date is required when planning production.',
             'lye_material_missing' => 'The required platform lye material (:key) is missing from the ingredient catalogue.',
+            'output_type_invalid' => 'Choose a valid production output type.',
+            'output_ingredient_required' => 'Choose the manufactured ingredient produced by this recipe.',
+            'output_ingredient_invalid' => 'Choose an active manufactured ingredient belonging to this workspace.',
+            'finished_output_has_no_ingredient' => 'Finished product recipes cannot point to a manufactured ingredient.',
+            'manufactured_ingredient_name_required' => 'Enter a name for the manufactured ingredient.',
+            'manufactured_ingredient_name_invalid' => 'Use a manufactured ingredient name of at most 255 characters.',
         ],
         'status' => [
             'draft' => 'Draft',

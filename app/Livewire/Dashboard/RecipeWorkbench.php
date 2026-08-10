@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Actions\Ingredients\CreateManufacturedIngredient;
 use App\Enums\MediaAssetType;
 use App\Enums\MediaAssetUsageRole;
 use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
@@ -218,6 +219,49 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 : 'Formula saved.',
             'redirect' => route('recipes.edit', Recipe::withoutGlobalScopes()->findOrFail($recipeVersion->recipe_id)),
             'snapshot' => $snapshot,
+        ];
+    }
+
+    /**
+     * @return array{ok: bool, message?: string, ingredient?: array{id: int, name: string}, errors?: array<string, array<int, string>>}
+     */
+    public function createManufacturedIngredient(string $name, CreateManufacturedIngredient $action): array
+    {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return [
+                'ok' => false,
+                'message' => 'You need to be signed in before an ingredient can be created.',
+            ];
+        }
+
+        $this->authorizeRecipeMutationOrCreation();
+
+        if ($this->currentRecipe()?->isLocked()) {
+            return [
+                'ok' => false,
+                'message' => 'Unlock this formula before adding an output ingredient.',
+            ];
+        }
+
+        try {
+            $ingredient = $action->handle($user, $name);
+        } catch (ValidationException $exception) {
+            return [
+                'ok' => false,
+                'message' => collect($exception->errors())->flatten()->first() ?? $exception->getMessage(),
+                'errors' => $exception->errors(),
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'message' => 'Manufactured ingredient created.',
+            'ingredient' => [
+                'id' => $ingredient->id,
+                'name' => $ingredient->display_name,
+            ],
         ];
     }
 

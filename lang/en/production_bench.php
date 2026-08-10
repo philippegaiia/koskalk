@@ -608,6 +608,11 @@ return [
     'settings' => [
         'title' => 'Production setup',
         'saved' => 'Changes saved.',
+        'ready_dates' => 'Ready dates',
+        'ready_dates_help' => 'Calendar days used to estimate when completed production output is ready. The estimate can be reviewed and changed on the production run.',
+        'soap_ready_delay_days' => 'Soap workbench delay (days)',
+        'cosmetic_ready_delay_days' => 'Cosmetic workbench delay (days)',
+        'ready_delay_whole_number' => 'Enter a non-negative whole number of days.',
         'intro' => 'Set up reusable batch sizes, people, tasks, and working days once. The daily production form stays short.',
         'numbering' => 'Numbering',
         'numbering_help' => 'Set the permanent batch number format for future production runs.',

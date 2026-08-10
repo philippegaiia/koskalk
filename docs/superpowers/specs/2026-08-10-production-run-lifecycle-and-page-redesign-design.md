@@ -235,7 +235,7 @@ Production mutations use the canonical lock order:
 
 ## Localization
 
-Every new customer-facing term uses translation keys rather than hardcoded Blade or PHP text. Lifecycle labels, action labels, confirmations, validation messages, unified-table headings, stock/release explanations, output variance labels, and empty states are added to every supported locale. Tests assert locale-file key parity so a new English key cannot ship without its translations.
+Every new customer-facing term uses translation keys rather than hardcoded Blade or PHP text. Lifecycle labels, action labels, confirmations, validation messages, unified-table headings, stock/release explanations, output variance labels, and empty states are added to every supported locale. English remains in `lang/en/production_bench.php`; reviewed German, Spanish, French, Italian, and Dutch values remain in the interface-translation catalogue, in line with the existing localization architecture. Catalogue-completeness tests prevent a new English key from shipping without every supported translation.
 
 ## Verification
 

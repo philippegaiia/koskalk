@@ -8,6 +8,7 @@ use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MassConverter;
+use App\Services\Production\ProductionDateRescheduler;
 use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionSnapshotRescaler;
 use App\Services\ProductionBenchAccess;
@@ -22,6 +23,7 @@ class UpdateProductionPlan
         private readonly MassConverter $massConverter,
         private readonly ProductionSnapshotRescaler $rescaler,
         private readonly ProductionReadyDateService $readyDates,
+        private readonly ProductionDateRescheduler $dateRescheduler,
     ) {}
 
     public function handle(
@@ -88,20 +90,31 @@ class UpdateProductionPlan
             }
 
             $this->assertNoActiveReservations($lockedProduction);
+            $scheduledDateChanged = $lockedProduction->status === ProductionRunStatus::Scheduled
+                && $lockedProduction->planned_for?->toDateString() !== $plannedFor;
+
+            if ($scheduledDateChanged) {
+                $this->dateRescheduler->rescheduleLocked($lockedWorkspace, $lockedProduction, $plannedFor);
+            }
 
             $this->rescaler->rescale($lockedProduction, $basisQuantityGrams, $expectedUnits);
 
-            $lockedProduction->update([
+            $updates = [
                 'basis_quantity_grams' => $basisQuantityGrams,
                 'basis_input_value' => $basisInputValue,
                 'basis_input_unit' => $massUnit,
                 'expected_units' => $expectedUnits,
-                'planned_for' => $plannedFor,
-                'estimated_ready_on' => $plannedFor === null || $lockedProduction->output_ready_delay_days === null
-                    ? null
-                    : $this->readyDates->estimatedReadyOn($plannedFor, (int) $lockedProduction->output_ready_delay_days),
                 'notes' => $notes,
-            ]);
+            ];
+
+            if (! $scheduledDateChanged) {
+                $updates['planned_for'] = $plannedFor;
+                $updates['estimated_ready_on'] = $plannedFor === null || $lockedProduction->output_ready_delay_days === null
+                    ? null
+                    : $this->readyDates->estimatedReadyOn($plannedFor, (int) $lockedProduction->output_ready_delay_days);
+            }
+
+            $lockedProduction->update($updates);
 
             return $lockedProduction->fresh(['requirements', 'formulaLines']);
         }, attempts: 5);

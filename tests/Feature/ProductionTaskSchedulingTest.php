@@ -14,6 +14,7 @@ use App\Actions\Production\SaveProductionTaskSet;
 use App\Actions\Production\SaveProductionTaskType;
 use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\SyncProductionTaskSetProducts;
+use App\Actions\Production\UpdateProductionPlan;
 use App\Enums\OwnerType;
 use App\Enums\ProductionRunStatus;
 use App\Enums\Visibility;
@@ -159,6 +160,28 @@ it('keeps production and the first task synchronized in both directions', functi
     expect($production->fresh()->planned_for->toDateString())->toBe('2026-08-14')
         ->and($first->fresh()->scheduled_for->toDateString())->toBe('2026-08-14')
         ->and($first->fresh()->scheduling_mode)->toBe('automatic');
+});
+
+it('reschedules automatic tasks when a scheduled production plan is updated', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
+    $cure = productionTaskSchedulingType($fixture, 'Cure');
+    productionTaskSchedulingSet($fixture, $pour, $cure, [0, 2]);
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
+    $tasks = $production->tasks()->orderBy('id')->get();
+
+    $updated = app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        plannedFor: '2026-08-12',
+    );
+
+    expect($updated->planned_for->toDateString())->toBe('2026-08-12')
+        ->and($tasks[0]->fresh()->scheduled_for->toDateString())->toBe('2026-08-12')
+        ->and($tasks[1]->fresh()->scheduled_for->toDateString())->toBe('2026-08-14');
 });
 
 it('marks later dates custom, resets them, and leaves completed tasks stable', function (): void {

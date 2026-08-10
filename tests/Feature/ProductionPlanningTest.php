@@ -408,6 +408,32 @@ it('does not remove the date from an already scheduled production', function ():
         ->and($production->fresh()->planned_for->toDateString())->toBe('2026-09-01');
 });
 
+it('does not accept a non-working date when updating a scheduled production', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'scheduled-weekend-update',
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-10',
+    );
+
+    expect(fn (): ProductionRun => app(UpdateProductionPlan::class)->handle(
+        actor: $fixture['owner'],
+        production: $production,
+        basisInputValue: '2',
+        basisInputUnit: 'kg',
+        expectedUnits: 20,
+        plannedFor: '2026-08-09',
+    ))->toThrow(ValidationException::class)
+        ->and($production->fresh()->planned_for->toDateString())->toBe('2026-08-10')
+        ->and($production->fresh()->basis_quantity_grams)->toBe('1000.000000000');
+});
+
 it('rejects a plan update while active stock reservations exist', function (): void {
     $fixture = productionPlanningTask2Fixture();
     $ingredient = Ingredient::factory()->create(['display_name' => 'Reserved oil']);

@@ -12,13 +12,13 @@
 
 ## Fixed decisions and boundaries
 
-- Rescheduling a stock-prepared production releases all active reservations, changes the run from `Reserved` to `Scheduled`, and requires stock preparation again. This is intentionally simpler than trying to retain or reallocate reservations invisibly.
+- Rescheduling releases every active reservation, including a partial preparation on a `Scheduled` run. A `Reserved` run also returns to `Scheduled`; either case requires stock preparation again. This is intentionally simpler than trying to retain or reallocate reservations invisibly.
 - Starting a production validates reserved lots against the actual start date. Saving substitute actual lots validates against the current execution date. Completion validates every actual lot again against the confirmed manufacture date.
 - A completed task may be reopened while the output is Awaiting release. A released output permanently freezes its production tasks.
 - Existing permanent batch numbers are permanent retroactively and must be backfilled into issuance history.
 - Permanent-number history is enforced in application code and at the PostgreSQL boundary.
 - A manufactured ingredient's stock cost per gram includes every direct material actually consumed by the run, including packaging or consumables when present.
-- Repair the reversible behavior of the new `2026_08_10_231100` output migration. The explicitly deferred August 7 rollback overhaul and conversion of the deliberate forward-only `2026_08_10_180000` migration remain outside this plan.
+- Repair the reversible behavior of the new `2026_08_10_231100` output migration. The explicitly deferred August 7 rollback overhaul remains outside this plan. Migrations `2026_08_10_180000`, `2026_08_10_231300`, `2026_08_10_231400`, and `2026_08_10_231500` are deliberately forward-only because reversing them would remove permanent-number history or its database enforcement.
 - Integration target is `codex/ingredient-catalog-curation`; never merge this work directly to `main`.
 
 ## File responsibility map

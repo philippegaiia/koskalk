@@ -24,7 +24,7 @@ class RescheduleProduction
         $workspace = $production->workspace;
 
         if ($workspace === null) {
-            throw ValidationException::withMessages(['production' => 'The production workspace could not be found.']);
+            throw ValidationException::withMessages(['production' => __('production_bench.production.workspace_missing')]);
         }
 
         $this->access->assertWritable($actor, $workspace);
@@ -34,7 +34,7 @@ class RescheduleProduction
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($lockedProduction->workspace_id);
 
             if ($lockedWorkspace === null) {
-                throw ValidationException::withMessages(['production' => 'The production workspace could not be found.']);
+                throw ValidationException::withMessages(['production' => __('production_bench.production.workspace_missing')]);
             }
 
             $this->access->assertWritable($actor, $lockedWorkspace);
@@ -45,7 +45,7 @@ class RescheduleProduction
                 ProductionRunStatus::Reserved,
             ], true)) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production date cannot be changed after production starts.',
+                    'production' => __('production_bench.production.validation.reschedule_after_start'),
                 ]);
             }
 
@@ -66,7 +66,7 @@ class RescheduleProduction
             || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))
             || $parsed->format('Y-m-d') !== $date
         ) {
-            throw ValidationException::withMessages(['planned_for' => 'The production date must use YYYY-MM-DD format.']);
+            throw ValidationException::withMessages(['planned_for' => __('production_bench.production.validation.planned_date_format')]);
         }
     }
 }

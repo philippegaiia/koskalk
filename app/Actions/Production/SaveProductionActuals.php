@@ -40,7 +40,7 @@ class SaveProductionActuals
 
         if (! $workspace instanceof Workspace) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -56,7 +56,7 @@ class SaveProductionActuals
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production workspace could not be found.',
+                    'production' => __('production_bench.production.workspace_missing'),
                 ]);
             }
 
@@ -64,7 +64,7 @@ class SaveProductionActuals
 
             if ($lockedProduction->status !== ProductionRunStatus::InProduction) {
                 throw ValidationException::withMessages([
-                    'production' => 'Actual consumption can only be recorded while the production is running.',
+                    'production' => __('production_bench.production.validation.actuals_running_only'),
                 ]);
             }
 
@@ -88,19 +88,19 @@ class SaveProductionActuals
 
                 if (! $line instanceof ProductionFormulaLine) {
                     throw ValidationException::withMessages([
-                        "calculatedRows.{$index}.production_formula_line_id" => 'The calculated formula line does not belong to this production.',
+                        "calculatedRows.{$index}.production_formula_line_id" => __('production_bench.production.validation.actual_calculated_line_invalid'),
                     ]);
                 }
 
                 if ($line->component !== ProductionFormulaComponent::Water) {
                     throw ValidationException::withMessages([
-                        "calculatedRows.{$index}.production_formula_line_id" => 'Only the calculated water line can receive a non-stock actual quantity.',
+                        "calculatedRows.{$index}.production_formula_line_id" => __('production_bench.production.validation.actual_calculated_water_only'),
                     ]);
                 }
 
                 if (in_array($line->id, $calculatedLineIds, true)) {
                     throw ValidationException::withMessages([
-                        "calculatedRows.{$index}.production_formula_line_id" => 'A calculated formula line can only be saved once per request.',
+                        "calculatedRows.{$index}.production_formula_line_id" => __('production_bench.production.validation.actual_calculated_line_duplicate'),
                     ]);
                 }
 
@@ -115,7 +115,7 @@ class SaveProductionActuals
 
                 if (! $requirement instanceof ProductionRequirement) {
                     throw ValidationException::withMessages([
-                        "rows.{$index}.production_requirement_id" => 'The requirement does not belong to this production.',
+                        "rows.{$index}.production_requirement_id" => __('production_bench.production.validation.actual_requirement_invalid'),
                     ]);
                 }
 
@@ -124,7 +124,7 @@ class SaveProductionActuals
                 if ($requirement->ingredient_id === null
                     && bccomp($quantity, bcdiv($quantity, '1', 0), 9) !== 0) {
                     throw ValidationException::withMessages([
-                        "rows.{$index}.quantity" => 'Packaging actual quantities must be whole units.',
+                        "rows.{$index}.quantity" => __('production_bench.production.validation.actual_packaging_whole'),
                     ]);
                 }
 
@@ -148,7 +148,7 @@ class SaveProductionActuals
 
                 if (! $lot instanceof StockLot) {
                     throw ValidationException::withMessages([
-                        "rows.{$index}.stock_lot_id" => 'Every actual quantity must reference a stock lot.',
+                        "rows.{$index}.stock_lot_id" => __('production_bench.production.validation.actual_lot_required'),
                     ]);
                 }
 
@@ -194,7 +194,7 @@ class SaveProductionActuals
 
         if (! $lot instanceof StockLot) {
             throw ValidationException::withMessages([
-                "rows.{$index}.stock_lot_id" => 'The stock lot does not belong to this workspace.',
+                "rows.{$index}.stock_lot_id" => __('production_bench.production.validation.actual_stock_lot_workspace_invalid'),
             ]);
         }
 
@@ -206,7 +206,7 @@ class SaveProductionActuals
 
         if (! $subjectMatches) {
             throw ValidationException::withMessages([
-                "rows.{$index}.stock_lot_id" => 'The stock lot does not match the requirement subject.',
+                "rows.{$index}.stock_lot_id" => __('production_bench.production.validation.actual_stock_lot_subject_invalid'),
             ]);
         }
 
@@ -219,7 +219,7 @@ class SaveProductionActuals
 
         if (preg_match('/^\d+(?:\.\d+)?$/', $quantity) !== 1) {
             throw ValidationException::withMessages([
-                "rows.{$index}.quantity" => 'The actual quantity must be a positive decimal value.',
+                "rows.{$index}.quantity" => __('production_bench.production.validation.actual_quantity_positive_decimal'),
             ]);
         }
 
@@ -232,7 +232,7 @@ class SaveProductionActuals
 
         if (preg_match('/^\d+(?:\.\d+)?$/', $quantity) !== 1 || bccomp($quantity, '0', 9) <= 0) {
             throw ValidationException::withMessages([
-                "calculatedRows.{$index}.actual_mass_grams" => 'The calculated actual quantity must be greater than zero.',
+                "calculatedRows.{$index}.actual_mass_grams" => __('production_bench.production.validation.calculated_actual_positive'),
             ]);
         }
 

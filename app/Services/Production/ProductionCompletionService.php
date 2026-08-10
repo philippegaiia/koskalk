@@ -96,7 +96,11 @@ class ProductionCompletionService
                         $currency = $lineCurrency;
                     } elseif ($currency !== $lineCurrency) {
                         throw ValidationException::withMessages([
-                            'production' => 'Production costing mixes currencies: the lot '.$lot->internal_lot_code.' is priced in '.$lineCurrency.' while the rest of the batch is in '.$currency.'. Correct the lot cost or use the workspace costing values.',
+                            'production' => __('production_bench.production.validation.completion_currency_mismatch', [
+                                'lot' => $lot->internal_lot_code,
+                                'lot_currency' => $lineCurrency,
+                                'batch_currency' => $currency,
+                            ]),
                         ]);
                     }
                 }
@@ -269,19 +273,19 @@ class ProductionCompletionService
     ): void {
         if ($production->status !== ProductionRunStatus::InProduction) {
             throw ValidationException::withMessages([
-                'production' => 'Only a running production can be completed.',
+                'production' => __('production_bench.production.validation.completion_running_only'),
             ]);
         }
 
         if ($production->batch_number === null) {
             throw ValidationException::withMessages([
-                'production' => 'The permanent batch number is required before completion.',
+                'production' => __('production_bench.production.validation.completion_permanent_number_required'),
             ]);
         }
 
         if (! $this->isValidDate($manufactureDate)) {
             throw ValidationException::withMessages([
-                'manufacture_date' => 'The manufacture date must use YYYY-MM-DD format.',
+                'manufacture_date' => __('production_bench.production.validation.completion_manufacture_date_invalid'),
             ]);
         }
 
@@ -295,7 +299,7 @@ class ProductionCompletionService
 
             if (! $ingredient instanceof Ingredient) {
                 throw ValidationException::withMessages([
-                    'output_ingredient_id' => 'The intermediate ingredient must belong to this workspace.',
+                    'output_ingredient_id' => __('production_bench.production.validation.completion_intermediate_ingredient_workspace_invalid'),
                 ]);
             }
         }
@@ -314,13 +318,13 @@ class ProductionCompletionService
 
         if ($missingWaterActual) {
             throw ValidationException::withMessages([
-                'production' => 'Record a positive actual water quantity before completing.',
+                'production' => __('production_bench.production.validation.completion_water_actual_positive'),
             ]);
         }
 
         if ($requirements->isEmpty()) {
             throw ValidationException::withMessages([
-                'production' => 'This production has no requirements to consume.',
+                'production' => __('production_bench.production.validation.completion_requirements_missing'),
             ]);
         }
 
@@ -335,7 +339,9 @@ class ProductionCompletionService
 
         if ($missing->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'production' => 'Record actual quantities for every requirement before completing: '.$missing->pluck('subject_name_snapshot')->implode(', ').'.',
+                'production' => __('production_bench.production.validation.completion_actuals_missing', [
+                    'materials' => $missing->pluck('subject_name_snapshot')->implode(', '),
+                ]),
             ]);
         }
 
@@ -346,7 +352,7 @@ class ProductionCompletionService
 
         if ($lotlessRows) {
             throw ValidationException::withMessages([
-                'production' => 'Every actual quantity must reference a stock lot before completing.',
+                'production' => __('production_bench.production.validation.actual_lot_required'),
             ]);
         }
     }
@@ -463,13 +469,13 @@ class ProductionCompletionService
     {
         if (preg_match('/^\d+(?:\.\d+)?$/', trim($value)) !== 1 || bccomp(trim($value), '0', self::GuardScale) <= 0) {
             throw ValidationException::withMessages([
-                'actual_output_quantity' => 'The actual output quantity must be greater than zero.',
+                'actual_output_quantity' => __('production_bench.production.validation.output_quantity_positive'),
             ]);
         }
 
         if (! $isIntermediate && preg_match('/^\d+$/', trim($value)) !== 1) {
             throw ValidationException::withMessages([
-                'actual_output_quantity' => 'Finished output must be a whole number of units.',
+                'actual_output_quantity' => __('production_bench.production.validation.completion_finished_output_whole'),
             ]);
         }
 

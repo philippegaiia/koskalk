@@ -21,6 +21,7 @@ use App\Enums\StockLotOrigin;
 use App\Enums\StockLotStatus;
 use App\Enums\StockUnitKind;
 use App\Enums\Visibility;
+use App\Models\InterfaceTranslation;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
@@ -122,6 +123,34 @@ it('rejects a non-working production date instead of moving it silently', functi
         taskSet: $set,
     ))->toThrow(ValidationException::class);
 });
+
+it('returns a localized validation message when rescheduling onto a non-working day', function (string $locale, string $message): void {
+    InterfaceTranslation::query()->create([
+        'group' => 'production_bench',
+        'key' => 'production.validation.planned_date_working_day',
+        'text' => [$locale => $message],
+    ]);
+    app()->setLocale($locale);
+
+    $fixture = productionTaskSchedulingFixture();
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
+
+    try {
+        app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-09');
+    } catch (ValidationException $exception) {
+        expect($exception->errors()['planned_for'])->toBe([$message]);
+
+        return;
+    }
+
+    $this->fail('Expected rescheduling onto a non-working day to fail.');
+})->with([
+    'German' => ['de', 'Das Produktionsdatum muss auf einen Arbeitstag fallen.'],
+    'Spanish' => ['es', 'La fecha de producción debe ser un día laborable.'],
+    'French' => ['fr', 'La date de production doit être un jour ouvré.'],
+    'Italian' => ['it', 'La data di produzione deve essere un giorno lavorativo.'],
+    'Dutch' => ['nl', 'De productiedatum moet op een werkdag vallen.'],
+]);
 
 it('matches recurring holidays in later years without shifting the explicit production date', function (): void {
     $fixture = productionTaskSchedulingFixture();

@@ -127,6 +127,8 @@ it('defaults water actuals at start and saves them atomically with lot actuals',
 });
 
 it('does not start production with a reserved lot that is no longer consumable', function (array $changes): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'start-lot-eligibility-'.fake()->uuid(), start: false);
     $lot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
@@ -210,6 +212,8 @@ it('rejects actual consumption from quarantined or not-yet-available lots', func
 });
 
 it('accepts an actual lot available on the execution date even when it expires before the planned date', function (): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'actuals-execution-date-expiry');
     $requirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
@@ -226,6 +230,8 @@ it('accepts an actual lot available on the execution date even when it expires b
 });
 
 it('rejects an actual lot that is unavailable on the current execution date', function (): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'actuals-execution-date-availability');
     $requirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();

@@ -21,7 +21,7 @@ class ProductionDateRescheduler
     {
         if (! $this->calendar->isWorkingDate($workspace, $plannedFor)) {
             throw ValidationException::withMessages([
-                'planned_for' => 'The production date must be a working day.',
+                'planned_for' => __('production_bench.production.validation.planned_date_working_day'),
             ]);
         }
 
@@ -34,22 +34,22 @@ class ProductionDateRescheduler
 
         if ($anchor instanceof ProductionTask && $anchor->completed_at !== null) {
             throw ValidationException::withMessages([
-                'production' => 'A production with a completed anchor task cannot be rescheduled.',
+                'production' => __('production_bench.production.validation.reschedule_completed_anchor'),
             ]);
         }
 
-        if ($production->status === ProductionRunStatus::Reserved) {
-            StockReservation::query()
-                ->where('production_run_id', $production->id)
-                ->where('status', StockReservationStatus::Active)
-                ->orderBy('id')
-                ->lockForUpdate()
-                ->get()
-                ->each(fn (StockReservation $reservation): bool => $reservation->update([
-                    'status' => StockReservationStatus::Released,
-                    'released_at' => now(),
-                ]));
+        StockReservation::query()
+            ->where('production_run_id', $production->id)
+            ->where('status', StockReservationStatus::Active)
+            ->orderBy('id')
+            ->lockForUpdate()
+            ->get()
+            ->each(fn (StockReservation $reservation): bool => $reservation->update([
+                'status' => StockReservationStatus::Released,
+                'released_at' => now(),
+            ]));
 
+        if ($production->status === ProductionRunStatus::Reserved) {
             $production->update(['status' => ProductionRunStatus::Scheduled]);
         }
 

@@ -12364,6 +12364,226 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.actual_calculated_line_duplicate",
+      "text": {
+        "de": "Berechnete Formelzeilen können pro Anfrage nur einmal gespeichert werden.",
+        "es": "Cada línea de fórmula calculada solo puede guardarse una vez por solicitud.",
+        "fr": "Une ligne de formule calculée ne peut être enregistrée qu’une fois par requête.",
+        "it": "Una riga di formula calcolata può essere salvata una sola volta per richiesta.",
+        "nl": "Een berekende formuleregel kan per verzoek maar één keer worden opgeslagen."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actual_calculated_line_invalid",
+      "text": {
+        "de": "Die berechnete Formelzeile gehört nicht zu dieser Produktion.",
+        "es": "La línea de fórmula calculada no pertenece a esta producción.",
+        "fr": "La ligne de formule calculée n’appartient pas à cette production.",
+        "it": "La riga di formula calcolata non appartiene a questa produzione.",
+        "nl": "De berekende formuleregel hoort niet bij deze productie."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actual_calculated_water_only",
+      "text": {
+        "de": "Nur die berechnete Wasserzeile kann eine tatsächliche Menge ohne Bestandsführung erhalten.",
+        "es": "Solo la línea de agua calculada puede recibir una cantidad real sin seguimiento de stock.",
+        "fr": "Seule la ligne d’eau calculée peut recevoir une quantité réelle non suivie en stock.",
+        "it": "Solo la riga dell’acqua calcolata può ricevere una quantità effettiva non tracciata a magazzino.",
+        "nl": "Alleen de berekende waterregel kan een werkelijke hoeveelheid zonder voorraadtracking krijgen."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actual_lot_required",
+      "text": {
+        "de": "Jede tatsächliche Menge muss auf ein Bestandslos verweisen.",
+        "es": "Cada cantidad real debe hacer referencia a un lote de stock.",
+        "fr": "Chaque quantité réelle doit faire référence à un lot de stock.",
+        "it": "Ogni quantità effettiva deve fare riferimento a un lotto di magazzino.",
+        "nl": "Elke werkelijke hoeveelheid moet naar een voorraadpartij verwijzen."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actual_packaging_whole",
+      "text": {
+        "de": "Tatsächliche Verpackungsmengen müssen ganze Einheiten sein.",
+        "es": "Las cantidades reales de envases deben ser unidades enteras.",
+        "fr": "Les quantités réelles d’emballage doivent être des unités entières.",
+        "it": "Le quantità effettive di imballaggio devono essere unità intere.",
+        "nl": "Werkelijke verpakkingshoeveelheden moeten hele eenheden zijn."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actual_quantity_positive_decimal",
+      "text": {
+        "de": "Die tatsächliche Menge muss eine positive Dezimalzahl sein.",
+        "es": "La cantidad real debe ser un valor decimal positivo.",
+        "fr": "La quantité réelle doit être une valeur décimale positive.",
+        "it": "La quantità effettiva deve essere un valore decimale positivo.",
+        "nl": "De werkelijke hoeveelheid moet een positieve decimale waarde zijn."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actual_requirement_invalid",
+      "text": {
+        "de": "Die Anforderung gehört nicht zu dieser Produktion.",
+        "es": "El requisito no pertenece a esta producción.",
+        "fr": "Le besoin n’appartient pas à cette production.",
+        "it": "Il fabbisogno non appartiene a questa produzione.",
+        "nl": "De behoefte hoort niet bij deze productie."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actual_stock_lot_subject_invalid",
+      "text": {
+        "de": "Das Bestandslos entspricht nicht dem Material der Anforderung.",
+        "es": "El lote de stock no corresponde al material del requisito.",
+        "fr": "Le lot de stock ne correspond pas à la matière du besoin.",
+        "it": "Il lotto di magazzino non corrisponde al materiale del fabbisogno.",
+        "nl": "De voorraadpartij komt niet overeen met het materiaal van de behoefte."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actual_stock_lot_workspace_invalid",
+      "text": {
+        "de": "Das Bestandslos gehört nicht zu diesem Arbeitsbereich.",
+        "es": "El lote de stock no pertenece a este espacio de trabajo.",
+        "fr": "Le lot de stock n’appartient pas à cet espace de travail.",
+        "it": "Il lotto di magazzino non appartiene a questo spazio di lavoro.",
+        "nl": "De voorraadpartij hoort niet bij deze werkruimte."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.actuals_running_only",
+      "text": {
+        "de": "Der tatsächliche Verbrauch kann nur während einer laufenden Produktion erfasst werden.",
+        "es": "El consumo real solo puede registrarse mientras la producción está en curso.",
+        "fr": "La consommation réelle ne peut être enregistrée que pendant une production en cours.",
+        "it": "Il consumo effettivo può essere registrato solo durante una produzione in corso.",
+        "nl": "Het werkelijke verbruik kan alleen tijdens een lopende productie worden vastgelegd."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.calculated_actual_positive",
+      "text": {
+        "de": "Die berechnete tatsächliche Menge muss größer als null sein.",
+        "es": "La cantidad real calculada debe ser mayor que cero.",
+        "fr": "La quantité réelle calculée doit être supérieure à zéro.",
+        "it": "La quantità effettiva calcolata deve essere maggiore di zero.",
+        "nl": "De berekende werkelijke hoeveelheid moet groter zijn dan nul."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_actuals_missing",
+      "text": {
+        "de": "Erfassen Sie vor dem Abschluss die tatsächlichen Mengen für alle Anforderungen: :materials.",
+        "es": "Registre las cantidades reales de todos los requisitos antes de completar: :materials.",
+        "fr": "Enregistrez les quantités réelles de tous les besoins avant de terminer : :materials.",
+        "it": "Registra le quantità effettive per tutti i fabbisogni prima di completare: :materials.",
+        "nl": "Leg de werkelijke hoeveelheden voor alle behoeften vast voordat u voltooit: :materials."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_currency_mismatch",
+      "text": {
+        "de": "Die Produktionskalkulation mischt Währungen: Los :lot ist in :lot_currency bewertet, der Rest der Charge in :batch_currency. Korrigieren Sie die Loskosten oder verwenden Sie die Kalkulationswerte des Arbeitsbereichs.",
+        "es": "El cálculo de costes de producción mezcla monedas: el lote :lot está valorado en :lot_currency y el resto del lote de producción en :batch_currency. Corrija el coste del lote o use los valores de costes del espacio de trabajo.",
+        "fr": "Le calcul du coût de production mélange des devises : le lot :lot est valorisé en :lot_currency, tandis que le reste de la production est en :batch_currency. Corrigez le coût du lot ou utilisez les valeurs de coût de l’espace de travail.",
+        "it": "Il calcolo dei costi di produzione usa valute diverse: il lotto :lot è valorizzato in :lot_currency, mentre il resto del lotto di produzione è in :batch_currency. Correggi il costo del lotto o usa i valori di costo dello spazio di lavoro.",
+        "nl": "De productiekostprijs gebruikt meerdere valuta’s: partij :lot is gewaardeerd in :lot_currency en de rest van de batch in :batch_currency. Corrigeer de partijkosten of gebruik de kostprijswaarden van de werkruimte."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_finished_output_whole",
+      "text": {
+        "de": "Die Fertigproduktmenge muss eine ganze Anzahl von Einheiten sein.",
+        "es": "La salida terminada debe ser un número entero de unidades.",
+        "fr": "La sortie de produit fini doit être un nombre entier d’unités.",
+        "it": "L’output finito deve essere un numero intero di unità.",
+        "nl": "De uitvoer van het eindproduct moet een geheel aantal eenheden zijn."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_intermediate_ingredient_workspace_invalid",
+      "text": {
+        "de": "Das Zwischenprodukt-Ingrediens muss zu diesem Arbeitsbereich gehören.",
+        "es": "El ingrediente intermedio debe pertenecer a este espacio de trabajo.",
+        "fr": "L’ingrédient intermédiaire doit appartenir à cet espace de travail.",
+        "it": "L’ingrediente intermedio deve appartenere a questo spazio di lavoro.",
+        "nl": "Het tusseningrediënt moet bij deze werkruimte horen."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_manufacture_date_invalid",
+      "text": {
+        "de": "Das Herstellungsdatum muss das Format JJJJ-MM-TT verwenden.",
+        "es": "La fecha de fabricación debe usar el formato AAAA-MM-DD.",
+        "fr": "La date de fabrication doit utiliser le format AAAA-MM-JJ.",
+        "it": "La data di fabbricazione deve usare il formato AAAA-MM-GG.",
+        "nl": "De productiedatum moet het formaat JJJJ-MM-DD gebruiken."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_permanent_number_required",
+      "text": {
+        "de": "Vor dem Abschluss ist eine permanente Chargennummer erforderlich.",
+        "es": "Se requiere un número de lote permanente antes de completar.",
+        "fr": "Un numéro de lot permanent est requis avant de terminer.",
+        "it": "Prima del completamento è necessario un numero di lotto permanente.",
+        "nl": "Voor voltooiing is een permanent batchnummer vereist."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_requirements_missing",
+      "text": {
+        "de": "Diese Produktion hat keine zu verbrauchenden Anforderungen.",
+        "es": "Esta producción no tiene requisitos que consumir.",
+        "fr": "Cette production ne comporte aucun besoin à consommer.",
+        "it": "Questa produzione non ha fabbisogni da consumare.",
+        "nl": "Deze productie heeft geen behoeften om te verbruiken."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_running_only",
+      "text": {
+        "de": "Nur eine laufende Produktion kann abgeschlossen werden.",
+        "es": "Solo se puede completar una producción en curso.",
+        "fr": "Seule une production en cours peut être terminée.",
+        "it": "Può essere completata solo una produzione in corso.",
+        "nl": "Alleen een lopende productie kan worden voltooid."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.completion_water_actual_positive",
+      "text": {
+        "de": "Erfassen Sie vor dem Abschluss eine positive tatsächliche Wassermenge.",
+        "es": "Registre una cantidad real de agua positiva antes de completar.",
+        "fr": "Enregistrez une quantité réelle d’eau positive avant de terminer.",
+        "it": "Registra una quantità effettiva di acqua positiva prima di completare.",
+        "nl": "Leg een positieve werkelijke waterhoeveelheid vast voordat u voltooit."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.early_release_confirmation",
       "text": {
         "de": "Dieser Output ist voraussichtlich am :date bereit. Bestätigen Sie die vorzeitige Freigabe, um ihn jetzt verfügbar zu machen.",
@@ -12496,6 +12716,17 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.output_quantity_positive",
+      "text": {
+        "de": "Die tatsächliche Ausgabemenge muss größer als null sein.",
+        "es": "La cantidad real de salida debe ser mayor que cero.",
+        "fr": "La quantité de sortie réelle doit être supérieure à zéro.",
+        "it": "La quantità effettiva di output deve essere maggiore di zero.",
+        "nl": "De werkelijke uitvoerhoeveelheid moet groter zijn dan nul."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.output_release_requires_completed",
       "text": {
         "de": "Nur Ausgaben einer abgeschlossenen Produktion können freigegeben werden.",
@@ -12584,6 +12815,17 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.planned_date_format",
+      "text": {
+        "de": "Das Produktionsdatum muss das Format JJJJ-MM-TT verwenden.",
+        "es": "La fecha de producción debe usar el formato AAAA-MM-DD.",
+        "fr": "La date de production doit utiliser le format AAAA-MM-JJ.",
+        "it": "La data di produzione deve usare il formato AAAA-MM-GG.",
+        "nl": "De productiedatum moet het formaat JJJJ-MM-DD gebruiken."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.planned_date_required",
       "text": {
         "de": "Bei der Produktionsplanung ist ein Produktionsdatum erforderlich.",
@@ -12602,6 +12844,39 @@
         "fr": "Une date de production est requise lors de la mise à jour d’une production planifiée.",
         "it": "Per aggiornare una produzione pianificata è necessaria una data di produzione.",
         "nl": "Bij het bijwerken van een geplande productie is een productiedatum verplicht."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.planned_date_working_day",
+      "text": {
+        "de": "Das Produktionsdatum muss auf einen Arbeitstag fallen.",
+        "es": "La fecha de producción debe ser un día laborable.",
+        "fr": "La date de production doit être un jour ouvré.",
+        "it": "La data di produzione deve essere un giorno lavorativo.",
+        "nl": "De productiedatum moet op een werkdag vallen."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.reschedule_after_start",
+      "text": {
+        "de": "Das Produktionsdatum kann nach Produktionsbeginn nicht mehr geändert werden.",
+        "es": "La fecha de producción no puede cambiarse una vez iniciada la producción.",
+        "fr": "La date de production ne peut plus être modifiée après le démarrage de la production.",
+        "it": "La data di produzione non può essere modificata dopo l’avvio della produzione.",
+        "nl": "De productiedatum kan niet worden gewijzigd nadat de productie is gestart."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.reschedule_completed_anchor",
+      "text": {
+        "de": "Eine Produktion mit einer abgeschlossenen Ankeraufgabe kann nicht neu geplant werden.",
+        "es": "Una producción con una tarea de referencia completada no puede reprogramarse.",
+        "fr": "Une production dont la tâche d’ancrage est terminée ne peut pas être replanifiée.",
+        "it": "Una produzione con un’attività di riferimento completata non può essere riprogrammata.",
+        "nl": "Een productie met een voltooide ankertaak kan niet opnieuw worden gepland."
       }
     },
     {

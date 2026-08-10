@@ -217,6 +217,29 @@ it('releases prepared stock and returns a production to scheduled when it is res
         ->and(StockReservation::query()->sole()->released_at)->not->toBeNull();
 });
 
+it('releases partial reservations when a scheduled production is rescheduled', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    productionStockIngredientRequirement($production, $fixture['ingredient'], '100.000000000');
+    productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
+
+    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-partial-reschedule');
+
+    expect($production->fresh()->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(1);
+
+    $rescheduled = app(RescheduleProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        plannedFor: '2026-08-24',
+    );
+
+    expect($rescheduled->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Active)->count())->toBe(0)
+        ->and(StockReservation::query()->where('production_run_id', $production->id)->where('status', StockReservationStatus::Released)->count())->toBe(1)
+        ->and(StockReservation::query()->sole()->released_at)->not->toBeNull();
+});
+
 it('cancels a reserved production and marks active reservations cancelled', function (): void {
     $fixture = productionStockPreparationFixture();
     $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);

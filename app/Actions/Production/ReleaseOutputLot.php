@@ -98,7 +98,9 @@ class ReleaseOutputLot
                 && $lockedLot->estimated_ready_on->isFuture()
                 && ! $earlyReleaseConfirmed) {
                 throw ValidationException::withMessages([
-                    'early_release_confirmation' => 'This output lot is estimated ready on '.$lockedLot->estimated_ready_on->toDateString().'. Confirm early release to make it available now.',
+                    'early_release_confirmation' => __('production_bench.production.validation.early_release_confirmation', [
+                        'date' => $lockedLot->estimated_ready_on->toDateString(),
+                    ]),
                 ]);
             }
 

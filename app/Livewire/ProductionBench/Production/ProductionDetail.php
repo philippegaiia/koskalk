@@ -339,6 +339,9 @@ class ProductionDetail extends Component
             $this->dispatch(
                 'early-start-confirmation-requested',
                 plannedFor: $production->planned_for->format('Y-m-d'),
+                message: __('production_bench.production.early_start_confirm', [
+                    'date' => $production->planned_for->format('Y-m-d'),
+                ]),
             );
 
             return;

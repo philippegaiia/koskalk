@@ -229,13 +229,13 @@ class ProductionCompletionService
         if ($outputType === ProductionOutputType::ManufacturedIngredient) {
             if ($production->output_ingredient_id === null) {
                 throw ValidationException::withMessages([
-                    'output_ingredient_id' => 'The production output ingredient is missing from its snapshot.',
+                    'output_ingredient_id' => __('production_bench.production.validation.output_snapshot_ingredient_missing'),
                 ]);
             }
 
             if ($legacyOutputIngredientId !== null && $legacyOutputIngredientId !== (int) $production->output_ingredient_id) {
                 throw ValidationException::withMessages([
-                    'output_ingredient_id' => 'The production output ingredient is fixed by the production snapshot.',
+                    'output_ingredient_id' => __('production_bench.production.validation.output_snapshot_ingredient_fixed'),
                 ]);
             }
 
@@ -247,7 +247,7 @@ class ProductionCompletionService
 
         if ($legacyOutputIngredientId !== null) {
             throw ValidationException::withMessages([
-                'output_ingredient_id' => 'Finished product output is fixed by the production snapshot.',
+                'output_ingredient_id' => __('production_bench.production.validation.output_snapshot_finished_fixed'),
             ]);
         }
 
@@ -356,7 +356,7 @@ class ProductionCompletionService
         if ($estimatedReadyOn !== null) {
             if (! $this->isValidDate($estimatedReadyOn)) {
                 throw ValidationException::withMessages([
-                    'estimated_ready_on' => 'The estimated ready date must use YYYY-MM-DD format.',
+                    'estimated_ready_on' => __('production_bench.production.validation.estimated_ready_date_invalid'),
                 ]);
             }
 

@@ -1031,7 +1031,13 @@ it('requires explicit confirmation before starting ahead of the planned date', f
     $page = Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $reserved->id])
         ->call('start')
-        ->assertDispatched('early-start-confirmation-requested');
+        ->assertDispatched('early-start-confirmation-requested', function (string $event, array $payload): bool {
+            return $event === 'early-start-confirmation-requested'
+                && $payload['plannedFor'] === '2026-08-20'
+                && $payload['message'] === __('production_bench.production.early_start_confirm', [
+                    'date' => '2026-08-20',
+                ]);
+        });
 
     expect($reserved->fresh()->status)->toBe(ProductionRunStatus::Reserved);
 

@@ -30,12 +30,12 @@ class ProductionReadyDateService
 
             if (! $outputIngredient instanceof Ingredient) {
                 throw ValidationException::withMessages([
-                    'output_ingredient_id' => 'The manufactured output ingredient must be an active in-house ingredient from this workspace.',
+                    'output_ingredient_id' => __('production_bench.production.validation.output_ingredient_invalid'),
                 ]);
             }
         } elseif ($outputIngredientId !== null) {
             throw ValidationException::withMessages([
-                'output_ingredient_id' => 'Finished product output cannot reference an ingredient.',
+                'output_ingredient_id' => __('production_bench.production.validation.finished_output_has_no_ingredient'),
             ]);
         }
 

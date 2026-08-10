@@ -10747,6 +10747,28 @@
     },
     {
       "group": "production_bench",
+      "key": "production.estimated_ready_date",
+      "text": {
+        "de": "Voraussichtliches Bereitschaftsdatum",
+        "es": "Fecha estimada de disponibilidad",
+        "fr": "Date estimée de disponibilité",
+        "it": "Data stimata di disponibilità",
+        "nl": "Geschatte gereeddatum"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.estimated_ready_date_help",
+      "text": {
+        "de": "Dies ist eine unverbindliche Schätzung. Die manuelle Freigabe bestimmt, wann der Output verfügbar wird.",
+        "es": "Es una estimación orientativa. La liberación manual decide cuándo está disponible el producto.",
+        "fr": "Il s’agit d’une estimation indicative. La libération manuelle détermine quand la production devient disponible.",
+        "it": "È una stima indicativa. Il rilascio manuale decide quando l’output diventa disponibile.",
+        "nl": "Dit is een indicatieve schatting. Handmatige vrijgave bepaalt wanneer de output beschikbaar wordt."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.expected_units_help",
       "text": {
         "de": "Wird zur Skalierung der Verpackungsanforderungen verwendet.",
@@ -11308,6 +11330,28 @@
     },
     {
       "group": "production_bench",
+      "key": "production.output_awaiting_release",
+      "text": {
+        "de": "Wartet auf Freigabe",
+        "es": "Pendiente de liberación",
+        "fr": "En attente de libération",
+        "it": "In attesa di rilascio",
+        "nl": "Wacht op vrijgave"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.output_estimated_ready",
+      "text": {
+        "de": "voraussichtlich bereit :date",
+        "es": "disponibilidad estimada :date",
+        "fr": "disponibilité estimée :date",
+        "it": "disponibilità stimata :date",
+        "nl": "naar verwachting gereed :date"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.output_intermediate",
       "text": {
         "de": "Zwischenprodukt (Gramm)",
@@ -11733,6 +11777,17 @@
         "fr": "Libérer le lot",
         "it": "Rilascia lotto",
         "nl": "Batch vrijgeven"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.release_early_warning",
+      "text": {
+        "de": "Das voraussichtliche Bereitschaftsdatum ist :date. Eine vorzeitige Freigabe ist nach Bestätigung möglich.",
+        "es": "La fecha estimada de disponibilidad es :date. Puede liberar antes tras confirmarlo.",
+        "fr": "La date estimée de disponibilité est le :date. Une libération anticipée est possible après confirmation.",
+        "it": "La data stimata di disponibilità è :date. Puoi rilasciare in anticipo dopo la conferma.",
+        "nl": "De geschatte gereeddatum is :date. Vervroegde vrijgave is mogelijk na bevestiging."
       }
     },
     {
@@ -12309,6 +12364,39 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.early_release_confirmation",
+      "text": {
+        "de": "Dieser Output ist voraussichtlich am :date bereit. Bestätigen Sie die vorzeitige Freigabe, um ihn jetzt verfügbar zu machen.",
+        "es": "Se estima que este lote estará listo el :date. Confirme la liberación anticipada para hacerlo disponible ahora.",
+        "fr": "La disponibilité de ce lot est estimée au :date. Confirmez la libération anticipée pour le rendre disponible maintenant.",
+        "it": "La disponibilità di questo lotto è stimata per il :date. Conferma il rilascio anticipato per renderlo disponibile ora.",
+        "nl": "Dit lot is naar schatting gereed op :date. Bevestig vervroegde vrijgave om het nu beschikbaar te maken."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.estimated_ready_date_invalid",
+      "text": {
+        "de": "Das voraussichtliche Bereitschaftsdatum muss das Format JJJJ-MM-TT verwenden.",
+        "es": "La fecha estimada debe tener el formato AAAA-MM-DD.",
+        "fr": "La date estimée doit utiliser le format AAAA-MM-JJ.",
+        "it": "La data stimata deve usare il formato AAAA-MM-GG.",
+        "nl": "De geschatte gereeddatum moet het formaat JJJJ-MM-DD gebruiken."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.finished_output_has_no_ingredient",
+      "text": {
+        "de": "Rezepte für Fertigprodukte dürfen nicht auf ein hergestelltes Ingrediens verweisen.",
+        "es": "Las recetas de productos terminados no pueden apuntar a un ingrediente fabricado.",
+        "fr": "Les recettes de produits finis ne peuvent pas pointer vers un ingrédient fabriqué.",
+        "it": "Le ricette di prodotti finiti non possono indicare un ingrediente fabbricato.",
+        "nl": "Recepten voor eindproducten mogen niet naar een vervaardigd ingrediënt verwijzen."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.lye_material_missing",
       "text": {
         "de": "Das erforderliche Laugenmaterial (:key) fehlt im Zutatenkatalog.",
@@ -12316,6 +12404,94 @@
         "fr": "La matière alcaline requise (:key) manque au catalogue des ingrédients.",
         "it": "Il materiale alcalino richiesto (:key) manca dal catalogo ingredienti.",
         "nl": "Het vereiste loogmateriaal (:key) ontbreekt in de ingrediëntencatalogus."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.manufactured_ingredient_name_invalid",
+      "text": {
+        "de": "Verwenden Sie einen Namen für das hergestellte Ingrediens mit höchstens 255 Zeichen.",
+        "es": "Usa un nombre de ingrediente fabricado de 255 caracteres como máximo.",
+        "fr": "Utilisez un nom d’ingrédient fabriqué de 255 caractères maximum.",
+        "it": "Usa un nome di ingrediente fabbricato di massimo 255 caratteri.",
+        "nl": "Gebruik een naam voor het vervaardigde ingrediënt van maximaal 255 tekens."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.manufactured_ingredient_name_required",
+      "text": {
+        "de": "Geben Sie einen Namen für das hergestellte Ingrediens ein.",
+        "es": "Introduce un nombre para el ingrediente fabricado.",
+        "fr": "Saisissez un nom pour l’ingrédient fabriqué.",
+        "it": "Inserisci un nome per l’ingrediente fabbricato.",
+        "nl": "Voer een naam in voor het vervaardigde ingrediënt."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_ingredient_invalid",
+      "text": {
+        "de": "Wählen Sie ein aktives, zu diesem Arbeitsbereich gehörendes hergestelltes Ingrediens.",
+        "es": "Elige un ingrediente fabricado activo que pertenezca a este espacio de trabajo.",
+        "fr": "Choisissez un ingrédient fabriqué actif appartenant à cet espace de travail.",
+        "it": "Scegli un ingrediente fabbricato attivo appartenente a questo spazio di lavoro.",
+        "nl": "Kies een actief vervaardigd ingrediënt dat bij deze werkruimte hoort."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_ingredient_required",
+      "text": {
+        "de": "Wählen Sie das hergestellte Ingrediens, das dieses Rezept erzeugt.",
+        "es": "Elige el ingrediente fabricado que produce esta receta.",
+        "fr": "Choisissez l’ingrédient fabriqué produit par cette recette.",
+        "it": "Scegli l’ingrediente fabbricato prodotto da questa ricetta.",
+        "nl": "Kies het vervaardigde ingrediënt dat dit recept produceert."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_snapshot_finished_fixed",
+      "text": {
+        "de": "Der Fertigproduktausgang ist durch den Produktions-Schnappschuss festgelegt.",
+        "es": "La salida del producto terminado está fijada por la instantánea de producción.",
+        "fr": "La sortie de produit fini est fixée par l’instantané de production.",
+        "it": "L’output del prodotto finito è fissato dallo snapshot della produzione.",
+        "nl": "De output van het eindproduct ligt vast in de productiesnapshot."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_snapshot_ingredient_fixed",
+      "text": {
+        "de": "Das hergestellte Ausgabe-Ingrediens ist durch den Produktions-Schnappschuss festgelegt.",
+        "es": "El ingrediente fabricado de salida está fijado por la instantánea de producción.",
+        "fr": "L’ingrédient fabriqué de sortie est fixé par l’instantané de production.",
+        "it": "L’ingrediente fabbricato di output è fissato dallo snapshot della produzione.",
+        "nl": "Het vervaardigde outputingrediënt ligt vast in de productiesnapshot."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_snapshot_ingredient_missing",
+      "text": {
+        "de": "Das hergestellte Ausgabe-Ingrediens fehlt im Produktions-Schnappschuss.",
+        "es": "Falta el ingrediente fabricado de salida en la instantánea de producción.",
+        "fr": "L’ingrédient fabriqué de sortie est absent de l’instantané de production.",
+        "it": "L’ingrediente fabbricato di output manca nello snapshot della produzione.",
+        "nl": "Het vervaardigde outputingrediënt ontbreekt in de productiesnapshot."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_type_invalid",
+      "text": {
+        "de": "Wählen Sie eine gültige Produktionsausgabeart.",
+        "es": "Elige un tipo de salida de producción válido.",
+        "fr": "Choisissez un type de sortie de production valide.",
+        "it": "Scegli un tipo di output di produzione valido.",
+        "nl": "Kies een geldig productietype voor de output."
       }
     },
     {
@@ -14080,6 +14256,17 @@
     },
     {
       "group": "production_bench",
+      "key": "settings.cosmetic_ready_delay_days",
+      "text": {
+        "de": "Verzögerung der Kosmetikwerkbank (Tage)",
+        "es": "Retraso del banco cosmético (días)",
+        "fr": "Délai de l’atelier cosmétique (jours)",
+        "it": "Ritardo del banco cosmetico (giorni)",
+        "nl": "Vertraging cosmetica-werkbank (dagen)"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "settings.days_after_production",
       "text": {
         "de": "Tage relativ zur Produktion",
@@ -14872,6 +15059,39 @@
     },
     {
       "group": "production_bench",
+      "key": "settings.ready_dates",
+      "text": {
+        "de": "Bereitschaftsdaten",
+        "es": "Fechas de disponibilidad",
+        "fr": "Dates de disponibilité",
+        "it": "Date di disponibilità",
+        "nl": "Gereeddatums"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.ready_dates_help",
+      "text": {
+        "de": "Kalendertage zur Schätzung, wann der Output einer abgeschlossenen Produktion bereit ist. Die Schätzung kann im Produktionslauf geprüft und geändert werden.",
+        "es": "Días naturales para estimar cuándo está disponible el producto de una producción completada. La estimación puede revisarse y cambiarse en la producción.",
+        "fr": "Jours calendaires utilisés pour estimer quand la sortie d’une production terminée est disponible. L’estimation peut être vérifiée et modifiée dans la production.",
+        "it": "Giorni di calendario usati per stimare quando l’output di una produzione completata è disponibile. La stima può essere verificata e modificata nella produzione.",
+        "nl": "Kalenderdagen om te schatten wanneer de output van een voltooide productie gereed is. De schatting kan in de productie worden gecontroleerd en gewijzigd."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.ready_delay_whole_number",
+      "text": {
+        "de": "Geben Sie eine nicht negative ganze Zahl an Tagen ein.",
+        "es": "Introduce un número entero de días no negativo.",
+        "fr": "Saisissez un nombre entier de jours positif ou nul.",
+        "it": "Inserisci un numero intero non negativo di giorni.",
+        "nl": "Voer een niet-negatief geheel aantal dagen in."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "settings.recurring",
       "text": {
         "de": "Jedes Jahr",
@@ -14934,6 +15154,17 @@
         "fr": "Rechercher par nom, tâche ou produit",
         "it": "Cerca per nome, attività o prodotto",
         "nl": "Zoeken op naam, taak of product"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.soap_ready_delay_days",
+      "text": {
+        "de": "Verzögerung der Seifenwerkbank (Tage)",
+        "es": "Retraso del banco de jabón (días)",
+        "fr": "Délai de l’atelier savon (jours)",
+        "it": "Ritardo del banco sapone (giorni)",
+        "nl": "Vertraging zeepwerkbank (dagen)"
       }
     },
     {
@@ -19272,6 +19503,28 @@
     },
     {
       "group": "workbench",
+      "key": "settings.choose_manufactured_ingredient",
+      "text": {
+        "de": "Ausgabe-Ingrediens",
+        "es": "Ingrediente de salida",
+        "fr": "Ingrédient de sortie",
+        "it": "Ingrediente di output",
+        "nl": "Outputingrediënt"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.create_manufactured_ingredient",
+      "text": {
+        "de": "Erstellen",
+        "es": "Crear",
+        "fr": "Créer",
+        "it": "Crea",
+        "nl": "Maken"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.edit",
       "text": {
         "de": "Einstellungen bearbeiten",
@@ -19290,6 +19543,17 @@
         "fr": "Saisir les quantités en",
         "it": "Inserisci le quantità in",
         "nl": "Hoeveelheden invoeren als"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.finished_product",
+      "text": {
+        "de": "Fertigprodukt",
+        "es": "Producto terminado",
+        "fr": "Produit fini",
+        "it": "Prodotto finito",
+        "nl": "Eindproduct"
       }
     },
     {
@@ -19327,6 +19591,72 @@
     },
     {
       "group": "workbench",
+      "key": "settings.manufactured_ingredient",
+      "text": {
+        "de": "Hergestelltes Ingrediens",
+        "es": "Ingrediente fabricado",
+        "fr": "Ingrédient fabriqué",
+        "it": "Ingrediente fabbricato",
+        "nl": "Vervaardigd ingrediënt"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.manufactured_ingredient_create_failed",
+      "text": {
+        "de": "Das hergestellte Ingrediens konnte nicht erstellt werden.",
+        "es": "No se pudo crear el ingrediente fabricado.",
+        "fr": "L’ingrédient fabriqué n’a pas pu être créé.",
+        "it": "Non è stato possibile creare l’ingrediente fabbricato.",
+        "nl": "Het vervaardigde ingrediënt kon niet worden aangemaakt."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.manufactured_ingredient_created",
+      "text": {
+        "de": "Hergestelltes Ingrediens erstellt.",
+        "es": "Ingrediente fabricado creado.",
+        "fr": "Ingrédient fabriqué créé.",
+        "it": "Ingrediente fabbricato creato.",
+        "nl": "Vervaardigd ingrediënt aangemaakt."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.manufactured_ingredient_help",
+      "text": {
+        "de": "Das ausgewählte Arbeitsbereich-Ingrediens erhält den hergestellten Bestand, wenn die Produktion abgeschlossen und freigegeben ist.",
+        "es": "El ingrediente seleccionado del espacio de trabajo recibirá el stock fabricado cuando la producción se complete y se libere.",
+        "fr": "L’ingrédient sélectionné de l’espace de travail recevra le stock fabriqué lorsque la production sera terminée et libérée.",
+        "it": "L’ingrediente selezionato dello spazio di lavoro riceverà lo stock fabbricato quando la produzione sarà completata e rilasciata.",
+        "nl": "Het geselecteerde ingrediënt uit de werkruimte ontvangt de vervaardigde voorraad wanneer de productie is voltooid en vrijgegeven."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.manufactured_ingredient_name_required",
+      "text": {
+        "de": "Geben Sie einen Namen für das hergestellte Ingrediens ein.",
+        "es": "Introduce un nombre para el ingrediente fabricado.",
+        "fr": "Saisissez un nom pour l’ingrédient fabriqué.",
+        "it": "Inserisci un nome per l’ingrediente fabbricato.",
+        "nl": "Voer een naam in voor het vervaardigde ingrediënt."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.new_manufactured_ingredient_name",
+      "text": {
+        "de": "Neues hergestelltes Ingrediens erstellen",
+        "es": "Crear un ingrediente fabricado nuevo",
+        "fr": "Créer un nouvel ingrédient fabriqué",
+        "it": "Crea un nuovo ingrediente fabbricato",
+        "nl": "Nieuw vervaardigd ingrediënt aanmaken"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.no_ifra_category",
       "text": {
         "de": "Keine IFRA-Kategorie ausgewählt",
@@ -19345,6 +19675,61 @@
         "fr": "Utilisation du produit",
         "it": "Uso del prodotto",
         "nl": "Productgebruik"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.production_output",
+      "text": {
+        "de": "Produktionsausgabe",
+        "es": "Salida de producción",
+        "fr": "Sortie de production",
+        "it": "Output della produzione",
+        "nl": "Productie-output"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.production_output_help",
+      "text": {
+        "de": "Wählen Sie, ob dieses Rezept ein Fertigprodukt oder ein wiederverwendbares Bulk-Ingrediens für ein anderes Produkt erzeugt.",
+        "es": "Elige si esta receta produce un producto terminado o un ingrediente a granel reutilizable para otro producto.",
+        "fr": "Choisissez si cette recette produit un produit fini ou un ingrédient vrac réutilisable pour un autre produit.",
+        "it": "Scegli se questa ricetta produce un prodotto finito o un ingrediente sfuso riutilizzabile per un altro prodotto.",
+        "nl": "Kies of dit recept een eindproduct of een herbruikbaar bulk-ingrediënt voor een ander product maakt."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.ready_delay_override",
+      "text": {
+        "de": "Abweichung für Bereitschaftsverzögerung (Tage)",
+        "es": "Excepción del retraso de disponibilidad (días)",
+        "fr": "Délai de disponibilité personnalisé (jours)",
+        "it": "Override del ritardo di disponibilità (giorni)",
+        "nl": "Afwijking gereedheidsvertraging (dagen)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.ready_delay_override_help",
+      "text": {
+        "de": "Leer lassen, um den Arbeitsbereichstandard für diese Produktfamilie zu verwenden.",
+        "es": "Déjalo vacío para usar el valor predeterminado del espacio de trabajo para esta familia de productos.",
+        "fr": "Laissez vide pour utiliser la valeur par défaut de l’espace de travail pour cette famille de produits.",
+        "it": "Lascia vuoto per usare il valore predefinito dello spazio di lavoro per questa famiglia di prodotti.",
+        "nl": "Laat leeg om de werkruimtestandaard voor deze productfamilie te gebruiken."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.ready_delay_override_placeholder",
+      "text": {
+        "de": "Produktionseinstellungen verwenden",
+        "es": "Usar ajustes de producción",
+        "fr": "Utiliser les paramètres de production",
+        "it": "Usa impostazioni produzione",
+        "nl": "Productie-instellingen gebruiken"
       }
     },
     {

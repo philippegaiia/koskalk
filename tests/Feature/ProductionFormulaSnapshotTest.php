@@ -9,6 +9,7 @@ use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
+use App\Models\ProductionFormulaLine;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -21,9 +22,20 @@ use App\Services\Production\ProductionFormulaSnapshotBuilder;
 use App\Services\Production\ProductionRequirementBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+it('stores nullable actual mass for calculated formula lines at canonical precision', function (): void {
+    expect(Schema::hasColumn('production_formula_lines', 'actual_mass_grams'))->toBeTrue();
+
+    $line = ProductionFormulaLine::factory()->create([
+        'actual_mass_grams' => '283.125',
+    ]);
+
+    expect($line->actual_mass_grams)->toBe('283.125000000');
+});
 
 it('builds a complete NaOH soap formula snapshot scaled to the production basis', function (): void {
     $fixture = productionFormulaSnapshotFixture('naoh');

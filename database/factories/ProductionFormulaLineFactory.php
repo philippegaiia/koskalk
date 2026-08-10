@@ -29,6 +29,7 @@ class ProductionFormulaLineFactory extends Factory
             'phase_name_snapshot' => 'Main',
             'basis_percentage_snapshot' => '10.000000000',
             'planned_mass_grams' => '100.000000000',
+            'actual_mass_grams' => null,
             'note_snapshot' => null,
             'sort_order' => 1,
         ];

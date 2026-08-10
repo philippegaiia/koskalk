@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'phase_name_snapshot',
     'basis_percentage_snapshot',
     'planned_mass_grams',
+    'actual_mass_grams',
     'note_snapshot',
     'sort_order',
 ])]
@@ -48,6 +49,7 @@ class ProductionFormulaLine extends Model
             'component' => ProductionFormulaComponent::class,
             'basis_percentage_snapshot' => 'decimal:9',
             'planned_mass_grams' => 'decimal:9',
+            'actual_mass_grams' => 'decimal:9',
             'sort_order' => 'integer',
         ];
     }

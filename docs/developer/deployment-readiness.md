@@ -1,0 +1,36 @@
+# Deployment readiness after catalogue curation
+
+Use this checklist only after the ingredient catalogue, sellable products, packaging, supplier listings, and interface translations have been reviewed in the application. It records the release work that follows curation; it does not authorize merging a branch or activating a locale.
+
+## Before the release
+
+- Confirm that approved catalogue and sales-data changes are committed and that the target branch has passed its focused tests and review.
+- Review the production workflow with the curated data: a manufactured ingredient can be released into ingredient stock, and a finished product can be completed and released.
+- Review the non-English values in `database/seeders/data/interface-translations.json` alongside their English keys. Keep the repository catalogue authoritative during the current owner-only pre-launch phase.
+- Make sure Forge has the production backup configuration described in [storage-and-backups.md](./storage-and-backups.md). Do not place credentials in the repository or in this checklist.
+
+## Release sequence
+
+From the deployed release directory, make a recoverable backup before applying migrations, then run the migration and translation steps in this order:
+
+```shell
+php artisan backup:database
+php artisan migrate --force
+php artisan db:seed --class='Database\Seeders\SupportedLocaleSeeder' --force
+php artisan translations:sync
+php artisan translations:catalogue:import --mode=authoritative --force --no-interaction
+```
+
+Do not run the full `DatabaseSeeder` for this release, and do not use `translations:sync --prune`. The commands above add missing owned keys and import only the reviewed application-interface catalogue; they do not alter curated ingredients, products, supplier listings, media, or other business data.
+
+When production editorial translation changes become authoritative, replace the final command with the preserve-existing mode documented in [localization.md](./localization.md). Do not activate a locale until its required interface and platform content are complete.
+
+## Release checks
+
+- Confirm the database backup completed and is recoverable according to the backup runbook.
+- Confirm migrations completed and the production-bench translation keys exist in `language_lines`.
+- In each enabled locale, trigger a production validation error and verify that its translated message is shown.
+- Smoke-test one planned production through stock preparation, start, completion, and output release using curated ingredient and product data.
+- Check the production log and browser errors before allowing wider access.
+
+For the detailed backup and restore procedure, use [storage-and-backups.md](./storage-and-backups.md). For catalogue modes, locale activation, and translation recovery, use [localization.md](./localization.md).

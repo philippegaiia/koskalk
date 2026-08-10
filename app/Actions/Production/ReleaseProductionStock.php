@@ -25,7 +25,7 @@ class ReleaseProductionStock
 
         if (! $workspace instanceof Workspace) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -41,7 +41,7 @@ class ReleaseProductionStock
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production workspace could not be found.',
+                    'production' => __('production_bench.production.workspace_missing'),
                 ]);
             }
 
@@ -49,7 +49,7 @@ class ReleaseProductionStock
 
             if (! in_array($lockedProduction->status, [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
                 throw ValidationException::withMessages([
-                    'production' => 'Only planned or stock-prepared productions can release stock.',
+                    'production' => __('production_bench.production.validation.release_stock_status_invalid'),
                 ]);
             }
 

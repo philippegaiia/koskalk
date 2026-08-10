@@ -39,7 +39,7 @@ class UpdateProductionPlan
 
         if ($workspace === null) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -68,7 +68,7 @@ class UpdateProductionPlan
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production workspace could not be found.',
+                    'production' => __('production_bench.production.workspace_missing'),
                 ]);
             }
 
@@ -79,7 +79,7 @@ class UpdateProductionPlan
                 ProductionRunStatus::Scheduled,
             ], true)) {
                 throw ValidationException::withMessages([
-                    'production' => 'Only draft or planned productions can be updated.',
+                    'production' => __('production_bench.production.validation.update_status_invalid'),
                 ]);
             }
 
@@ -126,7 +126,7 @@ class UpdateProductionPlan
             return $unit instanceof MassUnit ? $unit : MassUnit::fromInput($unit);
         } catch (\InvalidArgumentException) {
             throw ValidationException::withMessages([
-                'basis_input_unit' => 'Choose a supported mass unit.',
+                'basis_input_unit' => __('production_bench.production.validation.basis_input_unit_invalid'),
             ]);
         }
     }
@@ -138,13 +138,13 @@ class UpdateProductionPlan
             || bccomp(trim($basisInputValue), '0', 18) <= 0
         ) {
             throw ValidationException::withMessages([
-                'basis_input_value' => 'The production basis must be greater than zero.',
+                'basis_input_value' => __('production_bench.production.validation.basis_input_positive'),
             ]);
         }
 
         if ($plannedFor !== null && ! $this->isValidDate($plannedFor)) {
             throw ValidationException::withMessages([
-                'planned_for' => 'The production date must use YYYY-MM-DD format.',
+                'planned_for' => __('production_bench.production.validation.planned_date_format'),
             ]);
         }
     }
@@ -155,7 +155,7 @@ class UpdateProductionPlan
 
         if (preg_match('/^[1-9]\d*$/', $normalized) !== 1) {
             throw ValidationException::withMessages([
-                'expected_units' => 'Expected units must be a positive whole number.',
+                'expected_units' => __('production_bench.production.validation.expected_units_positive_whole'),
             ]);
         }
 
@@ -189,7 +189,7 @@ class UpdateProductionPlan
 
         if ($hasActiveReservations) {
             throw ValidationException::withMessages([
-                'production' => 'A production with active stock reservations cannot be changed.',
+                'production' => __('production_bench.production.validation.update_active_reservations'),
             ]);
         }
     }

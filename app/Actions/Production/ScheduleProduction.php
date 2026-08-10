@@ -27,7 +27,7 @@ class ScheduleProduction
 
         if ($workspace === null) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -35,13 +35,13 @@ class ScheduleProduction
 
         if (! $this->isValidDate($plannedFor)) {
             throw ValidationException::withMessages([
-                'planned_for' => 'The production date must use YYYY-MM-DD format.',
+                'planned_for' => __('production_bench.production.validation.planned_date_format'),
             ]);
         }
 
         if (! $this->calendar->isWorkingDate($workspace, $plannedFor)) {
             throw ValidationException::withMessages([
-                'planned_for' => 'The production date must be a working day.',
+                'planned_for' => __('production_bench.production.validation.planned_date_working_day'),
             ]);
         }
 
@@ -55,7 +55,7 @@ class ScheduleProduction
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production workspace could not be found.',
+                    'production' => __('production_bench.production.workspace_missing'),
                 ]);
             }
 
@@ -63,7 +63,7 @@ class ScheduleProduction
 
             if ($lockedProduction->status !== ProductionRunStatus::Draft) {
                 throw ValidationException::withMessages([
-                    'production' => 'Only draft productions can be planned.',
+                    'production' => __('production_bench.production.validation.schedule_draft_only'),
                 ]);
             }
 

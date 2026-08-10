@@ -23,7 +23,7 @@ class ReopenProductionTask
         $workspace = $task->workspace;
 
         if ($workspace === null) {
-            throw ValidationException::withMessages(['task' => 'The task workspace could not be found.']);
+            throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_workspace_missing')]);
         }
 
         $this->access->assertWritable($actor, $workspace);
@@ -42,7 +42,7 @@ class ReopenProductionTask
                     ->find($taskReference->production_run_id);
 
             if ($production === null || $workspace === null || (int) $taskReference->workspace_id !== (int) $workspace->id) {
-                throw ValidationException::withMessages(['task' => 'The task does not belong to this workspace.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_workspace_mismatch')]);
             }
 
             $this->access->assertWritable($actor, $workspace);
@@ -54,7 +54,7 @@ class ReopenProductionTask
             $lockedTask = $tasks->firstWhere('id', $task->id);
 
             if (! $lockedTask instanceof ProductionTask) {
-                throw ValidationException::withMessages(['task' => 'The task does not belong to this production.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_production_mismatch')]);
             }
 
             $outputLot = StockLot::query()
@@ -73,7 +73,7 @@ class ReopenProductionTask
                 ProductionRunStatus::InProduction,
                 ProductionRunStatus::Completed,
             ], true)) {
-                throw ValidationException::withMessages(['task' => 'This production task cannot be reopened.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_reopen_not_allowed')]);
             }
 
             if ($outputLot?->status === StockLotStatus::Released) {
@@ -83,7 +83,7 @@ class ReopenProductionTask
             }
 
             if ($lockedTask->completed_at === null) {
-                throw ValidationException::withMessages(['task' => 'This production task is not complete.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_not_completed')]);
             }
 
             $lockedTask->update(['completed_at' => null]);

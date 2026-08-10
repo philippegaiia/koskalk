@@ -35,6 +35,7 @@ use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
+use App\Models\InterfaceTranslation;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
@@ -57,6 +58,7 @@ use App\Support\NumberLocale;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -182,6 +184,8 @@ it('records actual consumption during production without posting stock movements
 });
 
 it('rejects actual consumption from quarantined or not-yet-available lots', function (): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
     $quarantinedFixture = productionExecutionFixture();
     $quarantinedProduction = productionExecutionRun($quarantinedFixture, 'actuals-eligibility-quarantine');
     $quarantinedRequirement = $quarantinedProduction->requirements()->where('kind', 'ingredient')->firstOrFail();
@@ -246,6 +250,8 @@ it('rejects an actual lot that is unavailable on the current execution date', fu
 });
 
 it('rechecks actual lots against the confirmed manufacture date before posting movements', function (): void {
+    $this->travelTo('2026-08-10 08:00:00');
+
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'actuals-manufacture-date-recheck');
     $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
@@ -388,6 +394,46 @@ it('rejects actual rows outside in-production and invalid quantities', function 
         ]);
     })->toThrow(ValidationException::class);
 });
+
+it('returns the catalogued localized message when actuals are saved outside production', function (string $locale): void {
+    $messages = productionExecutionCatalogueText('actuals_running_only');
+    InterfaceTranslation::query()->firstOrCreate([
+        'group' => 'production_bench',
+        'key' => 'production.validation.actuals_running_only',
+    ], [
+        'text' => $messages,
+    ]);
+    app()->setLocale($locale);
+
+    $fixture = productionExecutionFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: "localized-actuals-{$locale}",
+        status: ProductionRunStatus::Scheduled,
+        plannedFor: '2026-08-20',
+    );
+
+    try {
+        app(SaveProductionActuals::class)->handle($fixture['owner'], $production, []);
+    } catch (ValidationException $exception) {
+        expect($exception->errors()['production'])->toBe([$messages[$locale]]);
+
+        return;
+    }
+
+    $this->fail('Expected saving actuals outside production to fail.');
+})->with([
+    'German' => ['de'],
+    'Spanish' => ['es'],
+    'French' => ['fr'],
+    'Italian' => ['it'],
+    'Dutch' => ['nl'],
+]);
 
 it('saves actuals from the production sheet', function (): void {
     $fixture = productionExecutionFixture();
@@ -1840,4 +1886,18 @@ function productionExecutionRun(array $fixture, string $idempotencyKey, bool $st
     }
 
     return app(StartProduction::class)->handle($fixture['owner'], $production->fresh());
+}
+
+/** @return array<string, string> */
+function productionExecutionCatalogueText(string $key): array
+{
+    $translation = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->first(fn (array $row): bool => $row['group'] === 'production_bench'
+            && $row['key'] === "production.validation.{$key}");
+
+    if (! is_array($translation) || ! is_array($translation['text'] ?? null)) {
+        throw new LogicException("Missing production translation catalogue entry for [{$key}].");
+    }
+
+    return $translation['text'];
 }

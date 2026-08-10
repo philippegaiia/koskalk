@@ -24,7 +24,7 @@ class ResetProductionTaskDate
         $workspace = $task->workspace;
 
         if ($workspace === null) {
-            throw ValidationException::withMessages(['task' => 'The task workspace could not be found.']);
+            throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_workspace_missing')]);
         }
 
         $this->access->assertWritable($actor, $workspace);
@@ -34,13 +34,13 @@ class ResetProductionTaskDate
             $production = ProductionRun::query()->lockForUpdate()->find($lockedTask->production_run_id);
 
             if ($production === null) {
-                throw ValidationException::withMessages(['task' => 'The production could not be found.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_production_missing')]);
             }
 
             $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->find($production->workspace_id);
 
             if ($workspace === null || (int) $lockedTask->workspace_id !== (int) $workspace->id) {
-                throw ValidationException::withMessages(['task' => 'The task does not belong to this workspace.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_workspace_mismatch')]);
             }
 
             $this->access->assertWritable($actor, $workspace);
@@ -50,11 +50,11 @@ class ResetProductionTaskDate
                 ProductionRunStatus::Scheduled,
                 ProductionRunStatus::Reserved,
             ], true)) {
-                throw ValidationException::withMessages(['task' => 'Task dates cannot be changed after production starts.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_date_change_after_start')]);
             }
 
             if ($lockedTask->completed_at !== null) {
-                throw ValidationException::withMessages(['task' => 'Completed tasks must be reopened before their date can be reset.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_reset_reopen_required')]);
             }
 
             $anchorTaskId = ProductionTask::query()
@@ -64,11 +64,11 @@ class ResetProductionTaskDate
                 ->value('id');
 
             if ((int) $anchorTaskId === (int) $lockedTask->id) {
-                throw ValidationException::withMessages(['task' => 'The production task is the date anchor and cannot be reset independently.']);
+                throw ValidationException::withMessages(['task' => __('production_bench.production.validation.task_anchor_reset_invalid')]);
             }
 
             if ($production->planned_for === null) {
-                throw ValidationException::withMessages(['production' => 'Set a production date before resetting a task.']);
+                throw ValidationException::withMessages(['production' => __('production_bench.production.validation.task_reset_planned_date_required')]);
             }
 
             $lockedTask->update([

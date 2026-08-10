@@ -35,6 +35,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
@@ -124,11 +125,14 @@ it('rejects a non-working production date instead of moving it silently', functi
     ))->toThrow(ValidationException::class);
 });
 
-it('returns a localized validation message when rescheduling onto a non-working day', function (string $locale, string $message): void {
-    InterfaceTranslation::query()->create([
+it('returns the catalogued localized message when rescheduling onto a non-working day', function (string $locale): void {
+    $messages = productionTaskSchedulingCatalogueText('planned_date_working_day');
+
+    InterfaceTranslation::query()->firstOrCreate([
         'group' => 'production_bench',
         'key' => 'production.validation.planned_date_working_day',
-        'text' => [$locale => $message],
+    ], [
+        'text' => $messages,
     ]);
     app()->setLocale($locale);
 
@@ -138,18 +142,18 @@ it('returns a localized validation message when rescheduling onto a non-working 
     try {
         app(RescheduleProduction::class)->handle($fixture['owner'], $production, '2026-08-09');
     } catch (ValidationException $exception) {
-        expect($exception->errors()['planned_for'])->toBe([$message]);
+        expect($exception->errors()['planned_for'])->toBe([$messages[$locale]]);
 
         return;
     }
 
     $this->fail('Expected rescheduling onto a non-working day to fail.');
 })->with([
-    'German' => ['de', 'Das Produktionsdatum muss auf einen Arbeitstag fallen.'],
-    'Spanish' => ['es', 'La fecha de producción debe ser un día laborable.'],
-    'French' => ['fr', 'La date de production doit être un jour ouvré.'],
-    'Italian' => ['it', 'La data di produzione deve essere un giorno lavorativo.'],
-    'Dutch' => ['nl', 'De productiedatum moet op een werkdag vallen.'],
+    'German' => ['de'],
+    'Spanish' => ['es'],
+    'French' => ['fr'],
+    'Italian' => ['it'],
+    'Dutch' => ['nl'],
 ]);
 
 it('matches recurring holidays in later years without shifting the explicit production date', function (): void {
@@ -546,4 +550,18 @@ function productionTaskSchedulingOutputLot(array $fixture, ProductionRun $produc
         'status' => $status,
         'released_at' => $status === StockLotStatus::Released ? now() : null,
     ]);
+}
+
+/** @return array<string, string> */
+function productionTaskSchedulingCatalogueText(string $key): array
+{
+    $translation = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->first(fn (array $row): bool => $row['group'] === 'production_bench'
+            && $row['key'] === "production.validation.{$key}");
+
+    if (! is_array($translation) || ! is_array($translation['text'] ?? null)) {
+        throw new LogicException("Missing production translation catalogue entry for [{$key}].");
+    }
+
+    return $translation['text'];
 }

@@ -26,7 +26,7 @@ class GenerateProductionTasks
 
         if ($workspace === null) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -42,7 +42,7 @@ class GenerateProductionTasks
 
             if ($lockedWorkspace === null) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production workspace could not be found.',
+                    'production' => __('production_bench.production.workspace_missing'),
                 ]);
             }
 
@@ -154,7 +154,7 @@ class GenerateProductionTasks
 
         if ($taskSet === null) {
             throw ValidationException::withMessages([
-                'production_task_set' => 'The production task set is no longer available in this workspace.',
+                'production_task_set' => __('production_bench.production.validation.task_set_unavailable'),
             ]);
         }
 

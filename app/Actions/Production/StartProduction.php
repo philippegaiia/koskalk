@@ -34,7 +34,7 @@ class StartProduction
 
         if (! $workspace instanceof Workspace) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -50,7 +50,7 @@ class StartProduction
 
             if (! $lockedWorkspace instanceof Workspace) {
                 throw ValidationException::withMessages([
-                    'production' => 'The production workspace could not be found.',
+                    'production' => __('production_bench.production.workspace_missing'),
                 ]);
             }
 

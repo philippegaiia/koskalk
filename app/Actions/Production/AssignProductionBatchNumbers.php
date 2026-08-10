@@ -42,7 +42,7 @@ class AssignProductionBatchNumbers
 
             if ($productions->count() !== count($productionIds)) {
                 throw ValidationException::withMessages([
-                    'production_ids' => 'One or more selected productions could not be found in this workspace.',
+                    'production_ids' => __('production_bench.production.validation.batch_numbers_productions_missing'),
                 ]);
             }
 
@@ -59,7 +59,7 @@ class AssignProductionBatchNumbers
 
             if ($eligible->isNotEmpty() && $settings->next_permanent_serial > PHP_INT_MAX - $eligible->count()) {
                 throw ValidationException::withMessages([
-                    'next_permanent_serial' => 'The permanent batch number counter is exhausted for this assignment.',
+                    'next_permanent_serial' => __('production_bench.production.validation.batch_numbers_counter_exhausted'),
                 ]);
             }
 
@@ -67,7 +67,7 @@ class AssignProductionBatchNumbers
 
             if ($this->numbers->identityExists($lockedWorkspace->id, $candidates)) {
                 throw ValidationException::withMessages([
-                    'batch_number' => 'One or more batch numbers to assign are already in use.',
+                    'batch_number' => __('production_bench.production.validation.batch_numbers_in_use'),
                 ]);
             }
 
@@ -106,13 +106,13 @@ class AssignProductionBatchNumbers
         foreach ($productions as $production) {
             if (! in_array($production->status, [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
                 throw ValidationException::withMessages([
-                    'production_ids' => 'Only scheduled or reserved productions can receive batch numbers.',
+                    'production_ids' => __('production_bench.production.validation.batch_numbers_status_invalid'),
                 ]);
             }
 
             if ($production->planned_for === null) {
                 throw ValidationException::withMessages([
-                    'production_ids' => 'Every selected production must have a planned date.',
+                    'production_ids' => __('production_bench.production.validation.batch_numbers_planned_date_required'),
                 ]);
             }
         }
@@ -131,7 +131,7 @@ class AssignProductionBatchNumbers
 
             if (preg_match('/^[1-9]\d*$/', $value) !== 1 || strlen($value) > 18) {
                 throw ValidationException::withMessages([
-                    'production_ids' => 'Choose one or more valid productions.',
+                    'production_ids' => __('production_bench.production.validation.batch_numbers_selection_invalid'),
                 ]);
             }
 
@@ -143,7 +143,7 @@ class AssignProductionBatchNumbers
 
         if ($normalized === []) {
             throw ValidationException::withMessages([
-                'production_ids' => 'Choose at least one production.',
+                'production_ids' => __('production_bench.production.validation.batch_numbers_selection_required'),
             ]);
         }
 

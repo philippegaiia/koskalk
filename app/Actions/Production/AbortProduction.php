@@ -34,7 +34,7 @@ class AbortProduction
 
         if (! $workspace instanceof Workspace) {
             throw ValidationException::withMessages([
-                'production' => 'The production workspace could not be found.',
+                'production' => __('production_bench.production.workspace_missing'),
             ]);
         }
 
@@ -52,7 +52,7 @@ class AbortProduction
 
             if ($lockedProduction->status !== ProductionRunStatus::InProduction) {
                 throw ValidationException::withMessages([
-                    'production' => 'Only a running production can be aborted.',
+                    'production' => __('production_bench.production.validation.abort_running_only'),
                 ]);
             }
 
@@ -60,7 +60,7 @@ class AbortProduction
 
             if ($reason === '' || mb_strlen($reason) > 2000) {
                 throw ValidationException::withMessages([
-                    'abort_reason' => 'An abort reason between 1 and 2000 characters is required.',
+                    'abort_reason' => __('production_bench.production.validation.abort_reason_invalid'),
                 ]);
             }
 

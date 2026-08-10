@@ -203,7 +203,7 @@ class SaveProductionActuals
             || ($lot->available_from?->toDateString() !== null && $lot->available_from->toDateString() > $eligibilityDate)
             || ($lot->expires_at?->toDateString() !== null && $lot->expires_at->toDateString() < $eligibilityDate)) {
             throw ValidationException::withMessages([
-                "rows.{$index}.stock_lot_id" => 'The stock lot is not released and available for this production.',
+                "rows.{$index}.stock_lot_id" => __('production_bench.production.validation.stock_lot_not_available'),
             ]);
         }
 

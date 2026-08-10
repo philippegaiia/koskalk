@@ -65,7 +65,7 @@ class GenerateProductionTasks
             ProductionRunStatus::Reserved,
         ], true)) {
             throw ValidationException::withMessages([
-                'production' => 'Tasks can only be generated before production starts.',
+                'production' => __('production_bench.production.validation.tasks_before_start'),
             ]);
         }
 
@@ -93,7 +93,7 @@ class GenerateProductionTasks
 
         if (! $items->contains(fn ($item): bool => (int) $item->days_after_production === 0)) {
             throw ValidationException::withMessages([
-                'production_task_set' => 'The task set must include a production-day task.',
+                'production_task_set' => __('production_bench.settings.task_set_production_day_required'),
             ]);
         }
 
@@ -104,7 +104,7 @@ class GenerateProductionTasks
         foreach ($items as $item) {
             if ($item->taskType === null || (int) $item->taskType->workspace_id !== (int) $lockedWorkspace->id) {
                 throw ValidationException::withMessages([
-                    'production' => 'Every production task must belong to the active workspace.',
+                    'production' => __('production_bench.production.validation.task_workspace_invalid'),
                 ]);
             }
 
@@ -112,7 +112,7 @@ class GenerateProductionTasks
                 && ($item->taskType->department === null
                     || (int) $item->taskType->department->workspace_id !== (int) $lockedWorkspace->id)) {
                 throw ValidationException::withMessages([
-                    'production' => 'Every production task department must belong to the active workspace.',
+                    'production' => __('production_bench.production.validation.task_department_workspace_invalid'),
                 ]);
             }
 

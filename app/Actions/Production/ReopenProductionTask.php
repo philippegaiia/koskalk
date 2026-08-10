@@ -51,7 +51,7 @@ class ReopenProductionTask
             if ($production->status === ProductionRunStatus::Completed
                 || $production->outputLot()->where('status', 'released')->exists()) {
                 throw ValidationException::withMessages([
-                    'task' => 'Completed production tasks cannot be reopened after production completion or output release.',
+                    'task' => __('production_bench.production.validation.task_reopen_after_release'),
                 ]);
             }
 

@@ -99,7 +99,7 @@ class FlashDateProposalService
 
         if (! $recipe instanceof Recipe) {
             throw ValidationException::withMessages([
-                'lines' => 'The flash proposal is missing its product configuration.',
+                'lines' => __('production_bench.production.validation.flash_output_configuration_missing'),
             ]);
         }
 

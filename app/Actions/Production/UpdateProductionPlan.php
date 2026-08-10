@@ -83,7 +83,7 @@ class UpdateProductionPlan
 
             if ($lockedProduction->status === ProductionRunStatus::Scheduled && $plannedFor === null) {
                 throw ValidationException::withMessages([
-                    'planned_for' => 'A production date is required when updating a planned production.',
+                    'planned_for' => __('production_bench.production.validation.planned_date_update_required'),
                 ]);
             }
 

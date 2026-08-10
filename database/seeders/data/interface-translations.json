@@ -12397,6 +12397,17 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.flash_output_configuration_missing",
+      "text": {
+        "de": "Dem Flash-Vorschlag fehlt die Produktkonfiguration.",
+        "es": "La propuesta flash no incluye la configuración del producto.",
+        "fr": "La proposition Flash ne contient pas la configuration du produit.",
+        "it": "La proposta flash non contiene la configurazione del prodotto.",
+        "nl": "De flashvoorstel mist de productconfiguratie."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.lye_material_missing",
       "text": {
         "de": "Das erforderliche Laugenmaterial (:key) fehlt im Zutatenkatalog.",
@@ -12503,6 +12514,83 @@
         "fr": "Une date de production est requise pour planifier la production.",
         "it": "Per pianificare la produzione è necessaria una data di produzione.",
         "nl": "Bij het plannen van productie is een productiedatum verplicht."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.planned_date_update_required",
+      "text": {
+        "de": "Beim Aktualisieren einer geplanten Produktion ist ein Produktionsdatum erforderlich.",
+        "es": "Se requiere una fecha de producción al actualizar una producción planificada.",
+        "fr": "Une date de production est requise lors de la mise à jour d’une production planifiée.",
+        "it": "Per aggiornare una produzione pianificata è necessaria una data di produzione.",
+        "nl": "Bij het bijwerken van een geplande productie is een productiedatum verplicht."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.stock_lot_not_available",
+      "text": {
+        "de": "Das Bestandslos ist für diese Produktion nicht freigegeben oder verfügbar.",
+        "es": "El lote de stock no está liberado ni disponible para esta producción.",
+        "fr": "Le lot de stock n’est pas libéré ou disponible pour cette production.",
+        "it": "Il lotto di magazzino non è rilasciato o disponibile per questa produzione.",
+        "nl": "De voorraadpartij is niet vrijgegeven of beschikbaar voor deze productie."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.stock_lot_quantity_unavailable",
+      "text": {
+        "de": "Ein ausgewähltes Bestandslos hat nicht genügend geeignete Menge.",
+        "es": "Un lote de stock seleccionado no tiene suficiente cantidad disponible.",
+        "fr": "Un lot de stock sélectionné ne dispose pas d’une quantité éligible suffisante.",
+        "it": "Un lotto di magazzino selezionato non ha una quantità idonea sufficiente.",
+        "nl": "Een geselecteerde voorraadpartij heeft niet voldoende geschikte hoeveelheid."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.task_department_workspace_invalid",
+      "text": {
+        "de": "Jede Produktionsaufgabenabteilung muss zum aktiven Arbeitsbereich gehören.",
+        "es": "El departamento de cada tarea de producción debe pertenecer al espacio de trabajo activo.",
+        "fr": "Le service de chaque tâche de production doit appartenir à l’espace de travail actif.",
+        "it": "Il reparto di ogni attività di produzione deve appartenere allo spazio di lavoro attivo.",
+        "nl": "De afdeling van elke productietaak moet bij de actieve werkruimte horen."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.task_reopen_after_release",
+      "text": {
+        "de": "Abgeschlossene Produktionsaufgaben können nach Abschluss der Produktion oder Freigabe des Outputs nicht wieder geöffnet werden.",
+        "es": "Las tareas de producción completadas no pueden reabrirse después de completar la producción o liberar la salida.",
+        "fr": "Les tâches de production terminées ne peuvent pas être rouvertes après la fin de la production ou la libération de la sortie.",
+        "it": "Le attività di produzione completate non possono essere riaperte dopo il completamento della produzione o il rilascio dell’output.",
+        "nl": "Voltooide productietaken kunnen niet opnieuw worden geopend nadat de productie is voltooid of de output is vrijgegeven."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.task_workspace_invalid",
+      "text": {
+        "de": "Jede Produktionsaufgabe muss zum aktiven Arbeitsbereich gehören.",
+        "es": "Cada tarea de producción debe pertenecer al espacio de trabajo activo.",
+        "fr": "Chaque tâche de production doit appartenir à l’espace de travail actif.",
+        "it": "Ogni attività di produzione deve appartenere allo spazio di lavoro attivo.",
+        "nl": "Elke productietaak moet bij de actieve werkruimte horen."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.tasks_before_start",
+      "text": {
+        "de": "Aufgaben können nur vor Produktionsbeginn erzeugt werden.",
+        "es": "Las tareas solo pueden generarse antes de iniciar la producción.",
+        "fr": "Les tâches ne peuvent être générées qu’avant le démarrage de la production.",
+        "it": "Le attività possono essere generate solo prima dell’avvio della produzione.",
+        "nl": "Taken kunnen alleen vóór de productiestart worden gegenereerd."
       }
     },
     {

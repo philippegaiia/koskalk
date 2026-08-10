@@ -368,7 +368,7 @@ class PrepareProductionStock
 
             if ($available === null) {
                 throw ValidationException::withMessages([
-                    'allocations' => 'A selected stock lot does not have enough eligible quantity.',
+                    'allocations' => __('production_bench.production.validation.stock_lot_quantity_unavailable'),
                 ]);
             }
 
@@ -380,7 +380,7 @@ class PrepareProductionStock
 
             if (bccomp($quantity, $availableQuantity, 9) > 0) {
                 throw ValidationException::withMessages([
-                    'allocations' => 'A selected stock lot does not have enough eligible quantity.',
+                    'allocations' => __('production_bench.production.validation.stock_lot_quantity_unavailable'),
                 ]);
             }
 

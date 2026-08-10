@@ -21,14 +21,18 @@ class ReleaseOutputLot
     ) {}
 
     /**
-     * Release a quarantined output lot after its ready date and all linked
-     * production tasks have been completed.
+     * Release a quarantined output lot after all linked production tasks have
+     * been completed. An early release requires an explicit confirmation.
      */
-    public function handle(User $actor, StockLot $lot, ?string $note = null): StockLot
-    {
+    public function handle(
+        User $actor,
+        StockLot $lot,
+        ?string $note = null,
+        bool $earlyReleaseConfirmed = false,
+    ): StockLot {
         $this->access->assertWritable($actor, $lot->workspace);
 
-        return DB::transaction(function () use ($actor, $lot, $note): StockLot {
+        return DB::transaction(function () use ($actor, $earlyReleaseConfirmed, $lot, $note): StockLot {
             $lotReference = StockLot::query()
                 ->withoutGlobalScopes()
                 ->findOrFail($lot->id);
@@ -90,9 +94,11 @@ class ReleaseOutputLot
                 ]);
             }
 
-            if ($lockedLot->available_from !== null && $lockedLot->available_from->isFuture()) {
+            if ($lockedLot->estimated_ready_on !== null
+                && $lockedLot->estimated_ready_on->isFuture()
+                && ! $earlyReleaseConfirmed) {
                 throw ValidationException::withMessages([
-                    'lot' => 'This output lot is not available yet (available from '.$lockedLot->available_from->toDateString().').',
+                    'early_release_confirmation' => 'This output lot is estimated ready on '.$lockedLot->estimated_ready_on->toDateString().'. Confirm early release to make it available now.',
                 ]);
             }
 

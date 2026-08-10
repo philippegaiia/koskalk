@@ -8,6 +8,7 @@ use App\Models\ProductionRun;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MassConverter;
+use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionSnapshotRescaler;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class UpdateProductionPlan
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly ProductionSnapshotRescaler $rescaler,
+        private readonly ProductionReadyDateService $readyDates,
     ) {}
 
     public function handle(
@@ -95,6 +97,9 @@ class UpdateProductionPlan
                 'basis_input_unit' => $massUnit,
                 'expected_units' => $expectedUnits,
                 'planned_for' => $plannedFor,
+                'estimated_ready_on' => $plannedFor === null || $lockedProduction->output_ready_delay_days === null
+                    ? null
+                    : $this->readyDates->estimatedReadyOn($plannedFor, (int) $lockedProduction->output_ready_delay_days),
                 'notes' => $notes,
             ]);
 

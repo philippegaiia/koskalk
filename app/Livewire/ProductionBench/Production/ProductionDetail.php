@@ -38,6 +38,7 @@ use App\Services\MediaAssetUploadService;
 use App\Services\Production\ProductionDetailPresenter;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
@@ -70,6 +71,8 @@ class ProductionDetail extends Component
     public string $actualOutputQuantity = '';
 
     public string $manufactureDate = '';
+
+    public string $estimatedReadyOn = '';
 
     // The HTML select sends '' as its no-choice sentinel; typing this ?int
     // would make the empty value coerce ambiguously across Livewire versions.
@@ -232,6 +235,27 @@ class ProductionDetail extends Component
             ->where('public_id', $productionId)
             ->value('id') ?? abort(404));
         $this->loadSavedActualRows();
+    }
+
+    public function updatedManufactureDate(): void
+    {
+        if ($this->estimatedReadyOn !== '' || $this->manufactureDate === '') {
+            return;
+        }
+
+        $production = $this->production();
+
+        if ($production->output_ready_delay_days === null) {
+            return;
+        }
+
+        try {
+            $this->estimatedReadyOn = CarbonImmutable::parse($this->manufactureDate)
+                ->addDays((int) $production->output_ready_delay_days)
+                ->toDateString();
+        } catch (\Throwable) {
+            $this->estimatedReadyOn = '';
+        }
     }
 
     /**
@@ -484,6 +508,7 @@ class ProductionDetail extends Component
                 production: $production,
                 actualOutputQuantity: NumberLocale::normalizeDecimalString($this->actualOutputQuantity) ?? $this->actualOutputQuantity,
                 manufactureDate: $this->manufactureDate,
+                estimatedReadyOn: $this->estimatedReadyOn !== '' ? $this->estimatedReadyOn : null,
                 outputIngredientId: $this->outputMode === 'intermediate' && $this->outputIngredientId !== null
                     ? (int) $this->outputIngredientId
                     : null,
@@ -526,6 +551,16 @@ class ProductionDetail extends Component
 
     public function releaseOutput(): void
     {
+        $this->performRelease(false);
+    }
+
+    public function confirmEarlyRelease(): void
+    {
+        $this->performRelease(true);
+    }
+
+    private function performRelease(bool $earlyReleaseConfirmed): void
+    {
         $outputLot = $this->production()->outputLot;
 
         if (! $outputLot instanceof StockLot) {
@@ -533,9 +568,22 @@ class ProductionDetail extends Component
         }
 
         try {
-            app(ReleaseOutputLot::class)->handle($this->user(), $outputLot);
+            app(ReleaseOutputLot::class)->handle(
+                actor: $this->user(),
+                lot: $outputLot,
+                earlyReleaseConfirmed: $earlyReleaseConfirmed,
+            );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
+                if ($field === 'early_release_confirmation') {
+                    $this->dispatch(
+                        'early-release-confirmation-requested',
+                        message: (string) $messages[0],
+                    );
+
+                    continue;
+                }
+
                 foreach ($messages as $message) {
                     $this->addError('output', $message);
                 }
@@ -734,7 +782,7 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'journalEntries.createdBy', 'outputLot', 'cancelledBy', 'batchNumberAssignedBy'])
+            ->with(['recipe', 'outputIngredient', 'requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'journalEntries.createdBy', 'outputLot', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
     }
 

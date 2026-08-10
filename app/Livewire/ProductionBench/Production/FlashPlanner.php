@@ -303,6 +303,7 @@ class FlashPlanner extends Component
                 'recipe_name' => (string) $line['recipe']->name,
                 'whole_batches' => $line['whole_batches'],
                 'task_set_id' => $line['task_set_id'],
+                'output_ready_delay_days' => $line['output_ready_delay_days'],
                 'task_items' => $line['task_set']?->items->map(fn ($item): array => [
                     'name' => $item->taskType?->name ?? (string) $item->taskType?->key ?? 'Task',
                     'days_after_production' => (int) $item->days_after_production,

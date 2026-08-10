@@ -28,7 +28,7 @@ class ProductionDetailPresenter
      *   materials: list<array<string, mixed>>,
      *   has_active_reservations: bool,
      *   output: array{unit: string, planned: string, actual: string|null, variance: string|null, variance_percentage: string|null},
-     *   release: array{has_output: bool, quarantined: bool, ready_date_reached: bool, tasks_complete: bool, ready: bool, available_from: string|null, incomplete_tasks: list<string>},
+     *   release: array{has_output: bool, quarantined: bool, ready_date_reached: bool, tasks_complete: bool, ready: bool, available_from: string|null, estimated_ready_on: string|null, incomplete_tasks: list<string>},
      * }
      */
     public function present(
@@ -403,7 +403,7 @@ class ProductionDetailPresenter
     }
 
     /**
-     * @return array{has_output: bool, quarantined: bool, ready_date_reached: bool, tasks_complete: bool, ready: bool, available_from: string|null, incomplete_tasks: list<string>}
+     * @return array{has_output: bool, quarantined: bool, ready_date_reached: bool, tasks_complete: bool, ready: bool, available_from: string|null, estimated_ready_on: string|null, incomplete_tasks: list<string>}
      */
     private function releaseReadiness(ProductionRun $production): array
     {
@@ -413,8 +413,8 @@ class ProductionDetailPresenter
             ->pluck('name_snapshot')
             ->values()
             ->all();
-        $availableFrom = $outputLot?->available_from?->format('Y-m-d');
-        $readyDateReached = $availableFrom === null || $availableFrom <= today()->format('Y-m-d');
+        $estimatedReadyOn = $outputLot?->estimated_ready_on?->format('Y-m-d');
+        $readyDateReached = $estimatedReadyOn === null || $estimatedReadyOn <= today()->format('Y-m-d');
         $quarantined = $outputLot?->status === StockLotStatus::Quarantined;
         $tasksComplete = $incompleteTasks === [];
 
@@ -425,9 +425,9 @@ class ProductionDetailPresenter
             'tasks_complete' => $tasksComplete,
             'ready' => $production->status === ProductionRunStatus::Completed
                 && $quarantined
-                && $readyDateReached
                 && $tasksComplete,
-            'available_from' => $availableFrom,
+            'available_from' => $estimatedReadyOn,
+            'estimated_ready_on' => $estimatedReadyOn,
             'incomplete_tasks' => $incompleteTasks,
         ];
     }

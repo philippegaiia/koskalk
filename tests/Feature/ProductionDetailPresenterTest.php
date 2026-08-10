@@ -121,7 +121,7 @@ it('presents terminal lifecycle state and output release readiness', function ()
         'origin' => StockLotOrigin::ProductionOutput,
         'unit_kind' => StockUnitKind::Count,
         'status' => StockLotStatus::Quarantined,
-        'available_from' => today()->subDay(),
+        'estimated_ready_on' => today()->subDay(),
     ]);
     ProductionTask::factory()->for($fixture['workspace'])->for($production, 'productionRun')->create([
         'name_snapshot' => 'Final quality check',

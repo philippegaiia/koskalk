@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\Ingredients\CreateManufacturedIngredient;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\DeleteProductionRun;
@@ -13,6 +14,7 @@ use App\Actions\Production\UpdateProductionPlan;
 use App\Enums\MassUnit;
 use App\Enums\OwnerType;
 use App\Enums\ProductionBasisKind;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
@@ -84,6 +86,66 @@ it('rejects a planned production without a date at the action boundary', functio
     ))->toThrow(ValidationException::class);
 
     expect($fixture['workspace']->productionRuns()->count())->toBe(0);
+});
+
+it('snapshots configured output identity and ready dates when planning', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+    $firstOutput = app(CreateManufacturedIngredient::class)->handle($fixture['owner'], 'Turmeric oil macerate');
+    $secondOutput = app(CreateManufacturedIngredient::class)->handle($fixture['owner'], 'Lavender oil macerate');
+    $fixture['recipe']->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $firstOutput->id,
+        'ready_delay_days' => 4,
+    ]);
+
+    $planned = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '12',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'output-snapshot-planned',
+        plannedFor: '2026-08-20',
+        status: ProductionRunStatus::Scheduled,
+    );
+
+    expect($planned->production_output_type)->toBe(ProductionOutputType::ManufacturedIngredient)
+        ->and($planned->output_ingredient_id)->toBe($firstOutput->id)
+        ->and($planned->output_ready_delay_days)->toBe(4)
+        ->and($planned->estimated_ready_on?->toDateString())->toBe('2026-08-24');
+
+    $fixture['recipe']->update([
+        'output_ingredient_id' => $secondOutput->id,
+        'ready_delay_days' => 30,
+    ]);
+
+    expect($planned->fresh()->output_ingredient_id)->toBe($firstOutput->id)
+        ->and($planned->fresh()->output_ready_delay_days)->toBe(4)
+        ->and($planned->fresh()->estimated_ready_on?->toDateString())->toBe('2026-08-24');
+
+    $fixture['recipe']->update([
+        'output_ingredient_id' => $firstOutput->id,
+        'ready_delay_days' => 4,
+    ]);
+
+    $draft = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '12',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'output-snapshot-draft',
+    );
+
+    expect($draft->estimated_ready_on)->toBeNull()
+        ->and($draft->output_ingredient_id)->toBe($firstOutput->id);
+
+    $scheduled = app(ScheduleProduction::class)->handle($fixture['owner'], $draft, '2026-08-21');
+
+    expect($scheduled->estimated_ready_on?->toDateString())->toBe('2026-08-25')
+        ->and($scheduled->output_ready_delay_days)->toBe(4);
 });
 
 it('scales soap ingredient requirements from the initial oil mass and packaging from expected units', function (): void {

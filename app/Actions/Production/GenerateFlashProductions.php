@@ -108,7 +108,13 @@ class GenerateFlashProductions
                     ->first();
 
                 if ($existing instanceof ProductionRun) {
-                    $this->assertSameRequest($existing, $line, $proposal['production_date'], $taskSet?->id);
+                    $this->assertSameRequest(
+                        $existing,
+                        $line,
+                        $proposal['production_date'],
+                        $proposal['estimated_ready_on'],
+                        $taskSet?->id,
+                    );
                     $productions->push($existing->fresh(['requirements', 'tasks']));
 
                     continue;
@@ -160,14 +166,20 @@ class GenerateFlashProductions
     }
 
     /** @param array<string, mixed> $line */
-    private function assertSameRequest(ProductionRun $existing, array $line, string $plannedFor, ?int $taskSetId): void
-    {
+    private function assertSameRequest(
+        ProductionRun $existing,
+        array $line,
+        string $plannedFor,
+        string $estimatedReadyOn,
+        ?int $taskSetId,
+    ): void {
         if (
             (int) $existing->recipe_id !== (int) $line['recipe_id']
             || bccomp((string) $existing->basis_input_value, (string) $line['basis_input_value'], 9) !== 0
             || $existing->basis_input_unit !== $line['basis_input_unit']
             || (int) $existing->expected_units !== (int) $line['expected_units_per_batch']
             || $existing->planned_for?->toDateString() !== $plannedFor
+            || $existing->estimated_ready_on?->toDateString() !== $estimatedReadyOn
             || (int) ($existing->production_task_set_id ?? 0) !== (int) ($taskSetId ?? 0)
         ) {
             throw ValidationException::withMessages([

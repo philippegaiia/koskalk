@@ -228,7 +228,7 @@
                     @foreach ($datePreview as $proposal)
                         <div class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                             <span class="font-medium text-[var(--color-ink-strong)]">{{ $proposal['recipe_name'] }} · {{ __('production_bench.flash.batch_label', ['number' => $proposal['batch_number'], 'total' => $proposal['batch_total']]) }}</span>
-                            <span class="font-mono text-sm text-[var(--color-ink-soft)]">{{ $proposal['production_date'] }}</span>
+                            <span class="font-mono text-sm text-[var(--color-ink-soft)]">{{ $proposal['production_date'] }} → {{ $proposal['estimated_ready_on'] }}</span>
                         </div>
                         @foreach ($proposal['tasks'] as $task)
                             <div class="flex flex-col gap-1 bg-[var(--color-panel-muted)] px-4 py-2 pl-8 text-sm sm:flex-row sm:items-center sm:justify-between">

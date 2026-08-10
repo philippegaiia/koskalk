@@ -4,6 +4,7 @@ namespace App\Services\Production;
 
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionFormulaComponent;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotOrigin;
 use App\Enums\StockLotStatus;
@@ -41,12 +42,14 @@ class ProductionCompletionService
         ProductionRun $production,
         string $actualOutputQuantity,
         string $manufactureDate,
+        ?string $estimatedReadyOn = null,
         ?int $outputIngredientId = null,
     ): ProductionRun {
         return DB::transaction(function () use (
             $actor,
             $actualOutputQuantity,
             $manufactureDate,
+            $estimatedReadyOn,
             $outputIngredientId,
             $production,
         ): ProductionRun {
@@ -57,8 +60,10 @@ class ProductionCompletionService
                 ->lockForUpdate()
                 ->findOrFail($production->id);
 
+            $outputConfiguration = $this->resolveOutputConfiguration($lockedProduction, $outputIngredientId);
+            $resolvedOutputIngredientId = $outputConfiguration['output_ingredient_id'];
             $this->defaultCalculatedLyeActuals($actor, $lockedProduction);
-            $this->assertCompletable($lockedProduction, $workspace, $actualOutputQuantity, $manufactureDate, $outputIngredientId);
+            $this->assertCompletable($lockedProduction, $workspace, $actualOutputQuantity, $manufactureDate, $resolvedOutputIngredientId);
 
             $consumption = ProductionConsumption::query()
                 ->where('production_run_id', $lockedProduction->id)
@@ -137,16 +142,16 @@ class ProductionCompletionService
             // 3. Create the output lot, coded with the permanent batch number.
             //    Intermediate lots carry the producing batch's cost per gram so
             //    a downstream production prices them from this batch.
-            $isIntermediate = $outputIngredientId !== null;
+            $isIntermediate = $outputConfiguration['production_output_type'] === ProductionOutputType::ManufacturedIngredient;
             $outputQuantity = $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
             $intermediateCostPerGram = $isIntermediate && bccomp($ingredientTotal, '0', 18) > 0
                 ? bcdiv($ingredientTotal, $outputQuantity, 9)
                 : null;
-            $availableFrom = $this->readyDate($lockedProduction, $manufactureDate);
+            $confirmedReadyOn = $this->confirmedReadyOn($lockedProduction, $manufactureDate, $estimatedReadyOn);
 
             $outputLot = StockLot::query()->create([
                 'workspace_id' => $workspace->id,
-                'ingredient_id' => $isIntermediate ? $outputIngredientId : null,
+                'ingredient_id' => $isIntermediate ? $resolvedOutputIngredientId : null,
                 'packaging_item_id' => null,
                 'recipe_id' => $isIntermediate ? null : $lockedProduction->recipe_id,
                 'production_run_id' => $lockedProduction->id,
@@ -156,7 +161,8 @@ class ProductionCompletionService
                 'status' => StockLotStatus::Quarantined,
                 'stocked_at' => $manufactureDate,
                 'expires_at' => null,
-                'available_from' => $availableFrom,
+                'available_from' => null,
+                'estimated_ready_on' => $confirmedReadyOn,
                 'released_at' => null,
                 'provenance_complete' => true,
                 'historical_unit_cost' => $intermediateCostPerGram,
@@ -190,6 +196,7 @@ class ProductionCompletionService
                 'completed_at' => now(),
                 'completed_by_user_id' => $actor->id,
                 'manufacture_date' => $manufactureDate,
+                'estimated_ready_on' => $confirmedReadyOn,
                 'actual_output_units' => $isIntermediate ? null : (int) $outputQuantity,
                 'actual_output_mass_grams' => $isIntermediate ? $outputQuantity : null,
                 'cost_currency' => $currency ?: null,
@@ -201,6 +208,53 @@ class ProductionCompletionService
 
             return $lockedProduction->fresh(['requirements', 'consumption', 'outputLot']);
         }, attempts: 5);
+    }
+
+    /**
+     * @return array{production_output_type: ProductionOutputType, output_ingredient_id: int|null}
+     */
+    private function resolveOutputConfiguration(ProductionRun $production, ?int $legacyOutputIngredientId): array
+    {
+        $outputType = $production->production_output_type;
+
+        if (! $outputType instanceof ProductionOutputType) {
+            return [
+                'production_output_type' => $legacyOutputIngredientId === null
+                    ? ProductionOutputType::FinishedProduct
+                    : ProductionOutputType::ManufacturedIngredient,
+                'output_ingredient_id' => $legacyOutputIngredientId,
+            ];
+        }
+
+        if ($outputType === ProductionOutputType::ManufacturedIngredient) {
+            if ($production->output_ingredient_id === null) {
+                throw ValidationException::withMessages([
+                    'output_ingredient_id' => 'The production output ingredient is missing from its snapshot.',
+                ]);
+            }
+
+            if ($legacyOutputIngredientId !== null && $legacyOutputIngredientId !== (int) $production->output_ingredient_id) {
+                throw ValidationException::withMessages([
+                    'output_ingredient_id' => 'The production output ingredient is fixed by the production snapshot.',
+                ]);
+            }
+
+            return [
+                'production_output_type' => $outputType,
+                'output_ingredient_id' => (int) $production->output_ingredient_id,
+            ];
+        }
+
+        if ($legacyOutputIngredientId !== null) {
+            throw ValidationException::withMessages([
+                'output_ingredient_id' => 'Finished product output is fixed by the production snapshot.',
+            ]);
+        }
+
+        return [
+            'production_output_type' => $outputType,
+            'output_ingredient_id' => null,
+        ];
     }
 
     private function assertCompletable(
@@ -292,6 +346,30 @@ class ProductionCompletionService
                 'production' => 'Every actual quantity must reference a stock lot before completing.',
             ]);
         }
+    }
+
+    private function confirmedReadyOn(
+        ProductionRun $production,
+        string $manufactureDate,
+        ?string $estimatedReadyOn,
+    ): string {
+        if ($estimatedReadyOn !== null) {
+            if (! $this->isValidDate($estimatedReadyOn)) {
+                throw ValidationException::withMessages([
+                    'estimated_ready_on' => 'The estimated ready date must use YYYY-MM-DD format.',
+                ]);
+            }
+
+            return $estimatedReadyOn;
+        }
+
+        if ($production->output_ready_delay_days !== null) {
+            return Carbon::parse($manufactureDate)
+                ->addDays((int) $production->output_ready_delay_days)
+                ->toDateString();
+        }
+
+        return $this->readyDate($production, $manufactureDate);
     }
 
     private function defaultCalculatedLyeActuals(User $actor, ProductionRun $production): void

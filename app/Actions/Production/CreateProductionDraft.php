@@ -15,6 +15,7 @@ use App\Models\Workspace;
 use App\Services\MassConverter;
 use App\Services\Production\ProductionCalculatedRequirementBuilder;
 use App\Services\Production\ProductionFormulaSnapshotBuilder;
+use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionRequirementBuilder;
 use App\Services\Production\ProductionRunNumberService;
 use App\Services\Production\ProductionWorkingCalendar;
@@ -33,6 +34,7 @@ class CreateProductionDraft
         private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
         private readonly ProductionCalculatedRequirementBuilder $calculatedRequirementBuilder,
         private readonly ProductionRequirementBuilder $requirementBuilder,
+        private readonly ProductionReadyDateService $readyDates,
         private readonly ProductionRunNumberService $numbers,
         private readonly ProductionWorkingCalendar $calendar,
     ) {}
@@ -203,12 +205,16 @@ class CreateProductionDraft
                     startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
                 ),
             )->values();
+            $outputSnapshot = $this->readyDates->snapshot($lockedRecipe, $lockedWorkspace, $plannedFor);
             $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 
             $production = ProductionRun::query()->create([
                 'workspace_id' => $lockedWorkspace->id,
                 'recipe_id' => $lockedRecipe->id,
                 'recipe_version_id' => $publishedVersion->id,
+                'production_output_type' => $outputSnapshot['production_output_type'],
+                'output_ingredient_id' => $outputSnapshot['output_ingredient_id'],
+                'output_ready_delay_days' => $outputSnapshot['output_ready_delay_days'],
                 'recipe_name_snapshot' => $lockedRecipe->name,
                 'source_formula_version_number' => $publishedVersion->version_number,
                 'formula_context_snapshot' => $formulaSnapshot['context'],
@@ -217,6 +223,7 @@ class CreateProductionDraft
                 'status' => $status,
                 'source' => $source,
                 'planned_for' => $plannedFor,
+                'estimated_ready_on' => $outputSnapshot['estimated_ready_on'],
                 'basis_kind' => $basisKind,
                 'basis_quantity_grams' => $basisQuantityGrams,
                 'basis_input_value' => $basisInputValue,

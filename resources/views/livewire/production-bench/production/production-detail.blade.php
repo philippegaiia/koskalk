@@ -18,6 +18,7 @@
         <div
             x-data
             x-on:early-start-confirmation-requested.window="if (window.confirm($event.detail.message)) { $wire.confirmEarlyStart(); }"
+            x-on:early-release-confirmation-requested.window="if (window.confirm($event.detail.message)) { $wire.confirmEarlyRelease(); }"
             class="space-y-6"
         >
             @if ($isReadOnly)
@@ -60,7 +61,7 @@
                         @elseif ($primaryAction === 'complete')
                             <a data-testid="primary-production-action" href="#completion-section" class="sk-btn sk-btn-primary">{{ __('production_bench.production.complete') }}</a>
                         @elseif ($primaryAction === 'release_batch')
-                            <button type="button" data-testid="primary-production-action" wire:click="releaseOutput" wire:loading.attr="disabled" @disabled($mutationLocked || ! $release['ready']) class="sk-btn sk-btn-primary">{{ __('production_bench.production.release_batch') }}</button>
+                            <button type="button" data-testid="primary-production-action" wire:click="releaseOutput" wire:loading.attr="disabled" @disabled($mutationLocked || ! $release['tasks_complete']) class="sk-btn sk-btn-primary">{{ __('production_bench.production.release_batch') }}</button>
                         @endif
                     </div>
                 </div>
@@ -229,15 +230,21 @@
                     </div>
                     @error('production') <p role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     <div class="grid gap-4 sm:grid-cols-2">
-                        <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><select wire:model.live="outputMode" @disabled($mutationLocked) class="sk-input mt-1 w-full"><option value="units">{{ __('production_bench.production.output_units') }}</option><option value="intermediate">{{ __('production_bench.production.output_intermediate') }}</option></select></label>
+                        @if ($production->production_output_type === null)
+                            <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><select wire:model.live="outputMode" @disabled($mutationLocked) class="sk-input mt-1 w-full"><option value="units">{{ __('production_bench.production.output_units') }}</option><option value="intermediate">{{ __('production_bench.production.output_intermediate') }}</option></select></label>
+                        @else
+                            <div class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><p class="mt-1 sk-input bg-[var(--color-panel-muted)]">{{ $production->production_output_type->value === 'manufactured_ingredient' ? __('production_bench.production.output_intermediate').' · '.$production->outputIngredient?->display_name : __('production_bench.production.output_units') }}</p></div>
+                        @endif
                         <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_quantity') }}</span><input type="number" inputmode="decimal" min="0" step="any" wire:model.live="actualOutputQuantity" @disabled($mutationLocked) class="sk-input mt-1 w-full font-mono"></label>
-                        @if ($outputMode === 'intermediate')
+                        @if ($production->production_output_type === null && $outputMode === 'intermediate')
                             <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_intermediate_ingredient') }}</span><select wire:model.live="outputIngredientId" @disabled($mutationLocked) class="sk-input mt-1 w-full"><option value="">{{ __('production_bench.production.choose_intermediate') }}</option>@foreach ($intermediateIngredients as $ingredient)<option value="{{ $ingredient->id }}">{{ $ingredient->display_name }}</option>@endforeach</select></label>
                         @endif
                         <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.manufacture_date') }}</span><input type="date" wire:model.live="manufactureDate" @disabled($mutationLocked) class="sk-input mt-1 w-full"></label>
+                        <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.estimated_ready_date') }}</span><input type="date" wire:model.live="estimatedReadyOn" @disabled($mutationLocked) class="sk-input mt-1 w-full"><span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.estimated_ready_date_help') }}</span></label>
                     </div>
                     @error('actual_output_quantity') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     @error('manufacture_date') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+                    @error('estimated_ready_on') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     @error('output_ingredient_id') <p role="alert" class="text-sm text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
                     <div class="flex justify-end"><button type="button" wire:click="complete" wire:confirm="{{ __('production_bench.production.complete_confirm') }}" wire:loading.attr="disabled" @disabled($mutationLocked) class="sk-btn sk-btn-primary">{{ __('production_bench.production.complete') }}</button></div>
                 </section>
@@ -254,7 +261,7 @@
                 <section id="output-lot-section" aria-labelledby="output-lot-heading" class="sk-card overflow-hidden">
                     <div class="border-b border-[var(--color-line)] p-5 sm:p-6">
                         <div class="flex flex-wrap items-center justify-between gap-2"><h2 id="output-lot-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.output_lot') }}</h2><span class="font-mono text-sm font-semibold text-[var(--color-ink-strong)]">{{ $production->outputLot->internal_lot_code }}</span></div>
-                        <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $production->outputLot->subjectName() }} · {{ $production->outputLot->status->value === 'quarantined' ? __('production_bench.production.output_quarantined') : __('production_bench.production.output_released_label') }}@if ($production->outputLot->available_from) · {{ __('production_bench.production.output_available_from', ['date' => $production->outputLot->available_from->format('Y-m-d')]) }} @endif</p>
+                        <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $production->outputLot->subjectName() }} · {{ $production->outputLot->status->value === 'quarantined' ? __('production_bench.production.output_awaiting_release') : __('production_bench.production.output_released_label') }}@if ($production->outputLot->estimated_ready_on) · {{ __('production_bench.production.output_estimated_ready', ['date' => $production->outputLot->estimated_ready_on->format('Y-m-d')]) }} @endif</p>
                         @if ($output['actual'] !== null)
                             <div class="mt-4 grid gap-3 border-t border-[var(--color-line)] pt-4 text-sm sm:grid-cols-4">
                                 <div><p class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.output_planned') }}</p><p class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $output['planned'] }} {{ $output['unit'] }}</p></div>
@@ -270,7 +277,7 @@
                             <p class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.output_release_help') }}</p>
                             @if (! $release['ready'])
                                 <ul class="list-disc space-y-1 pl-5 text-xs text-[var(--color-warning-strong)]">
-                                    @if (! $release['ready_date_reached']) <li>{{ __('production_bench.production.release_wait_until', ['date' => $release['available_from']]) }}</li> @endif
+                                    @if (! $release['ready_date_reached']) <li>{{ __('production_bench.production.release_early_warning', ['date' => $release['estimated_ready_on']]) }}</li> @endif
                                     @if (! $release['tasks_complete']) <li>{{ __('production_bench.production.release_tasks_incomplete', ['count' => count($release['incomplete_tasks'])]) }}</li> @endif
                                 </ul>
                             @endif

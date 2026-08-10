@@ -20,6 +20,7 @@ use App\Enums\OwnerType;
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionDocumentType;
 use App\Enums\ProductionFormulaComponent;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotStatus;
 use App\Enums\StockMovementType;
@@ -466,6 +467,10 @@ it('completes intermediate output in grams against an in-house ingredient', func
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
     $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
     $intermediate = Ingredient::factory()->create(['display_name' => 'Soap base']);
+    $production->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $intermediate->id,
+    ]);
 
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
@@ -488,6 +493,69 @@ it('completes intermediate output in grams against an in-house ingredient', func
         ->and($outputLot->recipe_id)->toBeNull()
         ->and($outputLot->unit_kind->value)->toBe('mass')
         ->and($outputLot->movements()->where('type', StockMovementType::ProductionOutput)->sole()->quantity_delta)->toBe('12000.000000000');
+});
+
+it('completes configured manufactured output from the production snapshot', function (): void {
+    $fixture = productionExecutionFixture();
+    $firstOutput = Ingredient::factory()->for($fixture['workspace'])->create([
+        'display_name' => 'Turmeric oil macerate',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'is_manufactured' => true,
+        'requires_admin_review' => false,
+    ]);
+    $secondOutput = Ingredient::factory()->for($fixture['workspace'])->create([
+        'display_name' => 'Lavender oil macerate',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'is_manufactured' => true,
+        'requires_admin_review' => false,
+    ]);
+    $fixture['recipe']->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $firstOutput->id,
+        'ready_delay_days' => 4,
+    ]);
+
+    $production = productionExecutionRun($fixture, 'complete-configured-intermediate-1');
+
+    expect($production->production_output_type)->toBe(ProductionOutputType::ManufacturedIngredient)
+        ->and($production->output_ingredient_id)->toBe($firstOutput->id)
+        ->and($production->output_ready_delay_days)->toBe(4)
+        ->and($production->estimated_ready_on?->toDateString())->toBe('2026-08-24');
+
+    $fixture['recipe']->update([
+        'output_ingredient_id' => $secondOutput->id,
+        'ready_delay_days' => 30,
+    ]);
+
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '12000',
+        manufactureDate: '2026-08-20',
+        estimatedReadyOn: '2026-08-29',
+    );
+
+    $outputLot = $completed->outputLot()->sole();
+
+    expect($outputLot->ingredient_id)->toBe($firstOutput->id)
+        ->and($outputLot->recipe_id)->toBeNull()
+        ->and($outputLot->unit_kind->value)->toBe('mass')
+        ->and($outputLot->status)->toBe(StockLotStatus::Quarantined)
+        ->and($outputLot->estimated_ready_on?->toDateString())->toBe('2026-08-29')
+        ->and($outputLot->available_from)->toBeNull();
 });
 
 it('completes a production from the production sheet', function (): void {
@@ -624,15 +692,18 @@ it('releases a quarantined output lot and issues finished goods', function (): v
         app(IssueFinishedGoods::class)->handle($fixture['owner'], $outputLot, StockMovementType::Sample, '1');
     })->toThrow(ValidationException::class);
 
-    // Release before available_from is rejected.
-    $outputLot->update(['available_from' => now()->addDays(28)->toDateString()]);
+    // Release before the estimate requires explicit confirmation.
+    $outputLot->update(['estimated_ready_on' => now()->addDays(28)->toDateString()]);
     expect(function () use ($fixture, $outputLot): void {
         app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot);
     })->toThrow(ValidationException::class);
 
-    // Clear the future date and release.
-    $outputLot->update(['available_from' => null]);
-    $released = app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot, 'Cured and packed');
+    $released = app(ReleaseOutputLot::class)->handle(
+        actor: $fixture['owner'],
+        lot: $outputLot,
+        note: 'Cured and packed',
+        earlyReleaseConfirmed: true,
+    );
 
     expect($released->status->value)->toBe('released')
         ->and($released->released_at)->not->toBeNull()
@@ -685,7 +756,7 @@ it('requires all production tasks to be complete before releasing output', funct
         'completed_at' => null,
     ]);
     $outputLot = $completed->outputLot()->sole();
-    $outputLot->update(['available_from' => now()->subDay()->toDateString()]);
+    $outputLot->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
 
     expect(fn () => app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot))
         ->toThrow(ValidationException::class);
@@ -1081,6 +1152,10 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
     $fixtureA = productionExecutionFixture();
     $intermediate = Ingredient::factory()->create(['display_name' => 'Soap base']);
     $runA = productionExecutionRun($fixtureA, 'inter-a-1');
+    $runA->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $intermediate->id,
+    ]);
     $oilLotA = StockLot::query()->where('ingredient_id', $fixtureA['olive']->id)->firstOrFail();
     $packagingLotA = StockLot::query()->where('packaging_item_id', $fixtureA['packaging']->id)->firstOrFail();
     $oilLotA->update(['historical_unit_cost' => '0.012500000', 'currency' => 'EUR']);
@@ -1107,7 +1182,7 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
 
     // Manufactured output must be explicitly released and ready before it
     // can be consumed by a downstream production.
-    $intermediateLot->update(['available_from' => now()->subDay()->toDateString()]);
+    $intermediateLot->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
     $intermediateLot = app(ReleaseOutputLot::class)->handle($fixtureA['owner'], $intermediateLot);
 
     // Run B consumes the intermediate in the same workspace and prices it
@@ -1256,6 +1331,10 @@ it('subtracts downstream reservations when issuing an intermediate lot and rejec
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'issue-inter-1');
     $intermediate = Ingredient::factory()->create(['display_name' => 'Soap base']);
+    $production->update([
+        'production_output_type' => ProductionOutputType::ManufacturedIngredient,
+        'output_ingredient_id' => $intermediate->id,
+    ]);
     $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
     $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
@@ -1271,7 +1350,7 @@ it('subtracts downstream reservations when issuing an intermediate lot and rejec
         manufactureDate: '2026-08-20',
         outputIngredientId: $intermediate->id,
     );
-    $completed->outputLot()->sole()->update(['available_from' => now()->subDay()->toDateString()]);
+    $completed->outputLot()->sole()->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
     $intermediateLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
 
     // A later production reserves 4,000 g of the 12,000 g intermediate.
@@ -1323,7 +1402,7 @@ it('rejects fractional issue quantities for finished count lots', function (): v
         actualOutputQuantity: '95',
         manufactureDate: '2026-08-20',
     );
-    $completed->outputLot()->sole()->update(['available_from' => now()->subDay()->toDateString()]);
+    $completed->outputLot()->sole()->update(['estimated_ready_on' => now()->subDay()->toDateString()]);
     $finishedLot = app(ReleaseOutputLot::class)->handle($fixture['owner'], $completed->outputLot()->sole());
 
     expect(function () use ($fixture, $finishedLot): void {
@@ -1449,18 +1528,18 @@ it('sets family and task based ready dates on output lots', function (): void {
 
     // Soap, no tasks: +21 days after manufacture.
     $soap = $completeRun($fixture, 'ready-soap-1');
-    expect($soap->outputLot()->sole()->available_from?->toDateString())->toBe('2026-09-10');
+    expect($soap->outputLot()->sole()->estimated_ready_on?->toDateString())->toBe('2026-09-10');
 
-    // Cosmetic basis: +3 days.
+    // A later run snapshot is unaffected by changing formula metadata after planning.
     $cosmetic = $completeRun($fixture, 'ready-cosmetic-1', [
         'formula_context_snapshot' => ['calculation_basis' => 'total_formula'],
         'basis_kind' => 'total_formula_mass',
     ]);
-    expect($cosmetic->outputLot()->sole()->available_from?->toDateString())->toBe('2026-08-23');
+    expect($cosmetic->outputLot()->sole()->estimated_ready_on?->toDateString())->toBe('2026-09-10');
 
-    // Tasks override the family default: ready after the last task.
+    // Tasks do not override the snapshot delay; they are a separate release gate.
     $tasked = $completeRun($fixture, 'ready-task-1', [], ['2026-08-25', '2026-09-01']);
-    expect($tasked->outputLot()->sole()->available_from?->toDateString())->toBe('2026-09-01');
+    expect($tasked->outputLot()->sole()->estimated_ready_on?->toDateString())->toBe('2026-09-10');
 });
 
 it('requires the manufacture date before completing from the sheet', function (): void {

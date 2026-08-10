@@ -7,6 +7,7 @@ use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ class RescheduleProduction
     public function __construct(
         private readonly ProductionBenchAccess $access,
         private readonly ProductionWorkingCalendar $calendar,
+        private readonly ProductionReadyDateService $readyDates,
     ) {}
 
     public function handle(User $actor, ProductionRun $production, string $plannedFor): ProductionRun
@@ -56,7 +58,12 @@ class RescheduleProduction
                 ]);
             }
 
-            $lockedProduction->update(['planned_for' => $plannedFor]);
+            $lockedProduction->update([
+                'planned_for' => $plannedFor,
+                'estimated_ready_on' => $lockedProduction->output_ready_delay_days === null
+                    ? null
+                    : $this->readyDates->estimatedReadyOn($plannedFor, (int) $lockedProduction->output_ready_delay_days),
+            ]);
             $tasks = ProductionTask::query()
                 ->where('production_run_id', $lockedProduction->id)
                 ->orderBy('id')

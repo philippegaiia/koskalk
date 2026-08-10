@@ -21,6 +21,7 @@ class CompleteProduction
         ProductionRun $production,
         string $actualOutputQuantity,
         string $manufactureDate,
+        ?string $estimatedReadyOn = null,
         ?int $outputIngredientId = null,
     ): ProductionRun {
         $workspace = $production->workspace;
@@ -38,6 +39,7 @@ class CompleteProduction
             production: $production,
             actualOutputQuantity: $actualOutputQuantity,
             manufactureDate: $manufactureDate,
+            estimatedReadyOn: $estimatedReadyOn,
             outputIngredientId: $outputIngredientId,
         );
     }

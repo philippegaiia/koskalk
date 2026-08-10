@@ -159,6 +159,36 @@ it('records actual consumption during production without posting stock movements
         ->and(StockMovement::query()->count())->toBe($movementCount);
 });
 
+it('rejects actual consumption from quarantined or not-yet-available lots', function (): void {
+    $quarantinedFixture = productionExecutionFixture();
+    $quarantinedProduction = productionExecutionRun($quarantinedFixture, 'actuals-eligibility-quarantine');
+    $quarantinedRequirement = $quarantinedProduction->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $quarantinedLot = StockLot::query()->where('ingredient_id', $quarantinedFixture['olive']->id)->firstOrFail();
+    $quarantinedLot->update(['status' => StockLotStatus::Quarantined]);
+
+    expect(fn () => app(SaveProductionActuals::class)->handle($quarantinedFixture['owner'], $quarantinedProduction, [
+        [
+            'production_requirement_id' => $quarantinedRequirement->id,
+            'stock_lot_id' => $quarantinedLot->id,
+            'quantity' => '1',
+        ],
+    ]))->toThrow(ValidationException::class);
+
+    $futureFixture = productionExecutionFixture();
+    $futureProduction = productionExecutionRun($futureFixture, 'actuals-eligibility-future');
+    $futureRequirement = $futureProduction->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $futureLot = StockLot::query()->where('ingredient_id', $futureFixture['olive']->id)->firstOrFail();
+    $futureLot->update(['available_from' => '2026-08-21']);
+
+    expect(fn () => app(SaveProductionActuals::class)->handle($futureFixture['owner'], $futureProduction, [
+        [
+            'production_requirement_id' => $futureRequirement->id,
+            'stock_lot_id' => $futureLot->id,
+            'quantity' => '1',
+        ],
+    ]))->toThrow(ValidationException::class);
+});
+
 it('updates and removes actual rows before the terminal action', function (): void {
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'actuals-2');
@@ -1074,6 +1104,11 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
     expect($intermediateLot->historical_unit_cost)->toBe('0.011458333')
         ->and($intermediateLot->currency)->toBe('EUR')
         ->and($intermediateLot->costing_currency)->toBe('EUR');
+
+    // Manufactured output must be explicitly released and ready before it
+    // can be consumed by a downstream production.
+    $intermediateLot->update(['available_from' => now()->subDay()->toDateString()]);
+    $intermediateLot = app(ReleaseOutputLot::class)->handle($fixtureA['owner'], $intermediateLot);
 
     // Run B consumes the intermediate in the same workspace and prices it
     // from run A.

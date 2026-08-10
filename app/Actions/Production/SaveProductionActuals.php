@@ -5,6 +5,7 @@ namespace App\Actions\Production;
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotStatus;
 use App\Models\ProductionConsumption;
 use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRequirement;
@@ -136,7 +137,13 @@ class SaveProductionActuals
                     continue;
                 }
 
-                $lot = $this->resolveLot($requirement, $row['stock_lot_id'] ?? null, $lockedWorkspace, $index);
+                $lot = $this->resolveLot(
+                    $requirement,
+                    $lockedProduction,
+                    $row['stock_lot_id'] ?? null,
+                    $lockedWorkspace,
+                    $index,
+                );
 
                 if (! $lot instanceof StockLot) {
                     throw ValidationException::withMessages([
@@ -169,6 +176,7 @@ class SaveProductionActuals
 
     private function resolveLot(
         ProductionRequirement $requirement,
+        ProductionRun $production,
         mixed $stockLotId,
         Workspace $workspace,
         int $index,
@@ -189,9 +197,19 @@ class SaveProductionActuals
             ]);
         }
 
+        $eligibilityDate = $production->planned_for?->toDateString() ?? now()->toDateString();
+
+        if ($lot->status !== StockLotStatus::Released
+            || ($lot->available_from?->toDateString() !== null && $lot->available_from->toDateString() > $eligibilityDate)
+            || ($lot->expires_at?->toDateString() !== null && $lot->expires_at->toDateString() < $eligibilityDate)) {
+            throw ValidationException::withMessages([
+                "rows.{$index}.stock_lot_id" => 'The stock lot is not released and available for this production.',
+            ]);
+        }
+
         $subjectMatches = $requirement->ingredient_id !== null
-            ? $lot->ingredient_id === $requirement->ingredient_id
-            : $lot->packaging_item_id === $requirement->packaging_item_id;
+            ? $lot->ingredient_id === $requirement->ingredient_id && $lot->packaging_item_id === null
+            : $lot->packaging_item_id === $requirement->packaging_item_id && $lot->ingredient_id === null;
 
         if (! $subjectMatches) {
             throw ValidationException::withMessages([

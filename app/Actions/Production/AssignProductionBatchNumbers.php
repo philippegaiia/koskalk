@@ -4,6 +4,7 @@ namespace App\Actions\Production;
 
 use App\Enums\ProductionRunStatus;
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberIssuance;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\Production\ProductionRunNumberService;
@@ -72,7 +73,16 @@ class AssignProductionBatchNumbers
 
             foreach ($eligible as $offset => $production) {
                 $serial = $settings->next_permanent_serial + $offset;
-                $production->update($this->numbers->permanentAssignmentValues($candidates[$offset], $serial, $actor));
+                $assignment = $this->numbers->permanentAssignmentValues($candidates[$offset], $serial, $actor);
+                ProductionRunNumberIssuance::query()->create([
+                    'workspace_id' => $lockedWorkspace->id,
+                    'production_run_id' => $production->id,
+                    'batch_number' => $assignment['batch_number'],
+                    'serial' => $assignment['batch_number_serial'],
+                    'issued_by_user_id' => $assignment['batch_number_assigned_by_user_id'],
+                    'issued_at' => $assignment['batch_number_assigned_at'],
+                ]);
+                $production->update($assignment);
             }
 
             if ($eligible->isNotEmpty()) {

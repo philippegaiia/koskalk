@@ -2,6 +2,7 @@
 
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CancelProduction;
+use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\SaveProductionRunNumberSettings;
 use App\Enums\ProductionRunStatus;
@@ -10,6 +11,7 @@ use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberIssuance;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\StockLot;
 use App\Models\StockMovement;
@@ -397,6 +399,25 @@ it('retains permanent number audit metadata when a production is cancelled', fun
         ->and($cancelled->batch_number_assigned_at?->equalTo($assigned->batch_number_assigned_at))->toBeTrue()
         ->and($workspaceQueryIndex)->toBeLessThan($productionQueryIndex)
         ->and(str_contains(strtolower($productionLockQuery), 'workspace_id'))->toBeTrue();
+});
+
+it('rejects reissuing a permanent number after its production is deleted', function (): void {
+    [$owner, $workspace] = activeProductionNumberingWorkspace();
+    $run = productionNumberingRun($workspace);
+    $assignment = new AssignProductionBatchNumbers(new ProductionBenchAccess, new ProductionRunNumberService);
+
+    $assignment->handle($owner, $workspace, [$run->id]);
+    $issuedNumber = $run->fresh()->batch_number;
+
+    app(DeleteProductionRun::class)->handle($owner, $run->fresh());
+
+    expect(fn () => (new SaveProductionRunNumberSettings(new ProductionBenchAccess, new ProductionRunNumberService))
+        ->handle($owner, $workspace, 'B-', '', 5, 1))
+        ->toThrow(ValidationException::class)
+        ->and(ProductionRunNumberIssuance::query()->where('workspace_id', $workspace->id)->sole()->batch_number)
+        ->toBe($issuedNumber)
+        ->and(ProductionRunNumberIssuance::query()->where('workspace_id', $workspace->id)->sole()->production_run_id)
+        ->toBeNull();
 });
 
 it('serializes settings initialization against a concurrent PostgreSQL workspace lock', function (): void {

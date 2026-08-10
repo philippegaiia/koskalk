@@ -3,6 +3,7 @@
 namespace App\Services\Production;
 
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberIssuance;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
@@ -106,6 +107,10 @@ class ProductionRunNumberService
                 $query->whereIn('planning_batch_number', $identities)
                     ->orWhereIn('batch_number', $identities);
             })
-            ->exists();
+            ->exists()
+            || ProductionRunNumberIssuance::query()
+                ->where('workspace_id', $workspaceId)
+                ->whereIn('batch_number', $identities)
+                ->exists();
     }
 }

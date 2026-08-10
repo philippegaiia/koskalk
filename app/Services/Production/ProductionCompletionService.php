@@ -147,8 +147,9 @@ class ProductionCompletionService
             //    a downstream production prices them from this batch.
             $isIntermediate = $outputConfiguration['production_output_type'] === ProductionOutputType::ManufacturedIngredient;
             $outputQuantity = $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
-            $intermediateCostPerGram = $isIntermediate && bccomp($ingredientTotal, '0', 18) > 0
-                ? bcdiv($ingredientTotal, $outputQuantity, 9)
+            $totalCost = bcadd($ingredientTotal, $packagingTotal, 9);
+            $intermediateCostPerGram = $isIntermediate && bccomp($totalCost, '0', 18) > 0
+                ? bcdiv($totalCost, $outputQuantity, 9)
                 : null;
             $confirmedReadyOn = $this->confirmedReadyOn($lockedProduction, $manufactureDate, $estimatedReadyOn);
 
@@ -189,7 +190,6 @@ class ProductionCompletionService
             ]);
 
             // 5. Close the run with the actual cost snapshot.
-            $totalCost = bcadd($ingredientTotal, $packagingTotal, 9);
             $costPerUnit = bccomp($outputQuantity, '0', self::GuardScale) > 0
                 ? bcdiv($totalCost, $outputQuantity, 9)
                 : null;

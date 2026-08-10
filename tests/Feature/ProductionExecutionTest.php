@@ -1299,8 +1299,8 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
     );
     $intermediateLot = $completedA->outputLot()->sole();
 
-    // 137.50 / 12,000 g = 0.011458333 per gram, in EUR.
-    expect($intermediateLot->historical_unit_cost)->toBe('0.011458333')
+    // €137.50 ingredients + €49.00 packaging / 12,000 g = €0.015541666 per gram.
+    expect($intermediateLot->historical_unit_cost)->toBe('0.015541666')
         ->and($intermediateLot->currency)->toBe('EUR')
         ->and($intermediateLot->costing_currency)->toBe('EUR');
 
@@ -1327,8 +1327,8 @@ it('prices an intermediate output lot per gram and propagates it downstream', fu
         manufactureDate: '2026-08-22',
     );
 
-    // 6,000 g × €0.011458333 = €68.749998 — never a silent zero.
-    expect($completedB->actual_ingredient_total)->toBe('68.749998000')
+    // 6,000 g × €0.015541666 = €93.249996 — never a silent zero.
+    expect($completedB->actual_ingredient_total)->toBe('93.249996000')
         ->and($completedB->cost_currency)->toBe('EUR');
 });
 

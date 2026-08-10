@@ -48,87 +48,97 @@ class GenerateProductionTasks
 
             $this->access->assertWritable($actor, $lockedWorkspace);
 
-            if (! in_array($lockedProduction->status, [
-                ProductionRunStatus::Draft,
-                ProductionRunStatus::Scheduled,
-                ProductionRunStatus::Reserved,
-            ], true)) {
-                throw ValidationException::withMessages([
-                    'production' => 'Tasks can only be generated before production starts.',
-                ]);
-            }
-
-            if (ProductionTask::query()
-                ->where('production_run_id', $lockedProduction->id)
-                ->exists()) {
-                return $lockedProduction->fresh(['requirements', 'tasks']);
-            }
-
-            if ($lockedProduction->planned_for === null) {
-                return $lockedProduction->fresh(['requirements', 'tasks']);
-            }
-
-            $taskSet = $this->resolveTaskSet($lockedProduction, $lockedWorkspace);
-
-            if ($taskSet === null || ! $taskSet->is_active) {
-                return $lockedProduction->fresh(['requirements', 'tasks']);
-            }
-
-            $items = $taskSet->items()->with('taskType.department')->lockForUpdate()->get();
-
-            if ($items->isEmpty()) {
-                return $lockedProduction->fresh(['requirements', 'tasks']);
-            }
-
-            if (! $items->contains(fn ($item): bool => (int) $item->days_after_production === 0)) {
-                throw ValidationException::withMessages([
-                    'production_task_set' => 'The task set must include a production-day task.',
-                ]);
-            }
-
-            if ((int) $lockedProduction->production_task_set_id !== (int) $taskSet->id) {
-                $lockedProduction->update(['production_task_set_id' => $taskSet->id]);
-            }
-
-            foreach ($items as $item) {
-                if ($item->taskType === null || (int) $item->taskType->workspace_id !== (int) $lockedWorkspace->id) {
-                    throw ValidationException::withMessages([
-                        'production' => 'Every production task must belong to the active workspace.',
-                    ]);
-                }
-
-                if ($item->taskType->department_id !== null
-                    && ($item->taskType->department === null
-                        || (int) $item->taskType->department->workspace_id !== (int) $lockedWorkspace->id)) {
-                    throw ValidationException::withMessages([
-                        'production' => 'Every production task department must belong to the active workspace.',
-                    ]);
-                }
-
-                $scheduledFor = $this->calendar->dateRelativeToProduction(
-                    $lockedWorkspace,
-                    $lockedProduction->planned_for,
-                    (int) $item->days_after_production,
-                )->toDateString();
-
-                $lockedProduction->tasks()->create([
-                    'workspace_id' => $lockedWorkspace->id,
-                    'production_task_set_id' => $taskSet->id,
-                    'production_task_set_item_id' => $item->id,
-                    'name_snapshot' => $item->taskType->name,
-                    'colour_snapshot' => $item->taskType->colour,
-                    'department_id' => $item->taskType->department?->is_active === true
-                        ? $item->taskType->department_id
-                        : null,
-                    'days_after_production' => $item->days_after_production,
-                    'duration_minutes' => $item->duration_minutes ?? $item->taskType->default_duration_minutes,
-                    'scheduled_for' => $scheduledFor,
-                    'scheduling_mode' => 'automatic',
-                ]);
-            }
-
-            return $lockedProduction->fresh(['requirements', 'tasks']);
+            return $this->generateForLockedProduction($actor, $lockedProduction, $lockedWorkspace);
         }, attempts: 5);
+    }
+
+    public function generateForLockedProduction(
+        User $actor,
+        ProductionRun $lockedProduction,
+        Workspace $lockedWorkspace,
+    ): ProductionRun {
+        $this->access->assertWritable($actor, $lockedWorkspace);
+
+        if (! in_array($lockedProduction->status, [
+            ProductionRunStatus::Draft,
+            ProductionRunStatus::Scheduled,
+            ProductionRunStatus::Reserved,
+        ], true)) {
+            throw ValidationException::withMessages([
+                'production' => 'Tasks can only be generated before production starts.',
+            ]);
+        }
+
+        if (ProductionTask::query()
+            ->where('production_run_id', $lockedProduction->id)
+            ->exists()) {
+            return $lockedProduction->fresh(['requirements', 'tasks']);
+        }
+
+        if ($lockedProduction->planned_for === null) {
+            return $lockedProduction->fresh(['requirements', 'tasks']);
+        }
+
+        $taskSet = $this->resolveTaskSet($lockedProduction, $lockedWorkspace);
+
+        if ($taskSet === null || ! $taskSet->is_active) {
+            return $lockedProduction->fresh(['requirements', 'tasks']);
+        }
+
+        $items = $taskSet->items()->with('taskType.department')->lockForUpdate()->get();
+
+        if ($items->isEmpty()) {
+            return $lockedProduction->fresh(['requirements', 'tasks']);
+        }
+
+        if (! $items->contains(fn ($item): bool => (int) $item->days_after_production === 0)) {
+            throw ValidationException::withMessages([
+                'production_task_set' => 'The task set must include a production-day task.',
+            ]);
+        }
+
+        if ((int) $lockedProduction->production_task_set_id !== (int) $taskSet->id) {
+            $lockedProduction->update(['production_task_set_id' => $taskSet->id]);
+        }
+
+        foreach ($items as $item) {
+            if ($item->taskType === null || (int) $item->taskType->workspace_id !== (int) $lockedWorkspace->id) {
+                throw ValidationException::withMessages([
+                    'production' => 'Every production task must belong to the active workspace.',
+                ]);
+            }
+
+            if ($item->taskType->department_id !== null
+                && ($item->taskType->department === null
+                    || (int) $item->taskType->department->workspace_id !== (int) $lockedWorkspace->id)) {
+                throw ValidationException::withMessages([
+                    'production' => 'Every production task department must belong to the active workspace.',
+                ]);
+            }
+
+            $scheduledFor = $this->calendar->dateRelativeToProduction(
+                $lockedWorkspace,
+                $lockedProduction->planned_for,
+                (int) $item->days_after_production,
+            )->toDateString();
+
+            $lockedProduction->tasks()->create([
+                'workspace_id' => $lockedWorkspace->id,
+                'production_task_set_id' => $taskSet->id,
+                'production_task_set_item_id' => $item->id,
+                'name_snapshot' => $item->taskType->name,
+                'colour_snapshot' => $item->taskType->colour,
+                'department_id' => $item->taskType->department?->is_active === true
+                    ? $item->taskType->department_id
+                    : null,
+                'days_after_production' => $item->days_after_production,
+                'duration_minutes' => $item->duration_minutes ?? $item->taskType->default_duration_minutes,
+                'scheduled_for' => $scheduledFor,
+                'scheduling_mode' => 'automatic',
+            ]);
+        }
+
+        return $lockedProduction->fresh(['requirements', 'tasks']);
     }
 
     private function resolveTaskSet(ProductionRun $production, Workspace $workspace): ?ProductionTaskSet

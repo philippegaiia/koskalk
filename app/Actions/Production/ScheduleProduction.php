@@ -45,7 +45,7 @@ class ScheduleProduction
             ]);
         }
 
-        $scheduled = DB::transaction(function () use ($actor, $production, $plannedFor): ProductionRun {
+        return DB::transaction(function () use ($actor, $production, $plannedFor): ProductionRun {
             $lockedProduction = ProductionRun::query()
                 ->lockForUpdate()
                 ->findOrFail($production->id);
@@ -77,10 +77,12 @@ class ScheduleProduction
                 'estimated_ready_on' => $estimatedReadyOn,
             ]);
 
-            return $lockedProduction->fresh('requirements');
+            return $this->generateProductionTasks->generateForLockedProduction(
+                actor: $actor,
+                lockedProduction: $lockedProduction,
+                lockedWorkspace: $lockedWorkspace,
+            );
         }, attempts: 5);
-
-        return $this->generateProductionTasks->handle($actor, $scheduled);
     }
 
     private function isValidDate(string $date): bool

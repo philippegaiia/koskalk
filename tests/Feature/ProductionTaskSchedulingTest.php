@@ -1,6 +1,7 @@
 <?php
 
 use App\Actions\Production\CompleteProductionTask;
+use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\GenerateProductionTasks;
 use App\Actions\Production\PlanProduction;
 use App\Actions\Production\ReopenProductionTask;
@@ -11,6 +12,7 @@ use App\Actions\Production\SaveEmployee;
 use App\Actions\Production\SaveProductionHoliday;
 use App\Actions\Production\SaveProductionTaskSet;
 use App\Actions\Production\SaveProductionTaskType;
+use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Enums\OwnerType;
 use App\Enums\ProductionRunStatus;
@@ -19,6 +21,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\ProductionTask;
 use App\Models\ProductionTaskSet;
+use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -325,6 +328,46 @@ it('does not duplicate tasks when generation is retried', function (): void {
     app(GenerateProductionTasks::class)->handle($fixture['owner'], $production->fresh());
 
     expect($production->tasks()->count())->toBe(1);
+});
+
+it('rolls back draft scheduling when task generation fails', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $foreign = productionTaskSchedulingFixture();
+    $foreignType = productionTaskSchedulingType($foreign, 'Foreign task');
+    $taskSet = ProductionTaskSet::factory()->for($fixture['workspace'])->create([
+        'is_active' => true,
+    ]);
+    ProductionTaskSetItem::factory()
+        ->for($taskSet, 'taskSet')
+        ->for($foreignType, 'taskType')
+        ->create([
+            'position' => 1,
+            'days_after_production' => 0,
+        ]);
+    $taskSet->recipes()->attach($fixture['recipe']->id, ['is_default' => true]);
+
+    $draft = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '1',
+        basisInputUnit: 'kg',
+        expectedUnits: 10,
+        idempotencyKey: 'schedule-task-rollback-1',
+        taskSet: $taskSet,
+    );
+
+    expect(fn (): ProductionRun => app(ScheduleProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $draft,
+        plannedFor: '2026-08-10',
+    ))->toThrow(ValidationException::class);
+
+    $fresh = $draft->fresh();
+    expect($fresh->status)->toBe(ProductionRunStatus::Draft)
+        ->and($fresh->planned_for)->toBeNull()
+        ->and($fresh->estimated_ready_on)->toBeNull()
+        ->and($fresh->tasks()->count())->toBe(0);
 });
 
 /**

@@ -23,6 +23,8 @@ class EditIngredient extends EditRecord
 
     protected static string $resource = IngredientResource::class;
 
+    public static bool $formActionsAreSticky = true;
+
     protected function getHeaderActions(): array
     {
         return [

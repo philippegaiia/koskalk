@@ -124,6 +124,20 @@ it('shows the manual classification helper on admin ingredient create and edit f
         ->assertSee('disabled', escape: false);
 });
 
+it('keeps ingredient create and edit form actions sticky', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $this->actingAs($admin);
+
+    expect(Livewire::test(CreateIngredient::class)->instance()->areFormActionsSticky())
+        ->toBeTrue()
+        ->and(Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])->instance()->areFormActionsSticky())
+        ->toBeTrue();
+});
+
 it('generates an ingredient classification prompt from unsaved admin edit state', function (): void {
     $admin = User::factory()->admin()->create();
     $ingredient = Ingredient::factory()->create([

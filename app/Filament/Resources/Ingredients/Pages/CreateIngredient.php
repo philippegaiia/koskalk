@@ -15,6 +15,8 @@ class CreateIngredient extends CreateRecord
 
     protected static string $resource = IngredientResource::class;
 
+    public static bool $formActionsAreSticky = true;
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>

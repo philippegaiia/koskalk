@@ -3,6 +3,7 @@
 use App\Actions\Production\CancelProduction;
 use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\ReleaseProductionStock;
+use App\Actions\Production\RescheduleProduction;
 use App\Actions\Production\UpdateProductionPlan;
 use App\Enums\ProductionRequirementKind;
 use App\Enums\ProductionRunStatus;
@@ -186,6 +187,33 @@ it('releases reservations without deleting history and returns the production to
     expect($released->status)->toBe(ProductionRunStatus::Scheduled)
         ->and(StockReservation::query()->count())->toBe(1)
         ->and(StockReservation::query()->sole()->status)->toBe(StockReservationStatus::Released)
+        ->and(StockReservation::query()->sole()->released_at)->not->toBeNull();
+});
+
+it('releases prepared stock and returns a production to scheduled when it is rescheduled', function (): void {
+    $fixture = productionStockPreparationFixture();
+    $production = productionStockProduction($fixture, ProductionRunStatus::Scheduled);
+    productionStockIngredientRequirement($production, $fixture['ingredient'], '10.000000000');
+    productionStockLot($fixture, $fixture['ingredient'], '20.000000000', '2026-08-25');
+
+    app(PrepareProductionStock::class)->handle($fixture['owner'], [$production->id], 'prepare-reschedule');
+
+    $rescheduled = app(RescheduleProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        plannedFor: '2026-08-24',
+    );
+
+    expect($rescheduled->status)->toBe(ProductionRunStatus::Scheduled)
+        ->and($rescheduled->planned_for->toDateString())->toBe('2026-08-24')
+        ->and(StockReservation::query()
+            ->where('production_run_id', $production->id)
+            ->where('status', StockReservationStatus::Active)
+            ->count())->toBe(0)
+        ->and(StockReservation::query()
+            ->where('production_run_id', $production->id)
+            ->where('status', StockReservationStatus::Released)
+            ->count())->toBe(1)
         ->and(StockReservation::query()->sole()->released_at)->not->toBeNull();
 });
 

@@ -57,6 +57,12 @@ class CreateProductionDraft
             ]);
         }
 
+        if ($status === ProductionRunStatus::Scheduled && $plannedFor === null) {
+            throw ValidationException::withMessages([
+                'planned_for' => __('production_bench.production.validation.planned_date_required'),
+            ]);
+        }
+
         $expectedUnits = $this->normalizeExpectedUnits($expectedUnits);
         $this->validateInput($basisInputValue, $expectedUnits, $idempotencyKey, $plannedFor);
 

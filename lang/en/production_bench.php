@@ -513,6 +513,9 @@ return [
         'cancel_reason_invalid' => 'Enter a cancellation reason of at most 1000 characters.',
         'cancel_not_allowed' => 'Only draft, planned, or stock-prepared productions can be cancelled here.',
         'workspace_missing' => 'The production workspace could not be found.',
+        'validation' => [
+            'planned_date_required' => 'A production date is required when planning production.',
+        ],
         'status' => [
             'draft' => 'Draft',
             'scheduled' => 'Planned',

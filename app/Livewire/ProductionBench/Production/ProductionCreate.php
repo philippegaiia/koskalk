@@ -115,7 +115,7 @@ class ProductionCreate extends Component
             'basisInputValue' => ['required', 'numeric', 'gt:0'],
             'basisInputUnit' => ['required', 'in:g,kg,oz,lb'],
             'expectedUnits' => ['required', 'integer', 'min:1'],
-            'plannedFor' => ['nullable', 'date_format:Y-m-d'],
+            'plannedFor' => ['required', 'date_format:Y-m-d'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -136,7 +136,7 @@ class ProductionCreate extends Component
                 basisInputUnit: $this->basisInputUnit,
                 expectedUnits: $this->expectedUnits,
                 idempotencyKey: $this->idempotencyKey,
-                plannedFor: filled($this->plannedFor) ? $this->plannedFor : null,
+                plannedFor: $this->plannedFor,
                 notes: filled($this->notes) ? $this->notes : null,
                 source: ProductionRunSource::Direct,
                 taskSet: $this->selectedTaskSet(),

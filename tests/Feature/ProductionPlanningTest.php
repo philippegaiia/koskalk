@@ -67,6 +67,24 @@ it('rejects archived products before creating a production plan', function (): v
     expect($fixture['workspace']->productionRuns()->count())->toBe(0);
 });
 
+it('rejects a planned production without a date at the action boundary', function (): void {
+    $fixture = productionPlanningTask2Fixture();
+
+    expect(fn (): ProductionRun => app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '12',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'planned-without-date',
+        plannedFor: null,
+        status: ProductionRunStatus::Scheduled,
+    ))->toThrow(ValidationException::class);
+
+    expect($fixture['workspace']->productionRuns()->count())->toBe(0);
+});
+
 it('scales soap ingredient requirements from the initial oil mass and packaging from expected units', function (): void {
     $fixture = productionPlanningTask2Fixture();
     $oil = Ingredient::factory()->create(['display_name' => 'Olive oil']);
@@ -935,6 +953,7 @@ it('deletes draft and scheduled runs without reservations, including numbered ru
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 100,
         idempotencyKey: 'delete-scheduled-1',
+        plannedFor: '2026-08-20',
         status: ProductionRunStatus::Scheduled,
     );
     $numbered = app(CreateProductionDraft::class)->handle(
@@ -1056,6 +1075,7 @@ it('rejects deleting a numbered run with active reservations at the database bou
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 100,
         idempotencyKey: 'delete-trigger-1',
+        plannedFor: '2026-08-20',
         status: ProductionRunStatus::Scheduled,
     );
     $production->update([
@@ -1098,6 +1118,7 @@ it('rejects starting before the run is reserved', function (string $status): voi
         basisInputUnit: MassUnit::Kilogram,
         expectedUnits: 100,
         idempotencyKey: 'start-status-'.fake()->unique()->numberBetween(1, 99999),
+        plannedFor: '2026-08-20',
         status: $status === ProductionRunStatus::Scheduled->value
             ? ProductionRunStatus::Scheduled
             : ProductionRunStatus::Draft,

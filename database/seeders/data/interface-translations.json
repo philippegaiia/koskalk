@@ -12463,6 +12463,83 @@
     },
     {
       "group": "production_bench",
+      "key": "production.validation.output_lot_unlinked",
+      "text": {
+        "de": "Das Ausgabelos ist keiner Produktionscharge zugeordnet.",
+        "es": "El lote de salida no está vinculado a una producción.",
+        "fr": "Le lot de sortie n’est lié à aucune production.",
+        "it": "Il lotto di output non è collegato a una produzione.",
+        "nl": "De uitvoerpartij is niet gekoppeld aan een productie."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_lot_workspace_missing",
+      "text": {
+        "de": "Der Arbeitsbereich des Ausgabeloses konnte nicht gefunden werden.",
+        "es": "No se pudo encontrar el espacio de trabajo del lote de salida.",
+        "fr": "L’espace de travail du lot de sortie est introuvable.",
+        "it": "Impossibile trovare lo spazio di lavoro del lotto di output.",
+        "nl": "De werkruimte van de uitvoerpartij kon niet worden gevonden."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_production_missing",
+      "text": {
+        "de": "Die ursprüngliche Produktionscharge konnte nicht gefunden werden.",
+        "es": "No se pudo encontrar la producción de origen.",
+        "fr": "La production d’origine est introuvable.",
+        "it": "Impossibile trovare la produzione di origine.",
+        "nl": "De oorspronkelijke productie kon niet worden gevonden."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_release_requires_completed",
+      "text": {
+        "de": "Nur Ausgaben einer abgeschlossenen Produktion können freigegeben werden.",
+        "es": "Solo se puede liberar la salida de una producción completada.",
+        "fr": "Seule la sortie d’une production terminée peut être libérée.",
+        "it": "Può essere rilasciato solo l’output di una produzione completata.",
+        "nl": "Alleen uitvoer van een voltooide productie kan worden vrijgegeven."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_release_requires_production_lot",
+      "text": {
+        "de": "Nur Produktionsausgabelose können freigegeben werden.",
+        "es": "Solo se pueden liberar lotes de salida de producción.",
+        "fr": "Seuls les lots de sortie de production peuvent être libérés.",
+        "it": "Possono essere rilasciati solo lotti di output della produzione.",
+        "nl": "Alleen productie-uitvoerpartijen kunnen worden vrijgegeven."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_release_requires_quarantined",
+      "text": {
+        "de": "Nur ein Ausgabelos in Quarantäne kann freigegeben werden.",
+        "es": "Solo se puede liberar un lote de salida en cuarentena.",
+        "fr": "Seul un lot de sortie en quarantaine peut être libéré.",
+        "it": "Può essere rilasciato solo un lotto di output in quarantena.",
+        "nl": "Alleen een uitvoerpartij in quarantaine kan worden vrijgegeven."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.output_release_tasks_incomplete",
+      "text": {
+        "de": "Schließen Sie die verbleibenden Produktionsaufgaben ab, bevor Sie diese Ausgabe freigeben: :tasks.",
+        "es": "Complete las tareas de producción restantes antes de liberar esta salida: :tasks.",
+        "fr": "Terminez les tâches de production restantes avant de libérer cette sortie : :tasks.",
+        "it": "Completa le attività di produzione rimanenti prima di rilasciare questo output: :tasks.",
+        "nl": "Voltooi de resterende productietaken voordat u deze uitvoer vrijgeeft: :tasks."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.validation.output_snapshot_finished_fixed",
       "text": {
         "de": "Der Fertigproduktausgang ist durch den Produktions-Schnappschuss festgelegt.",

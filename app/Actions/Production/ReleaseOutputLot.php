@@ -42,7 +42,7 @@ class ReleaseOutputLot
 
             if (! $workspace instanceof Workspace) {
                 throw ValidationException::withMessages([
-                    'lot' => 'The output lot workspace could not be found.',
+                    'lot' => __('production_bench.production.validation.output_lot_workspace_missing'),
                 ]);
             }
 
@@ -50,7 +50,7 @@ class ReleaseOutputLot
 
             if ($lotReference->production_run_id === null) {
                 throw ValidationException::withMessages([
-                    'lot' => 'The output lot is not linked to a production run.',
+                    'lot' => __('production_bench.production.validation.output_lot_unlinked'),
                 ]);
             }
 
@@ -61,7 +61,7 @@ class ReleaseOutputLot
 
             if (! $production instanceof ProductionRun) {
                 throw ValidationException::withMessages([
-                    'lot' => 'The originating production run could not be found.',
+                    'lot' => __('production_bench.production.validation.output_production_missing'),
                 ]);
             }
 
@@ -78,19 +78,19 @@ class ReleaseOutputLot
 
             if ($production->status !== ProductionRunStatus::Completed) {
                 throw ValidationException::withMessages([
-                    'lot' => 'Only output from a completed production can be released.',
+                    'lot' => __('production_bench.production.validation.output_release_requires_completed'),
                 ]);
             }
 
             if ($lockedLot->origin !== StockLotOrigin::ProductionOutput) {
                 throw ValidationException::withMessages([
-                    'lot' => 'Only production output lots can be released.',
+                    'lot' => __('production_bench.production.validation.output_release_requires_production_lot'),
                 ]);
             }
 
             if ($lockedLot->status !== StockLotStatus::Quarantined) {
                 throw ValidationException::withMessages([
-                    'lot' => 'Only a quarantined output lot can be released.',
+                    'lot' => __('production_bench.production.validation.output_release_requires_quarantined'),
                 ]);
             }
 
@@ -108,7 +108,9 @@ class ReleaseOutputLot
 
             if ($incompleteTasks->isNotEmpty()) {
                 throw ValidationException::withMessages([
-                    'lot' => 'Complete the remaining production tasks before releasing this output: '.$incompleteTasks->pluck('name_snapshot')->implode(', ').'.',
+                    'lot' => __('production_bench.production.validation.output_release_tasks_incomplete', [
+                        'tasks' => $incompleteTasks->pluck('name_snapshot')->implode(', '),
+                    ]),
                 ]);
             }
 

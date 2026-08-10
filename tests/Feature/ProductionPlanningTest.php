@@ -1101,6 +1101,32 @@ it('rejects deleting a numbered run with active reservations at the database bou
         ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
 });
 
+it('rejects deleting an unnumbered run with active reservations at the database boundary', function (): void {
+    $fixture = productionPlanningTask3SoapFixture();
+    $production = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14',
+        basisInputUnit: MassUnit::Kilogram,
+        expectedUnits: 100,
+        idempotencyKey: 'delete-unnumbered-trigger-1',
+        plannedFor: '2026-08-20',
+        status: ProductionRunStatus::Scheduled,
+    );
+    StockReservation::factory()->create([
+        'workspace_id' => $fixture['workspace']->id,
+        'production_run_id' => $production->id,
+        'production_requirement_id' => $production->requirements()->firstOrFail()->id,
+        'stock_lot_id' => StockLot::factory()->released()->for($fixture['workspace'])->create()->id,
+        'created_by_user_id' => $fixture['owner']->id,
+    ]);
+
+    expect($production->batch_number)->toBeNull()
+        ->and(fn (): ?bool => $production->delete())->toThrow(QueryException::class)
+        ->and(ProductionRun::query()->find($production->id))->not->toBeNull();
+});
+
 it('keeps a partially prepared soap run planned until lye coverage is complete', function (): void {
     $fixture = productionPlanningTask3SoapFixture();
     $production = app(CreateProductionDraft::class)->handle(

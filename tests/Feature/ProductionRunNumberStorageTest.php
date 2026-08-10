@@ -244,8 +244,9 @@ it('enforces permanent number integrity on PostgreSQL', function (): void {
     ]))->toThrow(QueryException::class)
         ->and(fn (): int => ProductionRun::query()->whereKey($run->id)->update([
             'batch_number_assigned_at' => now()->addMinute(),
-        ]))->toThrow(QueryException::class)
-        ->and(fn (): ?bool => $run->fresh()->delete())->toThrow(QueryException::class);
+        ]))->toThrow(QueryException::class);
+
+    expect($run->fresh()->delete())->toBeTrue();
 });
 
 it('serializes PostgreSQL workspace number writes before cross-field collision checks', function (): void {
@@ -262,7 +263,7 @@ it('serializes PostgreSQL workspace number writes before cross-field collision c
 });
 
 it('ships a forward migration that reapplies production run number hardening', function (): void {
-    $migrationPath = database_path('migrations/2026_08_05_120004_harden_production_run_number_integrity.php');
+    $migrationPath = database_path('migrations/2026_08_10_180000_harden_production_run_reservation_delete_guard.php');
 
     expect(is_file($migrationPath))->toBeTrue();
 
@@ -282,7 +283,9 @@ it('ships a forward migration that reapplies production run number hardening', f
     expect(fn (): int => ProductionRun::query()->whereKey($run->id)->update([
         'batch_number' => 'B-24002',
     ]))->toThrow(QueryException::class)
-        ->and(fn (): ?bool => $assigner->delete())->toThrow(QueryException::class)
+        ->and(fn (): ?bool => $assigner->delete())->toThrow(QueryException::class);
+
+    expect($run->fresh()->delete())->toBeTrue()
         ->and(fn (): mixed => $migration->down())
         ->toThrow(RuntimeException::class, 'forward-only');
 });

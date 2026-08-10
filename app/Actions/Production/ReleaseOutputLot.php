@@ -2,10 +2,14 @@
 
 namespace App\Actions\Production;
 
+use App\Enums\ProductionRunStatus;
 use App\Enums\StockLotOrigin;
 use App\Enums\StockLotStatus;
+use App\Models\ProductionRun;
+use App\Models\ProductionTask;
 use App\Models\StockLot;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -17,18 +21,62 @@ class ReleaseOutputLot
     ) {}
 
     /**
-     * Release a quarantined output lot. Release is blocked until the lot's
-     * availability date has passed, so curing delays are respected.
+     * Release a quarantined output lot after its ready date and all linked
+     * production tasks have been completed.
      */
     public function handle(User $actor, StockLot $lot, ?string $note = null): StockLot
     {
         $this->access->assertWritable($actor, $lot->workspace);
 
         return DB::transaction(function () use ($actor, $lot, $note): StockLot {
+            $lotReference = StockLot::query()
+                ->withoutGlobalScopes()
+                ->findOrFail($lot->id);
+            $workspace = Workspace::withoutGlobalScopes()
+                ->lockForUpdate()
+                ->find($lotReference->workspace_id);
+
+            if (! $workspace instanceof Workspace) {
+                throw ValidationException::withMessages([
+                    'lot' => 'The output lot workspace could not be found.',
+                ]);
+            }
+
+            $this->access->assertWritable($actor, $workspace);
+
+            if ($lotReference->production_run_id === null) {
+                throw ValidationException::withMessages([
+                    'lot' => 'The output lot is not linked to a production run.',
+                ]);
+            }
+
+            $production = ProductionRun::query()
+                ->where('workspace_id', $workspace->id)
+                ->lockForUpdate()
+                ->find($lotReference->production_run_id);
+
+            if (! $production instanceof ProductionRun) {
+                throw ValidationException::withMessages([
+                    'lot' => 'The originating production run could not be found.',
+                ]);
+            }
+
+            $tasks = ProductionTask::query()
+                ->where('production_run_id', $production->id)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
             $lockedLot = StockLot::query()
                 ->withoutGlobalScopes()
+                ->where('workspace_id', $workspace->id)
                 ->lockForUpdate()
                 ->findOrFail($lot->id);
+
+            if ($production->status !== ProductionRunStatus::Completed) {
+                throw ValidationException::withMessages([
+                    'lot' => 'Only output from a completed production can be released.',
+                ]);
+            }
 
             if ($lockedLot->origin !== StockLotOrigin::ProductionOutput) {
                 throw ValidationException::withMessages([
@@ -45,6 +93,14 @@ class ReleaseOutputLot
             if ($lockedLot->available_from !== null && $lockedLot->available_from->isFuture()) {
                 throw ValidationException::withMessages([
                     'lot' => 'This output lot is not available yet (available from '.$lockedLot->available_from->toDateString().').',
+                ]);
+            }
+
+            $incompleteTasks = $tasks->whereNull('completed_at');
+
+            if ($incompleteTasks->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'lot' => 'Complete the remaining production tasks before releasing this output: '.$incompleteTasks->pluck('name_snapshot')->implode(', ').'.',
                 ]);
             }
 

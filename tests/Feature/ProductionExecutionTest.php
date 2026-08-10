@@ -3,6 +3,7 @@
 use App\Actions\Production\AbortProduction;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\CompleteProduction;
+use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\IssueFinishedGoods;
@@ -20,6 +21,7 @@ use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionDocumentType;
 use App\Enums\ProductionFormulaComponent;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotStatus;
 use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
@@ -628,6 +630,40 @@ it('releases a quarantined output lot and issues finished goods', function (): v
     expect(function () use ($fixture, $issued): void {
         app(IssueFinishedGoods::class)->handle($fixture['owner'], $issued, StockMovementType::Shipment, '999');
     })->toThrow(ValidationException::class);
+});
+
+it('requires all production tasks to be complete before releasing output', function (): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'output-task-gate-1');
+    $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
+    $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
+    app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
+        ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000'],
+        ['production_requirement_id' => $packagingRequirement->id, 'stock_lot_id' => $packagingLot->id, 'quantity' => '98'],
+    ]);
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $fixture['owner'],
+        production: $production->fresh(),
+        actualOutputQuantity: '95',
+        manufactureDate: '2026-08-20',
+    );
+    $task = ProductionTask::factory()->for($fixture['workspace'])->for($completed, 'productionRun')->create([
+        'name_snapshot' => 'Final quality check',
+        'scheduled_for' => '2026-08-20',
+        'completed_at' => null,
+    ]);
+    $outputLot = $completed->outputLot()->sole();
+    $outputLot->update(['available_from' => now()->subDay()->toDateString()]);
+
+    expect(fn () => app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot))
+        ->toThrow(ValidationException::class);
+
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+
+    expect(app(ReleaseOutputLot::class)->handle($fixture['owner'], $outputLot)->status)
+        ->toBe(StockLotStatus::Released);
 });
 
 it('records journal entries during planning and production, read-only afterwards', function (): void {

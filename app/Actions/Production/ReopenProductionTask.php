@@ -43,6 +43,7 @@ class ReopenProductionTask
                 ProductionRunStatus::Scheduled,
                 ProductionRunStatus::Reserved,
                 ProductionRunStatus::InProduction,
+                ProductionRunStatus::Completed,
             ], true)) {
                 throw ValidationException::withMessages(['task' => 'This production task cannot be reopened.']);
             }

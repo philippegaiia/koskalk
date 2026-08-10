@@ -269,7 +269,7 @@ it('saves actuals from the production sheet', function (): void {
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
-        ->assertSee('Actual consumption')
+        ->assertSee(__('production_bench.production.actual_used'))
         ->set('actualRows.'.$ingredientRequirement->id.'.stock_lot_id', (string) $oilLot->id)
         ->set('actualRows.'.$ingredientRequirement->id.'.quantity', '10500')
         ->set('actualRows.'.$ingredientRequirement->id.'.note', 'From the bench')
@@ -916,10 +916,50 @@ it('shows lifecycle sections appropriate to the run status', function (): void {
 
     Livewire::actingAs($fixture['owner'])
         ->test(ProductionDetail::class, ['productionId' => (string) $started->id])
-        ->assertSee('Actual consumption')
+        ->assertSee(__('production_bench.production.actual_used'))
         ->assertSee('Complete production')
         ->assertSee('Abort production')
         ->assertSee('Production journal');
+});
+
+it('requires explicit confirmation before starting ahead of the planned date', function (): void {
+    $this->travelTo('2026-08-10 10:00:00');
+    $fixture = productionExecutionFixture();
+    $reserved = productionExecutionRun($fixture, 'early-start-ui-1', start: false);
+
+    $page = Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $reserved->id])
+        ->call('start')
+        ->assertDispatched('early-start-confirmation-requested');
+
+    expect($reserved->fresh()->status)->toBe(ProductionRunStatus::Reserved);
+
+    $page->call('confirmEarlyStart')
+        ->assertHasNoErrors()
+        ->assertDispatched('production-started');
+
+    expect($reserved->fresh()->status)->toBe(ProductionRunStatus::InProduction);
+});
+
+it('renders one workflow table with formula, lye, water, packaging, and lifecycle landmarks', function (): void {
+    $fixture = productionExecutionFixture();
+    $reserved = productionExecutionRun($fixture, 'workflow-page-contract-1', start: false);
+
+    $html = Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $reserved->id])
+        ->html();
+
+    expect(substr_count($html, 'data-testid="production-header"'))->toBe(1)
+        ->and(substr_count($html, 'data-testid="production-lifecycle"'))->toBe(1)
+        ->and(substr_count($html, 'data-testid="primary-production-action"'))->toBe(1)
+        ->and(substr_count($html, 'data-testid="batch-materials-table"'))->toBe(1)
+        ->and(str_contains($html, 'data-testid="requirements-detail-heading"'))->toBeFalse()
+        ->and(str_contains($html, 'Sodium hydroxide'))->toBeTrue()
+        ->and(str_contains($html, 'Water'))->toBeTrue()
+        ->and(str_contains($html, 'Olive oil'))->toBeTrue()
+        ->and(str_contains($html, 'Soap box'))->toBeTrue()
+        ->and(str_contains($html, __('production_bench.production.actuals_not_stock_tracked')))->toBeTrue()
+        ->and(str_contains($html, __('production_bench.production.reserved_lots')))->toBeTrue();
 });
 
 it('prices actual consumption at the received per-gram cost from a real receipt', function (): void {

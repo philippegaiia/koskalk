@@ -35,7 +35,7 @@ use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MediaAssetUploadService;
-use App\Services\Production\ProductionOutputReconciliation;
+use App\Services\Production\ProductionDetailPresenter;
 use App\Services\ProductionBenchAccess;
 use App\Support\NumberLocale;
 use Illuminate\Contracts\View\View;
@@ -309,10 +309,31 @@ class ProductionDetail extends Component
 
     public function start(StartProduction $startProduction): void
     {
+        $production = $this->production();
+
+        if ($production->planned_for?->isFuture()) {
+            $this->dispatch(
+                'early-start-confirmation-requested',
+                plannedFor: $production->planned_for->format('Y-m-d'),
+            );
+
+            return;
+        }
+
+        $this->performStart($startProduction, $production);
+    }
+
+    public function confirmEarlyStart(StartProduction $startProduction): void
+    {
+        $this->performStart($startProduction, $this->production());
+    }
+
+    private function performStart(StartProduction $startProduction, ProductionRun $production): void
+    {
         try {
             $startProduction->handle(
                 actor: $this->user(),
-                production: $this->production(),
+                production: $production,
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
@@ -645,10 +666,16 @@ class ProductionDetail extends Component
         $this->dispatch('production-journal-updated');
     }
 
-    public function render(ProductionBenchAccess $access, ProductionOutputReconciliation $outputReconciliation): View
+    public function render(ProductionBenchAccess $access, ProductionDetailPresenter $detailPresenter): View
     {
         $workspace = $this->workspace();
         $production = $this->production();
+        $productionDetail = $detailPresenter->present(
+            production: $production,
+            actualRows: $this->actualRows,
+            calculatedActualRows: $this->calculatedActualRows,
+            locale: $this->user()->number_locale,
+        );
         $canMutate = $access->isActive($workspace)
             && ! $access->isReadOnly($workspace)
             && in_array($workspace->roleFor($this->user()), [
@@ -657,112 +684,17 @@ class ProductionDetail extends Component
                 WorkspaceMemberRole::Editor,
             ], true);
 
-        $defaultActualRows = [];
-        $actualRowsByRequirement = [];
-        $calculatedActualRowsFor = [];
-
-        foreach ($production->requirements as $requirement) {
-            $requirementId = (string) $requirement->id;
-            $defaults = [];
-
-            foreach ($requirement->reservations->where('status', StockReservationStatus::Active) as $reservation) {
-                $defaults['-'.$reservation->stock_lot_id] = [
-                    'stock_lot_id' => $reservation->stock_lot_id,
-                    'quantity' => (string) $reservation->quantity,
-                    'note' => null,
-                    'lot_code' => $reservation->stockLot?->internal_lot_code,
-                ];
-            }
-
-            if ($defaults === []) {
-                $defaults['-'] = ['stock_lot_id' => null, 'quantity' => '', 'note' => null, 'lot_code' => null];
-            }
-
-            $defaultActualRows[$requirementId] = $defaults;
-            $merged = $defaults;
-
-            foreach ($this->actualRows as $key => $row) {
-                [$rowRequirementId, $lotId] = array_pad(explode('-', (string) $key, 2), 2, '');
-
-                if ($rowRequirementId !== $requirementId) {
-                    continue;
-                }
-
-                $resolvedLotId = $lotId !== ''
-                    ? (int) $lotId
-                    : ($row['stock_lot_id'] ?? null);
-                $lotCode = $resolvedLotId !== null
-                    ? $production->requirements
-                        ->firstWhere('id', (int) $rowRequirementId)
-                        ?->reservations->firstWhere('stock_lot_id', $resolvedLotId)
-                        ?->stockLot?->internal_lot_code
-                    : null;
-
-                $merged['-'.$lotId] = [
-                    'stock_lot_id' => $resolvedLotId,
-                    'quantity' => $row['quantity'] ?? '',
-                    'note' => $row['note'] ?? null,
-                    'lot_code' => $lotCode,
-                ];
-            }
-
-            ksort($merged);
-            $actualRowsByRequirement[$requirementId] = $merged;
-        }
-
-        foreach ($production->formulaLines as $line) {
-            if ($line->component?->value !== 'water') {
-                continue;
-            }
-
-            $calculatedActualRowsFor[(string) $line->id] = $this->calculatedActualRows[(string) $line->id] ?? [
-                'actual_mass_grams' => (string) ($line->actual_mass_grams ?? $line->planned_mass_grams),
-            ];
-        }
-
-        $shortRequirements = collect();
-        $partialShortage = '0';
-        $hasActiveReservations = false;
-
-        if (in_array($production->status, [ProductionRunStatus::Scheduled, ProductionRunStatus::Reserved], true)) {
-            $activeReservations = $production->requirements
-                ->flatMap->reservations
-                ->where('status', StockReservationStatus::Active);
-
-            $hasActiveReservations = $activeReservations->isNotEmpty();
-
-            foreach ($production->requirements as $requirement) {
-                $required = $requirement->ingredient_id !== null
-                    ? (string) $requirement->required_mass_grams
-                    : (string) $requirement->required_units;
-                $reserved = '0';
-
-                foreach ($activeReservations->where('production_requirement_id', $requirement->id) as $reservation) {
-                    $reserved = bcadd($reserved, (string) $reservation->quantity, 9);
-                }
-
-                if (bccomp($reserved, '0', 9) > 0 && bccomp($reserved, $required, 9) < 0) {
-                    $shortRequirements->push($requirement->subject_name_snapshot);
-                    $partialShortage = bcadd($partialShortage, bcsub($required, $reserved, 9), 9);
-                }
-            }
-        }
         $completionReadiness = $this->completionReadiness($production);
 
         return view('livewire.production-bench.production.production-detail', [
             'workspace' => $workspace,
             'production' => $production,
-            'outputReconciliation' => $outputReconciliation->forProduction($production),
+            'productionDetail' => $productionDetail,
+            'outputReconciliation' => $productionDetail['output'],
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,
-            'defaultActualRows' => $defaultActualRows,
-            'actualRowsByRequirement' => $actualRowsByRequirement,
-            'calculatedActualRowsFor' => $calculatedActualRowsFor,
             'completionReadiness' => $completionReadiness,
-            'shortRequirements' => $shortRequirements,
-            'partialShortage' => $partialShortage,
-            'hasActiveReservations' => $hasActiveReservations,
             'intermediateIngredients' => Ingredient::query()
                 ->withoutGlobalScopes()
                 ->where(fn ($query) => $query->whereNull('workspace_id')->orWhere('workspace_id', $workspace->id))
@@ -802,7 +734,7 @@ class ProductionDetail extends Component
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'requirements.reservations.stockLot', 'formulaLines', 'consumption', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'cancelledBy', 'batchNumberAssignedBy'])
+            ->with(['recipe', 'requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'journalEntries.createdBy', 'outputLot', 'cancelledBy', 'batchNumberAssignedBy'])
             ->findOrFail((int) $this->productionId);
     }
 

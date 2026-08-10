@@ -167,8 +167,12 @@ it('rejects invalid employee assignments and displays task operation errors', fu
     $fixture['production']->update(['status' => ProductionRunStatus::Completed]);
 
     $page->call('toggleTask', $task->id)
-        ->assertHasErrors('task_task')
-        ->assertSee('This production task cannot be completed.');
+        ->assertHasNoErrors();
+    expect($task->fresh()->completed_at)->not->toBeNull();
+
+    $page->call('toggleTask', $task->id)
+        ->assertHasNoErrors();
+    expect($task->fresh()->completed_at)->toBeNull();
 });
 
 it('cancels draft and scheduled productions with a required reason', function (): void {

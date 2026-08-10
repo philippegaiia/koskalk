@@ -52,6 +52,14 @@ return new class extends Migration
      */
     public function down(): void
     {
+        DB::table('stock_lots')
+            ->where('origin', 'production_output')
+            ->whereNull('available_from')
+            ->whereNotNull('estimated_ready_on')
+            ->update([
+                'available_from' => DB::raw('estimated_ready_on'),
+            ]);
+
         Schema::table('stock_lots', function (Blueprint $table): void {
             $table->dropColumn('estimated_ready_on');
         });

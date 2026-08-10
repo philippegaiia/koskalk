@@ -579,9 +579,11 @@ it('persists the complete formula snapshot atomically when planning', function (
         ->toBe(['10500.000000000', '3500.000000000'])
         ->and($production->formulaLines()->where('component', 'naoh')->count())->toBe(1)
         ->and($production->formulaLines()->where('component', 'water')->count())->toBe(1)
-        ->and($production->requirements()->where('kind', 'ingredient')->count())->toBe(2)
+        ->and($production->requirements()->where('kind', 'ingredient')->count())->toBe(3)
         ->and($production->requirements()->where('kind', 'packaging')->count())->toBe(1)
-        ->and($production->requirements()->count())->toBe(3)
+        ->and($production->requirements()->where('ingredient_id', Ingredient::query()->where('catalog_key', 'CH1')->sole()->id)->firstOrFail()->required_mass_grams)
+        ->toBe($production->formulaLines()->where('component', 'naoh')->firstOrFail()->planned_mass_grams)
+        ->and($production->requirements()->count())->toBe(4)
         ->and(ProductionFormulaLine::query()->where('production_run_id', $production->id)->count())->toBe(4);
 });
 
@@ -646,7 +648,7 @@ it('keeps the production aggregate loadable when the version link is removed', f
 
     expect($loaded->recipe_version_id)->toBeNull()
         ->and($loaded->displayRecipeName())->toBe($fixture['recipe']->name)
-        ->and($loaded->requirements()->count())->toBe(3)
+        ->and($loaded->requirements()->count())->toBe(4)
         ->and($loaded->formulaLines()->count())->toBe(4);
 });
 
@@ -696,8 +698,10 @@ it('rescales snapshot quantities in place and keeps reservation history', functi
         ->and($updated->expected_units)->toBe(150)
         ->and($updated->requirements()->pluck('id')->all())->toBe($requirementIds)
         ->and($updated->formulaLines()->pluck('id')->all())->toBe($lineIds)
-        ->and($updated->requirements()->where('kind', 'ingredient')->orderBy('id')->pluck('required_mass_grams')->all())
+        ->and($updated->requirements()->where('kind', 'ingredient')->orderBy('id')->take(2)->pluck('required_mass_grams')->all())
         ->toBe(['15000.000000000', '5000.000000000'])
+        ->and($updated->requirements()->where('kind', 'ingredient')->orderBy('id')->get()->last()->required_mass_grams)
+        ->toBe($updated->formulaLines()->where('component', 'naoh')->firstOrFail()->planned_mass_grams)
         ->and($updated->requirements()->where('kind', 'packaging')->firstOrFail()->required_units)->toBe(150)
         ->and($updated->formulaLines()->where('component', 'ingredient')->orderBy('sort_order')->firstOrFail()->planned_mass_grams)
         ->toBe('15000.000000000')
@@ -739,7 +743,7 @@ it('corrects quantities without the source version or a live recipe lookup', fun
     expect($updated->basis_quantity_grams)->toBe('1500.000000000')
         ->and($updated->expected_units)->toBe(12)
         ->and($updated->recipe_version_id)->toBeNull()
-        ->and($updated->requirements()->count())->toBe(3)
+        ->and($updated->requirements()->count())->toBe(4)
         ->and($updated->formulaLines()->count())->toBe(4);
 });
 
@@ -1304,6 +1308,15 @@ function productionPlanningTask3SoapFixture(bool $withSap = true): array
             'totals' => [],
         ],
         'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
+    ]);
+
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'display_name' => 'Sodium hydroxide',
+    ]);
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH3',
+        'display_name' => 'Potassium hydroxide',
     ]);
 
     $oleic = FattyAcid::factory()->create(['key' => 'oleic-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Oleic']);

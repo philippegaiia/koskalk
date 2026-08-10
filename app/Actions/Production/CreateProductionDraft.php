@@ -13,6 +13,7 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MassConverter;
+use App\Services\Production\ProductionCalculatedRequirementBuilder;
 use App\Services\Production\ProductionFormulaSnapshotBuilder;
 use App\Services\Production\ProductionRequirementBuilder;
 use App\Services\Production\ProductionRunNumberService;
@@ -30,6 +31,7 @@ class CreateProductionDraft
         private readonly ProductionBenchAccess $access,
         private readonly MassConverter $massConverter,
         private readonly ProductionFormulaSnapshotBuilder $formulaSnapshotBuilder,
+        private readonly ProductionCalculatedRequirementBuilder $calculatedRequirementBuilder,
         private readonly ProductionRequirementBuilder $requirementBuilder,
         private readonly ProductionRunNumberService $numbers,
         private readonly ProductionWorkingCalendar $calendar,
@@ -195,6 +197,12 @@ class CreateProductionDraft
                 basisQuantityGrams: $basisQuantityGrams,
                 requirements: $requirements,
             );
+            $requirements = $requirements->concat(
+                $this->calculatedRequirementBuilder->build(
+                    formulaLines: $formulaSnapshot['lines'],
+                    startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
+                ),
+            )->values();
             $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 
             $production = ProductionRun::query()->create([

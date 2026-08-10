@@ -1302,6 +1302,15 @@ function productionExecutionFixture(?Ingredient $oil = null, ?Workspace $workspa
         'water_settings' => ['mode' => 'percent_of_oils', 'value' => 38],
     ]);
 
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'display_name' => 'Sodium hydroxide',
+    ]);
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH3',
+        'display_name' => 'Potassium hydroxide',
+    ]);
+
     $oleic = FattyAcid::factory()->create(['key' => 'oleic-'.fake()->unique()->numberBetween(1, 999999), 'name' => 'Oleic']);
     $olive = $oil ?? Ingredient::factory()->create(['display_name' => 'Olive oil']);
     IngredientSapProfile::factory()->create(['ingredient_id' => $olive->id, 'koh_sap_value' => 0.188]);

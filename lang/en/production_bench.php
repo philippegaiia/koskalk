@@ -515,6 +515,7 @@ return [
         'workspace_missing' => 'The production workspace could not be found.',
         'validation' => [
             'planned_date_required' => 'A production date is required when planning production.',
+            'lye_material_missing' => 'The required platform lye material (:key) is missing from the ingredient catalogue.',
         ],
         'status' => [
             'draft' => 'Draft',

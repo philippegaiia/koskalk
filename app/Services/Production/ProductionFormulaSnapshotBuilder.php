@@ -19,6 +19,7 @@ class ProductionFormulaSnapshotBuilder
     public function __construct(
         private readonly RecipeWorkbenchService $workbenchService,
         private readonly MassConverter $massConverter,
+        private readonly ProductionLyeMaterialResolver $lyeMaterialResolver,
     ) {}
 
     /**
@@ -164,7 +165,8 @@ class ProductionFormulaSnapshotBuilder
             );
 
             $lines->push([
-                'ingredient_id' => null,
+                'ingredient_id' => $this->lyeMaterialResolver
+                    ->resolve($candidate['component'])?->id,
                 'recipe_item_id' => null,
                 'component' => $candidate['component'],
                 'subject_name_snapshot' => $this->componentLabel($candidate['component']),

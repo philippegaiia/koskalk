@@ -17,6 +17,9 @@ use App\Actions\Production\SyncProductionTaskSetProducts;
 use App\Actions\Production\UpdateProductionPlan;
 use App\Enums\OwnerType;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
+use App\Enums\StockUnitKind;
 use App\Enums\Visibility;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
@@ -26,6 +29,7 @@ use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
@@ -214,7 +218,7 @@ it('marks later dates custom, resets them, and leaves completed tasks stable', f
     expect($tasks[1]->fresh()->completed_at)->toBeNull();
 });
 
-it('does not reopen tasks after the production has been completed', function (): void {
+it('reopens a completed task while production output awaits release', function (): void {
     $fixture = productionTaskSchedulingFixture();
     $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
     productionTaskSchedulingSet($fixture, $pour, null, [0]);
@@ -223,9 +227,27 @@ it('does not reopen tasks after the production has been completed', function ():
 
     app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
     $production->update(['status' => ProductionRunStatus::Completed]);
+    productionTaskSchedulingOutputLot($fixture, $production, StockLotStatus::Quarantined);
+
+    $reopened = app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh());
+
+    expect($reopened->completed_at)->toBeNull();
+});
+
+it('does not reopen a production task after output release', function (): void {
+    $fixture = productionTaskSchedulingFixture();
+    $pour = productionTaskSchedulingType($fixture, 'Pour', 30);
+    productionTaskSchedulingSet($fixture, $pour, null, [0]);
+    $production = productionTaskSchedulingPlan($fixture, '2026-08-10');
+    $task = $production->tasks()->firstOrFail();
+
+    app(CompleteProductionTask::class)->handle($fixture['owner'], $task);
+    $production->update(['status' => ProductionRunStatus::Completed]);
+    productionTaskSchedulingOutputLot($fixture, $production, StockLotStatus::Released);
 
     expect(fn (): ProductionTask => app(ReopenProductionTask::class)->handle($fixture['owner'], $task->fresh()))
-        ->toThrow(ValidationException::class);
+        ->toThrow(ValidationException::class)
+        ->and($task->fresh()->completed_at)->not->toBeNull();
 });
 
 it('does not move a completed automatic task when the production date changes', function (): void {
@@ -477,4 +499,19 @@ function productionTaskSchedulingPlan(array $fixture, string $date): ProductionR
         idempotencyKey: fake()->uuid(),
         plannedFor: $date,
     );
+}
+
+/** @param array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion} $fixture */
+function productionTaskSchedulingOutputLot(array $fixture, ProductionRun $production, StockLotStatus $status): StockLot
+{
+    return StockLot::factory()->for($fixture['workspace'])->create([
+        'ingredient_id' => null,
+        'packaging_item_id' => null,
+        'recipe_id' => $fixture['recipe']->id,
+        'production_run_id' => $production->id,
+        'origin' => StockLotOrigin::ProductionOutput,
+        'unit_kind' => StockUnitKind::Count,
+        'status' => $status,
+        'released_at' => $status === StockLotStatus::Released ? now() : null,
+    ]);
 }

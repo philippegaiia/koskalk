@@ -7,9 +7,11 @@ use App\Enums\ProductionRunStatus;
 use App\Enums\StockReservationStatus;
 use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRun;
+use App\Models\StockLot;
 use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Production\ConsumableStockLotPolicy;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +20,7 @@ class StartProduction
 {
     public function __construct(
         private readonly ProductionBenchAccess $access,
+        private readonly ConsumableStockLotPolicy $lotPolicy,
     ) {}
 
     /**
@@ -69,6 +72,33 @@ class StartProduction
                 throw ValidationException::withMessages([
                     'production' => __('production_bench.production.start_blocked_coverage'),
                 ]);
+            }
+
+            $reservations = StockReservation::query()
+                ->where('production_run_id', $lockedProduction->id)
+                ->where('status', StockReservationStatus::Active)
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+            $lots = StockLot::query()
+                ->withoutGlobalScopes()
+                ->where('workspace_id', $lockedWorkspace->id)
+                ->whereIn('id', $reservations->pluck('stock_lot_id')->filter()->unique())
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($reservations as $reservation) {
+                $lot = $lots->get($reservation->stock_lot_id);
+
+                if (! $lot instanceof StockLot) {
+                    throw ValidationException::withMessages([
+                        'production' => __('production_bench.production.validation.stock_lot_not_available'),
+                    ]);
+                }
+
+                $this->lotPolicy->assertConsumable($lot, now(), 'production');
             }
 
             ProductionFormulaLine::query()

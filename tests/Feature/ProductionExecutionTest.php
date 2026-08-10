@@ -126,6 +126,24 @@ it('defaults water actuals at start and saves them atomically with lot actuals',
         ->toBe(0);
 });
 
+it('does not start production with a reserved lot that is no longer consumable', function (array $changes): void {
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'start-lot-eligibility-'.fake()->uuid(), start: false);
+    $lot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
+    $waterLine = $production->formulaLines()->where('component', ProductionFormulaComponent::Water)->firstOrFail();
+    $lot->update($changes);
+
+    expect(fn () => app(StartProduction::class)->handle($fixture['owner'], $production))
+        ->toThrow(ValidationException::class)
+        ->and($production->fresh()->status)->toBe(ProductionRunStatus::Reserved)
+        ->and($production->fresh()->started_at)->toBeNull()
+        ->and($waterLine->fresh()->actual_mass_grams)->toBeNull();
+})->with([
+    'quarantined' => [['status' => StockLotStatus::Quarantined]],
+    'not yet available' => [['available_from' => '2026-08-11']],
+    'expired' => [['expires_at' => '2026-08-09']],
+]);
+
 it('records actual consumption during production without posting stock movements', function (): void {
     $fixture = productionExecutionFixture();
     $production = productionExecutionRun($fixture, 'actuals-1');

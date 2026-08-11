@@ -4,6 +4,8 @@ namespace App\Filament\Resources\Ingredients\Schemas;
 
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
+use App\Filament\Resources\Ingredients\Pages\CreateIngredient;
+use App\Filament\Resources\Ingredients\Pages\EditIngredient;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
@@ -28,6 +30,7 @@ use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Validation\Rule;
+use Livewire\Component as LivewireComponent;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 class IngredientForm
@@ -139,6 +142,7 @@ class IngredientForm
                         'md' => 2,
                     ]),
                 View::make('filament.resources.ingredients.classification-prompt')
+                    ->visible(fn (LivewireComponent $livewire): bool => $livewire instanceof CreateIngredient || $livewire instanceof EditIngredient)
                     ->columnSpanFull(),
                 Section::make('Guidance & Media')
                     ->description('Use a concise markdown field for advice-ready notes, plus a main ingredient image and an optional compact icon for selectors.')

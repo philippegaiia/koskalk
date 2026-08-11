@@ -630,6 +630,26 @@ it('offers a read-only view action on the ingredient admin table', function () {
         ->assertActionExists(TestAction::make('edit')->table($ingredient));
 });
 
+it('does not render the classification helper in the ingredient view action', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Olive Oil',
+    ]);
+
+    $this->actingAs($admin);
+
+    Livewire::test(ListIngredients::class)
+        ->loadTable()
+        ->mountAction(TestAction::make('view')->table($ingredient))
+        ->assertMountedActionModalDontSee('Classification helper');
+
+    Livewire::test(ListIngredients::class)
+        ->loadTable()
+        ->mountAction(TestAction::make('edit')->table($ingredient))
+        ->assertMountedActionModalDontSee('Classification helper');
+});
+
 it('keeps user ingredients out of the editable platform ingredient catalog', function () {
     $admin = User::factory()->admin()->create();
     $ingredientOwner = User::factory()->create();

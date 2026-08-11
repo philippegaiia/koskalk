@@ -12,13 +12,17 @@
     "packages": [
         "filament/filament",
         "laraveldaily/filacheck",
-        "fruitcake/laravel-debugbar"
+        "fruitcake/laravel-debugbar",
+        "spatie/laravel-medialibrary"
     ],
     "sail": false,
     "skills": [
+        "infer-conventions",
+        "cashier-paddle-development",
         "laravel-best-practices",
         "pest-testing",
         "tailwindcss-development",
+        "medialibrary-development",
         "debug-using-debugbar"
     ]
 }

@@ -3476,6 +3476,83 @@
         },
         {
             "group": "ingredients",
+            "key": "editor.compliance.substances.concentration",
+            "text": {
+                "de": "Konzentration",
+                "es": "Concentración",
+                "fr": "Concentration",
+                "it": "Concentrazione",
+                "nl": "Concentratie"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.compliance.substances.description",
+            "text": {
+                "de": "Erfasse vom Lieferanten deklarierte oder im Material identifizierte Stoffe. Diese Angaben unterstützen die regulatorische Prüfung und ersetzen keine länderspezifische Bewertung.",
+                "es": "Registra las sustancias declaradas por el proveedor o identificadas en el material. Estos datos ayudan al control normativo y no sustituyen una evaluación específica por jurisdicción.",
+                "fr": "Enregistrez les substances déclarées par le fournisseur ou identifiées dans la matière. Ces données facilitent le contrôle réglementaire sans remplacer une évaluation propre à chaque juridiction.",
+                "it": "Registra le sostanze dichiarate dal fornitore o identificate nel materiale. Questi dati supportano la verifica normativa e non sostituiscono una valutazione specifica per giurisdizione.",
+                "nl": "Leg stoffen vast die door de leverancier zijn gedeclareerd of in het materiaal zijn vastgesteld. Deze gegevens ondersteunen de regelgevingscontrole en vervangen geen beoordeling per rechtsgebied."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.compliance.substances.entries",
+            "text": {
+                "de": "Deklarierte Stoffe",
+                "es": "Sustancias declaradas",
+                "fr": "Substances déclarées",
+                "it": "Sostanze dichiarate",
+                "nl": "Gedeclareerde stoffen"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.compliance.substances.section",
+            "text": {
+                "de": "Beschränkte und verbotene Stoffe",
+                "es": "Sustancias restringidas y prohibidas",
+                "fr": "Substances restreintes et interdites",
+                "it": "Sostanze soggette a restrizioni e vietate",
+                "nl": "Beperkte en verboden stoffen"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.compliance.substances.substance",
+            "text": {
+                "de": "Stoff",
+                "es": "Sustancia",
+                "fr": "Substance",
+                "it": "Sostanza",
+                "nl": "Stof"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.compliance.substances.validation.catalogue",
+            "text": {
+                "de": "Wähle Stoffe aus dem Katalog.",
+                "es": "Elige sustancias del catálogo.",
+                "fr": "Choisissez des substances dans le catalogue.",
+                "it": "Scegli le sostanze dal catalogo.",
+                "nl": "Kies stoffen uit de catalogus."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.compliance.substances.validation.concentration",
+            "text": {
+                "de": "Die Konzentrationen der Stoffe müssen zwischen 0 % und 100 % liegen.",
+                "es": "Las concentraciones de las sustancias deben estar entre el 0 % y el 100 %.",
+                "fr": "Les concentrations des substances doivent être comprises entre 0 % et 100 %.",
+                "it": "Le concentrazioni delle sostanze devono essere comprese tra 0% e 100%.",
+                "nl": "De concentraties van stoffen moeten tussen 0% en 100% liggen."
+            }
+        },
+        {
+            "group": "ingredients",
             "key": "editor.composition.add",
             "text": {
                 "de": "Hinzufügen",
@@ -4037,6 +4114,380 @@
         },
         {
             "group": "ingredients",
+            "key": "editor.identity.add_alias",
+            "text": {
+                "de": "Alternativen Namen hinzufügen",
+                "es": "Añadir nombre alternativo",
+                "fr": "Ajouter un nom alternatif",
+                "it": "Aggiungi nome alternativo",
+                "nl": "Alternatieve naam toevoegen"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.add_identifier",
+            "text": {
+                "de": "Identifikator hinzufügen",
+                "es": "Añadir identificador",
+                "fr": "Ajouter un identifiant",
+                "it": "Aggiungi identificatore",
+                "nl": "Identificatiegegeven toevoegen"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.additional_identifiers",
+            "text": {
+                "de": "Zusätzliche Identifikatoren",
+                "es": "Identificadores adicionales",
+                "fr": "Identifiants supplémentaires",
+                "it": "Identificatori aggiuntivi",
+                "nl": "Extra identificatiegegevens"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.additional_identifiers_helper",
+            "text": {
+                "de": "Füge hier UNII- oder ECHA-Listenkennungen hinzu. ECHA-Listennummern sind keine EC-/EINECS-Nummern. Übernimm nur Kennungen, die durch deine Quelldokumente belegt sind.",
+                "es": "Añade aquí identificadores UNII o de listas ECHA. Los números de lista ECHA no son números EC/EINECS. Conserva solo los identificadores respaldados por tus documentos fuente.",
+                "fr": "Ajoutez ici les identifiants UNII ou de liste ECHA. Les numéros de liste ECHA ne sont pas des numéros CE/EINECS. Conservez uniquement les identifiants justifiés par vos documents sources.",
+                "it": "Aggiungi qui gli identificatori UNII o delle liste ECHA. I numeri di lista ECHA non sono numeri CE/EINECS. Mantieni solo gli identificatori supportati dai documenti di origine.",
+                "nl": "Voeg hier UNII- of ECHA-lijstidentificaties toe. ECHA-lijstnummers zijn geen EG/EINECS-nummers. Gebruik alleen identificatiegegevens die door je brondocumenten worden ondersteund."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.alias_kind",
+            "text": {
+                "de": "Namensart",
+                "es": "Tipo de nombre",
+                "fr": "Type de nom",
+                "it": "Tipo di nome",
+                "nl": "Type naam"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.alias_kinds.botanical",
+            "text": {
+                "de": "Botanischer Name",
+                "es": "Nombre botánico",
+                "fr": "Nom botanique",
+                "it": "Nome botanico",
+                "nl": "Botanische naam"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.alias_kinds.common",
+            "text": {
+                "de": "Gebräuchlicher Name",
+                "es": "Nombre común",
+                "fr": "Nom courant",
+                "it": "Nome comune",
+                "nl": "Gangbare naam"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.alias_kinds.former",
+            "text": {
+                "de": "Früherer Name",
+                "es": "Nombre anterior",
+                "fr": "Ancien nom",
+                "it": "Nome precedente",
+                "nl": "Voormalige naam"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.alias_kinds.spelling",
+            "text": {
+                "de": "Schreibvariante",
+                "es": "Variante ortográfica",
+                "fr": "Variante orthographique",
+                "it": "Variante ortografica",
+                "nl": "Spellingvariant"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.alias_name",
+            "text": {
+                "de": "Alternativer Name",
+                "es": "Nombre alternativo",
+                "fr": "Nom alternatif",
+                "it": "Nome alternativo",
+                "nl": "Alternatieve naam"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.aliases",
+            "text": {
+                "de": "Alternative Namen und Synonyme",
+                "es": "Nombres alternativos y sinónimos",
+                "fr": "Noms alternatifs et synonymes",
+                "it": "Nomi alternativi e sinonimi",
+                "nl": "Alternatieve namen en synoniemen"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.aliases_platform_helper",
+            "text": {
+                "de": "Aliase des Plattformkatalogs werden je Sprache kuratiert. Verwende bis zu fünf Namen pro Sprache.",
+                "es": "Los alias del catálogo de la plataforma se revisan por idioma. Usa hasta cinco nombres por idioma.",
+                "fr": "Les alias du catalogue de la plateforme sont organisés par langue. Utilisez jusqu’à cinq noms par langue.",
+                "it": "Gli alias del catalogo della piattaforma sono curati per lingua. Usa fino a cinque nomi per lingua.",
+                "nl": "Aliassen in de platformcatalogus worden per taal beheerd. Gebruik maximaal vijf namen per taal."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.aliases_workspace_helper",
+            "text": {
+                "de": "Füge bis zu fünf Namen hinzu, die in deinem Arbeitsbereich verwendet werden. Diese Namen bleiben in deinem Arbeitsbereich privat.",
+                "es": "Añade hasta cinco nombres utilizados en tu espacio de trabajo. Estos nombres permanecen privados en tu espacio.",
+                "fr": "Ajoutez jusqu’à cinq noms utilisés dans votre espace de travail. Ces noms restent privés dans votre espace.",
+                "it": "Aggiungi fino a cinque nomi utilizzati nel tuo spazio di lavoro. Questi nomi restano privati nel tuo spazio.",
+                "nl": "Voeg maximaal vijf namen toe die in je werkruimte worden gebruikt. Deze namen blijven privé in je werkruimte."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.cas_number",
+            "text": {
+                "de": "CAS-Nummer",
+                "es": "Número CAS",
+                "fr": "Numéro CAS",
+                "it": "Numero CAS",
+                "nl": "CAS-nummer"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.cas_placeholder",
+            "text": {
+                "de": "z. B. 19856-23-6",
+                "es": "p. ej. 19856-23-6",
+                "fr": "p. ex. 19856-23-6",
+                "it": "es. 19856-23-6",
+                "nl": "bijv. 19856-23-6"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.ec_number",
+            "text": {
+                "de": "EC-/EINECS-Nummer",
+                "es": "Número EC/EINECS",
+                "fr": "Numéro CE/EINECS",
+                "it": "Numero CE/EINECS",
+                "nl": "EG/EINECS-nummer"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.ec_placeholder",
+            "text": {
+                "de": "z. B. 243-378-4",
+                "es": "p. ej. 243-378-4",
+                "fr": "p. ex. 243-378-4",
+                "it": "es. 243-378-4",
+                "nl": "bijv. 243-378-4"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.identifier_schemes.cas",
+            "text": {
+                "de": "CAS",
+                "es": "CAS",
+                "fr": "CAS",
+                "it": "CAS",
+                "nl": "CAS"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.identifier_schemes.ec",
+            "text": {
+                "de": "EG/EINECS",
+                "es": "CE/EINECS",
+                "fr": "CE/EINECS",
+                "it": "CE/EINECS",
+                "nl": "EG/EINECS"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.identifier_schemes.echa_list",
+            "text": {
+                "de": "ECHA-Liste",
+                "es": "Lista ECHA",
+                "fr": "Liste ECHA",
+                "it": "Elenco ECHA",
+                "nl": "ECHA-lijst"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.identifier_schemes.unii",
+            "text": {
+                "de": "UNII",
+                "es": "UNII",
+                "fr": "UNII",
+                "it": "UNII",
+                "nl": "UNII"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.language",
+            "text": {
+                "de": "Sprache",
+                "es": "Idioma",
+                "fr": "Langue",
+                "it": "Lingua",
+                "nl": "Taal"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.language_neutral",
+            "text": {
+                "de": "Sprachneutral",
+                "es": "Neutro para el idioma",
+                "fr": "Neutre linguistique",
+                "it": "Neutro per la lingua",
+                "nl": "Taalneutraal"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.primary",
+            "text": {
+                "de": "Primär für diesen Typ",
+                "es": "Principal para este tipo",
+                "fr": "Principal pour ce type",
+                "it": "Primario per questo tipo",
+                "nl": "Primair voor dit type"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.primary_helper",
+            "text": {
+                "de": "Aktiviere dies, wenn der zusätzliche Wert den einfachen CAS- oder EC-Wert als primäre Kennung ersetzen soll.",
+                "es": "Actívalo cuando el valor adicional deba sustituir al valor CAS o EC simple como identificador principal.",
+                "fr": "Activez cette option si la valeur supplémentaire doit remplacer la valeur CAS ou CE simple comme identifiant principal.",
+                "it": "Attivalo quando il valore aggiuntivo deve sostituire il valore CAS o CE semplice come identificatore principale.",
+                "nl": "Schakel dit in als de extra waarde de eenvoudige CAS- of EG-waarde als primaire identificatie moet vervangen."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.scheme",
+            "text": {
+                "de": "Identifikatortyp",
+                "es": "Tipo de identificador",
+                "fr": "Type d’identifiant",
+                "it": "Tipo di identificatore",
+                "nl": "Type identificatiegegeven"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.validation.duplicate_alias",
+            "text": {
+                "de": "Dieser alternative Name ist für diese Zutat bereits eingetragen.",
+                "es": "Este nombre alternativo ya está introducido para este ingrediente.",
+                "fr": "Ce nom alternatif est déjà enregistré pour cet ingrédient.",
+                "it": "Questo nome alternativo è già inserito per questo ingrediente.",
+                "nl": "Deze alternatieve naam is al voor dit ingrediënt ingevoerd."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.validation.duplicate_identifier",
+            "text": {
+                "de": "Diese Kennung ist für diese Zutat bereits eingetragen.",
+                "es": "Este identificador ya está introducido para este ingrediente.",
+                "fr": "Cet identifiant est déjà enregistré pour cet ingrédient.",
+                "it": "Questo identificatore è già inserito per questo ingrediente.",
+                "nl": "Deze identificatie is al voor dit ingrediënt ingevoerd."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.validation.identifiers_limit",
+            "text": {
+                "de": "Eine Zutat darf höchstens :limit Identifikatoren haben.",
+                "es": "Un ingrediente puede tener como máximo :limit identificadores.",
+                "fr": "Un ingrédient peut avoir au maximum :limit identifiants.",
+                "it": "Un ingrediente può avere al massimo :limit identificatori.",
+                "nl": "Een ingrediënt mag maximaal :limit identificatiegegevens hebben."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.validation.platform_aliases_limit",
+            "text": {
+                "de": "Eine Plattformzutat darf höchstens :limit alternative Namen pro Sprache haben.",
+                "es": "Un ingrediente de la plataforma puede tener como máximo :limit nombres alternativos por idioma.",
+                "fr": "Un ingrédient de la plateforme peut avoir au maximum :limit noms alternatifs par langue.",
+                "it": "Un ingrediente della piattaforma può avere al massimo :limit nomi alternativi per lingua.",
+                "nl": "Een platformingrediënt mag maximaal :limit alternatieve namen per taal hebben."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.validation.primary_identifier",
+            "text": {
+                "de": "Pro Identifikatortyp ist nur eine primäre Kennung zulässig.",
+                "es": "Solo se permite un identificador principal por tipo de identificador.",
+                "fr": "Un seul identifiant principal est autorisé par type d’identifiant.",
+                "it": "È consentito un solo identificatore primario per tipo di identificatore.",
+                "nl": "Per type identificatiegegeven is slechts één primaire identificatie toegestaan."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.validation.supported_language",
+            "text": {
+                "de": "Wähle eine unterstützte Sprache.",
+                "es": "Elige un idioma compatible.",
+                "fr": "Choisissez une langue prise en charge.",
+                "it": "Scegli una lingua supportata.",
+                "nl": "Kies een ondersteunde taal."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.validation.workspace_aliases_limit",
+            "text": {
+                "de": "Eine Arbeitsbereichszutat darf höchstens :limit alternative Namen haben.",
+                "es": "Un ingrediente del espacio de trabajo puede tener como máximo :limit nombres alternativos.",
+                "fr": "Un ingrédient de l’espace de travail peut avoir au maximum :limit noms alternatifs.",
+                "it": "Un ingrediente dell’area di lavoro può avere al massimo :limit nomi alternativi.",
+                "nl": "Een ingrediënt in een werkruimte mag maximaal :limit alternatieve namen hebben."
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.identity.value",
+            "text": {
+                "de": "Identifikatorwert",
+                "es": "Valor del identificador",
+                "fr": "Valeur de l’identifiant",
+                "it": "Valore dell’identificatore",
+                "nl": "Waarde identificatiegegeven"
+            }
+        },
+        {
+            "group": "ingredients",
             "key": "editor.media.description",
             "text": {
                 "de": "Ergänze Bilder und Informationen, die dir helfen, diese Zutat zu erkennen und zu verwenden.",
@@ -4143,6 +4594,17 @@
                 "fr": "Images et notes",
                 "it": "Immagini e note",
                 "nl": "Afbeeldingen en notities"
+            }
+        },
+        {
+            "group": "ingredients",
+            "key": "editor.reference.additional_identifiers",
+            "text": {
+                "de": "Zusätzliche Identifikatoren",
+                "es": "Identificadores adicionales",
+                "fr": "Identifiants supplémentaires",
+                "it": "Identificatori aggiuntivi",
+                "nl": "Extra identificatiegegevens"
             }
         },
         {
@@ -10226,6 +10688,50 @@
                 "fr": "",
                 "it": "",
                 "nl": ""
+            }
+        },
+        {
+            "group": "plans",
+            "key": "limits.description",
+            "text": {
+                "de": "Lassen Sie einen Wert leer, um keine feste Begrenzung festzulegen. Kostenlose Pläne beginnen mit 30 Zutatenzeilen pro Rezeptur, kostenpflichtige Pläne mit 50. Alle Limits bleiben für Administratoren änderbar.",
+                "es": "Deja un valor vacío para no aplicar un límite estricto. Los planes gratuitos comienzan con 30 líneas de ingredientes por fórmula y los planes de pago con 50. Los administradores pueden ajustar todos los límites.",
+                "fr": "Laissez une valeur vide pour ne pas appliquer de limite stricte. Les forfaits gratuits commencent à 30 lignes d’ingrédients par formule et les forfaits payants à 50. Tous les quotas restent modifiables par les administrateurs.",
+                "it": "Lascia vuoto per non applicare un limite rigido. I piani gratuiti partono da 30 righe di ingredienti per formula e quelli a pagamento da 50. Gli amministratori possono modificare tutti i limiti.",
+                "nl": "Laat een waarde leeg om geen harde limiet toe te passen. Gratis plannen beginnen met 30 ingrediëntenregels per formule en betaalde plannen met 50. Beheerders kunnen alle limieten aanpassen."
+            }
+        },
+        {
+            "group": "plans",
+            "key": "limits.empty_unlimited",
+            "text": {
+                "de": "Leer bedeutet unbegrenzt.",
+                "es": "Vacío significa ilimitado.",
+                "fr": "Vide signifie illimité.",
+                "it": "Vuoto significa illimitato.",
+                "nl": "Leeg betekent onbeperkt."
+            }
+        },
+        {
+            "group": "plans",
+            "key": "limits.formula_items_per_recipe",
+            "text": {
+                "de": "Zutatenzeilen pro Rezeptur",
+                "es": "Líneas de ingredientes por fórmula",
+                "fr": "Lignes d’ingrédients par formule",
+                "it": "Righe di ingredienti per formula",
+                "nl": "Ingrediëntenregels per formule"
+            }
+        },
+        {
+            "group": "plans",
+            "key": "limits.value",
+            "text": {
+                "de": "Limit",
+                "es": "Límite",
+                "fr": "Limite",
+                "it": "Limite",
+                "nl": "Limiet"
             }
         },
         {
@@ -22550,6 +23056,50 @@
         },
         {
             "group": "workbench",
+            "key": "formula_items.count_plural",
+            "text": {
+                "de": ":count Zutatenzeilen",
+                "es": ":count líneas de ingredientes",
+                "fr": ":count lignes d’ingrédients",
+                "it": ":count righe di ingredienti",
+                "nl": ":count ingrediëntenregels"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "formula_items.count_singular",
+            "text": {
+                "de": "1 Zutatenzeile",
+                "es": "1 línea de ingrediente",
+                "fr": "1 ligne d’ingrédient",
+                "it": "1 riga di ingrediente",
+                "nl": "1 ingrediëntenregel"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "formula_items.limit_reached",
+            "text": {
+                "de": "Dieser Plan erlaubt höchstens :limit Zutatenzeilen pro Rezeptur. Entfernen Sie eine Zeile, bevor Sie eine weitere hinzufügen.",
+                "es": "Este plan permite hasta :limit líneas de ingredientes por fórmula. Elimina una línea antes de añadir otra.",
+                "fr": "Ce forfait autorise au maximum :limit lignes d’ingrédients par formule. Supprimez une ligne avant d’en ajouter une autre.",
+                "it": "Questo piano consente al massimo :limit righe di ingredienti per formula. Rimuovi una riga prima di aggiungerne un’altra.",
+                "nl": "Dit plan staat maximaal :limit ingrediëntenregels per formule toe. Verwijder een regel voordat je er een toevoegt."
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "formula_items.limited_count",
+            "text": {
+                "de": ":count / :limit Zutatenzeilen",
+                "es": ":count / :limit líneas de ingredientes",
+                "fr": ":count / :limit lignes d’ingrédients",
+                "it": ":count / :limit righe di ingredienti",
+                "nl": ":count / :limit ingrediëntenregels"
+            }
+        },
+        {
+            "group": "workbench",
             "key": "header.breadcrumb",
             "text": {
                 "de": "Produktnavigation",
@@ -23096,6 +23646,17 @@
                 "fr": "Modifications non enregistrées",
                 "it": "Modifiche non salvate",
                 "nl": "Niet-opgeslagen wijzigingen"
+            }
+        },
+        {
+            "group": "workbench",
+            "key": "messages.formula_item_limit",
+            "text": {
+                "de": "Diese Rezeptur enthält :count Zutatenzeilen, der aktuelle Plan erlaubt jedoch nur :limit. Entfernen Sie Zutatenzeilen oder ändern Sie den Plan, bevor Sie speichern.",
+                "es": "Esta fórmula tiene :count líneas de ingredientes, pero el plan actual permite :limit. Elimina líneas o cambia de plan antes de guardar.",
+                "fr": "Cette formule contient :count lignes d’ingrédients, mais le forfait actuel en autorise :limit. Supprimez des lignes ou changez de forfait avant d’enregistrer.",
+                "it": "Questa formula contiene :count righe di ingredienti, ma il piano attuale ne consente :limit. Rimuovi righe o cambia piano prima di salvare.",
+                "nl": "Deze formule bevat :count ingrediëntenregels, maar het huidige plan staat er :limit toe. Verwijder regels of wijzig het plan voordat je opslaat."
             }
         },
         {

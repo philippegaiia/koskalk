@@ -26,8 +26,23 @@ class IngredientExporter extends Exporter
             ExportColumn::make('notes'),
             ExportColumn::make('soap_inci_naoh_name'),
             ExportColumn::make('soap_inci_koh_name'),
-            ExportColumn::make('cas_number'),
-            ExportColumn::make('ec_number'),
+            ExportColumn::make('identifiers')
+                ->state(fn (Ingredient $record): string => $record->identifiers
+                    ->map(fn ($identifier): string => sprintf('%s: %s', $identifier->scheme->label(), $identifier->value))
+                    ->implode('; ')),
+            ExportColumn::make('aliases')
+                ->state(fn (Ingredient $record): string => $record->aliases
+                    ->map(fn ($alias): string => sprintf('%s: %s', $alias->locale, $alias->name))
+                    ->implode('; ')),
+            ExportColumn::make('substance_entries')
+                ->state(fn (Ingredient $record): string => $record->substanceEntries
+                    ->loadMissing('substance')
+                    ->map(fn ($entry): string => sprintf(
+                        '%s%s',
+                        $entry->substance?->name ?? 'Unknown substance',
+                        $entry->concentration_percent === null ? '' : sprintf(' (%s%%)', $entry->concentration_percent),
+                    ))
+                    ->implode('; ')),
             ExportColumn::make('unit'),
             ExportColumn::make('visibility'),
             ExportColumn::make('workspace.name')

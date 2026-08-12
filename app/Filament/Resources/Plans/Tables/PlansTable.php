@@ -28,6 +28,10 @@ class PlansTable
                     ->label('Private ingredients')
                     ->state(fn (Plan $record): string => self::limitValue($record, 'private_ingredients'))
                     ->badge(),
+                TextColumn::make('formula_items_per_recipe_limit')
+                    ->label(__('plans.limits.formula_items_per_recipe'))
+                    ->state(fn (Plan $record): string => self::limitValue($record, 'formula_items_per_recipe'))
+                    ->badge(),
                 TextColumn::make('production_batches_limit')
                     ->label('Production batches')
                     ->state(fn (Plan $record): string => self::limitValue($record, 'production_batches'))

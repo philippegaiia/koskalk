@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientFunction;
 use App\Models\IngredientSapProfile;
+use App\Models\Substance;
 use App\Services\IngredientDataEntryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -149,6 +150,41 @@ it('syncs ingredient functions from the ingredient entry service', function () {
     expect($savedIngredient->functions)->toHaveCount(2)
         ->and($savedIngredient->functions->pluck('id')->all())->toEqual([$emollient->id, $skinConditioning->id])
         ->and(app(IngredientDataEntryService::class)->formData($savedIngredient)['function_ids'])->toEqual([$emollient->id, $skinConditioning->id]);
+});
+
+it('round-trips identifiers aliases and simple substance composition', function (): void {
+    $ingredient = Ingredient::factory()->create();
+    $substance = Substance::factory()->create();
+
+    $savedIngredient = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => [
+            'display_name' => 'Sodium levulinate',
+            'inci_name' => 'SODIUM LEVULINATE',
+        ],
+        'cas_number' => '19856-23-6',
+        'additional_identifiers' => [[
+            'scheme' => 'unii',
+            'value' => 'VK3H1Z8Z6V',
+            'is_primary' => true,
+        ]],
+        'aliases' => [[
+            'locale' => 'und',
+            'name' => 'Sodium 4-oxovalerate',
+            'kind' => 'common',
+        ]],
+        'substance_entries' => [[
+            'substance_id' => $substance->id,
+            'concentration_percent' => 0.8,
+        ]],
+    ]);
+
+    $state = app(IngredientDataEntryService::class)->formData($savedIngredient);
+
+    expect($state['cas_number'])->toBe('19856-23-6')
+        ->and($state['additional_identifiers'][0]['scheme'])->toBe('unii')
+        ->and($state['aliases'][0]['name'])->toBe('Sodium 4-oxovalerate')
+        ->and($state['substance_entries'][0]['substance_id'])->toBe($substance->id)
+        ->and((float) $state['substance_entries'][0]['concentration_percent'])->toBe(0.8);
 });
 
 it('preserves CosIng function provenance when a workspace edits its function selection', function () {

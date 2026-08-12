@@ -24,6 +24,7 @@ class UserIngredientAuthoringService
         protected IngredientDataEntryService $ingredientDataEntryService,
         protected EntitlementService $entitlementService,
         protected IngredientFunctionAssignmentService $functionAssignments,
+        protected IngredientIdentitySynchronizer $ingredientIdentitySynchronizer,
     ) {}
 
     /**
@@ -41,6 +42,8 @@ class UserIngredientAuthoringService
             'inci_name' => null,
             'cas_number' => null,
             'ec_number' => null,
+            'additional_identifiers' => [],
+            'aliases' => [],
             'notes' => null,
             'featured_image_path' => null,
             'featured_image_original_name' => null,
@@ -52,6 +55,7 @@ class UserIngredientAuthoringService
             'function_ids' => [],
             'verified_function_names' => [],
             'allergen_entries' => [],
+            'substance_entries' => [],
             'components' => [],
             'sap_profile' => [
                 'koh_sap_value' => null,
@@ -90,8 +94,8 @@ class UserIngredientAuthoringService
             'is_soap_saponification_trusted' => $ingredient->is_soap_saponification_trusted,
             'requires_aromatic_compliance' => $ingredient->requires_aromatic_compliance,
             'inci_name' => data_get($entryData, 'current_version.inci_name'),
-            'cas_number' => data_get($entryData, 'current_version.cas_number'),
-            'ec_number' => data_get($entryData, 'current_version.ec_number'),
+            'cas_number' => $entryData['cas_number'] ?? null,
+            'ec_number' => $entryData['ec_number'] ?? null,
             'notes' => $ingredient->notes,
             'featured_image_path' => $ingredient->featured_image_path,
             'featured_image_original_name' => $ingredient->featured_image_original_name,
@@ -103,6 +107,9 @@ class UserIngredientAuthoringService
             'function_ids' => $entryData['function_ids'] ?? [],
             'verified_function_names' => $entryData['verified_function_names'] ?? [],
             'allergen_entries' => $entryData['allergen_entries'] ?? [],
+            'substance_entries' => $entryData['substance_entries'] ?? [],
+            'additional_identifiers' => $entryData['additional_identifiers'] ?? [],
+            'aliases' => $entryData['aliases'] ?? [],
             'components' => $entryData['components'] ?? [],
             'sap_profile' => [
                 'koh_sap_value' => data_get($entryData, 'sap_profile.koh_sap_value'),
@@ -211,8 +218,15 @@ class UserIngredientAuthoringService
             ]);
         }
 
-        return $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($source): Ingredient {
+        return $this->entitlementService->withinCompanyQuotaLock($user, function (Workspace $workspace) use ($source, $user): Ingredient {
             $this->entitlementService->assertCanCreatePrivateIngredientInWorkspace($workspace);
+
+            $source->loadMissing([
+                'translations',
+                'identifiers',
+                'aliases',
+                'substanceEntries',
+            ]);
 
             $copy = $source->replicate([
                 'public_id',
@@ -228,8 +242,9 @@ class UserIngredientAuthoringService
             $copy->workspace_id = $workspace->id;
             $copy->visibility = Visibility::Private;
             $copy->requires_admin_review = false;
-            $copy->cas_number = $this->normalizeCasNumber($copy->cas_number);
-            $copy->ec_number = $this->normalizeEcNumber($copy->ec_number);
+            $copy->display_name = $source->localizedDisplayName($user->locale) ?? $source->display_name;
+            $copy->saponification_name = $source->localizedSaponificationName($user->locale) ?? $source->saponification_name;
+            $copy->info_markdown = $source->localizedInfoMarkdown($user->locale) ?? $source->info_markdown;
             $copy->source_data = $this->duplicateSourceData($source);
             $copy->featured_image_path = null;
             $copy->featured_image_original_name = null;
@@ -238,45 +253,84 @@ class UserIngredientAuthoringService
             $copy->save();
 
             $this->deepCopyRelations($source, $copy);
+            $this->ingredientIdentitySynchronizer->sync($copy, $this->localizedIdentityState($source, $user));
 
             return $copy->fresh([
                 'sapProfile',
                 'fattyAcidEntries.fattyAcid',
                 'components.componentIngredient',
                 'allergenEntries.allergen',
+                'substanceEntries.substance',
+                'identifiers',
+                'aliases',
                 'functions',
                 'ifraCertificates.limits.ifraProductCategory',
             ]);
         });
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function localizedIdentityState(Ingredient $source, User $user): array
+    {
+        $state = $this->ingredientIdentitySynchronizer->formState($source);
+
+        $localeCandidates = Ingredient::translationLocaleCandidates($user->locale);
+        $aliases = $source->aliases
+            ->filter(fn ($alias): bool => in_array($alias->locale, $localeCandidates, true))
+            ->values();
+
+        if ($aliases->isEmpty()) {
+            $aliases = $source->aliases
+                ->where('locale', 'und')
+                ->values();
+        }
+
+        if ($aliases->isEmpty()) {
+            $aliases = $source->aliases
+                ->where('locale', 'en')
+                ->values();
+        }
+
+        $state['aliases'] = $aliases
+            ->take(5)
+            ->map(fn ($alias): array => [
+                'locale' => $alias->locale,
+                'name' => $alias->name,
+                'kind' => $alias->kind->value,
+            ])
+            ->all();
+
+        return $state;
+    }
+
     private function deepCopyRelations(Ingredient $source, Ingredient $copy): void
     {
-        // SAP profile
         if ($source->sapProfile) {
             $source->sapProfile->replicate()->fill([
                 'ingredient_id' => $copy->id,
             ])->save();
         }
 
-        // Fatty acid entries
         $source->fattyAcidEntries->each(function ($entry) use ($copy): void {
             $entry->replicate()->fill(['ingredient_id' => $copy->id])->save();
         });
 
-        // Components
         $source->components->each(function ($component) use ($copy): void {
             $component->replicate()->fill(['ingredient_id' => $copy->id])->save();
         });
 
-        // Allergen entries
         $source->allergenEntries->each(function ($entry) use ($copy): void {
+            $entry->replicate()->fill(['ingredient_id' => $copy->id])->save();
+        });
+
+        $source->substanceEntries->each(function ($entry) use ($copy): void {
             $entry->replicate()->fill(['ingredient_id' => $copy->id])->save();
         });
 
         $this->functionAssignments->copyTo($source, $copy);
 
-        // IFRA certificates + limits
         $source->ifraCertificates->each(function ($certificate) use ($copy): void {
             $newCertificate = $certificate->replicate()->fill(['ingredient_id' => $copy->id]);
             $newCertificate->save();
@@ -295,6 +349,9 @@ class UserIngredientAuthoringService
             'inci_name' => $state['inci_name'] ?? null,
             'cas_number' => $state['cas_number'] ?? null,
             'ec_number' => $state['ec_number'] ?? null,
+            'additional_identifiers' => $state['additional_identifiers'] ?? [],
+            'aliases' => $state['aliases'] ?? [],
+            'substance_entries' => $state['substance_entries'] ?? [],
             'notes' => $state['notes'] ?? null,
             'featured_image_path' => null,
             'icon_image_path' => null,
@@ -391,15 +448,18 @@ class UserIngredientAuthoringService
             'current_version' => [
                 'display_name' => Arr::get($state, 'name'),
                 'inci_name' => Arr::get($state, 'inci_name'),
-                'cas_number' => $this->normalizeCasNumber(Arr::get($state, 'cas_number')),
-                'ec_number' => $this->normalizeEcNumber(Arr::get($state, 'ec_number')),
                 'is_active' => true,
                 'is_manufactured' => false,
             ],
+            'cas_number' => Arr::get($state, 'cas_number'),
+            'ec_number' => Arr::get($state, 'ec_number'),
+            'additional_identifiers' => Arr::get($state, 'additional_identifiers', []),
+            'aliases' => Arr::get($state, 'aliases', []),
             'function_ids' => Arr::get($state, 'function_ids', []),
             'sap_profile' => Arr::get($state, 'sap_profile', []),
             'fatty_acid_entries' => Arr::get($state, 'fatty_acid_entries', []),
             'allergen_entries' => Arr::get($state, 'allergen_entries', []),
+            'substance_entries' => Arr::get($state, 'substance_entries', []),
             'components' => array_key_exists('ingredient_structure', $state)
                 && Arr::get($state, 'ingredient_structure') !== 'blend'
                     ? []
@@ -690,39 +750,6 @@ class UserIngredientAuthoringService
     private function formatRangeValue(float $value): string
     {
         return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
-    }
-
-    private function normalizeCasNumber(mixed $value): ?string
-    {
-        $value = $this->normalizeIdentifier($value);
-
-        if ($value === null) {
-            return null;
-        }
-
-        return preg_replace('/^([0-9]{2,7}-[0-9]{2})-0([0-9])$/', '$1-$2', $value) ?? $value;
-    }
-
-    private function normalizeEcNumber(mixed $value): ?string
-    {
-        $value = $this->normalizeIdentifier($value);
-
-        if ($value === null) {
-            return null;
-        }
-
-        return preg_replace('/^([0-9]{3}-[0-9]{3})-0([0-9])$/', '$1-$2', $value) ?? $value;
-    }
-
-    private function normalizeIdentifier(mixed $value): ?string
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        $value = trim((string) $value);
-
-        return $value === '' ? null : $value;
     }
 
     /**

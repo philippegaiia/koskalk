@@ -532,9 +532,20 @@ it('seeds the initial free registered plan limits', function () {
         ->toMatchArray([
             'saved_recipes' => 15,
             'private_ingredients' => 20,
+            'formula_items_per_recipe' => 30,
             'production_batches' => 0,
             'saved_formula_history' => 0,
         ]);
+});
+
+it('does not overwrite an administrator-edited formula line limit when the plan seeder reruns', function (): void {
+    $this->seed(PlanSeeder::class);
+    $plan = Plan::query()->where('slug', 'free-beta')->firstOrFail();
+    $plan->limits()->where('key', 'formula_items_per_recipe')->update(['value' => 37]);
+
+    $this->seed(PlanSeeder::class);
+
+    expect($plan->fresh()->limits->firstWhere('key', 'formula_items_per_recipe')?->value)->toBe(37);
 });
 
 it('keeps only one default plan', function () {

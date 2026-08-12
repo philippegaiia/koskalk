@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\CurrentMaterialPriceService;
 use App\Services\EntitlementService;
+use App\Services\IngredientCatalogSearchService;
 use App\Services\IngredientFormulaMutationService;
 use App\Services\IngredientFormulaUsageService;
 use App\Services\MediaStorage;
@@ -67,9 +68,14 @@ class IngredientsIndex extends Component
 
     private PriceBasisConverter $priceBasisConverter;
 
-    public function boot(PriceBasisConverter $priceBasisConverter): void
-    {
+    private IngredientCatalogSearchService $catalogSearch;
+
+    public function boot(
+        PriceBasisConverter $priceBasisConverter,
+        IngredientCatalogSearchService $catalogSearch,
+    ): void {
         $this->priceBasisConverter = $priceBasisConverter;
+        $this->catalogSearch = $catalogSearch;
     }
 
     public function mount(CurrentAppUserResolver $resolver): void
@@ -475,11 +481,11 @@ class IngredientsIndex extends Component
                 ->whereNull('owner_type')
                 ->where('is_active', true)
                 ->whereHas('currentPrices', fn (Builder $priceQuery): Builder => $priceQuery->where('workspace_id', $user->company()?->id)))
-            ->when($search !== '', fn (Builder $query): Builder => $query
-                ->where(fn (Builder $where): Builder => $where
-                    ->whereRaw('LOWER(display_name) LIKE ?', ['%'.$search.'%'])
-                    ->orWhereRaw('LOWER(inci_name) LIKE ?', ['%'.$search.'%'])
-                    ->orWhere('category', 'like', '%'.$search.'%')));
+            ->when($search !== '', fn (Builder $query): Builder => $this->catalogSearch->apply(
+                $query,
+                $search,
+                $translationLocales,
+            ));
     }
 
     private function accessibleIngredient(int $id, User $user): ?Ingredient

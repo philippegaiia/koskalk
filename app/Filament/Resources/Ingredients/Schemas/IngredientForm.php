@@ -6,10 +6,12 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Filament\Resources\Ingredients\Pages\CreateIngredient;
 use App\Filament\Resources\Ingredients\Pages\EditIngredient;
+use App\Forms\Components\IngredientIdentityFields;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Services\MediaStorage;
 use App\SoapSap;
@@ -126,12 +128,7 @@ class IngredientForm
                             ->helperText('English source name used in summaries such as “Saponified oils (coconut, olive)”.')
                             ->maxLength(255)
                             ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted')),
-                        TextInput::make('current_version.cas_number')
-                            ->label('CAS number')
-                            ->maxLength(255),
-                        TextInput::make('current_version.ec_number')
-                            ->label('EC number')
-                            ->maxLength(255),
+                        ...IngredientIdentityFields::schema('current_version.', platform: true),
                         TextInput::make('current_version.unit')
                             ->maxLength(64),
                         Toggle::make('current_version.is_manufactured')
@@ -353,6 +350,40 @@ class IngredientForm
                             ->helperText('One source for the whole allergen declaration, e.g. IFRA or SDS allergen statement.')
                             ->rows(2)
                             ->columnSpanFull(),
+                    ]),
+                Section::make(__('ingredients.editor.compliance.substances.section'))
+                    ->description(__('ingredients.editor.compliance.substances.description'))
+                    ->icon(Heroicon::ShieldCheck)
+                    ->schema([
+                        Repeater::make('substance_entries')
+                            ->label(__('ingredients.editor.compliance.substances.entries'))
+                            ->schema([
+                                Select::make('substance_id')
+                                    ->label(__('ingredients.editor.compliance.substances.substance'))
+                                    ->options(fn (): array => Substance::query()
+                                        ->orderBy('name')
+                                        ->pluck('name', 'id')
+                                        ->all())
+                                    ->searchable()
+                                    ->preload()
+                                    ->required(),
+                                TextInput::make('concentration_percent')
+                                    ->label(__('ingredients.editor.compliance.substances.concentration'))
+                                    ->numeric()
+                                    ->inputMode('decimal')
+                                    ->suffix('%')
+                                    ->minValue(0)
+                                    ->maxValue(100),
+                            ])
+                            ->columns([
+                                'md' => 2,
+                            ])
+                            ->defaultItems(0)
+                            ->reorderable(false)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns([
+                        'md' => 2,
                     ]),
                 Section::make('Composite Components')
                     ->description('Use this only when the raw material is itself a blend, macerate, or soap base. Every sub-component must already exist in the catalog so INCI expansion stays consistent.')

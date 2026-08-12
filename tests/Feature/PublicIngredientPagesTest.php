@@ -974,12 +974,14 @@ it('shows authenticated users the platform ingredient record in read-only form',
         'category' => IngredientCategory::AromaticMaterials,
         'display_name' => 'Platform Lavender Oil',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
-        'cas_number' => '8000-28-0',
-        'ec_number' => '289-995-2',
         'owner_type' => null,
         'owner_id' => null,
         'catalog_key' => 'PLATFORM-LAVENDER',
         'is_active' => true,
+    ]);
+    $ingredient->identifiers()->createMany([
+        ['scheme' => 'cas', 'value' => '8000-28-0', 'normalized_value' => '8000-28-0', 'is_primary' => true],
+        ['scheme' => 'ec', 'value' => '289-995-2', 'normalized_value' => '289-995-2', 'is_primary' => true],
     ]);
     $allergen = Allergen::factory()->create(['inci_name' => 'LINALOOL']);
     IngredientAllergenEntry::factory()->for($ingredient)->for($allergen)->create([

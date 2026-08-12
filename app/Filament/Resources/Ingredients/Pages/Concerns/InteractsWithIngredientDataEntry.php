@@ -25,6 +25,11 @@ trait InteractsWithIngredientDataEntry
 
         $this->ingredientDataEntryState = [
             'current_version' => $data['current_version'] ?? [],
+            'cas_number' => $data['cas_number'] ?? data_get($data, 'current_version.cas_number'),
+            'ec_number' => $data['ec_number'] ?? data_get($data, 'current_version.ec_number'),
+            'additional_identifiers' => $data['additional_identifiers'] ?? [],
+            'aliases' => $data['aliases'] ?? [],
+            'substance_entries' => $data['substance_entries'] ?? [],
             'sap_profile' => $data['sap_profile'] ?? [],
             'fatty_acid_entries' => $data['fatty_acid_entries'] ?? [],
             'allergen_entries' => $data['allergen_entries'] ?? [],
@@ -35,6 +40,11 @@ trait InteractsWithIngredientDataEntry
 
         unset(
             $data['current_version'],
+            $data['cas_number'],
+            $data['ec_number'],
+            $data['additional_identifiers'],
+            $data['aliases'],
+            $data['substance_entries'],
             $data['sap_profile'],
             $data['fatty_acid_entries'],
             $data['allergen_entries'],

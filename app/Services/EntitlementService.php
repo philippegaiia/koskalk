@@ -88,6 +88,15 @@ class EntitlementService
         return max(0, (int) $limit);
     }
 
+    public function formulaItemsPerRecipeLimitFor(User $user): ?int
+    {
+        $workspace = $this->companyWorkspaceFor($user);
+        $subscriber = $workspace?->owner ?? $user;
+        $limit = $this->limitsFor($subscriber)['formula_items_per_recipe'] ?? null;
+
+        return $limit === null ? null : max(0, (int) $limit);
+    }
+
     public function canCreateRecipe(User $user): bool
     {
         return $this->usageFor($user)['saved_recipes']['allowed'];

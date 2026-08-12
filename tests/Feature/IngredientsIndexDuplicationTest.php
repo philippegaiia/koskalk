@@ -4,6 +4,7 @@ use App\Enums\IngredientCategory;
 use App\Enums\OwnerType;
 use App\Models\Ingredient;
 use App\Models\User;
+use App\Models\Workspace;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 use function Pest\Laravel\actingAs;
@@ -47,6 +48,55 @@ it('searches platform ingredients for duplication', function () {
     $results = $response->json();
     expect($results)->toHaveCount(1);
     expect($results[0]['name'])->toBe('Lavender 40/42');
+});
+
+it('searches platform ingredients by curated aliases and typed identifiers without leaking workspace rows', function (): void {
+    $user = User::factory()->create();
+
+    $platform = Ingredient::factory()->create([
+        'display_name' => 'Black cumin oil',
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+    $platform->aliases()->create([
+        'locale' => 'und',
+        'name' => 'Nigella sativa oil',
+        'normalized_name' => 'nigella sativa oil',
+        'kind' => 'botanical',
+    ]);
+    $platform->identifiers()->create([
+        'scheme' => 'cas',
+        'value' => '8002-75-3',
+        'normalized_value' => '8002-75-3',
+        'is_primary' => true,
+    ]);
+
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $private = Ingredient::factory()->create([
+        'display_name' => 'Private alias ingredient',
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'is_active' => true,
+    ]);
+    $private->aliases()->create([
+        'locale' => 'und',
+        'name' => 'Nigella sativa oil',
+        'normalized_name' => 'nigella sativa oil',
+        'kind' => 'common',
+    ]);
+
+    $this->actingAs($user);
+
+    $aliasResults = $this->getJson(route('ingredients.search-platform').'?q=nigella');
+    $aliasResults->assertSuccessful();
+    expect($aliasResults->json('0.id'))->toBe($platform->id)
+        ->and($aliasResults->json())->toHaveCount(1);
+
+    $identifierResults = $this->getJson(route('ingredients.search-platform').'?q=8002-75-3');
+    $identifierResults->assertSuccessful();
+    expect($identifierResults->json('0.id'))->toBe($platform->id);
 });
 
 it('creates a workspace-owned copy when duplicating a platform ingredient', function () {

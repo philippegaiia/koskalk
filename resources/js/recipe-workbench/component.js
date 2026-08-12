@@ -280,6 +280,10 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         unsavedBeforeUnloadHandler: null,
         unsavedNavigateHandler: null,
         lastAddedIngredientRowId: null,
+        formulaItemLimit: payload.formulaItemLimit === null || payload.formulaItemLimit === undefined
+            ? null
+            : Math.max(0, Number(payload.formulaItemLimit)),
+        formulaItemLimitMessage: '',
         phaseItems: phaseItemsForBlueprints(phaseOrder),
 
         init() {
@@ -526,6 +530,14 @@ function createCatalogSection() {
                 return;
             }
 
+            if (this.formulaItemLimitReached()) {
+                this.formulaItemLimitMessage = this.t('formula_items.limit_reached', {
+                    limit: this.formulaItemLimit,
+                });
+
+                return;
+            }
+
             const nextRow = {
                 id: `${ingredient.id}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
                 ingredient_id: ingredient.id,
@@ -625,6 +637,20 @@ function createCatalogSection() {
 
         removeIngredient(phaseKey, rowId) {
             this.phaseItems[phaseKey] = this.phaseItems[phaseKey].filter((row) => row.id !== rowId);
+
+            if (!this.formulaItemLimitReached()) {
+                this.formulaItemLimitMessage = '';
+            }
+        },
+
+        formulaItemCount() {
+            return Object.values(this.phaseItems ?? {})
+                .reduce((total, rows) => total + (Array.isArray(rows) ? rows.length : 0), 0);
+        },
+
+        formulaItemLimitReached() {
+            return this.formulaItemLimit !== null
+                && this.formulaItemCount() >= this.formulaItemLimit;
         },
 
         beginRowDrag(phaseKey, rowId, event) {

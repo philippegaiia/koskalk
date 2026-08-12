@@ -26,6 +26,7 @@ class PlanSeeder extends Seeder
         foreach ([
             'saved_recipes' => 15,
             'private_ingredients' => 20,
+            'formula_items_per_recipe' => 30,
             'production_batches' => 0,
             'saved_formula_history' => 0,
             'media_assets' => 200,

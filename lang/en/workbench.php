@@ -134,6 +134,12 @@ return [
         'properties' => 'Properties',
         'ownership_note' => 'User-created or modified ingredients are marked with a dot. Soapkraft has not verified their data.',
     ],
+    'formula_items' => [
+        'count_singular' => '1 ingredient line',
+        'count_plural' => ':count ingredient lines',
+        'limited_count' => ':count / :limit ingredient lines',
+        'limit_reached' => 'This plan allows up to :limit ingredient lines per formula. Remove a line before adding another.',
+    ],
     'saponification' => [
         'title' => 'Saponification',
         'balanced' => 'Oils total 100%',
@@ -264,6 +270,9 @@ return [
             'load_failed' => 'Could not load costing.',
             'save_failed' => 'Could not save',
         ],
+    ],
+    'messages' => [
+        'formula_item_limit' => 'This formula has :count ingredient lines, but the current plan allows :limit. Remove ingredient lines or change the plan before saving.',
     ],
     'qualities' => [
         'disclaimer' => 'These values are estimates. Process, additives and cure conditions affect the finished soap.',

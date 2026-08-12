@@ -9,7 +9,10 @@ use App\Models\IngredientComponent;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientFunction;
 use App\Models\IngredientSapProfile;
+use App\Models\IngredientSubstanceEntry;
+use App\Models\Substance;
 use App\Support\NumberLocale;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -17,6 +20,7 @@ class IngredientDataEntryService
 {
     public function __construct(
         private readonly IngredientFunctionAssignmentService $functionAssignments,
+        private readonly IngredientIdentitySynchronizer $ingredientIdentitySynchronizer,
     ) {}
 
     /**
@@ -24,15 +28,18 @@ class IngredientDataEntryService
      */
     public function formData(Ingredient $ingredient): array
     {
+        $identityState = $this->ingredientIdentitySynchronizer->formState($ingredient);
+
         return [
+            ...$identityState,
             'current_version' => [
                 'display_name' => $ingredient->display_name,
                 'inci_name' => $ingredient->inci_name,
                 'soap_inci_naoh_name' => $ingredient->soap_inci_naoh_name,
                 'soap_inci_koh_name' => $ingredient->soap_inci_koh_name,
                 'saponification_name' => $ingredient->saponification_name,
-                'cas_number' => $ingredient->cas_number,
-                'ec_number' => $ingredient->ec_number,
+                'cas_number' => $identityState['cas_number'],
+                'ec_number' => $identityState['ec_number'],
                 'unit' => $ingredient->unit,
                 'is_active' => $ingredient->is_active,
                 'is_manufactured' => $ingredient->is_manufactured ?? false,
@@ -77,6 +84,16 @@ class IngredientDataEntryService
                 ])
                 ->values()
                 ->all(),
+            'substance_entries' => $ingredient->substanceEntries
+                ->sortBy('substance_id')
+                ->map(fn (IngredientSubstanceEntry $entry): array => [
+                    'substance_id' => $entry->substance_id,
+                    'concentration_percent' => $entry->concentration_percent === null
+                        ? null
+                        : (float) $entry->concentration_percent,
+                ])
+                ->values()
+                ->all(),
         ];
     }
 
@@ -85,12 +102,30 @@ class IngredientDataEntryService
      */
     public function syncCurrentData(Ingredient $ingredient, array $state): Ingredient
     {
+        return DB::transaction(
+            fn (): Ingredient => $this->syncCurrentDataWithinTransaction($ingredient, $state),
+            attempts: 5,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function syncCurrentDataWithinTransaction(Ingredient $ingredient, array $state): Ingredient
+    {
         $hasSapProfileState = array_key_exists('sap_profile', $state);
         $hasFattyAcidEntriesState = array_key_exists('fatty_acid_entries', $state);
         $hasAllergenEntriesState = array_key_exists('allergen_entries', $state);
         $hasFunctionIdsState = array_key_exists('function_ids', $state);
         $hasComponentsState = array_key_exists('components', $state);
         $currentVersionState = is_array($state['current_version'] ?? null) ? $state['current_version'] : [];
+        $hasIdentityState = array_key_exists('cas_number', $state)
+            || array_key_exists('ec_number', $state)
+            || array_key_exists('additional_identifiers', $state)
+            || array_key_exists('aliases', $state)
+            || array_key_exists('cas_number', $currentVersionState ?? [])
+            || array_key_exists('ec_number', $currentVersionState ?? []);
+        $hasSubstanceEntriesState = array_key_exists('substance_entries', $state);
         $sapProfileState = is_array($state['sap_profile'] ?? null) ? $state['sap_profile'] : [];
         $fattyAcidEntriesState = is_array($state['fatty_acid_entries'] ?? null) ? $state['fatty_acid_entries'] : [];
         $allergenEntriesState = is_array($state['allergen_entries'] ?? null) ? $state['allergen_entries'] : [];
@@ -103,8 +138,6 @@ class IngredientDataEntryService
             'soap_inci_naoh_name' => $currentVersionState['soap_inci_naoh_name'] ?? null,
             'soap_inci_koh_name' => $currentVersionState['soap_inci_koh_name'] ?? null,
             'saponification_name' => $currentVersionState['saponification_name'] ?? null,
-            'cas_number' => $currentVersionState['cas_number'] ?? null,
-            'ec_number' => $currentVersionState['ec_number'] ?? null,
             'unit' => $currentVersionState['unit'] ?? null,
             'is_active' => array_key_exists('is_active', $currentVersionState)
                 ? (bool) $currentVersionState['is_active']
@@ -135,12 +168,85 @@ class IngredientDataEntryService
             $this->syncComponents($ingredient, $componentsState);
         }
 
+        if ($hasIdentityState) {
+            $this->ingredientIdentitySynchronizer->sync($ingredient, [
+                'cas_number' => $state['cas_number'] ?? ($currentVersionState['cas_number'] ?? null),
+                'ec_number' => $state['ec_number'] ?? ($currentVersionState['ec_number'] ?? null),
+                'additional_identifiers' => $state['additional_identifiers'] ?? [],
+                'aliases' => $state['aliases'] ?? [],
+            ]);
+        }
+
+        if ($hasSubstanceEntriesState) {
+            $this->syncSubstanceEntries($ingredient, is_array($state['substance_entries'] ?? null)
+                ? $state['substance_entries']
+                : []);
+        }
+
         return $ingredient->fresh([
             'sapProfile',
             'fattyAcidEntries.fattyAcid',
             'allergenEntries.allergen',
             'functions',
+            'identifiers',
+            'aliases',
+            'substanceEntries.substance',
         ]);
+    }
+
+    /**
+     * @param  array<int, mixed>  $entries
+     */
+    private function syncSubstanceEntries(Ingredient $ingredient, array $entries): void
+    {
+        $rows = collect($entries)
+            ->filter(fn (mixed $row): bool => is_array($row) && filled($row['substance_id'] ?? null))
+            ->map(fn (array $row): array => [
+                'substance_id' => (int) $row['substance_id'],
+                'concentration_percent' => filled($row['concentration_percent'] ?? null)
+                    ? NumberLocale::parseDecimalInput($row['concentration_percent'])
+                    : null,
+            ])
+            ->unique('substance_id')
+            ->values();
+
+        if ($rows->contains(fn (array $row): bool => $row['concentration_percent'] !== null
+            && ($row['concentration_percent'] < 0 || $row['concentration_percent'] > 100))) {
+            throw ValidationException::withMessages([
+                'substance_entries' => __('ingredients.editor.compliance.substances.validation.concentration'),
+            ]);
+        }
+
+        $substanceIds = $rows->pluck('substance_id')->all();
+        $validSubstanceIds = Substance::query()
+            ->whereIn('id', $substanceIds)
+            ->pluck('id')
+            ->map(fn (int|string $id): int => (int) $id)
+            ->all();
+
+        if (count($validSubstanceIds) !== count($substanceIds)) {
+            throw ValidationException::withMessages([
+                'substance_entries' => __('ingredients.editor.compliance.substances.validation.catalogue'),
+            ]);
+        }
+
+        $existing = $ingredient->substanceEntries()
+            ->get()
+            ->keyBy('substance_id');
+
+        $ingredient->substanceEntries()->delete();
+
+        foreach ($rows as $row) {
+            $previous = $existing->get($row['substance_id']);
+
+            $ingredient->substanceEntries()->create([
+                'substance_id' => $row['substance_id'],
+                'concentration_percent' => $row['concentration_percent'],
+                'concentration_source' => $previous?->concentration_source ?? 'supplier',
+                'source_notes' => $previous?->source_notes,
+                'source_data' => $previous?->source_data,
+            ]);
+        }
     }
 
     public function generateCatalogKey(string $prefix = 'ADM'): string

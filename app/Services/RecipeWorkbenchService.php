@@ -29,6 +29,7 @@ class RecipeWorkbenchService
         private readonly RecipeWorkbenchPhaseBlueprints $recipeWorkbenchPhaseBlueprints,
         private readonly RecipeWorkbenchVersionDataService $recipeWorkbenchVersionDataService,
         private readonly EntitlementService $entitlementService,
+        private readonly RecipeFormulaItemLimitService $recipeFormulaItemLimitService,
         private readonly RecipeMediaRollbackGuard $recipeMediaRollbackGuard,
     ) {}
 
@@ -178,6 +179,11 @@ class RecipeWorkbenchService
         }
 
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, false);
+        if ($recipe instanceof Recipe) {
+            $this->recipeFormulaItemLimitService->assertUpdateAllowed($user, $normalizedPayload, $recipe);
+        } else {
+            $this->recipeFormulaItemLimitService->assertCreateAllowed($user, $normalizedPayload);
+        }
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validateOutputConfiguration($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
@@ -231,6 +237,11 @@ class RecipeWorkbenchService
         }
 
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($payload, $productFamily, true);
+        if ($recipe instanceof Recipe) {
+            $this->recipeFormulaItemLimitService->assertUpdateAllowed($user, $normalizedPayload, $recipe);
+        } else {
+            $this->recipeFormulaItemLimitService->assertCreateAllowed($user, $normalizedPayload);
+        }
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validateOutputConfiguration($user, $normalizedPayload);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
@@ -321,13 +332,18 @@ class RecipeWorkbenchService
 
     public function restoreCurrentVersion(User $user, Recipe $recipe, int $versionId): RecipeVersion
     {
-        return DB::transaction(function () use ($recipe, $user, $versionId): RecipeVersion {
+        $productFamily = $recipe->productFamily()->withoutGlobalScopes()->firstOrFail();
+        $targetPayload = $this->recipeWorkbenchDraftPayloadMapper->toSavePayload(
+            $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId),
+        );
+        $normalizedTargetPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($targetPayload, $productFamily, false);
+        $this->recipeFormulaItemLimitService->assertRestoreAllowed($user, $normalizedTargetPayload);
+
+        return DB::transaction(function () use ($recipe, $user, $versionId, $productFamily, $targetPayload): RecipeVersion {
             $currentVersion = $this->save(
                 $user,
-                $recipe->productFamily()->withoutGlobalScopes()->firstOrFail(),
-                $this->recipeWorkbenchDraftPayloadMapper->toSavePayload(
-                    $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId),
-                ),
+                $productFamily,
+                $targetPayload,
                 $recipe,
             );
 
@@ -374,6 +390,7 @@ class RecipeWorkbenchService
         $versionPayload = $this->recipeWorkbenchVersionDataService->publishedVersionPayload($recipe, $versionId);
         $savePayload = $this->recipeWorkbenchDraftPayloadMapper->toSavePayload($versionPayload);
         $normalizedPayload = $this->recipeWorkbenchPayloadNormalizer->normalize($savePayload, $productFamily, true);
+        $this->recipeFormulaItemLimitService->assertRestoreAllowed($user, $normalizedPayload);
 
         return $this->recipeVersionPublisher->restore($user, $recipe, $normalizedPayload, $sourceVersion);
     }

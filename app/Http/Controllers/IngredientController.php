@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\CurrentMaterialPriceService;
+use App\Services\IngredientCatalogSearchService;
 use App\Services\UserIngredientAuthoringService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -75,7 +76,7 @@ class IngredientController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function searchPlatform(Request $request)
+    public function searchPlatform(Request $request, IngredientCatalogSearchService $catalogSearch): JsonResponse
     {
         $query = (string) $request->query('q', '');
         $translationLocales = Ingredient::translationLocaleCandidates();
@@ -84,17 +85,13 @@ class IngredientController extends Controller
             ->with([
                 'translations' => fn ($translationQuery) => $translationQuery
                     ->whereIn('locale', $translationLocales),
+                'identifiers',
+                'aliases' => fn ($aliasQuery) => $aliasQuery
+                    ->whereIn('locale', array_values(array_unique([...$translationLocales, 'und', 'en']))),
             ])
             ->whereNull('owner_type')
             ->where('is_active', true)
-            ->when(filled($query), fn ($q) => $q->where(function ($q) use ($query, $translationLocales) {
-                $lower = mb_strtolower($query);
-                $q->whereRaw('LOWER(display_name) LIKE ?', ["%{$lower}%"])
-                    ->orWhereRaw('LOWER(inci_name) LIKE ?', ["%{$lower}%"])
-                    ->orWhereHas('translations', fn ($translationQuery) => $translationQuery
-                        ->whereIn('locale', $translationLocales)
-                        ->whereRaw('LOWER(display_name) LIKE ?', ["%{$lower}%"]));
-            }))
+            ->when(filled($query), fn ($q) => $catalogSearch->apply($q, $query, $translationLocales))
             ->limit(20)
             ->get()
             ->map(fn (Ingredient $ingredient) => [
@@ -102,6 +99,11 @@ class IngredientController extends Controller
                 'name' => $ingredient->localizedDisplayName(),
                 'inci_name' => $ingredient->inci_name,
                 'category' => $ingredient->category?->getLabel(),
+                'identifiers' => $ingredient->identifiers->map(fn ($identifier): array => [
+                    'scheme' => $identifier->scheme->value,
+                    'value' => $identifier->value,
+                ])->all(),
+                'aliases' => $ingredient->aliases->pluck('name')->all(),
             ])
             ->sortBy('name')
             ->values();

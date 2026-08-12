@@ -31,6 +31,8 @@ class RecipeWorkbenchIngredientCatalogBuilder
                 'sapProfile',
                 'fattyAcidEntries.fattyAcid',
                 'mediaAssetUsages.mediaAsset',
+                'identifiers',
+                'aliases',
                 'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
             ])
             ->where('is_active', true)
@@ -53,6 +55,13 @@ class RecipeWorkbenchIngredientCatalogBuilder
                     'name' => $ingredient->localizedDisplayName(),
                     'is_user_owned' => $ingredient->owner_type !== null,
                     'inci_name' => $ingredient->inci_name,
+                    'identifiers' => $ingredient->identifiers
+                        ->map(fn ($identifier): array => [
+                            'scheme' => $identifier->scheme->value,
+                            'value' => $identifier->value,
+                        ])
+                        ->all(),
+                    'aliases' => $ingredient->aliases->pluck('name')->all(),
                     'image_url' => $ingredient->pickerImageUrl(),
                     'category' => $category?->value,
                     'category_label' => $category?->getLabel(),

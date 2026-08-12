@@ -10,9 +10,12 @@ use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\Plan;
+use App\Models\Substance;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Services\MediaStorage;
 use App\Services\UserIngredientAuthoringService;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -98,15 +101,95 @@ it('creates a minimal private user ingredient from the public editor', function 
         ->where('owner_id', $workspace?->id)
         ->first();
 
+    $ingredient?->load('identifiers');
+
     expect($ingredient)->not->toBeNull()
         ->and($ingredient->visibility)->toBe(Visibility::Private)
         ->and($ingredient->is_soap_saponification_trusted)->toBeFalse()
         ->and($ingredient->display_name)->toBe('French Green Clay')
         ->and($ingredient->inci_name)->toBe('ILLITE')
-        ->and($ingredient->cas_number)->toBe('1332-58-7')
-        ->and($ingredient->ec_number)->toBe('310-194-1')
+        ->and($ingredient->identifiers->where('scheme', 'cas')->value('value'))->toBe('1332-58-7')
+        ->and($ingredient->identifiers->where('scheme', 'ec')->value('value'))->toBe('310-194-1')
         ->and($ingredient->notes)->toBe('Fine cosmetic-grade green clay')
         ->and($ingredient->is_active)->toBeTrue();
+});
+
+it('lets a workspace manage bounded identity aliases and declared substances', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $substance = Substance::factory()->create(['name' => 'Linalool']);
+    $service = app(UserIngredientAuthoringService::class);
+
+    $ingredient = $service->create([
+        'name' => 'Lavender oil',
+        'category' => IngredientCategory::AromaticMaterials->value,
+        'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+        'cas_number' => '8000-28-0',
+        'ec_number' => '289-995-2',
+        'additional_identifiers' => [[
+            'scheme' => 'unii',
+            'value' => 'EXAMPLE123',
+            'is_primary' => true,
+        ]],
+        'aliases' => [[
+            'locale' => 'fr',
+            'name' => 'Huile de lavande',
+            'kind' => 'common',
+        ]],
+        'substance_entries' => [[
+            'substance_id' => $substance->id,
+            'concentration_percent' => 0.8,
+        ]],
+    ], $user);
+
+    expect($service->formData($ingredient)['additional_identifiers'][0]['value'])->toBe('EXAMPLE123')
+        ->and($ingredient->aliases->first()->locale)->toBe('fr')
+        ->and((float) $ingredient->substanceEntries->first()->concentration_percent)->toBe(0.8);
+
+    $ingredient->substanceEntries()->first()->update([
+        'source_notes' => 'Supplier declaration',
+        'source_data' => ['document' => 'supplier-sds.pdf'],
+    ]);
+
+    $state = $service->formData($ingredient->fresh());
+    $state['additional_identifiers'][] = [
+        'scheme' => 'echa_list',
+        'value' => 'REACH-EXAMPLE',
+        'is_primary' => false,
+    ];
+    $state['aliases'][0]['name'] = 'Huile essentielle de lavande';
+    $state['substance_entries'][0]['concentration_percent'] = 1.2;
+
+    $updated = $service->update($ingredient, $state, $user);
+
+    expect($updated->identifiers)->toHaveCount(4)
+        ->and($updated->aliases->first()->name)->toBe('Huile essentielle de lavande')
+        ->and((float) $updated->substanceEntries->first()->concentration_percent)->toBe(1.2)
+        ->and($updated->substanceEntries->first()->source_notes)->toBe('Supplier declaration')
+        ->and($updated->substanceEntries->first()->source_data)->toBe(['document' => 'supplier-sds.pdf']);
+
+    $service->update($updated, [
+        ...$service->formData($updated),
+        'cas_number' => null,
+        'ec_number' => null,
+        'additional_identifiers' => [],
+        'aliases' => [],
+        'substance_entries' => [],
+    ], $user);
+
+    expect($updated->fresh()->identifiers)->toHaveCount(0)
+        ->and($updated->fresh()->aliases)->toHaveCount(0)
+        ->and($updated->fresh()->substanceEntries)->toHaveCount(0);
+
+    expect(fn () => $service->update($updated, $service->formData($updated), $otherUser))
+        ->toThrow(ValidationException::class, 'cannot be edited');
+
+    $platformIngredient = Ingredient::factory()->create(['owner_type' => null, 'owner_id' => null]);
+
+    expect(fn () => $service->update($platformIngredient, $service->formData($platformIngredient), $user))
+        ->toThrow(ValidationException::class, 'cannot be edited');
 });
 
 it('shows composition only when the user chooses a blend', function () {
@@ -136,7 +219,7 @@ it('shows specialist tabs from explicit capabilities while creating an ingredien
     Livewire::test(IngredientEditor::class)
         ->set('data.is_soap_saponification_trusted', true)
         ->assertSee('Soap chemistry')
-        ->assertDontSee('Compliance')
+        ->assertSee('Compliance')
         ->set('data.is_soap_saponification_trusted', false)
         ->set('data.requires_aromatic_compliance', true)
         ->assertSee('Compliance')
@@ -715,7 +798,7 @@ it('keeps user carrier oils out of the soap saponification lane', function () {
         ->not->toContain('saponified_oils');
 });
 
-it('normalizes imported CAS and EC check digit padding when saving a user ingredient', function () {
+it('preserves entered CAS and EC identifier values when saving a user ingredient', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -723,13 +806,15 @@ it('normalizes imported CAS and EC check digit padding when saving a user ingred
         'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive oil virgin',
         'inci_name' => 'Olea europaea fruit oil',
-        'cas_number' => '8001-25-00',
-        'ec_number' => '232-277-00',
         'owner_type' => OwnerType::User,
         'owner_id' => $user->id,
         'visibility' => Visibility::Private,
         'catalog_key' => 'USR-OLIVE',
         'is_soap_saponification_trusted' => true,
+    ]);
+    $ingredient->identifiers()->createMany([
+        ['scheme' => 'cas', 'value' => '8001-25-00', 'normalized_value' => '8001-25-00', 'is_primary' => true],
+        ['scheme' => 'ec', 'value' => '232-277-00', 'normalized_value' => '232-277-00', 'is_primary' => true],
     ]);
 
     Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient])
@@ -743,8 +828,10 @@ it('normalizes imported CAS and EC check digit padding when saving a user ingred
 
     $ingredient->refresh();
 
-    expect($ingredient->cas_number)->toBe('8001-25-0')
-        ->and($ingredient->ec_number)->toBe('232-277-0');
+    $ingredient->load('identifiers');
+
+    expect($ingredient->identifiers->where('scheme', 'cas')->value('value'))->toBe('8001-25-00')
+        ->and($ingredient->identifiers->where('scheme', 'ec')->value('value'))->toBe('232-277-00');
 });
 
 it('deletes replaced ingredient media from storage during update', function () {

@@ -48,8 +48,6 @@ class IngredientCatalogSeeder extends Seeder
                     'inci_name' => $this->value($row, 'INCI'),
                     'soap_inci_naoh_name' => $soapInciNaohName,
                     'soap_inci_koh_name' => $soapInciKohName,
-                    'cas_number' => $this->value($row, 'CAS'),
-                    'ec_number' => $this->value($row, 'EINECS') ?? $this->value($row, 'CAS EINECS'),
                     'unit' => $this->value($row, 'Unit'),
                     'is_soap_saponification_trusted' => $taxonomy['is_soap_saponification_trusted'] ?? false,
                     'requires_aromatic_compliance' => $taxonomy['requires_aromatic_compliance'] ?? false,
@@ -59,6 +57,40 @@ class IngredientCatalogSeeder extends Seeder
                     'source_data' => $row,
                 ]
             );
+
+            $this->syncLegacyIdentifiers($ingredient, $this->value($row, 'CAS'), 'cas');
+            $this->syncLegacyIdentifiers(
+                $ingredient,
+                $this->value($row, 'EINECS') ?? $this->value($row, 'CAS EINECS'),
+                'ec',
+            );
+        }
+    }
+
+    private function syncLegacyIdentifiers(Ingredient $ingredient, ?string $value, string $scheme): void
+    {
+        $ingredient->identifiers()->where('scheme', $scheme)->delete();
+
+        $seen = [];
+        $isPrimary = true;
+
+        foreach (preg_split('/[,;]+/u', (string) $value) ?: [] as $candidate) {
+            $trimmed = trim($candidate);
+            $normalized = mb_strtolower($trimmed);
+
+            if ($trimmed === '' || isset($seen[$normalized])) {
+                continue;
+            }
+
+            $ingredient->identifiers()->create([
+                'scheme' => $scheme,
+                'value' => $trimmed,
+                'normalized_value' => $normalized,
+                'is_primary' => $isPrimary,
+            ]);
+
+            $seen[$normalized] = true;
+            $isPrimary = false;
         }
     }
 

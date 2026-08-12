@@ -48,12 +48,24 @@
  </div>
  <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
  <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.cas_number') }}</dt>
- <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $ingredient->cas_number ?: __('ingredients.editor.common.not_available') }}</dd>
+ <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $identityState['cas_number'] ?: __('ingredients.editor.common.not_available') }}</dd>
  </div>
  <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3">
  <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.ec_number') }}</dt>
- <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $ingredient->ec_number ?: __('ingredients.editor.common.not_available') }}</dd>
+ <dd class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]">{{ $identityState['ec_number'] ?: __('ingredients.editor.common.not_available') }}</dd>
  </div>
+ @if (count($identityState['additional_identifiers'] ?? []) > 0)
+ <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3 sm:col-span-2">
+ <details>
+ <summary class="cursor-pointer text-sm font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.reference.additional_identifiers') }}</summary>
+ <ul class="mt-3 space-y-2 text-sm text-[var(--color-ink-soft)]">
+ @foreach ($identityState['additional_identifiers'] as $identifier)
+ <li><span class="font-medium text-[var(--color-ink-strong)]">{{ \App\Enums\IngredientIdentifierScheme::tryFrom((string) ($identifier['scheme'] ?? ''))?->label() ?? ($identifier['scheme'] ?? __('ingredients.editor.common.not_available')) }}</span>: {{ $identifier['value'] ?? __('ingredients.editor.common.not_available') }}</li>
+ @endforeach
+ </ul>
+ </details>
+ </div>
+ @endif
  <div class="rounded-lg bg-[var(--color-field-muted)] px-4 py-3 sm:col-span-2">
  <dt class="text-xs font-medium uppercase tracking-wide text-[var(--color-ink-soft)]">{{ __('ingredients.editor.reference.allergens') }}</dt>
  <dd class="mt-2">

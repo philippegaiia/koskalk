@@ -38,8 +38,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'soap_inci_naoh_name',
     'soap_inci_koh_name',
     'saponification_name',
-    'cas_number',
-    'ec_number',
     'notes',
     'unit',
     'owner_type',
@@ -91,6 +89,21 @@ class Ingredient extends Model
     public function translations(): HasMany
     {
         return $this->hasMany(IngredientTranslation::class);
+    }
+
+    public function identifiers(): HasMany
+    {
+        return $this->hasMany(IngredientIdentifier::class)
+            ->orderByDesc('is_primary')
+            ->orderBy('scheme')
+            ->orderBy('id');
+    }
+
+    public function aliases(): HasMany
+    {
+        return $this->hasMany(IngredientAlias::class)
+            ->orderBy('locale')
+            ->orderBy('id');
     }
 
     public function localizedDisplayName(?string $locale = null): ?string

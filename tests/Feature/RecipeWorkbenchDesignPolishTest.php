@@ -48,6 +48,25 @@ it('keeps formula-start compliance controls available but collapsed by default',
         ->toBeLessThan(strpos($soapSettings, 'Label &amp; compliance'));
 });
 
+it('shows the formula line limit and disables catalog additions at the limit', function (): void {
+    $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
+    $formulaSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
+    $formulaTab = view('livewire.dashboard.partials.recipe-workbench.formula-tab')->render();
+    $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
+
+    expect($componentSource)
+        ->toContain('formulaItemCount()')
+        ->toContain('formulaItemLimitReached()')
+        ->and($formulaSectionSource)
+        ->toContain("this.formulaItemLimitMessage = '';")
+        ->and($formulaTab)
+        ->toContain('formula_items.limited_count')
+        ->toContain('formula_items.limit_reached')
+        ->and($ingredientBrowser)
+        ->toContain(':disabled="formulaItemLimitReached()"')
+        ->toContain(':aria-disabled="formulaItemLimitReached().toString()"');
+});
+
 it('presents the workbench header as a quiet hierarchy with compact section navigation', function () {
     $savedFormulaUrl = 'http://koskalk.test/dashboard/recipes/savon-de-marseille/saved';
     $workbench = [

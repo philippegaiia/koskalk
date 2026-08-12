@@ -8,8 +8,11 @@ use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\IngredientTranslation;
+use App\Models\Substance;
 use App\Models\User;
 use App\Services\UserIngredientAuthoringService;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
@@ -26,8 +29,6 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
         'display_name' => 'Lavender 40/42',
         'inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
         'notes' => 'Supplier-neutral catalogue note',
-        'cas_number' => '8000-28-0',
-        'ec_number' => '289-995-2',
         'owner_type' => null,
         'owner_id' => null,
         'visibility' => Visibility::Public,
@@ -38,6 +39,10 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
         'icon_image_original_name' => 'Lavender icon.webp',
         'info_markdown' => 'A popular essential oil.',
         'is_active' => true,
+    ]);
+    $source->identifiers()->createMany([
+        ['scheme' => 'cas', 'value' => '8000-28-0', 'normalized_value' => '8000-28-0', 'is_primary' => true],
+        ['scheme' => 'ec', 'value' => '289-995-2', 'normalized_value' => '289-995-2', 'is_primary' => true],
     ]);
     $source->sapProfile()->create(['koh_sap_value' => 0.188]);
 
@@ -71,7 +76,7 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
     expect($copy->display_name)->toBe('Lavender 40/42');
     expect($copy->inci_name)->toBe('LAVANDULA ANGUSTIFOLIA OIL');
     expect($copy->notes)->toBe('Supplier-neutral catalogue note');
-    expect($copy->cas_number)->toBe('8000-28-0');
+    expect($copy->identifiers->where('scheme', 'cas')->value('value'))->toBe('8000-28-0');
     expect($copy->featured_image_path)->toBeNull();
     expect($copy->featured_image_original_name)->toBeNull();
     expect($copy->icon_image_path)->toBeNull();
@@ -95,6 +100,71 @@ it('duplicates a platform ingredient into a workspace-owned copy with all data e
     expect(Ingredient::query()->count())->toBe(2);
 });
 
+it('duplicates localized identity and substance data into an independent workspace copy', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    $user = User::factory()->create(['locale' => 'fr']);
+    $substance = Substance::factory()->create(['name' => 'Linalool']);
+
+    $source = Ingredient::factory()->create([
+        'display_name' => 'Lavender oil',
+        'saponification_name' => 'Lavender',
+        'info_markdown' => 'English guidance',
+        'category' => IngredientCategory::AromaticMaterials,
+        'owner_type' => null,
+        'owner_id' => null,
+        'is_active' => true,
+    ]);
+    $source->translations()->create([
+        'locale' => 'fr',
+        'display_name' => 'Huile de lavande',
+        'saponification_name' => 'Lavande',
+        'info_markdown' => 'Conseils en français',
+    ]);
+    $source->translations()->create([
+        'locale' => 'de',
+        'display_name' => 'Lavendelöl',
+        'saponification_name' => 'Lavendel',
+        'info_markdown' => 'Deutsche Hinweise',
+    ]);
+    $source->identifiers()->createMany([
+        ['scheme' => 'cas', 'value' => '8000-28-0', 'normalized_value' => '8000-28-0', 'is_primary' => true],
+        ['scheme' => 'ec', 'value' => '289-995-2', 'normalized_value' => '289-995-2', 'is_primary' => true],
+        ['scheme' => 'unii', 'value' => 'EXAMPLE123', 'normalized_value' => 'example123', 'is_primary' => true],
+    ]);
+    $source->aliases()->createMany([
+        ['locale' => 'fr', 'name' => 'Lavande vraie', 'normalized_name' => 'lavande vraie', 'kind' => 'common'],
+        ['locale' => 'und', 'name' => 'Lavandula angustifolia', 'normalized_name' => 'lavandula angustifolia', 'kind' => 'botanical'],
+        ['locale' => 'en', 'name' => 'English lavender', 'normalized_name' => 'english lavender', 'kind' => 'common'],
+    ]);
+    $source->substanceEntries()->create([
+        'substance_id' => $substance->id,
+        'concentration_percent' => 0.42,
+        'concentration_source' => 'supplier_coa',
+        'source_notes' => 'Supplier declaration',
+        'source_data' => ['document' => 'coa.pdf'],
+    ]);
+
+    $copy = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
+
+    expect($copy->display_name)->toBe('Huile de lavande')
+        ->and($copy->saponification_name)->toBe('Lavande')
+        ->and($copy->info_markdown)->toBe('Conseils en français')
+        ->and($copy->translations)->toBeEmpty()
+        ->and($copy->identifiers)->toHaveCount(3)
+        ->and($copy->identifiers->where('scheme', 'cas')->where('is_primary', true)->value('value'))->toBe('8000-28-0')
+        ->and($copy->aliases->pluck('name')->all())->toBe(['Lavande vraie'])
+        ->and($copy->substanceEntries)->toHaveCount(1)
+        ->and($copy->substanceEntries->first()->source_notes)->toBe('Supplier declaration')
+        ->and($copy->substanceEntries->first()->source_data)->toBe(['document' => 'coa.pdf']);
+
+    $copy->identifiers->first()->update(['value' => 'changed']);
+    $copy->substanceEntries->first()->update(['concentration_percent' => 0.8]);
+
+    expect($source->fresh()->identifiers->first()->value)->toBe('8000-28-0')
+        ->and((float) $source->fresh()->substanceEntries->first()->concentration_percent)->toBe(0.42)
+        ->and(IngredientTranslation::query()->where('ingredient_id', $copy->id)->exists())->toBeFalse();
+});
+
 it('duplicates a carrier oil with SAP profile and fatty acids', function () {
     $user = User::factory()->create();
     $oleic = FattyAcid::factory()->create(['key' => 'oleic', 'name' => 'Oleic']);
@@ -104,12 +174,14 @@ it('duplicates a carrier oil with SAP profile and fatty acids', function () {
         'category' => IngredientCategory::Lipids,
         'display_name' => 'Olive Oil',
         'saponification_name' => 'Olive',
-        'cas_number' => '8001-25-00',
-        'ec_number' => '232-277-00',
         'owner_type' => null,
         'owner_id' => null,
         'is_soap_saponification_trusted' => true,
         'is_active' => true,
+    ]);
+    $source->identifiers()->createMany([
+        ['scheme' => 'cas', 'value' => '8001-25-00', 'normalized_value' => '8001-25-00', 'is_primary' => true],
+        ['scheme' => 'ec', 'value' => '232-277-00', 'normalized_value' => '232-277-00', 'is_primary' => true],
     ]);
 
     $source->sapProfile()->create([
@@ -128,8 +200,8 @@ it('duplicates a carrier oil with SAP profile and fatty acids', function () {
 
     expect($copy->is_soap_saponification_trusted)->toBeTrue();
     expect($copy->saponification_name)->toBe('Olive');
-    expect($copy->cas_number)->toBe('8001-25-0');
-    expect($copy->ec_number)->toBe('232-277-0');
+    expect($copy->identifiers->where('scheme', 'cas')->value('value'))->toBe('8001-25-00');
+    expect($copy->identifiers->where('scheme', 'ec')->value('value'))->toBe('232-277-00');
     expect($copy->sapProfile)->not->toBeNull();
     expect((float) $copy->sapProfile->koh_sap_value)->toBe(0.188);
     expect((float) $copy->sapProfile->iodine_value)->toBe(86.4);

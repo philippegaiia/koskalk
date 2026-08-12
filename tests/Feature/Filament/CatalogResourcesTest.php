@@ -15,6 +15,8 @@ use App\Filament\Resources\Ingredients\Pages\ListIngredients;
 use App\Filament\Resources\Ingredients\Schemas\IngredientForm;
 use App\Filament\Resources\IngredientSapProfiles\IngredientSapProfileResource;
 use App\Filament\Resources\IngredientSubstanceEntries\IngredientSubstanceEntryResource;
+use App\Filament\Resources\Plans\Pages\CreatePlan;
+use App\Filament\Resources\Plans\Pages\EditPlan;
 use App\Filament\Resources\Plans\PlanResource;
 use App\Filament\Resources\RegulatoryRegimeAllergens\RegulatoryRegimeAllergenResource;
 use App\Filament\Resources\RegulatoryRegimes\RegulatoryRegimeResource;
@@ -77,6 +79,51 @@ it('keeps the entered display name when an admin creates an ingredient', functio
     expect($ingredient->display_name)->toBe('Grapefruit white')
         ->and($ingredient->catalog_key)->toStartWith('ADM-')
         ->and(IngredientResource::getRecordTitle($ingredient))->toBe('Grapefruit white');
+});
+
+it('curates typed identity aliases and declared substances from the admin ingredient form', function (): void {
+    $admin = User::factory()->admin()->create();
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $substance = Substance::factory()->create(['name' => 'Linalool']);
+    $this->actingAs($admin);
+
+    Livewire::test(CreateIngredient::class)
+        ->fillForm([
+            'category' => IngredientCategory::AromaticMaterials->value,
+            'subcategory' => IngredientSubcategory::EssentialOils->value,
+            'current_version.display_name' => 'Lavender essential oil',
+            'current_version.inci_name' => 'LAVANDULA ANGUSTIFOLIA OIL',
+            'current_version.cas_number' => '8000-28-0',
+            'current_version.ec_number' => '289-995-2',
+            'additional_identifiers' => [[
+                'scheme' => 'unii',
+                'value' => 'EXAMPLE123',
+                'is_primary' => true,
+            ]],
+            'aliases' => [[
+                'locale' => 'fr',
+                'name' => 'Huile de lavande',
+                'kind' => 'common',
+            ]],
+            'substance_entries' => [[
+                'substance_id' => $substance->id,
+                'concentration_percent' => 0.8,
+            ]],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $ingredient = Ingredient::query()->where('display_name', 'Lavender essential oil')->firstOrFail();
+
+    expect($ingredient->identifiers)->toHaveCount(3)
+        ->and($ingredient->identifiers->where('scheme', 'unii')->value('value'))->toBe('EXAMPLE123')
+        ->and($ingredient->aliases->first()->name)->toBe('Huile de lavande')
+        ->and((float) $ingredient->substanceEntries->first()->concentration_percent)->toBe(0.8);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->assertSet('data.additional_identifiers', fn (array $state): bool => collect($state)->first()['scheme'] === 'unii')
+        ->assertSet('data.aliases', fn (array $state): bool => collect($state)->first()['locale'] === 'fr')
+        ->assertSet('data.substance_entries', fn (array $state): bool => (int) collect($state)->first()['substance_id'] === $substance->id);
 });
 
 it('generates an ingredient classification prompt from unsaved admin create state', function (): void {
@@ -706,14 +753,45 @@ it('renders the plan limits resource in the admin panel', function () {
         ->assertSuccessful()
         ->assertSee('Free beta')
         ->assertSee('15')
-        ->assertSee('20');
+        ->assertSee('20')
+        ->assertSee('30')
+        ->assertSee('Ingredient lines per formula');
 
     $this->get(PlanResource::getUrl('edit', ['record' => $plan], panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Plan')
         ->assertSee('Limits')
         ->assertSee('Saved recipes')
-        ->assertSee('Private ingredients');
+        ->assertSee('Private ingredients')
+        ->assertSee('Ingredient lines per formula');
+});
+
+it('adds formula line defaults to new billable plans without overwriting edits', function (): void {
+    $admin = User::factory()->admin()->create();
+    $this->actingAs($admin);
+
+    Livewire::test(CreatePlan::class)
+        ->fillForm([
+            'name' => 'Growth',
+            'slug' => 'growth',
+            'paddle_price_id' => 'pri_growth',
+            'is_active' => true,
+            'limits' => [],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $plan = Plan::query()->where('slug', 'growth')->firstOrFail();
+
+    expect($plan->limits()->where('key', 'formula_items_per_recipe')->value('value'))->toBe(50);
+
+    $plan->limits()->where('key', 'formula_items_per_recipe')->update(['value' => 37]);
+
+    Livewire::test(EditPlan::class, ['record' => $plan->id])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($plan->fresh()->limits()->where('key', 'formula_items_per_recipe')->value('value'))->toBe(37);
 });
 
 it('renders the user management resource with plan subscription and usage context', function () {

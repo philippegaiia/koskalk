@@ -45,7 +45,7 @@ class PlanFactory extends Factory
         ]);
     }
 
-    public function hasLimit(string $key, int $value): static
+    public function hasLimit(string $key, ?int $value): static
     {
         return $this->afterCreating(function (Plan $plan) use ($key, $value): void {
             PlanLimit::factory()->create([

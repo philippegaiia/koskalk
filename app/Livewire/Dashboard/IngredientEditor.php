@@ -7,6 +7,7 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\MediaAssetType;
 use App\Enums\MediaAssetUsageRole;
+use App\Forms\Components\IngredientIdentityFields;
 use App\Forms\Components\MediaAssetPicker;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
@@ -15,10 +16,12 @@ use App\Models\FattyAcid;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
+use App\Models\Substance;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\IngredientClassificationPromptBuilder;
+use App\Services\IngredientIdentitySynchronizer;
 use App\Services\MediaAssetUsageService;
 use App\Services\UserIngredientAuthoringService;
 use App\SoapSap;
@@ -110,6 +113,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                 ecNumber: $this->data['ec_number'] ?? null,
                 supplierNotes: $this->data['notes'] ?? null,
                 responseLocale: app()->getLocale(),
+                additionalIdentifiers: $this->data['additional_identifiers'] ?? [],
             ),
         );
     }
@@ -410,14 +414,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         'md' => 2,
                                     ])
                                     ->schema([
-                                        TextInput::make('cas_number')
-                                            ->label(__('ingredients.editor.supplier.cas_number'))
-                                            ->maxLength(255)
-                                            ->placeholder(__('ingredients.editor.supplier.cas_placeholder')),
-                                        TextInput::make('ec_number')
-                                            ->label(__('ingredients.editor.supplier.ec_number'))
-                                            ->maxLength(255)
-                                            ->placeholder(__('ingredients.editor.supplier.ec_placeholder')),
+                                        ...IngredientIdentityFields::schema(platform: false),
                                         TextEntry::make('verified_function_names')
                                             ->label(__('ingredients.editor.supplier.verified_functions'))
                                             ->formatStateUsing(fn (mixed $state): string => collect(is_array($state) ? $state : [])->implode(', ') ?: __('ingredients.editor.supplier.none_verified'))
@@ -554,10 +551,10 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                     ]),
                             ]),
                         Tab::make(__('ingredients.editor.tabs.compliance'))
-                            ->visible(fn (Get $get): bool => (bool) $get('requires_aromatic_compliance'))
                             ->schema([
                                 Section::make(__('ingredients.editor.compliance.allergens.section'))
                                     ->description(__('ingredients.editor.compliance.allergens.description'))
+                                    ->visible(fn (Get $get): bool => (bool) $get('requires_aromatic_compliance'))
                                     ->schema([
                                         Repeater::make('allergen_entries')
                                             ->label(__('ingredients.editor.compliance.allergens.composition'))
@@ -589,8 +586,37 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->rows(2)
                                             ->columnSpanFull(),
                                     ]),
+                                Section::make(__('ingredients.editor.compliance.substances.section'))
+                                    ->description(__('ingredients.editor.compliance.substances.description'))
+                                    ->schema([
+                                        Repeater::make('substance_entries')
+                                            ->label(__('ingredients.editor.compliance.substances.entries'))
+                                            ->schema([
+                                                Select::make('substance_id')
+                                                    ->label(__('ingredients.editor.compliance.substances.substance'))
+                                                    ->options(fn (): array => Substance::query()
+                                                        ->orderBy('name')
+                                                        ->pluck('name', 'id')
+                                                        ->all())
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->required(),
+                                                LocalizedDecimalInput::make('concentration_percent')
+                                                    ->label(__('ingredients.editor.compliance.substances.concentration'))
+                                                    ->suffix('%')
+                                                    ->minValue(0)
+                                                    ->maxValue(100),
+                                            ])
+                                            ->columns([
+                                                'md' => 2,
+                                            ])
+                                            ->defaultItems(0)
+                                            ->reorderable(false)
+                                            ->columnSpanFull(),
+                                    ]),
                                 Section::make(__('ingredients.editor.compliance.ifra.section'))
                                     ->description(__('ingredients.editor.compliance.ifra.description'))
+                                    ->visible(fn (Get $get): bool => (bool) $get('requires_aromatic_compliance'))
                                     ->columns([
                                         'md' => 2,
                                     ])
@@ -650,9 +676,18 @@ class IngredientEditor extends Component implements HasActions, HasForms
     {
         $ingredient = $this->currentIngredient();
         $ingredient?->loadMissing('allergenEntries.allergen');
+        $identityState = $ingredient instanceof Ingredient
+            ? app(IngredientIdentitySynchronizer::class)->formState($ingredient)
+            : [
+                'cas_number' => null,
+                'ec_number' => null,
+                'additional_identifiers' => [],
+                'aliases' => [],
+            ];
 
         return view('livewire.dashboard.ingredient-editor', [
             'ingredient' => $ingredient,
+            'identityState' => $identityState,
         ]);
     }
 

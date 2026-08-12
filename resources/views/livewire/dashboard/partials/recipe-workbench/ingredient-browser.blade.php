@@ -121,7 +121,7 @@
  <div class="flex justify-end">
  @if ($isCosmeticWorkbench)
  <template x-if="phaseOrder.length <= 1">
- <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
+ <button type="button" @click.stop="addIngredient(ingredient, cosmeticDefaultPhaseKey())" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
  <span>+</span>
  </button>
  </template>
@@ -158,7 +158,7 @@
  :style="panelStyle"
  class="z-[90] max-h-[min(16rem,calc(100vh-2rem))] overflow-y-auto rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] p-1 shadow-lg">
  <template x-for="phase in phaseOrder" :key="`${ingredient.id}-${phase.key}-add-option`">
- <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-active-soft)]">
+ <button type="button" @click.stop="addIngredient(ingredient, phase.key); open = false" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left text-xs font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-active-soft)]">
  <span class="truncate" x-text="t('cosmetic.add_to_phase', { phase: phase.name || humanizeKey(phase.key) })"></span>
  <span class="numeric text-[var(--color-ink-soft)]" x-text="`${format(cosmeticPhasePercentageTotal(phase.key), 1)}%`"></span>
  </button>
@@ -168,7 +168,7 @@
  </div>
  </template>
  @else
- <button type="button" @click.stop="addIngredient(ingredient)" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
+ <button type="button" @click.stop="addIngredient(ingredient)" :disabled="formulaItemLimitReached()" :aria-disabled="formulaItemLimitReached().toString()" :class="formulaItemLimitReached() ? 'cursor-not-allowed opacity-40' : ''" class="grid size-9 place-items-center rounded-full bg-[var(--color-accent)] text-lg font-semibold leading-none text-[var(--color-on-accent)] opacity-100 transition hover:bg-[var(--color-accent-hover)] sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100" aria-label="{{ __('workbench.accessibility.add_ingredient') }}">
  <span>+</span>
  </button>
  @endif

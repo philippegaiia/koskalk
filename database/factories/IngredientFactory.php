@@ -32,8 +32,6 @@ class IngredientFactory extends Factory
             'soap_inci_naoh_name' => null,
             'soap_inci_koh_name' => null,
             'saponification_name' => null,
-            'cas_number' => null,
-            'ec_number' => null,
             'unit' => 'g',
             'owner_type' => null,
             'owner_id' => null,

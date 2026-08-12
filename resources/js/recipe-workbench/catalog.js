@@ -52,9 +52,16 @@ export function filterIngredients(ingredients, search, activeCategory) {
 
     return ingredients.filter((ingredient) => {
         const matchesCategory = activeCategory === 'all' || ingredient.category === activeCategory;
+        const identifiers = (ingredient.identifiers ?? [])
+            .map((identifier) => `${identifier.scheme ?? ''} ${identifier.value ?? ''}`)
+            .join(' ')
+            .toLowerCase();
+        const aliases = (ingredient.aliases ?? []).join(' ').toLowerCase();
         const matchesSearch = normalizedSearch === ''
             || ingredient.name.toLowerCase().includes(normalizedSearch)
-            || (ingredient.inci_name ?? '').toLowerCase().includes(normalizedSearch);
+            || (ingredient.inci_name ?? '').toLowerCase().includes(normalizedSearch)
+            || identifiers.includes(normalizedSearch)
+            || aliases.includes(normalizedSearch);
 
         return matchesCategory && matchesSearch;
     });

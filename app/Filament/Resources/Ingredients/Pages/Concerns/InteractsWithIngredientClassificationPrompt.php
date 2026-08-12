@@ -29,10 +29,11 @@ trait InteractsWithIngredientClassificationPrompt
             new IngredientClassificationPromptInput(
                 name: data_get($this->data, 'current_version.display_name'),
                 inciName: data_get($this->data, 'current_version.inci_name'),
-                casNumber: data_get($this->data, 'current_version.cas_number'),
-                ecNumber: data_get($this->data, 'current_version.ec_number'),
+                casNumber: data_get($this->data, 'cas_number', data_get($this->data, 'current_version.cas_number')),
+                ecNumber: data_get($this->data, 'ec_number', data_get($this->data, 'current_version.ec_number')),
                 supplierNotes: null,
                 responseLocale: app()->getLocale(),
+                additionalIdentifiers: data_get($this->data, 'additional_identifiers', []),
             ),
         );
     }

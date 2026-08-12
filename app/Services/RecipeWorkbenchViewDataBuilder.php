@@ -21,6 +21,7 @@ class RecipeWorkbenchViewDataBuilder
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly RecipeWorkbenchIngredientCatalogBuilder $recipeWorkbenchIngredientCatalogBuilder,
         private readonly RecipeWorkbenchIfraOptionsBuilder $recipeWorkbenchIfraOptionsBuilder,
+        private readonly RecipeFormulaItemLimitService $recipeFormulaItemLimitService,
         private readonly CurrencyCatalog $currencyCatalog,
         private readonly Translator $translator,
     ) {}
@@ -66,6 +67,9 @@ class RecipeWorkbenchViewDataBuilder
             'numberLocaleOptions' => NumberLocale::options(),
             'preferredMassUnit' => $massDisplaySystem->preferredUnit($defaultMassGrams)->value,
             'canPersist' => $user instanceof User,
+            'formulaItemLimit' => $user instanceof User
+                ? $this->recipeFormulaItemLimitService->limitFor($user)
+                : null,
             'translations' => $this->translations(),
         ];
     }

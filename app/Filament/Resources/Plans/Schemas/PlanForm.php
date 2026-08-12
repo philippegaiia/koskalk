@@ -73,7 +73,7 @@ class PlanForm
                         'md' => 2,
                     ]),
                 Section::make('Limits')
-                    ->description('Leave a value empty for no hard limit. Initial free plan target: 15 saved recipes, 20 private ingredients, 200 media assets, 20 media labels, and 0 production batches.')
+                    ->description(__('plans.limits.description'))
                     ->icon(Heroicon::AdjustmentsHorizontal)
                     ->schema([
                         Repeater::make('limits')
@@ -83,6 +83,7 @@ class PlanForm
                                     ->options([
                                         'saved_recipes' => 'Saved recipes',
                                         'private_ingredients' => 'Private ingredients',
+                                        'formula_items_per_recipe' => __('plans.limits.formula_items_per_recipe'),
                                         'production_batches' => 'Production batches',
                                         'media_assets' => 'Media assets',
                                         'media_labels' => 'Media labels',
@@ -92,12 +93,12 @@ class PlanForm
                                     ->distinct()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                                 TextInput::make('value')
-                                    ->label('Limit')
+                                    ->label(__('plans.limits.value'))
                                     ->numeric()
                                     ->inputMode('numeric')
                                     ->minValue(0)
                                     ->step(1)
-                                    ->helperText('Empty means unlimited.'),
+                                    ->helperText(__('plans.limits.empty_unlimited')),
                             ])
                             ->columns([
                                 'md' => 2,

@@ -2,6 +2,7 @@
 
 use App\Enums\MassDisplaySystem;
 use App\Models\InterfaceTranslation;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
@@ -25,6 +26,12 @@ it('uses the workspace mass system to choose the initial formula unit', function
         'name' => 'Soap',
     ]);
     $user = User::factory()->create();
+    $plan = Plan::factory()->hasLimit('formula_items_per_recipe', 30)->create();
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
 
     Workspace::factory()->for($user, 'owner')->create([
         'mass_display_system' => MassDisplaySystem::UsCustomary,
@@ -43,7 +50,8 @@ it('uses the workspace mass system to choose the initial formula unit', function
 
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, $user);
 
-    expect($payload['preferredMassUnit'])->toBe('lb');
+    expect($payload['preferredMassUnit'])->toBe('lb')
+        ->and($payload['formulaItemLimit'])->toBe(30);
 });
 
 it('includes active allergen and substance rule counts for each regime', function () {

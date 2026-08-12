@@ -48,6 +48,7 @@ class IngredientClassificationPromptBuilder
             'inci_name' => $input->inciName,
             'cas_number' => $input->casNumber,
             'ec_number' => $input->ecNumber,
+            'additional_identifiers' => $input->additionalIdentifiers,
             'supplier_notes' => $input->supplierNotes,
         ]);
         $responseLanguage = $this->responseLanguage($input->responseLocale);
@@ -134,6 +135,9 @@ Identity review
   - Status: consistent, questionable, missing, or conflicting
   - Confidence: high, medium, or low
   - Source: supporting source or Not verified
+- Additional identifiers
+  - Review each user-entered UNII or ECHA list value separately and distinguish its identifier scheme clearly.
+  - Do not treat an ECHA list number as an EC / EINECS number.
 
 Functions
 - Verified COSING functions: list only functions officially assigned to this exact ingredient, each with its exact backing key and the directly accessed official European Commission COSING source URL; otherwise write Not verified

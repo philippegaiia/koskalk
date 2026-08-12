@@ -11,5 +11,7 @@ final readonly class IngredientClassificationPromptInput
         public ?string $ecNumber,
         public ?string $supplierNotes,
         public string $responseLocale,
+        /** @var array<int, array<string, mixed>> */
+        public array $additionalIdentifiers = [],
     ) {}
 }

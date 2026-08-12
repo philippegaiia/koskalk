@@ -640,6 +640,10 @@ export function createFormulaSection() {
             const nextPhaseItems = { ...this.phaseItems };
             delete nextPhaseItems[phaseKey];
             this.phaseItems = nextPhaseItems;
+
+            if (!this.formulaItemLimitReached()) {
+                this.formulaItemLimitMessage = '';
+            }
         },
 
         number(value) {

@@ -103,7 +103,7 @@ jq '
 Run:
 
 ```bash
-test -z "$(jq -r '.translations[] | select((.text | length) > 0 and (.text.pt_BR | type != "string" or .text.pt_BR == "")) | "\(.group).\(.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json)"
+test -z "$(jq -r '.translations[] | . as $row | select(([$row.text | to_entries[] | select(.key != "pt_BR") | .value] | any(. != "")) and (($row.text.pt_BR | type) != "string" or $row.text.pt_BR == "")) | "\($row.group).\($row.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json)"
 ```
 
 Expected: the command exits non-zero because the empty `pt_BR` draft values are detected. Do not invoke `translations:catalogue:import` on the incomplete draft; the authoritative catalogue and database must remain unchanged.
@@ -164,7 +164,7 @@ For each returned object, find the row by both `group` and `key`, insert `text.p
 Run:
 
 ```bash
-jq -r '.translations[] | select((.text | length) > 0 and (.text.pt_BR | type != "string" or .text.pt_BR == "")) | "\(.group).\(.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
+jq -r '.translations[] | . as $row | select(([$row.text | to_entries[] | select(.key != "pt_BR") | .value] | any(. != "")) and (($row.text.pt_BR | type) != "string" or $row.text.pt_BR == "")) | "\($row.group).\($row.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
 ```
 
 Expected: this prints untranslated rows from later batches, but none from the nine foundation groups.
@@ -193,7 +193,7 @@ Use the Batch Contract. Treat file type names, accepted extensions, MIME labels,
 Run:
 
 ```bash
-jq -r '.translations[] | select((.group == "products" or .group == "packaging" or .group == "media" or .group == "media_library") and (.text | length) > 0 and (.text.pt_BR | type != "string" or .text.pt_BR == "")) | "\(.group).\(.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
+jq -r '.translations[] | . as $row | select(($row.group == "products" or $row.group == "packaging" or $row.group == "media" or $row.group == "media_library") and ([$row.text | to_entries[] | select(.key != "pt_BR") | .value] | any(. != "")) and (($row.text.pt_BR | type) != "string" or $row.text.pt_BR == "")) | "\($row.group).\($row.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
 ```
 
 Expected: no output.
@@ -222,7 +222,7 @@ Apply the fixed terms `saponificação`, `adições à fórmula`, `fórmula`, an
 Run:
 
 ```bash
-jq -r '.translations[] | select((.group == "formula_documents" or .group == "workbench") and (.text | length) > 0 and (.text.pt_BR | type != "string" or .text.pt_BR == "")) | "\(.group).\(.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
+jq -r '.translations[] | . as $row | select(($row.group == "formula_documents" or $row.group == "workbench") and ([$row.text | to_entries[] | select(.key != "pt_BR") | .value] | any(. != "")) and (($row.text.pt_BR | type) != "string" or $row.text.pt_BR == "")) | "\($row.group).\($row.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
 ```
 
 Expected: no output.
@@ -286,7 +286,7 @@ Ask Terra to check soap chemistry, aromatic compliance, regulatory-review wordin
 Run:
 
 ```bash
-jq -r '.translations[] | select(.group == "ingredients" and (.text | length) > 0 and (.text.pt_BR | type != "string" or .text.pt_BR == "")) | "\(.group).\(.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
+jq -r '.translations[] | . as $row | select($row.group == "ingredients" and ([$row.text | to_entries[] | select(.key != "pt_BR") | .value] | any(. != "")) and (($row.text.pt_BR | type) != "string" or $row.text.pt_BR == "")) | "\($row.group).\($row.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
 ```
 
 Expected: no output.
@@ -315,7 +315,7 @@ Use `lote` for batch, `fornecedor` for supplier, and `oferta do fornecedor` for 
 Run:
 
 ```bash
-jq -r '.translations[] | select(.group == "production_bench" and (.key == "title" or (.key | startswith("access.") or startswith("calendar.") or startswith("common.") or startswith("filters.") or startswith("flash.") or startswith("home.") or startswith("inventory.") or startswith("listing.") or startswith("navigation.") or startswith("procurement.") or startswith("supplier."))) and (.text | length) > 0 and (.text.pt_BR | type != "string" or .text.pt_BR == "")) | "\(.group).\(.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
+jq -r '.translations[] | . as $row | select($row.group == "production_bench" and ($row.key == "title" or ($row.key | startswith("access.") or startswith("calendar.") or startswith("common.") or startswith("filters.") or startswith("flash.") or startswith("home.") or startswith("inventory.") or startswith("listing.") or startswith("navigation.") or startswith("procurement.") or startswith("supplier."))) and ([$row.text | to_entries[] | select(.key != "pt_BR") | .value] | any(. != "")) and (($row.text.pt_BR | type) != "string" or $row.text.pt_BR == "")) | "\($row.group).\($row.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
 ```
 
 Expected: no output.
@@ -348,7 +348,7 @@ Review the `production.validation.*`, `receipt.*`, `production.abort*`, `product
 Run:
 
 ```bash
-jq -r '.translations[] | select(.group == "production_bench" and (.text | length) > 0 and (.text.pt_BR | type != "string" or .text.pt_BR == "")) | "\(.group).\(.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
+jq -r '.translations[] | . as $row | select($row.group == "production_bench" and ([$row.text | to_entries[] | select(.key != "pt_BR") | .value] | any(. != "")) and (($row.text.pt_BR | type) != "string" or $row.text.pt_BR == "")) | "\($row.group).\($row.key)"' storage/app/translation-drafts/pt_BR-interface-translations.json
 ```
 
 Expected: no output.
@@ -364,7 +364,7 @@ Expected: no output.
 Run:
 
 ```bash
-jq '{locales, rows: (.translations | length), incomplete: [.translations[] | select((.text | length) > 0 and (.text.pt_BR | type != "string" or .text.pt_BR == "")) | "\(.group).\(.key)"]}' storage/app/translation-drafts/pt_BR-interface-translations.json
+jq '{locales, rows: (.translations | length), incomplete: [.translations[] | . as $row | select(([$row.text | to_entries[] | select(.key != "pt_BR") | .value] | any(. != "")) and (($row.text.pt_BR | type) != "string" or $row.text.pt_BR == "")) | "\($row.group).\($row.key)"]}' storage/app/translation-drafts/pt_BR-interface-translations.json
 ```
 
 Expected: `locales` is `["de","es","fr","it","nl","pt_BR"]`, `rows` is `2286`, and `incomplete` is an empty array.

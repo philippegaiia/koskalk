@@ -29,7 +29,9 @@ This design adds a development-first enrichment workflow. A separate determinist
 - Existing reviewed values are preserved by default.
 - Categories, subcategories, and COSING functions are shared controlled vocabularies, not per-ingredient translated content.
 - Canonical identifiers, backing keys, numeric values, and source references are never translated.
-- For a platform record curated for colourant use, the applicable CI designation is the label-ready EU common ingredient name and may be stored in `inci_name`.
+- A platform colourant keeps its `CI xxxxx` value in `inci_name` as its canonical INCI declaration regardless of the selected market.
+- Colourants may have one market-label override per supported market. The override changes printed labelling; it does not duplicate the ingredient, translate the CI value, or imply that the colourant is authorized for that use.
+- EU and US are the only initial markets for colour-label resolution. Other jurisdictions are separate future market packs, not a shared regional regime.
 
 ## Scope
 
@@ -42,14 +44,18 @@ This design adds a development-first enrichment workflow. A separate determinist
 - Validate and preview enrichment results without database writes.
 - Apply valid results explicitly and atomically per ingredient.
 - Populate core ingredient identity, classification, verified COSING assignments, English guidance, and `ingredient_translations`.
-- Populate the label-ready EU common ingredient name, including the applicable CI designation for a platform record curated for non-hair colourant use.
+- Populate the canonical `CI xxxxx` INCI value for a platform colourant.
+- Let an Admin maintain a colourant's printed declaration and regulatory source through a dedicated **Market colour labels** action.
+- Research and import source-backed EU and US colour-label proposals for colourants.
+- Resolve a colourant's printed ingredient-list value for the market selected by the recipe's regulatory regime.
 - Support safe reruns that fill gaps without erasing reviewed work.
 
 ### Deferred
 
 - SAP, iodine, INS, and fatty-acid enrichment for lipids and waxes.
 - Allergen, IFRA, and detailed composition enrichment for aromatic materials.
-- Detailed Annex IV matching, use conditions, and market-specific regulatory enrichment for colourants.
+- Detailed colourant authorization, permitted-use conditions, purity requirements, and restriction matching. A market-label record is a naming rule, not proof that the colourant is permitted.
+- Colour-label packs for markets other than EU and US. Each future jurisdiction is researched and enabled independently; there is no generic South America profile.
 - Automated OpenAI or other AI-provider calls from the application.
 - Queues, background enrichment jobs, and unattended publication.
 - End-user translation-correction proposals.
@@ -89,11 +95,34 @@ Only these platform ingredient fields are translated per ingredient:
 - `saponification_name`, when relevant
 - `info_markdown`
 
-They continue to use `ingredient_translations`. Each field falls back independently to canonical English. The label-ready common ingredient name, CAS, EC/EINECS, UNII, ECHA List Number, InChIKey, PubChem CID, category values, subcategory values, COSING keys, regulatory references, dates, percentages, and units remain canonical.
+They continue to use `ingredient_translations`. Each field falls back independently to canonical English. The INCI value, market colour labels, CAS, EC/EINECS, UNII, ECHA List Number, InChIKey, PubChem CID, category values, subcategory values, COSING keys, regulatory references, dates, percentages, and units remain canonical.
+
+### Colourant identity and market labels
 
 For EU cosmetic labelling, Article 19(1)(g) of [Regulation (EC) No 1223/2009](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32009R1223) requires CI nomenclature where applicable for colourants other than colourants intended to colour hair. The [European Commission glossary guidance](https://single-market-economy.ec.europa.eu/sectors/cosmetics/cosmetic-ingredient-database/cosing-glossary-ingredients_en) and current [Implementing Decision (EU) 2025/1175](https://eur-lex.europa.eu/eli/dec_impl/2025/1175/oj/eng) state that the CI number should therefore be listed as the common ingredient name for those colourants.
 
-CI and INCI remain technically distinct nomenclatures, but the generated EU ingredient list needs one label-ready common ingredient name. Soapkraft's current `inci_name` field supplies that output. For a platform record curated for colourant use, it may therefore contain a value such as `CI 77491`. That controlled designation is not translated. An underlying chemical or INCI identity may still be relevant and must remain in the research evidence rather than being treated as a translation. Ambiguous or role-dependent cases remain under Admin review until the specialist colourant model is designed.
+Soapkraft therefore stores a colourant's `CI xxxxx` declaration, such as `CI 77491`, in `inci_name`. This is the ingredient's stable canonical value in the application and is not translated or changed when a recipe market changes.
+
+The US labelling system requires a special printed value. The [FDA cosmetic ingredient naming guidance](https://www.fda.gov/cosmetics/cosmetics-labeling/cosmetic-ingredient-names) states that a CI number cannot replace the ingredient name required in the United States, although it may follow the US name in parentheses. Certified and certification-exempt colour additives use their applicable US names, such as `FD&C Red No. 40`, `Red 40`, or `Iron Oxides`, under the FDA rules applicable to that additive.
+
+The normalized market-label relation stores at most one current row per platform colourant and supported market. A row contains:
+
+- the ingredient;
+- the market code;
+- the exact declaration value to print;
+- the authoritative source name and URL;
+- optional effective dates and review metadata.
+
+The **Market colour labels** Admin action creates or updates these rows. It initially offers only EU and US. It may show the canonical CI value as the proposed EU declaration, while the US declaration requires an explicit source-backed value. Adding another interface locale does not add a regulatory market, and an existing experimental regulatory regime does not make its market supported by this colour-label workflow.
+
+Ingredient-list generation resolves colourants through one small market-label interface:
+
+1. Non-colourants continue to print their canonical `inci_name`.
+2. A colourant prints its market-label row when one exists for the selected market.
+3. EU may fall back to the canonical `CI xxxxx` value.
+4. US generation without a source-backed market-label row reports a blocking validation error rather than silently printing the CI value.
+
+This resolution changes only the printed name. Colourant authorization and use restrictions remain a separate deferred compliance concern.
 
 ## Core Enrichment Workflow
 
@@ -102,11 +131,13 @@ CI and INCI remain technically distinct nomenclatures, but the generated EU ingr
 An Admin creates or edits a platform ingredient with the minimum reliable English information:
 
 - display name;
-- label-ready common ingredient name or supplier identity when known, including a CI designation for a record curated for colourant use;
+- canonical INCI name or supplier identity when known, using `CI xxxxx` for a colourant;
 - category selected by the Admin;
 - optional subcategory, identifiers, aliases, and source notes.
 
 The workflow does not require the Admin to complete translations or specialist data by hand.
+
+For a colourant, the Admin can also open **Market colour labels** to review or enter the EU and US printed declaration values and their sources. This action is available independently of batch import so a single newly entered colourant can be completed or corrected without rerunning an entire catalogue batch.
 
 ### 2. Deterministic export
 
@@ -118,8 +149,9 @@ Each JSONL record contains:
 - stable `catalog_key`;
 - a fingerprint of the exported source state;
 - current canonical fields and existing translations;
+- current colour market-label rows;
 - the Admin-selected category;
-- allowed category, compatible subcategory, COSING function, identifier-scheme, and locale values;
+- allowed category, compatible subcategory, COSING function, identifier-scheme, locale, and supported market values;
 - requested output fields;
 - the concise-guidance contract;
 - the source and verification rules required by the research result.
@@ -128,7 +160,7 @@ Ordering is deterministic so an unchanged export produces no diff.
 
 ### 3. External research
 
-Codex or another external research model processes the exported records in bounded batches. Routine editorial translation may use a lower-cost model. Canonical identity, COSING assignments, and regulatory distinctions require source-backed research against authoritative primary sources.
+Codex or another external research model processes the exported records in bounded batches. Routine editorial translation may use a lower-cost model. Canonical identity, COSING assignments, and colour market-label distinctions require source-backed research against authoritative primary sources. Initial colour research is limited to EU and US declaration names.
 
 The result is JSONL only. It contains no Markdown fences or explanatory text outside the schema.
 
@@ -148,14 +180,15 @@ The summary distinguishes:
 
 An explicit apply option writes valid records. Each ingredient is handled in its own database transaction. An invalid ingredient is skipped and reported without preventing unrelated valid records from being applied.
 
-Applied ingredients remain marked as requiring Admin review. Import never activates a locale, changes a private ingredient, or publishes unsupported specialist data.
+Applied ingredients remain marked as requiring Admin review. Import may write validated market-label rows for a platform colourant through the same domain module used by the Admin action. It never activates a locale or market, changes a private ingredient, or publishes unsupported specialist data.
 
 ## Research Result Contract
 
 Each result identifies the exported ingredient by `catalog_key` and source fingerprint. Its proposal may contain:
 
 - canonical English display name;
-- label-ready common ingredient name and normalized identifier proposals, including a CI designation where applicable and any distinct underlying chemical or INCI identity in the evidence;
+- canonical INCI and normalized identifier proposals, using `CI xxxxx` for a colourant;
+- source-backed EU and US printed market-label proposals when the ingredient is a colourant;
 - category review and compatible subcategory proposal;
 - verified COSING function assignments;
 - concise English `info_markdown`;
@@ -193,7 +226,9 @@ A result is eligible for apply only when:
 - the source fingerprint still matches the current ingredient state;
 - category, subcategory, COSING, identifier, and locale keys are recognized;
 - the subcategory belongs to the proposed category;
-- a CI-form common ingredient name applies to a non-hair colourant record; ambiguous or role-dependent identity is retained for Admin review;
+- `CI xxxxx` is used only for a colourant record, with ambiguous identity retained for Admin review;
+- every proposed market-label row targets EU or US, contains an exact printed declaration, and carries an authoritative source;
+- a US colour declaration is not accepted when it merely repeats a bare CI value;
 - each verified COSING assignment carries acceptable official evidence;
 - translated fields preserve their canonical field boundaries;
 - required target locale rows are present;
@@ -211,6 +246,8 @@ Repeated import of the same accepted result is idempotent.
 - Unknown or duplicate `catalog_key` values report record-level errors.
 - Invalid vocabulary or locale values report the rejected field and allowed values.
 - Missing or unacceptable COSING evidence prevents that assignment from being written while leaving the record available for correction.
+- Missing or unacceptable market-label evidence prevents that market row from being written while leaving the canonical colourant available for correction.
+- US ingredient-list generation identifies each colourant missing its required market label and does not present the result as market-adapted output.
 - Stale fingerprints instruct the Admin to export and research the current state again.
 - Per-ingredient transactions prevent partially updated ingredient relationships.
 - The command exits unsuccessfully when any record fails and prints counts for applied, unchanged, skipped, warned, and failed records.
@@ -227,7 +264,12 @@ Focused Pest coverage proves:
 - each ingredient is atomic;
 - stale fingerprints are rejected;
 - invalid categories, incompatible subcategories, COSING keys, identifier schemes, and locales are rejected;
-- CI-form common ingredient names are limited to applicable non-hair colourant records and ambiguous identities remain reviewable;
+- `CI xxxxx` canonical values are limited to colourant records and remain unchanged when the recipe market changes;
+- the Admin market-label action maintains at most one current declaration per colourant and market with its source;
+- EU colour labelling uses an explicit market label when present and otherwise falls back to canonical `CI xxxxx`;
+- US colour labelling uses the source-backed US declaration and rejects a missing or bare-CI declaration;
+- non-colourants continue to print their canonical INCI value;
+- market-label records do not mark a colourant as authorized or permitted;
 - verified COSING assignments require evidence;
 - practical roles do not become verified assignments;
 - existing reviewed fields are preserved by default;
@@ -248,7 +290,10 @@ Focused Pest coverage proves:
 - Concise guidance includes practical soapmaking information when relevant.
 - Categories, subcategories, and COSING functions render in the workspace locale through shared vocabulary translations.
 - Canonical backing values, identifiers, and evidence remain unchanged.
-- A platform record curated for applicable non-hair colourant use can use its CI designation as the `inci_name` consumed by ingredient-list generation.
+- A platform colourant keeps `CI xxxxx` as its canonical `inci_name` for every market.
+- An Admin can enter or correct a colourant's exact printed declaration and source for EU or US through **Market colour labels**.
+- Ingredient-list generation selects the colourant declaration for the recipe market, with canonical CI fallback for EU and a required explicit US value.
+- No country-specific ingredient duplicate is created, and changing the interface language does not change the selected regulatory market.
 - Specialist chemistry and compliance records remain untouched for later family-specific enrichment.
 - The workflow can be rerun safely as new platform ingredients are entered or existing ones are gradually improved.
 
@@ -258,6 +303,6 @@ After the core pipeline is proven, create separate designs for:
 
 1. lipid and wax chemistry enrichment;
 2. aromatic allergen, IFRA, and composition enrichment;
-3. Annex IV and market-regulation enrichment for colourants;
+3. colourant authorization, restrictions, and future jurisdiction market packs;
 4. deterministic curated platform-catalogue export and production seeding;
 5. optional in-application AI-provider automation.

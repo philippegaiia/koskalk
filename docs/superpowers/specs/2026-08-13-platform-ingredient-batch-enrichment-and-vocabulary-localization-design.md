@@ -29,6 +29,7 @@ This design adds a development-first enrichment workflow. A separate determinist
 - Existing reviewed values are preserved by default.
 - Categories, subcategories, and COSING functions are shared controlled vocabularies, not per-ingredient translated content.
 - Canonical identifiers, backing keys, numeric values, and source references are never translated.
+- For a platform record curated for colourant use, the applicable CI designation is the label-ready EU common ingredient name and may be stored in `inci_name`.
 
 ## Scope
 
@@ -41,13 +42,14 @@ This design adds a development-first enrichment workflow. A separate determinist
 - Validate and preview enrichment results without database writes.
 - Apply valid results explicitly and atomically per ingredient.
 - Populate core ingredient identity, classification, verified COSING assignments, English guidance, and `ingredient_translations`.
+- Populate the label-ready EU common ingredient name, including the applicable CI designation for a platform record curated for non-hair colourant use.
 - Support safe reruns that fill gaps without erasing reviewed work.
 
 ### Deferred
 
 - SAP, iodine, INS, and fatty-acid enrichment for lipids and waxes.
 - Allergen, IFRA, and detailed composition enrichment for aromatic materials.
-- Colour Index (CI) numbers and market-specific regulatory enrichment for colourants.
+- Detailed Annex IV matching, use conditions, and market-specific regulatory enrichment for colourants.
 - Automated OpenAI or other AI-provider calls from the application.
 - Queues, background enrichment jobs, and unattended publication.
 - End-user translation-correction proposals.
@@ -87,9 +89,11 @@ Only these platform ingredient fields are translated per ingredient:
 - `saponification_name`, when relevant
 - `info_markdown`
 
-They continue to use `ingredient_translations`. Each field falls back independently to canonical English. INCI, CAS, EC/EINECS, UNII, ECHA List Number, InChIKey, PubChem CID, category values, subcategory values, COSING keys, regulatory references, dates, percentages, and units remain canonical.
+They continue to use `ingredient_translations`. Each field falls back independently to canonical English. The label-ready common ingredient name, CAS, EC/EINECS, UNII, ECHA List Number, InChIKey, PubChem CID, category values, subcategory values, COSING keys, regulatory references, dates, percentages, and units remain canonical.
 
-A Colour Index (CI) number identifies a colourant in the Colour Index system. It is distinct from the ingredient's INCI name; neither value is translated.
+For EU cosmetic labelling, Article 19(1)(g) of [Regulation (EC) No 1223/2009](https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX%3A32009R1223) requires CI nomenclature where applicable for colourants other than colourants intended to colour hair. The [European Commission glossary guidance](https://single-market-economy.ec.europa.eu/sectors/cosmetics/cosmetic-ingredient-database/cosing-glossary-ingredients_en) and current [Implementing Decision (EU) 2025/1175](https://eur-lex.europa.eu/eli/dec_impl/2025/1175/oj/eng) state that the CI number should therefore be listed as the common ingredient name for those colourants.
+
+CI and INCI remain technically distinct nomenclatures, but the generated EU ingredient list needs one label-ready common ingredient name. Soapkraft's current `inci_name` field supplies that output. For a platform record curated for colourant use, it may therefore contain a value such as `CI 77491`. That controlled designation is not translated. An underlying chemical or INCI identity may still be relevant and must remain in the research evidence rather than being treated as a translation. Ambiguous or role-dependent cases remain under Admin review until the specialist colourant model is designed.
 
 ## Core Enrichment Workflow
 
@@ -98,7 +102,7 @@ A Colour Index (CI) number identifies a colourant in the Colour Index system. It
 An Admin creates or edits a platform ingredient with the minimum reliable English information:
 
 - display name;
-- INCI or supplier identity when known;
+- label-ready common ingredient name or supplier identity when known, including a CI designation for a record curated for colourant use;
 - category selected by the Admin;
 - optional subcategory, identifiers, aliases, and source notes.
 
@@ -151,7 +155,7 @@ Applied ingredients remain marked as requiring Admin review. Import never activa
 Each result identifies the exported ingredient by `catalog_key` and source fingerprint. Its proposal may contain:
 
 - canonical English display name;
-- INCI and normalized identifier proposals;
+- label-ready common ingredient name and normalized identifier proposals, including a CI designation where applicable and any distinct underlying chemical or INCI identity in the evidence;
 - category review and compatible subcategory proposal;
 - verified COSING function assignments;
 - concise English `info_markdown`;
@@ -189,6 +193,7 @@ A result is eligible for apply only when:
 - the source fingerprint still matches the current ingredient state;
 - category, subcategory, COSING, identifier, and locale keys are recognized;
 - the subcategory belongs to the proposed category;
+- a CI-form common ingredient name applies to a non-hair colourant record; ambiguous or role-dependent identity is retained for Admin review;
 - each verified COSING assignment carries acceptable official evidence;
 - translated fields preserve their canonical field boundaries;
 - required target locale rows are present;
@@ -222,6 +227,7 @@ Focused Pest coverage proves:
 - each ingredient is atomic;
 - stale fingerprints are rejected;
 - invalid categories, incompatible subcategories, COSING keys, identifier schemes, and locales are rejected;
+- CI-form common ingredient names are limited to applicable non-hair colourant records and ambiguous identities remain reviewable;
 - verified COSING assignments require evidence;
 - practical roles do not become verified assignments;
 - existing reviewed fields are preserved by default;
@@ -242,6 +248,7 @@ Focused Pest coverage proves:
 - Concise guidance includes practical soapmaking information when relevant.
 - Categories, subcategories, and COSING functions render in the workspace locale through shared vocabulary translations.
 - Canonical backing values, identifiers, and evidence remain unchanged.
+- A platform record curated for applicable non-hair colourant use can use its CI designation as the `inci_name` consumed by ingredient-list generation.
 - Specialist chemistry and compliance records remain untouched for later family-specific enrichment.
 - The workflow can be rerun safely as new platform ingredients are entered or existing ones are gradually improved.
 
@@ -251,6 +258,6 @@ After the core pipeline is proven, create separate designs for:
 
 1. lipid and wax chemistry enrichment;
 2. aromatic allergen, IFRA, and composition enrichment;
-3. Colour Index (CI) and market-regulation enrichment for colourants;
+3. Annex IV and market-regulation enrichment for colourants;
 4. deterministic curated platform-catalogue export and production seeding;
 5. optional in-application AI-provider automation.

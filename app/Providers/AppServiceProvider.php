@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Contracts\ExchangeRateProvider;
+use App\Contracts\IngredientResearchClient;
 use App\Listeners\CreateDefaultCompany;
 use App\Listeners\SyncPlanEntitlementFromPaddleSubscription;
 use App\Services\FrankfurterExchangeRateProvider;
+use App\Services\IngredientEnrichment\OpenAiIngredientResearchClient;
 use App\Services\LocalePreferenceResolver;
 use Filament\Auth\Events\Registered;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->scoped(LocalePreferenceResolver::class);
         $this->app->bind(ExchangeRateProvider::class, FrankfurterExchangeRateProvider::class);
+        $this->app->bind(IngredientResearchClient::class, OpenAiIngredientResearchClient::class);
     }
 
     public function boot(): void

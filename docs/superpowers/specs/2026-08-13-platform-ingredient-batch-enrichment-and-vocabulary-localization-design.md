@@ -47,7 +47,7 @@ This design adds a development-first enrichment workflow. A separate determinist
 
 - SAP, iodine, INS, and fatty-acid enrichment for lipids and waxes.
 - Allergen, IFRA, and detailed composition enrichment for aromatic materials.
-- CI identity and market-specific regulatory enrichment for colourants.
+- Colour Index (CI) numbers and market-specific regulatory enrichment for colourants.
 - Automated OpenAI or other AI-provider calls from the application.
 - Queues, background enrichment jobs, and unattended publication.
 - End-user translation-correction proposals.
@@ -88,6 +88,8 @@ Only these platform ingredient fields are translated per ingredient:
 - `info_markdown`
 
 They continue to use `ingredient_translations`. Each field falls back independently to canonical English. INCI, CAS, EC/EINECS, UNII, ECHA List Number, InChIKey, PubChem CID, category values, subcategory values, COSING keys, regulatory references, dates, percentages, and units remain canonical.
+
+A Colour Index (CI) number identifies a colourant in the Colour Index system. It is distinct from the ingredient's INCI name; neither value is translated.
 
 ## Core Enrichment Workflow
 
@@ -249,6 +251,6 @@ After the core pipeline is proven, create separate designs for:
 
 1. lipid and wax chemistry enrichment;
 2. aromatic allergen, IFRA, and composition enrichment;
-3. colourant identity and market-regulation enrichment;
+3. Colour Index (CI) and market-regulation enrichment for colourants;
 4. deterministic curated platform-catalogue export and production seeding;
 5. optional in-application AI-provider automation.

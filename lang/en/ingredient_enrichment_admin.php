@@ -1,6 +1,45 @@
 <?php
 
 return [
+    'resource' => [
+        'label' => 'AI enrichment batch',
+        'plural_label' => 'AI enrichment batches',
+        'summary' => 'Research summary',
+    ],
+    'fields' => ['batch' => 'Batch'],
+    'actions' => [
+        'run' => 'Run AI enrichment',
+        'run_heading' => 'Research selected ingredients',
+        'run_description' => 'Queue source-backed research with :model. This paid action proposes translations, identifiers, COSING functions, guidance, and colour labels. Nothing is applied until review and approval.',
+        'review' => 'Review proposal',
+        'approve' => 'Approve',
+        'apply' => 'Apply approved',
+        'retry' => 'Retry failures',
+        'cancel' => 'Cancel pending',
+    ],
+    'notifications' => [
+        'applied' => 'Applied :applied; unchanged :unchanged; stale :stale; failed :failed.',
+        'retried' => 'Failed ingredients were queued again.',
+        'cancelled' => 'Pending research was cancelled.',
+    ],
+    'replace' => [
+        'display_name' => 'Replace English display name', 'inci_name' => 'Replace INCI name',
+        'category' => 'Replace category', 'subcategory' => 'Replace subcategory',
+        'saponification_name' => 'Replace saponification name', 'info_markdown' => 'Replace guidance',
+        'identifiers' => 'Replace identifiers', 'cosing_functions' => 'Replace COSING functions',
+        'translations' => 'Replace translations', 'market_labels' => 'Replace market labels',
+    ],
+    'status' => [
+        'batch' => [
+            'pending' => 'Pending', 'processing' => 'Processing', 'ready_for_review' => 'Ready for review',
+            'partially_failed' => 'Partially failed', 'applied' => 'Applied', 'cancelled' => 'Cancelled',
+        ],
+        'item' => [
+            'pending' => 'Pending', 'researching' => 'Researching', 'ready' => 'Ready', 'warning' => 'Warning',
+            'failed' => 'Failed', 'approved' => 'Approved', 'applying' => 'Applying', 'stale' => 'Stale',
+            'applied' => 'Applied', 'unchanged' => 'Unchanged', 'cancelled' => 'Cancelled',
+        ],
+    ],
     'validation' => [
         'missing_api_key' => 'OpenAI ingredient research is not configured on this server.',
         'provider_failed' => 'The research provider could not complete this ingredient.',

@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Ingredients\Tables;
 
+use App\Actions\IngredientEnrichment\StartIngredientEnrichmentBatch;
 use App\Enums\IngredientCategory;
 use App\Filament\Exports\IngredientExporter;
+use App\Filament\Resources\IngredientEnrichmentBatches\IngredientEnrichmentBatchResource;
 use App\Models\Ingredient;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportBulkAction;
@@ -14,6 +17,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 
 class IngredientsTable
 {
@@ -65,8 +70,27 @@ class IngredientsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('runAiEnrichment')
+                        ->label(__('ingredient_enrichment_admin.actions.run'))
+                        ->icon('heroicon-o-sparkles')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('ingredient_enrichment_admin.actions.run_heading'))
+                        ->modalDescription(fn (): string => __('ingredient_enrichment_admin.actions.run_description', [
+                            'model' => config('ingredient-enrichment.openai.model'),
+                        ]))
+                        ->action(function (Collection $records, StartIngredientEnrichmentBatch $startBatch): mixed {
+                            $batch = $startBatch->handle(auth()->user(), $records);
+
+                            return redirect(IngredientEnrichmentBatchResource::getUrl('view', ['record' => $batch]));
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     ExportBulkAction::make()
-                        ->exporter(IngredientExporter::class),
+                        ->exporter(IngredientExporter::class)
+                        ->modifyQueryUsing(fn (Builder $query): Builder => $query->with([
+                            'identifiers',
+                            'aliases',
+                            'substanceEntries.substance',
+                        ])),
                 ]),
             ])
             ->defaultSort('catalog_key')

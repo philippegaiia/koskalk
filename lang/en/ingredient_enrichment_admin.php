@@ -10,5 +10,8 @@ return [
         'ai_disabled' => 'AI ingredient research is disabled on this server.',
         'selection_size' => 'Select between 1 and :maximum platform ingredients.',
         'platform_only' => 'Only platform ingredients can be researched in this workflow.',
+        'not_approvable' => 'This ingredient proposal is not ready for approval.',
+        'stale' => 'The ingredient changed after research. Start fresh research before approval.',
+        'apply_failed' => 'The approved proposal could not be applied.',
     ],
 ];

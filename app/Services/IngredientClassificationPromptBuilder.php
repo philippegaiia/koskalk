@@ -17,16 +17,16 @@ class IngredientClassificationPromptBuilder
     public function build(IngredientClassificationPromptInput $input): string
     {
         $taxonomy = collect(IngredientCategory::cases())
-            ->map(function (IngredientCategory $category): string {
+            ->map(function (IngredientCategory $category) use ($input): string {
                 $subcategories = collect($category->subcategories())
                     ->map(fn (IngredientSubcategory $subcategory): string => sprintf(
                         '- %s (%s)',
-                        $subcategory->getLabel(),
+                        $subcategory->localizedLabel($input->responseLocale),
                         $subcategory->value,
                     ))
                     ->implode("\n");
 
-                return sprintf('%s (%s)', $category->getLabel(), $category->value)
+                return sprintf('%s (%s)', $category->localizedLabel($input->responseLocale), $category->value)
                     .($subcategories === '' ? '' : "\n{$subcategories}");
             })
             ->implode("\n\n");
@@ -38,7 +38,7 @@ class IngredientClassificationPromptBuilder
             ->get()
             ->map(fn (IngredientFunction $function): string => sprintf(
                 '- %s (%s)',
-                $function->name,
+                $function->localizedName($input->responseLocale),
                 $function->key,
             ))
             ->implode("\n");
@@ -136,7 +136,8 @@ Identity review
   - Confidence: high, medium, or low
   - Source: supporting source or Not verified
 - Additional identifiers
-  - Review each user-entered UNII or ECHA list value separately and distinguish its identifier scheme clearly.
+  - Review every additional CAS, EC / EINECS, UNII, ECHA List Number, InChIKey, or PubChem CID separately and distinguish its identifier scheme clearly.
+  - Report conflicting or alternative CAS and EC / EINECS values without silently choosing one.
   - Do not treat an ECHA list number as an EC / EINECS number.
 
 Functions

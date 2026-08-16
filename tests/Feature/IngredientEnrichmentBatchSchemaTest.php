@@ -6,9 +6,11 @@ use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\User;
+use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 
@@ -68,7 +70,7 @@ it('persists auditable batches and per ingredient research items', function (): 
         ->and($item->ingredient)->toBeInstanceOf(Ingredient::class);
 });
 
-it('prevents duplicate ingredients within a batch while retaining audit rows after ingredient deletion', function (): void {
+it('prevents duplicate ingredients within a batch and retains the subject for audit', function (): void {
     $batch = IngredientEnrichmentBatch::factory()->create();
     $ingredient = Ingredient::factory()->create();
     $attributes = [
@@ -84,9 +86,8 @@ it('prevents duplicate ingredients within a batch while retaining audit rows aft
     expect(fn () => IngredientEnrichmentBatchItem::query()->create($attributes))
         ->toThrow(QueryException::class);
 
-    $ingredient->delete();
-
-    expect(IngredientEnrichmentBatchItem::query()->firstOrFail()->ingredient_id)->toBeNull();
+    expect(fn () => $ingredient->delete())->toThrow(QueryException::class)
+        ->and(IngredientEnrichmentBatchItem::query()->firstOrFail()->ingredient_id)->toBe($ingredient->id);
 });
 
 it('allows only admins to access or mutate enrichment batches', function (): void {
@@ -103,4 +104,27 @@ it('allows only admins to access or mutate enrichment batches', function (): voi
         ->and(Gate::forUser($admin)->allows('create', IngredientEnrichmentBatch::class))->toBeTrue()
         ->and(Gate::forUser($user)->allows('viewAny', IngredientEnrichmentBatch::class))->toBeFalse()
         ->and(Gate::forUser($user)->allows('create', IngredientEnrichmentBatch::class))->toBeFalse();
+});
+
+it('removes relationship ordering from the grouped batch status query', function (): void {
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'total_count' => 1,
+        'pending_count' => 1,
+    ]);
+    IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'status' => IngredientEnrichmentItemStatus::Ready,
+    ]);
+    $queries = [];
+    DB::listen(function ($query) use (&$queries): void {
+        $queries[] = $query->sql;
+    });
+
+    app(IngredientEnrichmentBatchService::class)->refresh($batch->id);
+
+    $statusQuery = collect($queries)->first(
+        fn (string $query): bool => str_contains($query, 'count(*) as aggregate'),
+    );
+
+    expect($statusQuery)->toBeString()
+        ->and(strtolower($statusQuery))->not->toContain('order by');
 });

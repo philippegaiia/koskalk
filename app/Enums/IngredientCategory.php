@@ -43,12 +43,22 @@ enum IngredientCategory: string implements HasColor, HasDescription, HasIcon, Ha
 
     public function getLabel(): string|Htmlable|null
     {
-        return __(sprintf('ingredients.categories.%s.label', $this->value));
+        return $this->localizedLabel();
+    }
+
+    public function localizedLabel(?string $locale = null): string|Htmlable|null
+    {
+        return __(sprintf('ingredients.categories.%s.label', $this->value), [], $locale);
     }
 
     public function getDescription(): string|Htmlable|null
     {
-        return __(sprintf('ingredients.categories.%s.description', $this->value));
+        return $this->localizedDescription();
+    }
+
+    public function localizedDescription(?string $locale = null): string|Htmlable|null
+    {
+        return __(sprintf('ingredients.categories.%s.description', $this->value), [], $locale);
     }
 
     public function getColor(): string|array|null

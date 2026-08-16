@@ -9,6 +9,8 @@ enum IngredientEnrichmentReplaceField: string
     case Category = 'category';
     case Subcategory = 'subcategory';
     case SaponificationName = 'saponification_name';
+    case SoapInciNaohName = 'soap_inci_naoh_name';
+    case SoapInciKohName = 'soap_inci_koh_name';
     case InfoMarkdown = 'info_markdown';
     case Identifiers = 'identifiers';
     case CosingFunctions = 'cosing_functions';

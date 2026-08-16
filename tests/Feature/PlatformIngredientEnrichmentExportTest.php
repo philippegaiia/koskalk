@@ -91,6 +91,7 @@ it('writes the fixed input contract including vocabulary, requested output, and 
     ])
         ->and($record['format'])->toBe('soapkraft-platform-ingredient-enrichment-input')
         ->and($record['vocabulary']['markets'])->toBe(['eu', 'us'])
+        ->and($record['requested_output']['fields'])->toContain('aliases')
         ->and($record['requested_output']['fields'])->toContain('market_labels')
         ->and($record['research_rules']['deferred_fields'])->toContain('sap');
 
@@ -106,11 +107,12 @@ function makeCompleteIngredient(string $catalogKey): Ingredient
     ]);
 
     foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+        $headings = config("ingredient-enrichment.guidance.localized_headings.{$locale}");
         IngredientTranslation::factory()->create([
             'ingredient_id' => $ingredient->id,
             'locale' => $locale,
             'display_name' => "Name {$locale}",
-            'info_markdown' => "## Overview\nA translated ingredient.\n\n## Formulation use\nUsed in translated formulas.",
+            'info_markdown' => "## {$headings['overview']}\nA translated ingredient.\n\n## {$headings['formulation_use']}\nUsed in translated formulas.",
         ]);
     }
 

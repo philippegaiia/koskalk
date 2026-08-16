@@ -27,9 +27,27 @@ class IngredientFunction extends Model
                 'source',
                 'source_reference',
                 'source_checked_at',
+                'source_tier',
+                'confidence',
+                'source_version',
+                'source_updated_at',
                 'assigned_by_user_id',
             ])
             ->withTimestamps();
+    }
+
+    public function localizedName(?string $locale = null): string
+    {
+        return $this->localizedValue("ingredients.functions.{$this->key}.label", $this->name, $locale);
+    }
+
+    public function localizedDescription(?string $locale = null): string
+    {
+        return $this->localizedValue(
+            "ingredients.functions.{$this->key}.description",
+            (string) ($this->description ?? ''),
+            $locale,
+        );
     }
 
     protected function casts(): array
@@ -38,5 +56,14 @@ class IngredientFunction extends Model
             'sort_order' => 'int',
             'is_active' => 'bool',
         ];
+    }
+
+    private function localizedValue(string $key, string $fallback, ?string $locale): string
+    {
+        $value = __($key, [], $locale);
+
+        return is_string($value) && $value !== '' && $value !== $key
+            ? $value
+            : $fallback;
     }
 }

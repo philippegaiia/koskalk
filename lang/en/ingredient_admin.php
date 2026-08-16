@@ -1,0 +1,69 @@
+<?php
+
+return [
+    'market_labels' => [
+        'form' => [
+            'section' => 'Market declarations',
+            'description' => 'The canonical INCI is defined once under General. Add a market declaration only when the printed name must differ.',
+            'canonical_inci' => 'Canonical INCI',
+            'canonical_inci_empty' => 'No canonical INCI entered.',
+            'canonical_inci_helper' => 'This is the default European declaration for ordinary ingredients.',
+            'eu_override' => 'EU declaration override',
+            'us_declaration' => 'US declaration',
+            'use_eu_override' => 'Use a different EU declaration',
+            'use_eu_override_helper' => 'Enable only when verified European labelling differs from the canonical INCI.',
+            'eu_description' => 'Usually leave this empty. Enter a value only for a verified European market-specific exception.',
+            'us_description' => 'FDA common or usual English name. The international name may follow in parentheses.',
+        ],
+        'markets' => [
+            'eu' => 'European Union',
+            'us' => 'United States',
+        ],
+        'action' => [
+            'label' => 'Market colour labels',
+            'heading' => 'Market colour labels',
+            'description' => 'Review the declaration printed for this colourant in each supported market. The canonical INCI value is not changed.',
+            'submit' => 'Save market labels',
+            'declarations' => 'Printed declarations',
+            'market' => 'Market',
+            'declaration_name' => 'Declaration name',
+            'source' => 'Source',
+            'source_url' => 'Source URL',
+            'effective_from' => 'Effective from',
+            'effective_until' => 'Effective until',
+            'add' => 'Add market label',
+            'failed' => 'Market labels were not saved',
+            'failed_body' => 'Review the market declarations and try again.',
+            'saved' => 'Market colour labels saved',
+        ],
+        'validation' => [
+            'one_per_market' => 'Only one current market label may be supplied per market.',
+            'us_bare_ci' => 'US colour declarations must use the applicable US name, not a bare CI number.',
+            'date_order' => 'The effective end date must be on or after the start date.',
+            'platform_only' => 'Only platform ingredients can have market labels.',
+            'colourant_only' => 'Only colourants can have market labels.',
+            'unsupported_market' => 'Market declarations are not configured for :market.',
+            'invalid_us_declaration' => 'The US colour declaration for :ingredient must use the applicable US name, not a bare CI number.',
+            'missing_declaration' => 'No effective :market colour declaration is recorded for :ingredient.',
+        ],
+    ],
+    'translations' => [
+        'validation' => [
+            'platform_only' => 'Only platform ingredients can have managed translations.',
+            'content_required' => 'Enter a translated name or translated guidance.',
+        ],
+    ],
+    'delete' => [
+        'label' => 'Delete',
+        'heading' => 'Delete platform ingredient',
+        'description' => 'Delete only accidental, unused catalog records. Deactivate ingredients that are already used.',
+        'submit' => 'Delete ingredient',
+        'failed' => 'Ingredient was not deleted',
+        'failed_body' => 'This ingredient cannot be deleted.',
+        'saved' => 'Ingredient deleted',
+        'dependency_labels' => [
+            'enrichment_audit' => 'ingredient enrichment audit row|ingredient enrichment audit rows',
+            'intake_audit' => 'ingredient intake audit row|ingredient intake audit rows',
+        ],
+    ],
+];

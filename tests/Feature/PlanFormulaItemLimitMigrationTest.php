@@ -22,4 +22,8 @@ it('backfills formula line limits for free and billable plans without overwritin
         ->and(DB::table('plan_limits')->where('plan_id', $internalPlan->id)->where('key', 'formula_items_per_recipe')->exists())->toBeFalse();
 
     $migration->down();
+
+    expect(DB::table('plan_limits')->where('plan_id', $freePlan->id)->where('key', 'formula_items_per_recipe')->exists())->toBeFalse()
+        ->and(DB::table('plan_limits')->where('plan_id', $paidPlan->id)->where('key', 'formula_items_per_recipe')->exists())->toBeFalse()
+        ->and(DB::table('plan_limits')->where('plan_id', $editedPlan->id)->where('key', 'formula_items_per_recipe')->value('value'))->toBe(37);
 });

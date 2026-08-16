@@ -663,3 +663,17 @@ livewire(ListUsers::class)
 - After you have created/modified any files in `app/Filament` folder, you must run `vendor/bin/filacheck --fix`, to ensure there is no deprecated Filament code. Reported not fixed issues MUST be fixed before continuing.
 
 </laravel-boost-guidelines>
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues for `philippegaiia/koskalk`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The default five-role triage vocabulary is used. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repository uses the single-context domain documentation layout. See `docs/agents/domain.md`.

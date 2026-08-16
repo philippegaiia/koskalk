@@ -103,13 +103,19 @@ it('restores output availability when the output configuration migration is roll
         'estimated_ready_on' => '2026-09-10',
     ]);
     $migration = require database_path('migrations/2026_08_10_231100_add_output_configuration_to_recipes_runs_and_lots.php');
+    $indexMigration = require database_path('migrations/2026_08_11_095609_add_production_foreign_key_indexes.php');
+    $followUpIndexMigration = require database_path('migrations/2026_08_12_063613_add_missing_production_foreign_key_indexes.php');
 
+    $followUpIndexMigration->down();
+    $indexMigration->down();
     $migration->down();
 
     expect(substr((string) DB::table('stock_lots')->where('id', $lot->id)->value('available_from'), 0, 10))
         ->toBe('2026-09-10');
 
     $migration->up();
+    $indexMigration->up();
+    $followUpIndexMigration->up();
 });
 
 it('defines the complete production planning enum contract', function (): void {

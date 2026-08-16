@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'ingredient_id',
@@ -24,6 +25,11 @@ class IngredientIdentifier extends Model
     public function ingredient(): BelongsTo
     {
         return $this->belongsTo(Ingredient::class);
+    }
+
+    public function evidence(): HasMany
+    {
+        return $this->hasMany(IngredientIdentifierEvidence::class);
     }
 
     protected function casts(): array

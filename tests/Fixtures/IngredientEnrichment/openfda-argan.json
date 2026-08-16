@@ -1,0 +1,12 @@
+{
+  "results": [
+    {
+      "unii": "4V59G5UW9X",
+      "names": [
+        {"name": "ARGAN OIL", "display_name": true, "preferred": true, "name_orgs": [{"name_org": "FDA"}]},
+        {"name": "ARGANIA SPINOSA KERNEL OIL", "display_name": false, "preferred": false, "name_orgs": [{"name_org": "INCI"}]}
+      ],
+      "codes": []
+    }
+  ]
+}

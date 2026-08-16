@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\IngredientLabelMarket;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\RegulatoryRegime;
@@ -16,6 +17,7 @@ class InciGenerationService
 
     public function __construct(
         private readonly IngredientFormulaContextResolver $ingredientFormulaContextResolver,
+        private readonly IngredientDeclarationNameResolver $ingredientDeclarationNameResolver,
         private readonly SoapCalculationService $soapCalculationService,
     ) {}
 
@@ -90,6 +92,7 @@ class InciGenerationService
     {
         $rowContexts = $this->ingredientFormulaContextResolver->resolve($payload, [
             'allergenEntries.allergen',
+            'marketLabels',
             'sapProfile',
         ]);
         $declarationRuleState = $this->declarationRuleState($payload);
@@ -137,7 +140,8 @@ class InciGenerationService
      *     default_threshold_percent: float,
      *     rules_by_allergen_id: array<int, array{label: string, threshold_percent: float, threshold_operator: string}>,
      *     regime_code: string,
-     *     regime_label: string
+     *     regime_label: string,
+     *     market_code: string
      * }
      */
     private function declarationRuleState(array $payload): array
@@ -181,6 +185,7 @@ class InciGenerationService
                 'rules_by_allergen_id' => [],
                 'regime_code' => $regimeCode,
                 'regime_label' => Str::upper($regimeCode),
+                'market_code' => $regimeCode === 'eu' ? 'eu' : $regimeCode,
             ];
         }
 
@@ -217,6 +222,9 @@ class InciGenerationService
             'rules_by_allergen_id' => $rulesByAllergenId,
             'regime_code' => $regime->code,
             'regime_label' => $regime->name,
+            'market_code' => filled($regime->market_code)
+                ? Str::lower(trim((string) $regime->market_code))
+                : ($regime->code === 'eu' ? 'eu' : Str::lower(trim((string) $regime->code))),
         ];
     }
 
@@ -1103,7 +1111,10 @@ class InciGenerationService
         array $declarationRuleState,
     ): array {
         if ($variantKey === self::INCORPORATED_LIST_VARIANT_KEY) {
-            $labelState = $this->incorporatedIngredientLabel($context);
+            $labelState = $this->incorporatedIngredientLabel(
+                $context,
+                (string) $declarationRuleState['market_code'],
+            );
 
             return [[
                 'label' => $labelState['label'],
@@ -1136,7 +1147,10 @@ class InciGenerationService
             }
 
             if ($superfatWeight > 0) {
-                $labelState = $this->incorporatedIngredientLabel($context);
+                $labelState = $this->incorporatedIngredientLabel(
+                    $context,
+                    (string) $declarationRuleState['market_code'],
+                );
 
                 $contributions[] = [
                     'label' => $labelState['label'],
@@ -1154,6 +1168,7 @@ class InciGenerationService
             $payload,
             $formulaWeight,
             $declarationRuleState,
+            (string) $declarationRuleState['market_code'],
         );
 
         return [[
@@ -1218,6 +1233,7 @@ class InciGenerationService
             $payload,
             $formulaWeight,
             $declarationRuleState,
+            (string) $declarationRuleState['market_code'],
         );
 
         return [[
@@ -1459,6 +1475,7 @@ class InciGenerationService
         array $payload,
         float $formulaWeight,
         array $declarationRuleState,
+        string $marketCode,
     ): array {
         $ingredient = $context['ingredient'];
         $ingredientName = $context['ingredient_name'] !== '' ? $context['ingredient_name'] : 'Unnamed ingredient';
@@ -1485,7 +1502,7 @@ class InciGenerationService
                 ];
             }
 
-            $fallbackLabel = $this->normalizePrintedLabel($ingredient->inci_name ?? $ingredient->display_name);
+            $fallbackLabel = $this->resolveIngredientDeclaration($ingredient, $marketCode);
 
             return [
                 'label' => $fallbackLabel,
@@ -1496,7 +1513,7 @@ class InciGenerationService
             ];
         }
 
-        $label = $this->normalizePrintedLabel($ingredient->inci_name);
+        $label = $this->resolveIngredientDeclaration($ingredient, $marketCode);
 
         if ($label !== null) {
             if ($this->isParfumLabel($label)) {
@@ -1544,7 +1561,7 @@ class InciGenerationService
      * }  $context
      * @return array{label: string|null, kind: string, warning: string|null}
      */
-    private function incorporatedIngredientLabel(array $context): array
+    private function incorporatedIngredientLabel(array $context, string $marketCode): array
     {
         $ingredient = $context['ingredient'];
         $ingredientName = $context['ingredient_name'] !== '' ? $context['ingredient_name'] : 'Unnamed ingredient';
@@ -1557,7 +1574,7 @@ class InciGenerationService
             ];
         }
 
-        $label = $this->normalizePrintedLabel($ingredient->inci_name);
+        $label = $this->resolveIngredientDeclaration($ingredient, $marketCode);
 
         if ($label !== null) {
             return [
@@ -1576,6 +1593,15 @@ class InciGenerationService
                 ? null
                 : "{$ingredientName} is missing an INCI name, so the preview is falling back to its display name.",
         ];
+    }
+
+    private function resolveIngredientDeclaration(Ingredient $ingredient, string $marketCode): ?string
+    {
+        return $this->ingredientDeclarationNameResolver->resolve(
+            $ingredient,
+            $marketCode,
+            allowLegacyEuFallback: $marketCode === IngredientLabelMarket::Eu->value,
+        );
     }
 
     /**

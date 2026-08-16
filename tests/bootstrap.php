@@ -13,5 +13,13 @@ if (is_file($cachedConfigurationPath)) {
         throw new RuntimeException('Refusing to run tests because the Laravel configuration cache is invalid.');
     }
 
-    TestDatabaseSafety::assertSafe($cachedConfiguration);
+    TestDatabaseSafety::assertSafe(
+        $cachedConfiguration,
+        allowDisposablePostgres: filter_var(
+            $_SERVER['VERIFY_POSTGRESQL_INDEXES']
+                ?? $_ENV['VERIFY_POSTGRESQL_INDEXES']
+                ?? getenv('VERIFY_POSTGRESQL_INDEXES'),
+            FILTER_VALIDATE_BOOL,
+        ),
+    );
 }

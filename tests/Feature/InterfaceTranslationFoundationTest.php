@@ -48,7 +48,7 @@ it('seeds the initial locales without preventing future languages', function () 
     $this->seed($seeder);
 
     expect(SupportedLocale::query()->orderBy('sort_order')->pluck('code')->all())
-        ->toBe(['en', 'fr', 'es', 'de', 'it', 'nl'])
+        ->toBe(['en', 'fr', 'es', 'de', 'it', 'nl', 'pt_BR'])
         ->and(SupportedLocale::query()->where('is_default', true)->value('code'))
         ->toBe('en')
         ->and(SupportedLocale::query()->where('code', 'nl')->firstOrFail()->only([
@@ -64,7 +64,37 @@ it('seeds the initial locales without preventing future languages', function () 
             'is_active' => false,
             'sort_order' => 60,
         ])
+        ->and(SupportedLocale::query()->where('code', 'pt_BR')->firstOrFail()->only([
+            'name',
+            'native_name',
+            'number_locale',
+            'text_direction',
+            'is_active',
+            'is_default',
+            'sort_order',
+        ]))->toBe([
+            'name' => 'Portuguese (Brazil)',
+            'native_name' => 'Português (Brasil)',
+            'number_locale' => 'pt_BR',
+            'text_direction' => 'ltr',
+            'is_active' => false,
+            'is_default' => false,
+            'sort_order' => 70,
+        ])
         ->and(InterfaceTranslation::query()->exists())->toBeFalse();
+});
+
+it('installs Brazilian Portuguese framework translations without application interface copy', function () {
+    foreach (['actions', 'auth', 'http-statuses', 'pagination', 'passwords', 'validation'] as $group) {
+        expect(lang_path("pt_BR/{$group}.php"))->toBeFile();
+    }
+
+    App::setLocale('pt_BR');
+
+    expect(__('validation.required', ['attribute' => 'nome']))
+        ->not->toBe('The nome field is required.')
+        ->and(__('auth.failed'))->not->toBe('These credentials do not match our records.')
+        ->and(__('public.navigation.product'))->toBe('Product');
 });
 
 it('reads only application-owned English source strings from Laravel language files', function () {
@@ -85,7 +115,7 @@ it('reads only application-owned English source strings from Laravel language fi
 });
 
 it('keeps non-English application locale files and translation-value seeders out of the codebase', function () {
-    foreach (['fr', 'es', 'de', 'it', 'nl'] as $locale) {
+    foreach (['fr', 'es', 'de', 'it', 'nl', 'pt_BR'] as $locale) {
         expect(lang_path("{$locale}/workbench.php"))->not->toBeFile();
     }
 

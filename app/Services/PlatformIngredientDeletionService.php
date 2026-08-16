@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
+use App\Models\IngredientEnrichmentBatchItem;
+use App\Models\IngredientIntakeItem;
 use App\Models\ProductionBatchIngredient;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersionCostingItem;
@@ -77,7 +79,9 @@ class PlatformIngredientDeletionService
      *     costing_items: int,
      *     composite_ingredients: int,
      *     current_prices: int,
-     *     production_batch_ingredients: int
+     *     production_batch_ingredients: int,
+     *     enrichment_audit: int,
+     *     intake_audit: int
      * }
      */
     private function dependencyCounts(Ingredient $ingredient): array
@@ -90,6 +94,12 @@ class PlatformIngredientDeletionService
                 ->count(),
             'current_prices' => CurrentMaterialPrice::query()->whereBelongsTo($ingredient)->count(),
             'production_batch_ingredients' => ProductionBatchIngredient::query()->whereBelongsTo($ingredient)->count(),
+            'enrichment_audit' => IngredientEnrichmentBatchItem::query()->where('ingredient_id', $ingredient->id)->count(),
+            'intake_audit' => IngredientIntakeItem::query()
+                ->where(fn ($query) => $query
+                    ->where('existing_ingredient_id', $ingredient->id)
+                    ->orWhere('promoted_ingredient_id', $ingredient->id))
+                ->count(),
         ];
     }
 
@@ -99,7 +109,9 @@ class PlatformIngredientDeletionService
      *     costing_items: int,
      *     composite_ingredients: int,
      *     current_prices: int,
-     *     production_batch_ingredients: int
+     *     production_batch_ingredients: int,
+     *     enrichment_audit: int,
+     *     intake_audit: int
      * }  $dependencies
      */
     private function blockedDeletionMessage(array $dependencies): string
@@ -110,6 +122,8 @@ class PlatformIngredientDeletionService
             'composite_ingredients' => 'composite ingredient|composite ingredients',
             'current_prices' => 'current workspace price|current workspace prices',
             'production_batch_ingredients' => 'production batch ingredient|production batch ingredients',
+            'enrichment_audit' => __('ingredient_admin.delete.dependency_labels.enrichment_audit'),
+            'intake_audit' => __('ingredient_admin.delete.dependency_labels.intake_audit'),
         ];
         $usages = [];
 

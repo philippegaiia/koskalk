@@ -1,6 +1,6 @@
 @php
  $isPlatformIngredient = $ingredient !== null && $ingredient->owner_type === null;
- $ingredientContext = $ingredient?->display_name ?: __('ingredients.editor.common.new_ingredient');
+ $ingredientContext = $ingredient?->localizedDisplayName() ?: __('ingredients.editor.common.new_ingredient');
  $isCarrierOil = \App\Enums\IngredientCategory::tryFrom((string) ($data['category'] ?? '')) === \App\Enums\IngredientCategory::Lipids;
 @endphp
 
@@ -28,7 +28,7 @@
  @endif
  </p>
 
- @if (! $isPlatformIngredient && $isCarrierOil)
+ @if (! $isPlatformIngredient && $isCarrierOil && ! $hasSoapChemistry)
  <aside class="mt-4 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] px-4 py-3 text-sm leading-6 text-[var(--color-warning-strong)]" aria-labelledby="carrier-oil-guidance-title">
  <p id="carrier-oil-guidance-title" class="font-medium text-[var(--color-ink-strong)]">{{ __('ingredients.editor.carrier_oil_warning.heading') }}</p>
  <p class="mt-1">{{ __('ingredients.editor.carrier_oil_warning.description') }}</p>
@@ -93,55 +93,6 @@
  {{ $this->form }}
 
  @unless ($isPlatformIngredient)
- <section
- class="sk-card p-5 sm:p-6"
- x-data="classificationPrompt()"
- aria-labelledby="classification-prompt-title"
- >
- <div class="flex flex-wrap items-center justify-between gap-4">
- <div>
- <p class="sk-eyebrow">{{ __('ingredients.editor.classification_prompt.eyebrow') }}</p>
- <h2 id="classification-prompt-title" class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.editor.classification_prompt.heading') }}</h2>
- <p class="mt-1 max-w-3xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.editor.classification_prompt.description') }}</p>
- </div>
- <div class="flex flex-wrap items-center gap-3">
- <button
- type="button"
- class="sk-btn sk-btn-outline"
- wire:click="generateClassificationPrompt"
- wire:loading.attr="disabled"
- wire:target="generateClassificationPrompt"
- >
- {{ __('ingredients.editor.classification_prompt.generate') }}
- </button>
- <button
- type="button"
- class="sk-btn sk-btn-outline"
- data-classification-prompt-copy
- @disabled($generatedClassificationPrompt === null)
- x-on:click="copy($refs.classificationPrompt?.value ?? '')"
- >
- <span x-show="! copied">{{ __('ingredients.editor.classification_prompt.copy') }}</span>
- <span x-cloak x-show="copied">{{ __('ingredients.editor.classification_prompt.copied') }}</span>
- </button>
- </div>
- </div>
-
- @if ($generatedClassificationPrompt !== null)
- <div class="mt-4">
- <textarea
- x-ref="classificationPrompt"
- readonly
- aria-label="{{ __('ingredients.editor.classification_prompt.preview') }}"
- class="h-72 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field-muted)] p-3 text-xs leading-5 text-[var(--color-ink-strong)]"
- >{{ $generatedClassificationPrompt }}</textarea>
- <p x-cloak x-show="copyFailed" class="mt-3 text-sm text-[var(--color-danger-strong)]">
- {{ __('ingredients.editor.classification_prompt.copy_failed') }}
- </p>
- </div>
- @endif
- </section>
-
  <x-workflow-action-bar data-ingredient-save-bar>
  <a href="{{ route('ingredients.index') }}" wire:navigate class="sk-btn sk-btn-ghost">
  {{ __('ingredients.actions.cancel') }}

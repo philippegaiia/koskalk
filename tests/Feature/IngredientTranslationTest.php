@@ -248,6 +248,66 @@ it('delivers localized platform names to the recipe workbench with English fallb
         ->toBe('Sea Salt');
 });
 
+it('uses active and neutral aliases in the workbench and English only as a fallback', function (): void {
+    app()->setLocale('fr');
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $productFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $localized = Ingredient::factory()->create(['category' => IngredientCategory::Other]);
+    $fallback = Ingredient::factory()->create(['category' => IngredientCategory::Other]);
+
+    $localized->aliases()->createMany([
+        ['locale' => 'fr', 'name' => 'Nigelle', 'normalized_name' => 'nigelle', 'kind' => 'common'],
+        ['locale' => 'und', 'name' => 'Nigella sativa', 'normalized_name' => 'nigella sativa', 'kind' => 'botanical'],
+        ['locale' => 'en', 'name' => 'Black cumin', 'normalized_name' => 'black cumin', 'kind' => 'common'],
+    ]);
+    $fallback->aliases()->createMany([
+        ['locale' => 'und', 'name' => 'Butyrospermum parkii', 'normalized_name' => 'butyrospermum parkii', 'kind' => 'botanical'],
+        ['locale' => 'en', 'name' => 'Shea butter', 'normalized_name' => 'shea butter', 'kind' => 'common'],
+    ]);
+
+    $catalog = collect(app(RecipeWorkbenchIngredientCatalogBuilder::class)->build(null, $productFamily))->keyBy('id');
+
+    expect($catalog[$localized->id]['aliases'])->toBe(['Nigelle', 'Nigella sativa'])
+        ->and($catalog[$fallback->id]['aliases'])->toBe(['Butyrospermum parkii', 'Shea butter']);
+});
+
+it('does not search an English alias when an active-locale alias exists', function (): void {
+    app()->setLocale('fr');
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $user = User::factory()->create(['locale' => 'fr']);
+    $localized = Ingredient::factory()->create([
+        'display_name' => 'Nigella Seed Oil',
+        'inci_name' => 'NIGELLA SATIVA SEED OIL',
+    ]);
+    $fallback = Ingredient::factory()->create([
+        'display_name' => 'Butyrospermum Parkii Butter',
+        'inci_name' => 'BUTYROSPERMUM PARKII BUTTER',
+    ]);
+    $localized->aliases()->createMany([
+        ['locale' => 'fr', 'name' => 'Nigelle', 'normalized_name' => 'nigelle', 'kind' => 'common'],
+        ['locale' => 'en', 'name' => 'Black cumin', 'normalized_name' => 'black cumin', 'kind' => 'common'],
+    ]);
+    $fallback->aliases()->create([
+        'locale' => 'en',
+        'name' => 'Shea butter',
+        'normalized_name' => 'shea butter',
+        'kind' => 'common',
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('ingredients.search-platform', ['q' => 'black cumin']))
+        ->assertSuccessful()
+        ->assertJsonMissing(['id' => $localized->id]);
+
+    $this->actingAs($user)
+        ->getJson(route('ingredients.search-platform', ['q' => 'shea butter']))
+        ->assertSuccessful()
+        ->assertJsonFragment(['id' => $fallback->id]);
+});
+
 it('keeps private ingredient names authored in localized workbench catalogs', function () {
     app()->setLocale('fr');
     SupportedLocale::factory()->create(['code' => 'fr']);

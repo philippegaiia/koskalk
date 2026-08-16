@@ -42,7 +42,7 @@ it('shows the focused new supplier form to active workspaces', function (): void
         ->assertSeeHtml('class="fi-section')
         ->assertSeeHtml('wire:model="data.code"')
         ->assertSeeHtml('data-production-bench-save-bar')
-        ->assertSeeHtml('fixed bottom-0 left-0 right-0')
+        ->assertSeeHtml('sk-workflow-action-bar')
         ->assertSeeHtml('pb-24')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.suppliers').'"')
         ->assertSeeHtml('maxlength="16"')

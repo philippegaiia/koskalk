@@ -25,6 +25,8 @@ class IngredientEnrichmentBatchItemFactory extends Factory
             'warnings' => [],
             'unresolved_questions' => [],
             'sources' => [],
+            'research_stages' => [],
+            'structured_source_calls' => 0,
         ];
     }
 }

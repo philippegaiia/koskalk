@@ -152,7 +152,10 @@ it('duplicates localized identity and substance data into an independent workspa
         ->and($copy->translations)->toBeEmpty()
         ->and($copy->identifiers)->toHaveCount(3)
         ->and($copy->identifiers->where('scheme', 'cas')->where('is_primary', true)->value('value'))->toBe('8000-28-0')
-        ->and($copy->aliases->pluck('name')->all())->toBe(['Lavande vraie'])
+        ->and($copy->aliases->pluck('name')->all())->toBe([
+            'Lavande vraie',
+            'Lavandula angustifolia',
+        ])
         ->and($copy->substanceEntries)->toHaveCount(1)
         ->and($copy->substanceEntries->first()->source_notes)->toBe('Supplier declaration')
         ->and($copy->substanceEntries->first()->source_data)->toBe(['document' => 'coa.pdf']);
@@ -291,7 +294,7 @@ it('validates duplicated carrier oil fatty acids against trusted ranges and tota
     unset($row);
 
     expect(fn () => $service->update($copy, $state, $user))
-        ->toThrow(ValidationException::class, 'must stay between');
+        ->toThrow(ValidationException::class, 'outside its allowed range');
 
     $state = $service->formData($copy);
     foreach ($state['fatty_acid_entries'] as &$row) {

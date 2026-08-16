@@ -85,7 +85,12 @@ class MediaAssetUsageService
 
         if ($ids->count() > $maximum) {
             throw ValidationException::withMessages([
-                'media' => __('media_library.validation.maximum_images', ['max' => $maximum]),
+                'media' => __(
+                    $expectedType === MediaAssetType::Pdf
+                        ? 'media_library.validation.maximum_documents'
+                        : 'media_library.validation.maximum_images',
+                    ['max' => $maximum],
+                ),
             ]);
         }
 

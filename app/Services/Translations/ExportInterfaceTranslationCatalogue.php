@@ -4,7 +4,6 @@ namespace App\Services\Translations;
 
 use App\Exceptions\InvalidInterfaceTranslationCatalogue;
 use App\Models\InterfaceTranslation;
-use App\Models\SupportedLocale;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use stdClass;
@@ -23,11 +22,8 @@ class ExportInterfaceTranslationCatalogue
     public function handle(mixed $requestedPath = null): array
     {
         $path = $this->catalogue->resolvePath($requestedPath);
-        $locales = SupportedLocale::query()
-            ->where('code', '!=', 'en')
-            ->orderBy('code')
-            ->pluck('code')
-            ->all();
+        /** @var list<string> $locales */
+        $locales = config('interface-translations.catalogue_locales', []);
         $ownedKeys = array_fill_keys(array_keys($this->englishSource->all()), true);
 
         $translations = InterfaceTranslation::query()

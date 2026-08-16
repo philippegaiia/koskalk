@@ -424,3 +424,17 @@ Rules:
 - If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
 - For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
 - After modifying code files in this session, run `graphify update .` to generate or refresh the local graph (AST-only, no API cost)
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in GitHub Issues for `philippegaiia/koskalk`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The default five-role triage vocabulary is used. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This repository uses the single-context domain documentation layout. See `docs/agents/domain.md`.

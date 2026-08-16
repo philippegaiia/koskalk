@@ -199,19 +199,15 @@ class EntitlementService
 
     public function assertCanCreatePrivateIngredient(User $user): void
     {
-        $this->assertUsageAllows(
-            $this->usageFor($user)['private_ingredients'],
-            'private ingredients',
-        );
+        $this->assertPrivateIngredientUsageAllows($this->usageFor($user)['private_ingredients']);
     }
 
     public function assertCanCreatePrivateIngredientInWorkspace(Workspace $workspace): void
     {
         $subscriber = $this->subscriberForWorkspace($workspace);
 
-        $this->assertUsageAllows(
+        $this->assertPrivateIngredientUsageAllows(
             $this->privateIngredientUsage($subscriber, $workspace, $this->limitsFor($subscriber)),
-            'private ingredients',
         );
     }
 
@@ -332,6 +328,24 @@ class EntitlementService
 
         throw ValidationException::withMessages([
             'plan' => "Your current plan allows {$usage['limit']} {$resource}.",
+        ]);
+    }
+
+    /**
+     * @param  array{used: int, limit: int|null, remaining: int|null, allowed: bool}  $usage
+     */
+    private function assertPrivateIngredientUsageAllows(array $usage): void
+    {
+        if ($usage['allowed']) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'plan' => trans_choice(
+                'ingredients.editor.validation.private_ingredient_limit',
+                (int) $usage['limit'],
+                ['limit' => $usage['limit']],
+            ),
         ]);
     }
 

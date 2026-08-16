@@ -4,12 +4,18 @@ namespace Database\Seeders;
 
 use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
+use App\Services\IngredientIdentitySynchronizer;
 use App\Support\IngredientCatalogTaxonomyDataset;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class IngredientCatalogSeeder extends Seeder
 {
+    public function __construct(
+        private readonly IngredientIdentitySynchronizer $ingredientIdentitySynchronizer,
+    ) {}
+
     /**
      * Run the database seeds.
      */
@@ -36,43 +42,73 @@ class IngredientCatalogSeeder extends Seeder
             $displayNameEn = $this->value($row, 'Nom EN');
             $displayNameFr = $this->value($row, 'Name');
 
-            $ingredient = Ingredient::query()->updateOrCreate(
-                [
-                    'catalog_key' => $catalogKey,
-                ],
-                [
-                    'category' => $taxonomy['category'] ?? IngredientCategory::Other,
-                    'subcategory' => $taxonomy['subcategory'] ?? null,
-                    'taxonomy_source' => $taxonomy === null ? 'import_unclassified' : 'platform_curated',
-                    'display_name' => $displayNameEn ?? $displayNameFr ?? $this->value($row, 'INCI') ?? $catalogKey,
-                    'inci_name' => $this->value($row, 'INCI'),
-                    'soap_inci_naoh_name' => $soapInciNaohName,
-                    'soap_inci_koh_name' => $soapInciKohName,
-                    'unit' => $this->value($row, 'Unit'),
-                    'is_soap_saponification_trusted' => $taxonomy['is_soap_saponification_trusted'] ?? false,
-                    'requires_aromatic_compliance' => $taxonomy['requires_aromatic_compliance'] ?? false,
-                    'requires_admin_review' => true,
-                    'is_active' => $this->yesNoToBool($this->value($row, 'Active'), default: true),
-                    'is_manufactured' => $this->yesNoToBool($this->value($row, 'Fabriqué'), default: false),
-                    'source_data' => $row,
-                ]
-            );
+            DB::transaction(function () use ($catalogKey, $displayNameEn, $displayNameFr, $row, $soapInciKohName, $soapInciNaohName, $taxonomy): void {
+                $ingredient = Ingredient::query()->updateOrCreate(
+                    [
+                        'catalog_key' => $catalogKey,
+                    ],
+                    [
+                        'category' => $taxonomy['category'] ?? IngredientCategory::Other,
+                        'subcategory' => $taxonomy['subcategory'] ?? null,
+                        'taxonomy_source' => $taxonomy === null ? 'import_unclassified' : 'platform_curated',
+                        'display_name' => $displayNameEn ?? $displayNameFr ?? $this->value($row, 'INCI') ?? $catalogKey,
+                        'inci_name' => $this->value($row, 'INCI'),
+                        'soap_inci_naoh_name' => $soapInciNaohName,
+                        'soap_inci_koh_name' => $soapInciKohName,
+                        'unit' => $this->value($row, 'Unit'),
+                        'is_soap_saponification_trusted' => $taxonomy['is_soap_saponification_trusted'] ?? false,
+                        'requires_aromatic_compliance' => $taxonomy['requires_aromatic_compliance'] ?? false,
+                        'requires_admin_review' => true,
+                        'is_active' => $this->yesNoToBool($this->value($row, 'Active'), default: true),
+                        'is_manufactured' => $this->yesNoToBool($this->value($row, 'Fabriqué'), default: false),
+                        'source_data' => $row,
+                    ]
+                );
 
-            $this->syncLegacyIdentifiers($ingredient, $this->value($row, 'CAS'), 'cas');
-            $this->syncLegacyIdentifiers(
-                $ingredient,
-                $this->value($row, 'EINECS') ?? $this->value($row, 'CAS EINECS'),
-                'ec',
-            );
+                if ($ingredient->wasRecentlyCreated) {
+                    $this->syncImportedIdentity($ingredient, $row);
+                }
+            }, attempts: 5);
         }
     }
 
-    private function syncLegacyIdentifiers(Ingredient $ingredient, ?string $value, string $scheme): void
+    /**
+     * @param  array<string, string>  $row
+     */
+    private function syncImportedIdentity(Ingredient $ingredient, array $row): void
     {
-        $ingredient->identifiers()->where('scheme', $scheme)->delete();
+        $casNumbers = $this->identifierValues($this->value($row, 'CAS'));
+        $ecNumbers = $this->identifierValues(
+            $this->value($row, 'EINECS') ?? $this->value($row, 'CAS EINECS'),
+        );
+        $additionalIdentifiers = collect([
+            ...collect($casNumbers)->skip(1)->map(fn (string $value): array => [
+                'scheme' => 'cas',
+                'value' => $value,
+                'is_primary' => false,
+            ]),
+            ...collect($ecNumbers)->skip(1)->map(fn (string $value): array => [
+                'scheme' => 'ec',
+                'value' => $value,
+                'is_primary' => false,
+            ]),
+        ])->values()->all();
 
+        $this->ingredientIdentitySynchronizer->sync($ingredient, [
+            'cas_number' => $casNumbers[0] ?? null,
+            'ec_number' => $ecNumbers[0] ?? null,
+            'additional_identifiers' => $additionalIdentifiers,
+            'aliases' => [],
+        ]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function identifierValues(?string $value): array
+    {
         $seen = [];
-        $isPrimary = true;
+        $identifiers = [];
 
         foreach (preg_split('/[,;]+/u', (string) $value) ?: [] as $candidate) {
             $trimmed = trim($candidate);
@@ -82,16 +118,11 @@ class IngredientCatalogSeeder extends Seeder
                 continue;
             }
 
-            $ingredient->identifiers()->create([
-                'scheme' => $scheme,
-                'value' => $trimmed,
-                'normalized_value' => $normalized,
-                'is_primary' => $isPrimary,
-            ]);
-
             $seen[$normalized] = true;
-            $isPrimary = false;
+            $identifiers[] = $trimmed;
         }
+
+        return $identifiers;
     }
 
     /**

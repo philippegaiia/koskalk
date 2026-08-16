@@ -40,7 +40,7 @@ class IngredientTranslationService
         if ($ingredient->owner_type !== null) {
             if ($rows !== []) {
                 throw ValidationException::withMessages([
-                    'translations' => 'Only platform ingredients can have managed translations.',
+                    'translations' => __('ingredient_admin.translations.validation.platform_only'),
                 ]);
             }
 
@@ -115,7 +115,7 @@ class IngredientTranslationService
                 ) {
                     $validator->errors()->add(
                         "translations.{$index}.display_name",
-                        'Enter a translated name or translated guidance.',
+                        __('ingredient_admin.translations.validation.content_required'),
                     );
                 }
             }

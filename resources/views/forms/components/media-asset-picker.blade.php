@@ -26,7 +26,7 @@
             acceptedTypes: @js($acceptedTypes),
             messages: {
                 refreshFailed: @js(__('media_library.picker.refresh_failed')),
-                uploadFailed: @js(__('media_library.picker.upload_failed')),
+                uploadFailed: @js($acceptsDocuments ? __('media_library.picker.document_upload_failed') : __('media_library.picker.upload_failed')),
                 pollingStopped: @js(__('media_library.picker.polling_stopped')),
                 processingFailed: @js(__('media_library.picker.processing_failed')),
             },
@@ -53,11 +53,11 @@
                     @endforeach
                 </div>
             @else
-                <div class="rounded-xl border border-dashed border-[var(--color-line)] bg-[var(--color-field-muted)] px-4 py-5 text-sm text-[var(--color-ink-soft)]">{{ __('media_library.picker.no_selection') }}</div>
+                <div class="rounded-xl border border-dashed border-[var(--color-line)] bg-[var(--color-field-muted)] px-4 py-5 text-sm text-[var(--color-ink-soft)]">{{ $acceptsDocuments ? __('media_library.picker.no_document_selection') : __('media_library.picker.no_selection') }}</div>
             @endif
 
             <div class="flex flex-wrap gap-2">
-                <button x-ref="trigger" type="button" x-on:click="openPicker()" class="sk-btn sk-btn-primary">{{ $isMultiple ? __('media_library.picker.choose_multiple') : __('media_library.picker.choose') }}</button>
+                <button x-ref="trigger" type="button" x-on:click="openPicker()" class="sk-btn sk-btn-primary">{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : ($isMultiple ? __('media_library.picker.choose_multiple') : __('media_library.picker.choose')) }}</button>
                 <button type="button" x-show="multiple ? (Array.isArray(state) && state.length) : state" x-on:click="state = multiple ? [] : null" class="sk-btn border border-[var(--color-line)] text-[var(--color-ink-soft)]">{{ __('media_library.picker.clear') }}</button>
             </div>
         @endunless
@@ -65,19 +65,19 @@
         @if ($isEmbedded())
             <div data-media-picker-embedded class="overflow-hidden rounded-[var(--radius-lg)] border border-[var(--color-line)] bg-[var(--color-panel)]">
         @else
-            <div x-cloak x-show="open" x-trap.inert.noscroll="open" x-on:keydown.escape.window="closePicker()" class="fixed inset-0 z-[70] grid place-items-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-label="{{ __('media_library.picker.choose') }}">
+            <div x-cloak x-show="open" x-trap.inert.noscroll="open" x-on:keydown.escape.window="closePicker()" class="fixed inset-0 z-[70] grid place-items-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-label="{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : __('media_library.picker.choose') }}">
                 <div x-on:click.outside="closePicker()" class="max-h-[88dvh] w-full max-w-5xl overflow-hidden rounded-[var(--radius-lg)] bg-[var(--color-panel)] shadow-2xl">
         @endif
             @unless ($embedded)
                 <div class="flex items-start justify-between gap-4 border-b border-[var(--color-line)] px-5 py-4">
-                    <div><h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.picker.choose') }}</h3><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $isMultiple ? __('media_library.picker.select_multiple', ['count' => $maximumItems]) : __('media_library.picker.select_one') }}</p></div>
+                    <div><h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : __('media_library.picker.choose') }}</h3><p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $acceptsDocuments ? __('media_library.picker.select_documents', ['count' => $maximumItems]) : ($isMultiple ? __('media_library.picker.select_multiple', ['count' => $maximumItems]) : __('media_library.picker.select_one')) }}</p></div>
                     <button type="button" x-on:click="closePicker()" class="grid size-10 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)]" aria-label="{{ __('media_library.picker.close') }}">×</button>
                 </div>
             @endunless
 
-                <div class="border-b border-[var(--color-line)] px-5 pt-3" role="tablist" aria-label="{{ __('media_library.picker.choose') }}">
+                <div class="border-b border-[var(--color-line)] px-5 pt-3" role="tablist" aria-label="{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : __('media_library.picker.choose') }}">
                     <button id="{{ $pickerId }}-library-tab" data-media-picker-library-tab x-ref="libraryTab" type="button" role="tab" aria-controls="{{ $pickerId }}-library-panel" x-on:click="activeTab = 'library'" x-on:keydown.arrow-right.prevent="moveTabFocus(1)" x-on:keydown.arrow-left.prevent="moveTabFocus(-1)" x-on:keydown.home.prevent="focusTab('library')" x-on:keydown.end.prevent="focusTab('upload')" x-bind:aria-selected="activeTab === 'library'" x-bind:tabindex="activeTab === 'library' ? 0 : -1" class="border-b-2 px-3 py-2 text-sm font-medium" x-bind:class="activeTab === 'library' ? 'border-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-transparent text-[var(--color-ink-soft)]'">{{ __('media_library.picker.library') }}</button>
-                    <button id="{{ $pickerId }}-upload-tab" data-media-picker-upload-tab x-ref="uploadTab" type="button" role="tab" aria-controls="{{ $pickerId }}-upload-panel" x-on:click="activeTab = 'upload'" x-on:keydown.arrow-right.prevent="moveTabFocus(1)" x-on:keydown.arrow-left.prevent="moveTabFocus(-1)" x-on:keydown.home.prevent="focusTab('library')" x-on:keydown.end.prevent="focusTab('upload')" x-bind:aria-selected="activeTab === 'upload'" x-bind:tabindex="activeTab === 'upload' ? 0 : -1" class="border-b-2 px-3 py-2 text-sm font-medium" x-bind:class="activeTab === 'upload' ? 'border-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-transparent text-[var(--color-ink-soft)]'">{{ __('media_library.picker.upload_new') }}</button>
+                    <button id="{{ $pickerId }}-upload-tab" data-media-picker-upload-tab x-ref="uploadTab" type="button" role="tab" aria-controls="{{ $pickerId }}-upload-panel" x-on:click="activeTab = 'upload'" x-on:keydown.arrow-right.prevent="moveTabFocus(1)" x-on:keydown.arrow-left.prevent="moveTabFocus(-1)" x-on:keydown.home.prevent="focusTab('library')" x-on:keydown.end.prevent="focusTab('upload')" x-bind:aria-selected="activeTab === 'upload'" x-bind:tabindex="activeTab === 'upload' ? 0 : -1" class="border-b-2 px-3 py-2 text-sm font-medium" x-bind:class="activeTab === 'upload' ? 'border-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-transparent text-[var(--color-ink-soft)]'">{{ $acceptsDocuments ? __('media_library.picker.upload_new_document') : __('media_library.picker.upload_new') }}</button>
                 </div>
 
                 <div class="max-h-[56dvh] overflow-y-auto p-5">
@@ -85,13 +85,13 @@
                         <label for="{{ $pickerId }}-search" class="sr-only">{{ __('media_library.picker.search_label') }}</label>
                         <input id="{{ $pickerId }}-search" x-ref="search" x-model="search" x-on:input.debounce.350ms="loadAssets(true)" type="search" placeholder="{{ __('media_library.picker.search_placeholder') }}" class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
                         <div data-media-picker-pending-status x-show="pendingUpload" role="status" aria-live="polite" aria-atomic="true" class="rounded-xl border border-[var(--color-line)] bg-[var(--color-accent-soft)] p-4">
-                            <div class="flex items-center justify-between gap-3"><p class="text-sm font-semibold text-[var(--color-ink-strong)]"><span x-show="pendingUpload?.status === 'processing'">{{ __('media_library.picker.processing') }}</span><span x-show="pendingUpload?.status === 'failed'">{{ __('media_library.picker.failed') }}</span></p><span x-show="pendingUpload?.status === 'processing'" class="text-sm tabular-nums text-[var(--color-ink-soft)]" x-text="`${pendingUpload?.progress ?? 0}%`"></span></div>
+                            <div class="flex items-center justify-between gap-3"><p class="text-sm font-semibold text-[var(--color-ink-strong)]"><span x-show="pendingUpload?.status === 'processing'">{{ $acceptsDocuments ? __('media_library.picker.processing_document') : __('media_library.picker.processing') }}</span><span x-show="pendingUpload?.status === 'failed'">{{ $acceptsDocuments ? __('media_library.picker.document_failed') : __('media_library.picker.failed') }}</span></p><span x-show="pendingUpload?.status === 'processing'" class="text-sm tabular-nums text-[var(--color-ink-soft)]" x-text="`${pendingUpload?.progress ?? 0}%`"></span></div>
                             <div x-show="pendingUpload?.status === 'processing'" class="mt-3 h-2 overflow-hidden rounded-full bg-white/70"><div class="h-full rounded-full bg-[var(--color-accent)] transition-all" x-bind:style="`width: ${pendingUpload?.progress ?? 0}%`"></div></div>
                             <p x-show="pendingUpload?.failureReason" x-text="pendingUpload?.failureReason" class="mt-2 text-sm text-[var(--color-danger)]"></p>
                             <div x-show="pendingUpload?.status === 'failed'" class="mt-3 flex gap-2"><button data-media-picker-retry type="button" x-show="pendingUpload?.retryUrl" x-on:click="retryUpload()" class="sk-btn sk-btn-primary">{{ __('media_library.picker.retry') }}</button><button data-media-picker-remove type="button" x-show="pendingUpload?.removeUrl" x-on:click="removeUpload()" class="sk-btn border border-[var(--color-line)]">{{ __('media_library.picker.remove') }}</button></div>
                         </div>
                         <div data-media-picker-assets-error x-show="assetsError" role="alert" class="rounded-xl border border-[var(--color-danger)] p-4 text-sm text-[var(--color-danger)]"><p x-text="assetsError"></p><button type="button" x-on:click="retryAssets()" class="mt-3 font-medium underline">{{ __('media_library.picker.retry') }}</button></div>
-                        <div x-show="! assetsLoading && ! assetsError && assets.length === 0" class="py-12 text-center"><p class="font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.picker.empty_title') }}</p><p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('media_library.picker.empty_description') }}</p></div>
+                        <div x-show="! assetsLoading && ! assetsError && assets.length === 0" class="py-12 text-center"><p class="font-semibold text-[var(--color-ink-strong)]">{{ __('media_library.picker.empty_title') }}</p><p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ $acceptsDocuments ? __('media_library.picker.empty_documents_description') : __('media_library.picker.empty_description') }}</p></div>
                         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                             <template x-for="asset in assets" x-bind:key="asset.id">
                                 <button type="button" data-media-picker-asset x-bind:data-media-picker-status="asset.status" x-bind:data-media-picker-selectable="asset.status === 'ready' ? 'true' : 'false'" x-bind:disabled="asset.status !== 'ready'" x-on:click="select(asset.id)" x-bind:aria-pressed="selected(asset.id)" x-bind:class="selected(asset.id) ? 'border-[var(--color-active)] ring-2 ring-[var(--color-active)]/25' : 'border-[var(--color-line)]'" class="overflow-hidden rounded-xl border text-left disabled:cursor-not-allowed disabled:opacity-65">
@@ -124,9 +124,9 @@
                                             data-media-picker-file-trigger
                                             class="sk-btn cursor-pointer border border-[var(--color-accent)] bg-[var(--color-accent-soft)] text-[var(--color-accent-strong)] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-[var(--color-accent)]"
                                         >
-                                            {{ __('media_library.picker.choose_file') }}
+                                            {{ $acceptsDocuments ? __('media_library.picker.choose_document') : __('media_library.picker.choose_file') }}
                                         </label>
-                                        <span class="min-w-0 flex-1 truncate text-sm text-[var(--color-ink-soft)]" x-text="uploadFilename || @js(__('media_library.picker.no_file_selected'))"></span>
+                                        <span class="min-w-0 flex-1 truncate text-sm text-[var(--color-ink-soft)]" x-text="uploadFilename || @js($acceptsDocuments ? __('media_library.picker.no_document_selected') : __('media_library.picker.no_file_selected'))"></span>
                                     </div>
                                 </div>
                                 <p x-show="uploadError" x-text="uploadError" role="alert" class="text-sm text-[var(--color-danger)]"></p>
@@ -148,7 +148,7 @@
                                 </div>
                                 <button type="button" x-on:click="uploadNew()" x-bind:disabled="uploadSubmitting" class="sk-btn sk-btn-primary disabled:cursor-wait disabled:opacity-65">
                                     <span x-show="! uploadSubmitting">{{ $acceptsDocuments ? __('media_library.documents.upload') : __('media_library.upload') }}</span>
-                                    <span x-show="uploadSubmitting">{{ __('media_library.picker.processing') }}</span>
+                                    <span x-show="uploadSubmitting">{{ $acceptsDocuments ? __('media_library.picker.processing_document') : __('media_library.picker.processing') }}</span>
                                 </button>
                             </div>
                         @else

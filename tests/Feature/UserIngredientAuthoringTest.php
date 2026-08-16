@@ -84,7 +84,7 @@ it('creates a minimal private user ingredient from the public editor', function 
 
     $component
         ->set('data.is_soap_saponification_trusted', true)
-        ->assertSee('Soap chemistry');
+        ->assertDontSee('Soap chemistry');
 
     $component
         ->set('data.name', 'French Green Clay')
@@ -212,15 +212,14 @@ it('shows composition only when the user chooses a blend', function () {
         ->assertSee('Add ingredient');
 });
 
-it('shows specialist tabs from explicit capabilities while creating an ingredient', function () {
+it('does not let a manually created ingredient enable soap chemistry', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
     Livewire::test(IngredientEditor::class)
         ->set('data.is_soap_saponification_trusted', true)
-        ->assertSee('Soap chemistry')
+        ->assertDontSee('Soap chemistry')
         ->assertSee('Compliance')
-        ->set('data.is_soap_saponification_trusted', false)
         ->set('data.requires_aromatic_compliance', true)
         ->assertSee('Compliance')
         ->assertDontSee('Soap chemistry');
@@ -397,7 +396,7 @@ it('rejects an empty blend and components inaccessible to the author', function 
         'category' => IngredientCategory::Other->value,
         'ingredient_structure' => 'blend',
         'components' => [],
-    ], $user))->toThrow(ValidationException::class, 'Add at least one component');
+    ], $user))->toThrow(ValidationException::class, 'Add at least one ingredient');
 
     expect(fn () => $service->create([
         'name' => 'Tampered Blend',
@@ -407,7 +406,7 @@ it('rejects an empty blend and components inaccessible to the author', function 
             'component_ingredient_id' => $privateIngredient->id,
             'percentage_in_parent' => 100,
         ]],
-    ], $user))->toThrow(ValidationException::class, 'not available to you');
+    ], $user))->toThrow(ValidationException::class, 'no longer available to you');
 });
 
 it('rejects inactive blend components during server-side persistence validation', function () {
@@ -427,7 +426,7 @@ it('rejects inactive blend components during server-side persistence validation'
             'component_ingredient_id' => $inactiveIngredient->id,
             'percentage_in_parent' => 100,
         ]],
-    ], $user))->toThrow(ValidationException::class, 'not available to you');
+    ], $user))->toThrow(ValidationException::class, 'no longer available to you');
 });
 
 it('persists the parent allergen declaration source for aromatic user ingredients', function () {
@@ -569,14 +568,19 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
 it('accepts comma decimals throughout user soap chemistry fields', function () {
     $user = User::factory()->create();
     $fattyAcid = FattyAcid::factory()->create(['is_active' => true]);
-    $ingredient = Ingredient::factory()->create([
+    $source = Ingredient::factory()->create([
         'category' => IngredientCategory::Lipids,
-        'display_name' => 'User chemistry oil',
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
+        'display_name' => 'Platform chemistry oil',
+        'owner_type' => null,
+        'owner_id' => null,
         'is_soap_saponification_trusted' => true,
     ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.188]);
+    $source->fattyAcidEntries()->create([
+        'fatty_acid_id' => $fattyAcid->id,
+        'percentage' => 80.2,
+    ]);
+    $ingredient = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
 
     $this->actingAs($user);
 
@@ -586,7 +590,7 @@ it('accepts comma decimals throughout user soap chemistry fields', function () {
         ->set('data.sap_profile.ins_value', '102,8')
         ->set('data.fatty_acid_entries', [[
             'fatty_acid_id' => $fattyAcid->id,
-            'percentage' => '0,2',
+            'percentage' => '80,2',
         ]])
         ->call('save')
         ->assertHasNoErrors();
@@ -596,18 +600,19 @@ it('accepts comma decimals throughout user soap chemistry fields', function () {
     expect((float) $freshIngredient->sapProfile->koh_sap_value)->toBe(0.188)
         ->and((float) $freshIngredient->sapProfile->iodine_value)->toBe(86.4)
         ->and((float) $freshIngredient->sapProfile->ins_value)->toBe(102.8)
-        ->and((float) $freshIngredient->fattyAcidEntries->first()->percentage)->toBe(0.2);
+        ->and((float) $freshIngredient->fattyAcidEntries->first()->percentage)->toBe(80.2);
 });
 
 it('derives the same NaOH SAP from decimal and professional KOH notation', function () {
     $user = User::factory()->create(['number_locale' => 'fr_FR']);
-    $ingredient = Ingredient::factory()->create([
+    $source = Ingredient::factory()->create([
         'category' => IngredientCategory::Lipids,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
+        'owner_type' => null,
+        'owner_id' => null,
         'is_soap_saponification_trusted' => true,
     ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.176]);
+    $ingredient = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
 
     $this->actingAs($user);
 
@@ -626,13 +631,14 @@ it('derives the same NaOH SAP from decimal and professional KOH notation', funct
 
 it('returns professional KOH notation to the canonical decimal scale', function () {
     $user = User::factory()->create();
-    $ingredient = Ingredient::factory()->create([
+    $source = Ingredient::factory()->create([
         'category' => IngredientCategory::Lipids,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
+        'owner_type' => null,
+        'owner_id' => null,
         'is_soap_saponification_trusted' => true,
     ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.18]);
+    $ingredient = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
 
     $this->actingAs($user);
 
@@ -643,13 +649,14 @@ it('returns professional KOH notation to the canonical decimal scale', function 
 
 it('keeps invalid KOH input visible so validation can explain it', function () {
     $user = User::factory()->create();
-    $ingredient = Ingredient::factory()->create([
+    $source = Ingredient::factory()->create([
         'category' => IngredientCategory::Lipids,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
+        'owner_type' => null,
+        'owner_id' => null,
         'is_soap_saponification_trusted' => true,
     ]);
+    $source->sapProfile()->create(['koh_sap_value' => 0.18]);
+    $ingredient = app(UserIngredientAuthoringService::class)->duplicate($source, $user);
 
     $this->actingAs($user);
 

@@ -2,10 +2,14 @@
 
 namespace App\Services\IngredientEnrichment;
 
+use App\Enums\IngredientAliasKind;
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientEvidenceConfidence;
 use App\Enums\IngredientIdentifierScheme;
 use App\Enums\IngredientLabelMarket;
+use App\Enums\IngredientSourceTier;
 use App\Enums\IngredientSubcategory;
+use App\Enums\IngredientValueProvenance;
 
 class IngredientEnrichmentResultSchema
 {
@@ -28,22 +32,35 @@ class IngredientEnrichmentResultSchema
                 'type' => 'integer',
                 'enum' => [(int) config('ingredient-enrichment.schema_version')],
             ],
-            'catalog_key' => $this->string(minLength: 1),
+            'subject_type' => $this->string(enum: ['ingredient', 'intake']),
+            'subject_public_id' => $this->string(),
+            'catalog_key' => $this->nullableString(),
             'source_fingerprint' => $this->string(pattern: '^[a-f0-9]{64}$'),
             'proposal' => $this->object([
-                'display_name' => $this->string(minLength: 1),
-                'inci_name' => $this->string(minLength: 1),
-                'category' => $this->string(enum: collect(IngredientCategory::cases())->map->value->all()),
+                'display_name' => $this->string(),
+                'inci_name' => $this->string(),
+                'category' => $this->nullableString(enum: [
+                    ...collect(IngredientCategory::cases())->map->value->all(),
+                    null,
+                ]),
                 'subcategory' => $this->nullableString(enum: [
                     ...collect(IngredientSubcategory::cases())->map->value->all(),
                     null,
                 ]),
                 'saponification_name' => $this->nullableString(),
-                'info_markdown' => $this->string(minLength: 1),
+                'soap_inci_naoh_name' => $this->nullableString(),
+                'soap_inci_koh_name' => $this->nullableString(),
+                'info_markdown' => $this->string(),
                 'soapmaking_relevant' => ['type' => 'boolean'],
+                'aliases' => $this->array($this->object([
+                    'locale' => $this->string(),
+                    'name' => $this->string(),
+                    'kind' => $this->string(enum: collect(IngredientAliasKind::cases())->map->value->all()),
+                    ...$source,
+                ])),
                 'identifiers' => $this->array($this->object([
                     'scheme' => $this->string(enum: collect(IngredientIdentifierScheme::cases())->map->value->all()),
-                    'value' => $this->string(minLength: 1),
+                    'value' => $this->string(),
                     'is_primary' => ['type' => 'boolean'],
                     ...$source,
                 ])),
@@ -53,22 +70,36 @@ class IngredientEnrichmentResultSchema
                 ])),
                 'translations' => $this->array($this->object([
                     'locale' => $this->string(enum: array_values(config('interface-translations.catalogue_locales', []))),
-                    'display_name' => $this->string(minLength: 1),
+                    'display_name' => $this->string(),
                     'saponification_name' => $this->nullableString(),
-                    'info_markdown' => $this->string(minLength: 1),
+                    'info_markdown' => $this->string(),
                 ])),
                 'market_labels' => $this->array($this->object([
                     'market_code' => $this->string(enum: collect(IngredientLabelMarket::cases())->map->value->all()),
-                    'declaration_name' => $this->string(minLength: 1),
-                    'source_name' => $this->string(minLength: 1),
-                    'source_url' => $this->string(format: 'uri'),
+                    'declaration_name' => $this->string(),
                     'reviewed_at' => $this->nullableString(format: 'date'),
                     'effective_from' => $this->nullableString(format: 'date'),
                     'effective_until' => $this->nullableString(format: 'date'),
+                    ...$source,
                 ])),
             ]),
+            'field_confidence' => $this->array($this->object([
+                'field' => $this->string(),
+                'confidence' => $this->string(enum: collect(IngredientEvidenceConfidence::cases())->map->value->all()),
+            ])),
+            'value_provenance' => $this->array($this->object([
+                'field' => $this->string(),
+                'kind' => $this->string(enum: collect(IngredientValueProvenance::cases())->map->value->all()),
+                'reasoning' => $this->string(),
+                'source_urls' => $this->array($this->string()),
+            ])),
             'evidence' => $this->array($this->object([
-                'field' => $this->string(minLength: 1),
+                'field' => $this->string(),
+                ...$source,
+            ])),
+            'regulatory_findings' => $this->array($this->object([
+                'market_code' => $this->string(enum: collect(IngredientLabelMarket::cases())->map->value->all()),
+                'finding' => $this->string(),
                 ...$source,
             ])),
             'confidence' => $this->string(enum: ['low', 'medium', 'high']),
@@ -83,9 +114,13 @@ class IngredientEnrichmentResultSchema
     private function sourceProperties(): array
     {
         return [
-            'source_name' => $this->string(minLength: 1),
-            'source_url' => $this->string(format: 'uri'),
-            'checked_at' => $this->string(format: 'date'),
+            'source_name' => $this->string(),
+            'source_url' => $this->string(),
+            'source_tier' => $this->string(enum: collect(IngredientSourceTier::cases())->map->value->all()),
+            'confidence' => $this->string(enum: collect(IngredientEvidenceConfidence::cases())->map->value->all()),
+            'source_version' => $this->nullableString(),
+            'source_updated_at' => $this->nullableString(format: 'date'),
+            'retrieved_at' => $this->string(format: 'date-time'),
         ];
     }
 
@@ -119,14 +154,13 @@ class IngredientEnrichmentResultSchema
      * @param  list<string>|null  $enum
      * @return array<string, mixed>
      */
-    private function string(?array $enum = null, ?string $format = null, ?string $pattern = null, ?int $minLength = null): array
+    private function string(?array $enum = null, ?string $format = null, ?string $pattern = null): array
     {
         return array_filter([
             'type' => 'string',
             'enum' => $enum,
             'format' => $format,
             'pattern' => $pattern,
-            'minLength' => $minLength,
         ], fn (mixed $value): bool => $value !== null);
     }
 

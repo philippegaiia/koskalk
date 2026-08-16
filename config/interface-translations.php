@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'catalogue_locales' => ['de', 'es', 'fr', 'it', 'nl', 'pt_BR'],
+
     'sources' => [
         'account' => ['*'],
         'dashboard' => ['*'],

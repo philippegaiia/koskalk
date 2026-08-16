@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\InterfaceTranslation;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Services\Translations\EnglishTranslationSource;
 use App\Services\Translations\InterfaceTranslationCatalogue;
@@ -57,7 +58,7 @@ it('commits a complete reviewed translation for every owned interface key', func
             continue;
         }
 
-        foreach (['de', 'es', 'fr', 'it', 'nl'] as $locale) {
+        foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
             expect(trim((string) data_get($rows[$fullKey], "text.{$locale}")))
                 ->not->toBe('', "Missing {$locale} translation for {$fullKey} ({$english})");
         }
@@ -72,11 +73,72 @@ it('commits the reviewed classification helper description in every supported lo
             && $row['key'] === 'editor.classification_prompt.description');
 
     expect($description['text'] ?? null)->toBe([
-        'de' => 'Erzeuge einen Prompt für Klassifizierung, Identitätsprüfung und kurze fachliche Hinweise. Gib zuerst den Namen der Zutat oder die INCI-Bezeichnung ein.',
-        'es' => 'Genera un prompt para la clasificación, la revisión de identificadores y notas profesionales breves. Introduce primero el nombre del ingrediente o el INCI.',
-        'fr' => 'Générez un prompt pour le classement, la vérification des identifiants et de brèves notes professionnelles. Saisissez d’abord le nom de l’ingrédient ou son INCI.',
-        'it' => 'Genera un prompt per la classificazione, la verifica degli identificatori e brevi note professionali. Inserisci prima il nome dell’ingrediente o l’INCI.',
-        'nl' => 'Genereer een prompt voor classificatie, controle van identificatiegegevens en korte professionele notities. Vul eerst de ingrediëntnaam of INCI in.',
+        'de' => 'Erzeuge einen Prompt, um Klassifizierung, Identifikatoren, COSING-Funktionen und kurze fachliche Hinweise zu recherchieren. Das Formular wird dadurch nicht geändert.',
+        'es' => 'Genera un prompt para investigar la clasificación, los identificadores, las funciones COSING y notas profesionales breves. No modificará este formulario.',
+        'fr' => 'Générez un prompt pour rechercher la classification, les identifiants, les fonctions COSING et de brèves notes professionnelles. Il ne modifiera pas ce formulaire.',
+        'it' => 'Genera un prompt per ricercare classificazione, identificatori, funzioni COSING e brevi note professionali. Non modificherà questo modulo.',
+        'nl' => 'Genereer een prompt om classificatie, identificatiegegevens, COSING-functies en korte professionele notities te onderzoeken. Dit formulier wordt niet gewijzigd.',
+        'pt_BR' => 'Gere um prompt para pesquisar classificação, identificadores, funções COSING e notas profissionais concisas. Ele não alterará este formulário.',
+    ]);
+});
+
+it('commits reviewed workspace ingredient alerts and document picker copy', function (): void {
+    $catalogue = app(InterfaceTranslationCatalogue::class)
+        ->read(database_path('seeders/data/interface-translations.json'));
+    $translations = collect($catalogue['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+
+    expect($translations['ingredients.editor.status.invalid']['text'] ?? null)->toBe([
+        'de' => 'Prüfe die markierten Felder.',
+        'es' => 'Revisa los campos resaltados.',
+        'fr' => 'Vérifiez les champs signalés.',
+        'it' => 'Controlla i campi evidenziati.',
+        'nl' => 'Controleer de gemarkeerde velden.',
+        'pt_BR' => 'Revise os campos destacados.',
+    ])->and($translations['ingredients.editor.validation.blend_required']['text'] ?? null)->toBe([
+        'de' => 'Füge mindestens eine Zutat hinzu, um diese Mischung zu speichern.',
+        'es' => 'Añade al menos un ingrediente para guardar esta mezcla.',
+        'fr' => 'Ajoutez au moins un ingrédient pour enregistrer ce mélange.',
+        'it' => 'Aggiungi almeno un ingrediente per salvare questa miscela.',
+        'nl' => 'Voeg minstens één ingrediënt toe om dit mengsel op te slaan.',
+        'pt_BR' => 'Adicione pelo menos um ingrediente para salvar esta mistura.',
+    ])->and($translations['media_library.picker.choose_documents']['text'] ?? null)->toBe([
+        'de' => 'Dokumente auswählen',
+        'es' => 'Elegir documentos',
+        'fr' => 'Choisir des documents',
+        'it' => 'Scegli documenti',
+        'nl' => 'Documenten kiezen',
+        'pt_BR' => 'Escolher documentos',
+    ])->and($translations['media_library.picker.document_upload_failed']['text'] ?? null)->toBe([
+        'de' => 'Die PDF-Datei konnte nicht hochgeladen werden. Versuche es erneut.',
+        'es' => 'No se pudo cargar el PDF. Inténtalo de nuevo.',
+        'fr' => 'Le PDF n’a pas pu être importé. Réessayez.',
+        'it' => 'Non è stato possibile caricare il PDF. Riprova.',
+        'nl' => 'De PDF kon niet worden geüpload. Probeer het opnieuw.',
+        'pt_BR' => 'Não foi possível enviar o PDF. Tente novamente.',
+    ]);
+});
+
+it('commits reviewed labels for additional ingredient identifier schemes', function (): void {
+    $catalogue = app(InterfaceTranslationCatalogue::class)
+        ->read(database_path('seeders/data/interface-translations.json'));
+    $translations = collect($catalogue['translations'])
+        ->keyBy(fn (array $row): string => $row['group'].'.'.$row['key']);
+
+    expect($translations['ingredients.editor.identity.identifier_schemes.inchikey']['text'] ?? null)->toBe([
+        'de' => 'InChIKey',
+        'es' => 'InChIKey',
+        'fr' => 'InChIKey',
+        'it' => 'InChIKey',
+        'nl' => 'InChIKey',
+        'pt_BR' => 'InChIKey',
+    ])->and($translations['ingredients.editor.identity.identifier_schemes.pubchem_cid']['text'] ?? null)->toBe([
+        'de' => 'PubChem CID',
+        'es' => 'PubChem CID',
+        'fr' => 'PubChem CID',
+        'it' => 'PubChem CID',
+        'nl' => 'PubChem CID',
+        'pt_BR' => 'CID PubChem',
     ]);
 });
 
@@ -93,6 +155,7 @@ it('commits the reviewed preservatives and preservation boosters label', functio
         'fr' => 'Conservateurs et boosters de conservation',
         'it' => 'Conservanti e coadiuvanti della conservazione',
         'nl' => 'Conserveermiddelen en conserveringsboosters',
+        'pt_BR' => 'Conservantes e potencializadores de conservação',
     ]);
 });
 
@@ -106,6 +169,7 @@ it('exports a deterministic human-reviewable catalogue without database metadata
             'de' => 'Produkt',
             'it' => 'Prodotto',
             'es' => 'Producto',
+            'pt_BR' => 'Produto',
         ],
     ]);
     InterfaceTranslation::query()->create([
@@ -131,7 +195,7 @@ it('exports a deterministic human-reviewable catalogue without database metadata
 
     expect(File::get($this->cataloguePath))->toBe($firstExport)
         ->and($firstExport)->toEndWith(PHP_EOL)
-        ->and($decoded['locales'])->toBe(['de', 'es', 'fr', 'it', 'nl'])
+        ->and($decoded['locales'])->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR'])
         ->and($decoded['translations'])->toBe([
             [
                 'group' => 'auth',
@@ -147,6 +211,7 @@ it('exports a deterministic human-reviewable catalogue without database metadata
                     'fr' => 'Produit',
                     'it' => 'Prodotto',
                     'nl' => "Product\nopenen",
+                    'pt_BR' => 'Produto',
                 ],
             ],
         ])
@@ -158,6 +223,17 @@ it('exports a deterministic human-reviewable catalogue without database metadata
         )
         ->and(InterfaceTranslation::query()->where('group', 'homepage')->where('key', 'hero.title')->exists())
         ->toBeTrue();
+});
+
+it('keeps the reviewed Brazilian locale inactive until it is enabled', function (): void {
+    expect(SupportedLocale::query()->where('code', 'pt_BR')->value('is_active'))->toBeFalse()
+        ->and(config('interface-translations.catalogue_locales'))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
+
+    $this->artisan('translations:catalogue:export', ['--path' => $this->cataloguePath])
+        ->assertSuccessful();
+
+    expect(File::json($this->cataloguePath)['locales'])
+        ->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
 });
 
 it('sorts exported keys bytewise instead of relying on the database collation', function () {
@@ -198,6 +274,7 @@ it('round trips Unicode multiline and placeholder values and remains idempotent'
         'fr' => "Original : :name\nRéutilisable",
         'it' => 'Originale: :name',
         'nl' => 'Origineel: :name',
+        'pt_BR' => 'Original: :name',
     ];
 
     InterfaceTranslation::query()->create([
@@ -228,6 +305,7 @@ it('round trips Unicode multiline and placeholder values and remains idempotent'
             'fr' => "Original : :name\nRéutilisable",
             'it' => 'Originale: :name',
             'nl' => 'Origineel: :name',
+            'pt_BR' => 'Original: :name',
         ]);
 });
 
@@ -534,6 +612,7 @@ it('recovers the committed reviewed catalogue after synchronization on an empty 
             'fr' => 'Image actuelle',
             'it' => 'Immagine attuale',
             'nl' => 'Huidige afbeelding',
+            'pt_BR' => 'Imagem atual',
         ])
         ->and(InterfaceTranslation::query()
             ->where('group', 'media_library')
@@ -545,6 +624,7 @@ it('recovers the committed reviewed catalogue after synchronization on an empty 
                 'fr' => 'Médiathèque',
                 'it' => 'Libreria multimediale',
                 'nl' => 'Mediabibliotheek',
+                'pt_BR' => 'Biblioteca de mídia',
             ]);
 });
 
@@ -581,7 +661,7 @@ it('commits every localized media batch upload string', function () {
 
     foreach ($requiredKeys as $key) {
         expect($rows)->toHaveKey($key)
-            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
+            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
     }
 });
 
@@ -598,7 +678,7 @@ it('commits the localized direct square crop guidance', function () {
 
     foreach ($requiredKeys as $key) {
         expect($rows)->toHaveKey($key)
-            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
+            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
     }
 });
 
@@ -619,7 +699,7 @@ it('commits every localized destructive media action string', function () {
 
     foreach ($requiredKeys as $key) {
         expect($rows)->toHaveKey($key)
-            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
+            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
     }
 });
 
@@ -634,7 +714,7 @@ it('commits every production lifecycle key for every supported locale', function
     $rows = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
         ->where('group', 'production_bench')
         ->keyBy('key');
-    $locales = ['de', 'es', 'fr', 'it', 'nl'];
+    $locales = ['de', 'es', 'fr', 'it', 'nl', 'pt_BR'];
 
     expect($rows->keys()->sort()->values()->all())->toBe($englishKeys);
 

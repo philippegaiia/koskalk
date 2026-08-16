@@ -1147,12 +1147,14 @@ it('renders the public ingredient create page for signed in users', function () 
         ->assertSeeText('Add an ingredient to your library.')
         ->assertDontSeeText('Back to ingredients')
         ->assertDontSeeText('Create the ingredient now, then enrich it on the next screen.')
-        ->assertSee('Details')
-        ->assertSeeText('Ingredient details')
-        ->assertSeeText('Identifiers and functions')
-        ->assertSeeText('Images and notes')
+        ->assertSee('Overview')
+        ->assertSeeText('Ingredient identity')
+        ->assertSeeText('Classification')
+        ->assertSeeText('Reference identifiers')
+        ->assertSeeText('Documents and media')
         ->assertSee('CAS number')
         ->assertSee('EC / EINECS number')
+        ->assertDontSeeText('Trusted for soap saponification')
         ->assertDontSee('Certified organic')
         ->assertDontSee('Allergens')
         ->assertDontSee('IFRA guidance');
@@ -1184,8 +1186,7 @@ it('keeps one compact non-obstructing create action visible in the ingredient ed
 
     expect($saveAction['submit_count'])->toBe(1)
         ->and($saveAction['label'])->toBe('Add ingredient')
-        ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-30')
-        ->not->toContain('z-10')
+        ->and($saveAction['bar_classes'])->toContain('sk-workflow-action-bar', 'pointer-events-none')
         ->and($saveAction['button_classes'])->toContain('sk-btn', 'sk-btn-primary')
         ->not->toContain('pointer-events-auto')
         ->not->toContain('w-full');
@@ -1203,8 +1204,7 @@ it('keeps one compact non-obstructing save action visible in the ingredient edit
 
     expect($saveAction['submit_count'])->toBe(1)
         ->and($saveAction['label'])->toBe('Save changes')
-        ->and($saveAction['bar_classes'])->toContain('pointer-events-none', 'fixed', 'bottom-0', 'left-0', 'right-0', 'z-30')
-        ->not->toContain('z-10')
+        ->and($saveAction['bar_classes'])->toContain('sk-workflow-action-bar', 'pointer-events-none')
         ->and($saveAction['button_classes'])->toContain('sk-btn', 'sk-btn-primary')
         ->not->toContain('pointer-events-auto')
         ->not->toContain('w-full');

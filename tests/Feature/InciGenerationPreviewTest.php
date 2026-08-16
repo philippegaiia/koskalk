@@ -468,6 +468,7 @@ it('screens allergen declarations through the selected regulatory regime mapping
 
     $regime = RegulatoryRegime::factory()->create([
         'code' => 'custom_market',
+        'market_code' => 'eu',
         'name' => 'Custom Market',
         'status' => 'active',
     ]);
@@ -526,6 +527,7 @@ it('does not fall back to every recorded allergen when the selected regime has n
 
     RegulatoryRegime::factory()->create([
         'code' => 'empty_market',
+        'market_code' => 'eu',
         'name' => 'Empty Market',
         'status' => 'active',
     ]);

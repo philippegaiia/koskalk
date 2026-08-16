@@ -36,6 +36,7 @@ it('builds a locale-aware classification prompt with strict evidence boundaries'
         ->toContain('"name": "Vegetable glycerin"', '"inci_name": "GLYCERIN"')
         ->toContain('"cas_number": "56-81-5"', '"ec_number": "200-289-5"')
         ->toContain('"additional_identifiers": [', 'EXAMPLE123')
+        ->toContain('Review every additional CAS, EC / EINECS, UNII, ECHA List Number, InChIKey, or PubChem CID separately')
         ->toContain('"supplier_notes": "Palm-free supplier grade"')
         ->toContain('humectants_polyols', 'glycerin_glycols', 'humectant')
         ->toContain('A catalogue category describes the primary practical material role')

@@ -9,6 +9,7 @@ use App\Filament\Resources\Ingredients\Pages\EditIngredient;
 use App\Forms\Components\IngredientIdentityFields;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
 use App\Models\Substance;
@@ -19,6 +20,7 @@ use App\Support\FilamentUploadMetadata;
 use Closure;
 use Filament\Forms\Components\BaseFileUpload;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -26,11 +28,16 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Component as LivewireComponent;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
@@ -41,10 +48,39 @@ class IngredientForm
     {
         return $schema
             ->components([
+                Tabs::make(__('ingredients.editor.admin.tabs.label'))
+                    ->id('ingredient-editor-tabs')
+                    ->persistTabInQueryString('ingredient-tab')
+                    ->tabs([
+                        static::generalTab(),
+                        static::marketDeclarationsTab(),
+                        static::guidanceMediaTab(),
+                        static::translationsTab(),
+                        static::soapChemistryTab(),
+                        static::allergensTab(),
+                        static::substancesTab(),
+                        static::ifraTab(),
+                        static::componentsTab(),
+                    ])
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private static function generalTab(): Tab
+    {
+        return Tab::make(__('ingredients.editor.admin.tabs.general'))
+            ->icon(Heroicon::Squares2x2)
+            ->schema([
                 Section::make(__('ingredients.editor.admin.classification.section'))
                     ->description(__('ingredients.editor.admin.classification.description'))
-                    ->icon(Heroicon::Squares2x2)
                     ->schema([
+                        TextInput::make('current_version.display_name')
+                            ->label(__('ingredients.editor.admin.identity.display_name'))
+                            ->required()
+                            ->maxLength(255),
+                        TextInput::make('current_version.inci_name')
+                            ->label(__('ingredients.editor.details.inci'))
+                            ->maxLength(255),
                         Select::make('category')
                             ->label(__('ingredients.editor.admin.classification.category'))
                             ->options(IngredientCategory::options())
@@ -52,42 +88,60 @@ class IngredientForm
                             ->helperText(__('ingredients.editor.admin.classification.category_helper'))
                             ->live()
                             ->required()
-                            ->rules([Rule::enum(IngredientCategory::class)])
-                            ->columnSpanFull(),
+                            ->rules([Rule::enum(IngredientCategory::class)]),
                         Select::make('subcategory')
                             ->label(__('ingredients.editor.details.subcategory'))
                             ->options(fn (Get $get): array => IngredientSubcategory::optionsFor($get('category')))
                             ->searchable()
                             ->live()
                             ->required(fn (Get $get): bool => ! static::isCategory($get('category'), IngredientCategory::Other))
-                            ->helperText(__('ingredients.editor.admin.classification.subcategory_helper'))
-                            ->columnSpanFull(),
-                        Toggle::make('is_soap_saponification_trusted')
-                            ->label(__('ingredients.editor.details.soap_trusted'))
-                            ->helperText(__('ingredients.editor.admin.classification.soap_trusted_helper'))
+                            ->helperText(__('ingredients.editor.admin.classification.subcategory_helper')),
+                        TextInput::make('current_version.unit')
+                            ->label(__('ingredients.editor.admin.identity.unit'))
+                            ->maxLength(64),
+                        Toggle::make('current_version.is_manufactured')
+                            ->label(__('ingredients.editor.admin.identity.manufactured'))
                             ->default(false),
-                        Toggle::make('requires_aromatic_compliance')
-                            ->label(__('ingredients.editor.details.aromatic_compliance'))
-                            ->helperText(__('ingredients.editor.admin.classification.aromatic_compliance_helper'))
-                            ->default(false),
-                        Toggle::make('requires_admin_review')
-                            ->label(__('ingredients.editor.admin.classification.needs_review'))
-                            ->helperText(__('ingredients.editor.admin.classification.needs_review_helper'))
-                            ->default(true),
-                        Toggle::make('is_active')
-                            ->label(__('ingredients.editor.admin.classification.active'))
-                            ->default(true),
-                        TextEntry::make('verified_function_names')
-                            ->label(__('ingredients.editor.supplier.verified_functions'))
-                            ->state(fn (?Ingredient $record): string => $record?->functions()
-                                ->wherePivotIn('source', ['cosing', 'inherited'])
-                                ->orderBy('ingredient_functions.sort_order')
-                                ->pluck('ingredient_functions.name')
-                                ->implode(', ') ?: __('ingredients.editor.supplier.none_verified'))
-                            ->helperText(__('ingredients.editor.supplier.verified_functions_helper'))
-                            ->columnSpanFull(),
-                        Select::make('function_ids')
-                            ->label(__('ingredients.editor.supplier.additional_functions'))
+                        Grid::make([
+                            'default' => 1,
+                            'lg' => 2,
+                        ])->schema([
+                            Toggle::make('is_soap_saponification_trusted')
+                                ->label(__('ingredients.editor.details.soap_trusted'))
+                                ->helperText(__('ingredients.editor.admin.classification.soap_trusted_helper'))
+                                ->default(false),
+                            Toggle::make('requires_aromatic_compliance')
+                                ->label(__('ingredients.editor.details.aromatic_compliance'))
+                                ->helperText(__('ingredients.editor.admin.classification.aromatic_compliance_helper'))
+                                ->default(false),
+                            Toggle::make('requires_admin_review')
+                                ->label(__('ingredients.editor.admin.classification.needs_review'))
+                                ->helperText(__('ingredients.editor.admin.classification.needs_review_helper'))
+                                ->default(true),
+                            Toggle::make('is_active')
+                                ->label(__('ingredients.editor.admin.classification.active'))
+                                ->default(true),
+                        ])->columnSpanFull(),
+                    ])
+                    ->columns([
+                        'default' => 1,
+                        'lg' => 2,
+                    ])
+                    ->columnSpanFull(),
+                Section::make(__('ingredients.editor.identity.section'))
+                    ->description(__('ingredients.editor.identity.description'))
+                    ->icon(Heroicon::FingerPrint)
+                    ->schema([
+                        ...IngredientIdentityFields::schema('current_version.', platform: true),
+                    ])
+                    ->columns(1)
+                    ->columnSpanFull(),
+                Section::make(__('ingredients.editor.admin.cosing_functions.section'))
+                    ->description(__('ingredients.editor.admin.cosing_functions.description'))
+                    ->icon(Heroicon::ListBullet)
+                    ->schema([
+                        Select::make('reviewed_function_ids')
+                            ->label(__('ingredients.editor.admin.classification.functions'))
                             ->multiple()
                             ->searchable()
                             ->preload()
@@ -97,60 +151,55 @@ class IngredientForm
                                 ->orderBy('name')
                                 ->pluck('name', 'id')
                                 ->all())
-                            ->helperText(__('ingredients.editor.supplier.additional_functions_helper'))
+                            ->helperText(__('ingredients.editor.admin.classification.functions_helper'))
                             ->columnSpanFull(),
                     ])
-                    ->columns([
-                        'md' => 3,
-                    ]),
-                Section::make('Material Identity')
-                    ->description('Edit the current material data directly here. This replaces the old day-to-day need to jump into a separate ingredient version resource.')
-                    ->icon(Heroicon::Identification)
-                    ->schema([
-                        TextInput::make('current_version.display_name')
-                            ->label('Display name')
-                            ->required()
-                            ->maxLength(255),
-                        TextInput::make('current_version.inci_name')
-                            ->label('INCI')
-                            ->maxLength(255)
-                            ->columnSpanFull(),
-                        TextInput::make('current_version.soap_inci_naoh_name')
-                            ->label('Soap INCI NaOH')
-                            ->maxLength(255)
-                            ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted')),
-                        TextInput::make('current_version.soap_inci_koh_name')
-                            ->label('Soap INCI KOH')
-                            ->maxLength(255)
-                            ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted')),
-                        TextInput::make('current_version.saponification_name')
-                            ->label('Saponification name')
-                            ->helperText('English source name used in summaries such as “Saponified oils (coconut, olive)”.')
-                            ->maxLength(255)
-                            ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted')),
-                        ...IngredientIdentityFields::schema('current_version.', platform: true),
-                        TextInput::make('current_version.unit')
-                            ->maxLength(64),
-                        Toggle::make('current_version.is_manufactured')
-                            ->label('Manufactured in-house')
-                            ->default(false),
-                    ])
-                    ->columns([
-                        'md' => 2,
-                    ]),
+                    ->columnSpanFull(),
                 View::make('filament.resources.ingredients.classification-prompt')
                     ->visible(fn (LivewireComponent $livewire): bool => $livewire instanceof CreateIngredient || $livewire instanceof EditIngredient)
                     ->columnSpanFull(),
-                Section::make('Guidance & Media')
-                    ->description('Use a concise markdown field for advice-ready notes, plus a main ingredient image and an optional compact icon for selectors.')
-                    ->icon(Heroicon::DocumentText)
+            ]);
+    }
+
+    private static function marketDeclarationsTab(): Tab
+    {
+        return Tab::make(__('ingredient_admin.market_labels.form.section'))
+            ->icon(Heroicon::GlobeAlt)
+            ->schema([
+                Section::make(__('ingredient_admin.market_labels.form.section'))
+                    ->description(__('ingredient_admin.market_labels.form.description'))
+                    ->schema([
+                        TextEntry::make('market_labels_canonical_inci')
+                            ->label(__('ingredient_admin.market_labels.form.canonical_inci'))
+                            ->state(fn (Get $get): ?string => $get('current_version.inci_name'))
+                            ->placeholder(__('ingredient_admin.market_labels.form.canonical_inci_empty'))
+                            ->helperText(__('ingredient_admin.market_labels.form.canonical_inci_helper'))
+                            ->columnSpanFull(),
+                        static::marketLabelFieldset('eu'),
+                        static::marketLabelFieldset('us'),
+                    ])
+                    ->columns([
+                        'default' => 1,
+                        'xl' => 2,
+                    ])
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private static function guidanceMediaTab(): Tab
+    {
+        return Tab::make(__('ingredients.editor.admin.tabs.guidance_media'))
+            ->icon(Heroicon::DocumentText)
+            ->schema([
+                Section::make(__('ingredients.editor.admin.guidance.section'))
+                    ->description(__('ingredients.editor.admin.guidance.description'))
                     ->schema([
                         MarkdownEditor::make('info_markdown')
-                            ->label('Ingredient guidance')
-                            ->helperText('Good for sourcing nuances, sensory notes, formulation advice, or future assistant guidance.')
+                            ->label(__('ingredients.editor.admin.guidance.field'))
+                            ->helperText(__('ingredients.editor.admin.guidance.helper'))
                             ->columnSpanFull(),
                         FileUpload::make('featured_image_path')
-                            ->label('Ingredient image')
+                            ->label(__('ingredients.editor.admin.guidance.image'))
                             ->image()
                             ->maxSize(MediaStorage::ingredientImagesMaxSize())
                             ->disk(MediaStorage::publicDisk())
@@ -160,7 +209,7 @@ class IngredientForm
                             ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => FilamentUploadMetadata::applyDisplayName(
                                 $component->getUploadedFile($file, $storedFileNames),
                                 $storedFileNames,
-                                'Current image',
+                                __('ingredients.editor.admin.guidance.current_image'),
                             ))
                             ->deleteUploadedFileUsing(function (string $file): void {
                                 MediaStorage::deletePublicPath($file);
@@ -176,10 +225,10 @@ class IngredientForm
                             ->imageAspectRatio('1:1')
                             ->imageEditorAspectRatioOptions(['1:1'])
                             ->automaticallyOpenImageEditorForAspectRatio()
-                            ->helperText('Square image for the ingredient sheet and larger cards.')
+                            ->helperText(__('ingredients.editor.admin.guidance.image_helper'))
                             ->columnSpan(1),
                         FileUpload::make('icon_image_path')
-                            ->label('Ingredient icon')
+                            ->label(__('ingredients.editor.admin.guidance.icon'))
                             ->image()
                             ->maxSize(MediaStorage::ingredientIconsMaxSize())
                             ->disk(MediaStorage::publicDisk())
@@ -189,7 +238,7 @@ class IngredientForm
                             ->getUploadedFileUsing(fn (BaseFileUpload $component, string $file, string|array|null $storedFileNames): ?array => FilamentUploadMetadata::applyDisplayName(
                                 $component->getUploadedFile($file, $storedFileNames),
                                 $storedFileNames,
-                                'Current image',
+                                __('ingredients.editor.admin.guidance.current_image'),
                             ))
                             ->deleteUploadedFileUsing(function (string $file): void {
                                 MediaStorage::deletePublicPath($file);
@@ -205,90 +254,124 @@ class IngredientForm
                             ->imageAspectRatio('1:1')
                             ->imageEditorAspectRatioOptions(['1:1'])
                             ->automaticallyOpenImageEditorForAspectRatio()
-                            ->helperText('Optional 96x96 icon for compact selectors and ingredient chips.')
+                            ->helperText(__('ingredients.editor.admin.guidance.icon_helper'))
                             ->columnSpan(1),
                     ])
                     ->columns([
-                        'md' => 2,
-                    ]),
-                Section::make('Translations')
-                    ->description('Translate the public ingredient name and guidance.')
-                    ->icon(Heroicon::Language)
+                        'default' => 1,
+                        'lg' => 2,
+                    ])
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private static function translationsTab(): Tab
+    {
+        return Tab::make(__('ingredients.editor.admin.tabs.translations'))
+            ->icon(Heroicon::Language)
+            ->visible(fn (?Ingredient $record): bool => $record === null || $record->owner_type === null)
+            ->schema([
+                Section::make(__('ingredients.editor.admin.translations.section'))
+                    ->description(__('ingredients.editor.admin.translations.description'))
                     ->visible(fn (?Ingredient $record): bool => $record === null || $record->owner_type === null)
                     ->schema([
                         TextEntry::make('translation_source_name')
-                            ->label('English name')
+                            ->label(__('ingredients.editor.admin.translations.english_name'))
                             ->state(fn (Get $get): ?string => $get('current_version.display_name')),
                         TextEntry::make('translation_source_guidance')
-                            ->label('English guidance')
+                            ->label(__('ingredients.editor.admin.translations.english_guidance'))
                             ->state(fn (Get $get): ?string => $get('info_markdown'))
-                            ->placeholder('No English guidance entered.')
+                            ->placeholder(__('ingredients.editor.admin.translations.no_guidance'))
                             ->columnSpanFull(),
                         Repeater::make('translations')
-                            ->label('Localized content')
+                            ->label(__('ingredients.editor.admin.translations.localized_content'))
                             ->schema([
                                 Select::make('locale')
-                                    ->label('Language')
+                                    ->label(__('ingredients.editor.admin.translations.language'))
                                     ->options(fn (): array => static::translationLocaleOptions())
+                                    ->live()
                                     ->required()
                                     ->distinct()
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                                 TextInput::make('display_name')
-                                    ->label('Translated display name')
+                                    ->label(__('ingredients.editor.admin.translations.display_name'))
                                     ->maxLength(255)
-                                    ->helperText('Leave empty to show the English name.'),
+                                    ->helperText(__('ingredients.editor.admin.translations.display_name_helper')),
                                 TextInput::make('saponification_name')
-                                    ->label('Translated saponification name')
+                                    ->label(__('ingredients.editor.admin.saponified_declaration.translated_material_name'))
                                     ->maxLength(255)
-                                    ->helperText('For example, “coco” in a saponified-oils summary.'),
+                                    ->helperText(__('ingredients.editor.admin.saponified_declaration.translated_material_name_helper')),
                                 MarkdownEditor::make('info_markdown')
-                                    ->label('Translated guidance')
-                                    ->helperText('Leave empty to show the English guidance.')
+                                    ->label(__('ingredients.editor.admin.translations.guidance'))
+                                    ->helperText(__('ingredients.editor.admin.translations.guidance_helper'))
                                     ->columnSpanFull(),
                             ])
-                            ->columns([
-                                'md' => 2,
-                            ])
+                            ->itemLabel(fn (array $state): ?string => static::translationLocaleOptions()[$state['locale'] ?? ''] ?? null)
+                            ->collapsed()
                             ->defaultItems(0)
                             ->reorderable(false)
-                            ->addActionLabel('Add language')
+                            ->addActionLabel(__('ingredients.editor.admin.translations.add'))
                             ->columnSpanFull(),
                     ])
+                    ->columns(1)
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private static function soapChemistryTab(): Tab
+    {
+        return Tab::make(__('ingredients.editor.admin.specialist.soap_chemistry'))
+            ->icon(Heroicon::Beaker)
+            ->visible(fn (Get $get): bool => static::isCategory($get('category'), IngredientCategory::Lipids))
+            ->schema([
+                Section::make(__('ingredients.editor.admin.saponified_declaration.section'))
+                    ->description(__('ingredients.editor.admin.saponified_declaration.description'))
+                    ->visible(fn (Get $get): bool => (bool) $get('is_soap_saponification_trusted'))
+                    ->schema([
+                        TextInput::make('current_version.saponification_name')
+                            ->label(__('ingredients.editor.admin.saponified_declaration.material_name'))
+                            ->helperText(__('ingredients.editor.admin.saponified_declaration.material_name_helper'))
+                            ->maxLength(255),
+                        TextInput::make('current_version.soap_inci_naoh_name')
+                            ->label(__('ingredients.editor.admin.saponified_declaration.naoh'))
+                            ->maxLength(255),
+                        TextInput::make('current_version.soap_inci_koh_name')
+                            ->label(__('ingredients.editor.admin.saponified_declaration.koh'))
+                            ->maxLength(255),
+                    ])
                     ->columns([
-                        'md' => 2,
-                    ]),
-                Section::make('Soap Chemistry')
-                    ->description('For carrier oils and butters, keep the current SAP, optional iodine and INS references, and fatty-acid profile directly on the ingredient workflow.')
-                    ->icon(Heroicon::Beaker)
-                    ->visible(fn (Get $get): bool => static::isCategory($get('category'), IngredientCategory::Lipids))
+                        'default' => 1,
+                        'xl' => 3,
+                    ])
+                    ->columnSpanFull(),
+                Section::make(__('ingredients.editor.admin.specialist.soap_chemistry'))
                     ->schema([
                         TextInput::make('sap_profile.koh_sap_value')
-                            ->label('KOH SAP')
+                            ->label(__('ingredients.editor.soap.koh_sap'))
                             ->numeric()
                             ->inputMode('decimal')
                             ->live(onBlur: true)
-                            ->helperText('You can enter professional-style KOH SAP like 245 or decimal-style 0.245. NaOH SAP is derived automatically.'),
+                            ->helperText(__('ingredients.editor.soap.koh_helper')),
                         TextEntry::make('sap_profile.naoh_sap_value')
-                            ->label('Derived NaOH SAP')
+                            ->label(__('ingredients.editor.soap.naoh_sap'))
                             ->state(fn (Get $get): ?string => blank($get('sap_profile.koh_sap_value')) ? null : number_format(SoapSap::deriveNaohFromKoh((float) $get('sap_profile.koh_sap_value')), 6, '.', '')),
                         TextInput::make('sap_profile.iodine_value')
-                            ->label('Iodine')
+                            ->label(__('ingredients.editor.soap.iodine'))
                             ->numeric()
                             ->inputMode('decimal'),
                         TextInput::make('sap_profile.ins_value')
-                            ->label('INS')
+                            ->label(__('ingredients.editor.soap.ins'))
                             ->numeric()
                             ->inputMode('decimal'),
                         Textarea::make('sap_profile.source_notes')
-                            ->label('Soap notes')
-                            ->helperText('One source for the SAP values, iodine, INS, and the fatty-acid profile, e.g. lab analysis or supplier COA.')
+                            ->label(__('ingredients.editor.soap.notes'))
                             ->rows(3)
                             ->columnSpanFull(),
                         Repeater::make('fatty_acid_entries')
-                            ->label('Fatty acid profile')
+                            ->label(__('ingredients.editor.soap.fatty_acid_profile'))
                             ->schema([
                                 Select::make('fatty_acid_id')
-                                    ->label('Fatty acid')
+                                    ->label(__('ingredients.editor.soap.fatty_acid'))
                                     ->options(fn (): array => FattyAcid::query()
                                         ->where('is_active', true)
                                         ->orderBy('display_order')
@@ -296,64 +379,90 @@ class IngredientForm
                                         ->all())
                                     ->searchable()
                                     ->preload()
+                                    ->live()
                                     ->required(),
                                 TextInput::make('percentage')
+                                    ->label(__('ingredients.editor.soap.percentage'))
                                     ->numeric()
                                     ->inputMode('decimal')
                                     ->suffix('%')
                                     ->minValue(0)
                                     ->maxValue(100)
+                                    ->live(onBlur: true)
                                     ->required(),
                             ])
                             ->columns([
-                                'md' => 2,
+                                'default' => 1,
+                                'lg' => 2,
                             ])
+                            ->itemLabel(fn (array $state): ?string => static::fattyAcidItemLabel($state))
+                            ->collapsed()
                             ->defaultItems(0)
                             ->reorderable(false)
                             ->columnSpanFull(),
                     ])
                     ->columns([
-                        'md' => 2,
-                    ]),
-                Section::make('Aromatic Compliance')
-                    ->description('For aromatic materials, keep the current allergen declaration directly on the ingredient so stewardship stays in one place.')
-                    ->icon(Heroicon::Sparkles)
-                    ->visible(fn (Get $get): bool => static::isAromaticCategory($get('category')))
+                        'default' => 1,
+                        'lg' => 2,
+                    ])
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private static function allergensTab(): Tab
+    {
+        return Tab::make(__('ingredients.editor.compliance.allergens.section'))
+            ->icon(Heroicon::Sparkles)
+            ->schema([
+                Section::make(__('ingredients.editor.compliance.allergens.section'))
                     ->schema([
                         Repeater::make('allergen_entries')
-                            ->label('Allergen composition')
+                            ->label(__('ingredients.editor.compliance.allergens.composition'))
                             ->schema([
                                 Select::make('allergen_id')
-                                    ->label('Allergen')
+                                    ->label(__('ingredients.editor.compliance.allergens.allergen'))
                                     ->options(fn (): array => Allergen::query()
                                         ->orderBy('inci_name')
                                         ->pluck('inci_name', 'id')
                                         ->all())
                                     ->searchable()
                                     ->preload()
+                                    ->live()
                                     ->required(),
                                 TextInput::make('concentration_percent')
-                                    ->label('Concentration')
+                                    ->label(__('ingredients.editor.compliance.allergens.concentration'))
                                     ->numeric()
                                     ->inputMode('decimal')
                                     ->suffix('%')
                                     ->minValue(0)
+                                    ->maxValue(100)
+                                    ->live(onBlur: true)
                                     ->required(),
                             ])
                             ->columns([
-                                'md' => 2,
+                                'default' => 1,
+                                'lg' => 2,
                             ])
+                            ->itemLabel(fn (array $state): ?string => static::allergenItemLabel($state))
+                            ->collapsed()
                             ->defaultItems(0)
                             ->columnSpanFull(),
                         Textarea::make('allergen_source_notes')
-                            ->label('Allergen declaration source')
-                            ->helperText('One source for the whole allergen declaration, e.g. IFRA or SDS allergen statement.')
+                            ->label(__('ingredients.editor.compliance.allergens.source'))
+                            ->helperText(__('ingredients.editor.compliance.allergens.source_helper'))
                             ->rows(2)
                             ->columnSpanFull(),
-                    ]),
+                    ])
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private static function substancesTab(): Tab
+    {
+        return Tab::make(__('ingredients.editor.admin.tabs.substances'))
+            ->icon(Heroicon::ShieldCheck)
+            ->schema([
                 Section::make(__('ingredients.editor.compliance.substances.section'))
-                    ->description(__('ingredients.editor.compliance.substances.description'))
-                    ->icon(Heroicon::ShieldCheck)
                     ->schema([
                         Repeater::make('substance_entries')
                             ->label(__('ingredients.editor.compliance.substances.entries'))
@@ -366,6 +475,7 @@ class IngredientForm
                                         ->all())
                                     ->searchable()
                                     ->preload()
+                                    ->live()
                                     ->required(),
                                 TextInput::make('concentration_percent')
                                     ->label(__('ingredients.editor.compliance.substances.concentration'))
@@ -373,45 +483,135 @@ class IngredientForm
                                     ->inputMode('decimal')
                                     ->suffix('%')
                                     ->minValue(0)
-                                    ->maxValue(100),
+                                    ->maxValue(100)
+                                    ->live(onBlur: true),
                             ])
                             ->columns([
-                                'md' => 2,
+                                'default' => 1,
+                                'lg' => 2,
                             ])
+                            ->itemLabel(fn (array $state): ?string => static::substanceItemLabel($state))
+                            ->collapsed()
+                            ->defaultItems(0)
+                            ->reorderable(false)
+                            ->columnSpanFull(),
+                    ])
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private static function ifraTab(): Tab
+    {
+        return Tab::make(__('ingredients.editor.admin.tabs.ifra'))
+            ->icon(Heroicon::DocumentCheck)
+            ->schema([
+                Section::make(__('ingredients.editor.compliance.ifra.section'))
+                    ->schema([
+                        TextInput::make('ifra.reference_label')
+                            ->label(__('ingredients.editor.compliance.ifra.reference'))
+                            ->maxLength(255),
+                        TextInput::make('ifra.ifra_amendment')
+                            ->label(__('ingredients.editor.compliance.ifra.amendment'))
+                            ->maxLength(255),
+                        TextInput::make('ifra.peroxide_value')
+                            ->label(__('ingredients.editor.compliance.ifra.peroxide'))
+                            ->numeric()
+                            ->inputMode('decimal')
+                            ->minValue(0)
+                            ->suffix('meq O2/kg'),
+                        Textarea::make('ifra.source_notes')
+                            ->label(__('ingredients.editor.compliance.ifra.notes'))
+                            ->rows(3)
+                            ->columnSpanFull(),
+                        Repeater::make('ifra.limits')
+                            ->label(__('ingredients.editor.compliance.ifra.limits'))
+                            ->schema([
+                                Select::make('ifra_product_category_id')
+                                    ->label(__('ingredients.editor.compliance.ifra.category'))
+                                    ->options(fn (): array => IfraProductCategory::query()
+                                        ->where('is_active', true)
+                                        ->orderBy('code')
+                                        ->get()
+                                        ->mapWithKeys(fn (IfraProductCategory $category): array => [
+                                            $category->id => $category->optionLabel(),
+                                        ])
+                                        ->all())
+                                    ->searchable()
+                                    ->preload()
+                                    ->live()
+                                    ->required(),
+                                TextInput::make('max_percentage')
+                                    ->label(__('ingredients.editor.compliance.ifra.maximum'))
+                                    ->numeric()
+                                    ->inputMode('decimal')
+                                    ->minValue(0)
+                                    ->maxValue(100)
+                                    ->suffix('%')
+                                    ->live(onBlur: true)
+                                    ->required(),
+                                Textarea::make('restriction_note')
+                                    ->label(__('ingredients.editor.compliance.ifra.restriction_note'))
+                                    ->rows(2)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns([
+                                'default' => 1,
+                                'lg' => 2,
+                            ])
+                            ->itemLabel(fn (array $state): ?string => static::ifraLimitItemLabel($state))
+                            ->collapsed()
                             ->defaultItems(0)
                             ->reorderable(false)
                             ->columnSpanFull(),
                     ])
                     ->columns([
-                        'md' => 2,
-                    ]),
-                Section::make('Composite Components')
-                    ->description('Use this only when the raw material is itself a blend, macerate, or soap base. Every sub-component must already exist in the catalog so INCI expansion stays consistent.')
-                    ->icon(Heroicon::QueueList)
+                        'default' => 1,
+                        'lg' => 2,
+                    ])
+                    ->columnSpanFull(),
+            ]);
+    }
+
+    private static function componentsTab(): Tab
+    {
+        return Tab::make(__('ingredients.editor.admin.tabs.components'))
+            ->icon(Heroicon::QueueList)
+            ->schema([
+                Section::make(__('ingredients.editor.admin.components.section'))
+                    ->description(__('ingredients.editor.admin.components.description'))
                     ->schema([
+                        TextEntry::make('components_total')
+                            ->label(__('ingredients.editor.admin.components.total_label'))
+                            ->state(fn (Get $get): string => static::componentTotalLabel($get('components')))
+                            ->columnSpanFull(),
                         Repeater::make('components')
-                            ->label('Ingredient components')
+                            ->label(__('ingredients.editor.admin.components.entries'))
                             ->schema([
                                 Select::make('component_ingredient_id')
-                                    ->label('Catalog ingredient')
+                                    ->label(__('ingredients.editor.admin.components.ingredient'))
                                     ->options(fn (?Ingredient $record): array => static::componentIngredientOptions($record))
                                     ->searchable()
                                     ->preload()
+                                    ->live()
                                     ->helperText(fn (Get $get): string => static::componentIngredientHelperText($get('component_ingredient_id')))
                                     ->required(),
                                 TextInput::make('percentage_in_parent')
-                                    ->label('Share in parent')
+                                    ->label(__('ingredients.editor.admin.components.percentage'))
                                     ->numeric()
                                     ->inputMode('decimal')
                                     ->suffix('%')
                                     ->minValue(0)
                                     ->maxValue(100)
+                                    ->live(onBlur: true)
                                     ->required(),
                             ])
                             ->columns([
-                                'md' => 2,
+                                'default' => 1,
+                                'lg' => 2,
                             ])
-                            ->helperText('For accurate INCI generation, component percentages should total 100%.')
+                            ->itemLabel(fn (array $state): ?string => static::componentItemLabel($state))
+                            ->collapsed()
+                            ->helperText(__('ingredients.editor.admin.components.total_helper'))
                             ->rule(static function (): Closure {
                                 return static function (string $attribute, mixed $value, Closure $fail): void {
                                     if (! is_array($value)) {
@@ -429,19 +629,160 @@ class IngredientForm
                                     $total = $rows->sum(fn (array $row): float => (float) ($row['percentage_in_parent'] ?? 0));
 
                                     if (abs($total - 100.0) > 0.01) {
-                                        $fail('Composite ingredient percentages must total 100%.');
+                                        $fail(__('ingredients.editor.admin.components.validation_total'));
                                     }
                                 };
                             })
                             ->defaultItems(0)
                             ->columnSpanFull(),
                         Textarea::make('composition_source_notes')
-                            ->label('Composition source')
-                            ->helperText('One source for the whole blend composition, e.g. supplier spec or lab report.')
+                            ->label(__('ingredients.editor.admin.components.source'))
+                            ->helperText(__('ingredients.editor.admin.components.source_helper'))
                             ->rows(2)
                             ->columnSpanFull(),
-                    ]),
+                    ])
+                    ->columnSpanFull(),
             ]);
+    }
+
+    private static function marketLabelFieldset(string $market): Fieldset
+    {
+        $declarationPath = "market_labels.{$market}.declaration_name";
+        $overridePath = "market_labels.{$market}.use_override";
+
+        return Fieldset::make(__("ingredient_admin.market_labels.markets.{$market}"))
+            ->label(__("ingredient_admin.market_labels.markets.{$market}"))
+            ->schema([
+                Hidden::make("market_labels.{$market}.market_code")
+                    ->default($market),
+                Hidden::make("market_labels.{$market}.reviewed_at"),
+                Hidden::make("market_labels.{$market}.source_tier"),
+                Hidden::make("market_labels.{$market}.confidence"),
+                Hidden::make("market_labels.{$market}.source_version"),
+                Hidden::make("market_labels.{$market}.source_updated_at"),
+                Hidden::make("market_labels.{$market}.retrieved_at"),
+                ...($market === 'eu' ? [
+                    Toggle::make($overridePath)
+                        ->label(__('ingredient_admin.market_labels.form.use_eu_override'))
+                        ->helperText(__('ingredient_admin.market_labels.form.use_eu_override_helper'))
+                        ->live()
+                        ->dehydrated(false)
+                        ->afterStateHydrated(function (Toggle $component, Get $get): void {
+                            $component->state(static::declarationsDiffer(
+                                $get('market_labels.eu.declaration_name'),
+                                $get('current_version.inci_name'),
+                            ));
+                        })
+                        ->columnSpanFull(),
+                ] : []),
+                TextInput::make($declarationPath)
+                    ->label(__($market === 'eu'
+                        ? 'ingredient_admin.market_labels.form.eu_override'
+                        : 'ingredient_admin.market_labels.form.us_declaration'))
+                    ->helperText(__("ingredient_admin.market_labels.form.{$market}_description"))
+                    ->maxLength(255)
+                    ->rules($market === 'us' ? ['not_regex:/^CI\s*[0-9]{5}$/i'] : [])
+                    ->visible(fn (Get $get): bool => $market === 'us' || (bool) $get($overridePath))
+                    ->dehydratedWhenHidden(false)
+                    ->columnSpanFull(),
+                TextInput::make("market_labels.{$market}.source_name")
+                    ->label(__('ingredient_admin.market_labels.action.source'))
+                    ->required(fn (Get $get): bool => filled($get($declarationPath)) && ($market === 'us' || (bool) $get($overridePath)))
+                    ->maxLength(255)
+                    ->visible(fn (Get $get): bool => $market === 'us' || (bool) $get($overridePath))
+                    ->dehydratedWhenHidden(false),
+                TextInput::make("market_labels.{$market}.source_url")
+                    ->label(__('ingredient_admin.market_labels.action.source_url'))
+                    ->required(fn (Get $get): bool => filled($get($declarationPath)) && ($market === 'us' || (bool) $get($overridePath)))
+                    ->url()
+                    ->maxLength(2000)
+                    ->visible(fn (Get $get): bool => $market === 'us' || (bool) $get($overridePath))
+                    ->dehydratedWhenHidden(false),
+                Hidden::make("market_labels.{$market}.effective_from"),
+                Hidden::make("market_labels.{$market}.effective_until"),
+            ])
+            ->columns([
+                'default' => 1,
+                'lg' => 2,
+            ]);
+    }
+
+    private static function declarationsDiffer(mixed $declaration, mixed $canonical): bool
+    {
+        $normalizedDeclaration = Str::lower(Str::squish((string) $declaration));
+        $normalizedCanonical = Str::lower(Str::squish((string) $canonical));
+
+        return $normalizedDeclaration !== '' && $normalizedDeclaration !== $normalizedCanonical;
+    }
+
+    /** @param array<string, mixed> $state */
+    private static function fattyAcidItemLabel(array $state): ?string
+    {
+        $name = FattyAcid::query()->find($state['fatty_acid_id'] ?? null)?->name;
+
+        return static::percentageItemLabel($name, $state['percentage'] ?? null);
+    }
+
+    /** @param array<string, mixed> $state */
+    private static function allergenItemLabel(array $state): ?string
+    {
+        $name = Allergen::query()->find($state['allergen_id'] ?? null)?->inci_name;
+
+        return static::percentageItemLabel($name, $state['concentration_percent'] ?? null);
+    }
+
+    /** @param array<string, mixed> $state */
+    private static function substanceItemLabel(array $state): ?string
+    {
+        $name = Substance::query()->find($state['substance_id'] ?? null)?->name;
+
+        return static::percentageItemLabel($name, $state['concentration_percent'] ?? null);
+    }
+
+    /** @param array<string, mixed> $state */
+    private static function ifraLimitItemLabel(array $state): ?string
+    {
+        $category = IfraProductCategory::query()->find($state['ifra_product_category_id'] ?? null);
+
+        return static::percentageItemLabel($category?->optionLabel(), $state['max_percentage'] ?? null);
+    }
+
+    /** @param array<string, mixed> $state */
+    private static function componentItemLabel(array $state): ?string
+    {
+        $ingredient = Ingredient::query()->find($state['component_ingredient_id'] ?? null);
+        $name = $ingredient?->display_name ?? $ingredient?->catalog_key;
+
+        return static::percentageItemLabel($name, $state['percentage_in_parent'] ?? null);
+    }
+
+    private static function percentageItemLabel(?string $name, mixed $percentage): ?string
+    {
+        if (blank($name)) {
+            return null;
+        }
+
+        if (blank($percentage)) {
+            return $name;
+        }
+
+        return __('ingredients.editor.admin.item_label.percentage', [
+            'name' => $name,
+            'percentage' => $percentage,
+        ]);
+    }
+
+    private static function componentTotalLabel(mixed $state): string
+    {
+        $total = collect(is_array($state) ? $state : [])
+            ->filter(fn (mixed $row): bool => is_array($row))
+            ->sum(fn (array $row): float => (float) ($row['percentage_in_parent'] ?? 0));
+
+        $translationKey = abs($total - 100.0) <= 0.01
+            ? 'ingredients.editor.admin.components.total_complete'
+            : 'ingredients.editor.admin.components.total_incomplete';
+
+        return __($translationKey, ['total' => number_format($total, 2, '.', '')]);
     }
 
     /**
@@ -488,24 +829,26 @@ class IngredientForm
     private static function componentIngredientHelperText(mixed $ingredientId): string
     {
         if (! filled($ingredientId)) {
-            return 'Every component must already exist in the catalog. Create the ingredient first, then reference it here.';
+            return __('ingredients.editor.admin.components.ingredient_helper');
         }
 
         $options = static::componentIngredientOptions(null);
 
         if (! isset($options[(int) $ingredientId])) {
-            return 'This linked component does not yet have an INCI name on its current material record.';
+            return __('ingredients.editor.admin.components.missing_inci');
         }
 
         $label = $options[(int) $ingredientId];
 
         if (! str_contains($label, '(')) {
-            return 'This linked component does not yet have an INCI name on its current material record.';
+            return __('ingredients.editor.admin.components.missing_inci');
         }
 
         preg_match('/\(([^)]+)\)/', $label, $matches);
 
-        return sprintf('Resolved INCI: %s', $matches[1] ?? 'unknown');
+        return __('ingredients.editor.admin.components.resolved_inci', [
+            'inci' => $matches[1] ?? __('ingredients.editor.admin.components.unknown'),
+        ]);
     }
 
     private static function isCategory(mixed $state, IngredientCategory $category): bool
@@ -515,14 +858,5 @@ class IngredientForm
         }
 
         return IngredientCategory::tryFrom((string) $state) === $category;
-    }
-
-    private static function isAromaticCategory(mixed $state): bool
-    {
-        if ($state instanceof IngredientCategory) {
-            $state = $state->value;
-        }
-
-        return IngredientCategory::tryFrom((string) $state) === IngredientCategory::AromaticMaterials;
     }
 }

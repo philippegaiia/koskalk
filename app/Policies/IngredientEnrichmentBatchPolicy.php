@@ -46,4 +46,9 @@ class IngredientEnrichmentBatchPolicy
     {
         return $user->is_admin;
     }
+
+    public function delete(User $user, IngredientEnrichmentBatch $batch): bool
+    {
+        return $user->is_admin;
+    }
 }

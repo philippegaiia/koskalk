@@ -2,6 +2,7 @@
 
 use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
+use App\Models\IngredientMarketLabel;
 use App\Models\IngredientSapProfile;
 use App\Models\IngredientSubstanceEntry;
 use App\Models\ProductFamily;
@@ -38,6 +39,7 @@ it('aggregates restricted constituents across ingredients for the selected regim
     ]);
     $regime = RegulatoryRegime::factory()->create([
         'code' => 'eu',
+        'market_code' => 'eu',
         'name' => 'EU regime',
         'status' => 'active',
     ]);
@@ -107,6 +109,7 @@ it('flags unknown restricted constituent concentration as needing review', funct
     ]);
     $regime = RegulatoryRegime::factory()->create([
         'code' => 'eu',
+        'market_code' => 'eu',
         'name' => 'EU regime',
         'status' => 'active',
     ]);
@@ -167,8 +170,18 @@ it('flags prohibited whole ingredients independently from constituent accumulati
     ]);
     $regime = RegulatoryRegime::factory()->create([
         'code' => 'us_mocra_preview',
+        'market_code' => 'us',
         'name' => 'US MoCRA preview',
         'status' => 'preview',
+    ]);
+
+    IngredientMarketLabel::factory()->for($oliveOil)->create([
+        'market_code' => 'us',
+        'declaration_name' => 'Olive Oil',
+    ]);
+    IngredientMarketLabel::factory()->for($calamusOil)->create([
+        'market_code' => 'us',
+        'declaration_name' => 'Calamus Oil',
     ]);
 
     IngredientSubstanceEntry::factory()

@@ -21,7 +21,7 @@ it('offers a confirmed multi ingredient ai enrichment bulk action', function ():
         ->assertActionExists(TestAction::make('runAiEnrichment')->table()->bulk())
         ->selectTableRecords($ingredients->pluck('id')->all())
         ->mountAction(TestAction::make('runAiEnrichment')->table()->bulk())
-        ->assertMountedActionModalSee('translations, identifiers, COSING functions, guidance, and colour labels');
+        ->assertMountedActionModalSee('Structured EU and FDA lookups run first');
 });
 
 it('starts one durable batch for all selected ingredients', function (): void {

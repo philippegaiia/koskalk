@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\IngredientAliasKind;
 use App\Enums\IngredientIdentifierScheme;
 use App\Models\Ingredient;
+use App\Models\IngredientIdentifierEvidence;
 use App\Models\SupportedLocale;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -55,22 +56,109 @@ class IngredientIdentitySynchronizer
     /**
      * @param  array<string, mixed>  $state
      */
-    public function sync(Ingredient $ingredient, array $state): void
+    public function sync(Ingredient $ingredient, array $state, array $identifierEvidence = []): void
     {
         [$identifiers, $aliases] = $this->validatedRows($state);
 
-        DB::transaction(function () use ($ingredient, $identifiers, $aliases): void {
+        DB::transaction(function () use ($ingredient, $identifiers, $aliases, $identifierEvidence): void {
             $lockedIngredient = Ingredient::withoutGlobalScopes()
                 ->lockForUpdate()
                 ->findOrFail($ingredient->id);
 
             $this->assertLimits($lockedIngredient, $identifiers, $aliases);
 
-            $lockedIngredient->identifiers()->delete();
-            $lockedIngredient->identifiers()->createMany($identifiers);
+            $this->syncIdentifiers($lockedIngredient, $identifiers);
+            $this->syncEvidence($lockedIngredient, $identifierEvidence);
             $lockedIngredient->aliases()->delete();
             $lockedIngredient->aliases()->createMany($aliases);
         }, attempts: 5);
+    }
+
+    /** @param list<array{scheme:string, value:string, normalized_value:string, is_primary:bool}> $rows */
+    private function syncIdentifiers(Ingredient $ingredient, array $rows): void
+    {
+        $ingredient->identifiers()->update(['is_primary' => false]);
+        $persistedIdentifierIds = [];
+
+        foreach ($rows as $row) {
+            $identifier = $ingredient->identifiers()->updateOrCreate(
+                [
+                    'scheme' => $row['scheme'],
+                    'normalized_value' => $row['normalized_value'],
+                ],
+                [
+                    'value' => $row['value'],
+                    'is_primary' => $row['is_primary'],
+                ],
+            );
+            $persistedIdentifierIds[] = $identifier->id;
+        }
+
+        $ingredient->identifiers()
+            ->when(
+                $persistedIdentifierIds !== [],
+                fn ($query) => $query->whereNotIn('id', $persistedIdentifierIds),
+            )
+            ->delete();
+    }
+
+    /** @param list<array<string, mixed>> $rows */
+    private function syncEvidence(Ingredient $ingredient, array $rows): void
+    {
+        $evidenceByIdentifier = collect($rows)
+            ->filter(fn (mixed $row): bool => is_array($row)
+                && is_string($row['scheme'] ?? null)
+                && is_string($row['value'] ?? null))
+            ->keyBy(fn (array $row): string => $row['scheme'].'|'.$this->normalizeIdentifier($row['value'], $row['scheme']));
+
+        foreach ($ingredient->identifiers()->get() as $identifier) {
+            $key = $identifier->scheme->value.'|'.$identifier->normalized_value;
+            if (! $evidenceByIdentifier->has($key)) {
+                continue;
+            }
+
+            $row = $evidenceByIdentifier->get($key);
+            $evidence = is_array($row) && is_array($row['evidence'] ?? null) ? $row['evidence'] : [];
+            foreach ($evidence as $evidenceRow) {
+                if (! is_array($evidenceRow) || ! is_string($evidenceRow['source_url'] ?? null)) {
+                    continue;
+                }
+
+                $sourceUrl = trim($evidenceRow['source_url']);
+                if ($sourceUrl === '') {
+                    continue;
+                }
+
+                $existing = $identifier->evidence()
+                    ->where('source_url', $sourceUrl)
+                    ->first();
+
+                if (! $existing instanceof IngredientIdentifierEvidence) {
+                    $existing = $identifier->evidence()
+                        ->where('source_name', $evidenceRow['source_name'] ?? null)
+                        ->first();
+                }
+
+                $attributes = collect($evidenceRow)
+                    ->only([
+                        'source_name',
+                        'source_url',
+                        'source_tier',
+                        'confidence',
+                        'source_version',
+                        'source_updated_at',
+                        'retrieved_at',
+                    ])
+                    ->all();
+
+                if ($existing instanceof IngredientIdentifierEvidence) {
+                    $existing->fill($attributes);
+                    $existing->save();
+                } else {
+                    $identifier->evidence()->create($attributes);
+                }
+            }
+        }
     }
 
     /**
@@ -250,7 +338,10 @@ class IngredientIdentitySynchronizer
     {
         $normalized = Str::of($value)->trim()->replace(['–', '—'], '-')->toString();
 
-        return $scheme === IngredientIdentifierScheme::Unii->value
+        return in_array($scheme, [
+            IngredientIdentifierScheme::Unii->value,
+            IngredientIdentifierScheme::InchiKey->value,
+        ], true)
             ? Str::upper($normalized)
             : mb_strtolower($normalized);
     }

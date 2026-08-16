@@ -26,13 +26,23 @@ class IngredientExporter extends Exporter
             ExportColumn::make('notes'),
             ExportColumn::make('soap_inci_naoh_name'),
             ExportColumn::make('soap_inci_koh_name'),
+            ExportColumn::make('cas_numbers')
+                ->state(fn (Ingredient $record): string => $record->identifiers
+                    ->where('scheme', 'cas')
+                    ->pluck('value')
+                    ->implode('; ')),
+            ExportColumn::make('ec_numbers')
+                ->state(fn (Ingredient $record): string => $record->identifiers
+                    ->where('scheme', 'ec')
+                    ->pluck('value')
+                    ->implode('; ')),
             ExportColumn::make('identifiers')
                 ->state(fn (Ingredient $record): string => $record->identifiers
                     ->map(fn ($identifier): string => sprintf('%s: %s', $identifier->scheme->label(), $identifier->value))
                     ->implode('; ')),
             ExportColumn::make('aliases')
                 ->state(fn (Ingredient $record): string => $record->aliases
-                    ->map(fn ($alias): string => sprintf('%s: %s', $alias->locale, $alias->name))
+                    ->map(fn ($alias): string => sprintf('%s [%s]: %s', $alias->locale, $alias->kind->label(), $alias->name))
                     ->implode('; ')),
             ExportColumn::make('substance_entries')
                 ->state(fn (Ingredient $record): string => $record->substanceEntries

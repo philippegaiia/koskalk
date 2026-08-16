@@ -4,6 +4,8 @@ use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
+use App\Models\IngredientEnrichmentBatch;
+use App\Models\IngredientEnrichmentBatchItem;
 use App\Models\IngredientTranslation;
 use App\Models\ProductionBatchIngredient;
 use App\Models\RecipeItem;
@@ -114,6 +116,25 @@ it('allows only administrators to delete platform ingredients', function () {
         ->toThrow(AuthorizationException::class);
 
     $this->assertModelExists($ingredient);
+});
+
+it('blocks deletion while enrichment audit rows retain the ingredient subject', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create();
+    $item = IngredientEnrichmentBatchItem::factory()->for($batch, 'batch')->create([
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'snapshot' => ['catalog_key' => $ingredient->catalog_key],
+    ]);
+
+    expect(fn () => app(PlatformIngredientDeletionService::class)->delete($admin, $ingredient))
+        ->toThrow(ValidationException::class)
+        ->and($ingredient->fresh())->not->toBeNull()
+        ->and($item->fresh())->not->toBeNull();
 });
 
 it('refuses to delete private user ingredients through the platform operation', function () {

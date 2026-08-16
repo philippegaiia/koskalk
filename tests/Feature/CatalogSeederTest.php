@@ -12,6 +12,7 @@ use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
 use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
+use App\Services\IngredientIdentitySynchronizer;
 use Database\Seeders\AllergenCatalogSeeder;
 use Database\Seeders\CarrierOilSeeder;
 use Database\Seeders\FattyAcidSeeder;
@@ -22,6 +23,7 @@ use Database\Seeders\ProductFamilySeeder;
 use Database\Seeders\RegulatoryRegimeSeeder;
 use Database\Seeders\SubstanceSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
@@ -105,6 +107,80 @@ it('updates existing ingredient rows without duplicating them on reseed', functi
     $this->seed(IngredientCatalogSeeder::class);
 
     expect(Ingredient::query()->count())->toBe(1);
+});
+
+it('does not replace curated identifiers or aliases when the catalog is reseeded', function (): void {
+    [, $ingredientPath] = writeCatalogFixtures(
+        $this->catalogFixtureDirectory,
+        allergenRows: [['Nom INCI (à étiqueter)', 'Numéro CAS (International)', 'Numéro CE (Européen)', '', '']],
+        ingredientRows: [
+            ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
+            ['OB1', "Huile d'olive vierge", '', 'kg', '', '0.000', 'Yes', 'No', 'Olea europaea fruit oil', '', '', '8001-25-0', '', '232-277-0', 'Olive oil'],
+        ],
+    );
+    config()->set('catalog-imports.ingredients.path', $ingredientPath);
+    $this->seed(IngredientCatalogSeeder::class);
+
+    $ingredient = Ingredient::query()->where('catalog_key', 'OB1')->sole();
+    app(IngredientIdentitySynchronizer::class)->sync($ingredient, [
+        'cas_number' => 'CURATED-CAS',
+        'ec_number' => 'CURATED-EC',
+        'additional_identifiers' => [[
+            'scheme' => 'unii',
+            'value' => 'CURATED123',
+            'is_primary' => true,
+        ]],
+        'aliases' => [[
+            'locale' => 'und',
+            'name' => 'Olea europaea',
+            'kind' => 'botanical',
+        ]],
+    ]);
+
+    writeCsv($ingredientPath, [
+        ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
+        ['OB1', "Huile d'olive vierge", '', 'kg', '', '0.000', 'Yes', 'No', 'Olea europaea fruit oil', '', '', 'RESEED-CAS', '', 'RESEED-EC', 'Olive oil'],
+    ]);
+
+    $this->seed(IngredientCatalogSeeder::class);
+    $ingredient->refresh();
+
+    expect($ingredient->identifiers->pluck('value')->all())->toBe([
+        'CURATED-CAS',
+        'CURATED-EC',
+        'CURATED123',
+    ])->and($ingredient->aliases->pluck('name')->all())->toBe(['Olea europaea']);
+});
+
+it('rolls back a new catalog ingredient when initial identity synchronization fails', function (): void {
+    [, $ingredientPath] = writeCatalogFixtures(
+        $this->catalogFixtureDirectory,
+        allergenRows: [['Nom INCI (à étiqueter)', 'Numéro CAS (International)', 'Numéro CE (Européen)', '', '']],
+        ingredientRows: [
+            ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
+            ['OB1', "Huile d'olive vierge", '', 'kg', '', '0.000', 'Yes', 'No', 'Olea europaea fruit oil', '', '', collect(range(1, 11))->map(fn (int $number): string => "CAS-{$number}")->implode(';'), '', '', 'Olive oil'],
+        ],
+    );
+    config()->set('catalog-imports.ingredients.path', $ingredientPath);
+
+    expect(fn () => $this->seed(IngredientCatalogSeeder::class))
+        ->toThrow(ValidationException::class);
+
+    expect(Ingredient::query()->where('catalog_key', 'OB1')->exists())->toBeFalse();
+
+    writeCsv($ingredientPath, [
+        ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
+        ['OB1', "Huile d'olive vierge", '', 'kg', '', '0.000', 'Yes', 'No', 'Olea europaea fruit oil', '', '', '8001-25-0', '', '232-277-0', 'Olive oil'],
+    ]);
+
+    $this->seed(IngredientCatalogSeeder::class);
+
+    $ingredient = Ingredient::query()->where('catalog_key', 'OB1')->sole();
+
+    expect($ingredient->identifiers->pluck('value')->all())->toBe([
+        '8001-25-0',
+        '232-277-0',
+    ]);
 });
 
 it('classifies imported ingredients from the canonical taxonomy without granting soap trust from soap names', function () {

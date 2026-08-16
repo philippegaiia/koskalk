@@ -254,7 +254,7 @@ it('enforces the subscriber private ingredient limit when a company member creat
         'name' => 'Blocked Company Ingredient',
         'category' => IngredientCategory::Other->value,
         'inci_name' => 'BLOCKED COMPANY INGREDIENT',
-    ], $member))->toThrow(ValidationException::class, '1 private ingredients');
+    ], $member))->toThrow(ValidationException::class, '1 private ingredient');
 });
 
 it('blocks new recipes when the active plan recipe limit is reached', function () {

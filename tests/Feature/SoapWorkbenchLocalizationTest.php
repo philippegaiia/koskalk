@@ -426,6 +426,6 @@ it('commits localized formula balance actions for every supported locale', funct
         'status.remove_percentage',
     ] as $key) {
         expect($rows)->toHaveKey($key)
-            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl']);
+            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
     }
 });

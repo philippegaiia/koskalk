@@ -10,6 +10,10 @@ use App\Models\User;
 
 class RecipeWorkbenchIngredientCatalogBuilder
 {
+    public function __construct(
+        private readonly IngredientAliasLocaleService $ingredientAliasLocaleService,
+    ) {}
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -26,15 +30,20 @@ class RecipeWorkbenchIngredientCatalogBuilder
                 ->keyBy('ingredient_id')
             : collect();
 
+        $relations = [
+            'sapProfile',
+            'fattyAcidEntries.fattyAcid',
+            'mediaAssetUsages.mediaAsset',
+            'identifiers',
+            'aliases',
+        ];
+
+        if ($translationLocales !== []) {
+            $relations['translations'] = fn ($query) => $query->whereIn('locale', $translationLocales);
+        }
+
         return Ingredient::query()
-            ->with([
-                'sapProfile',
-                'fattyAcidEntries.fattyAcid',
-                'mediaAssetUsages.mediaAsset',
-                'identifiers',
-                'aliases',
-                'translations' => fn ($query) => $query->whereIn('locale', $translationLocales),
-            ])
+            ->with($relations)
             ->where('is_active', true)
             ->accessibleTo($user)
             ->whereIn('category', array_map(
@@ -43,7 +52,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
             ))
             ->get()
             ->filter(fn (Ingredient $ingredient): bool => $isCosmetic || $ingredient->availableWorkbenchPhases() !== [])
-            ->map(function (Ingredient $ingredient) use ($defaultPricesByIngredient): array {
+            ->map(function (Ingredient $ingredient) use ($defaultPricesByIngredient, $translationLocales): array {
                 $category = $ingredient->category;
                 $sapProfile = $ingredient->sapProfile;
                 $availablePhases = $ingredient->availableWorkbenchPhases();
@@ -61,7 +70,10 @@ class RecipeWorkbenchIngredientCatalogBuilder
                             'value' => $identifier->value,
                         ])
                         ->all(),
-                    'aliases' => $ingredient->aliases->pluck('name')->all(),
+                    'aliases' => $this->ingredientAliasLocaleService
+                        ->eligibleAliases($ingredient->aliases, $translationLocales)
+                        ->pluck('name')
+                        ->all(),
                     'image_url' => $ingredient->pickerImageUrl(),
                     'category' => $category?->value,
                     'category_label' => $category?->getLabel(),

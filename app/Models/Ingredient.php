@@ -106,6 +106,14 @@ class Ingredient extends Model
             ->orderBy('id');
     }
 
+    public function marketLabels(): HasMany
+    {
+        return $this->hasMany(IngredientMarketLabel::class)
+            ->orderBy('market_code')
+            ->orderByDesc('effective_from')
+            ->orderBy('id');
+    }
+
     public function localizedDisplayName(?string $locale = null): ?string
     {
         return $this->localizedPlatformValue('display_name', $locale, $this->display_name);
@@ -169,6 +177,10 @@ class Ingredient extends Model
                 'source',
                 'source_reference',
                 'source_checked_at',
+                'source_tier',
+                'confidence',
+                'source_version',
+                'source_updated_at',
                 'assigned_by_user_id',
             ])
             ->withTimestamps()

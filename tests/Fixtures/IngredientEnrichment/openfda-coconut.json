@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "unii": "Q9L0O73W7L",
+      "names": [
+        {"name": "COCONUT OIL", "display_name": true, "preferred": true, "name_orgs": [{"name_org": "FDA"}]},
+        {"name": "COCOS NUCIFERA (COCONUT) OIL", "display_name": false, "preferred": false, "name_orgs": [{"name_org": "INCI"}]}
+      ],
+      "codes": [
+        {"code": "8001-31-8", "code_system": "CAS"}
+      ]
+    }
+  ]
+}

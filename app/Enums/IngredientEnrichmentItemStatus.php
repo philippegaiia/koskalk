@@ -15,6 +15,7 @@ enum IngredientEnrichmentItemStatus: string
     case Applied = 'applied';
     case Unchanged = 'unchanged';
     case Cancelled = 'cancelled';
+    case Rejected = 'rejected';
 
     public function label(): string
     {

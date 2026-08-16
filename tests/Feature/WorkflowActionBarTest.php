@@ -17,15 +17,21 @@ it('renders a compact sticky workflow surface with leading and trailing actions'
     expect($html)
         ->toContain('data-workflow-action-bar')
         ->toContain('data-example-save-bar')
-        ->toContain('fixed bottom-0 left-0 right-0')
+        ->toContain('sk-workflow-action-bar')
         ->toContain('flex-nowrap')
         ->not->toContain('flex-wrap')
-        ->toContain('lg:left-[var(--app-sidebar-width,0rem)]')
         ->toContain('backdrop-blur-md')
         ->toContain('bg-[color-mix(in_oklab,var(--color-panel)_80%,transparent)]')
         ->toContain('sk-btn sk-btn-danger')
         ->toContain('sk-btn sk-btn-ghost')
         ->toContain('sk-btn sk-btn-primary');
+
+    $css = file_get_contents(resource_path('css/app.css'));
+
+    expect($css)
+        ->toMatch('/\.sk-workflow-action-bar\s*\{[^}]*position:\s*fixed;/s')
+        ->toMatch('/\.sk-workflow-action-bar\s*\{[^}]*bottom:\s*0;/s')
+        ->toContain('left: var(--app-sidebar-width, 0rem);');
 });
 
 it('right-aligns actions when no leading action is provided', function (): void {

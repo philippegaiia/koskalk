@@ -4,7 +4,7 @@
 
 <div
     {{ $attributes->class([
-        'pointer-events-none fixed bottom-0 left-0 right-0 z-30 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5 lg:left-[var(--app-sidebar-width,0rem)]',
+        'sk-workflow-action-bar pointer-events-none px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-5',
     ]) }}
     data-workflow-action-bar
 >

@@ -12,7 +12,10 @@ abstract class TestCase extends BaseTestCase
     {
         $application = parent::createApplication();
 
-        TestDatabaseSafety::assertSafe($application['config']->all());
+        TestDatabaseSafety::assertSafe(
+            $application['config']->all(),
+            allowDisposablePostgres: filter_var(env('VERIFY_POSTGRESQL_INDEXES', false), FILTER_VALIDATE_BOOL),
+        );
 
         return $application;
     }

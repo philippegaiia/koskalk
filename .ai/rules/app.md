@@ -26,3 +26,6 @@ Wrap multi-step writes in DB::transaction(fn () => ...) closures; never use begi
 
 ## Write idempotently with updateOrCreate/firstOrCreate
 Prefer ->updateOrCreate([...], [...]) or ->firstOrCreate([...], [...]) for idempotent writes; the app does not use upsert(). Hand-rolled find-then-save is acceptable but updateOrCreate/firstOrCreate express the intent more clearly.
+
+## Treat compliance output as live guidance
+Saved formulas stabilize formula composition only; linked platform or private ingredient facts and regulatory reference data remain live. Any linked ingredient change requires the formula's INCI and regulatory guidance to be reviewed again. Koskalk output is point-in-time, non-authoritative guidance and must not be presented or persisted as a compliance certification or toxicological assessment.

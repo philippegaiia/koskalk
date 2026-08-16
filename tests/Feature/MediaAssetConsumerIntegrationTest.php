@@ -84,6 +84,17 @@ it('uses the shared media picker instead of record-owned image uploads', functio
         ->assertSee('Upload image')
         ->assertSee('Choose from Media Library')
         ->assertSeeHtml('data-media-picker-upload-form');
+
+    Livewire::test(IngredientEditor::class)
+        ->assertSeeText('Choose documents')
+        ->assertSeeText('No library documents selected.')
+        ->assertSeeText('Select up to 8 ready PDF documents.')
+        ->assertSeeText('Upload a PDF document to the library, then return here to select it.')
+        ->assertSeeText('Upload PDF')
+        ->assertSeeText('Choose PDF')
+        ->assertSeeHtml('No PDF selected')
+        ->assertSeeText('Processing uploaded PDF')
+        ->assertSeeText('PDF processing failed');
 });
 
 it('filters picker results by the component media type', function () {
@@ -159,7 +170,7 @@ it('enforces media types and limits for ingredient and sop document roles', func
         [...$documents->pluck('id')->all(), $image->id],
         maximum: 8,
         expectedType: MediaAssetType::Pdf,
-    ))->toThrow(ValidationException::class, '8 images');
+    ))->toThrow(ValidationException::class, '8 PDF documents');
 });
 
 it('keeps product descriptions text-only and removes direct rich editor uploads', function () {
@@ -386,10 +397,15 @@ it('keeps recipe autosave and packaging save controls inside their owning forms'
     $packagingHtml = Livewire::actingAs($user)
         ->test(PackagingItemEditor::class)
         ->html();
+    $ingredientHtml = Livewire::actingAs($user)
+        ->test(IngredientEditor::class)
+        ->html();
 
     expect(editorControlOwningForm($recipeHtml, '//*[@data-instructions-save-bar]'))
         ->toContain('recipeContentAutosave(')
         ->and(editorControlOwningForm($packagingHtml, '//button[@type="submit"]'))
+        ->toBe('save')
+        ->and(editorControlOwningForm($ingredientHtml, '//*[@data-ingredient-save-bar]//button[@type="submit"]'))
         ->toBe('save');
 });
 

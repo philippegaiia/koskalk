@@ -31,9 +31,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'unchanged_count',
     'stale_count',
     'cancelled_count',
+    'rejected_count',
     'input_tokens',
     'output_tokens',
     'web_search_calls',
+    'structured_source_calls',
     'started_at',
     'completed_at',
     'cancelled_at',
@@ -48,6 +50,7 @@ class IngredientEnrichmentBatch extends Model
     protected $attributes = [
         'status' => IngredientEnrichmentBatchStatus::Pending->value,
         'mode' => 'fill_missing',
+        'structured_source_calls' => 0,
     ];
 
     public function requester(): BelongsTo
@@ -76,9 +79,11 @@ class IngredientEnrichmentBatch extends Model
             'unchanged_count' => 'integer',
             'stale_count' => 'integer',
             'cancelled_count' => 'integer',
+            'rejected_count' => 'integer',
             'input_tokens' => 'integer',
             'output_tokens' => 'integer',
             'web_search_calls' => 'integer',
+            'structured_source_calls' => 'integer',
             'started_at' => 'immutable_datetime',
             'completed_at' => 'immutable_datetime',
             'cancelled_at' => 'immutable_datetime',

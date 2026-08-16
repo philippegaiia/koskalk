@@ -25,6 +25,7 @@ class UserIngredientAuthoringService
         protected EntitlementService $entitlementService,
         protected IngredientFunctionAssignmentService $functionAssignments,
         protected IngredientIdentitySynchronizer $ingredientIdentitySynchronizer,
+        protected IngredientAliasLocaleService $ingredientAliasLocaleService,
     ) {}
 
     /**
@@ -80,6 +81,7 @@ class UserIngredientAuthoringService
     public function formData(Ingredient $ingredient): array
     {
         $entryData = $this->ingredientDataEntryService->formData($ingredient);
+        $isPlatformIngredient = $ingredient->owner_type === null;
         $currentIfra = $ingredient->ifraCertificates()
             ->with('limits')
             ->where('is_current', true)
@@ -88,7 +90,9 @@ class UserIngredientAuthoringService
 
         return [
             'ingredient_structure' => $ingredient->components()->exists() ? 'blend' : 'ingredient',
-            'name' => data_get($entryData, 'current_version.display_name'),
+            'name' => $isPlatformIngredient
+                ? $ingredient->localizedDisplayName()
+                : data_get($entryData, 'current_version.display_name'),
             'category' => $ingredient->category?->value,
             'subcategory' => $ingredient->subcategory?->value,
             'is_soap_saponification_trusted' => $ingredient->is_soap_saponification_trusted,
@@ -101,7 +105,9 @@ class UserIngredientAuthoringService
             'featured_image_original_name' => $ingredient->featured_image_original_name,
             'icon_image_path' => $ingredient->icon_image_path,
             'icon_image_original_name' => $ingredient->icon_image_original_name,
-            'info_markdown' => $ingredient->info_markdown,
+            'info_markdown' => $isPlatformIngredient
+                ? $ingredient->localizedInfoMarkdown()
+                : $ingredient->info_markdown,
             'composition_source_notes' => $ingredient->composition_source_notes,
             'allergen_source_notes' => $ingredient->allergen_source_notes,
             'function_ids' => $entryData['function_ids'] ?? [],
@@ -176,7 +182,7 @@ class UserIngredientAuthoringService
     {
         if (! $ingredient->isEditableBy($user)) {
             throw ValidationException::withMessages([
-                'ingredient' => 'This private ingredient cannot be edited from the public app.',
+                'ingredient' => __('ingredients.editor.validation.private_edit_forbidden'),
             ]);
         }
 
@@ -205,7 +211,7 @@ class UserIngredientAuthoringService
     {
         if ($source->owner_type !== null) {
             throw ValidationException::withMessages([
-                'ingredient' => 'Only platform ingredients can be duplicated.',
+                'ingredient' => __('ingredients.editor.validation.duplicate_platform_only'),
             ]);
         }
 
@@ -214,7 +220,7 @@ class UserIngredientAuthoringService
             && $source->sapProfile?->koh_sap_value === null
         ) {
             throw ValidationException::withMessages([
-                'ingredient' => 'This platform carrier oil cannot be duplicated until its KOH SAP value is available. Contact support@soapkraft.com.',
+                'ingredient' => __('ingredients.editor.validation.duplicate_soap_profile_required'),
             ]);
         }
 
@@ -277,21 +283,8 @@ class UserIngredientAuthoringService
         $state = $this->ingredientIdentitySynchronizer->formState($source);
 
         $localeCandidates = Ingredient::translationLocaleCandidates($user->locale);
-        $aliases = $source->aliases
-            ->filter(fn ($alias): bool => in_array($alias->locale, $localeCandidates, true))
-            ->values();
-
-        if ($aliases->isEmpty()) {
-            $aliases = $source->aliases
-                ->where('locale', 'und')
-                ->values();
-        }
-
-        if ($aliases->isEmpty()) {
-            $aliases = $source->aliases
-                ->where('locale', 'en')
-                ->values();
-        }
+        $aliases = $this->ingredientAliasLocaleService
+            ->eligibleAliases($source->aliases, $localeCandidates);
 
         $state['aliases'] = $aliases
             ->take(5)
@@ -390,7 +383,7 @@ class UserIngredientAuthoringService
         if ($ingredient->subcategory instanceof IngredientSubcategory
             && $ingredient->subcategory->category() !== $ingredient->category) {
             throw ValidationException::withMessages([
-                'subcategory' => 'Choose a subcategory belonging to the selected ingredient category.',
+                'subcategory' => __('ingredients.editor.validation.subcategory_mismatch'),
             ]);
         }
 
@@ -496,7 +489,7 @@ class UserIngredientAuthoringService
 
         if ($componentIds->isEmpty()) {
             throw ValidationException::withMessages([
-                'components' => 'Add at least one component to save a blend.',
+                'components' => __('ingredients.editor.validation.blend_required'),
             ]);
         }
 
@@ -508,7 +501,7 @@ class UserIngredientAuthoringService
 
         if ($accessibleCount !== $componentIds->unique()->count()) {
             throw ValidationException::withMessages([
-                'components' => 'One or more selected components are not available to you.',
+                'components' => __('ingredients.editor.validation.blend_component_unavailable'),
             ]);
         }
     }
@@ -568,7 +561,9 @@ class UserIngredientAuthoringService
         }
 
         $certificate = $ingredient->ifraCertificates()->make([
-            'certificate_name' => ($state['reference_label'] ?? null) ?: sprintf('%s current IFRA guidance', $ingredient->display_name),
+            'certificate_name' => ($state['reference_label'] ?? null) ?: __('ingredients.editor.compliance.ifra.default_reference', [
+                'ingredient' => $ingredient->display_name,
+            ]),
             'ifra_amendment' => $state['ifra_amendment'] ?? null,
             'peroxide_value' => filled($state['peroxide_value'] ?? null) ? (float) $state['peroxide_value'] : null,
             'source_notes' => $state['source_notes'] ?? null,
@@ -635,7 +630,7 @@ class UserIngredientAuthoringService
 
         if ($kohSapValue === null || $kohSapValue === '' || ! is_numeric($kohSapValue)) {
             throw ValidationException::withMessages([
-                'sap_profile.koh_sap_value' => 'KOH SAP value is required for duplicated carrier oils trusted for soap calculation.',
+                'sap_profile.koh_sap_value' => __('ingredients.editor.validation.soap_koh_required'),
             ]);
         }
 
@@ -645,7 +640,9 @@ class UserIngredientAuthoringService
 
         if ($normalizedKohSapValue < $minimumValue || $normalizedKohSapValue > $maximumValue) {
             throw ValidationException::withMessages([
-                'sap_profile.koh_sap_value' => 'KOH SAP value must be within ±3% of the duplicated platform value.',
+                'sap_profile.koh_sap_value' => __('ingredients.editor.validation.soap_koh_tolerance', [
+                    'tolerance' => self::TRUSTED_KOH_SAP_TOLERANCE * 100,
+                ]),
             ]);
         }
     }
@@ -679,7 +676,7 @@ class UserIngredientAuthoringService
 
         if ($total < 80 || $total > 100) {
             throw ValidationException::withMessages([
-                'fatty_acid_entries' => 'Fatty acid percentages must total between 80% and 100%.',
+                'fatty_acid_entries' => __('ingredients.editor.validation.fatty_acid_total'),
             ]);
         }
 
@@ -690,11 +687,10 @@ class UserIngredientAuthoringService
 
             if ($currentValue < $minimum || $currentValue > $maximum) {
                 throw ValidationException::withMessages([
-                    'fatty_acid_entries' => sprintf(
-                        'Fatty acid values must stay between %s%% and %s%% of their allowed range.',
-                        $this->formatRangeValue($minimum),
-                        $this->formatRangeValue($maximum),
-                    ),
+                    'fatty_acid_entries' => __('ingredients.editor.validation.fatty_acid_range', [
+                        'minimum' => $this->formatRangeValue($minimum),
+                        'maximum' => $this->formatRangeValue($maximum),
+                    ]),
                 ]);
             }
         }
@@ -762,13 +758,13 @@ class UserIngredientAuthoringService
 
             if ($concentration < 0) {
                 throw ValidationException::withMessages([
-                    "allergen_entries.{$index}.concentration_percent" => 'Allergen concentration must not be negative.',
+                    "allergen_entries.{$index}.concentration_percent" => __('ingredients.editor.validation.allergen_negative'),
                 ]);
             }
 
             if ($concentration > 100) {
                 throw ValidationException::withMessages([
-                    "allergen_entries.{$index}.concentration_percent" => 'Allergen concentration must not exceed 100%.',
+                    "allergen_entries.{$index}.concentration_percent" => __('ingredients.editor.validation.allergen_maximum'),
                 ]);
             }
         }
@@ -783,7 +779,7 @@ class UserIngredientAuthoringService
 
         if ($peroxideValue !== null && (float) $peroxideValue < 0) {
             throw ValidationException::withMessages([
-                'ifra.peroxide_value' => 'Peroxide value must not be negative.',
+                'ifra.peroxide_value' => __('ingredients.editor.validation.peroxide_negative'),
             ]);
         }
 
@@ -794,13 +790,13 @@ class UserIngredientAuthoringService
 
             if ($maxPercentage < 0) {
                 throw ValidationException::withMessages([
-                    "ifra.limits.{$index}.max_percentage" => 'Max concentration must not be negative.',
+                    "ifra.limits.{$index}.max_percentage" => __('ingredients.editor.validation.ifra_maximum_negative'),
                 ]);
             }
 
             if ($maxPercentage > 100) {
                 throw ValidationException::withMessages([
-                    "ifra.limits.{$index}.max_percentage" => 'Max concentration must not exceed 100%.',
+                    "ifra.limits.{$index}.max_percentage" => __('ingredients.editor.validation.ifra_maximum'),
                 ]);
             }
         }

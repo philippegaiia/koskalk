@@ -2,6 +2,7 @@
 
 namespace App\Services\IngredientEnrichment;
 
+use App\Data\IngredientEnrichmentSubject;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientIdentifierScheme;
 use App\Enums\IngredientLabelMarket;
@@ -16,6 +17,7 @@ class IngredientEnrichmentInputBuilder
 
     public function __construct(
         private readonly IngredientEnrichmentSnapshotBuilder $snapshotBuilder,
+        private readonly IngredientEnrichmentSubjectBuilder $subjectBuilder,
     ) {}
 
     /**
@@ -23,15 +25,32 @@ class IngredientEnrichmentInputBuilder
      */
     public function build(Ingredient $ingredient): array
     {
-        $snapshot = $this->snapshotBuilder->build($ingredient);
-        $category = $ingredient->category instanceof IngredientCategory ? $ingredient->category : null;
+        return $this->buildRecord($this->subjectBuilder->forIngredient($ingredient), includeSubjectIdentity: false);
+    }
 
-        return [
+    /**
+     * @return array<string, mixed>
+     */
+    public function buildForSubject(IngredientEnrichmentSubject $subject): array
+    {
+        return $this->buildRecord($subject, includeSubjectIdentity: true);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildRecord(IngredientEnrichmentSubject $subject, bool $includeSubjectIdentity): array
+    {
+        $snapshot = $subject->currentSnapshot;
+        $canonical = is_array($snapshot['canonical'] ?? null) ? $snapshot['canonical'] : [];
+        $category = IngredientCategory::tryFrom((string) ($canonical['category'] ?? ''));
+
+        $record = [
             'format' => config('ingredient-enrichment.input_format'),
             'schema_version' => config('ingredient-enrichment.schema_version'),
-            'catalog_key' => $ingredient->catalog_key,
-            'source_fingerprint' => $snapshot['fingerprint'],
-            'current' => $snapshot['snapshot'],
+            'catalog_key' => $subject->catalogKey,
+            'source_fingerprint' => $subject->fingerprint,
+            'current' => $snapshot,
             'vocabulary' => [
                 'category' => [
                     'selected' => $category?->value,
@@ -40,7 +59,7 @@ class IngredientEnrichmentInputBuilder
                 'subcategories' => collect(
                     $category instanceof IngredientCategory
                         ? IngredientSubcategory::forCategory($category)
-                        : [],
+                        : IngredientSubcategory::cases(),
                 )->map->value->all(),
                 'cosing_functions' => $this->activeCosingFunctions(),
                 'identifier_schemes' => collect(IngredientIdentifierScheme::cases())->map->value->all(),
@@ -54,8 +73,11 @@ class IngredientEnrichmentInputBuilder
                     'category',
                     'subcategory',
                     'saponification_name',
+                    'soap_inci_naoh_name',
+                    'soap_inci_koh_name',
                     'info_markdown',
                     'soapmaking_relevant',
+                    'aliases',
                     'identifiers',
                     'cosing_functions',
                     'translations',
@@ -78,8 +100,28 @@ class IngredientEnrichmentInputBuilder
                     'authorization',
                     'restrictions',
                 ],
+                'research_family' => $subject->researchFamily->value,
+                'duplicate_context' => $subject->duplicateContext,
+                'duplicate_resolution' => $subject->duplicateResolution?->value,
+                'allow_gap_research' => $subject->allowGapResearch,
             ],
         ];
+
+        if ($includeSubjectIdentity) {
+            $record = [
+                'format' => $record['format'],
+                'schema_version' => $record['schema_version'],
+                'subject_type' => $subject->subjectType,
+                'subject_public_id' => $subject->subjectPublicId,
+                'subject_identity' => [
+                    'current_name' => $subject->currentName,
+                    'inci_name' => $subject->inciName,
+                ],
+                ...collect($record)->except(['format', 'schema_version'])->all(),
+            ];
+        }
+
+        return $record;
     }
 
     /**

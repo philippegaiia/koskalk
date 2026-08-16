@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "unii": "I753WB2F1M",
+      "names": [
+        {"name": "TARTRAZINE", "display_name": true, "preferred": true, "name_orgs": [{"name_org": "FDA"}]},
+        {"name": "CI 19140", "display_name": false, "preferred": false, "name_orgs": [{"name_org": "INCI"}]}
+      ],
+      "codes": [
+        {"code": "1934-21-0", "code_system": "CAS"}
+      ]
+    }
+  ]
+}

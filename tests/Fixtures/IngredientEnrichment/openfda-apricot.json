@@ -1,0 +1,14 @@
+{
+  "results": [
+    {
+      "unii": "54JB35T06A",
+      "names": [
+        {"name": "APRICOT KERNEL OIL", "display_name": true, "preferred": true, "name_orgs": [{"name_org": "FDA"}]},
+        {"name": "PRUNUS ARMENIACA KERNEL OIL", "display_name": false, "preferred": false, "name_orgs": [{"name_org": "INCI"}]}
+      ],
+      "codes": [
+        {"code": "72869-69-3", "code_system": "CAS"}
+      ]
+    }
+  ]
+}

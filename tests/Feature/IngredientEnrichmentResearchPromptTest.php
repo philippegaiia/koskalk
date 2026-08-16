@@ -17,7 +17,7 @@ it('builds a precise versioned source restricted research protocol', function ()
     );
 
     expect($prompt)->toHaveKeys(['version', 'instructions', 'input'])
-        ->and($prompt['version'])->toBe('ingredient-enrichment-research-v1')
+        ->and($prompt['version'])->toBe('ingredient-enrichment-research-v2')
         ->and($prompt['instructions'])->toContain(
             '# Identity',
             '# Non-negotiable rules',
@@ -45,6 +45,8 @@ it('builds a precise versioned source restricted research protocol', function ()
             'Ambiguous essential oil example',
             'CI colourant example',
             'distinct US declaration',
+            'value_provenance',
+            'subject_public_id',
         )
         ->and($prompt['instructions'])->not->toContain($record['catalog_key'])
         ->and($prompt['input'])->toContain(
@@ -59,10 +61,10 @@ it('builds a precise versioned source restricted research protocol', function ()
 
 it('configures direct batches and an official web search domain allow list safely', function (): void {
     expect(config('ingredient-enrichment.direct_ai'))->toMatchArray([
-        'enabled' => false,
         'default_batch_size' => 10,
         'maximum_batch_size' => 25,
     ])
+        ->and(file_get_contents(base_path('.env.example')))->toContain('INGREDIENT_ENRICHMENT_AI_ENABLED=false')
         ->and(config('ingredient-enrichment.openai.model'))->toBe('gpt-5.6-terra')
         ->and(config('ingredient-enrichment.openai.allowed_domains'))->toBe([
             'ec.europa.eu',
@@ -77,4 +79,11 @@ it('configures direct batches and an official web search domain allow list safel
             'pubmed.ncbi.nlm.nih.gov',
             'cir-safety.org',
         ]);
+});
+
+it('allows every guidance research domain through the editorial evidence tier', function (): void {
+    $guidanceResearchDomains = config('ingredient-enrichment.openai.gap_research.allowed_domains');
+    $editorialEvidenceDomains = config('ingredient-enrichment.source_hosts_by_tier.editorial');
+
+    expect(array_diff($guidanceResearchDomains, $editorialEvidenceDomains))->toBe([]);
 });

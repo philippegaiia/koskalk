@@ -89,6 +89,8 @@ Use these sites for these purposes:
 - `proposal.category`: choose only from `vocabulary.category.allowed`. Keep `vocabulary.category.selected` unless the researched identity clearly contradicts it; describe any correction in `warnings`.
 - `proposal.subcategory`: choose only from `vocabulary.subcategories`. It must belong to the proposed category. Use null when the category has no allowed subcategory or the supplied choices do not fit.
 - `proposal.saponification_name`: use an established soapmaking name only when meaningful; otherwise null. It is editorial, not INCI.
+- `proposal.soap_inci_naoh_name` and `proposal.soap_inci_koh_name`: these are regulatory ingredient names, not editorial names. Return a value only when an exact sodium or potassium soap entry is explicitly tied to this base material by a deterministic source and independently verified in the official EU Common Ingredient Names Glossary. Never construct a salt name from the base oil name or from a naming pattern. Verify NaOH and KOH independently; use null for either unresolved value.
+- When deterministic evidence is missing for one of those salt names but the base identity is reliable, an AI proposal may be returned only as a visibly provisional value with `field_confidence=unresolved` or `supported` and a matching `value_provenance.kind=ai_proposed` row. If the base identity is missing or ambiguous, return null and mark the salt unresolved.
 
 ## Identifiers
 
@@ -97,6 +99,13 @@ Use these sites for these purposes:
 - Each row requires its own exact identity-record URL. Cross-check ECHA, CAS Common Chemistry, and PubChem. A shared number on two pages is corroboration; a disagreement is unresolved.
 - A mixture, botanical oil, essential oil, extract, or wax may legitimately have a material-level identifier different from its components. Never copy component identifiers into the material.
 - Mark at most one identifier per scheme as primary. Primary means the best exact material-level identifier, not the first search hit. Retain verified secondary CAS/EC rows as non-primary.
+
+## Synonyms
+
+- Return only exact alternative names explicitly listed by an authoritative identity source for the same material. Never invent, translate, or infer a synonym.
+- Exclude duplicates of the English display name, INCI name, and market declarations after case-insensitive normalization.
+- Use locale `und` unless the source explicitly establishes a language. Classify a name as common, botanical, spelling, or former only when the source supports that classification; otherwise use common.
+- Cite the exact identity record separately for every synonym row. Return at most five synonyms per locale.
 
 ## COSING functions
 
@@ -108,9 +117,10 @@ Use these sites for these purposes:
 
 - `proposal.info_markdown` must have exactly the headings required by `requested_output.guidance.required_headings`, in order.
 - Add exactly one `## Soapmaking` section after those headings only when `proposal.soapmaking_relevant` is true. Otherwise omit it and set the flag false.
-- Stay within the requested word range. Write an introductory summary of identity, physical/formulation role, and practical use supported by researched sources.
+- Stay within the requested word range. Write a useful summary of material identity, origin, physical form, formulation role, phase or dispersion, solubility, handling, stability, and compatibility where supported.
+- Do not begin every section or paragraph with the ingredient name. Explain COSING functions in practical terms and omit generic filler.
 - Do not give therapeutic claims, safety assurances, exact usage percentages, regulatory conclusions, detailed composition, or deferred specialist values.
-- Soapmaking guidance may explain the ingredient's broad contribution and how it is commonly incorporated. Do not invent SAP values, fatty-acid percentages, temperatures, or dosage.
+- Soapmaking guidance may explain the ingredient's broad contribution, how it is commonly incorporated, and one supported handling, trace, bar-character, or storage consideration. Do not invent SAP values, fatty-acid percentages, temperatures, or dosage.
 
 ## Translations
 
@@ -129,7 +139,7 @@ Use these sites for these purposes:
 
 ## Evidence, confidence, warnings, and unresolved questions
 
-- Add evidence for `proposal.inci_name`, every identifier row, every COSING function row, and every market-label row. Use the exact indexed field path, such as `proposal.identifiers.0`.
+- Add evidence for `proposal.inci_name`, every synonym row, every identifier row, every COSING function row, and every market-label row. Use the exact indexed field path, such as `proposal.aliases.0` or `proposal.identifiers.0`.
 - `source_url` must be the exact consulted HTTP(S) page. The application will reject a citation that is not in the web-search source list, even when its domain is allowed.
 - `checked_at` must exactly equal the date on `<ingredient_research_input checked_at="...">`; never substitute a page publication date.
 - `confidence=high` requires unambiguous exact primary records with no identity conflict. Use `medium` for a supported proposal with a stated limitation. Use `low` for unresolved identity or missing primary evidence.
@@ -155,6 +165,7 @@ Execute these steps in order for this ingredient:
 - Arrays must always be present. Use an empty array when no verified row applies.
 - Do not duplicate an identifier, function, locale, market, evidence row, warning, or unresolved question.
 - Evidence order follows proposal field order. Identifier order is stable by scheme then normalized value. Translation order follows `vocabulary.locales`. Market order follows `vocabulary.markets`.
+- Include `subject_type`, `subject_public_id`, and one `value_provenance` row for every material proposal field. Use `source_confirmed` only for an exact correlated deterministic source, `ai_proposed` for editorial or salt suggestions, `reviewer_supplied` only when the input explicitly supplies the value, and `unresolved` when no defensible value is available. Value provenance does not upgrade field confidence.
 - Before returning, ask: “Could every proposed factual identity value be defended from the cited exact pages without relying on a snippet or assumption?” If no, remove or null that value and record the gap.
 
 # Examples

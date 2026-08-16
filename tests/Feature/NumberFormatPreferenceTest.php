@@ -22,15 +22,17 @@ it('defines number formats separately from interface languages', function () {
             'de_DE',
             'it_IT',
             'nl_NL',
+            'pt_BR',
         ])
         ->and(NumberLocale::isSupported('en_GB'))->toBeTrue()
         ->and(NumberLocale::isSupported('nl_NL'))->toBeTrue()
+        ->and(NumberLocale::isSupported('pt_BR'))->toBeTrue()
         ->and(NumberLocale::formatDecimal(1234.56, 2, 'nl_NL'))->toBe('1234,56')
+        ->and(NumberLocale::formatDecimal(1234.56, 2, 'pt_BR'))->toBe('1234,56')
         ->and(NumberLocale::formatAdaptiveDecimal('29', 2, 4, 'en_US'))->toBe('29.00')
         ->and(NumberLocale::formatAdaptiveDecimal('10.43', 2, 4, 'en_US'))->toBe('10.43')
         ->and(NumberLocale::formatAdaptiveDecimal('0.0042', 2, 4, 'en_US'))->toBe('0.0042')
-        ->and(NumberLocale::normalizeDecimalString('1 234,56'))->toBe('1234.56')
-        ->and(NumberLocale::isSupported('pt_BR'))->toBeFalse();
+        ->and(NumberLocale::normalizeDecimalString('1 234,56'))->toBe('1234.56');
 });
 
 it('lets a registered user save a number format preference', function () {

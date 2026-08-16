@@ -3,6 +3,9 @@
 namespace App\Services;
 
 use App\Enums\IngredientFunctionSource;
+use App\Models\IfraCertificate;
+use App\Models\IfraCertificateLimit;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientComponent;
@@ -67,6 +70,12 @@ class IngredientDataEntryService
                 ->pluck('ingredient_functions.id')
                 ->map(fn (int|string $id): int => (int) $id)
                 ->all(),
+            'reviewed_function_ids' => $ingredient->functions()
+                ->orderBy('ingredient_functions.sort_order')
+                ->orderBy('ingredient_functions.name')
+                ->pluck('ingredient_functions.id')
+                ->map(fn (int|string $id): int => (int) $id)
+                ->all(),
             'verified_function_names' => $ingredient->functions()
                 ->wherePivotIn('source', [
                     IngredientFunctionSource::CosIng->value,
@@ -74,7 +83,8 @@ class IngredientDataEntryService
                 ])
                 ->orderBy('ingredient_functions.sort_order')
                 ->orderBy('ingredient_functions.name')
-                ->pluck('ingredient_functions.name')
+                ->get()
+                ->map(fn (IngredientFunction $function): string => $function->localizedName())
                 ->all(),
             'components' => $ingredient->components
                 ->map(fn (IngredientComponent $entry): array => [
@@ -94,6 +104,7 @@ class IngredientDataEntryService
                 ])
                 ->values()
                 ->all(),
+            'ifra' => $this->ifraForForm($ingredient),
         ];
     }
 
@@ -117,7 +128,9 @@ class IngredientDataEntryService
         $hasFattyAcidEntriesState = array_key_exists('fatty_acid_entries', $state);
         $hasAllergenEntriesState = array_key_exists('allergen_entries', $state);
         $hasFunctionIdsState = array_key_exists('function_ids', $state);
+        $hasReviewedFunctionIdsState = array_key_exists('reviewed_function_ids', $state);
         $hasComponentsState = array_key_exists('components', $state);
+        $hasIfraState = array_key_exists('ifra', $state);
         $currentVersionState = is_array($state['current_version'] ?? null) ? $state['current_version'] : [];
         $hasIdentityState = array_key_exists('cas_number', $state)
             || array_key_exists('ec_number', $state)
@@ -130,6 +143,7 @@ class IngredientDataEntryService
         $fattyAcidEntriesState = is_array($state['fatty_acid_entries'] ?? null) ? $state['fatty_acid_entries'] : [];
         $allergenEntriesState = is_array($state['allergen_entries'] ?? null) ? $state['allergen_entries'] : [];
         $functionIdsState = is_array($state['function_ids'] ?? null) ? $state['function_ids'] : [];
+        $reviewedFunctionIdsState = is_array($state['reviewed_function_ids'] ?? null) ? $state['reviewed_function_ids'] : [];
         $componentsState = is_array($state['components'] ?? null) ? $state['components'] : [];
 
         $ingredient->fill([
@@ -160,7 +174,9 @@ class IngredientDataEntryService
             $this->syncAllergenEntries($ingredient, $allergenEntriesState);
         }
 
-        if ($hasFunctionIdsState) {
+        if ($hasReviewedFunctionIdsState) {
+            $this->functionAssignments->syncReviewed($ingredient, $reviewedFunctionIdsState);
+        } elseif ($hasFunctionIdsState) {
             $this->syncFunctions($ingredient, $functionIdsState);
         }
 
@@ -169,18 +185,44 @@ class IngredientDataEntryService
         }
 
         if ($hasIdentityState) {
-            $this->ingredientIdentitySynchronizer->sync($ingredient, [
-                'cas_number' => $state['cas_number'] ?? ($currentVersionState['cas_number'] ?? null),
-                'ec_number' => $state['ec_number'] ?? ($currentVersionState['ec_number'] ?? null),
-                'additional_identifiers' => $state['additional_identifiers'] ?? [],
-                'aliases' => $state['aliases'] ?? [],
-            ]);
+            $identityState = $this->ingredientIdentitySynchronizer->formState($ingredient);
+            if (array_key_exists('cas_number', $state)) {
+                $identityState['cas_number'] = $state['cas_number'];
+            } elseif (array_key_exists('cas_number', $currentVersionState)) {
+                $identityState['cas_number'] = $currentVersionState['cas_number'];
+            }
+
+            if (array_key_exists('ec_number', $state)) {
+                $identityState['ec_number'] = $state['ec_number'];
+            } elseif (array_key_exists('ec_number', $currentVersionState)) {
+                $identityState['ec_number'] = $currentVersionState['ec_number'];
+            }
+
+            if (array_key_exists('additional_identifiers', $state)) {
+                $identityState['additional_identifiers'] = is_array($state['additional_identifiers'])
+                    ? $state['additional_identifiers']
+                    : [];
+            }
+
+            if (array_key_exists('aliases', $state)) {
+                $identityState['aliases'] = is_array($state['aliases']) ? $state['aliases'] : [];
+            }
+
+            $this->ingredientIdentitySynchronizer->sync(
+                $ingredient,
+                $identityState,
+                is_array($state['identifier_evidence'] ?? null) ? $state['identifier_evidence'] : [],
+            );
         }
 
         if ($hasSubstanceEntriesState) {
             $this->syncSubstanceEntries($ingredient, is_array($state['substance_entries'] ?? null)
                 ? $state['substance_entries']
                 : []);
+        }
+
+        if ($hasIfraState && $ingredient->requiresAromaticCompliance()) {
+            $this->syncIfra($ingredient, is_array($state['ifra'] ?? null) ? $state['ifra'] : []);
         }
 
         return $ingredient->fresh([
@@ -191,7 +233,103 @@ class IngredientDataEntryService
             'identifiers',
             'aliases',
             'substanceEntries.substance',
+            'ifraCertificates.limits.ifraProductCategory',
         ]);
+    }
+
+    /** @return array<string, mixed> */
+    private function ifraForForm(Ingredient $ingredient): array
+    {
+        $certificate = $ingredient->ifraCertificates()
+            ->with('limits')
+            ->where('is_current', true)
+            ->latest('id')
+            ->first();
+
+        return [
+            'reference_label' => $certificate?->certificate_name,
+            'ifra_amendment' => $certificate?->ifra_amendment,
+            'peroxide_value' => $certificate?->peroxide_value === null ? null : (float) $certificate->peroxide_value,
+            'source_notes' => $certificate?->source_notes,
+            'limits' => $certificate?->limits
+                ->sortBy('ifra_product_category_id')
+                ->map(fn (IfraCertificateLimit $limit): array => [
+                    'ifra_product_category_id' => $limit->ifra_product_category_id,
+                    'max_percentage' => $limit->max_percentage === null ? null : (float) $limit->max_percentage,
+                    'restriction_note' => $limit->restriction_note,
+                ])
+                ->values()
+                ->all() ?? [],
+        ];
+    }
+
+    /** @param array<string, mixed> $state */
+    private function syncIfra(Ingredient $ingredient, array $state): void
+    {
+        $peroxideValue = NumberLocale::parseDecimalInput($state['peroxide_value'] ?? null);
+        if ($peroxideValue !== null && $peroxideValue < 0) {
+            throw ValidationException::withMessages([
+                'ifra.peroxide_value' => __('ingredients.editor.validation.peroxide_negative'),
+            ]);
+        }
+
+        $limits = collect($state['limits'] ?? [])
+            ->filter(fn (mixed $row): bool => is_array($row) && filled($row['ifra_product_category_id'] ?? null))
+            ->map(fn (array $row): array => [
+                'ifra_product_category_id' => (int) $row['ifra_product_category_id'],
+                'max_percentage' => NumberLocale::parseDecimalInput($row['max_percentage'] ?? null),
+                'restriction_note' => filled($row['restriction_note'] ?? null)
+                    ? trim((string) $row['restriction_note'])
+                    : null,
+            ])
+            ->unique('ifra_product_category_id')
+            ->values();
+
+        foreach ($limits as $index => $limit) {
+            if ($limit['max_percentage'] === null || $limit['max_percentage'] < 0 || $limit['max_percentage'] > 100) {
+                throw ValidationException::withMessages([
+                    "ifra.limits.{$index}.max_percentage" => __('ingredients.editor.validation.ifra_maximum'),
+                ]);
+            }
+        }
+
+        $categoryIds = $limits->pluck('ifra_product_category_id')->all();
+        if (IfraProductCategory::query()->whereIn('id', $categoryIds)->count() !== count($categoryIds)) {
+            throw ValidationException::withMessages([
+                'ifra.limits' => __('ingredients.editor.compliance.ifra.invalid_category'),
+            ]);
+        }
+
+        $certificate = $ingredient->ifraCertificates()
+            ->where('is_current', true)
+            ->latest('id')
+            ->first();
+        $hasMeaningfulData = filled($state['reference_label'] ?? null)
+            || filled($state['ifra_amendment'] ?? null)
+            || $peroxideValue !== null
+            || filled($state['source_notes'] ?? null)
+            || $limits->isNotEmpty();
+
+        if (! $hasMeaningfulData) {
+            $certificate?->limits()->delete();
+            $certificate?->delete();
+
+            return;
+        }
+
+        $certificate ??= new IfraCertificate(['ingredient_id' => $ingredient->id, 'is_current' => true]);
+        $certificate->fill([
+            'certificate_name' => filled($state['reference_label'] ?? null)
+                ? trim((string) $state['reference_label'])
+                : __('ingredients.editor.compliance.ifra.default_reference', ['ingredient' => $ingredient->display_name]),
+            'ifra_amendment' => filled($state['ifra_amendment'] ?? null) ? trim((string) $state['ifra_amendment']) : null,
+            'peroxide_value' => $peroxideValue,
+            'source_notes' => filled($state['source_notes'] ?? null) ? trim((string) $state['source_notes']) : null,
+            'is_current' => true,
+        ]);
+        $certificate->save();
+        $certificate->limits()->delete();
+        $limits->each(fn (array $limit): IfraCertificateLimit => $certificate->limits()->create($limit));
     }
 
     /**
@@ -442,7 +580,7 @@ class IngredientDataEntryService
 
         if ($hasUnsupportedManualComponent) {
             throw ValidationException::withMessages([
-                'components' => 'Composite components must reference existing catalog ingredients.',
+                'components' => __('ingredients.editor.validation.component_reference_required'),
             ]);
         }
 
@@ -478,13 +616,13 @@ class IngredientDataEntryService
 
         if ($components->count() > 20) {
             throw ValidationException::withMessages([
-                'components' => 'A blend can contain at most 20 components.',
+                'components' => __('ingredients.editor.validation.component_limit'),
             ]);
         }
 
         if ($components->pluck('component_ingredient_id')->duplicates()->isNotEmpty()) {
             throw ValidationException::withMessages([
-                'components' => 'Each blend component may only be selected once.',
+                'components' => __('ingredients.editor.validation.component_duplicate'),
             ]);
         }
 
@@ -492,7 +630,7 @@ class IngredientDataEntryService
             || $row['percentage_in_parent'] < 0
             || $row['percentage_in_parent'] > 100)) {
             throw ValidationException::withMessages([
-                'components' => 'Each component share must be a number between 0% and 100%.',
+                'components' => __('ingredients.editor.validation.component_share'),
             ]);
         }
 
@@ -500,7 +638,7 @@ class IngredientDataEntryService
 
         if (abs($totalPercentage - 100.0) > 0.01) {
             throw ValidationException::withMessages([
-                'components' => 'Composite ingredient percentages must total 100%.',
+                'components' => __('ingredients.editor.validation.composition_total'),
             ]);
         }
 
@@ -512,14 +650,14 @@ class IngredientDataEntryService
 
         if (in_array($ingredient->id, $componentIngredientIds, true)) {
             throw ValidationException::withMessages([
-                'components' => 'An ingredient cannot include itself as a component.',
+                'components' => __('ingredients.editor.validation.composition_self'),
             ]);
         }
 
         foreach ($componentIngredientIds as $componentIngredientId) {
             if ($this->ingredientDependsOn($componentIngredientId, $ingredient->id)) {
                 throw ValidationException::withMessages([
-                    'components' => 'This component would create a circular ingredient composition.',
+                    'components' => __('ingredients.editor.validation.composition_cycle'),
                 ]);
             }
         }

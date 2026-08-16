@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientFunctionSource;
 use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
@@ -34,6 +35,7 @@ use App\Models\IfraCertificateLimit;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
+use App\Models\IngredientFunction;
 use App\Models\IngredientSapProfile;
 use App\Models\IngredientSubstanceEntry;
 use App\Models\IngredientTranslation;
@@ -54,6 +56,9 @@ use Database\Seeders\PlanSeeder;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\Testing\TestAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -183,6 +188,152 @@ it('keeps ingredient create and edit form actions sticky', function (): void {
         ->toBeTrue()
         ->and(Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])->instance()->areFormActionsSticky())
         ->toBeTrue();
+});
+
+it('organizes specialist ingredient data into distinct Filament tabs', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->assertSeeText('Allergens')
+        ->assertSeeText('Restricted substances')
+        ->assertSeeText('IFRA');
+
+    $lipid = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+
+    Livewire::test(EditIngredient::class, ['record' => $lipid->public_id])
+        ->assertSeeText('Soap chemistry')
+        ->assertSeeText('Fatty acid profile');
+});
+
+it('organizes the complete ingredient editor into persistent top-level tabs with responsive field groups', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'subcategory' => IngredientSubcategory::VegetableOils,
+        'is_soap_saponification_trusted' => true,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $this->actingAs($admin);
+
+    $form = Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->instance()
+        ->form;
+    $category = $form->getComponent('category');
+    $displayName = $form->getComponent('current_version.display_name');
+    $euDeclaration = $form->getComponent('market_labels.eu.declaration_name', withHidden: true);
+    $euOverrideToggle = $form->getComponent('market_labels.eu.use_override');
+    $guidance = $form->getComponent('info_markdown');
+    $saponificationName = $form->getComponent('current_version.saponification_name');
+    $allergens = $form->getComponent('allergen_entries');
+    $substances = $form->getComponent('substance_entries');
+    $ifraLimits = $form->getComponent('ifra.limits');
+    $components = $form->getComponent('components');
+    $additionalIdentifiers = $form->getComponent('additional_identifiers');
+    $aliases = $form->getComponent('aliases');
+    $translations = $form->getComponent('translations');
+    $fattyAcids = $form->getComponent('fatty_acid_entries');
+    $classificationSection = $category->getContainer()->getParentComponent();
+    $generalTab = $classificationSection->getContainer()->getParentComponent();
+
+    expect($generalTab)->toBeInstanceOf(Tab::class);
+
+    /** @var Tab $generalTab */
+    $editorTabs = $generalTab->getContainer()->getParentComponent();
+    $tabLabels = collect($editorTabs->getChildSchema()->getComponents())
+        ->map(fn (Tab $tab): string => (string) $tab->getLabel())
+        ->values()
+        ->all();
+    $saponificationSection = $saponificationName->getContainer()->getParentComponent();
+
+    expect($editorTabs)
+        ->toBeInstanceOf(Tabs::class)
+        ->and($editorTabs->getId())->toBe('ingredient-editor-tabs')
+        ->and($editorTabs->getTabQueryStringKey())->toBe('ingredient-tab')
+        ->and($editorTabs->getColumnSpan('default'))->toBe('full')
+        ->and($tabLabels)->toBe([
+            'General',
+            'Market declarations',
+            'Guidance & media',
+            'Translations',
+            'Soap chemistry',
+            'Allergens',
+            'Restricted substances',
+            'IFRA',
+            'Components',
+        ])
+        ->and($classificationSection)->toBe($displayName->getContainer()->getParentComponent())
+        ->and($classificationSection->getColumns('default'))->toBe(1)
+        ->and($classificationSection->getColumns('lg'))->toBe(2)
+        ->and($euOverrideToggle)->not->toBeNull()
+        ->and($euDeclaration->isVisible())->toBeFalse()
+        ->and($generalTab)->not->toBe($euDeclaration->getContainer()->getParentComponent())
+        ->and($generalTab)->not->toBe($guidance->getContainer()->getParentComponent())
+        ->and($generalTab)->not->toBe($translations->getContainer()->getParentComponent())
+        ->and($saponificationSection->getColumns('default'))->toBe(1)
+        ->and($saponificationSection->getColumns('xl'))->toBe(3)
+        ->and($generalTab)->not->toBe($saponificationSection->getContainer()->getParentComponent())
+        ->and($generalTab)->not->toBe($allergens->getContainer()->getParentComponent())
+        ->and($generalTab)->not->toBe($substances->getContainer()->getParentComponent())
+        ->and($generalTab)->not->toBe($ifraLimits->getContainer()->getParentComponent())
+        ->and($generalTab)->not->toBe($components->getContainer()->getParentComponent())
+        ->and($additionalIdentifiers->isCollapsed())->toBeTrue()
+        ->and($aliases->isCollapsed())->toBeTrue()
+        ->and($translations->isCollapsed())->toBeTrue()
+        ->and($fattyAcids->isCollapsed())->toBeTrue();
+});
+
+it('saves current IFRA guidance from the ingredient specialist tab', function (): void {
+    $admin = User::factory()->admin()->create();
+    $category = IfraProductCategory::factory()->create([
+        'code' => '5A',
+        'name' => 'Body lotion',
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'subcategory' => IngredientSubcategory::EssentialOils,
+        'requires_aromatic_compliance' => true,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
+        ->set('data.ifra.reference_label', 'Supplier IFRA certificate')
+        ->set('data.ifra.ifra_amendment', '51')
+        ->set('data.ifra.peroxide_value', '2.5')
+        ->set('data.ifra.source_notes', 'Reviewed supplier certificate.')
+        ->set('data.ifra.limits', [[
+            'ifra_product_category_id' => $category->id,
+            'max_percentage' => '4.2',
+            'restriction_note' => 'Finished product maximum.',
+        ]])
+        ->call('save')
+        ->assertHasNoFormErrors()
+        ->assertNotified();
+
+    $certificate = $ingredient->ifraCertificates()
+        ->with('limits')
+        ->where('is_current', true)
+        ->firstOrFail();
+
+    expect($certificate->certificate_name)->toBe('Supplier IFRA certificate')
+        ->and($certificate->ifra_amendment)->toBe('51')
+        ->and((float) $certificate->peroxide_value)->toBe(2.5)
+        ->and($certificate->limits)->toHaveCount(1)
+        ->and((float) $certificate->limits->first()->max_percentage)->toBe(4.2)
+        ->and($certificate->limits->first()->restriction_note)->toBe('Finished product maximum.');
 });
 
 it('generates an ingredient classification prompt from unsaved admin edit state', function (): void {
@@ -353,15 +504,46 @@ it('renders the catalog list resources in the admin panel', function () {
 
     $this->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
         ->assertSuccessful()
-        ->assertSee('Soap Chemistry')
+        ->assertSee('Soap chemistry')
         ->assertSee('Fatty acid profile')
         ->assertSee('Ingredient guidance')
-        ->assertSee('Verified COSING functions')
-        ->assertSee('Additional functions');
+        ->assertSee('COSING functions')
+        ->assertSee('Verified COSING functions retain their source');
 
     $this->get(IngredientSapProfileResource::getUrl(panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Olive Oil');
+});
+
+it('renders all assigned ingredient functions in one editable Filament multi select', function (): void {
+    $admin = User::factory()->admin()->create();
+    $ingredient = Ingredient::factory()->create([
+        'display_name' => 'Zea mays starch',
+    ]);
+    $functions = collect(['abrasive' => 'Abrasive', 'absorbent' => 'Absorbent'])
+        ->map(fn (string $name, string $key): IngredientFunction => IngredientFunction::factory()->create([
+            'key' => $key,
+            'name' => $name,
+        ]));
+    $ingredient->functions()->attach($functions->pluck('id'), [
+        'source' => IngredientFunctionSource::CosIng->value,
+    ]);
+    $this->actingAs($admin);
+
+    $livewire = Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id]);
+    $component = $livewire->instance()->form->getComponent('reviewed_function_ids');
+
+    expect($component)->toBeInstanceOf(Select::class)
+        ->and($component->isMultiple())->toBeTrue()
+        ->and($component->getState())->toEqualCanonicalizing($functions->pluck('id')->all());
+
+    $livewire
+        ->set('data.reviewed_function_ids', [$functions->first()->id])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($ingredient->fresh()->functions()->pluck('ingredient_functions.id')->all())
+        ->toBe([$functions->first()->id]);
 });
 
 it('lists user ingredients anonymously in a separate read only admin resource', function () {
@@ -460,7 +642,7 @@ it('renders registered platform ingredient translation locales in Filament', fun
     $this->actingAs($admin)
         ->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
         ->assertSuccessful()
-        ->assertSeeText('Translate the public ingredient name and guidance.')
+        ->assertSeeText('Translate the public ingredient name, saponification name, and guidance.')
         ->assertSeeText('French')
         ->assertSeeText('German')
         ->assertSeeText('Olive Oil')
@@ -726,12 +908,11 @@ it('renders the catalog create forms in the admin panel', function () {
     $this->get(IngredientResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Ingredient category')
-        ->assertSee('Material Identity')
-        ->assertSee('Guidance &amp; Media', false)
+        ->assertSee('Identity')
+        ->assertSee('Guidance &amp; media', false)
         ->assertSee('Ingredient guidance')
         ->assertSee('Ingredient image')
-        ->assertSee('Verified COSING functions')
-        ->assertSee('Additional functions')
+        ->assertSee('COSING functions')
         ->assertSee('Composite Components')
         ->assertDontSee('Internal Metadata');
 
@@ -1106,10 +1287,9 @@ it('renders the compliance resources in the admin panel', function () {
     $this->get(IngredientResource::getUrl('edit', ['record' => $ingredient], panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Lavender Essential Oil')
-        ->assertSee('Material Identity')
-        ->assertSee('Aromatic Compliance')
-        ->assertSee('LINALOOL')
-        ->assertSee('Guidance &amp; Media', false)
+        ->assertSee('Identity')
+        ->assertSee('Allergens')
+        ->assertSee('Guidance &amp; media', false)
         ->assertSee('Composite Components');
 });
 

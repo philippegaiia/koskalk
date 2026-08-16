@@ -21,7 +21,10 @@ class ResearchIngredientEnrichment implements ShouldBeUnique, ShouldQueue
 
     public bool $failOnTimeout = true;
 
-    public function __construct(public readonly int $itemId) {}
+    public function __construct(
+        public readonly int $itemId,
+        public readonly bool $allowGapResearch = false,
+    ) {}
 
     public function handle(ResearchIngredientEnrichmentItem $processor): void
     {
@@ -29,7 +32,7 @@ class ResearchIngredientEnrichment implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $processor->handle($this->itemId);
+        $processor->handle($this->itemId, $this->allowGapResearch);
     }
 
     public function failed(?Throwable $exception): void

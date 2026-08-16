@@ -3,11 +3,13 @@
 use App\Enums\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientFunction;
 use App\Models\IngredientSapProfile;
 use App\Models\Substance;
+use App\Models\SupportedLocale;
 use App\Services\IngredientDataEntryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -114,6 +116,42 @@ it('syncs current aromatic allergen data from the ingredient entry service', fun
         ->and($savedIngredient->allergenEntries->pluck('allergen_id')->all())->toEqualCanonicalizing([$linalool->id, $limonene->id]);
 });
 
+it('round trips current IFRA guidance and category limits from the ingredient entry service', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
+    ]);
+    $category = IfraProductCategory::factory()->create();
+
+    $savedIngredient = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => 'Lavender essential oil'],
+        'ifra' => [
+            'reference_label' => 'Supplier IFRA certificate',
+            'ifra_amendment' => '51',
+            'peroxide_value' => '2.5',
+            'source_notes' => 'Supplier document dated 2026-08-01.',
+            'limits' => [[
+                'ifra_product_category_id' => $category->id,
+                'max_percentage' => '4.2',
+                'restriction_note' => 'Finished product maximum.',
+            ]],
+        ],
+    ]);
+
+    $state = app(IngredientDataEntryService::class)->formData($savedIngredient);
+    $certificate = $savedIngredient->ifraCertificates()->with('limits')->where('is_current', true)->first();
+
+    expect($certificate)->not->toBeNull()
+        ->and($certificate?->certificate_name)->toBe('Supplier IFRA certificate')
+        ->and($certificate?->ifra_amendment)->toBe('51')
+        ->and((float) $certificate?->peroxide_value)->toBe(2.5)
+        ->and($certificate?->limits)->toHaveCount(1)
+        ->and((float) $certificate?->limits->first()->max_percentage)->toBe(4.2)
+        ->and($certificate?->limits->first()->restriction_note)->toBe('Finished product maximum.')
+        ->and(data_get($state, 'ifra.reference_label'))->toBe('Supplier IFRA certificate')
+        ->and(data_get($state, 'ifra.limits.0.ifra_product_category_id'))->toBe($category->id);
+});
+
 it('syncs ingredient functions from the ingredient entry service', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Other,
@@ -185,6 +223,46 @@ it('round-trips identifiers aliases and simple substance composition', function 
         ->and($state['aliases'][0]['name'])->toBe('Sodium 4-oxovalerate')
         ->and($state['substance_entries'][0]['substance_id'])->toBe($substance->id)
         ->and((float) $state['substance_entries'][0]['concentration_percent'])->toBe(0.8);
+});
+
+it('preserves omitted identity collections while allowing explicit collection clearing', function (): void {
+    SupportedLocale::factory()->create(['code' => 'fr']);
+    $ingredient = Ingredient::factory()->create();
+    $ingredient->identifiers()->createMany([
+        ['scheme' => 'cas', 'value' => '19856-23-6', 'normalized_value' => '19856-23-6', 'is_primary' => true],
+        ['scheme' => 'unii', 'value' => 'VK3H1Z8Z6V', 'normalized_value' => 'VK3H1Z8Z6V', 'is_primary' => true],
+    ]);
+    $ingredient->aliases()->create([
+        'locale' => 'fr',
+        'name' => 'Lévulinate de sodium',
+        'normalized_name' => 'lévulinate de sodium',
+        'kind' => 'common',
+    ]);
+
+    $service = app(IngredientDataEntryService::class);
+    $service->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => 'Sodium levulinate'],
+        'aliases' => [],
+    ]);
+
+    expect($ingredient->fresh()->identifiers)->toHaveCount(2)
+        ->and($ingredient->fresh()->aliases)->toBeEmpty();
+
+    $service->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => 'Sodium levulinate'],
+        'cas_number' => '19856-23-6',
+    ]);
+
+    expect($ingredient->fresh()->identifiers)->toHaveCount(2)
+        ->and($ingredient->fresh()->aliases)->toBeEmpty();
+
+    $service->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => 'Sodium levulinate'],
+        'additional_identifiers' => [],
+    ]);
+
+    expect($ingredient->fresh()->identifiers)->toHaveCount(1)
+        ->and($ingredient->fresh()->aliases)->toBeEmpty();
 });
 
 it('preserves CosIng function provenance when a workspace edits its function selection', function () {
@@ -414,7 +492,7 @@ it('rejects composite components that do not reference catalog ingredients', fun
                 'source_notes' => 'Should fail.',
             ],
         ],
-    ]))->toThrow(ValidationException::class, 'Composite components must reference existing catalog ingredients.');
+    ]))->toThrow(ValidationException::class, 'Each blend row must use an ingredient from your catalogue.');
 });
 
 it('preserves specialist data when an ingredient is reclassified', function () {

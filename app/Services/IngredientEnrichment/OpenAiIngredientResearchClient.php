@@ -38,7 +38,7 @@ class OpenAiIngredientResearchClient implements IngredientResearchClient
                     return $exception instanceof ConnectionException
                         || ($exception instanceof RequestException
                             && ($exception->response->status() === 429 || $exception->response->serverError()));
-                })
+                }, throw: false)
                 ->post($url, [
                     'model' => config('ingredient-enrichment.openai.model'),
                     'reasoning' => ['effort' => config('ingredient-enrichment.openai.reasoning_effort')],
@@ -66,7 +66,20 @@ class OpenAiIngredientResearchClient implements IngredientResearchClient
         }
 
         if ($response->failed()) {
-            throw new RuntimeException(__('ingredient_enrichment_admin.validation.provider_failed'));
+            $providerCode = data_get($response->json(), 'error.code')
+                ?? data_get($response->json(), 'error.type')
+                ?? 'unknown_error';
+            $providerCode = substr(preg_replace('/[^a-zA-Z0-9._-]/', '', (string) $providerCode) ?: 'unknown_error', 0, 60);
+            $requestId = substr(preg_replace('/[^a-zA-Z0-9._-]/', '', (string) $response->header('x-request-id')) ?: 'unavailable', 0, 100);
+
+            throw new IngredientResearchProviderException(
+                failureCode: "provider_http_{$response->status()}_{$providerCode}",
+                safeMessage: __('ingredient_enrichment_admin.validation.provider_failed_with_details', [
+                    'status' => $response->status(),
+                    'code' => $providerCode,
+                    'request_id' => $requestId,
+                ]),
+            );
         }
 
         $payload = $response->json();

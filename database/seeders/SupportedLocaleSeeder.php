@@ -73,6 +73,16 @@ class SupportedLocaleSeeder extends Seeder
                 'is_default' => false,
                 'sort_order' => 60,
             ],
+            [
+                'code' => 'pt_BR',
+                'name' => 'Portuguese (Brazil)',
+                'native_name' => 'Português (Brasil)',
+                'number_locale' => 'pt_BR',
+                'text_direction' => 'ltr',
+                'is_active' => false,
+                'is_default' => false,
+                'sort_order' => 70,
+            ],
         ], ['code'], [
             'name',
             'native_name',

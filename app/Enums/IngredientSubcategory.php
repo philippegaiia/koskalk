@@ -94,12 +94,22 @@ enum IngredientSubcategory: string implements HasLabel
 
     public function getLabel(): string|Htmlable|null
     {
-        return __(sprintf('ingredients.subcategories.%s.label', $this->value));
+        return $this->localizedLabel();
+    }
+
+    public function localizedLabel(?string $locale = null): string|Htmlable|null
+    {
+        return __(sprintf('ingredients.subcategories.%s.label', $this->value), [], $locale);
     }
 
     public function getDescription(): string|Htmlable|null
     {
-        return __(sprintf('ingredients.subcategories.%s.description', $this->value));
+        return $this->localizedDescription();
+    }
+
+    public function localizedDescription(?string $locale = null): string|Htmlable|null
+    {
+        return __(sprintf('ingredients.subcategories.%s.description', $this->value), [], $locale);
     }
 
     public function category(): IngredientCategory

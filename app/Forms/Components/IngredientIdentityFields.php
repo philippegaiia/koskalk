@@ -49,9 +49,11 @@ final class IngredientIdentityFields
                         ->label(__('ingredients.editor.identity.primary'))
                         ->helperText(__('ingredients.editor.identity.primary_helper')),
                 ])
-                ->columns([
-                    'md' => 3,
-                ])
+                ->columns(1)
+                ->collapsed()
+                ->itemLabel(fn (array $state): ?string => filled($state['value'] ?? null)
+                    ? sprintf('%s: %s', (string) ($state['scheme'] ?? __('ingredients.editor.identity.additional_identifiers')), $state['value'])
+                    : null)
                 ->defaultItems(0)
                 ->reorderable(false)
                 ->maxItems(10)
@@ -77,9 +79,11 @@ final class IngredientIdentityFields
                         ->maxLength(150)
                         ->required(),
                 ])
-                ->columns([
-                    'md' => 3,
-                ])
+                ->columns(1)
+                ->collapsed()
+                ->itemLabel(fn (array $state): ?string => filled($state['name'] ?? null)
+                    ? (string) $state['name']
+                    : null)
                 ->defaultItems(0)
                 ->reorderable(false)
                 ->maxItems($platform ? 25 : 5)

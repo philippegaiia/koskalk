@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\CurrentMaterialPriceService;
+use App\Services\IngredientAliasLocaleService;
 use App\Services\IngredientCatalogSearchService;
 use App\Services\UserIngredientAuthoringService;
 use Illuminate\Contracts\View\View;
@@ -76,8 +77,11 @@ class IngredientController extends Controller
         return response()->json(['ok' => true]);
     }
 
-    public function searchPlatform(Request $request, IngredientCatalogSearchService $catalogSearch): JsonResponse
-    {
+    public function searchPlatform(
+        Request $request,
+        IngredientCatalogSearchService $catalogSearch,
+        IngredientAliasLocaleService $ingredientAliasLocaleService,
+    ): JsonResponse {
         $query = (string) $request->query('q', '');
         $translationLocales = Ingredient::translationLocaleCandidates();
 
@@ -86,8 +90,7 @@ class IngredientController extends Controller
                 'translations' => fn ($translationQuery) => $translationQuery
                     ->whereIn('locale', $translationLocales),
                 'identifiers',
-                'aliases' => fn ($aliasQuery) => $aliasQuery
-                    ->whereIn('locale', array_values(array_unique([...$translationLocales, 'und', 'en']))),
+                'aliases',
             ])
             ->whereNull('owner_type')
             ->where('is_active', true)
@@ -103,7 +106,10 @@ class IngredientController extends Controller
                     'scheme' => $identifier->scheme->value,
                     'value' => $identifier->value,
                 ])->all(),
-                'aliases' => $ingredient->aliases->pluck('name')->all(),
+                'aliases' => $ingredientAliasLocaleService
+                    ->eligibleAliases($ingredient->aliases, $translationLocales)
+                    ->pluck('name')
+                    ->all(),
             ])
             ->sortBy('name')
             ->values();

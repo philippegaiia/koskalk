@@ -59,6 +59,13 @@ export function serializeDraft(state) {
         ready_delay_days: state.readyDelayDays === '' || state.readyDelayDays === null || state.readyDelayDays === undefined
             ? null
             : Number(state.readyDelayDays),
+        product_reference: state.productReference?.trim() || null,
+        nominal_content_value: state.nominalContentValue === '' || state.nominalContentValue === null || state.nominalContentValue === undefined
+            ? null
+            : number(state.nominalContentValue),
+        nominal_content_unit: state.nominalContentValue === '' || state.nominalContentValue === null || state.nominalContentValue === undefined
+            ? null
+            : state.nominalContentUnit || null,
     };
 }
 

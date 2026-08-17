@@ -186,6 +186,7 @@ class RecipeWorkbenchService
         }
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validateOutputConfiguration($user, $normalizedPayload);
+        $this->validateProductReference($user, $normalizedPayload, $recipe);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
         $createdRecipe = null;
@@ -244,6 +245,7 @@ class RecipeWorkbenchService
         }
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validateOutputConfiguration($user, $normalizedPayload);
+        $this->validateProductReference($user, $normalizedPayload, $recipe);
         $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
 
         $createdRecipe = null;
@@ -294,6 +296,7 @@ class RecipeWorkbenchService
     ): RecipeVersion {
         $copyPayload = $payload;
         $copyPayload['name'] = $this->duplicateName((string) ($payload['name'] ?? 'Soap Formula'));
+        $copyPayload['product_reference'] = null;
 
         return $this->save(
             $user,
@@ -517,6 +520,31 @@ class RecipeWorkbenchService
                 'output_ingredient_id' => $outputIngredientId === null
                     ? __('production_bench.production.validation.output_ingredient_required')
                     : __('production_bench.production.validation.output_ingredient_invalid'),
+            ]);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function validateProductReference(User $user, array $payload, ?Recipe $recipe): void
+    {
+        $productReference = $payload['product_reference'] ?? null;
+        $workspace = $user->company();
+
+        if (! is_string($productReference) || $productReference === '' || ! $workspace instanceof Workspace) {
+            return;
+        }
+
+        $referenceIsUsed = Recipe::withoutGlobalScopes()
+            ->where('workspace_id', $workspace->id)
+            ->where('product_reference', $productReference)
+            ->when($recipe instanceof Recipe, fn ($query) => $query->whereKeyNot($recipe->id))
+            ->exists();
+
+        if ($referenceIsUsed) {
+            throw ValidationException::withMessages([
+                'product_reference' => __('workbench.settings.product_reference_unique'),
             ]);
         }
     }

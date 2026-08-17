@@ -922,9 +922,12 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
 });
 
 it('shows cured soap output beside restrictions and gives cosmetics one descending ingredient table', function () {
-    $outputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab')->render();
+    $outputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
+        'isPublicCalculator' => true,
+    ])->render();
     $cosmeticOutputTab = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
         'isCosmeticWorkbench' => true,
+        'isPublicCalculator' => true,
     ])->render();
     $presentationSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
 

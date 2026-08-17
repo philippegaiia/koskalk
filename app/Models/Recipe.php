@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Casts\OriginalFilename;
 use App\Enums\MediaAssetUsageRole;
+use App\Enums\NominalContentUnit;
 use App\Enums\OwnerType;
 use App\Enums\ProductionOutputType;
 use App\Enums\Visibility;
@@ -32,6 +33,9 @@ use Illuminate\Support\Collection;
     'production_output_type',
     'output_ingredient_id',
     'ready_delay_days',
+    'product_reference',
+    'nominal_content_value',
+    'nominal_content_unit',
     'owner_type',
     'owner_id',
     'workspace_id',
@@ -320,6 +324,8 @@ class Recipe extends Model implements HasRichContent
         return [
             'production_output_type' => ProductionOutputType::class,
             'ready_delay_days' => 'integer',
+            'nominal_content_value' => 'decimal:4',
+            'nominal_content_unit' => NominalContentUnit::class,
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
             'archived_at' => 'datetime',

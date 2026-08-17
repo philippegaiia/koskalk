@@ -29208,6 +29208,18 @@
     },
     {
       "group": "workbench",
+      "key": "settings.duplicate_for_another_size",
+      "text": {
+        "de": "Für eine andere Größe duplizieren",
+        "es": "Duplicar para otro tamaño",
+        "fr": "Dupliquer pour un autre format",
+        "it": "Duplica per un altro formato",
+        "nl": "Dupliceren voor een ander formaat",
+        "pt_BR": "Duplicar para outro tamanho"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.edit",
       "text": {
         "de": "Einstellungen bearbeiten",
@@ -29240,6 +29252,18 @@
         "it": "Prodotto finito",
         "nl": "Eindproduct",
         "pt_BR": "Produto acabado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.finished_product_help",
+      "text": {
+        "de": "Die Ausgabe ist dieses Produkt. Eine Produktionscharge stellt dieses Produkt her; es gibt keine separate Produktauswahl.",
+        "es": "La salida es este producto. Un lote de producción fabrica este producto; no hay un selector de producto independiente.",
+        "fr": "La sortie est ce produit. Un lot de production fabrique ce produit ; il n’y a pas de sélecteur de produit séparé.",
+        "it": "L'output è questo prodotto. Un lotto di produzione realizza questo prodotto; non esiste un selettore di prodotto separato.",
+        "nl": "De uitvoer is dit product. Eén productiepartij maakt dit product; er is geen aparte productkeuze.",
+        "pt_BR": "A saída é este produto. Um lote de produção fabrica este produto; não há um seletor de produto separado."
       }
     },
     {
@@ -29360,6 +29384,126 @@
         "it": "Nessuna categoria IFRA selezionata",
         "nl": "Geen IFRA-categorie geselecteerd",
         "pt_BR": "Nenhuma categoria IFRA selecionada"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.nominal_content",
+      "text": {
+        "de": "Nenninhalt",
+        "es": "Contenido nominal",
+        "fr": "Contenu nominal",
+        "it": "Contenuto nominale",
+        "nl": "Nominale inhoud",
+        "pt_BR": "Conteúdo nominal"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.nominal_content_help",
+      "text": {
+        "de": "Optionales Gewicht oder Volumen der fertigen Einheit, zum Beispiel 100 g oder 50 ml.",
+        "es": "Peso o volumen opcional de la unidad terminada, por ejemplo 100 g o 50 ml.",
+        "fr": "Poids ou volume facultatif de l’unité finie, par exemple 100 g ou 50 ml.",
+        "it": "Peso o volume facoltativo dell'unità finita, ad esempio 100 g o 50 ml.",
+        "nl": "Optioneel gewicht of volume van de afgewerkte eenheid, bijvoorbeeld 100 g of 50 ml.",
+        "pt_BR": "Peso ou volume opcional da unidade acabada, por exemplo 100 g ou 50 ml."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.nominal_content_pair_required",
+      "text": {
+        "de": "Geben Sie sowohl den Nenninhalt als auch die Einheit ein oder lassen Sie beides leer.",
+        "es": "Introduce el contenido nominal y su unidad, o deja ambos campos vacíos.",
+        "fr": "Saisissez le contenu nominal et son unité, ou laissez les deux champs vides.",
+        "it": "Inserisci sia il contenuto nominale sia la sua unità, oppure lascia entrambi vuoti.",
+        "nl": "Vul zowel de nominale inhoud als de eenheid in, of laat beide leeg.",
+        "pt_BR": "Informe o conteúdo nominal e a unidade, ou deixe ambos em branco."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.nominal_content_unit",
+      "text": {
+        "de": "Einheit des Nenninhalts",
+        "es": "Unidad del contenido nominal",
+        "fr": "Unité du contenu nominal",
+        "it": "Unità del contenuto nominale",
+        "nl": "Eenheid van nominale inhoud",
+        "pt_BR": "Unidade do conteúdo nominal"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.nominal_content_value",
+      "text": {
+        "de": "Wert des Nenninhalts",
+        "es": "Valor del contenido nominal",
+        "fr": "Valeur du contenu nominal",
+        "it": "Valore del contenuto nominale",
+        "nl": "Waarde van nominale inhoud",
+        "pt_BR": "Valor do conteúdo nominal"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.one_batch_one_product_help",
+      "text": {
+        "de": "Eine Charge erzeugt ein Produkt. Für eine andere Größe duplizieren Sie dieses Produkt und ändern dann Name, Nenninhalt und Verpackung.",
+        "es": "Un lote produce un producto. Para otro tamaño, duplica este producto y cambia su nombre, contenido nominal y envase.",
+        "fr": "Un lot produit un produit. Pour un autre format, dupliquez ce produit puis modifiez son nom, son contenu nominal et son conditionnement.",
+        "it": "Un lotto produce un prodotto. Per un altro formato, duplica questo prodotto e modifica nome, contenuto nominale e confezionamento.",
+        "nl": "Eén partij produceert één product. Dupliceer dit product voor een ander formaat en wijzig daarna naam, nominale inhoud en verpakking.",
+        "pt_BR": "Um lote produz um produto. Para outro tamanho, duplique este produto e altere o nome, o conteúdo nominal e a embalagem."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_reference",
+      "text": {
+        "de": "Produktreferenz",
+        "es": "Referencia del producto",
+        "fr": "Référence produit",
+        "it": "Riferimento prodotto",
+        "nl": "Productreferentie",
+        "pt_BR": "Referência do produto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_reference_help",
+      "text": {
+        "de": "Optional. Referenzen sind innerhalb Ihres Arbeitsbereichs eindeutig.",
+        "es": "Opcional. Las referencias son únicas en tu espacio de trabajo.",
+        "fr": "Facultatif. Les références sont uniques dans votre espace de travail.",
+        "it": "Facoltativo. I riferimenti sono univoci nello spazio di lavoro.",
+        "nl": "Optioneel. Referenties zijn uniek binnen je werkruimte.",
+        "pt_BR": "Opcional. As referências são únicas no seu espaço de trabalho."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_reference_placeholder",
+      "text": {
+        "de": "Optionale SKU oder interne Referenz",
+        "es": "SKU o referencia interna opcional",
+        "fr": "SKU ou référence interne facultative",
+        "it": "SKU o riferimento interno facoltativo",
+        "nl": "Optionele SKU of interne referentie",
+        "pt_BR": "SKU ou referência interna opcional"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_reference_unique",
+      "text": {
+        "de": "Diese Produktreferenz wird in Ihrem Arbeitsbereich bereits verwendet.",
+        "es": "Esta referencia de producto ya se usa en tu espacio de trabajo.",
+        "fr": "Cette référence produit est déjà utilisée dans votre espace de travail.",
+        "it": "Questo riferimento prodotto è già utilizzato nello spazio di lavoro.",
+        "nl": "Deze productreferentie wordt al gebruikt in je werkruimte.",
+        "pt_BR": "Esta referência de produto já é usada no seu espaço de trabalho."
       }
     },
     {
@@ -29810,12 +29954,12 @@
       "group": "workbench",
       "key": "tabs.output",
       "text": {
-        "de": "Etikett & Ausgabe",
-        "es": "Etiqueta y resultado",
-        "fr": "Étiquette et rendu",
-        "it": "Etichetta e risultato",
-        "nl": "Etiket en uitvoer",
-        "pt_BR": "Rótulo e saída"
+        "de": "Produktausgabe",
+        "es": "Salida del producto",
+        "fr": "Sortie produit",
+        "it": "Output prodotto",
+        "nl": "Productuitvoer",
+        "pt_BR": "Saída do produto"
       }
     },
     {

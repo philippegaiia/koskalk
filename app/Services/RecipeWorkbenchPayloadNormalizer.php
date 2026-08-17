@@ -3,10 +3,12 @@
 namespace App\Services;
 
 use App\Enums\MassUnit;
+use App\Enums\NominalContentUnit;
 use App\Enums\ProductionOutputType;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\RegulatoryRegime;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
@@ -37,7 +39,10 @@ class RecipeWorkbenchPayloadNormalizer
      *     packaging_items: array<int, array<string, mixed>>,
      *     production_output_type: string,
      *     output_ingredient_id: int|null,
-     *     ready_delay_days: int|null
+     *     ready_delay_days: int|null,
+     *     product_reference: string|null,
+     *     nominal_content_value: float|null,
+     *     nominal_content_unit: string|null
      * }
      */
     public function normalize(array $payload, ?ProductFamily $productFamily = null, bool $requireComplete = true): array
@@ -145,7 +150,10 @@ class RecipeWorkbenchPayloadNormalizer
      *     packaging_items: array<int, array<string, mixed>>,
      *     production_output_type: string,
      *     output_ingredient_id: int|null,
-     *     ready_delay_days: int|null
+     *     ready_delay_days: int|null,
+     *     product_reference: string|null,
+     *     nominal_content_value: float|null,
+     *     nominal_content_unit: string|null
      * }
      */
     private function normalizeCosmetic(array $payload, ?ProductFamily $productFamily, bool $requireComplete): array
@@ -262,7 +270,7 @@ class RecipeWorkbenchPayloadNormalizer
 
     /**
      * @param  array<string, mixed>  $payload
-     * @return array{production_output_type: string, output_ingredient_id: int|null, ready_delay_days: int|null}
+     * @return array{production_output_type: string, output_ingredient_id: int|null, ready_delay_days: int|null, product_reference: string|null, nominal_content_value: float|null, nominal_content_unit: string|null}
      */
     private function normalizeOutputConfiguration(array $payload): array
     {
@@ -301,10 +309,50 @@ class RecipeWorkbenchPayloadNormalizer
             ]);
         }
 
+        $productReference = $this->nullableTrimmedText($payload['product_reference'] ?? null);
+
+        if ($productReference !== null && Str::length($productReference) > 100) {
+            throw ValidationException::withMessages([
+                'product_reference' => __('validation.max.string', ['attribute' => 'product reference', 'max' => 100]),
+            ]);
+        }
+
+        $rawNominalContentValue = $payload['nominal_content_value'] ?? null;
+        $rawNominalContentUnit = $payload['nominal_content_unit'] ?? null;
+        $nominalContentValue = $rawNominalContentValue === null || $rawNominalContentValue === ''
+            ? null
+            : (is_numeric($rawNominalContentValue) ? (float) $rawNominalContentValue : null);
+        $nominalContentUnit = is_string($rawNominalContentUnit)
+            ? NominalContentUnit::tryFrom($rawNominalContentUnit)
+            : null;
+
+        if ($nominalContentValue !== null && $nominalContentValue <= 0) {
+            throw ValidationException::withMessages([
+                'nominal_content_value' => __('validation.gt.numeric', ['attribute' => 'nominal content', 'value' => 0]),
+            ]);
+        }
+
+        if ($nominalContentValue === null && $rawNominalContentValue !== null && $rawNominalContentValue !== '') {
+            throw ValidationException::withMessages([
+                'nominal_content_value' => __('validation.numeric', ['attribute' => 'nominal content']),
+            ]);
+        }
+
+        if (($nominalContentValue === null) !== ($nominalContentUnit === null)) {
+            throw ValidationException::withMessages([
+                $nominalContentValue === null ? 'nominal_content_value' : 'nominal_content_unit' => __('workbench.settings.nominal_content_pair_required'),
+            ]);
+        }
+
         return [
             'production_output_type' => $outputType->value,
             'output_ingredient_id' => $outputIngredientId,
             'ready_delay_days' => $readyDelayDays === null ? null : (int) $readyDelayDays,
+            'product_reference' => $outputType === ProductionOutputType::FinishedProduct && $productReference !== null
+                ? Str::upper($productReference)
+                : null,
+            'nominal_content_value' => $outputType === ProductionOutputType::FinishedProduct ? $nominalContentValue : null,
+            'nominal_content_unit' => $outputType === ProductionOutputType::FinishedProduct ? $nominalContentUnit?->value : null,
         ];
     }
 

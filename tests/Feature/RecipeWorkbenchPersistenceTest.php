@@ -74,6 +74,14 @@ it('exposes the production output controls and workspace manufactured ingredient
         ->assertSee('Turmeric oil macerate');
 });
 
+it('places production output settings in the output tab instead of formula settings', function () {
+    $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $outputTab = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-tab.blade.php'));
+
+    expect($formulaSettings)->not->toContain('setting-production-output')
+        ->and($outputTab)->toContain('recipe-workbench.production-output-settings');
+});
+
 it('persists manufactured ingredient output configuration through recipe save, reload, and duplication', function () {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -103,6 +111,101 @@ it('persists manufactured ingredient output configuration through recipe save, r
         ->and($duplicate->production_output_type)->toBe(ProductionOutputType::ManufacturedIngredient)
         ->and($duplicate->output_ingredient_id)->toBe($outputIngredient->id)
         ->and($duplicate->ready_delay_days)->toBe(12);
+});
+
+it('persists optional finished product reference and nominal content through save and reload', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient(), name: 'Lavender soap 100 g');
+    $payload['product_reference'] = ' lav-100 ';
+    $payload['nominal_content_value'] = 100;
+    $payload['nominal_content_unit'] = 'g';
+
+    $service = app(RecipeWorkbenchService::class);
+    $savedVersion = $service->save($user, $soapFamily, $payload);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id);
+    $workbenchPayload = $service->currentVersionPayload($recipe);
+
+    expect($recipe->product_reference)->toBe('LAV-100')
+        ->and((float) $recipe->nominal_content_value)->toBe(100.0)
+        ->and($recipe->nominal_content_unit?->value)->toBe('g')
+        ->and($workbenchPayload['productReference'])->toBe('LAV-100')
+        ->and($workbenchPayload['nominalContentValue'])->toBe(100.0)
+        ->and($workbenchPayload['nominalContentUnit'])->toBe('g');
+});
+
+it('allows finished product reference and nominal content to be omitted', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $savedVersion = app(RecipeWorkbenchService::class)->save(
+        $user,
+        $soapFamily,
+        workbenchSoapDraftPayload(makeCarrierOilIngredient()),
+    );
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id);
+
+    expect($recipe->product_reference)->toBeNull()
+        ->and($recipe->nominal_content_value)->toBeNull()
+        ->and($recipe->nominal_content_unit)->toBeNull();
+});
+
+it('duplicates a product for another size while clearing its unique reference', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient(), name: 'Lavender soap 100 g');
+    $payload['product_reference'] = 'LAV-100';
+    $payload['nominal_content_value'] = 100;
+    $payload['nominal_content_unit'] = 'g';
+    $payload['ready_delay_days'] = 42;
+    $payload['packaging_items'] = [[
+        'packaging_item_id' => null,
+        'name' => '100 g soap box',
+        'components_per_unit' => 1,
+        'notes' => 'Primary packaging',
+    ]];
+
+    $service = app(RecipeWorkbenchService::class);
+    $savedVersion = $service->save($user, $soapFamily, $payload);
+    $source = Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id);
+    $duplicateVersion = $service->duplicateRecipe($user, $source);
+    $duplicate = Recipe::withoutGlobalScopes()->findOrFail($duplicateVersion->recipe_id);
+
+    expect($duplicate->name)->toBe('Copy of Lavender soap 100 g')
+        ->and($duplicate->product_reference)->toBeNull()
+        ->and((float) $duplicate->nominal_content_value)->toBe(100.0)
+        ->and($duplicate->nominal_content_unit?->value)->toBe('g')
+        ->and($duplicate->ready_delay_days)->toBe(42)
+        ->and($duplicateVersion->packagingItems)->toHaveCount(1)
+        ->and($duplicateVersion->packagingItems->first()?->name)->toBe('100 g soap box')
+        ->and((float) $duplicateVersion->packagingItems->first()?->components_per_unit)->toBe(1.0);
+});
+
+it('requires a finished product reference to be unique within its workspace', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $service = app(RecipeWorkbenchService::class);
+    $firstPayload = workbenchSoapDraftPayload(makeCarrierOilIngredient(), name: 'Lavender soap');
+    $firstPayload['product_reference'] = 'LAV-100';
+    $service->save($user, $soapFamily, $firstPayload);
+
+    $secondPayload = workbenchSoapDraftPayload(makeCarrierOilIngredient(), name: 'Another lavender soap');
+    $secondPayload['product_reference'] = ' lav-100 ';
+
+    expect(fn () => $service->save($user, $soapFamily, $secondPayload))
+        ->toThrow(ValidationException::class, 'product reference');
 });
 
 it('requires a valid manufactured ingredient when a recipe output is configured as manufactured', function () {
@@ -1961,6 +2064,81 @@ JS;
     expect($rows)->toHaveCount(2)
         ->and($rows[0]['position'])->toBe(1)
         ->and($rows[1]['position'])->toBe(2);
+});
+
+it('serializes and restores finished product identity fields in the browser draft', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const payloadSource = fs
+  .readFileSync('resources/js/recipe-workbench/payload.js', 'utf8')
+  .replace(/^import[^;]+;\n/gm, '')
+  .replace(/export function /g, 'function ');
+const snapshotSource = fs
+  .readFileSync('resources/js/recipe-workbench/snapshot.js', 'utf8')
+  .replace(/^import[^;]+;\n/gm, '')
+  .replace(/export function /g, 'function ');
+
+const normalizedIfraProductCategoryId = (value) => value;
+const rowWeight = () => 0;
+const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const nonNegativeNumber = (value) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : 0;
+
+eval(`${payloadSource}\n${snapshotSource}\nglobalThis.serializeDraft = serializeDraft; globalThis.draftStateFromDraft = draftStateFromDraft;`);
+
+const serialized = globalThis.serializeDraft({
+  formulaName: 'Lavender soap 100 g',
+  oilUnit: 'g',
+  oilWeight: 1000,
+  phaseOrder: [],
+  phaseItems: {},
+  packagingPlanRows: [],
+  productionOutputType: 'finished_product',
+  outputIngredientId: '',
+  readyDelayDays: '',
+  productReference: 'LAV-100',
+  nominalContentValue: 100,
+  nominalContentUnit: 'g',
+});
+
+const restored = globalThis.draftStateFromDraft({
+  productReference: 'LAV-100',
+  nominalContentValue: 100,
+  nominalContentUnit: 'g',
+}, {
+  phaseOrder: [],
+  packagingPlanRows: [],
+  productionOutputType: 'finished_product',
+  outputIngredientId: '',
+  readyDelayDays: '',
+  productReference: '',
+  nominalContentValue: '',
+  nominalContentUnit: '',
+});
+
+console.log(JSON.stringify({ serialized, restored }));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['serialized'])->toMatchArray([
+        'product_reference' => 'LAV-100',
+        'nominal_content_value' => 100,
+        'nominal_content_unit' => 'g',
+    ])->and($payload['restored'])->toMatchArray([
+        'productReference' => 'LAV-100',
+        'nominalContentValue' => 100,
+        'nominalContentUnit' => 'g',
+    ]);
 });
 
 it('hydrates saved draft packaging rows into the workbench state', function () {

@@ -74,6 +74,11 @@ export function draftStateFromDraft(draft, currentState) {
         readyDelayDays: draft.readyDelayDays === null || draft.readyDelayDays === undefined || draft.readyDelayDays === ''
             ? ''
             : number(draft.readyDelayDays),
+        productReference: draft.productReference ?? currentState.productReference ?? '',
+        nominalContentValue: draft.nominalContentValue === null || draft.nominalContentValue === undefined || draft.nominalContentValue === ''
+            ? ''
+            : number(draft.nominalContentValue),
+        nominalContentUnit: draft.nominalContentUnit ?? currentState.nominalContentUnit ?? 'g',
     };
 
     if (Object.hasOwn(draft, 'selectedIfraProductCategoryId')) {

@@ -122,6 +122,11 @@ class RecipeWorkbenchVersionPayloadMapper
             'productionOutputType' => ($version->recipe?->production_output_type ?? ProductionOutputType::FinishedProduct)->value,
             'outputIngredientId' => $version->recipe?->output_ingredient_id,
             'readyDelayDays' => $version->recipe?->ready_delay_days,
+            'productReference' => $version->recipe?->product_reference,
+            'nominalContentValue' => $version->recipe?->nominal_content_value === null
+                ? null
+                : (float) $version->recipe->nominal_content_value,
+            'nominalContentUnit' => $version->recipe?->nominal_content_unit?->value,
             'catalogReview' => $catalogReview,
         ];
     }

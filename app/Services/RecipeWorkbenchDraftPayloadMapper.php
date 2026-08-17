@@ -63,6 +63,9 @@ class RecipeWorkbenchDraftPayloadMapper
             'production_output_type' => $draft['productionOutputType'] ?? null,
             'output_ingredient_id' => $draft['outputIngredientId'] ?? null,
             'ready_delay_days' => $draft['readyDelayDays'] ?? null,
+            'product_reference' => $draft['productReference'] ?? null,
+            'nominal_content_value' => $draft['nominalContentValue'] ?? null,
+            'nominal_content_unit' => $draft['nominalContentUnit'] ?? null,
         ];
     }
 

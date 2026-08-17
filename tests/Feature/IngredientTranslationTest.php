@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Ingredient;
@@ -246,6 +247,28 @@ it('delivers localized platform names to the recipe workbench with English fallb
         ->toBe('Poudre d’olive')
         ->and(collect($catalog)->firstWhere('id', $fallbackIngredient->id)['name'])
         ->toBe('Sea Salt');
+});
+
+it('delivers canonical category and subcategory metadata to the recipe workbench', function (): void {
+    $productFamily = ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'subcategory' => IngredientSubcategory::VegetableOils,
+        'display_name' => 'Olive Oil',
+    ]);
+
+    $catalog = collect(app(RecipeWorkbenchIngredientCatalogBuilder::class)->build(null, $productFamily))->keyBy('id');
+
+    expect($catalog[$ingredient->id])
+        ->toMatchArray([
+            'category' => 'lipids',
+            'category_label' => 'Oils, butters & fats',
+            'subcategory' => 'vegetable_oils',
+            'subcategory_label' => 'Vegetable oils',
+        ]);
 });
 
 it('uses active and neutral aliases in the workbench and English only as a fallback', function (): void {

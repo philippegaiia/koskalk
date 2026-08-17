@@ -1,32 +1,28 @@
 import { format, humanizeKey, number } from './utils';
 
-export const CATEGORY_OPTIONS = [
-    { value: 'all', label: 'All' },
-    { value: 'carrier_oil', label: 'Carrier Oils' },
-    { value: 'essential_oil', label: 'Essential Oils' },
-    { value: 'fragrance_oil', label: 'Fragrance Oils' },
-    { value: 'botanical_extract', label: 'Botanical Extracts' },
-    { value: 'co2_extract', label: 'CO2 Extracts' },
-    { value: 'liquid', label: 'Liquids' },
-    { value: 'glycol', label: 'Glycols' },
-    { value: 'clay', label: 'Clays' },
-    { value: 'colorant', label: 'Colorants' },
-    { value: 'preservative', label: 'Preservatives' },
-    { value: 'additive', label: 'Additives' },
-];
-
 const INGREDIENT_CATEGORY_CODES = {
-    carrier_oil: 'CA',
-    essential_oil: 'EO',
-    fragrance_oil: 'FO',
-    botanical_extract: 'BE',
-    co2_extract: 'CO2',
-    liquid: 'LI',
-    glycol: 'GL',
-    clay: 'CL',
-    colorant: 'CL',
-    preservative: 'PR',
-    additive: 'AD',
+    lipids: 'LI',
+    waxes: 'WA',
+    hydrocarbons: 'HC',
+    silicones: 'SI',
+    fatty_derivatives: 'FD',
+    surfactants: 'SU',
+    emulsifiers: 'EM',
+    humectants_polyols: 'HP',
+    water_solvents_carriers: 'WS',
+    rheology_modifiers: 'RM',
+    functional_polymers: 'FP',
+    minerals_salts_powders: 'MS',
+    actives: 'AC',
+    botanicals_extracts: 'BE',
+    aromatic_materials: 'AR',
+    colourants: 'CO',
+    preservation_stability: 'PS',
+    ph_adjusters_buffers: 'PH',
+    soapmaking_alkalis: 'SA',
+    exfoliants_abrasives: 'EA',
+    bases_blends_premixes: 'BB',
+    other: 'OT',
 };
 
 const FATTY_ACID_LABELS = {
@@ -47,6 +43,26 @@ const FATTY_ACID_LABELS = {
     erucic: 'Erucic',
 };
 
+export function categoryOptions(ingredients, allLabel = 'All') {
+    const categories = new Map();
+
+    ingredients.forEach((ingredient) => {
+        if (!ingredient.category || categories.has(ingredient.category)) {
+            return;
+        }
+
+        categories.set(
+            ingredient.category,
+            ingredient.category_label || humanizeKey(ingredient.category),
+        );
+    });
+
+    const representedCategories = Array.from(categories, ([value, label]) => ({ value, label }))
+        .sort((left, right) => left.label.localeCompare(right.label));
+
+    return [{ value: 'all', label: allLabel }, ...representedCategories];
+}
+
 export function filterIngredients(ingredients, search, activeCategory) {
     const normalizedSearch = search.trim().toLowerCase();
 
@@ -57,11 +73,21 @@ export function filterIngredients(ingredients, search, activeCategory) {
             .join(' ')
             .toLowerCase();
         const aliases = (ingredient.aliases ?? []).join(' ').toLowerCase();
+        const taxonomy = [
+            ingredient.category,
+            ingredient.category_label,
+            ingredient.subcategory,
+            ingredient.subcategory_label,
+        ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
         const matchesSearch = normalizedSearch === ''
             || ingredient.name.toLowerCase().includes(normalizedSearch)
             || (ingredient.inci_name ?? '').toLowerCase().includes(normalizedSearch)
             || identifiers.includes(normalizedSearch)
-            || aliases.includes(normalizedSearch);
+            || aliases.includes(normalizedSearch)
+            || taxonomy.includes(normalizedSearch);
 
         return matchesCategory && matchesSearch;
     });
@@ -141,11 +167,11 @@ export function fattyAcidLabels() {
 }
 
 export function targetPhaseForCategory(category) {
-    if (['essential_oil', 'botanical_extract', 'co2_extract', 'fragrance_oil'].includes(category)) {
+    if (['aromatic_materials', 'botanicals_extracts'].includes(category)) {
         return 'fragrance';
     }
 
-    return category === 'carrier_oil' ? 'saponified_oils' : 'additives';
+    return category === 'lipids' ? 'saponified_oils' : 'additives';
 }
 
 export function resolveTargetPhase(ingredient, requestedPhase = null) {

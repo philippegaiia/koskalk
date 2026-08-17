@@ -2097,7 +2097,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';
@@ -2190,7 +2190,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';
@@ -2520,7 +2520,7 @@ JS;
     ]);
 });
 
-it('allows carrier oils to move between soap oils and additives', function () {
+it('allows lipids to move between soap oils and additives', function () {
     $script = <<<'JS'
 import fs from 'node:fs';
 
@@ -2530,7 +2530,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';
@@ -2566,7 +2566,7 @@ const workbench = globalThis.createRecipeWorkbench({
       id: 1,
       name: 'Olive Oil',
       inci_name: 'OLEA EUROPAEA FRUIT OIL',
-      category: 'carrier_oil',
+      category: 'lipids',
       available_phases: ['saponified_oils', 'additives'],
       can_add_to_saponified_oils: true,
       can_add_to_additives: true,
@@ -2580,7 +2580,7 @@ workbench.phaseItems = {
       id: 'oil-1',
       ingredient_id: 1,
       name: 'Olive Oil',
-      category: 'carrier_oil',
+      category: 'lipids',
       available_phases: ['saponified_oils', 'additives'],
       can_add_to_saponified_oils: true,
       koh_sap_value: 0.188,
@@ -2640,7 +2640,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';
@@ -2674,7 +2674,7 @@ const additiveOnlyOil = {
   id: 2,
   name: 'Unsaponifiable Carrier',
   inci_name: 'UNSAPONIFIABLE CARRIER OIL',
-  category: 'carrier_oil',
+  category: 'lipids',
   available_phases: ['additives'],
   can_add_to_saponified_oils: false,
   can_add_to_additives: true,
@@ -2741,7 +2741,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';
@@ -2832,7 +2832,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';
@@ -2919,7 +2919,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';
@@ -3007,7 +3007,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';
@@ -3095,7 +3095,7 @@ const source = fs
   .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
 
 const stubs = `
-const CATEGORY_OPTIONS = [];
+const buildCategoryOptions = () => [];
 const buildFattyAcidLabels = () => [];
 const filterIngredientCatalog = (ingredients) => ingredients;
 const getIngredientCategoryCode = () => '';

@@ -16,12 +16,21 @@ use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
-it('starts soap users in the carrier oil catalog and keeps the visible selector synced', function () {
+it('starts soap users in lipids and builds the selector from canonical catalogue categories', function (): void {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
+    $catalogSource = file_get_contents(resource_path('js/recipe-workbench/catalog.js'));
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
 
     expect($componentSource)
-        ->toContain("activeCategory: isCosmeticFormula ? 'all' : 'carrier_oil'")
+        ->toContain("activeCategory: isCosmeticFormula ? 'all' : 'lipids'")
+        ->toContain('buildCategoryOptions(this.ingredients')
+        ->not->toContain('CATEGORY_OPTIONS')
+        ->not->toContain("'carrier_oil'")
+        ->and($catalogSource)
+        ->toContain('export function categoryOptions')
+        ->toContain('ingredient.category_label')
+        ->toContain('ingredient.subcategory_label')
+        ->not->toContain("value: 'carrier_oil'")
         ->and($ingredientBrowser)
         ->toContain(':selected="option.value === activeCategory"');
 });

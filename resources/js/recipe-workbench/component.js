@@ -1,5 +1,5 @@
 import {
-    CATEGORY_OPTIONS,
+    categoryOptions as buildCategoryOptions,
     fattyAcidLabels as buildFattyAcidLabels,
     filterIngredients as filterIngredientCatalog,
     ingredientCategoryCode as getIngredientCategoryCode,
@@ -119,7 +119,7 @@ function canMoveSoapRowToPhase(row, sourcePhaseKey, targetPhaseKey) {
 
     const oilAdditivePhases = ['saponified_oils', 'additives'];
 
-    if (row?.category !== 'carrier_oil'
+    if (row?.category !== 'lipids'
         || !oilAdditivePhases.includes(sourcePhaseKey)
         || !oilAdditivePhases.includes(targetPhaseKey)) {
         return false;
@@ -199,7 +199,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         waterValue: 38,
         superfat: 5,
         search: '',
-        activeCategory: isCosmeticFormula ? 'all' : 'carrier_oil',
+        activeCategory: isCosmeticFormula ? 'all' : 'lipids',
         isComplianceSettingsOpen: false,
         isFormulaSettingsOpen: initialDraft === null,
         formulaDiagnosticsPreferenceKey: FORMULA_DIAGNOSTICS_PREFERENCE_KEY,
@@ -428,10 +428,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
 function createCatalogSection() {
     return {
         get categoryOptions() {
-            return CATEGORY_OPTIONS.map((option) => ({
-                ...option,
-                label: this.t(`categories.${option.value}`),
-            }));
+            return buildCategoryOptions(this.ingredients, this.t('categories.all'));
         },
 
         get filteredIngredients() {

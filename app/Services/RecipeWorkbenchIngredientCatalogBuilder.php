@@ -54,6 +54,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
             ->filter(fn (Ingredient $ingredient): bool => $isCosmetic || $ingredient->availableWorkbenchPhases() !== [])
             ->map(function (Ingredient $ingredient) use ($defaultPricesByIngredient, $translationLocales): array {
                 $category = $ingredient->category;
+                $subcategory = $ingredient->subcategory;
                 $sapProfile = $ingredient->sapProfile;
                 $availablePhases = $ingredient->availableWorkbenchPhases();
                 $defaultPrice = $defaultPricesByIngredient->get($ingredient->id);
@@ -77,6 +78,8 @@ class RecipeWorkbenchIngredientCatalogBuilder
                     'image_url' => $ingredient->pickerImageUrl(),
                     'category' => $category?->value,
                     'category_label' => $category?->getLabel(),
+                    'subcategory' => $subcategory?->value,
+                    'subcategory_label' => $subcategory?->getLabel(),
                     'soap_inci_naoh_name' => $ingredient->soap_inci_naoh_name,
                     'soap_inci_koh_name' => $ingredient->soap_inci_koh_name,
                     'needs_compliance' => $ingredient->requiresAromaticCompliance(),

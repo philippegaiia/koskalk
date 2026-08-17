@@ -98,7 +98,7 @@ return [
         'timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_TIMEOUT', 300),
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v2',
-        'editorial_prompt_version' => 'ingredient-enrichment-editorial-v4',
+        'editorial_prompt_version' => 'ingredient-enrichment-editorial-v5',
         'allowed_domains' => [
             'ec.europa.eu',
             'single-market-economy.ec.europa.eu',

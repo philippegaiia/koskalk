@@ -21,3 +21,6 @@ For lipid enrichment, first discover sodium and potassium soap entries from dete
 
 ## Normalize localized guidance headings
 AI may translate guidance prose, but the three fixed Markdown section headings are normalized deterministically per catalogue locale before validation. Validation and completeness checks require the configured localized headings in order.
+
+## Editorial guidance filters low-value source facts
+Ingredient guidance must turn source facts into material-specific formulation consequences or omit them from prose. Never mechanically define COSING labels, assume grade-specific processing, copy generic SDS language, repeat storage advice, or describe a saponified oil using the raw oil's emollient properties.

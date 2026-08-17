@@ -187,13 +187,30 @@ it('requires useful catalogue guidance and localized soapmaking names instead of
     expect($prompt['instructions'])
         ->toContain('Never mention the research process')
         ->toContain('what the ingredient is and where it comes from')
-        ->toContain('practical role in a cosmetic formula')
+        ->toContain('useful consequence for formulation')
         ->toContain('Do not begin every section or paragraph with the ingredient name')
-        ->toContain('phase, dispersion, solubility, handling, stability, or compatibility')
+        ->toContain('phase, dispersion, solubility')
+        ->toContain('handling, stability, compatibility')
         ->toContain('Avoid generic filler')
-        ->toContain('common contribution to soap')
+        ->toContain('saponified fatty-acid contribution')
         ->toContain('short ingredient stem without words such as oil')
         ->toContain('must be non-empty in every locale');
+});
+
+it('filters low-value editorial claims instead of mechanically expanding source facts', function (): void {
+    $prompt = app(IngredientEnrichmentEditorialPrompt::class)->build(editorialFacts());
+
+    expect($prompt['version'])->toBe('ingredient-enrichment-editorial-v5')
+        ->and($prompt['instructions'])
+        ->toContain('apply a relevance filter')
+        ->toContain('either state a supported practical formulation consequence or omit the function from the prose')
+        ->toContain('Its skin-conditioning function helps maintain skin in good condition')
+        ->toContain('Its perfuming function can contribute to or modify product odour')
+        ->toContain('Do not assume a grade-specific processing method')
+        ->toContain('Exclude generic SDS language')
+        ->toContain('Do not explain routine soapmaking steps')
+        ->toContain('saponified fatty-acid contribution rather than the raw oil\'s emollient properties')
+        ->toContain('Do not repeat the same handling or storage advice across sections');
 });
 
 it('allows a bounded taxonomy proposal while keeping the family hint non-authoritative', function (): void {

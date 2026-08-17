@@ -3,6 +3,7 @@
 use App\Services\IngredientEnrichment\IngredientSourceException;
 use App\Services\IngredientEnrichment\Sources\CachedIngredientSourceHttpClient;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
@@ -90,4 +91,24 @@ it('returns a safe exception for a failed configured source', function (): void 
         version: 'inventory-2026-03-21',
         ttl: now()->addDays(30),
     ))->toThrow(IngredientSourceException::class, 'could not provide usable data');
+});
+
+it('preserves a query string already present in a source URL', function (): void {
+    $url = 'https://eur-lex.test/legal-content/EN/TXT/HTML/?uri=CELEX:32025D1175';
+    config()->set('ingredient-enrichment.sources.eur_lex_glossary.url', $url);
+    Http::preventStrayRequests();
+    Http::fake(fn (Request $request) => str_contains($request->url(), 'uri=CELEX')
+        ? Http::response('<html><body>Glossary</body></html>')
+        : Http::response([], 404));
+
+    $response = app(CachedIngredientSourceHttpClient::class)->text(
+        source: 'eur_lex_glossary',
+        url: $url,
+        query: [],
+        version: '32025D1175',
+        ttl: now()->addDays(30),
+    );
+
+    expect($response->status)->toBe(200)
+        ->and($response->payload)->toContain('Glossary');
 });

@@ -78,9 +78,12 @@ class CachedIngredientSourceHttpClient
                             && ($exception->response->status() === 429 || $exception->response->serverError()));
                 }, throw: false);
 
-            $response = $expectsJson
-                ? $request->acceptJson()->get($url, $normalizedQuery)
-                : $request->accept('text/html,application/xhtml+xml')->get($url, $normalizedQuery);
+            $request = $expectsJson
+                ? $request->acceptJson()
+                : $request->accept('text/html,application/xhtml+xml');
+            $response = $normalizedQuery === []
+                ? $request->get($url)
+                : $request->get($url, $normalizedQuery);
         } catch (Throwable) {
             throw new IngredientSourceException($source);
         }

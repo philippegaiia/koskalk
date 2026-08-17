@@ -16,6 +16,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | lang/**/*.php | .ai/rules/lang.md |
 | app/Livewire/** | .ai/rules/livewire.md |
 | database/migrations/** | .ai/rules/migrations.md |
+| app/{Models,Services}/** | .ai/rules/models-services.md |
 | app/Models/** | .ai/rules/models.md |
 | app/Policies/** | .ai/rules/policies.md |
 | app/Providers/*.php | .ai/rules/providers.md |

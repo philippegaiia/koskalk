@@ -3,9 +3,11 @@
 use App\Enums\IngredientCategory;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\Allergen;
+use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientComponent;
+use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
@@ -15,6 +17,63 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
 uses(RefreshDatabase::class);
+
+it('keeps the soap preview available when an ingredient has no inci name', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeSoapOilIngredient();
+    $oleicAcid = FattyAcid::factory()->create([
+        'key' => 'oleic',
+        'name' => 'Oleic',
+        'saturation_class' => 'monounsaturated',
+        'default_group_key' => 'mu',
+    ]);
+    IngredientFattyAcid::factory()->create([
+        'ingredient_id' => $oliveOil->id,
+        'fatty_acid_id' => $oleicAcid->id,
+        'percentage' => 71,
+    ]);
+    $bacuriButter = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Bacuri Butter',
+        'inci_name' => null,
+        'is_active' => true,
+    ]);
+    $unusedFragrance = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'display_name' => 'Unscented Base',
+        'inci_name' => 'PARFUM',
+        'is_active' => true,
+    ]);
+
+    $payload = soapDraftPayloadWithFragrance($oliveOil, $unusedFragrance);
+    $payload['phase_items']['fragrance'] = [];
+    $payload['phase_items']['additives'] = [[
+        'ingredient_id' => $bacuriButter->id,
+        'percentage' => 2,
+        'weight' => 20,
+        'note' => null,
+    ]];
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->previewCalculation(
+        $payload,
+        app(RecipeWorkbenchService::class),
+    );
+
+    expect($result['ok'])->toBeTrue()
+        ->and($result['calculation'])->not->toBeNull()
+        ->and($result['calculation']['properties']['fatty_acid_groups']['mu'])->toBe(71.0)
+        ->and($result['labeling']['final_labels'])->toContain('BACURI BUTTER')
+        ->and(collect($result['labeling']['warnings'])->contains(
+            fn (string $warning): bool => str_contains($warning, 'Bacuri Butter'),
+        ))->toBeFalse();
+});
 
 it('returns a generated ingredient list and declaration details in the live preview', function () {
     ProductFamily::factory()->create([

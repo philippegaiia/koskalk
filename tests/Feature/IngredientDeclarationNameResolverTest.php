@@ -102,6 +102,25 @@ it('blocks a missing ordinary US declaration and permits EU canonical fallback o
         ))->toBe('ARGANIA SPINOSA KERNEL OIL');
 });
 
+it('returns no declaration for an explicit eu preview fallback when canonical inci is missing', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::Lipids,
+        'display_name' => 'Bacuri Butter',
+        'inci_name' => null,
+    ]);
+    $ingredient->load('marketLabels');
+
+    $resolver = app(IngredientDeclarationNameResolver::class);
+
+    expect(fn () => $resolver->resolve($ingredient, IngredientLabelMarket::Eu->value))
+        ->toThrow(ValidationException::class)
+        ->and($resolver->resolve(
+            $ingredient,
+            IngredientLabelMarket::Eu->value,
+            allowLegacyEuFallback: true,
+        ))->toBeNull();
+});
+
 it('uses the selected market declaration in generated ingredient lists', function (): void {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Colourants,

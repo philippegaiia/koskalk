@@ -55,8 +55,11 @@ class IngredientDeclarationNameResolver
 
         $canonicalName = $this->normalize($ingredient->inci_name);
 
-        if ($market === IngredientLabelMarket::Eu
-            && ($this->isBareCi($canonicalName) || ($allowLegacyEuFallback && $canonicalName !== null))) {
+        if ($market === IngredientLabelMarket::Eu && $this->isBareCi($canonicalName)) {
+            return $canonicalName;
+        }
+
+        if ($market === IngredientLabelMarket::Eu && $allowLegacyEuFallback) {
             return $canonicalName;
         }
 

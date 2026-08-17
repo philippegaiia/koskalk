@@ -1545,9 +1545,7 @@ class InciGenerationService
         return [
             'label' => $fallbackLabel,
             'kind' => 'ingredient',
-            'warning' => $fallbackLabel === null
-                ? null
-                : "{$ingredientName} is missing an INCI name, so the preview is falling back to its display name.",
+            'warning' => null,
         ];
     }
 
@@ -1564,7 +1562,6 @@ class InciGenerationService
     private function incorporatedIngredientLabel(array $context, string $marketCode): array
     {
         $ingredient = $context['ingredient'];
-        $ingredientName = $context['ingredient_name'] !== '' ? $context['ingredient_name'] : 'Unnamed ingredient';
 
         if (! $ingredient instanceof Ingredient) {
             return [
@@ -1589,9 +1586,7 @@ class InciGenerationService
         return [
             'label' => $fallbackLabel,
             'kind' => 'ingredient',
-            'warning' => $fallbackLabel === null
-                ? null
-                : "{$ingredientName} is missing an INCI name, so the preview is falling back to its display name.",
+            'warning' => null,
         ];
     }
 

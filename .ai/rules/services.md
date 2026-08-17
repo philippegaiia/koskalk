@@ -2,6 +2,7 @@
 paths:
   - 'app/Services/**'
   - app/Services/IngredientIdentitySynchronizer.php
+  - 'app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php'
 ---
 
 # Services
@@ -17,3 +18,6 @@ Compute money and mass with bcmath on canonical decimal strings, never floats. N
 
 ## Preserve identifier evidence during reconciliation
 Reconcile ingredient identifiers by scheme plus normalized value so unchanged identifier rows keep their IDs and source evidence. Delete only identifiers removed from the submitted state. Replace evidence only when explicit identifier evidence is supplied; an Admin form save without evidence state must preserve existing provenance.
+
+## Live previews tolerate missing INCI
+Workbench EU previews may explicitly fall back to an ingredient display name when canonical INCI is missing, without showing a user warning, so calculation panels stay available. Strict declaration resolution without the preview fallback must continue to reject missing market declarations.

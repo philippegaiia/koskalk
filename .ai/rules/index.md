@@ -7,6 +7,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Actions/** | .ai/rules/actions.md |
 | app/**, app/*.php | .ai/rules/app.md |
 | bootstrap/app.php | .ai/rules/bootstrap.md |
+| app/Console/Commands/** | .ai/rules/commands.md |
 | app/{Models/Ingredient.php,Enums/IngredientIdentifierScheme.php,Services/IngredientIdentitySynchronizer.php,Forms/Components/IngredientIdentityFields.php} | .ai/rules/components.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | app/Livewire/Dashboard/IngredientEditor.php | .ai/rules/dashboard.md |

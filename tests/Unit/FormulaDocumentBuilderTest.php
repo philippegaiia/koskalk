@@ -39,6 +39,35 @@ it('keeps every selected lye in the aligned lye and water section', function (fl
     'dual lye' => [80.0, 60.0, ['NaOH', 'KOH', 'Water']],
 ]);
 
+it('shows actual water and selected fresh lye liquid quantities', function () {
+    $snapshot = soapFormulaDocumentSnapshot();
+    $snapshot['draft']['phaseItems']['lye_water'] = [[
+        'name' => 'Rose hydrosol',
+        'percentage' => 25,
+        'weight' => 75,
+        'note' => 'Chilled',
+        'is_user_owned' => false,
+    ]];
+    $snapshot['calculation']['lye']['liquid_composition'] = [
+        'water_weight' => 225,
+        'substitutions' => [[
+            'ingredient_id' => 10,
+            'percentage' => 25,
+            'weight' => 75,
+        ]],
+    ];
+
+    $document = app(FormulaDocumentBuilder::class)->build($snapshot, [
+        'calculation_basis' => 'oil_weight',
+    ]);
+    $rows = collect($document['sections'][1]['rows'])->keyBy('name');
+
+    expect($rows['Water']['weight'])->toBe(225.0)
+        ->and($rows['Rose hydrosol']['weight'])->toBe(75.0)
+        ->and($rows['Rose hydrosol']['percentage'])->toBe(7.5)
+        ->and($rows['Rose hydrosol']['note'])->toBe('Chilled');
+});
+
 it('keeps cosmetic phases aligned on total formula percentage', function () {
     $document = app(FormulaDocumentBuilder::class)->build(cosmeticFormulaDocumentSnapshot(), [
         'name' => 'Face cream',

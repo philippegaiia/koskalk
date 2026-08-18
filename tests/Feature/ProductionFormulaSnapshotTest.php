@@ -163,6 +163,33 @@ it('stores only stable formula calculation facts in the context snapshot', funct
     ]);
 });
 
+it('scales selected lye liquids from fresh mass and keeps only remaining water as calculated', function (): void {
+    $fixture = productionFormulaSnapshotFixture('naoh');
+    addSoapFormula($fixture);
+    $hydrosol = Ingredient::factory()->create(['display_name' => 'Rose hydrosol']);
+    $lyeWater = RecipePhase::withoutGlobalScopes()
+        ->where('recipe_version_id', $fixture['version']->id)
+        ->where('slug', 'lye_water')
+        ->firstOrFail();
+    RecipeItem::factory()->for($fixture['version'])->for($lyeWater, 'recipePhase')->for($hydrosol)->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $fixture['workspace']->id,
+        'workspace_id' => $fixture['workspace']->id,
+        'visibility' => Visibility::Private,
+        'position' => 1,
+        'percentage' => '25.0000',
+        'weight' => '95.0000',
+    ]);
+
+    $snapshot = buildFormulaSnapshot($fixture, '2000.000000000', 20);
+    $hydrosolLine = $snapshot['lines']->firstWhere('ingredient_id', $hydrosol->id);
+    $waterLine = $snapshot['lines']->firstWhere('component', 'water');
+
+    expect($hydrosolLine['planned_mass_grams'])->toBe('190.000000000')
+        ->and($hydrosolLine['phase_key_snapshot'])->toBe('lye_water')
+        ->and($waterLine['planned_mass_grams'])->toBe('570.000000000');
+});
+
 it('copies packaging plan notes into packaging requirement snapshots', function (): void {
     $fixture = productionFormulaSnapshotFixture('naoh');
     $packaging = PackagingItem::factory()->for($fixture['workspace'])->create(['name' => 'Soap box']);

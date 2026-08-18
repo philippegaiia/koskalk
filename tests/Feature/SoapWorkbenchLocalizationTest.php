@@ -46,6 +46,8 @@ it('uses the approved product and formula terminology on the soap workbench', fu
         ->toContain('Regulatory framework')
         ->toContain('IFRA category')
         ->toContain('No IFRA category selected')
+        ->toContain('Fresh weight')
+        ->toContain('settings.lye_liquid_fresh_weight_for')
         ->not->toContain('Formula setup')
         ->not->toContain('>Current<');
 });

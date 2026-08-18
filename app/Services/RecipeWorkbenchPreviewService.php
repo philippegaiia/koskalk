@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Ingredient;
+use App\Models\User;
 
 class RecipeWorkbenchPreviewService
 {
@@ -11,14 +12,19 @@ class RecipeWorkbenchPreviewService
         private readonly InciGenerationService $inciGenerationService,
         private readonly SubstanceComplianceService $substanceComplianceService,
         private readonly RecipeWorkbenchDraftPayloadMapper $recipeWorkbenchDraftPayloadMapper,
+        private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
+        private readonly LyeLiquidIngredientValidator $lyeLiquidIngredientValidator,
     ) {}
 
     /**
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>|null
      */
-    public function previewSoapCalculation(array $payload): ?array
-    {
+    public function previewSoapCalculation(
+        array $payload,
+        ?User $user = null,
+        bool $validateLyeIngredients = true,
+    ): ?array {
         if (($payload['manufacturing_mode'] ?? 'saponify_in_formula') !== 'saponify_in_formula') {
             return null;
         }
@@ -72,7 +78,7 @@ class RecipeWorkbenchPreviewService
             return null;
         }
 
-        return $this->soapCalculationService->calculate($oils, [
+        $calculation = $this->soapCalculationService->calculate($oils, [
             'superfat' => (float) ($payload['superfat'] ?? 5),
             'lye_type' => $payload['lye_type'] ?? 'naoh',
             'dual_lye_koh_percentage' => (float) ($payload['dual_lye_koh_percentage'] ?? 40),
@@ -80,6 +86,17 @@ class RecipeWorkbenchPreviewService
             'water_mode' => $payload['water_mode'] ?? 'percent_of_oils',
             'water_value' => (float) ($payload['water_value'] ?? 38),
         ]);
+
+        $rawLyeLiquidRows = collect($payload['phase_items']['lye_water'] ?? [])->values()->all();
+        $lyeLiquidRows = $validateLyeIngredients
+            ? $this->lyeLiquidIngredientValidator->validate($rawLyeLiquidRows, $user)
+            : $this->lyeLiquidIngredientValidator->normalizeRows($rawLyeLiquidRows);
+        $calculation['lye']['liquid_composition'] = $this->lyeLiquidAllocationService->allocateFresh(
+            (string) $calculation['lye']['water']['weight'],
+            $lyeLiquidRows,
+        );
+
+        return $calculation;
     }
 
     /**
@@ -162,13 +179,35 @@ class RecipeWorkbenchPreviewService
      */
     public function snapshotFromWorkbenchDraft(array $draft): array
     {
-        $calculation = $this->calculationFromWorkbenchDraft($draft);
+        return $this->snapshot($draft, true);
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}
+     */
+    public function snapshotFromPersistedWorkbenchDraft(array $draft): array
+    {
+        return $this->snapshot($draft, false);
+    }
+
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}
+     */
+    private function snapshot(array $draft, bool $validateLyeIngredients): array
+    {
+        $previewPayload = $this->recipeWorkbenchDraftPayloadMapper->toPreviewPayload($draft);
+        $calculation = $this->previewSoapCalculation(
+            $previewPayload,
+            validateLyeIngredients: $validateLyeIngredients,
+        );
 
         return [
             'draft' => $draft,
             'calculation' => $calculation,
-            'labeling' => $this->labelingFromWorkbenchDraft($draft, $calculation),
-            'restrictions' => $this->restrictionsFromWorkbenchDraft($draft, $calculation),
+            'labeling' => $this->previewInci($previewPayload, $calculation),
+            'restrictions' => $this->previewRestrictions($previewPayload, $calculation),
         ];
     }
 

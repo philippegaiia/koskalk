@@ -62,7 +62,7 @@ class ProductionFormulaSnapshotBuilder
                 ->all();
         }
 
-        $recomputed = $this->workbenchService->snapshotFromWorkbenchDraft($draft);
+        $recomputed = $this->workbenchService->snapshotFromPersistedWorkbenchDraft($draft);
         $calculation = $recomputed['calculation'] ?? null;
         $isSoap = ($draft['manufacturingMode'] ?? null) === 'saponify_in_formula'
             || ($draft['phaseItems']['saponified_oils'] ?? []) !== [];
@@ -125,7 +125,8 @@ class ProductionFormulaSnapshotBuilder
         $lyeType = $draft['lyeType'] ?? 'naoh';
         $naohWeight = (float) ($selected['naoh_weight'] ?? 0);
         $kohWeight = (float) ($selected['koh_to_weigh'] ?? 0);
-        $waterWeight = (float) ($lye['water']['weight'] ?? 0);
+        $totalLiquidWeight = (float) ($lye['water']['weight'] ?? 0);
+        $waterWeight = (float) data_get($lye, 'liquid_composition.water_weight', $totalLiquidWeight);
         $dualKohPercentage = (float) ($selected['dual_lye_koh_percentage'] ?? $draft['dualKohPercentage'] ?? 40);
         $hasValidLye = match ($lyeType) {
             'koh' => $kohWeight > 0,
@@ -141,7 +142,7 @@ class ProductionFormulaSnapshotBuilder
             ]);
         }
 
-        if ($waterWeight <= 0) {
+        if ($totalLiquidWeight <= 0) {
             throw ValidationException::withMessages([
                 'recipe' => 'The soap formula calculation produced no measurable water for this production basis.',
             ]);

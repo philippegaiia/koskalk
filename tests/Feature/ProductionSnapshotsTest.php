@@ -14,6 +14,8 @@ use App\Models\ProductionBatchIngredient;
 use App\Models\ProductionBatchPackagingItem;
 use App\Models\ProductType;
 use App\Models\Recipe;
+use App\Models\RecipeItem;
+use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
@@ -261,6 +263,82 @@ it('prices production ingredient quantities using the saved batch unit', functio
         ->and($batch->ingredient_total)->toBe('9.0718')
         ->and($batch->total_cost)->toBe('9.0718')
         ->and($batch->cost_per_unit)->toBe('2.2680');
+});
+
+it('scales saved lye liquid quantities in non gram batches without presenting their share as oil basis', function (): void {
+    [$user, $recipe, $version, $oil] = productionSnapshotSoapRecipe();
+    $hydrosol = Ingredient::factory()->create([
+        'display_name' => 'Rose hydrosol',
+        'is_active' => true,
+    ]);
+
+    $version->forceFill([
+        'batch_size' => 2,
+        'batch_unit' => 'kg',
+        'batch_mass_grams' => '2000.000000000',
+    ])->save();
+    $oilPhase = RecipePhase::withoutGlobalScopes()
+        ->where('recipe_version_id', $version->id)
+        ->where('slug', 'saponified_oils')
+        ->firstOrFail();
+    RecipeItem::withoutGlobalScopes()
+        ->where('recipe_phase_id', $oilPhase->id)
+        ->firstOrFail()
+        ->update(['weight' => 2]);
+    $lyeLiquidPhase = RecipePhase::withoutGlobalScopes()
+        ->where('recipe_version_id', $version->id)
+        ->where('slug', 'lye_water')
+        ->firstOrFail();
+    RecipeItem::factory()->create([
+        'recipe_version_id' => $version->id,
+        'recipe_phase_id' => $lyeLiquidPhase->id,
+        'ingredient_id' => $hydrosol->id,
+        'owner_type' => $version->owner_type,
+        'owner_id' => $version->owner_id,
+        'workspace_id' => $version->workspace_id,
+        'visibility' => $version->visibility,
+        'position' => 1,
+        'percentage' => 70,
+        'weight' => 0.532,
+    ]);
+
+    $costing = RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 3,
+        'oil_unit_for_costing' => 'kg',
+        'units_produced' => 6,
+        'currency' => 'EUR',
+    ]);
+
+    foreach ([[$oil, 'saponified_oils'], [$hydrosol, 'lye_water']] as [$ingredient, $phaseKey]) {
+        RecipeVersionCostingItem::query()->create([
+            'recipe_version_costing_id' => $costing->id,
+            'ingredient_id' => $ingredient->id,
+            'phase_key' => $phaseKey,
+            'position' => 1,
+            'price_per_kg' => 10,
+        ]);
+    }
+
+    $preview = app(RecipeVersionCostPreviewBuilder::class)->buildFromCosting(
+        recipe: $recipe,
+        version: $version->fresh(),
+        costing: $costing,
+        batchBasisValue: 3,
+        unitsProduced: 6,
+    );
+    $rows = collect($preview['ingredient_rows'])->keyBy('phase_key');
+
+    expect($rows['saponified_oils']['quantity'])->toBe(3.0)
+        ->and($rows['saponified_oils']['percentage_basis'])->toBe('oils')
+        ->and($rows['saponified_oils']['percentage_label'])->toBe('%')
+        ->and($rows['lye_water']['quantity'])->toBe(0.798)
+        ->and($rows['lye_water']['unit'])->toBe('kg')
+        ->and($rows['lye_water']['percentage'])->toBe(70.0)
+        ->and($rows['lye_water']['percentage_basis'])->toBe('lye_liquid')
+        ->and($rows['lye_water']['percentage_label'])->toBe('% lye liquid')
+        ->and($rows['lye_water']['phase_name'])->toBe('Lye liquid');
 });
 
 it('defaults a production preview from canonical formula mass', function (): void {

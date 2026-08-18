@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Enums\MassUnit;
 use App\Enums\NominalContentUnit;
 use App\Enums\ProductionOutputType;
+use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\RegulatoryRegime;
+use App\Support\NumberLocale;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -18,6 +20,9 @@ class RecipeWorkbenchPayloadNormalizer
         private readonly RecipeNormalizationService $recipeNormalizationService,
         private readonly RecipeWorkbenchPhaseBlueprints $recipeWorkbenchPhaseBlueprints,
         private readonly MassConverter $massConverter,
+        private readonly SoapCalculationService $soapCalculationService,
+        private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
+        private readonly LyeLiquidIngredientValidator $lyeLiquidIngredientValidator,
     ) {}
 
     /**
@@ -73,6 +78,34 @@ class RecipeWorkbenchPayloadNormalizer
             ]);
         }
 
+        $lyeLiquidItems = $this->normalizeLyeLiquidItems($payload, $normalizedRecipe);
+
+        $normalizedRecipe['phases'] = collect($normalizedRecipe['phases'])
+            ->map(function (array $phase) use ($lyeLiquidItems): array {
+                if ($phase['key'] !== 'lye_water') {
+                    return $phase;
+                }
+
+                return [
+                    ...$phase,
+                    'items' => $lyeLiquidItems,
+                    'totals' => [
+                        'percentage_of_oils' => 0.0,
+                        'weight' => (float) $this->roundMass(
+                            collect($lyeLiquidItems)->reduce(
+                                fn (string $total, array $item): string => bcadd(
+                                    $total,
+                                    NumberLocale::normalizeDecimalString($item['weight'] ?? null) ?? '0',
+                                    18,
+                                ),
+                                '0',
+                            ),
+                        ),
+                    ],
+                ];
+            })
+            ->all();
+
         $name = trim((string) ($payload['name'] ?? 'Untitled Soap Formula'));
 
         return [
@@ -120,9 +153,11 @@ class RecipeWorkbenchPayloadNormalizer
                     'name' => $phase['name'],
                     'phase_type' => $phaseBlueprint['phase_type'] ?? null,
                     'is_system' => (bool) ($phaseBlueprint['is_system'] ?? false),
-                    'items' => array_values(array_filter($phase['items'], function (array $item): bool {
-                        return $item['ingredient_id'] !== null;
-                    })),
+                    'items' => collect($phase['items'])
+                        ->filter(fn (array $item): bool => $phase['key'] === 'lye_water'
+                            || $item['ingredient_id'] !== null)
+                        ->values()
+                        ->all(),
                 ];
             }, $normalizedRecipe['phases']),
             'packaging_items' => $this->normalizePackagingItems($payload['packaging_items'] ?? []),
@@ -397,7 +432,9 @@ class RecipeWorkbenchPayloadNormalizer
         $phaseItems = $payload['phase_items'] ?? [];
 
         return array_map(function (array $phase) use ($phaseItems): array {
-            $rows = $phaseItems[$phase['key']] ?? [];
+            $rows = $phase['key'] === 'lye_water'
+                ? []
+                : ($phaseItems[$phase['key']] ?? []);
 
             return [
                 'key' => $phase['key'],
@@ -412,6 +449,77 @@ class RecipeWorkbenchPayloadNormalizer
                 }, is_array($rows) ? $rows : []),
             ];
         }, $this->recipeWorkbenchPhaseBlueprints->all());
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>  $normalizedRecipe
+     * @return array<int, array{ingredient_id: int|null, percentage: float, weight: float, note: mixed}>
+     */
+    private function normalizeLyeLiquidItems(array $payload, array $normalizedRecipe): array
+    {
+        $rows = collect($this->lyeLiquidIngredientValidator->normalizeRows(
+            collect($payload['phase_items']['lye_water'] ?? [])->values()->all(),
+        ));
+
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $oilPhase = collect($normalizedRecipe['phases'] ?? [])->firstWhere('key', 'saponified_oils');
+        $oilItems = collect(is_array($oilPhase) ? ($oilPhase['items'] ?? []) : []);
+        $ingredients = Ingredient::query()
+            ->with(['sapProfile', 'fattyAcidEntries.fattyAcid'])
+            ->whereKey($oilItems->pluck('ingredient_id')->filter()->all())
+            ->get()
+            ->keyBy('id');
+        $oils = $oilItems
+            ->map(function (array $item) use ($ingredients): ?array {
+                $ingredient = $ingredients->get($item['ingredient_id']);
+
+                if (! $ingredient instanceof Ingredient || (float) ($item['weight'] ?? 0) <= 0) {
+                    return null;
+                }
+
+                return [
+                    'name' => $ingredient->display_name,
+                    'weight' => (float) $item['weight'],
+                    'koh_sap_value' => $ingredient->sapProfile?->koh_sap_value ?? 0,
+                    'fatty_acid_profile' => $ingredient->normalizedFattyAcidProfile(),
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+
+        $calculation = $this->soapCalculationService->calculate($oils, [
+            'superfat' => (float) ($payload['superfat'] ?? 5),
+            'lye_type' => $payload['lye_type'] ?? 'naoh',
+            'dual_lye_koh_percentage' => (float) ($payload['dual_lye_koh_percentage'] ?? 40),
+            'koh_purity_percentage' => (float) ($payload['koh_purity_percentage'] ?? 90),
+            'water_mode' => $payload['water_mode'] ?? 'percent_of_oils',
+            'water_value' => (float) ($payload['water_value'] ?? 38),
+        ]);
+
+        try {
+            $allocation = $this->lyeLiquidAllocationService->allocateFresh(
+                (string) $calculation['lye']['water']['weight'],
+                $rows->all(),
+            );
+        } catch (InvalidArgumentException $exception) {
+            throw ValidationException::withMessages([
+                'phase_items.lye_water' => $exception->getMessage(),
+            ]);
+        }
+
+        return collect($allocation['substitutions'])
+            ->map(fn (array $row): array => [
+                'ingredient_id' => $this->ingredientId($row['ingredient_id'] ?? null),
+                'percentage' => (float) $row['percentage'],
+                'weight' => (float) $row['weight'],
+                'note' => $row['note'] ?? null,
+            ])
+            ->all();
     }
 
     /**
@@ -558,6 +666,11 @@ class RecipeWorkbenchPayloadNormalizer
     private function boundedPercentage(mixed $value): float
     {
         return max(0.0, min(100.0, (float) $value));
+    }
+
+    private function roundMass(string $value): string
+    {
+        return bcadd(bcadd($value, '0.00005', 5), '0', 4);
     }
 
     private function normalizationErrorField(string $message): string

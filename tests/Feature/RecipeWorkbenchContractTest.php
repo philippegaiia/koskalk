@@ -13,6 +13,38 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+it('keeps alternative lye liquids behind an opt-in progressive disclosure control', function () {
+    $settings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $formulaSection = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
+
+    expect($settings)
+        ->toContain("__('workbench.settings.lye_liquid_toggle')")
+        ->toContain("t('settings.lye_liquid_remove', { ingredient: row.name })")
+        ->toContain("t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: format(lyeLiquidWeight(row), 3), unit: oilUnit })")
+        ->toContain("__('workbench.settings.lye_liquid_fresh_weight_mobile')")
+        ->toContain('class="sr-only"')
+        ->toContain('sm:hidden')
+        ->toContain('isLyeLiquidCompositionOpen')
+        ->toContain('lyeLiquidRows')
+        ->toContain("__('workbench.settings.lye_liquid_percentage')")
+        ->toContain('relative h-6 w-11 shrink-0 overflow-hidden rounded-full')
+        ->toContain('absolute left-0 top-0.5 size-5')
+        ->not->toContain('Use another lye liquid')
+        ->not->toContain('Selected liquids exceed 100%')
+        ->not->toContain('`Remove ${row.name}`')
+        ->not->toContain('role="text"')
+        ->and($formulaSection)
+        ->toContain("this.t('settings.lye_liquid')")
+        ->toContain("this.t('settings.water')")
+        ->toContain("this.t('settings.lye_liquid_water_only')")
+        ->toContain("this.t('settings.lye_liquid_selected_singular')")
+        ->toContain("this.t('settings.lye_liquid_selected_plural'")
+        ->toContain("this.t('settings.lye_liquid_water_free_singular')")
+        ->toContain("this.t('settings.lye_liquid_water_free_plural'")
+        ->not->toContain("label: 'Lye liquid'")
+        ->not->toContain("label: 'Water'");
+});
+
 it('uses Soapkraft design tokens for restriction status styling', function () {
     $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
     $restrictionsPreview = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/restrictions-preview.blade.php'));

@@ -47,7 +47,7 @@ class RecipeVersionViewDataBuilder
         if (abs($selectedOilWeight - (float) ($snapshot['draft']['oilWeight'] ?? 0)) > 0.0001) {
             $draft = $snapshot['draft'];
             $draft['oilWeight'] = $selectedOilWeight;
-            $snapshot = $this->recipeWorkbenchService->snapshotFromWorkbenchDraft($draft);
+            $snapshot = $this->recipeWorkbenchService->snapshotFromPersistedWorkbenchDraft($draft);
         }
 
         $isCosmetic = $recipe->productFamily?->calculation_basis === 'total_formula';

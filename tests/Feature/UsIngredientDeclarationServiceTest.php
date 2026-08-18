@@ -29,6 +29,21 @@ it('uses the FDA sweet almond botanical label example', function (): void {
         ->toBe('Sweet Almond (Prunus Amygdalus Dulcis) Oil');
 });
 
+it('uses the separately verified canonical INCI for the FDA sweet almond label example', function (): void {
+    $result = app(UsIngredientDeclarationService::class)->propose(
+        candidate: [
+            'unii' => '18L9E3U51M',
+            'common_name' => 'ALMOND OIL',
+            'inci_names' => [],
+            'cas' => ['8007-69-0'],
+        ],
+        verifiedInciName: 'PRUNUS AMYGDALUS DULCIS OIL',
+    );
+
+    expect($result->data['declaration_name'])
+        ->toBe('Sweet Almond (Prunus Amygdalus Dulcis) Oil');
+});
+
 it('does not propose a bare CI number as a US colour declaration', function (): void {
     $result = app(UsIngredientDeclarationService::class)->propose([
         'unii' => null,

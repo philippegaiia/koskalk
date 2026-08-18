@@ -16,8 +16,11 @@ class UsIngredientDeclarationService
     /**
      * @param  array{unii?: string|null, common_name?: string|null, inci_names?: list<string>, cas?: list<string>}  candidate
      */
-    public function propose(array $candidate, bool $isColourant = false): IngredientSourceStageResult
-    {
+    public function propose(
+        array $candidate,
+        bool $isColourant = false,
+        ?string $verifiedInciName = null,
+    ): IngredientSourceStageResult {
         $commonName = trim((string) ($candidate['common_name'] ?? ''));
         if ($commonName === '' || ($isColourant && preg_match('/^CI\s*\d{5}$/i', $commonName) === 1)) {
             $unresolvedMessage = $isColourant
@@ -32,12 +35,19 @@ class UsIngredientDeclarationService
             );
         }
 
+        $inciNames = collect([...($candidate['inci_names'] ?? []), $verifiedInciName])
+            ->filter(fn (mixed $name): bool => is_string($name) && trim($name) !== '')
+            ->map(fn (string $name): string => trim($name))
+            ->unique(fn (string $name): string => Str::lower($name))
+            ->values()
+            ->all();
+
         return new IngredientSourceStageResult(
             stage: IngredientEnrichmentResearchStage::UsDeclaration,
             status: 'completed',
             data: [
                 'market_code' => 'us',
-                'declaration_name' => $this->harmonizedBotanicalName($commonName, $candidate['inci_names'] ?? []),
+                'declaration_name' => $this->harmonizedBotanicalName($commonName, $inciNames),
                 'confidence' => 'supported',
             ],
             evidence: [[

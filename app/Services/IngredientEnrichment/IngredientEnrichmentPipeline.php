@@ -280,7 +280,12 @@ class IngredientEnrichmentPipeline
     ): IngredientSourceStageResult {
         if (($record['category'] ?? null) !== IngredientCategory::Colourants->value
             && ($record['research_family'] ?? null) !== 'colourants') {
-            return $this->usDeclarations->propose($candidate);
+            $verifiedInciName = $euOfficial->data['common_ingredient_name'] ?? $record['inci_name'] ?? null;
+
+            return $this->usDeclarations->propose(
+                candidate: $candidate,
+                verifiedInciName: is_string($verifiedInciName) ? $verifiedInciName : null,
+            );
         }
 
         $names = collect([

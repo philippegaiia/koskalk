@@ -429,3 +429,38 @@ it('commits localized formula balance actions for every supported locale', funct
             ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
     }
 });
+
+it('commits composition and product identity copy for every supported locale', function (): void {
+    $catalogue = File::json(database_path('seeders/data/interface-translations.json'));
+    $rows = collect($catalogue['translations'])
+        ->where('group', 'workbench')
+        ->whereIn('key', [
+            'tabs.output',
+            'settings.production_output',
+            'settings.finished_product',
+            'settings.manufactured_ingredient',
+            'settings.choose_manufactured_ingredient',
+            'settings.new_manufactured_ingredient_name',
+            'settings.manufactured_ingredient_name_required',
+            'settings.manufactured_ingredient_created',
+            'settings.manufactured_ingredient_create_failed',
+        ])
+        ->keyBy('key');
+    $expectedFrench = [
+        'tabs.output' => 'Composition et étiquetage',
+        'settings.production_output' => 'Cette formule produit',
+        'settings.finished_product' => 'Produit',
+        'settings.manufactured_ingredient' => 'Ingrédient',
+        'settings.choose_manufactured_ingredient' => 'Ingrédient produit',
+        'settings.new_manufactured_ingredient_name' => 'Créer un ingrédient',
+        'settings.manufactured_ingredient_name_required' => 'Saisissez un nom d’ingrédient.',
+        'settings.manufactured_ingredient_created' => 'Ingrédient créé.',
+        'settings.manufactured_ingredient_create_failed' => 'L’ingrédient n’a pas pu être créé.',
+    ];
+
+    foreach ($expectedFrench as $key => $translation) {
+        expect($rows)->toHaveKey($key)
+            ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR'])
+            ->and($rows[$key]['text']['fr'])->toBe($translation);
+    }
+});

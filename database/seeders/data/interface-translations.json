@@ -29186,12 +29186,12 @@
       "group": "workbench",
       "key": "settings.choose_manufactured_ingredient",
       "text": {
-        "de": "Ausgabe-Ingrediens",
-        "es": "Ingrediente de salida",
-        "fr": "Ingrédient de sortie",
-        "it": "Ingrediente di output",
-        "nl": "Outputingrediënt",
-        "pt_BR": "Ingrediente de saída"
+        "de": "Erzeugtes Ingrediens",
+        "es": "Ingrediente producido",
+        "fr": "Ingrédient produit",
+        "it": "Ingrediente prodotto",
+        "nl": "Geproduceerd ingrediënt",
+        "pt_BR": "Ingrediente produzido"
       }
     },
     {
@@ -29246,12 +29246,12 @@
       "group": "workbench",
       "key": "settings.finished_product",
       "text": {
-        "de": "Fertigprodukt",
-        "es": "Producto terminado",
-        "fr": "Produit fini",
-        "it": "Prodotto finito",
-        "nl": "Eindproduct",
-        "pt_BR": "Produto acabado"
+        "de": "Produkt",
+        "es": "Producto",
+        "fr": "Produit",
+        "it": "Prodotto",
+        "nl": "Product",
+        "pt_BR": "Produto"
       }
     },
     {
@@ -29306,36 +29306,36 @@
       "group": "workbench",
       "key": "settings.manufactured_ingredient",
       "text": {
-        "de": "Hergestelltes Ingrediens",
-        "es": "Ingrediente fabricado",
-        "fr": "Ingrédient fabriqué",
-        "it": "Ingrediente fabbricato",
-        "nl": "Vervaardigd ingrediënt",
-        "pt_BR": "Ingrediente fabricado"
+        "de": "Ingrediens",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
       }
     },
     {
       "group": "workbench",
       "key": "settings.manufactured_ingredient_create_failed",
       "text": {
-        "de": "Das hergestellte Ingrediens konnte nicht erstellt werden.",
-        "es": "No se pudo crear el ingrediente fabricado.",
-        "fr": "L’ingrédient fabriqué n’a pas pu être créé.",
-        "it": "Non è stato possibile creare l’ingrediente fabbricato.",
-        "nl": "Het vervaardigde ingrediënt kon niet worden aangemaakt.",
-        "pt_BR": "Não foi possível criar o ingrediente fabricado."
+        "de": "Das Ingrediens konnte nicht erstellt werden.",
+        "es": "No se pudo crear el ingrediente.",
+        "fr": "L’ingrédient n’a pas pu être créé.",
+        "it": "Non è stato possibile creare l’ingrediente.",
+        "nl": "Het ingrediënt kon niet worden aangemaakt.",
+        "pt_BR": "Não foi possível criar o ingrediente."
       }
     },
     {
       "group": "workbench",
       "key": "settings.manufactured_ingredient_created",
       "text": {
-        "de": "Hergestelltes Ingrediens erstellt.",
-        "es": "Ingrediente fabricado creado.",
-        "fr": "Ingrédient fabriqué créé.",
-        "it": "Ingrediente fabbricato creato.",
-        "nl": "Vervaardigd ingrediënt aangemaakt.",
-        "pt_BR": "Ingrediente fabricado criado."
+        "de": "Ingrediens erstellt.",
+        "es": "Ingrediente creado.",
+        "fr": "Ingrédient créé.",
+        "it": "Ingrediente creato.",
+        "nl": "Ingrediënt aangemaakt.",
+        "pt_BR": "Ingrediente criado."
       }
     },
     {
@@ -29354,24 +29354,24 @@
       "group": "workbench",
       "key": "settings.manufactured_ingredient_name_required",
       "text": {
-        "de": "Geben Sie einen Namen für das hergestellte Ingrediens ein.",
-        "es": "Introduce un nombre para el ingrediente fabricado.",
-        "fr": "Saisissez un nom pour l’ingrédient fabriqué.",
-        "it": "Inserisci un nome per l’ingrediente fabbricato.",
-        "nl": "Voer een naam in voor het vervaardigde ingrediënt.",
-        "pt_BR": "Informe um nome para o ingrediente fabricado."
+        "de": "Geben Sie einen Ingrediensnamen ein.",
+        "es": "Introduce un nombre de ingrediente.",
+        "fr": "Saisissez un nom d’ingrédient.",
+        "it": "Inserisci un nome per l’ingrediente.",
+        "nl": "Voer een ingrediëntnaam in.",
+        "pt_BR": "Informe um nome de ingrediente."
       }
     },
     {
       "group": "workbench",
       "key": "settings.new_manufactured_ingredient_name",
       "text": {
-        "de": "Neues hergestelltes Ingrediens erstellen",
-        "es": "Crear un ingrediente fabricado nuevo",
-        "fr": "Créer un nouvel ingrédient fabriqué",
-        "it": "Crea un nuovo ingrediente fabbricato",
-        "nl": "Nieuw vervaardigd ingrediënt aanmaken",
-        "pt_BR": "Criar um novo ingrediente fabricado"
+        "de": "Ingrediens erstellen",
+        "es": "Crear un ingrediente",
+        "fr": "Créer un ingrédient",
+        "it": "Crea un ingrediente",
+        "nl": "Ingrediënt aanmaken",
+        "pt_BR": "Criar um ingrediente"
       }
     },
     {
@@ -29522,12 +29522,12 @@
       "group": "workbench",
       "key": "settings.production_output",
       "text": {
-        "de": "Produktionsausgabe",
-        "es": "Salida de producción",
-        "fr": "Sortie de production",
-        "it": "Output della produzione",
-        "nl": "Productie-output",
-        "pt_BR": "Saída da produção"
+        "de": "Diese Rezeptur erzeugt",
+        "es": "Esta fórmula produce",
+        "fr": "Cette formule produit",
+        "it": "Questa formula produce",
+        "nl": "Deze formule produceert",
+        "pt_BR": "Esta fórmula produz"
       }
     },
     {
@@ -29954,12 +29954,12 @@
       "group": "workbench",
       "key": "tabs.output",
       "text": {
-        "de": "Produktausgabe",
-        "es": "Salida del producto",
-        "fr": "Sortie produit",
-        "it": "Output prodotto",
-        "nl": "Productuitvoer",
-        "pt_BR": "Saída do produto"
+        "de": "Zusammensetzung & Kennzeichnung",
+        "es": "Composición y etiquetado",
+        "fr": "Composition et étiquetage",
+        "it": "Composizione ed etichettatura",
+        "nl": "Samenstelling en etikettering",
+        "pt_BR": "Composição e rotulagem"
       }
     },
     {

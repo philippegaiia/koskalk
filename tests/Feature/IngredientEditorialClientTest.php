@@ -233,6 +233,16 @@ it('allows a bounded taxonomy proposal while keeping the family hint non-authori
         ->toContain('human reviewer makes the final taxonomy decision');
 });
 
+it('requires botanical subcategories to match the physical material form', function (): void {
+    $prompt = app(IngredientEnrichmentEditorialPrompt::class)->build(editorialFacts());
+
+    expect($prompt['instructions'])
+        ->toContain('Select the subcategory from the supported physical material form')
+        ->toContain('`aqueous_glycerinated_extracts` only for a liquid extract')
+        ->toContain('`plant_powders` for whole or milled plant material')
+        ->toContain('`dry_extracts` for concentrated botanical-derived dry solids');
+});
+
 /** @return array<string, mixed> */
 function editorialFacts(): array
 {

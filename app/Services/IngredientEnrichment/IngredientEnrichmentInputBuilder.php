@@ -44,6 +44,11 @@ class IngredientEnrichmentInputBuilder
         $snapshot = $subject->currentSnapshot;
         $canonical = is_array($snapshot['canonical'] ?? null) ? $snapshot['canonical'] : [];
         $category = IngredientCategory::tryFrom((string) ($canonical['category'] ?? ''));
+        $subcategories = collect(
+            $category instanceof IngredientCategory
+                ? IngredientSubcategory::forCategory($category)
+                : IngredientSubcategory::cases(),
+        );
 
         $record = [
             'format' => config('ingredient-enrichment.input_format'),
@@ -56,11 +61,15 @@ class IngredientEnrichmentInputBuilder
                     'selected' => $category?->value,
                     'allowed' => collect(IngredientCategory::cases())->map->value->all(),
                 ],
-                'subcategories' => collect(
-                    $category instanceof IngredientCategory
-                        ? IngredientSubcategory::forCategory($category)
-                        : IngredientSubcategory::cases(),
-                )->map->value->all(),
+                'subcategories' => $subcategories->map->value->all(),
+                'subcategory_definitions' => $subcategories
+                    ->map(fn (IngredientSubcategory $subcategory): array => [
+                        'value' => $subcategory->value,
+                        'category' => $subcategory->category()->value,
+                        'description' => (string) $subcategory->localizedDescription('en'),
+                    ])
+                    ->values()
+                    ->all(),
                 'cosing_functions' => $this->activeCosingFunctions(),
                 'identifier_schemes' => collect(IngredientIdentifierScheme::cases())->map->value->all(),
                 'locales' => $this->snapshotBuilder->targetLocales(),

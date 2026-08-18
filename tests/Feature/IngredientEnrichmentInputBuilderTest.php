@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Models\FattyAcid;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
@@ -49,6 +50,32 @@ it('builds the same deterministic research record used by the jsonl exporter', f
         ->toBe($record);
 
     unlink($path);
+});
+
+it('includes bounded subcategory definitions for material-form classification', function (): void {
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'turmeric_root_powder',
+        'display_name' => 'Turmeric Root Powder',
+        'category' => IngredientCategory::BotanicalsExtracts,
+        'subcategory' => null,
+    ]);
+
+    $definitions = collect(app(IngredientEnrichmentInputBuilder::class)->build($ingredient)['vocabulary']['subcategory_definitions'])
+        ->keyBy('value');
+
+    expect($definitions->get(IngredientSubcategory::AqueousGlycerinatedExtracts->value))->toBe([
+        'value' => 'aqueous_glycerinated_extracts',
+        'category' => 'botanicals_extracts',
+        'description' => 'Plant extracts carried in water, glycerin, or water-glycerin blends.',
+    ])->and($definitions->get(IngredientSubcategory::DryExtracts->value))->toBe([
+        'value' => 'dry_extracts',
+        'category' => 'botanicals_extracts',
+        'description' => 'Concentrated botanical extracts supplied as dry solids or powders.',
+    ])->and($definitions->get(IngredientSubcategory::PlantPowders->value))->toBe([
+        'value' => 'plant_powders',
+        'category' => 'botanicals_extracts',
+        'description' => 'Whole or milled botanical powders used directly in formulas.',
+    ]);
 });
 
 it('snapshots existing soap chemistry only when the ingredient is trusted for saponification', function (): void {

@@ -63,6 +63,7 @@ return [
         'queue' => env('INGREDIENT_ENRICHMENT_QUEUE', 'default'),
         'default_batch_size' => (int) env('INGREDIENT_ENRICHMENT_DEFAULT_BATCH_SIZE', 10),
         'maximum_batch_size' => (int) env('INGREDIENT_ENRICHMENT_MAXIMUM_BATCH_SIZE', 25),
+        'job_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_JOB_TIMEOUT', 900),
     ],
     'source_transport' => [
         'connect_timeout_seconds' => (int) env('INGREDIENT_SOURCE_CONNECT_TIMEOUT', 5),
@@ -95,7 +96,7 @@ return [
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         'model' => env('INGREDIENT_ENRICHMENT_MODEL', 'gpt-5.6-terra'),
         'reasoning_effort' => env('INGREDIENT_ENRICHMENT_REASONING_EFFORT', 'low'),
-        'timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_TIMEOUT', 300),
+        'timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_TIMEOUT', 600),
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-editorial-v6',

@@ -23,6 +23,19 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
+it('uses the configured enrichment job timeout', function (): void {
+    config()->set('ingredient-enrichment.direct_ai.job_timeout_seconds', 900);
+
+    $job = new ResearchIngredientEnrichment(123);
+
+    expect($job->timeout)->toBe(900);
+});
+
+it('keeps the default enrichment request timeout below its job window', function (): void {
+    expect(config('ingredient-enrichment.openai.timeout_seconds'))->toBe(600)
+        ->and(config('ingredient-enrichment.direct_ai.job_timeout_seconds'))->toBe(900);
+});
+
 it('researches, validates, plans, and persists a proposal without changing the ingredient', function (): void {
     seedResearchLocales();
     $ingredient = Ingredient::factory()->create([

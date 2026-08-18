@@ -17,14 +17,16 @@ class ResearchIngredientEnrichment implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 3;
 
-    public int $timeout = 330;
+    public int $timeout;
 
     public bool $failOnTimeout = true;
 
     public function __construct(
         public readonly int $itemId,
         public readonly bool $allowGapResearch = false,
-    ) {}
+    ) {
+        $this->timeout = (int) config('ingredient-enrichment.direct_ai.job_timeout_seconds');
+    }
 
     public function handle(ResearchIngredientEnrichmentItem $processor): void
     {

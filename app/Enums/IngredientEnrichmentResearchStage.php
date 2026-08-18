@@ -10,6 +10,7 @@ enum IngredientEnrichmentResearchStage: string
     case UsIdentity = 'us_identity';
     case UsDeclaration = 'us_declaration';
     case ConflictEvaluation = 'conflict_evaluation';
+    case AiGuidanceResearch = 'ai_guidance_research';
     case AiEditorial = 'ai_editorial';
     case Validation = 'validation';
 
@@ -25,6 +26,7 @@ enum IngredientEnrichmentResearchStage: string
             self::EuOfficial,
             self::UsDeclaration,
             self::ConflictEvaluation,
+            self::AiGuidanceResearch,
             self::AiEditorial,
             self::Validation,
         ];

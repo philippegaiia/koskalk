@@ -94,27 +94,56 @@ class IngredientEnrichmentPipeline
             ),
         );
         $facts = is_array($conflict->data['facts'] ?? null) ? $conflict->data['facts'] : [];
+        $editorialFacts = [
+            ...$facts,
+            'catalog_key' => $input['catalog_key'],
+            'vocabulary' => $input['vocabulary'],
+        ];
+        $guidanceResearch = $this->runStage(
+            $itemId,
+            IngredientEnrichmentResearchStage::AiGuidanceResearch,
+            function () use ($editorialFacts, $allowGapResearch): IngredientSourceStageResult {
+                $shouldResearch = $allowGapResearch
+                    || (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true);
+
+                if (! $shouldResearch) {
+                    return new IngredientSourceStageResult(
+                        stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
+                        status: 'completed',
+                        data: $this->emptyGuidanceResearchData(),
+                    );
+                }
+
+                $response = $this->gapResearch->research($editorialFacts);
+
+                return new IngredientSourceStageResult(
+                    stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
+                    status: 'completed',
+                    data: [
+                        'performed' => true,
+                        'candidate_evidence' => $response->candidateEvidence,
+                        'warnings' => $response->warnings,
+                        'unresolved_questions' => $response->unresolvedQuestions,
+                        'sources' => $response->sources,
+                        'provider_response_id' => $response->responseId,
+                        'provider_request_id' => $response->requestId,
+                        'provider_model' => $response->model,
+                        'input_tokens' => $response->inputTokens,
+                        'output_tokens' => $response->outputTokens,
+                        'web_search_calls' => $response->webSearchCalls,
+                    ],
+                );
+            },
+        );
         $editorial = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::AiEditorial,
-            function () use ($facts, $input, $allowGapResearch): IngredientSourceStageResult {
-                $researchGuidance = $allowGapResearch
-                    || (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true);
-                $gap = $researchGuidance ? $this->gapResearch->research([
-                    ...$facts,
-                    'catalog_key' => $input['catalog_key'],
-                    'vocabulary' => $input['vocabulary'],
-                ]) : null;
-                $editorialFacts = [
-                    ...$facts,
-                    'catalog_key' => $input['catalog_key'],
-                    'vocabulary' => $input['vocabulary'],
-                ];
-                if ($gap !== null) {
+            function () use ($editorialFacts, $guidanceResearch): IngredientSourceStageResult {
+                if (($guidanceResearch->data['performed'] ?? false) === true) {
                     $editorialFacts['gap_research'] = [
-                        'candidate_evidence' => $gap->candidateEvidence,
-                        'warnings' => $gap->warnings,
-                        'unresolved_questions' => $gap->unresolvedQuestions,
+                        'candidate_evidence' => $guidanceResearch->data['candidate_evidence'] ?? [],
+                        'warnings' => $guidanceResearch->data['warnings'] ?? [],
+                        'unresolved_questions' => $guidanceResearch->data['unresolved_questions'] ?? [],
                     ];
                 }
                 $response = $this->editorial->edit($editorialFacts);
@@ -127,13 +156,9 @@ class IngredientEnrichmentPipeline
                         'provider_response_id' => $response->responseId,
                         'provider_request_id' => $response->requestId,
                         'provider_model' => $response->model,
-                        'input_tokens' => $response->inputTokens + ($gap?->inputTokens ?? 0),
-                        'output_tokens' => $response->outputTokens + ($gap?->outputTokens ?? 0),
-                        'web_search_calls' => $response->webSearchCalls + ($gap?->webSearchCalls ?? 0),
-                        'gap_sources' => $gap?->sources ?? [],
-                        'gap_candidate_evidence' => $gap?->candidateEvidence ?? [],
-                        'gap_warnings' => $gap?->warnings ?? [],
-                        'gap_unresolved_questions' => $gap?->unresolvedQuestions ?? [],
+                        'input_tokens' => $response->inputTokens,
+                        'output_tokens' => $response->outputTokens,
+                        'web_search_calls' => $response->webSearchCalls,
                     ],
                 );
             },
@@ -154,10 +179,10 @@ class IngredientEnrichmentPipeline
             ->values()
             ->all();
         $editorialValues['warnings'] = collect($editorialValues['warnings'] ?? [])
-            ->merge($editorial->data['gap_warnings'] ?? [])->filter()->unique()->values()->all();
+            ->merge($guidanceResearch->data['warnings'] ?? [])->filter()->unique()->values()->all();
         $editorialValues['unresolved_questions'] = collect($editorialValues['unresolved_questions'] ?? [])
-            ->merge($editorial->data['gap_unresolved_questions'] ?? [])->filter()->unique()->values()->all();
-        $editorialValues['guidance_evidence'] = collect($editorial->data['gap_candidate_evidence'] ?? [])
+            ->merge($guidanceResearch->data['unresolved_questions'] ?? [])->filter()->unique()->values()->all();
+        $editorialValues['guidance_evidence'] = collect($guidanceResearch->data['candidate_evidence'] ?? [])
             ->filter(fn (mixed $row): bool => is_array($row)
                 && ($row['field'] ?? null) === 'proposal.info_markdown'
                 && is_string($row['source_name'] ?? null)
@@ -195,18 +220,39 @@ class IngredientEnrichmentPipeline
                     'url' => (string) $evidence['source_url'],
                     'title' => (string) ($evidence['source_name'] ?? $evidence['source_url']),
                 ])
-                ->merge($editorial->data['gap_sources'] ?? [])
+                ->merge($guidanceResearch->data['sources'] ?? [])
                 ->unique('url')
                 ->values()
                 ->all(),
             providerResponseId: (string) ($editorial->data['provider_response_id'] ?? ''),
             providerRequestId: (string) ($editorial->data['provider_request_id'] ?? ''),
             providerModel: (string) ($editorial->data['provider_model'] ?? ''),
-            inputTokens: (int) ($editorial->data['input_tokens'] ?? 0),
-            outputTokens: (int) ($editorial->data['output_tokens'] ?? 0),
-            webSearchCalls: (int) ($editorial->data['web_search_calls'] ?? 0),
+            inputTokens: (int) ($editorial->data['input_tokens'] ?? 0)
+                + (int) ($guidanceResearch->data['input_tokens'] ?? 0),
+            outputTokens: (int) ($editorial->data['output_tokens'] ?? 0)
+                + (int) ($guidanceResearch->data['output_tokens'] ?? 0),
+            webSearchCalls: (int) ($editorial->data['web_search_calls'] ?? 0)
+                + (int) ($guidanceResearch->data['web_search_calls'] ?? 0),
             structuredSourceCalls: collect($completed)->sum(fn (array $stage): int => (int) ($stage['source_calls'] ?? 0)),
         );
+    }
+
+    /** @return array<string, mixed> */
+    private function emptyGuidanceResearchData(): array
+    {
+        return [
+            'performed' => false,
+            'candidate_evidence' => [],
+            'warnings' => [],
+            'unresolved_questions' => [],
+            'sources' => [],
+            'provider_response_id' => '',
+            'provider_request_id' => '',
+            'provider_model' => '',
+            'input_tokens' => 0,
+            'output_tokens' => 0,
+            'web_search_calls' => 0,
+        ];
     }
 
     /** @param array<string, mixed> $record @return array<string, mixed> */
@@ -528,6 +574,9 @@ class IngredientEnrichmentPipeline
                 'subcategory' => $canonical['subcategory'] ?? null,
                 'identifiers' => is_array($current['identifiers'] ?? null) ? $current['identifiers'] : [],
                 'aliases' => is_array($current['aliases'] ?? null) ? $current['aliases'] : [],
+                'trusted_soap_chemistry' => is_array($current['soap_chemistry'] ?? null)
+                    ? $current['soap_chemistry']
+                    : null,
                 'research_family' => data_get($snapshot, 'research_rules.research_family'),
                 'duplicate_context' => data_get($snapshot, 'research_rules.duplicate_context', []),
                 'duplicate_resolution' => data_get($snapshot, 'research_rules.duplicate_resolution'),

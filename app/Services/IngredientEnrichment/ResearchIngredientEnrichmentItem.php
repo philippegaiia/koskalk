@@ -257,30 +257,36 @@ class ResearchIngredientEnrichmentItem
     private function failureTelemetry(IngredientEnrichmentBatchItem $item): array
     {
         $stages = is_array($item->research_stages) ? $item->research_stages : [];
+        $guidanceResearch = data_get($stages, 'ai_guidance_research.data');
         $editorial = data_get($stages, 'ai_editorial.data');
         $telemetry = [
             'structured_source_calls' => collect($stages)->sum(
                 fn (mixed $stage): int => is_array($stage) ? (int) ($stage['source_calls'] ?? 0) : 0,
             ),
         ];
-
-        if (! is_array($editorial)) {
-            return $telemetry;
-        }
+        $providerTelemetry = collect([$editorial, $guidanceResearch])
+            ->first(fn (mixed $data): bool => is_array($data)
+                && filled($data['provider_response_id'] ?? null));
 
         foreach ([
             'provider_response_id',
             'provider_request_id',
             'provider_model',
         ] as $field) {
-            if (is_string($editorial[$field] ?? null) && $editorial[$field] !== '') {
-                $telemetry[$field] = $editorial[$field];
+            if (is_array($providerTelemetry)
+                && is_string($providerTelemetry[$field] ?? null)
+                && $providerTelemetry[$field] !== '') {
+                $telemetry[$field] = $providerTelemetry[$field];
             }
         }
 
         foreach (['input_tokens', 'output_tokens', 'web_search_calls'] as $field) {
-            if (is_numeric($editorial[$field] ?? null)) {
-                $telemetry[$field] = (int) $editorial[$field];
+            $total = collect([$guidanceResearch, $editorial])
+                ->sum(fn (mixed $data): int => is_array($data) && is_numeric($data[$field] ?? null)
+                    ? (int) $data[$field]
+                    : 0);
+            if ($total > 0) {
+                $telemetry[$field] = $total;
             }
         }
 

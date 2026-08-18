@@ -172,12 +172,20 @@ it('rejects COSMILE candidate evidence for an identity or declaration field', fu
         ->toThrow(RuntimeException::class, 'cannot support identity or declaration fields');
 });
 
-it('gives the editorial pass the configured guidance headings that translations must preserve', function (): void {
+it('requires native editorial localization in every target locale', function (): void {
     $prompt = app(IngredientEnrichmentEditorialPrompt::class)->build(editorialFacts());
 
     expect($prompt['instructions'])
         ->toContain('## Overview', '## Formulation use')
-        ->toContain('Translations preserve the same sections and meaning')
+        ->toContain('not a sentence-by-sentence translation')
+        ->toContain('as though it were originally written by a native cosmetic formulator')
+        ->toContain('freely recast sentence structure')
+        ->toContain('does not need to preserve the number or order of sentences')
+        ->toContain('English calques')
+        ->toContain('native technical terminology, idiom, syntax, register, and rhetorical flow')
+        ->toContain('Do not use English as a grammatical template')
+        ->toContain('Apply this same native-editor standard to every locale')
+        ->toContain('every supported fact, caution, omission, and section')
         ->toContain('introduce no factual claims');
 });
 
@@ -193,6 +201,9 @@ it('requires useful catalogue guidance and localized soapmaking names instead of
         ->toContain('handling, stability, compatibility')
         ->toContain('Avoid generic filler')
         ->toContain('saponified fatty-acid contribution')
+        ->toContain('trusted soap chemistry')
+        ->toContain('use it only for qualitative soapmaking consequences')
+        ->toContain('Never reproduce exact KOH or NaOH SAP values, iodine or INS values, or fatty-acid percentages in catalogue prose')
         ->toContain('short ingredient stem without words such as oil')
         ->toContain('must be non-empty in every locale');
 });
@@ -200,7 +211,7 @@ it('requires useful catalogue guidance and localized soapmaking names instead of
 it('filters low-value editorial claims instead of mechanically expanding source facts', function (): void {
     $prompt = app(IngredientEnrichmentEditorialPrompt::class)->build(editorialFacts());
 
-    expect($prompt['version'])->toBe('ingredient-enrichment-editorial-v5')
+    expect($prompt['version'])->toBe('ingredient-enrichment-editorial-v6')
         ->and($prompt['instructions'])
         ->toContain('apply a relevance filter')
         ->toContain('either state a supported practical formulation consequence or omit the function from the prose')

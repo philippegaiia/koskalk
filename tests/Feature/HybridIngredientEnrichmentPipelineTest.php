@@ -262,6 +262,90 @@ it('runs restricted guidance research automatically and includes its usage', fun
         ]);
 });
 
+it('passes trusted soap chemistry through to the editorial facts', function (): void {
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    $editorial = fakeHybridEditorialClient();
+    $item = hybridPipelineItem(
+        'argan_trusted_oil',
+        'Argan oil',
+        trustedSoapChemistry: [
+            'koh_sap_value' => '0.191000',
+            'naoh_sap_value' => '0.136183',
+            'iodine_value' => '95.000',
+            'ins_value' => '95.000',
+            'fatty_acids' => [[
+                'key' => 'oleic',
+                'name' => 'Oleic',
+                'saturation_class' => 'monounsaturated',
+                'percentage' => '46.00000',
+            ]],
+        ],
+    );
+
+    app(IngredientEnrichmentPipeline::class)->run($item->id);
+
+    expect(data_get($editorial->facts, 'editorial_context.trusted_soap_chemistry'))
+        ->toBe(data_get($item->snapshot, 'current.soap_chemistry'));
+});
+
+it('reuses persisted guidance research after editorial generation fails', function (): void {
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    $editorial = fakeHybridEditorialClient(failFirst: true);
+    $gapResearch = new class extends OpenAiIngredientGapResearchClient
+    {
+        public int $calls = 0;
+
+        public function research(array $facts): IngredientGapResearchResponse
+        {
+            $this->calls++;
+
+            return new IngredientGapResearchResponse(
+                candidateEvidence: [[
+                    'field' => 'proposal.info_markdown',
+                    'source_name' => 'COSMILE Europe',
+                    'source_url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
+                    'summary' => 'A lightweight fixed oil used as an emollient in skin-care formulations.',
+                ]],
+                warnings: [],
+                unresolvedQuestions: [],
+                responseId: 'resp_gap_retry',
+                requestId: 'req_gap_retry',
+                model: 'gpt-test',
+                inputTokens: 40,
+                outputTokens: 20,
+                webSearchCalls: 1,
+                sources: [[
+                    'url' => 'https://cosmileeurope.eu/inci/detail/1152/argania-spinosa-kernel-oil/',
+                    'title' => 'Argania Spinosa Kernel Oil',
+                ]],
+            );
+        }
+    };
+    app()->instance(OpenAiIngredientGapResearchClient::class, $gapResearch);
+    $item = hybridPipelineItem('argan_persisted_guidance_oil', 'Argan oil');
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
+
+    expect(fn () => app(IngredientEnrichmentPipeline::class)->run($item->id))
+        ->toThrow(RuntimeException::class, 'Simulated editorial timeout');
+
+    expect($gapResearch->calls)->toBe(1)
+        ->and($editorial->calls)->toBe(1)
+        ->and(data_get($item->fresh()->research_stages, 'ai_guidance_research.status'))->toBe('completed')
+        ->and(data_get($item->fresh()->research_stages, 'ai_editorial.status'))->toBe('failed');
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+
+    expect($gapResearch->calls)->toBe(1)
+        ->and($editorial->calls)->toBe(2)
+        ->and($response->inputTokens)->toBe(140)
+        ->and($response->outputTokens)->toBe(70)
+        ->and($response->webSearchCalls)->toBe(1);
+});
+
 function seedHybridCosingFunctions(): void
 {
     foreach ([
@@ -291,9 +375,9 @@ function fakeHybridIngredientSources(string $fixture): void
     });
 }
 
-function fakeHybridEditorialClient(array $overrides = []): IngredientEditorialClient
+function fakeHybridEditorialClient(array $overrides = [], bool $failFirst = false): IngredientEditorialClient
 {
-    $client = new class($overrides) implements IngredientEditorialClient
+    $client = new class($overrides, $failFirst) implements IngredientEditorialClient
     {
         public int $calls = 0;
 
@@ -301,12 +385,19 @@ function fakeHybridEditorialClient(array $overrides = []): IngredientEditorialCl
         public array $facts = [];
 
         /** @param array<string, mixed> $overrides */
-        public function __construct(private readonly array $overrides) {}
+        public function __construct(
+            private readonly array $overrides,
+            private readonly bool $failFirst,
+        ) {}
 
         public function edit(array $facts): IngredientEditorialResponse
         {
             $this->calls++;
             $this->facts = $facts;
+            if ($this->failFirst && $this->calls === 1) {
+                throw new RuntimeException('Simulated editorial timeout');
+            }
+
             $displayName = str_contains((string) data_get($facts, 'proposal.inci_name'), 'ARGANIA')
                 ? 'Argan oil'
                 : 'Apricot kernel oil';
@@ -350,6 +441,7 @@ function hybridPipelineItem(
     ?string $subcategory = 'vegetable_oils',
     string $subjectType = 'ingredient',
     ?string $researchFamily = null,
+    ?array $trustedSoapChemistry = null,
 ): IngredientEnrichmentBatchItem {
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
 
@@ -367,6 +459,7 @@ function hybridPipelineItem(
                     'subcategory' => $subcategory,
                 ],
                 'identifiers' => [],
+                ...($trustedSoapChemistry === null ? [] : ['soap_chemistry' => $trustedSoapChemistry]),
             ],
             'vocabulary' => [
                 'category' => ['allowed' => collect(IngredientCategory::cases())->map->value->all()],

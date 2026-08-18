@@ -26,6 +26,7 @@ return [
         'us_identity' => 'US identity lookup',
         'us_declaration' => 'US declaration lookup',
         'conflict_evaluation' => 'Conflict evaluation',
+        'ai_guidance_research' => 'Guidance research',
         'ai_editorial' => 'Editorial guidance and translations',
         'validation' => 'Validation',
     ],

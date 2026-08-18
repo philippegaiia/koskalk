@@ -24,3 +24,9 @@ AI may translate guidance prose, but the three fixed Markdown section headings a
 
 ## Editorial guidance filters low-value source facts
 Ingredient guidance must turn source facts into material-specific formulation consequences or omit them from prose. Never mechanically define COSING labels, assume grade-specific processing, copy generic SDS language, repeat storage advice, or describe a saponified oil using the raw oil's emollient properties.
+
+## Localize guidance as native editorial copy
+Every ingredient-guidance locale is an independent localized rewrite, never a sentence-by-sentence copy or an English grammatical template. Preserve supported facts, cautions, omissions, and section order while using native cosmetic-formulation terminology, idiom, syntax, register, and rhetorical flow equally in every language.
+
+## Reuse trusted chemistry and persisted guidance research
+Expose SAP and fatty-acid data to enrichment prose only when Ingredient::canDriveSoapSaponification() is true, and use it qualitatively without printing exact chemistry values. Keep AI guidance research in its own persisted stage before editorial generation so an editorial timeout/retry does not repeat research.

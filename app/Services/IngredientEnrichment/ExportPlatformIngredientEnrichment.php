@@ -38,6 +38,8 @@ class ExportPlatformIngredientEnrichment
                 'functions',
                 'translations',
                 'marketLabels',
+                'sapProfile',
+                'fattyAcidEntries.fattyAcid',
             ])
             ->orderBy('catalog_key');
 

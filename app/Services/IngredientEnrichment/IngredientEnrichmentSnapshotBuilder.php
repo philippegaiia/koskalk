@@ -2,17 +2,21 @@
 
 namespace App\Services\IngredientEnrichment;
 
+use App\DecimalStringFormatter;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientFunctionSource;
 use App\Enums\IngredientLabelMarket;
 use App\Enums\IngredientSubcategory;
 use App\Models\Ingredient;
+use App\Models\IngredientFattyAcid;
 use App\Models\IngredientFunction;
 use App\Models\IngredientMarketLabel;
 use Carbon\CarbonImmutable;
 
 class IngredientEnrichmentSnapshotBuilder
 {
+    public function __construct(private readonly DecimalStringFormatter $decimalStringFormatter) {}
+
     /**
      * Build the normalized state and its canonical fingerprint.
      *
@@ -42,7 +46,11 @@ class IngredientEnrichmentSnapshotBuilder
             'functions',
             'translations',
             'marketLabels',
+            'sapProfile',
+            'fattyAcidEntries.fattyAcid',
         ]);
+
+        $soapChemistry = $this->trustedSoapChemistry($ingredient);
 
         return [
             'catalog_key' => (string) $ingredient->catalog_key,
@@ -60,6 +68,7 @@ class IngredientEnrichmentSnapshotBuilder
                 'is_manufactured' => (bool) $ingredient->is_manufactured,
                 'requires_aromatic_compliance' => (bool) $ingredient->requires_aromatic_compliance,
             ],
+            ...($soapChemistry === null ? [] : ['soap_chemistry' => $soapChemistry]),
             'identifiers' => $ingredient->identifiers
                 ->map(fn ($identifier): array => [
                     'scheme' => $this->enumValue($identifier->scheme),
@@ -238,6 +247,46 @@ class IngredientEnrichmentSnapshotBuilder
         $value = trim((string) $value);
 
         return $value === '' ? null : $value;
+    }
+
+    /**
+     * @return array{
+     *     koh_sap_value: string,
+     *     naoh_sap_value: string,
+     *     iodine_value: string|null,
+     *     ins_value: string|null,
+     *     fatty_acids: list<array{key: string, name: string, saturation_class: string|null, percentage: string}>
+     * }|null
+     */
+    private function trustedSoapChemistry(Ingredient $ingredient): ?array
+    {
+        if (! $ingredient->canDriveSoapSaponification() || $ingredient->sapProfile === null) {
+            return null;
+        }
+
+        return [
+            'koh_sap_value' => (string) $ingredient->sapProfile->koh_sap_value,
+            'naoh_sap_value' => $this->decimalStringFormatter->toFixed(
+                (string) $ingredient->sapProfile->naoh_sap_value,
+                6,
+            ),
+            'iodine_value' => $this->nullableString($ingredient->sapProfile->iodine_value),
+            'ins_value' => $this->nullableString($ingredient->sapProfile->ins_value),
+            'fatty_acids' => $ingredient->fattyAcidEntries
+                ->filter(fn (IngredientFattyAcid $entry): bool => $entry->fattyAcid !== null)
+                ->sortBy(fn (IngredientFattyAcid $entry): string => implode('|', [
+                    str_pad((string) $entry->fattyAcid->display_order, 10, '0', STR_PAD_LEFT),
+                    $entry->fattyAcid->key,
+                ]))
+                ->map(fn (IngredientFattyAcid $entry): array => [
+                    'key' => (string) $entry->fattyAcid->key,
+                    'name' => (string) $entry->fattyAcid->name,
+                    'saturation_class' => $this->nullableString($entry->fattyAcid->saturation_class),
+                    'percentage' => (string) $entry->percentage,
+                ])
+                ->values()
+                ->all(),
+        ];
     }
 
     private function dateTimeString(mixed $value): ?string

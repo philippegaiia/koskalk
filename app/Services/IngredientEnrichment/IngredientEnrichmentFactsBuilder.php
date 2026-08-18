@@ -171,6 +171,9 @@ class IngredientEnrichmentFactsBuilder
                     $record['category'] ?? null,
                     $record['subcategory'] ?? null,
                 ])->filter(fn (mixed $value): bool => is_string($value) && $value !== '')->values()->all(),
+                ...(is_array($record['trusted_soap_chemistry'] ?? null)
+                    ? ['trusted_soap_chemistry' => $record['trusted_soap_chemistry']]
+                    : []),
             ],
         ];
     }

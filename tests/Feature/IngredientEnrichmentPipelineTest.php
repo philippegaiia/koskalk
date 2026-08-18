@@ -153,6 +153,7 @@ it('runs deterministic stages before one editorial pass and resumes their persis
         'eu_official',
         'us_declaration',
         'conflict_evaluation',
+        'ai_guidance_research',
         'ai_editorial',
         'validation',
     ])->and($response->structuredSourceCalls)->toBe(3)

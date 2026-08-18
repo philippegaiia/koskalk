@@ -386,7 +386,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
                 this.outputIngredientId = String(ingredient.id);
                 this.manufacturedIngredientName = '';
                 this.manufacturedIngredientStatus = 'success';
-                this.manufacturedIngredientMessage = response.message ?? this.t('settings.manufactured_ingredient_created');
+                this.manufacturedIngredientMessage = this.t('settings.manufactured_ingredient_created');
             } catch (error) {
                 void error;
                 this.manufacturedIngredientStatus = 'error';

@@ -4,10 +4,6 @@
 @endphp
 
 <div x-show="activeWorkbenchTab === 'output'" x-cloak role="tabpanel" aria-labelledby="tab-output" id="panel-output" class="space-y-6 pb-24">
-@unless ($isPublicCalculator)
-    @include('livewire.dashboard.partials.recipe-workbench.production-output-settings')
-@endunless
-
 @if ($isCosmeticWorkbench)
  <section class="sk-card p-5">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">

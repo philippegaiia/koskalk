@@ -35,7 +35,7 @@ it('uses the approved product and formula terminology on the soap workbench', fu
         ->and($navigation)
         ->toContain('aria-label="Product sections"')
         ->toContain('Product sheet')
-        ->toContain('Product output')
+        ->toContain('Composition &amp; labeling')
         ->toContain('Instructions &amp; media')
         ->and($settings)
         ->toContain('Formula settings')

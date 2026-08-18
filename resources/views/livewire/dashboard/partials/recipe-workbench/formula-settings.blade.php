@@ -1,5 +1,6 @@
 @php
     $isCosmeticWorkbench = $isCosmeticWorkbench ?? false;
+    $isPublicCalculator = $isPublicCalculator ?? false;
     $ifraSearchOptions = collect($workbench['ifraProductCategories'] ?? [])->map(fn (array $category): array => [
         'id' => $category['id'],
         'label' => filled($category['short_name'] ?? null)
@@ -41,6 +42,9 @@
 	</button>
 	</div>
 	<div id="formula-settings-panel" x-show="isFormulaSettingsOpen" x-cloak class="mt-4">
+@unless ($isPublicCalculator)
+    @include('livewire.dashboard.partials.recipe-workbench.formula-output-type')
+@endunless
 @if ($isCosmeticWorkbench)
 	 <div>
 	 <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-5">

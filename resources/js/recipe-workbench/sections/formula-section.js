@@ -143,6 +143,17 @@ export function createFormulaSection() {
                 );
             }
 
+            if (this.canPersist) {
+                cards.unshift({
+                    id: 'formula-output-type',
+                    label: this.t('settings.production_output'),
+                    value: this.productionOutputType === 'manufactured_ingredient'
+                        ? this.t('settings.manufactured_ingredient')
+                        : this.t('settings.finished_product'),
+                    tone: 'info',
+                });
+            }
+
             cards.push(
                 {
                     id: 'formula-exposure',

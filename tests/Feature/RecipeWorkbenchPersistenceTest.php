@@ -58,7 +58,7 @@ it('creates an active workspace manufactured ingredient for inline recipe output
         ->and(SupplierListing::query()->where('ingredient_id', $ingredient->id)->count())->toBe(0);
 });
 
-it('exposes the production output controls and workspace manufactured ingredients in the workbench', function () {
+it('exposes product or ingredient identity at the start of formula settings', function (): void {
     $user = User::factory()->create();
     ProductFamily::factory()->create([
         'slug' => 'soap',
@@ -69,17 +69,36 @@ it('exposes the production output controls and workspace manufactured ingredient
     $this->actingAs($user)
         ->get(route('recipes.create', ['family' => 'soap']))
         ->assertSuccessful()
-        ->assertSee('Production output')
-        ->assertSee('Manufactured ingredient')
+        ->assertSee('This formula produces')
+        ->assertSee('Product')
+        ->assertSee('Ingredient')
         ->assertSee('Turmeric oil macerate');
 });
 
-it('places production output settings in the output tab instead of formula settings', function () {
+it('keeps product identity in formula settings and composition output in its own tab', function (): void {
     $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $formulaOutputType = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-output-type.blade.php'));
     $outputTab = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-tab.blade.php'));
+    $publicFormulaSettings = view('livewire.dashboard.partials.recipe-workbench.formula-settings', [
+        'isPublicCalculator' => true,
+    ])->render();
 
-    expect($formulaSettings)->not->toContain('setting-production-output')
-        ->and($outputTab)->toContain('recipe-workbench.production-output-settings');
+    expect($formulaSettings)
+        ->toContain('recipe-workbench.formula-output-type')
+        ->and($formulaOutputType)
+        ->toContain('data-formula-output-type')
+        ->toContain('role="radiogroup"')
+        ->toContain(':aria-checked="productionOutputType === \'finished_product\'"')
+        ->toContain(':aria-checked="productionOutputType === \'manufactured_ingredient\'"')
+        ->not->toContain('readyDelayDays')
+        ->not->toContain('productReference')
+        ->not->toContain('nominalContentValue')
+        ->not->toContain('duplicateFormula()')
+        ->and($outputTab)
+        ->not->toContain('production-output-settings')
+        ->not->toContain('formula-output-type')
+        ->and($publicFormulaSettings)
+        ->not->toContain('data-formula-output-type');
 });
 
 it('persists manufactured ingredient output configuration through recipe save, reload, and duplication', function () {

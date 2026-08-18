@@ -44,6 +44,72 @@ export function createFormulaSection() {
             return this.phaseItems.fragrance ?? [];
         },
 
+        get lyeLiquidRows() {
+            return this.phaseItems?.lye_water ?? [];
+        },
+
+        lyeLiquidPercentageTotal() {
+            return this.lyeLiquidRows.reduce(
+                (total, row) => total + Math.max(0, parseDecimal(row?.percentage)),
+                0,
+            );
+        },
+
+        lyeLiquidWaterPercentage() {
+            return Math.max(0, 100 - this.lyeLiquidPercentageTotal());
+        },
+
+        lyeLiquidTotalWeight() {
+            return this.number(
+                this.backendCalculation?.lye?.water?.weight ?? this.lyeBreakdown().water_weight,
+            );
+        },
+
+        lyeLiquidWeight(row) {
+            return this.lyeLiquidTotalWeight() * (this.nonNegativeNumber(row?.percentage) / 100);
+        },
+
+        lyeLiquidWaterWeight() {
+            return this.lyeLiquidTotalWeight() * (this.lyeLiquidWaterPercentage() / 100);
+        },
+
+        lyeLiquidSelectionSummary() {
+            if (this.lyeLiquidRows.length === 0) {
+                return this.t('settings.lye_liquid_water_only');
+            }
+
+            if (this.lyeLiquidPercentageTotal() >= 100) {
+                return this.lyeLiquidRows.length === 1
+                    ? this.t('settings.lye_liquid_water_free_singular')
+                    : this.t('settings.lye_liquid_water_free_plural', { count: this.lyeLiquidRows.length });
+            }
+
+            return this.lyeLiquidRows.length === 1
+                ? this.t('settings.lye_liquid_selected_singular')
+                : this.t('settings.lye_liquid_selected_plural', { count: this.lyeLiquidRows.length });
+        },
+
+        lyeLiquidSummaryCards() {
+            return [
+                {
+                    id: 'water',
+                    label: this.t('settings.water'),
+                    value: this.lyeLiquidWaterWeight(),
+                    kind: 'liquid',
+                },
+                ...this.lyeLiquidRows.map((row) => ({
+                    id: `lye-liquid-${row.id ?? row.ingredient_id}`,
+                    label: row.name,
+                    value: this.lyeLiquidWeight(row),
+                    kind: 'liquid',
+                })),
+            ];
+        },
+
+        get lyeLiquidCompositionIsValid() {
+            return this.lyeLiquidPercentageTotal() <= 100.00001;
+        },
+
         formulaIngredientRows() {
             if (this.isCosmeticFormula) {
                 return this.cosmeticFormulaRows();
@@ -130,8 +196,8 @@ export function createFormulaSection() {
                     },
                     {
                         id: 'formula-water',
-                        label: 'Water',
-                        value: this.waterModeSummaryLabel,
+                        label: this.t('settings.lye_liquid'),
+                        value: `${this.lyeLiquidSelectionSummary()} · ${this.waterModeSummaryLabel}`,
                         tone: 'chemistry',
                     },
                     {
@@ -188,8 +254,7 @@ export function createFormulaSection() {
         },
 
         get lyeWaterDiagnostic() {
-            const waterCard = this.lyeSummaryCards.find((card) => card.id === 'water');
-            const waterWeight = this.number(waterCard?.value ?? this.lyeBreakdown().water_weight);
+            const waterWeight = this.lyeLiquidTotalWeight();
             const lyeWeight = this.totalLyeToWeigh();
             const hasResolvedWeights = this.oilWeightTotal() > 0 && lyeWeight > 0;
 
@@ -337,11 +402,7 @@ export function createFormulaSection() {
                     );
                 }
 
-                cards.push({
-                    id: 'water',
-                    label: 'Water',
-                    value: backendLye.water?.weight ?? 0,
-                });
+                cards.push(...this.lyeLiquidSummaryCards());
 
                 return cards;
             }
@@ -375,11 +436,7 @@ export function createFormulaSection() {
                 );
             }
 
-            cards.push({
-                id: 'water',
-                label: 'Water',
-                value: lye.water_weight,
-            });
+            cards.push(...this.lyeLiquidSummaryCards());
 
             return cards;
         },
@@ -390,8 +447,9 @@ export function createFormulaSection() {
 
         formatLyeSummaryCardValue(card) {
             const value = this.number(card?.value ?? 0);
-            const shouldFloorLye = this.oilUnit === 'g' && card?.id !== 'water' && this.totalLyeToWeigh() > 300;
-            const shouldFloorWater = this.oilUnit === 'g' && card?.id === 'water' && value > 300;
+            const isLiquid = card?.kind === 'liquid' || card?.id === 'water';
+            const shouldFloorLye = this.oilUnit === 'g' && !isLiquid && this.totalLyeToWeigh() > 300;
+            const shouldFloorWater = this.oilUnit === 'g' && isLiquid && value > 300;
 
             if (shouldFloorLye || shouldFloorWater) {
                 return this.format(Math.floor(value), 0);
@@ -473,11 +531,11 @@ export function createFormulaSection() {
                 return this.nonNegativeNumber(this.oilWeight) > 0;
             }
 
-            return this.oilPercentageIsBalanced;
+            return this.oilPercentageIsBalanced && this.lyeLiquidCompositionIsValid;
         },
 
         get canSaveRecipe() {
-            return this.oilPercentageIsBalanced;
+            return this.oilPercentageIsBalanced && this.lyeLiquidCompositionIsValid;
         },
 
         get canDuplicateFormula() {

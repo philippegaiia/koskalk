@@ -213,7 +213,23 @@ class ProductionDetailPresenter
             ];
         }
 
-        return $materials;
+        $materials = collect($materials);
+        $firstLyeWaterIndex = $materials->search(
+            fn (array $material): bool => $material['group_key'] === 'lye_water',
+        );
+
+        if ($firstLyeWaterIndex === false) {
+            return $materials->values()->all();
+        }
+
+        $isNotLyeWater = fn (array $material): bool => $material['group_key'] !== 'lye_water';
+
+        return $materials->take($firstLyeWaterIndex)
+            ->filter($isNotLyeWater)
+            ->concat($materials->filter(fn (array $material): bool => $material['group_key'] === 'lye_water'))
+            ->concat($materials->slice($firstLyeWaterIndex)->filter($isNotLyeWater))
+            ->values()
+            ->all();
     }
 
     /**

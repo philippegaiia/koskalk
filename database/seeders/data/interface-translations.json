@@ -27432,6 +27432,18 @@
     },
     {
       "group": "workbench",
+      "key": "costing.ingredients.lye_liquid_percentage",
+      "text": {
+        "de": "% Laugenflüssigkeit",
+        "es": "% líquido de lejía",
+        "fr": "% liquide de lessive",
+        "it": "% liquido alcalino",
+        "nl": "% loogvloeistof",
+        "pt_BR": "% líquido alcalino"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "costing.ingredients.percentage",
       "text": {
         "de": "%",
@@ -27680,6 +27692,18 @@
         "it": "Fragranze e sostanze aromatiche",
         "nl": "Geur- en aromastoffen",
         "pt_BR": "Fragrância e aromáticos"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.phases.lye_liquid",
+      "text": {
+        "de": "Laugenflüssigkeit",
+        "es": "Líquido de lejía",
+        "fr": "Liquide de lessive",
+        "it": "Liquido alcalino",
+        "nl": "Loogvloeistof",
+        "pt_BR": "Líquido alcalino"
       }
     },
     {
@@ -29304,6 +29328,258 @@
     },
     {
       "group": "workbench",
+      "key": "settings.lye_liquid",
+      "text": {
+        "de": "Laugenflüssigkeit",
+        "es": "Líquido de lejía",
+        "fr": "Liquide de soude",
+        "it": "Liquido alcalino",
+        "nl": "Loogvloeistof",
+        "pt_BR": "Líquido de soda cáustica"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_add",
+      "text": {
+        "de": "Laugenflüssigkeit hinzufügen",
+        "es": "Añadir un líquido de lejía",
+        "fr": "Ajouter un liquide de soude",
+        "it": "Aggiungi un liquido alcalino",
+        "nl": "Loogvloeistof toevoegen",
+        "pt_BR": "Adicionar um líquido de soda cáustica"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_exceeds",
+      "text": {
+        "de": "Ausgewählte Flüssigkeiten überschreiten 100 %",
+        "es": "Los líquidos seleccionados superan el 100 %",
+        "fr": "Les liquides sélectionnés dépassent 100 %",
+        "it": "I liquidi selezionati superano il 100%",
+        "nl": "Geselecteerde vloeistoffen overschrijden 100%",
+        "pt_BR": "Os líquidos selecionados excedem 100%"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_fresh_weight",
+      "text": {
+        "de": "Frischgewicht (:unit)",
+        "es": "Peso fresco (:unit)",
+        "fr": "Poids frais (:unit)",
+        "it": "Peso fresco (:unit)",
+        "nl": "Versgewicht (:unit)",
+        "pt_BR": "Peso fresco (:unit)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_fresh_weight_for",
+      "text": {
+        "de": "Frischgewicht für :ingredient: :weight :unit",
+        "es": "Peso fresco de :ingredient: :weight :unit",
+        "fr": "Poids frais de :ingredient : :weight :unit",
+        "it": "Peso fresco di :ingredient: :weight :unit",
+        "nl": "Versgewicht van :ingredient: :weight :unit",
+        "pt_BR": "Peso fresco de :ingredient: :weight :unit"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_fresh_weight_mobile",
+      "text": {
+        "de": "Frischgewicht",
+        "es": "Peso fresco",
+        "fr": "Poids frais",
+        "it": "Peso fresco",
+        "nl": "Versgewicht",
+        "pt_BR": "Peso fresco"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_help",
+      "text": {
+        "de": "Wasser bleibt die Vorgabe; ersetzen Sie es teilweise oder vollständig durch Hydrolat, Milch oder eine andere Katalogzutat.",
+        "es": "Mantén el agua como opción predeterminada o sustituye una parte o toda por hidrolato, leche u otro ingrediente del catálogo.",
+        "fr": "Conservez l’eau par défaut ou remplacez-en une partie ou la totalité par un hydrolat, du lait ou un autre ingrédient du catalogue.",
+        "it": "Mantieni l’acqua come predefinita oppure sostituiscila in parte o del tutto con idrolato, latte o un altro ingrediente del catalogo.",
+        "nl": "Behoud water als standaard of vervang een deel of alles door hydrolaat, melk of een ander catalogusingrediënt.",
+        "pt_BR": "Mantenha a água como padrão ou substitua parte ou toda por hidrolato, leite ou outro ingrediente do catálogo."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_percentage",
+      "text": {
+        "de": "% der gesamten Laugenflüssigkeit",
+        "es": "% del líquido de lejía total",
+        "fr": "% du liquide de soude total",
+        "it": "% del liquido alcalino totale",
+        "nl": "% van totale loogvloeistof",
+        "pt_BR": "% do líquido de soda cáustica total"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_percentage_for",
+      "text": {
+        "de": "Prozent der gesamten Laugenflüssigkeit für :ingredient",
+        "es": "Porcentaje del líquido de lejía total para :ingredient",
+        "fr": "Pourcentage du liquide de soude total pour :ingredient",
+        "it": "Percentuale del liquido alcalino totale per :ingredient",
+        "nl": "Percentage van totale loogvloeistof voor :ingredient",
+        "pt_BR": "Percentual do líquido de soda cáustica total para :ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_percentage_short",
+      "text": {
+        "de": "% Flüssigkeit",
+        "es": "% líquido",
+        "fr": "% liquide",
+        "it": "% liquido",
+        "nl": "% vloeistof",
+        "pt_BR": "% líquido"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_remove",
+      "text": {
+        "de": ":ingredient entfernen",
+        "es": "Eliminar :ingredient",
+        "fr": "Supprimer :ingredient",
+        "it": "Rimuovi :ingredient",
+        "nl": ":ingredient verwijderen",
+        "pt_BR": "Remover :ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_remove_confirm",
+      "text": {
+        "de": "Ausgewählte Laugenflüssigkeiten entfernen und wieder nur Wasser verwenden?",
+        "es": "¿Eliminar los líquidos de lejía seleccionados y volver a usar solo agua?",
+        "fr": "Supprimer les liquides de lessive sélectionnés et revenir à l’eau uniquement ?",
+        "it": "Rimuovere i liquidi alcalini selezionati e tornare a usare solo acqua?",
+        "nl": "De geselecteerde loogvloeistoffen verwijderen en teruggaan naar alleen water?",
+        "pt_BR": "Remover os líquidos alcalinos selecionados e voltar a usar somente água?"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_replaced",
+      "text": {
+        "de": ":percentage% ersetzt",
+        "es": ":percentage% sustituido",
+        "fr": ":percentage % remplacé",
+        "it": ":percentage% sostituito",
+        "nl": ":percentage% vervangen",
+        "pt_BR": ":percentage% substituído"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_search",
+      "text": {
+        "de": "Hydrolat, Milch oder andere Zutat suchen",
+        "es": "Buscar hidrolato, leche u otro ingrediente",
+        "fr": "Rechercher un hydrolat, du lait ou un autre ingrédient",
+        "it": "Cerca idrolato, latte o un altro ingrediente",
+        "nl": "Zoek hydrolaat, melk of een ander ingrediënt",
+        "pt_BR": "Pesquisar hidrolato, leite ou outro ingrediente"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_selected_plural",
+      "text": {
+        "de": "Wasser + :count ausgewählte Flüssigkeiten",
+        "es": "Agua + :count líquidos seleccionados",
+        "fr": "Eau + :count liquides sélectionnés",
+        "it": "Acqua + :count liquidi selezionati",
+        "nl": "Water + :count geselecteerde vloeistoffen",
+        "pt_BR": "Água + :count líquidos selecionados"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_selected_singular",
+      "text": {
+        "de": "Wasser + 1 ausgewählte Flüssigkeit",
+        "es": "Agua + 1 líquido seleccionado",
+        "fr": "Eau + 1 liquide sélectionné",
+        "it": "Acqua + 1 liquido selezionato",
+        "nl": "Water + 1 geselecteerde vloeistof",
+        "pt_BR": "Água + 1 líquido selecionado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_toggle",
+      "text": {
+        "de": "Andere Laugenflüssigkeit verwenden",
+        "es": "Usar otro líquido de lejía",
+        "fr": "Utiliser un autre liquide de soude",
+        "it": "Usa un altro liquido alcalino",
+        "nl": "Andere loogvloeistof gebruiken",
+        "pt_BR": "Usar outro líquido de soda cáustica"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_water_free_plural",
+      "text": {
+        "de": ":count ausgewählte Flüssigkeiten · kein Wasser",
+        "es": ":count líquidos seleccionados · sin agua",
+        "fr": ":count liquides sélectionnés · sans eau",
+        "it": ":count liquidi selezionati · senza acqua",
+        "nl": ":count geselecteerde vloeistoffen · geen water",
+        "pt_BR": ":count líquidos selecionados · sem água"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_water_free_singular",
+      "text": {
+        "de": "1 ausgewählte Flüssigkeit · kein Wasser",
+        "es": "1 líquido seleccionado · sin agua",
+        "fr": "1 liquide sélectionné · sans eau",
+        "it": "1 liquido selezionato · senza acqua",
+        "nl": "1 geselecteerde vloeistof · geen water",
+        "pt_BR": "1 líquido selecionado · sem água"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_water_only",
+      "text": {
+        "de": "Laugenflüssigkeit: nur Wasser",
+        "es": "Líquido de lejía: solo agua",
+        "fr": "Liquide de soude : eau uniquement",
+        "it": "Liquido alcalino: solo acqua",
+        "nl": "Loogvloeistof: alleen water",
+        "pt_BR": "Líquido de soda cáustica: somente água"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.lye_liquid_water_summary",
+      "text": {
+        "de": "Wasser :percentage% · :weight :unit",
+        "es": "Agua :percentage% · :weight :unit",
+        "fr": "Eau :percentage % · :weight :unit",
+        "it": "Acqua :percentage% · :weight :unit",
+        "nl": "Water :percentage% · :weight :unit",
+        "pt_BR": "Água :percentage% · :weight :unit"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.manufactured_ingredient",
       "text": {
         "de": "Ingrediens",
@@ -29612,6 +29888,18 @@
         "it": "Peso totale degli oli",
         "nl": "Totaalgewicht van de oliën",
         "pt_BR": "Peso total dos óleos"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.water",
+      "text": {
+        "de": "Wasser",
+        "es": "Agua",
+        "fr": "Eau",
+        "it": "Acqua",
+        "nl": "Water",
+        "pt_BR": "Água"
       }
     },
     {
@@ -29972,6 +30260,78 @@
         "it": "Confezionamento",
         "nl": "Verpakking",
         "pt_BR": "Embalagem"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "validation.lye_liquid_alkali",
+      "text": {
+        "de": "Alkalien für die Seifenherstellung können nicht als Ersatz für die Laugenflüssigkeit verwendet werden.",
+        "es": "Los álcalis para jabonería no pueden utilizarse como sustitutos del líquido de lejía.",
+        "fr": "Les alcalis de savonnerie ne peuvent pas être utilisés comme substituts du liquide de soude.",
+        "it": "Gli alcali per la saponificazione non possono essere usati come sostituti del liquido alcalino.",
+        "nl": "Alkaliën voor zeepbereiding kunnen niet als vervanging voor de loogvloeistof worden gebruikt.",
+        "pt_BR": "Álcalis para saboaria não podem ser usados como substitutos do líquido de soda cáustica."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "validation.lye_liquid_ingredient",
+      "text": {
+        "de": "Wählen Sie für jeden Ersatz der Laugenflüssigkeit eine aktive, zugängliche Zutat aus.",
+        "es": "Seleccione un ingrediente activo y accesible para cada sustitución del líquido de lejía.",
+        "fr": "Sélectionnez un ingrédient actif et accessible pour chaque substitut du liquide de soude.",
+        "it": "Seleziona un ingrediente attivo e accessibile per ogni sostituzione del liquido alcalino.",
+        "nl": "Selecteer voor elke vervanging van de loogvloeistof een actief, toegankelijk ingrediënt.",
+        "pt_BR": "Selecione um ingrediente ativo e acessível para cada substituição do líquido de soda cáustica."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "validation.lye_liquid_negative_cured",
+      "text": {
+        "de": "Das Gewicht der gereiften Seife darf nicht negativ sein.",
+        "es": "El peso del jabón curado no puede ser negativo.",
+        "fr": "Le poids du savon affiné ne peut pas être négatif.",
+        "it": "Il peso del sapone stagionato non può essere negativo.",
+        "nl": "Het gewicht van de uitgeharde zeep mag niet negatief zijn.",
+        "pt_BR": "O peso do sabão curado não pode ser negativo."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "validation.lye_liquid_negative_total",
+      "text": {
+        "de": "Das Gesamtgewicht der Verdünnungsflüssigkeit darf nicht negativ sein.",
+        "es": "El peso total del líquido de dilución no puede ser negativo.",
+        "fr": "Le poids total du liquide de dilution ne peut pas être négatif.",
+        "it": "Il peso totale del liquido di diluizione non può essere negativo.",
+        "nl": "Het totale gewicht van de verdunningsvloeistof mag niet negatief zijn.",
+        "pt_BR": "O peso total do líquido de diluição não pode ser negativo."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "validation.lye_liquid_percentage_range",
+      "text": {
+        "de": "Jeder Prozentsatz der Laugenflüssigkeit muss zwischen 0 und 100 liegen.",
+        "es": "Cada porcentaje de líquido de lejía debe estar entre 0 y 100.",
+        "fr": "Chaque pourcentage de liquide de soude doit être compris entre 0 et 100.",
+        "it": "Ogni percentuale di liquido alcalino deve essere compresa tra 0 e 100.",
+        "nl": "Elk percentage loogvloeistof moet tussen 0 en 100 liggen.",
+        "pt_BR": "Cada percentual de líquido de soda cáustica deve estar entre 0 e 100."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "validation.lye_liquid_percentage_total",
+      "text": {
+        "de": "Die Ersetzungen der Laugenflüssigkeit dürfen insgesamt 100 % nicht überschreiten.",
+        "es": "Las sustituciones del líquido de lejía no pueden superar el 100 %.",
+        "fr": "Les substitutions du liquide de soude ne peuvent pas dépasser 100 %.",
+        "it": "Le sostituzioni del liquido alcalino non possono superare il 100%.",
+        "nl": "Vervangingen van loogvloeistof mogen samen niet meer dan 100% zijn.",
+        "pt_BR": "As substituições do líquido de soda cáustica não podem exceder 100%."
       }
     }
   ]

@@ -10,6 +10,7 @@ use App\Models\RecipeVersionCostingItem;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
+use App\Support\NumberLocale;
 use Illuminate\Support\Collection;
 
 class RecipeVersionCostPreviewBuilder
@@ -31,7 +32,7 @@ class RecipeVersionCostPreviewBuilder
      *     has_unpriced_rows: bool
      * }
      */
-    public function ensureCostingAndBuild(Recipe $recipe, RecipeVersion $version, User $user, float $batchBasisValue, ?int $unitsProduced): array
+    public function ensureCostingAndBuild(Recipe $recipe, RecipeVersion $version, User $user, string|int|float $batchBasisValue, ?int $unitsProduced): array
     {
         $existingCosting = RecipeVersionCosting::query()
             ->with(['items', 'packagingItems'])
@@ -72,7 +73,7 @@ class RecipeVersionCostPreviewBuilder
      *     has_unpriced_rows: bool
      * }
      */
-    public function buildFromCosting(Recipe $recipe, RecipeVersion $version, RecipeVersionCosting $costing, float $batchBasisValue, ?int $unitsProduced): array
+    public function buildFromCosting(Recipe $recipe, RecipeVersion $version, RecipeVersionCosting $costing, string|int|float $batchBasisValue, ?int $unitsProduced): array
     {
         $version = RecipeVersion::withoutGlobalScopes()
             ->with([
@@ -112,7 +113,7 @@ class RecipeVersionCostPreviewBuilder
      *     has_unpriced_rows: bool
      * }
      */
-    private function buildPreview(RecipeVersion $version, RecipeVersionCosting $costing, ?RecipeVersionCosting $existingCosting, float $batchBasisValue, string $unit, ?int $unitsProduced, string $currency): array
+    private function buildPreview(RecipeVersion $version, RecipeVersionCosting $costing, ?RecipeVersionCosting $existingCosting, string|int|float $batchBasisValue, string $unit, ?int $unitsProduced, string $currency): array
     {
         $ingredientPricesByKey = $costing->items->keyBy(fn (RecipeVersionCostingItem $item): string => $this->lotKey(
             (int) $item->ingredient_id,
@@ -147,11 +148,11 @@ class RecipeVersionCostPreviewBuilder
      * @param  Collection<string, RecipeVersionCostingItem>  $ingredientPricesByKey
      * @return array<int, array<string, mixed>>
      */
-    private function ingredientRows(RecipeVersion $version, Collection $ingredientPricesByKey, float $batchBasisValue, string $unit): array
+    private function ingredientRows(RecipeVersion $version, Collection $ingredientPricesByKey, string|int|float $batchBasisValue, string $unit): array
     {
         return $version->phases
             ->flatMap(fn (RecipePhase $phase): Collection => $phase->items
-                ->map(function ($item) use ($batchBasisValue, $ingredientPricesByKey, $phase, $unit): array {
+                ->map(function ($item) use ($batchBasisValue, $ingredientPricesByKey, $phase, $unit, $version): array {
                     $position = (int) $item->position;
                     $phaseKey = (string) $phase->slug;
                     $ingredientId = (int) $item->ingredient_id;
@@ -159,7 +160,10 @@ class RecipeVersionCostPreviewBuilder
                     $costingItem = $ingredientPricesByKey->get($lotKey);
                     $pricePerKg = $costingItem?->price_per_kg === null ? null : (float) $costingItem->price_per_kg;
                     $percentage = (float) $item->percentage;
-                    $quantity = round($batchBasisValue * ($percentage / 100), 4);
+                    $quantity = $phaseKey === 'lye_water' && bccomp((string) $version->batch_size, '0', 9) > 0
+                        ? $this->scaledLyeLiquidQuantity((string) $item->weight, $batchBasisValue, (string) $version->batch_size)
+                        : round($batchBasisValue * ($percentage / 100), 4);
+                    $percentageBasis = $phaseKey === 'lye_water' ? 'lye_liquid' : 'oils';
 
                     return [
                         'lot_key' => $lotKey,
@@ -169,6 +173,10 @@ class RecipeVersionCostPreviewBuilder
                         'position' => $position,
                         'ingredient_name' => $item->ingredient?->display_name ?? 'Ingredient',
                         'percentage' => $percentage,
+                        'percentage_basis' => $percentageBasis,
+                        'percentage_label' => $percentageBasis === 'lye_liquid'
+                            ? __('workbench.costing.ingredients.lye_liquid_percentage')
+                            : '%',
                         'quantity' => $quantity,
                         'unit' => $unit,
                         'price_per_kg' => $pricePerKg,
@@ -180,6 +188,21 @@ class RecipeVersionCostPreviewBuilder
                 }))
             ->values()
             ->all();
+    }
+
+    private function scaledLyeLiquidQuantity(string $itemWeight, string|int|float $batchBasisValue, string $formulaBasisValue): float
+    {
+        $normalizedItemWeight = NumberLocale::normalizeDecimalString($itemWeight) ?? '0';
+        $normalizedBatchBasis = NumberLocale::normalizeDecimalString($batchBasisValue) ?? '0';
+        $normalizedFormulaBasis = NumberLocale::normalizeDecimalString($formulaBasisValue) ?? '0';
+        $scale = bcdiv($normalizedBatchBasis, $normalizedFormulaBasis, 18);
+
+        return (float) $this->roundMass(bcmul($normalizedItemWeight, $scale, 18));
+    }
+
+    private function roundMass(string $value): string
+    {
+        return bcadd(bcadd($value, '0.00005', 5), '0', 4);
     }
 
     /**
@@ -395,6 +418,7 @@ class RecipeVersionCostPreviewBuilder
     {
         return match ($phase->slug) {
             'saponified_oils' => 'Saponified oils',
+            'lye_water' => __('workbench.costing.phases.lye_liquid'),
             'additives' => 'Additives',
             'fragrance' => 'Fragrance and aromatics',
             default => $phase->name,

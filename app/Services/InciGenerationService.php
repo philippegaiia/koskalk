@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
+use App\Support\NumberLocale;
 use Illuminate\Support\Str;
 
 class InciGenerationService
@@ -36,6 +37,7 @@ class InciGenerationService
      *     ingredient_rows: array<int, array{
      *         label: string,
      *         weight: float,
+     *         lye_liquid_weight: float,
      *         percent_of_formula: float,
      *         kind: string,
      *         source_ingredients: array<int, string>,
@@ -61,6 +63,7 @@ class InciGenerationService
      *         ingredient_rows: array<int, array{
      *             label: string,
      *             weight: float,
+     *             lye_liquid_weight: float,
      *             percent_of_formula: float,
      *             kind: string,
      *             source_ingredients: array<int, string>,
@@ -90,11 +93,14 @@ class InciGenerationService
      */
     public function generate(array $payload, ?array $soapCalculation = null): array
     {
-        $rowContexts = $this->ingredientFormulaContextResolver->resolve($payload, [
-            'allergenEntries.allergen',
-            'marketLabels',
-            'sapProfile',
-        ]);
+        $rowContexts = $this->ingredientFormulaContextResolver->resolve(
+            $this->withResolvedLyeLiquidWeights($payload, $soapCalculation),
+            [
+                'allergenEntries.allergen',
+                'marketLabels',
+                'sapProfile',
+            ],
+        );
         $declarationRuleState = $this->declarationRuleState($payload);
         $basis = $this->basisState(
             $payload,
@@ -253,6 +259,7 @@ class InciGenerationService
      *     ingredient_rows: array<int, array{
      *         label: string,
      *         weight: float,
+     *         lye_liquid_weight: float,
      *         percent_of_formula: float,
      *         kind: string,
      *         source_ingredients: array<int, string>,
@@ -334,6 +341,7 @@ class InciGenerationService
      *     ingredient_rows: array<int, array{
      *         label: string,
      *         weight: float,
+     *         lye_liquid_weight: float,
      *         percent_of_formula: float,
      *         kind: string,
      *         source_ingredients: array<int, string>,
@@ -403,6 +411,7 @@ class InciGenerationService
      *     ingredient_rows: array<int, array{
      *         label: string,
      *         weight: float,
+     *         lye_liquid_weight: float,
      *         percent_of_formula: float,
      *         kind: string,
      *         source_ingredients: array<int, string>,
@@ -431,6 +440,7 @@ class InciGenerationService
      *     ingredient_rows: array<int, array{
      *         label: string,
      *         weight: float,
+     *         lye_liquid_weight: float,
      *         percent_of_formula: float,
      *         kind: string,
      *         source_ingredients: array<int, string>,
@@ -589,7 +599,7 @@ class InciGenerationService
             $this->appendPlainLanguageRow(
                 $restRowsByLabel,
                 'Water',
-                (float) data_get($soapCalculation, 'lye.water.weight', 0),
+                $this->freshWaterWeight($soapCalculation),
             );
             $this->appendPlainLanguageRow(
                 $restRowsByLabel,
@@ -831,6 +841,7 @@ class InciGenerationService
      *     ingredient_rows: array<int, array{
      *         label: string,
      *         weight: float,
+     *         lye_liquid_weight: float,
      *         percent_of_formula: float,
      *         kind: string,
      *         source_ingredients: array<int, string>,
@@ -887,7 +898,9 @@ class InciGenerationService
     private function basisState(array $payload, array $rowContexts, ?array $soapCalculation, float $thresholdPercent): array
     {
         $phaseWeight = array_sum(array_map(
-            fn (array $context): float => (float) $context['weight'],
+            fn (array $context): float => $context['phase_key'] === 'lye_water'
+                ? 0.0
+                : (float) $context['weight'],
             $rowContexts,
         ));
         $manufacturingMode = (string) ($payload['manufacturing_mode'] ?? 'saponify_in_formula');
@@ -947,6 +960,7 @@ class InciGenerationService
      *     rows: array<int, array{
      *         label: string,
      *         weight: float,
+     *         lye_liquid_weight: float,
      *         percent_of_formula: float,
      *         kind: string,
      *         source_ingredients: array<int, string>,
@@ -992,6 +1006,7 @@ class InciGenerationService
                     $rowsByLabel[$labelKey] = [
                         'label' => $contribution['label'],
                         'weight' => 0.0,
+                        'lye_liquid_weight' => 0.0,
                         'percent_of_formula' => 0.0,
                         'kind' => $contribution['kind'],
                         'source_ingredients' => [],
@@ -1000,6 +1015,9 @@ class InciGenerationService
                 }
 
                 $rowsByLabel[$labelKey]['weight'] += $contribution['weight'];
+                $rowsByLabel[$labelKey]['lye_liquid_weight'] += $context['phase_key'] === 'lye_water'
+                    ? $contribution['weight']
+                    : 0.0;
                 $rowsByLabel[$labelKey]['kind'] = $this->mergeRowKind(
                     $rowsByLabel[$labelKey]['kind'],
                     $contribution['kind'],
@@ -1032,6 +1050,7 @@ class InciGenerationService
                 return [
                     'label' => $row['label'],
                     'weight' => round((float) $row['weight'], 5),
+                    'lye_liquid_weight' => round((float) $row['lye_liquid_weight'], 5),
                     'percent_of_formula' => $formulaWeight > 0
                         ? round((((float) $row['weight']) / $formulaWeight) * 100, 5)
                         : 0.0,
@@ -1119,7 +1138,7 @@ class InciGenerationService
             return [[
                 'label' => $labelState['label'],
                 'weight' => $context['weight'],
-                'kind' => $labelState['kind'],
+                'kind' => $context['phase_key'] === 'lye_water' ? 'lye_liquid' : $labelState['kind'],
                 'warning' => $labelState['warning'],
             ]];
         }
@@ -1174,7 +1193,7 @@ class InciGenerationService
         return [[
             'label' => $labelState['label'],
             'weight' => $context['weight'],
-            'kind' => $labelState['kind'],
+            'kind' => $context['phase_key'] === 'lye_water' ? 'lye_liquid' : $labelState['kind'],
             'warning' => $labelState['warning'],
         ]];
     }
@@ -1687,6 +1706,7 @@ class InciGenerationService
         float $weight,
         string $kind,
         string $sourceIngredient,
+        float $lyeLiquidWeight = 0.0,
     ): void {
         if ($weight <= 0) {
             return;
@@ -1698,6 +1718,7 @@ class InciGenerationService
             $rowsByLabel[$labelKey] = [
                 'label' => $label,
                 'weight' => 0.0,
+                'lye_liquid_weight' => 0.0,
                 'percent_of_formula' => 0.0,
                 'kind' => $kind,
                 'source_ingredients' => [],
@@ -1706,6 +1727,7 @@ class InciGenerationService
         }
 
         $rowsByLabel[$labelKey]['weight'] += $weight;
+        $rowsByLabel[$labelKey]['lye_liquid_weight'] += $lyeLiquidWeight;
         $rowsByLabel[$labelKey]['source_ingredients'][] = $sourceIngredient;
         $rowsByLabel[$labelKey]['source_is_user_owned'][] = false;
     }
@@ -1742,9 +1764,10 @@ class InciGenerationService
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
             'AQUA',
-            (float) data_get($soapCalculation, 'lye.water.weight', 0),
+            $this->freshWaterWeight($soapCalculation),
             'water',
             'Lye water',
+            $this->freshWaterWeight($soapCalculation),
         );
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
@@ -1771,9 +1794,10 @@ class InciGenerationService
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
             'AQUA',
-            (float) data_get($soapCalculation, 'lye.water.weight', 0),
+            $this->freshWaterWeight($soapCalculation),
             'water',
             'Lye water',
+            $this->freshWaterWeight($soapCalculation),
         );
         $this->appendStandaloneIngredientRow(
             $rowsByLabel,
@@ -1789,6 +1813,61 @@ class InciGenerationService
             'lye',
             'Lye',
         );
+    }
+
+    /** @param array<string, mixed> $soapCalculation */
+    private function freshWaterWeight(array $soapCalculation): float
+    {
+        return (float) data_get(
+            $soapCalculation,
+            'lye.liquid_composition.water_weight',
+            data_get($soapCalculation, 'lye.water.weight', 0),
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @param  array<string, mixed>|null  $soapCalculation
+     * @return array<string, mixed>
+     */
+    private function withResolvedLyeLiquidWeights(array $payload, ?array $soapCalculation): array
+    {
+        $resolvedSubstitutions = data_get($soapCalculation, 'lye.liquid_composition.substitutions');
+        $lyeLiquidRows = data_get($payload, 'phase_items.lye_water');
+
+        if (! is_array($resolvedSubstitutions) || ! is_array($lyeLiquidRows)) {
+            return $payload;
+        }
+
+        $resolvedIndex = 0;
+        $payload['phase_items']['lye_water'] = collect($lyeLiquidRows)
+            ->values()
+            ->map(function (mixed $row) use (&$resolvedIndex, $resolvedSubstitutions): mixed {
+                if (! is_array($row)) {
+                    return $row;
+                }
+
+                $percentage = NumberLocale::normalizeDecimalString($row['percentage'] ?? null);
+
+                if ($percentage === null || bccomp($percentage, '0', 12) <= 0) {
+                    return [...$row, 'weight' => 0.0];
+                }
+
+                $resolvedSubstitution = $resolvedSubstitutions[$resolvedIndex] ?? null;
+                $resolvedIndex++;
+
+                if (! is_array($resolvedSubstitution)) {
+                    return $row;
+                }
+
+                return [
+                    ...$row,
+                    'weight' => (float) ($resolvedSubstitution['weight'] ?? $row['weight'] ?? 0),
+                ];
+            })
+            ->all();
+
+        return $payload;
     }
 
     /**

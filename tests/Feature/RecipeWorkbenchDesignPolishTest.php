@@ -57,10 +57,13 @@ it('keeps formula-start compliance controls available but collapsed by default',
         ->toBeLessThan(strpos($soapSettings, 'Label &amp; compliance'));
 });
 
-it('shows the formula line limit and disables catalog additions at the limit', function (): void {
+it('enforces the formula line limit without showing a line counter', function (): void {
     $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
     $formulaSectionSource = file_get_contents(resource_path('js/recipe-workbench/sections/formula-section.js'));
-    $formulaTab = view('livewire.dashboard.partials.recipe-workbench.formula-tab')->render();
+    $soapFormulaTab = view('livewire.dashboard.partials.recipe-workbench.formula-tab')->render();
+    $cosmeticFormulaTab = view('livewire.dashboard.partials.recipe-workbench.formula-tab', [
+        'isCosmeticWorkbench' => true,
+    ])->render();
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
 
     expect($componentSource)
@@ -68,9 +71,12 @@ it('shows the formula line limit and disables catalog additions at the limit', f
         ->toContain('formulaItemLimitReached()')
         ->and($formulaSectionSource)
         ->toContain("this.formulaItemLimitMessage = '';")
-        ->and($formulaTab)
-        ->toContain('formula_items.limited_count')
-        ->toContain('formula_items.limit_reached')
+        ->and($soapFormulaTab)
+        ->not->toContain('formula_items.limited_count')
+        ->not->toContain('formula_items.limit_reached')
+        ->and($cosmeticFormulaTab)
+        ->not->toContain('formula_items.limited_count')
+        ->not->toContain('formula_items.limit_reached')
         ->and($ingredientBrowser)
         ->toContain(':disabled="formulaItemLimitReached()"')
         ->toContain(':aria-disabled="formulaItemLimitReached().toString()"');
@@ -395,7 +401,7 @@ it('centers costing table row contents beside price inputs', function () {
 
     expect($costingTab)
         ->toContain('flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"')
-        ->toContain('numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"')
+        ->toContain('numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"')
         ->toContain('flex items-center bg-white px-3 py-3')
         ->toContain('numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"')
         ->not->toContain('numeric bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"');

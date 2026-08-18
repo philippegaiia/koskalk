@@ -17,6 +17,8 @@ use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductFamilyIfraCategory;
 use App\Models\Recipe;
+use App\Models\RecipeItem;
+use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
 use App\Models\SupplierListing;
 use App\Models\User;
@@ -41,6 +43,194 @@ use Symfony\Component\Process\Process;
 use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
+
+it('persists lye liquid substitutions as a share of the calculated dilution liquid', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $hydrosol = Ingredient::factory()->create([
+        'display_name' => 'Rose hydrosol',
+        'inci_name' => 'ROSA DAMASCENA FLOWER WATER',
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['phase_items']['lye_water'] = [[
+        'ingredient_id' => $hydrosol->id,
+        'percentage' => 25,
+        'weight' => 0,
+        'note' => 'Add chilled',
+    ]];
+
+    $version = app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload);
+    $phase = RecipePhase::withoutGlobalScopes()
+        ->where('recipe_version_id', $version->id)
+        ->where('slug', 'lye_water')
+        ->firstOrFail();
+    $item = RecipeItem::withoutGlobalScopes()
+        ->where('recipe_phase_id', $phase->id)
+        ->first();
+
+    expect($item)->not->toBeNull()
+        ->and((float) $item->percentage)->toBe(25.0)
+        ->and((float) $item->weight)->toBe(95.0)
+        ->and($item->note)->toBe('Add chilled');
+
+    $snapshot = app(RecipeWorkbenchService::class)->currentVersionSnapshot(
+        Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id),
+    );
+
+    expect($snapshot['calculation']['lye']['liquid_composition']['water_weight'])->toBe(285.0)
+        ->and($snapshot['calculation']['lye']['liquid_composition']['substitutions'][0]['weight'])->toBe(95.0);
+
+    $ingredientRows = collect($snapshot['labeling']['ingredient_rows'])->keyBy('label');
+
+    expect($ingredientRows['AQUA']['weight'])->toBe(285.0)
+        ->and($ingredientRows['ROSA DAMASCENA FLOWER WATER']['weight'])->toBe(95.0)
+        ->and($ingredientRows['ROSA DAMASCENA FLOWER WATER']['kind'])->toBe('lye_liquid');
+});
+
+it('rejects lye liquid substitutions above one hundred percent', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $hydrosol = Ingredient::factory()->create(['is_active' => true]);
+    $milk = Ingredient::factory()->create(['is_active' => true]);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['phase_items']['lye_water'] = [
+        ['ingredient_id' => $hydrosol->id, 'percentage' => 60, 'weight' => 0],
+        ['ingredient_id' => $milk->id, 'percentage' => 41, 'weight' => 0],
+    ];
+
+    app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload);
+})->throws(ValidationException::class);
+
+it('rejects soapmaking alkalis as lye liquid replacements in preview and persistence', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $alkali = Ingredient::factory()->create([
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'display_name' => 'Sodium hydroxide',
+        'is_active' => true,
+    ]);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['phase_items']['lye_water'] = [[
+        'ingredient_id' => $alkali->id,
+        'percentage' => 25,
+        'weight' => 0,
+    ]];
+    $message = 'Soapmaking alkalis cannot be used as lye liquid replacements.';
+
+    expect(fn () => app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, $user))
+        ->toThrow(ValidationException::class, $message)
+        ->and(fn () => app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload))
+        ->toThrow(ValidationException::class, $message);
+});
+
+it('rejects positive lye liquid replacements without an active accessible ingredient', function () {
+    $user = User::factory()->create();
+    $otherUser = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $inaccessibleIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::User,
+        'owner_id' => $otherUser->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $message = 'Select an active, accessible ingredient for each lye liquid replacement.';
+
+    foreach ([null, 999999, $inaccessibleIngredient->id] as $ingredientId) {
+        $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+        $payload['phase_items']['lye_water'] = [[
+            'ingredient_id' => $ingredientId,
+            'percentage' => 25,
+            'weight' => 0,
+        ]];
+
+        expect(fn () => app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, $user))
+            ->toThrow(ValidationException::class, $message)
+            ->and(fn () => app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload))
+            ->toThrow(ValidationException::class, $message);
+    }
+});
+
+it('ignores blank zero percentage lye liquid placeholders in preview and persistence', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['phase_items']['lye_water'] = [[
+        'ingredient_id' => null,
+        'percentage' => '',
+        'weight' => 0,
+    ]];
+
+    $preview = app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, $user);
+    $version = app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload);
+    $lyeLiquidPhase = RecipePhase::withoutGlobalScopes()
+        ->where('recipe_version_id', $version->id)
+        ->where('slug', 'lye_water')
+        ->firstOrFail();
+
+    expect($preview['lye']['liquid_composition']['substitutions'])->toBe([])
+        ->and($lyeLiquidPhase->items)->toHaveCount(0);
+});
+
+it('limits null user lye liquid previews to public ingredients', function () {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->create(['owner_user_id' => $owner->id]);
+    $privateIngredient = Ingredient::factory()->create([
+        'owner_type' => OwnerType::Workspace,
+        'owner_id' => $workspace->id,
+        'workspace_id' => $workspace->id,
+        'visibility' => Visibility::Private,
+        'is_active' => true,
+    ]);
+    $publicIngredient = Ingredient::factory()->create([
+        'visibility' => Visibility::Public,
+        'is_active' => true,
+    ]);
+    $message = 'Select an active, accessible ingredient for each lye liquid replacement.';
+
+    $privatePayload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $privatePayload['phase_items']['lye_water'] = [[
+        'ingredient_id' => $privateIngredient->id,
+        'percentage' => 25,
+    ]];
+    $publicPayload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $publicPayload['phase_items']['lye_water'] = [[
+        'ingredient_id' => $publicIngredient->id,
+        'percentage' => 25,
+    ]];
+
+    expect(fn () => app(RecipeWorkbenchService::class)->previewSoapCalculation($privatePayload))
+        ->toThrow(ValidationException::class, $message)
+        ->and(app(RecipeWorkbenchService::class)->previewSoapCalculation($privatePayload, $owner))
+        ->toHaveKey('lye.liquid_composition.substitutions.0.ingredient_id', $privateIngredient->id)
+        ->and(app(RecipeWorkbenchService::class)->previewSoapCalculation($publicPayload))
+        ->toHaveKey('lye.liquid_composition.substitutions.0.ingredient_id', $publicIngredient->id);
+});
+
+it('does not repeat lye ingredient validation queries while saving', function () {
+    $user = User::factory()->create();
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $hydrosol = Ingredient::factory()->create(['is_active' => true]);
+    $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
+    $payload['phase_items']['lye_water'] = [[
+        'ingredient_id' => $hydrosol->id,
+        'percentage' => 25,
+    ]];
+    $ingredientQueries = [];
+
+    DB::listen(function ($query) use (&$ingredientQueries): void {
+        if (str_contains($query->sql, 'from "ingredients"')) {
+            $ingredientQueries[] = $query->sql;
+        }
+    });
+
+    app(RecipeWorkbenchService::class)->save($user, $soapFamily, $payload);
+
+    expect($ingredientQueries)->toHaveCount(4);
+});
 
 it('creates an active workspace manufactured ingredient for inline recipe output setup', function () {
     $user = User::factory()->create();
@@ -1088,7 +1278,7 @@ it('reuses one preview bundle when calculation and labeling refresh together', f
     $service = mock(RecipeWorkbenchService::class);
     $service->shouldReceive('previewSoapCalculation')
         ->once()
-        ->with($draft)
+        ->with($draft, null)
         ->andReturn($calculation);
     $service->shouldReceive('previewInci')
         ->once()
@@ -4031,6 +4221,88 @@ JS;
         ]);
 });
 
+it('parses localized lye liquid percentages and costs their share of the scaled dilution liquid', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const parseDecimalInput = (value) => Number.parseFloat(String(value ?? 0).replace(',', '.')) || 0;
+const parseDecimal = parseDecimalInput;
+const nonNegativeNumber = (value) => Math.max(0, parseDecimalInput(value));
+const number = parseDecimalInput;
+const rowWeightForOilWeight = (oilWeight, row) => nonNegativeNumber(oilWeight) * (nonNegativeNumber(row.percentage) / 100);
+const convertCostingMass = (value, from, to) => {
+  const grams = { g: 1, kg: 1000, oz: 28.349523125, lb: 453.59237 };
+
+  return nonNegativeNumber(value) * grams[from] / grams[to];
+};
+const convertCostingPrice = (value) => nonNegativeNumber(value);
+
+const formulaSource = fs.readFileSync('resources/js/recipe-workbench/sections/formula-section.js', 'utf8');
+const formulaSectionSource = formulaSource
+  .slice(formulaSource.indexOf('export function createFormulaSection'))
+  .replace('export function createFormulaSection', 'function createFormulaSection');
+const costingSource = fs.readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createCostingSection', 'function createCostingSection');
+
+eval(`${formulaSectionSource}\nglobalThis.createFormulaSection = createFormulaSection;`);
+eval(`${costingSource}\nglobalThis.createCostingSection = createCostingSection;`);
+
+const workbench = {
+  productFamilySlug: 'soap',
+  isCosmeticFormula: false,
+  oilWeight: 1,
+  oilUnit: 'kg',
+  costingOilWeight: 2000,
+  costingOilUnit: 'g',
+  phaseOrder: [
+    { key: 'saponified_oils', name: 'Saponified Oils' },
+    { key: 'lye_water', name: 'Lye Water' },
+  ],
+  phaseItems: {
+    saponified_oils: [{ id: 'oil', ingredient_id: 1, name: 'Olive oil', percentage: 100 }],
+    lye_water: [{ id: 'hydrosol', ingredient_id: 2, name: 'Rose hydrosol', percentage: '70,00' }],
+  },
+  backendCalculation: { lye: { water: { weight: '0,38' } } },
+  ingredientForRow: () => null,
+  t: (key) => ({
+    'costing.phases.saponification': 'Saponification',
+    'costing.phases.lye_liquid': 'Lye liquid',
+    'costing.ingredients.lye_liquid_percentage': 'Translated % lye liquid',
+  })[key] ?? key,
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createFormulaSection()));
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createCostingSection({})));
+Object.defineProperties(workbench, {
+  number: { configurable: true, value: number },
+  nonNegativeNumber: { configurable: true, value: nonNegativeNumber },
+});
+
+assert.equal(workbench.lyeLiquidPercentageTotal(), 70);
+
+const oil = workbench.costingFormulaRows.find((row) => row.phaseKey === 'saponified_oils');
+const hydrosol = workbench.costingFormulaRows.find((row) => row.phaseKey === 'lye_water');
+
+assert.equal(oil.weight, 2000);
+assert.equal(oil.percentageLabel, '%');
+assert.equal(hydrosol.weight, 532);
+assert.equal(hydrosol.percentage, 70);
+assert.equal(hydrosol.percentageLabel, 'Translated % lye liquid');
+assert.equal(hydrosol.phaseLabel, 'Lye liquid');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
 it('keeps fatty acid chemistry compact with grouped profile first and collapsed details', function () {
     $fattyAcidProfile = view('livewire.dashboard.partials.recipe-workbench.fatty-acid-profile')->render();
     $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
@@ -4112,6 +4384,184 @@ it('presents soap qualities as compact tabbed metric cards', function () {
         ->and($formulaTabSource)
         ->toContain('@include(\'livewire.dashboard.partials.recipe-workbench.formula-analysis\')')
         ->toContain('@include(\'livewire.dashboard.partials.recipe-workbench.post-reaction\')');
+});
+
+it('shows the water remainder and substitute liquids in the workbench lye summary', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const parseDecimal = (value) => Number.parseFloat(String(value ?? 0).replace(',', '.')) || 0;
+
+const source = fs.readFileSync('resources/js/recipe-workbench/sections/formula-section.js', 'utf8');
+const sectionSource = source
+    .slice(source.indexOf('export function createFormulaSection'))
+    .replace('export function createFormulaSection', 'function createFormulaSection');
+
+eval(`${sectionSource}\nglobalThis.createFormulaSection = createFormulaSection;`);
+
+const workbench = {
+  productFamilySlug: 'soap',
+  lyeType: 'naoh',
+  kohPurity: 90,
+  phaseItems: {
+    saponified_oils: [],
+    lye_water: [{ id: 'lavender', name: 'Lavender Hydrosol', percentage: 70 }],
+    additives: [],
+    fragrance: [],
+  },
+  backendCalculation: {
+    lye: {
+      selected: { naoh_weight: 145.83 },
+      water: { weight: 259.26 },
+      liquid_composition: {
+        total_weight: 259.26,
+        water_percentage: 30,
+        water_weight: 77.778,
+        substitutions: [{ id: 'lavender', name: 'Lavender Hydrosol', percentage: 70, weight: 181.482 }],
+      },
+    },
+  },
+  number: (value) => Number(value ?? 0),
+  nonNegativeNumber: (value) => Math.max(0, Number(value ?? 0)),
+  t: (key, replacements = {}) => {
+    const translation = ({
+      'settings.water': 'Water',
+      'settings.lye_liquid_selected_singular': 'Water + 1 selected liquid',
+      'settings.lye_liquid_water_free_plural': ':count selected liquids · no water',
+      'settings.lye_liquid_water_free_singular': '1 selected liquid · no water',
+    })[key] ?? key;
+
+    return Object.entries(replacements).reduce(
+      (value, [name, replacement]) => value.replaceAll(`:${name}`, String(replacement)),
+      translation,
+    );
+  },
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createFormulaSection()));
+Object.defineProperties(workbench, {
+  number: {
+    configurable: true,
+    value: (value) => Number(value ?? 0),
+  },
+  nonNegativeNumber: {
+    configurable: true,
+    value: (value) => Math.max(0, Number(value ?? 0)),
+  },
+});
+
+assert.deepEqual(
+  workbench.lyeSummaryCards.map(({ id, label, value }) => ({ id, label, value: Number(value.toFixed(3)) })),
+  [
+    { id: 'naoh-to-weigh', label: 'Lye (NaOH)', value: 145.83 },
+    { id: 'water', label: 'Water', value: 77.778 },
+    { id: 'lye-liquid-lavender', label: 'Lavender Hydrosol', value: 181.482 },
+  ],
+);
+
+assert.equal(workbench.lyeLiquidSelectionSummary(), 'Water + 1 selected liquid');
+workbench.phaseItems.lye_water[0].percentage = 100;
+assert.equal(workbench.lyeLiquidSelectionSummary(), '1 selected liquid · no water');
+assert.equal(workbench.lyeLiquidSelectionSummary().includes('Water +'), false);
+workbench.phaseItems.lye_water = [
+  { id: 'lavender', name: 'Lavender Hydrosol', percentage: 60 },
+  { id: 'milk', name: 'Goat Milk', percentage: 40 },
+];
+assert.equal(workbench.lyeLiquidSelectionSummary(), '2 selected liquids · no water');
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+});
+
+it('keeps the viewport on the lye liquid editor when selecting a substitute liquid', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
+  .replace(/^import[\s\S]*?;\n/gm, '')
+  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
+
+const stubs = `
+const buildCategoryOptions = () => [];
+const buildFattyAcidLabels = () => [];
+const filterIngredientCatalog = (ingredients) => ingredients;
+const getIngredientCategoryCode = () => '';
+const buildIngredientFattyAcidRows = () => [];
+const buildIngredientInspectorRows = () => [];
+const getIngredientMonogram = () => '';
+const getNormalizedIfraProductCategoryId = (value) => value;
+const resolveIngredientTargetPhase = (ingredient, requestedPhase = null) => requestedPhase ?? ingredient.available_phases?.[0] ?? null;
+const findSelectedIfraProductCategory = () => null;
+const getTargetPhaseForCategory = () => null;
+const buildSerializedDraft = () => ({});
+const buildSerializedRow = () => ({});
+const persistWorkbench = async () => {};
+const refreshWorkbenchCalculationPreview = async () => {};
+const buildDraftStateFromDraft = () => null;
+const buildSnapshotStateFromSnapshot = () => null;
+const humanizeText = (value) => value;
+const createFormulaSection = () => ({});
+const createPackagingSection = () => ({});
+const createCostingSection = () => ({});
+const createPresentationSection = () => ({});
+const createVersionSection = () => ({});
+`;
+
+let scrollCount = 0;
+const postReaction = {
+  scrollIntoView() {
+    scrollCount += 1;
+  },
+  classList: { add() {}, remove() {} },
+};
+
+globalThis.document = {
+  getElementById: (id) => id === 'post-reaction-phases' ? postReaction : null,
+};
+globalThis.window = {
+  location: { hash: '' },
+  matchMedia: () => ({ matches: true }),
+};
+
+eval(`${stubs}\n${source}\nglobalThis.createRecipeWorkbench = createRecipeWorkbench;`);
+
+const workbench = globalThis.createRecipeWorkbench({
+  phases: [],
+  ingredients: [{
+    id: 7,
+    name: 'Lavender Hydrosol',
+    inci_name: 'Lavandula Water',
+    category: 'hydrosols',
+    available_phases: ['additives'],
+    can_add_to_additives: true,
+  }],
+});
+
+workbench.addLyeLiquidIngredient(7);
+
+assert.equal(workbench.phaseItems.lye_water.length, 1);
+assert.equal(workbench.phaseItems.additives.length, 0);
+assert.equal(scrollCount, 0);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 });
 
 it('keeps allergen mass inside its source oil when rendering cured soap output', function () {
@@ -4196,6 +4646,65 @@ JS;
         ->toBeLessThan(15.401)
         ->and($result['linaloolPercent'])->toBeGreaterThan(0.153)
         ->toBeLessThan(0.155);
+});
+
+it('keeps water and substitute lye liquids inside the eleven percent cured liquid pool', function () {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+
+const source = fs
+  .readFileSync('resources/js/recipe-workbench/sections/presentation-section.js', 'utf8')
+  .replace('export function createPresentationSection', 'function createPresentationSection');
+
+eval(`${source}\nglobalThis.createPresentationSection = createPresentationSection;`);
+
+const workbench = {
+  productFamilySlug: 'soap',
+  backendLabeling: {
+    basis: {
+      formula_weight: 1270,
+      cured_weight: 1000,
+      residual_water_weight: 110,
+    },
+    default_variant_key: 'saponified_with_superfat',
+    list_variants: [{
+      key: 'saponified_with_superfat',
+      ingredient_rows: [
+        { label: 'SODIUM OLIVATE', weight: 860, lye_liquid_weight: 0, kind: 'saponified_oil' },
+        { label: 'AQUA', weight: 200, lye_liquid_weight: 190, kind: 'water' },
+        { label: 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', weight: 210, lye_liquid_weight: 190, kind: 'lye_liquid' },
+      ],
+      declaration_rows: [],
+    }],
+  },
+  number: (value) => Number(value ?? 0),
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPresentationSection()));
+
+const rows = workbench.curedSoapIngredientRows;
+const water = rows.find((row) => row.label === 'AQUA');
+const hydrosol = rows.find((row) => row.label === 'LAVANDULA ANGUSTIFOLIA FLOWER WATER');
+
+assert.ok(water);
+assert.ok(hydrosol);
+assert.equal(water.adjusted_weight, 65);
+assert.equal(hydrosol.adjusted_weight, 75);
+assert.equal(water.percent_of_cured_basis, 6.5);
+assert.equal(hydrosol.percent_of_cured_basis, 7.5);
+assert.equal(workbench.curedSoapIngredientTotalWeight, 1000);
+assert.equal(workbench.curedSoapIngredientTotalPercent, 100);
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 });
 
 it('presents tendency quality metrics without score target treatment', function () {

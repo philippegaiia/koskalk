@@ -13,6 +13,7 @@ use App\Models\ProductFamily;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
 use App\Services\RecipeWorkbenchService;
+use App\Services\SoapCuredOutputBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 
@@ -817,6 +818,133 @@ it('marks merged rows as mixed when soap and superfat labels collapse to the sam
     expect($ingredientRow)->not->toBeNull()
         ->and($ingredientRow['weight'])->toBe(1029.6072)
         ->and($ingredientRow['kind'])->toBe('mixed_saponified_superfat');
+});
+
+it('preserves lye liquid provenance when matching inci labels merge across phases', function () {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeSoapOilIngredient();
+    $unusedFragrance = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'display_name' => 'Unscented Base',
+        'inci_name' => 'PARFUM',
+        'is_active' => true,
+    ]);
+    $hydrosol = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'display_name' => 'Rose hydrosol',
+        'inci_name' => 'ROSA DAMASCENA FLOWER WATER',
+        'is_active' => true,
+    ]);
+    $addedWater = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'display_name' => 'Added water',
+        'inci_name' => 'AQUA',
+        'is_active' => true,
+    ]);
+    $payload = soapDraftPayloadWithFragrance($oliveOil, $unusedFragrance);
+    $payload['phase_items']['fragrance'] = [];
+    $payload['phase_items']['lye_water'] = [[
+        'ingredient_id' => $hydrosol->id,
+        'percentage' => 50,
+        'weight' => 0,
+        'note' => null,
+    ]];
+    $payload['phase_items']['additives'] = [
+        [
+            'ingredient_id' => $hydrosol->id,
+            'percentage' => 2,
+            'weight' => 20,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $addedWater->id,
+            'percentage' => 1,
+            'weight' => 10,
+            'note' => null,
+        ],
+    ];
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+    $ingredientRows = collect($result['labeling']['ingredient_rows'])->keyBy('label');
+
+    expect($ingredientRows['ROSA DAMASCENA FLOWER WATER']['weight'])->toBe(210.0)
+        ->and($ingredientRows['ROSA DAMASCENA FLOWER WATER']['lye_liquid_weight'])->toBe(190.0)
+        ->and($ingredientRows['AQUA']['weight'])->toBe(200.0)
+        ->and($ingredientRows['AQUA']['lye_liquid_weight'])->toBe(190.0);
+});
+
+it('keeps a zero lye liquid placeholder from stealing the following replacement allocation', function (): void {
+    ProductFamily::factory()->create([
+        'slug' => 'soap',
+        'name' => 'Soap',
+    ]);
+
+    $oliveOil = makeSoapOilIngredient();
+    $unusedFragrance = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'display_name' => 'Unscented Base',
+        'inci_name' => 'PARFUM',
+        'is_active' => true,
+    ]);
+    $zeroHydrosol = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'display_name' => 'Zero hydrosol',
+        'inci_name' => 'ROSA DAMASCENA FLOWER WATER',
+        'is_active' => true,
+    ]);
+    $selectedMilk = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'display_name' => 'Selected milk',
+        'inci_name' => 'CAPRAE LAC',
+        'is_active' => true,
+    ]);
+    $payload = soapDraftPayloadWithFragrance($oliveOil, $unusedFragrance);
+    $payload['phase_items']['fragrance'] = [];
+    $payload['phase_items']['lye_water'] = [
+        [
+            'ingredient_id' => $zeroHydrosol->id,
+            'percentage' => 0,
+            'weight' => 0,
+            'note' => null,
+        ],
+        [
+            'ingredient_id' => $selectedMilk->id,
+            'percentage' => 50,
+            'weight' => 0,
+            'note' => null,
+        ],
+    ];
+
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+    $result = $component->previewCalculation($payload, app(RecipeWorkbenchService::class));
+    $ingredientRows = collect($result['labeling']['ingredient_rows'])->keyBy('label');
+
+    expect($ingredientRows)->not->toHaveKey('ROSA DAMASCENA FLOWER WATER')
+        ->and($ingredientRows['CAPRAE LAC']['weight'])->toBe(190.0)
+        ->and($ingredientRows['CAPRAE LAC']['lye_liquid_weight'])->toBe(190.0)
+        ->and($ingredientRows['AQUA']['lye_liquid_weight'])->toBe(190.0)
+        ->and($ingredientRows->sum('lye_liquid_weight'))->toBe(380.0)
+        ->and($result['labeling']['final_label_text'])->toContain('CAPRAE LAC')
+        ->not->toContain('ROSA DAMASCENA FLOWER WATER');
+
+    $curedWeight = (float) $result['labeling']['basis']['cured_weight'];
+    $curedOutput = app(SoapCuredOutputBuilder::class)->build($result['labeling'], $curedWeight);
+    $curedRows = collect($curedOutput['rows'])->keyBy('name');
+    $expectedResidualShare = round($curedWeight * 0.11 * 0.5, 4);
+
+    expect($curedRows)->not->toHaveKey('ROSA DAMASCENA FLOWER WATER')
+        ->and($curedRows['CAPRAE LAC']['weight'])->toBe($expectedResidualShare)
+        ->and($curedRows['AQUA']['weight'])->toBe($expectedResidualShare)
+        ->and(round((float) collect($curedOutput['rows'])->sum('weight'), 4))->toBe(round($curedWeight, 4))
+        ->and($curedOutput['inci'])->toContain('CAPRAE LAC')
+        ->not->toContain('ROSA DAMASCENA FLOWER WATER');
 });
 
 function makeSoapOilIngredient(array $overrides = [], float $kohSapValue = 0.188): Ingredient

@@ -2,12 +2,14 @@ import { normalizedIfraProductCategoryId } from './catalog';
 import { rowWeight } from './calculation';
 import { nonNegativeNumber, number } from './utils';
 
-export function serializeRow(state, row) {
+export function serializeRow(state, row, phaseKey = null) {
     return {
         id: row.id,
         ingredient_id: row.ingredient_id,
         percentage: nonNegativeNumber(row.percentage),
-        weight: rowWeight(state, row),
+        weight: phaseKey === 'lye_water' && typeof state.lyeLiquidWeight === 'function'
+            ? state.lyeLiquidWeight(row)
+            : rowWeight(state, row),
         note: row.note ?? null,
     };
 }
@@ -16,7 +18,7 @@ export function serializeDraft(state) {
     const phaseItems = Object.fromEntries(
         Object.entries(state.phaseItems ?? {}).map(([phaseKey, rows]) => [
             phaseKey,
-            Array.isArray(rows) ? rows.map((row) => serializeRow(state, row)) : [],
+            Array.isArray(rows) ? rows.map((row) => serializeRow(state, row, phaseKey)) : [],
         ]),
     );
 

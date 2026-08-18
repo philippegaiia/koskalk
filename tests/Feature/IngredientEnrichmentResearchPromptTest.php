@@ -17,7 +17,7 @@ it('builds a precise versioned source restricted research protocol', function ()
     );
 
     expect($prompt)->toHaveKeys(['version', 'instructions', 'input'])
-        ->and($prompt['version'])->toBe('ingredient-enrichment-research-v2')
+        ->and($prompt['version'])->toBe('ingredient-enrichment-research-v3')
         ->and($prompt['instructions'])->toContain(
             '# Identity',
             '# Non-negotiable rules',
@@ -47,7 +47,9 @@ it('builds a precise versioned source restricted research protocol', function ()
             'distinct US declaration',
             'value_provenance',
             'subject_public_id',
+            'Do not research or propose aliases',
         )
+        ->and($prompt['instructions'])->not->toContain('Return at most five synonyms per locale')
         ->and($prompt['instructions'])->not->toContain($record['catalog_key'])
         ->and($prompt['input'])->toContain(
             '<ingredient_research_input checked_at="2026-08-13">',

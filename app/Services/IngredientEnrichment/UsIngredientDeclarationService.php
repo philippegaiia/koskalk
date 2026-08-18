@@ -8,6 +8,11 @@ use Illuminate\Support\Str;
 
 class UsIngredientDeclarationService
 {
+    /** @var array<string, string> */
+    private const FDA_BOTANICAL_LABEL_EXAMPLES = [
+        'PRUNUS AMYGDALUS DULCIS OIL' => 'Sweet Almond (Prunus Amygdalus Dulcis) Oil',
+    ];
+
     /**
      * @param  array{unii?: string|null, common_name?: string|null, inci_names?: list<string>, cas?: list<string>}  candidate
      */
@@ -51,6 +56,14 @@ class UsIngredientDeclarationService
     /** @param list<string> $inciNames */
     private function harmonizedBotanicalName(string $commonName, array $inciNames): string
     {
+        foreach ($inciNames as $inciName) {
+            $officialLabelExample = self::FDA_BOTANICAL_LABEL_EXAMPLES[Str::upper(trim($inciName))] ?? null;
+
+            if ($officialLabelExample !== null) {
+                return $officialLabelExample;
+            }
+        }
+
         foreach ([$commonName, ...$inciNames] as $name) {
             if (preg_match('/^(?<latin>.+?)\s+\((?<common>[^)]+)\)\s+(?<suffix>.+)$/u', trim($name), $parts) !== 1) {
                 continue;

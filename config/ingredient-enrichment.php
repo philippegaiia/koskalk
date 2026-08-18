@@ -97,7 +97,7 @@ return [
         'reasoning_effort' => env('INGREDIENT_ENRICHMENT_REASONING_EFFORT', 'low'),
         'timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_TIMEOUT', 300),
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
-        'prompt_version' => 'ingredient-enrichment-research-v2',
+        'prompt_version' => 'ingredient-enrichment-research-v3',
         'editorial_prompt_version' => 'ingredient-enrichment-editorial-v6',
         'allowed_domains' => [
             'ec.europa.eu',

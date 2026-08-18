@@ -58,7 +58,7 @@ Use these sites for these purposes:
    Use legal text only for the proposition it actually supports. Do not turn an Annex or glossary entry into an authorization claim.
 3. EU substance identity:
    - https://echa.europa.eu/information-on-chemicals
-   Use the exact substance page for EC/EINECS number, ECHA List Number, CAS linkage, and synonyms.
+   Use the exact substance page for EC/EINECS number, ECHA List Number, CAS linkage, and identity verification.
 4. CAS cross-check:
    - https://commonchemistry.cas.org/
    Use a public CAS Common Chemistry record only when it unambiguously matches the same substance or material.
@@ -67,7 +67,7 @@ Use these sites for these purposes:
    Use the exact compound/substance record for PubChem CID, InChIKey, and linked identifiers. Do not apply a component's record to a mixture.
 6. Botanical taxon:
    - https://powo.science.kew.org/
-   Use Kew Plants of the World Online for the accepted plant taxon and synonyms. Kew does not establish cosmetic INCI or COSING functions.
+   Use Kew Plants of the World Online for the accepted plant taxon. Kew does not establish cosmetic INCI or COSING functions.
 7. US cosmetic naming context:
    - https://www.fda.gov/cosmetics/cosmetics-labeling/cosmetic-ingredient-names
 8. US colour additives:
@@ -100,12 +100,10 @@ Use these sites for these purposes:
 - A mixture, botanical oil, essential oil, extract, or wax may legitimately have a material-level identifier different from its components. Never copy component identifiers into the material.
 - Mark at most one identifier per scheme as primary. Primary means the best exact material-level identifier, not the first search hit. Retain verified secondary CAS/EC rows as non-primary.
 
-## Synonyms
+## Aliases
 
-- Return only exact alternative names explicitly listed by an authoritative identity source for the same material. Never invent, translate, or infer a synonym.
-- Exclude duplicates of the English display name, INCI name, and market declarations after case-insensitive normalization.
-- Use locale `und` unless the source explicitly establishes a language. Classify a name as common, botanical, spelling, or former only when the source supports that classification; otherwise use common.
-- Cite the exact identity record separately for every synonym row. Return at most five synonyms per locale.
+- Do not research or propose aliases. Return an empty `proposal.aliases` array. Catalogue aliases are manually curated.
+- Existing aliases supplied in the input may help confirm identity, but do not expand, translate, replace, or cite them as new proposals.
 
 ## COSING functions
 
@@ -139,7 +137,7 @@ Use these sites for these purposes:
 
 ## Evidence, confidence, warnings, and unresolved questions
 
-- Add evidence for `proposal.inci_name`, every synonym row, every identifier row, every COSING function row, and every market-label row. Use the exact indexed field path, such as `proposal.aliases.0` or `proposal.identifiers.0`.
+- Add evidence for `proposal.inci_name`, every identifier row, every COSING function row, and every market-label row. Use the exact indexed field path, such as `proposal.identifiers.0`.
 - `source_url` must be the exact consulted HTTP(S) page. The application will reject a citation that is not in the web-search source list, even when its domain is allowed.
 - `checked_at` must exactly equal the date on `<ingredient_research_input checked_at="...">`; never substitute a page publication date.
 - `confidence=high` requires unambiguous exact primary records with no identity conflict. Use `medium` for a supported proposal with a stated limitation. Use `low` for unresolved identity or missing primary evidence.
@@ -149,7 +147,7 @@ Use these sites for these purposes:
 
 Execute these steps in order for this ingredient:
 
-1. Build identity search terms from the English display name, current INCI, known identifiers, botanical name, aliases, category, and subcategory. List alternate spellings mentally; do not output search commentary.
+1. Build identity search terms from the English display name, current INCI, known identifiers, botanical name, existing aliases, category, and subcategory. Do not search for additional aliases or output search commentary.
 2. Search COSING/European Commission first. Locate an exact ingredient record and verify INCI/common name and every proposed COSING function.
 3. Search ECHA, CAS Common Chemistry, and PubChem. Compare the substance/material names before collecting all matching identifiers. Reject component-only or merely similar records.
 4. If botanical, verify the accepted plant taxon with Kew, then separately verify the cosmetic nomenclature with COSING. Do not merge those evidentiary roles.

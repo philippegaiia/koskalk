@@ -3,7 +3,6 @@
 namespace App\Services\IngredientEnrichment;
 
 use App\Data\IngredientSourceStageResult;
-use Illuminate\Support\Str;
 
 class IngredientEnrichmentFactsBuilder
 {
@@ -61,13 +60,7 @@ class IngredientEnrichmentFactsBuilder
             $usDeclaration->evidence,
         );
         $identifiers = $this->identifiers($candidate, $usCandidate, $euEvidence, $usIdentityEvidence);
-        $aliases = $this->aliases(
-            $record,
-            $usCandidate,
-            $usDeclaration,
-            $inciName,
-            $usIdentityEvidence,
-        );
+        $aliases = [];
         $marketLabels = is_string($inciName) && $inciName !== '' && is_array($officialEvidence) ? [[
             'market_code' => 'eu',
             'declaration_name' => $inciName,
@@ -222,59 +215,6 @@ class IngredientEnrichmentFactsBuilder
             )->all())
             ->values()
             ->all();
-    }
-
-    /**
-     * @param  array<string, mixed>  $record
-     * @param  array<string, mixed>|null  $usCandidate
-     * @param  array<string, mixed>|null  $source
-     * @return list<array<string, mixed>>
-     */
-    private function aliases(
-        array $record,
-        ?array $usCandidate,
-        IngredientSourceStageResult $usDeclaration,
-        mixed $inciName,
-        ?array $source,
-    ): array {
-        if (! is_array($usCandidate) || ! is_array($source)) {
-            return [];
-        }
-
-        $excluded = collect([
-            $record['display_name'] ?? null,
-            $record['inci_name'] ?? null,
-            $inciName,
-            $usDeclaration->data['declaration_name'] ?? null,
-            ...collect($record['aliases'] ?? [])->pluck('name')->all(),
-        ])
-            ->filter(fn (mixed $name): bool => is_string($name) && trim($name) !== '')
-            ->map(fn (string $name): string => $this->normalizedName($name))
-            ->all();
-
-        $existingNeutralAliases = collect($record['aliases'] ?? [])
-            ->filter(fn (mixed $alias): bool => is_array($alias) && ($alias['locale'] ?? null) === 'und')
-            ->count();
-
-        return collect($usCandidate['names'] ?? [])
-            ->filter(fn (mixed $name): bool => is_string($name) && trim($name) !== '')
-            ->map(fn (string $name): string => Str::squish($name))
-            ->reject(fn (string $name): bool => in_array($this->normalizedName($name), $excluded, true))
-            ->unique(fn (string $name): string => $this->normalizedName($name))
-            ->take(max(0, 5 - $existingNeutralAliases))
-            ->map(fn (string $name): array => [
-                'locale' => 'und',
-                'name' => $name,
-                'kind' => 'common',
-                ...$source,
-            ])
-            ->values()
-            ->all();
-    }
-
-    private function normalizedName(string $name): string
-    {
-        return Str::lower(Str::squish($name));
     }
 
     /**

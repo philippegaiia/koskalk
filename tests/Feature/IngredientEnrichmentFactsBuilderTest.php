@@ -54,13 +54,10 @@ it('assembles separate EU and US declarations plus multi-value identifiers', fun
             && $row['source_tier'] === 'structured_mirror'))->toBeTrue()
         ->and(data_get($facts, 'proposal.market_labels.0.market_code'))->toBe('eu')
         ->and(data_get($facts, 'proposal.market_labels.1.market_code'))->toBe('us')
-        ->and(data_get($facts, 'proposal.aliases.0'))->toMatchArray([
-            'locale' => 'und',
-            'name' => 'MOROCCAN ARGAN OIL',
-            'kind' => 'common',
-            'source_tier' => 'official',
-        ])
-        ->and(collect($facts['evidence'])->contains('field', 'proposal.aliases.0'))->toBeTrue()
+        ->and(data_get($facts, 'proposal.aliases'))->toBe([])
+        ->and(collect($facts['evidence'])->contains(
+            fn (array $evidence): bool => str_starts_with($evidence['field'], 'proposal.aliases.'),
+        ))->toBeFalse()
         ->and(collect($facts['field_confidence'])->firstWhere('field', 'proposal.inci_name')['confidence'])->toBe('verified');
     expect(data_get($facts, 'editorial_context.identity_description'))
         ->toBe('Oil obtained from the kernels of Argania spinosa.')

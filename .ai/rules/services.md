@@ -21,3 +21,6 @@ Reconcile ingredient identifiers by scheme plus normalized value so unchanged id
 
 ## Live previews tolerate missing INCI
 Workbench EU previews may explicitly fall back to an ingredient display name when canonical INCI is missing, without showing a user warning, so calculation panels stay available. Strict declaration resolution without the preview fallback must continue to reject missing market declarations.
+
+## Legacy output fields must round-trip invisibly
+readyDelayDays, productReference, and nominalContentValue are no longer editable in the workbench UI but MUST stay in RecipeWorkbenchVersionPayloadMapper (emit), resources/js/recipe-workbench/snapshot.js (hydrate), and RecipeWorkbenchDraftPayloadMapper (save) so existing DB values survive edits. Do not drop them until a deliberate cleanup ships a replacement product-details experience. Keep the browser serialization and hydration path intact when changing these fields; existing persistence coverage protects the PHP round-trip, while browser draft coverage asserts productReference and nominalContentValue.

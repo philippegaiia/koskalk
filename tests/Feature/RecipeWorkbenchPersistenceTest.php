@@ -69,6 +69,8 @@ it('exposes product or ingredient identity at the start of formula settings', fu
     $this->actingAs($user)
         ->get(route('recipes.create', ['family' => 'soap']))
         ->assertSuccessful()
+        ->assertSee('data-formula-output-type', false)
+        ->assertSee('id="setting-formula-output-type"', false)
         ->assertSee('This formula produces')
         ->assertSee('Product')
         ->assertSee('Ingredient')

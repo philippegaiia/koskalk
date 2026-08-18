@@ -28,6 +28,7 @@ class RecipeWorkbenchService
         private readonly RecipeWorkbenchPreviewService $recipeWorkbenchPreviewService,
         private readonly RecipeWorkbenchPhaseBlueprints $recipeWorkbenchPhaseBlueprints,
         private readonly RecipeWorkbenchVersionDataService $recipeWorkbenchVersionDataService,
+        private readonly LyeLiquidIngredientValidator $lyeLiquidIngredientValidator,
         private readonly EntitlementService $entitlementService,
         private readonly RecipeFormulaItemLimitService $recipeFormulaItemLimitService,
         private readonly RecipeMediaRollbackGuard $recipeMediaRollbackGuard,
@@ -37,9 +38,9 @@ class RecipeWorkbenchService
      * @param  array<string, mixed>  $payload
      * @return array<string, mixed>|null
      */
-    public function previewSoapCalculation(array $payload): ?array
+    public function previewSoapCalculation(array $payload, ?User $user = null): ?array
     {
-        return $this->recipeWorkbenchPreviewService->previewSoapCalculation($payload);
+        return $this->recipeWorkbenchPreviewService->previewSoapCalculation($payload, $user);
     }
 
     /**
@@ -166,6 +167,15 @@ class RecipeWorkbenchService
         return $this->recipeWorkbenchPreviewService->snapshotFromWorkbenchDraft($draft);
     }
 
+    /**
+     * @param  array<string, mixed>  $draft
+     * @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}
+     */
+    public function snapshotFromPersistedWorkbenchDraft(array $draft): array
+    {
+        return $this->recipeWorkbenchPreviewService->snapshotFromPersistedWorkbenchDraft($draft);
+    }
+
     public function save(
         User $user,
         ProductFamily $productFamily,
@@ -184,10 +194,11 @@ class RecipeWorkbenchService
         } else {
             $this->recipeFormulaItemLimitService->assertCreateAllowed($user, $normalizedPayload);
         }
+        $this->validateLyeLiquidIngredients($user, $normalizedPayload);
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validateOutputConfiguration($user, $normalizedPayload);
         $this->validateProductReference($user, $normalizedPayload, $recipe);
-        $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
+        $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload, $user);
 
         $createdRecipe = null;
         $trackCreatedRecipe = function (Recipe $destinationRecipe) use (&$createdRecipe): void {
@@ -243,10 +254,11 @@ class RecipeWorkbenchService
         } else {
             $this->recipeFormulaItemLimitService->assertCreateAllowed($user, $normalizedPayload);
         }
+        $this->validateLyeLiquidIngredients($user, $normalizedPayload);
         $this->validateIngredientAccess($user, $normalizedPayload);
         $this->validateOutputConfiguration($user, $normalizedPayload);
         $this->validateProductReference($user, $normalizedPayload, $recipe);
-        $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload);
+        $this->validatePreviewableSoapCalculation($productFamily, $normalizedPayload, $user);
 
         $createdRecipe = null;
         $trackCreatedRecipe = function (Recipe $destinationRecipe) use (&$createdRecipe): void {
@@ -446,13 +458,32 @@ class RecipeWorkbenchService
     /**
      * @param  array<string, mixed>  $payload
      */
-    private function validatePreviewableSoapCalculation(ProductFamily $productFamily, array $payload): void
+    private function validatePreviewableSoapCalculation(ProductFamily $productFamily, array $payload, User $user): void
     {
         if ($productFamily->slug !== 'soap') {
             return;
         }
 
-        $this->recipeWorkbenchPreviewService->previewSoapCalculation($this->previewPayloadFromNormalizedSavePayload($payload));
+        $this->recipeWorkbenchPreviewService->previewSoapCalculation(
+            $this->previewPayloadFromNormalizedSavePayload($payload),
+            $user,
+            validateLyeIngredients: false,
+        );
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function validateLyeLiquidIngredients(User $user, array $payload): void
+    {
+        $lyeLiquidPhase = collect($payload['phases'] ?? [])->first(
+            fn (mixed $phase): bool => is_array($phase) && ($phase['key'] ?? null) === 'lye_water',
+        );
+
+        $this->lyeLiquidIngredientValidator->validate(
+            is_array($lyeLiquidPhase) && is_array($lyeLiquidPhase['items'] ?? null)
+                ? $lyeLiquidPhase['items']
+                : [],
+            $user,
+        );
     }
 
     /**
@@ -461,7 +492,7 @@ class RecipeWorkbenchService
     private function validateIngredientAccess(User $user, array $payload): void
     {
         $ingredientIds = collect($payload['phases'] ?? [])
-            ->filter(fn (mixed $phase): bool => is_array($phase))
+            ->filter(fn (mixed $phase): bool => is_array($phase) && ($phase['key'] ?? null) !== 'lye_water')
             ->flatMap(fn (array $phase): array => is_array($phase['items'] ?? null) ? $phase['items'] : [])
             ->filter(fn (mixed $item): bool => is_array($item) && is_numeric($item['ingredient_id'] ?? null))
             ->map(fn (array $item): int => (int) $item['ingredient_id'])

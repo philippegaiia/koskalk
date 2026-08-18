@@ -574,13 +574,22 @@ export function createPresentationSection() {
 
             const curedBasisWeight = this.curedSoapOutputBasisWeight;
             const residualWaterWeight = this.curedSoapResidualWaterWeight;
-            const rows = (this.activeIngredientListVariant?.ingredient_rows ?? [])
-                .map((row) => ({
-                    ...row,
-                    adjusted_weight: row.label === 'AQUA'
-                        ? residualWaterWeight
-                        : this.number(row.weight),
-                }))
+            const ingredientRows = this.activeIngredientListVariant?.ingredient_rows ?? [];
+            const freshLyeLiquidWeight = ingredientRows
+                .reduce((sum, row) => sum + this.lyeLiquidProvenanceWeight(row), 0);
+            const rows = ingredientRows
+                .map((row) => {
+                    const totalWeight = this.number(row.weight);
+                    const lyeLiquidWeight = Math.min(totalWeight, this.lyeLiquidProvenanceWeight(row));
+                    const nonLyeWeight = Math.max(0, totalWeight - lyeLiquidWeight);
+
+                    return {
+                        ...row,
+                        adjusted_weight: nonLyeWeight + (freshLyeLiquidWeight > 0
+                            ? residualWaterWeight * (lyeLiquidWeight / freshLyeLiquidWeight)
+                            : 0),
+                    };
+                })
                 .filter((row) => row.adjusted_weight > 0);
 
             return rows
@@ -597,6 +606,16 @@ export function createPresentationSection() {
 
                     return right.adjusted_weight - left.adjusted_weight;
                 });
+        },
+
+        lyeLiquidProvenanceWeight(row) {
+            if (Object.hasOwn(row, 'lye_liquid_weight')) {
+                return this.number(row.lye_liquid_weight);
+            }
+
+            return row.label === 'AQUA' || row.kind === 'lye_liquid'
+                ? this.number(row.weight)
+                : 0;
         },
 
         get curedSoapIngredientTotalWeight() {

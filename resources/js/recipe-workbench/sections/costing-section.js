@@ -9,6 +9,7 @@ import { MASS_UNITS, convertMass, convertMassPrice } from '../mass';
 
 const SYSTEM_PHASE_TRANSLATION_KEYS = {
     saponified_oils: 'costing.phases.saponification',
+    lye_water: 'costing.phases.lye_liquid',
     additives: 'costing.phases.additions',
     fragrance: 'costing.phases.fragrance',
 };
@@ -176,11 +177,40 @@ export function createCostingSection(payload) {
                     position: index + 1,
                     name: row.name,
                     percentage: nonNegativeNumber(row.percentage),
-                    weight: rowWeightForOilWeight(this.costingBaseOilWeight, row),
+                    percentageLabel: phaseKey === 'lye_water'
+                        ? this.t('costing.ingredients.lye_liquid_percentage')
+                        : '%',
+                    weight: this.costingWeightForRow(phaseKey, row),
                     weightUnit: this.costingBaseOilUnit,
                     defaultPricePerKg: ingredient?.default_price_per_kg ?? null,
                 };
             }));
+        },
+
+        costingWeightForRow(phaseKey, row) {
+            if (phaseKey !== 'lye_water') {
+                return rowWeightForOilWeight(this.costingBaseOilWeight, row);
+            }
+
+            const formulaOilWeight = convertCostingMass(
+                this.oilWeight,
+                this.oilUnit,
+                this.costingBaseOilUnit,
+            );
+
+            if (formulaOilWeight <= 0) {
+                return 0;
+            }
+
+            const formulaLyeLiquidWeight = convertCostingMass(
+                this.lyeLiquidTotalWeight(),
+                this.oilUnit,
+                this.costingBaseOilUnit,
+            );
+            const scaledLyeLiquidWeight = formulaLyeLiquidWeight
+                * (this.costingBaseOilWeight / formulaOilWeight);
+
+            return scaledLyeLiquidWeight * (nonNegativeNumber(row.percentage) / 100);
         },
 
         costingPriceForRow(row) {

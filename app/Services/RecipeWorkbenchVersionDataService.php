@@ -297,7 +297,7 @@ class RecipeWorkbenchVersionDataService
      */
     private function snapshotForVersion(RecipeVersion $version): array
     {
-        return $this->recipeWorkbenchPreviewService->snapshotFromWorkbenchDraft(
+        return $this->recipeWorkbenchPreviewService->snapshotFromPersistedWorkbenchDraft(
             $this->payloadForVersion($version),
         );
     }

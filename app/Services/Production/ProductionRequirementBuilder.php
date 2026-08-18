@@ -7,6 +7,7 @@ use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Services\MassConverter;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
@@ -15,6 +16,8 @@ class ProductionRequirementBuilder
     private const int GuardScale = 18;
 
     private const int StorageScale = 9;
+
+    public function __construct(private readonly MassConverter $massConverter) {}
 
     /**
      * @return Collection<int, array<string, mixed>>
@@ -84,13 +87,15 @@ class ProductionRequirementBuilder
                 $this->assertMaterialWorkspace($ingredient, (int) $version->workspace_id, 'ingredient');
 
                 $percentage = $this->decimal((string) $item->percentage);
-                $requiredMass = $this->roundStorage(
-                    bcdiv(
-                        bcmul($basisQuantityGrams, $percentage, self::GuardScale),
-                        '100',
-                        self::GuardScale,
-                    ),
-                );
+                $requiredMass = $phase->slug === 'lye_water'
+                    ? $this->scaledLyeLiquidMass($version, (string) $item->weight, $basisQuantityGrams)
+                    : $this->roundStorage(
+                        bcdiv(
+                            bcmul($basisQuantityGrams, $percentage, self::GuardScale),
+                            '100',
+                            self::GuardScale,
+                        ),
+                    );
 
                 if (bccomp($requiredMass, '0', self::StorageScale) <= 0) {
                     continue;
@@ -107,7 +112,9 @@ class ProductionRequirementBuilder
                     'subject_name_snapshot' => $ingredient->display_name,
                     'phase_key_snapshot' => $phase->slug,
                     'phase_name_snapshot' => $phase->name,
-                    'percentage_snapshot' => $this->roundStorage($percentage),
+                    'percentage_snapshot' => $phase->slug === 'lye_water'
+                        ? $this->roundStorage(bcdiv(bcmul($requiredMass, '100', self::GuardScale), $basisQuantityGrams, self::GuardScale))
+                        : $this->roundStorage($percentage),
                     'components_per_unit_snapshot' => null,
                     'unit_snapshot' => 'g',
                     'note_snapshot' => $item->note,
@@ -157,6 +164,28 @@ class ProductionRequirementBuilder
         }
 
         return $requirements;
+    }
+
+    private function scaledLyeLiquidMass(RecipeVersion $version, string $savedWeight, string $basisQuantityGrams): string
+    {
+        $referenceBasisGrams = (string) ($version->batch_mass_grams
+            ?? $this->massConverter->toGrams((string) $version->batch_size, $version->batch_unit ?: 'g'));
+
+        if (bccomp($referenceBasisGrams, '0', self::GuardScale) <= 0) {
+            throw ValidationException::withMessages([
+                'recipe' => 'The published formula basis must be greater than zero.',
+            ]);
+        }
+
+        $savedWeightGrams = (string) $this->massConverter->toGrams($savedWeight, $version->batch_unit ?: 'g');
+
+        return $this->roundStorage(
+            bcdiv(
+                bcmul($savedWeightGrams, $basisQuantityGrams, self::GuardScale),
+                $referenceBasisGrams,
+                self::GuardScale,
+            ),
+        );
     }
 
     private function assertMaterialWorkspace(

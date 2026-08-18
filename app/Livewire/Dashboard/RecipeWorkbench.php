@@ -658,7 +658,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
         }
 
         try {
-            $calculation = $recipeWorkbenchService->previewSoapCalculation($draft);
+            $calculation = $recipeWorkbenchService->previewSoapCalculation($draft, $this->currentUser());
 
             return $this->previewResponses[$draftHash] = [
                 'ok' => true,
@@ -666,10 +666,12 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 'labeling' => $recipeWorkbenchService->previewInci($draft, $calculation),
                 'restrictions' => $recipeWorkbenchService->previewRestrictions($draft, $calculation),
             ];
-        } catch (InvalidArgumentException $exception) {
+        } catch (ValidationException|InvalidArgumentException $exception) {
             return $this->previewResponses[$draftHash] = [
                 'ok' => false,
-                'message' => $exception->getMessage(),
+                'message' => $exception instanceof ValidationException
+                    ? collect($exception->errors())->flatten()->first() ?? $exception->getMessage()
+                    : $exception->getMessage(),
                 'calculation' => null,
                 'labeling' => null,
                 'restrictions' => null,

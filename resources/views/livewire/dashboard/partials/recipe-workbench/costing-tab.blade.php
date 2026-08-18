@@ -90,7 +90,7 @@
  <div class="flex items-center bg-white px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"></div>
  <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)}`"></div>
  <div class="flex items-center bg-white px-3 py-3">
  <input

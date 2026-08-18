@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Support\NumberLocale;
 use Illuminate\Support\Arr;
 
 class FormulaDocumentBuilder
@@ -106,7 +107,7 @@ class FormulaDocumentBuilder
             $this->section(
                 'lye_water',
                 __('formula_documents.sections.lye_water'),
-                $this->lyeAndWaterRows($snapshot, $basisWeight),
+                $this->lyeAndWaterRows($snapshot, data_get($snapshot, 'draft.oilWeight', 0)),
             ),
             $this->section(
                 'formula_additions',
@@ -180,29 +181,76 @@ class FormulaDocumentBuilder
     }
 
     /** @return array<int, array<string, mixed>> */
-    private function lyeAndWaterRows(array $snapshot, float $basisWeight): array
+    private function lyeAndWaterRows(array $snapshot, mixed $basisWeight): array
     {
         $selected = data_get($snapshot, 'calculation.lye.selected', []);
+        $normalizedBasisWeight = $this->decimal($basisWeight);
 
-        if (! is_array($selected) || $basisWeight <= 0) {
+        if (! is_array($selected) || bccomp($normalizedBasisWeight, '0', 18) <= 0) {
             return [];
         }
 
-        return collect([
-            [__('formula_documents.ingredients.naoh'), (float) ($selected['naoh_weight'] ?? 0)],
-            [__('formula_documents.ingredients.koh'), (float) ($selected['koh_to_weigh'] ?? 0)],
-            [__('formula_documents.ingredients.water'), (float) data_get($snapshot, 'calculation.lye.water.weight', 0)],
+        $rows = collect([
+            [__('formula_documents.ingredients.naoh'), $this->decimal($selected['naoh_weight'] ?? 0)],
+            [__('formula_documents.ingredients.koh'), $this->decimal($selected['koh_to_weigh'] ?? 0)],
+            [
+                __('formula_documents.ingredients.water'),
+                $this->decimal(data_get(
+                    $snapshot,
+                    'calculation.lye.liquid_composition.water_weight',
+                    data_get($snapshot, 'calculation.lye.water.weight', 0),
+                )),
+            ],
         ])
-            ->filter(fn (array $row): bool => $row[1] > 0)
+            ->filter(fn (array $row): bool => bccomp($row[1], '0', 18) > 0)
             ->map(fn (array $row): array => [
                 'name' => $row[0],
-                'percentage' => round(($row[1] / $basisWeight) * 100, 4),
-                'weight' => round($row[1], 4),
+                'percentage' => $this->percentageOfBasis($row[1], $normalizedBasisWeight),
+                'weight' => (float) $this->roundMass($row[1]),
                 'note' => null,
                 'is_user_owned' => false,
-            ])
-            ->values()
-            ->all();
+            ]);
+
+        $draftRows = collect(Arr::wrap(data_get($snapshot, 'draft.phaseItems.lye_water', [])))->values();
+        $substitutionRows = collect(Arr::wrap(data_get($snapshot, 'calculation.lye.liquid_composition.substitutions', [])))
+            ->map(function (mixed $substitution, int $index) use ($normalizedBasisWeight, $draftRows): ?array {
+                $weight = is_array($substitution) ? $this->decimal($substitution['weight'] ?? 0) : '0';
+
+                if (! is_array($substitution) || bccomp($weight, '0', 18) <= 0) {
+                    return null;
+                }
+
+                $draftRow = $draftRows->first(fn (mixed $row): bool => is_array($row)
+                    && isset($row['ingredient_id'], $substitution['ingredient_id'])
+                    && (int) $row['ingredient_id'] === (int) $substitution['ingredient_id']);
+                $draftRow = is_array($draftRow) ? $draftRow : $draftRows->get($index, []);
+
+                return [
+                    'name' => (string) ($draftRow['name'] ?? __('formula_documents.ingredients.unnamed')),
+                    'percentage' => $this->percentageOfBasis($weight, $normalizedBasisWeight),
+                    'weight' => (float) $this->roundMass($weight),
+                    'note' => filled($draftRow['note'] ?? null) ? (string) $draftRow['note'] : null,
+                    'is_user_owned' => (bool) ($draftRow['is_user_owned'] ?? false),
+                ];
+            })
+            ->filter();
+
+        return $rows->merge($substitutionRows)->values()->all();
+    }
+
+    private function percentageOfBasis(string $weight, string $basisWeight): float
+    {
+        return (float) $this->roundMass(bcmul(bcdiv($weight, $basisWeight, 18), '100', 18));
+    }
+
+    private function decimal(mixed $value): string
+    {
+        return NumberLocale::normalizeDecimalString($value) ?? '0';
+    }
+
+    private function roundMass(string $value): string
+    {
+        return bcadd(bcadd($value, '0.00005', 5), '0', 4);
     }
 
     /** @return array<int, array{label: string, value: float, unit: string}> */

@@ -21,6 +21,7 @@ use App\Models\StockReservation;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Production\ProductionDetailPresenter;
 use App\Services\Production\ProductionRunNumberService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
@@ -247,13 +248,31 @@ it('groups the formula snapshot by phase on the detail page', function (): void 
         'sort_order' => 1,
     ]);
     ProductionFormulaLine::factory()->for($fixture['production'], 'productionRun')->create([
+        'component' => ProductionFormulaComponent::Ingredient,
+        'subject_name_snapshot' => 'Lavender hydrosol',
+        'phase_key_snapshot' => 'lye_water',
+        'phase_name_snapshot' => 'Lye Water',
+        'basis_percentage_snapshot' => '20.000000000',
+        'planned_mass_grams' => '2400.000000000',
+        'sort_order' => 2,
+    ]);
+    ProductionFormulaLine::factory()->for($fixture['production'], 'productionRun')->create([
+        'component' => ProductionFormulaComponent::Ingredient,
+        'subject_name_snapshot' => 'Lavender essential oil',
+        'phase_key_snapshot' => 'formula_additions',
+        'phase_name_snapshot' => 'Formula Additions',
+        'basis_percentage_snapshot' => '2.000000000',
+        'planned_mass_grams' => '240.000000000',
+        'sort_order' => 3,
+    ]);
+    ProductionFormulaLine::factory()->for($fixture['production'], 'productionRun')->create([
         'component' => ProductionFormulaComponent::Naoh,
         'subject_name_snapshot' => 'Sodium hydroxide',
         'phase_key_snapshot' => 'lye_water',
         'phase_name_snapshot' => 'Lye Water',
         'basis_percentage_snapshot' => '7.500000000',
         'planned_mass_grams' => '900.000000000',
-        'sort_order' => 2,
+        'sort_order' => 4,
     ]);
     ProductionFormulaLine::factory()->for($fixture['production'], 'productionRun')->create([
         'component' => ProductionFormulaComponent::Water,
@@ -262,7 +281,24 @@ it('groups the formula snapshot by phase on the detail page', function (): void 
         'phase_name_snapshot' => 'Lye Water',
         'basis_percentage_snapshot' => '30.000000000',
         'planned_mass_grams' => '3600.000000000',
-        'sort_order' => 3,
+        'sort_order' => 5,
+    ]);
+
+    $production = $fixture['production']->fresh()->load([
+        'requirements.reservations.stockLot',
+        'formulaLines',
+        'consumption.stockLot',
+        'tasks',
+        'outputLot',
+    ]);
+    $materials = app(ProductionDetailPresenter::class)->present($production)['materials'];
+
+    expect(collect($materials)->pluck('group_key')->all())->toBe([
+        'saponified_oils',
+        'lye_water',
+        'lye_water',
+        'lye_water',
+        'formula_additions',
     ]);
 
     Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => (string) $fixture['production']->id])
@@ -270,6 +306,7 @@ it('groups the formula snapshot by phase on the detail page', function (): void 
         ->assertSee('Saponified Oils')
         ->assertSee('Lye Water')
         ->assertSee('Olive oil')
+        ->assertSee('Lavender hydrosol')
         ->assertSee('Sodium hydroxide')
         ->assertSee('9000')
         ->assertDontSee('Formula version');

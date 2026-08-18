@@ -53,6 +53,7 @@ function defaultPhaseBlueprints(productFamilySlug) {
 
     return [
         { key: 'saponified_oils', name: 'Saponified Oils' },
+        { key: 'lye_water', name: 'Lye Water' },
         { key: 'additives', name: 'Additives' },
         { key: 'fragrance', name: 'Fragrance And Aromatics' },
     ];
@@ -202,6 +203,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         activeCategory: isCosmeticFormula ? 'all' : 'lipids',
         isComplianceSettingsOpen: false,
         isFormulaSettingsOpen: initialDraft === null,
+        isLyeLiquidCompositionOpen: false,
         formulaDiagnosticsPreferenceKey: FORMULA_DIAGNOSTICS_PREFERENCE_KEY,
         isFormulaDiagnosticsOpen: preferredFormulaDiagnosticsOpen(),
         ifraProductCategories: payload.ifraProductCategories ?? [],
@@ -292,6 +294,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         init() {
             this.applyDraft(initialDraft);
             this.applySnapshot(initialSnapshot);
+            this.isLyeLiquidCompositionOpen = (this.phaseItems.lye_water ?? []).length > 0;
             this.initializeCostingState();
             this.resetPackagingCatalogForm();
             this.refreshDirtyBaseline();
@@ -510,7 +513,10 @@ function createCatalogSection() {
                 });
             }
 
-            return JSON.stringify(this.phaseItems?.saponified_oils ?? []);
+            return JSON.stringify({
+                oils: this.phaseItems?.saponified_oils ?? [],
+                lyeLiquids: this.phaseItems?.lye_water ?? [],
+            });
         },
 
         addIngredient(ingredient, requestedPhase = null, shouldAnimate = true) {
@@ -564,15 +570,42 @@ function createCatalogSection() {
 
             this.phaseItems[targetPhase].push(nextRow);
 
-            if (shouldAnimate) {
-                this.lastAddedIngredientRowId = nextRow.id;
+            if (!shouldAnimate) {
+                return;
             }
+
+            this.lastAddedIngredientRowId = nextRow.id;
 
             if (this.isCosmeticFormula) {
                 this.highlightCosmeticPhase(targetPhase);
             } else if (targetPhase !== 'saponified_oils') {
                 this.highlightPostReaction();
             }
+        },
+
+        addLyeLiquidIngredient(ingredientId) {
+            const ingredient = this.ingredients.find((candidate) => Number(candidate.id) === Number(ingredientId));
+
+            if (!ingredient || ingredient.category === 'soapmaking_alkalis') {
+                return;
+            }
+
+            this.addIngredient(ingredient, 'lye_water', false);
+        },
+
+        toggleLyeLiquidComposition() {
+            if (this.isLyeLiquidCompositionOpen) {
+                if (this.lyeLiquidRows.length > 0 && !window.confirm(this.t('settings.lye_liquid_remove_confirm'))) {
+                    return;
+                }
+
+                this.phaseItems.lye_water = [];
+                this.isLyeLiquidCompositionOpen = false;
+
+                return;
+            }
+
+            this.isLyeLiquidCompositionOpen = true;
         },
 
         prefersReducedMotion() {

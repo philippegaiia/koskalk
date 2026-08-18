@@ -150,6 +150,54 @@ it('presents terminal lifecycle state and output release readiness', function ()
         ]);
 });
 
+it('groups only lye water materials while preserving every other material position', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    $production = ProductionRun::factory()->for($workspace)->create();
+
+    foreach ([
+        ['Olive oil', 'saponified_oils', ProductionFormulaComponent::Ingredient, 1],
+        ['Rose hydrosol', 'lye_water', ProductionFormulaComponent::Ingredient, 2],
+        ['Green clay', 'formula_additions', ProductionFormulaComponent::Ingredient, 3],
+        ['Sodium hydroxide', 'lye_water', ProductionFormulaComponent::Naoh, 4],
+        ['Coconut oil addition', 'saponified_oils', ProductionFormulaComponent::Ingredient, 5],
+        ['Water', 'lye_water', ProductionFormulaComponent::Water, 6],
+        ['Lavender oil', 'formula_additions', ProductionFormulaComponent::Ingredient, 7],
+    ] as [$name, $phase, $component, $sortOrder]) {
+        ProductionFormulaLine::factory()->for($production, 'productionRun')->create([
+            'component' => $component,
+            'subject_name_snapshot' => $name,
+            'phase_key_snapshot' => $phase,
+            'phase_name_snapshot' => str($phase)->replace('_', ' ')->title(),
+            'planned_mass_grams' => '10.000000000',
+            'sort_order' => $sortOrder,
+        ]);
+    }
+
+    ProductionRequirement::factory()->for($production, 'productionRun')->forPackaging(
+        PackagingItem::factory()->for($workspace)->create(['name' => 'Carton']),
+    )->create([
+        'subject_name_snapshot' => 'Carton',
+        'required_units' => 10,
+        'sort_order' => 8,
+    ]);
+
+    $materials = app(ProductionDetailPresenter::class)->present(
+        $production->fresh()->load(['requirements.reservations.stockLot', 'formulaLines', 'tasks', 'outputLot']),
+    )['materials'];
+
+    expect(collect($materials)->pluck('material_name')->all())->toBe([
+        'Olive oil',
+        'Rose hydrosol',
+        'Sodium hydroxide',
+        'Water',
+        'Green clay',
+        'Coconut oil addition',
+        'Lavender oil',
+        'Carton',
+    ]);
+});
+
 /**
  * @return array{
  *     owner: User,

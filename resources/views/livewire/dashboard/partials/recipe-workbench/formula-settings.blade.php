@@ -7,6 +7,16 @@
             : "Cat {$category['code']}",
         'searchText' => implode(' ', array_filter([$category['code'], $category['short_name'] ?? null])),
     ])->values()->all();
+    $lyeLiquidSearchOptions = collect($workbench['ingredients'] ?? [])
+        ->reject(fn (array $ingredient): bool => ($ingredient['category'] ?? null) === 'soapmaking_alkalis')
+        ->map(fn (array $ingredient): array => [
+            'id' => $ingredient['id'],
+            'label' => $ingredient['name'],
+            'description' => $ingredient['inci_name'] ?? null,
+            'searchText' => implode(' ', array_filter([$ingredient['name'], $ingredient['inci_name'] ?? null])),
+        ])
+        ->values()
+        ->all();
 @endphp
 
 <section class="sk-card px-5 py-4" aria-labelledby="formula-setup-heading">
@@ -212,6 +222,56 @@
 	 </template>
 	 </div>
 	 </div>
+	 </div>
+	 </div>
+	 </div>
+	 <div class="mt-4 sk-inset sk-tone-chemistry p-4">
+	 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+	 <div>
+	 <p class="sk-eyebrow">{{ __('workbench.settings.lye_liquid') }}</p>
+	 <p class="mt-1 text-sm font-medium text-[var(--color-ink-strong)]" x-text="lyeLiquidSelectionSummary()"></p>
+	 <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.settings.lye_liquid_help') }}</p>
+	 </div>
+	 <button type="button" role="switch" :aria-checked="isLyeLiquidCompositionOpen.toString()" @click="toggleLyeLiquidComposition()" class="flex min-h-11 shrink-0 items-center gap-3 rounded-full bg-[var(--color-control)] px-3 py-2 text-xs font-medium text-[var(--color-ink-strong)] transition">
+	 <span>{{ __('workbench.settings.lye_liquid_toggle') }}</span>
+	 <span :class="isLyeLiquidCompositionOpen ? 'bg-[var(--color-active)]' : 'bg-[var(--color-line-strong)]'" class="relative h-6 w-11 shrink-0 overflow-hidden rounded-full transition">
+	 <span :class="isLyeLiquidCompositionOpen ? 'translate-x-5' : 'translate-x-0.5'" class="absolute left-0 top-0.5 size-5 rounded-full bg-white shadow-sm transition"></span>
+	 </span>
+	 </button>
+	 </div>
+	 <div x-show="isLyeLiquidCompositionOpen" x-cloak class="mt-4 space-y-4 border-t border-[var(--color-line)] pt-4">
+	 <x-search-combobox
+	 id="lye-liquid-ingredient-search"
+	 :label="__('workbench.settings.lye_liquid_add')"
+	 :options="$lyeLiquidSearchOptions"
+	 :placeholder="__('workbench.settings.lye_liquid_search')"
+	 x-on:search-combobox-selected="addLyeLiquidIngredient($event.detail.id)"
+	 />
+	 <div class="overflow-hidden rounded-xl border border-[var(--color-line)] bg-white">
+	 <div class="hidden grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] gap-px bg-[var(--color-line)] text-xs font-medium text-[var(--color-ink-soft)] sm:grid">
+	 <div class="bg-[var(--color-field-muted)] px-3 py-2">{{ __('workbench.common.ingredient') }}</div>
+	 <div class="bg-[var(--color-field-muted)] px-3 py-2">{{ __('workbench.settings.lye_liquid_percentage') }}</div>
+	 <div class="bg-[var(--color-field-muted)] px-3 py-2" x-text="t('settings.lye_liquid_fresh_weight', { unit: oilUnit })"></div>
+	 <div class="bg-[var(--color-field-muted)]"></div>
+	 </div>
+	 <div class="divide-y divide-[var(--color-line)]">
+	 <template x-for="row in lyeLiquidRows" :key="row.id">
+	 <div class="grid gap-3 px-3 py-3 sm:grid-cols-[minmax(0,1fr)_10rem_10rem_2.5rem] sm:items-center">
+	 <div><p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p><p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p></div>
+	 <label class="flex items-center gap-2"><span class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_percentage_short') }}</span><input x-model="row.percentage" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('settings.lye_liquid_percentage_for', { ingredient: row.name })" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm" /></label>
+	 <span class="flex items-center gap-2 text-sm text-[var(--color-ink-soft)]">
+	 <span class="sr-only" x-text="t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: format(lyeLiquidWeight(row), 3), unit: oilUnit })"></span>
+	 <span aria-hidden="true" class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_fresh_weight_mobile') }}</span>
+	 <span aria-hidden="true" class="numeric" x-text="format(lyeLiquidWeight(row), 3)"></span>
+	 <span aria-hidden="true" class="sm:hidden" x-text="oilUnit"></span>
+	 </span>
+	 <button type="button" @click="removeIngredient('lye_water', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('settings.lye_liquid_remove', { ingredient: row.name })">×</button>
+	 </div>
+	 </template>
+	 </div>
+	 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-line)] bg-[var(--color-field-muted)] px-3 py-2.5 text-xs">
+	 <span :class="lyeLiquidCompositionIsValid ? 'text-[var(--color-ink-soft)]' : 'text-[var(--color-danger-strong)]'" x-text="lyeLiquidCompositionIsValid ? t('settings.lye_liquid_replaced', { percentage: format(lyeLiquidPercentageTotal(), 2) }) : t('settings.lye_liquid_exceeds')"></span>
+	 <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="t('settings.lye_liquid_water_summary', { percentage: format(lyeLiquidWaterPercentage(), 2), weight: format(lyeLiquidWaterWeight(), 3), unit: oilUnit })"></span>
 	 </div>
 	 </div>
 	 </div>

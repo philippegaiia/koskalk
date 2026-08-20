@@ -253,14 +253,15 @@ it('creates an active workspace manufactured ingredient for inline recipe output
 
 it('exposes product or ingredient identity at the start of formula settings', function (): void {
     $user = User::factory()->create();
-    ProductFamily::factory()->create([
+    $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
     app(CreateManufacturedIngredient::class)->handle($user, 'Turmeric oil macerate');
 
     $this->actingAs($user)
-        ->get(route('recipes.create', ['family' => 'soap']))
+        ->get(route('recipes.create', ['family' => 'soap', 'type' => $productType->slug]))
         ->assertSuccessful()
         ->assertSee('data-formula-output-type', false)
         ->assertSee('id="setting-formula-output-type"', false)

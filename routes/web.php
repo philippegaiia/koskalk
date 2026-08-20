@@ -76,6 +76,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->name('recipes.')
         ->group(function (): void {
             Route::get('/', 'index')->name('index');
+            Route::get('/start', 'start')->name('start');
+            Route::get('/start/{entry}', 'chooseProductType')->name('choose-type');
             Route::get('/new', 'create')->name('create');
             Route::delete('/{recipe}', 'destroy')->name('destroy');
             Route::get('/{recipe}/saved', 'saved')->name('saved');

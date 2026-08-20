@@ -4,11 +4,13 @@ use App\Enums\IngredientCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\RecipeWorkbenchService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -133,13 +135,14 @@ it('renders packaging as its own workbench tab', function () {
         'owner_user_id' => $user->id,
         'default_currency' => 'GBP',
     ]);
-    ProductFamily::factory()->create([
+    $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
 
     $this->actingAs($user)
-        ->get(route('recipes.create'))
+        ->get(route('recipes.create', ['family' => 'soap', 'type' => $productType->slug]))
         ->assertSuccessful()
         ->assertSee('Packaging')
         ->assertSee('Packaging plan')
@@ -217,8 +220,15 @@ function packagingPlanIngredient(): Ingredient
  */
 function packagingPlanDraftPayload(Ingredient $ingredient, string $name): array
 {
+    $soapFamily = ProductFamily::query()->where('slug', 'soap')->latest('id')->firstOrFail();
+    $productType = ProductType::query()
+        ->whereHas('productFamilies', fn (Builder $query): Builder => $query->whereKey($soapFamily->id))
+        ->first();
+    $productType ??= ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
+
     return [
         'name' => $name,
+        'product_type_id' => $productType->id,
         'oil_unit' => 'g',
         'oil_weight' => 1000,
         'manufacturing_mode' => 'saponify_in_formula',

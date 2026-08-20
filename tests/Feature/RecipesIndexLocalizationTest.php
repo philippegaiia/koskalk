@@ -52,8 +52,7 @@ it('uses product-first terminology throughout the recipes index', function () {
         ->assertSeeText('Products')
         ->assertSeeText('Manage your products.')
         ->assertSeeText('Create and manage soap and cosmetic products, including their formulas, packaging, and saved versions.')
-        ->assertSeeText('New soap product')
-        ->assertSeeText('New cosmetic product')
+        ->assertSeeText('New product')
         ->assertSee('placeholder="Product name, category, or type"', false)
         ->assertSeeText('All categories')
         ->assertSeeText('All types')
@@ -92,7 +91,7 @@ it('loads product index interface copy from the database', function () {
         'page.title' => 'Produits',
         'page.heading' => 'Gérez vos produits.',
         'page.intro' => 'Créez et gérez vos savons et produits cosmétiques, avec leurs formules, emballages et versions enregistrées.',
-        'actions.new_soap' => 'Nouveau savon',
+        'actions.new_product' => 'Nouveau produit',
         'actions.open_workbench' => 'Ouvrir l’atelier',
         'filters.search.label' => 'Rechercher',
         'filters.search.placeholder' => 'Nom, catégorie ou type de produit',
@@ -115,7 +114,7 @@ it('loads product index interface copy from the database', function () {
         ->assertSeeText('Produits')
         ->assertSeeText('Gérez vos produits.')
         ->assertSeeText('Créez et gérez vos savons et produits cosmétiques, avec leurs formules, emballages et versions enregistrées.')
-        ->assertSeeText('Nouveau savon')
+        ->assertSeeText('Nouveau produit')
         ->assertSee('placeholder="Nom, catégorie ou type de produit"', false)
         ->assertSeeText('Toutes les catégories')
         ->assertSeeText('Tous les types')

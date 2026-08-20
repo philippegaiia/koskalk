@@ -12,11 +12,8 @@
 			</div>
 
 			<div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-				<a href="{{ route('recipes.create') }}" wire:navigate class="sk-btn sk-btn-primary">
-					{{ __('dashboard.create.soap') }}
-				</a>
-				<a href="{{ route('recipes.create', ['family' => 'cosmetic']) }}" wire:navigate class="sk-btn sk-btn-outline">
-					{{ __('dashboard.create.cosmetic') }}
+				<a href="{{ route('recipes.start') }}" wire:navigate class="sk-btn sk-btn-primary">
+					{{ __('products.actions.new_product') }}
 				</a>
 			</div>
 		</div>

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
 use App\Services\MediaStorage;
+use App\Services\ProductCreationCatalog;
 use App\Services\RecipeCsvExporter;
 use App\Services\RecipeExportDataBuilder;
 use App\Services\RecipeVersionCostPreviewBuilder;
@@ -34,7 +35,26 @@ class RecipeController extends Controller
         return view('recipes.index');
     }
 
-    public function create(Request $request): View
+    public function start(ProductCreationCatalog $productCreationCatalog): View
+    {
+        return view('recipes.create-start', [
+            'entries' => $productCreationCatalog->entries(),
+        ]);
+    }
+
+    public function chooseProductType(string $entry, ProductCreationCatalog $productCreationCatalog): View
+    {
+        $entryData = $productCreationCatalog->entries()[$entry] ?? null;
+        abort_if($entryData === null, 404);
+
+        return view('recipes.product-type-selector', [
+            'entry' => $entry,
+            'entryData' => $entryData,
+            'groupedProductTypes' => $productCreationCatalog->groupedTypes($entry),
+        ]);
+    }
+
+    public function create(Request $request): View|RedirectResponse
     {
         $productFamilySlug = $request->string('family')->toString() ?: 'soap';
         $productTypeSlug = $request->string('type')->toString();
@@ -42,16 +62,20 @@ class RecipeController extends Controller
             ->where('slug', $productFamilySlug)
             ->firstOrFail();
 
-        $productType = $productTypeSlug !== ''
-            ? ProductType::query()
-                ->whereHas(
-                    'productFamilies',
-                    fn (Builder $query): Builder => $query->whereKey($productFamily->id),
-                )
-                ->where('slug', $productTypeSlug)
-                ->where('is_active', true)
-                ->firstOrFail()
-            : null;
+        if ($productTypeSlug === '') {
+            return redirect()->route('recipes.choose-type', [
+                'entry' => $productFamily->slug === 'cosmetic' ? 'cosmetics' : 'soap',
+            ]);
+        }
+
+        $productType = ProductType::query()
+            ->whereHas(
+                'productFamilies',
+                fn (Builder $query): Builder => $query->whereKey($productFamily->id),
+            )
+            ->where('slug', $productTypeSlug)
+            ->where('is_active', true)
+            ->firstOrFail();
 
         return view('recipes.workbench', [
             'productFamily' => $productFamily,

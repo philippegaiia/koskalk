@@ -44,7 +44,7 @@ it('accepts kilograms and persists canonical total formula mass', function (): v
         ->and($version->batch_mass_grams)->toBe('1000.000000000');
 });
 
-it('opens new cosmetic formulas directly in the workbench with an editable product category', function () {
+it('requires a Product Type before opening a new cosmetic formula', function () {
     $user = User::factory()->create();
     $cosmeticFamily = ProductFamily::factory()->create([
         'name' => 'Cosmetic',
@@ -68,15 +68,7 @@ it('opens new cosmetic formulas directly in the workbench with an editable produ
 
     $this->actingAs($user)
         ->get(route('recipes.create', ['family' => 'cosmetic']))
-        ->assertSuccessful()
-        ->assertSee('Formula')
-        ->assertSee('Costing')
-        ->assertSee('Composition &amp; labeling', false)
-        ->assertSee('Instructions &amp; media', false)
-        ->assertSee('Product category')
-        ->assertSee('Choose later')
-        ->assertSee('Cream')
-        ->assertDontSee('Hidden cosmetic type');
+        ->assertRedirect(route('recipes.choose-type', ['entry' => 'cosmetics']));
 
     $this->actingAs($user)
         ->get(route('recipes.create', [

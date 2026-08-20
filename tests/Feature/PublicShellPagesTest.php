@@ -49,12 +49,12 @@ it('redirects guests from the application root to login', function () {
         ->assertRedirect(route('login'));
 });
 
-it('redirects authenticated homepage visitors to the formula workbench', function () {
+it('redirects authenticated homepage visitors to Product creation', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
         ->get(route('home'))
-        ->assertRedirect(route('recipes.create'));
+        ->assertRedirect(route('recipes.start'));
 });
 
 it('renders public interface database translations with an English fallback', function () {

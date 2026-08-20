@@ -6,11 +6,8 @@
                 <p class="mt-3 max-w-4xl text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('products.page.intro') }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('recipes.create') }}" wire:navigate class="sk-btn sk-btn-primary">
-                    {{ __('products.actions.new_soap') }}
-                </a>
-                <a href="{{ route('recipes.create', ['family' => 'cosmetic']) }}" wire:navigate class="sk-btn sk-btn-outline">
-                    {{ __('products.actions.new_cosmetic') }}
+                <a href="{{ route('recipes.start') }}" wire:navigate class="sk-btn sk-btn-primary">
+                    {{ __('products.actions.new_product') }}
                 </a>
             </div>
         </div>
@@ -84,8 +81,7 @@
             </p>
             @if (! $hasFilters)
                 <div class="mt-5 flex flex-wrap justify-center gap-2">
-                    <a href="{{ route('recipes.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('products.actions.new_soap') }}</a>
-                    <a href="{{ route('recipes.create', ['family' => 'cosmetic']) }}" wire:navigate class="sk-btn sk-btn-outline">{{ __('products.actions.new_cosmetic') }}</a>
+                    <a href="{{ route('recipes.start') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('products.actions.new_product') }}</a>
                 </div>
             @endif
         </section>

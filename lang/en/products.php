@@ -13,6 +13,7 @@ return [
         'description' => 'Open this page from your signed-in account to create and manage products.',
     ],
     'actions' => [
+        'new_product' => 'New product',
         'new_soap' => 'New soap product',
         'new_cosmetic' => 'New cosmetic product',
         'clear_filters' => 'Clear filters',
@@ -27,6 +28,36 @@ return [
         'use_name' => 'Use product name',
         'delete_permanently' => 'Delete permanently',
         'cancel' => 'Cancel',
+    ],
+    'creation' => [
+        'entries' => [
+            'soap' => [
+                'name' => 'Soap',
+                'description' => 'Oils + lye',
+            ],
+            'cosmetics' => [
+                'name' => 'Cosmetics',
+                'description' => 'Skin, hair, melt-and-pour and syndets',
+            ],
+            'home' => [
+                'name' => 'Home',
+                'description' => 'Candles, cleaning and laundry',
+            ],
+        ],
+        'start' => [
+            'title' => 'New product',
+            'heading' => 'Create a product',
+            'description' => 'Choose the kind of product you want to formulate.',
+            'aria_label' => 'Product creation options',
+        ],
+        'selector' => [
+            'title' => 'New :entry product',
+            'heading' => 'New :entry product',
+            'choose' => 'Choose a product type',
+            'description' => 'You can name and complete the formula in the workbench.',
+            'back' => 'Back to product kinds',
+            'fallback_description' => 'Open a blank formula for this product type.',
+        ],
     ],
     'filters' => [
         'aria_label' => 'Product filters',
@@ -58,7 +89,7 @@ return [
         'no_matches' => 'No products match these filters',
         'try_again' => 'Try another product name, category, or type.',
         'no_items' => 'No products yet',
-        'description' => 'Create your first soap or cosmetic product, then build its formula and packaging in the workbench.',
+        'description' => 'Create your first soap, cosmetic, or home product, then build its formula and packaging in the workbench.',
     ],
     'card' => [
         'default_category' => 'Product',

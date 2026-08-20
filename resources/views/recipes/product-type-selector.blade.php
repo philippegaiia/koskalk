@@ -1,45 +1,50 @@
 @extends('layouts.app-shell')
 
-@section('title', 'New Cosmetic Formula · '.config('app.name'))
-@section('page_heading', 'New Cosmetic Formula')
+@section('title', __('products.creation.selector.title', ['entry' => $entryData['name']]).' · '.config('app.name'))
+@section('page_heading', __('products.creation.selector.heading', ['entry' => $entryData['name']]))
 
 @section('content')
-    <div class="mx-auto max-w-app space-y-6">
-        <section class="sk-card p-6">
-            <p class="sk-eyebrow">Cosmetic formula</p>
-            <div class="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div class="max-w-3xl">
-                    <h3 class="text-3xl font-semibold text-[var(--color-ink-strong)]">Choose a cosmetic product type</h3>
-                    <p class="mt-4 text-sm leading-7 text-[var(--color-ink-soft)]">
-                        Pick the broad category first. The formula name stays free, and IFRA guidance remains editable in the workbench.
-                    </p>
-                </div>
-                <a href="{{ route('recipes.index') }}" wire:navigate class="sk-action-link">Back to recipes</a>
+    <div class="mx-auto w-full max-w-5xl space-y-10">
+        <header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div class="max-w-2xl">
+                <p class="sk-eyebrow">{{ $entryData['name'] }}</p>
+                <h3 class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ __('products.creation.selector.choose') }}</h3>
+                <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('products.creation.selector.description') }}</p>
             </div>
-        </section>
+            <a href="{{ route('recipes.start') }}" wire:navigate class="sk-action-link">{{ __('products.creation.selector.back') }}</a>
+        </header>
 
-        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            @foreach ($productTypes as $productType)
-                <a
-                    href="{{ route('recipes.create', ['family' => $productFamily->slug, 'type' => $productType->slug]) }}"
-                    wire:navigate
-                    class="sk-card p-5 transition hover:-translate-y-0.5 hover:border-[var(--color-line-strong)]"
-                >
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="sk-eyebrow">Product type</p>
-                            <h4 class="mt-3 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $productType->name }}</h4>
+        @foreach ($groupedProductTypes as $area)
+            <section class="space-y-6" aria-labelledby="product-area-{{ $area['id'] }}">
+                <div class="border-b border-[var(--color-line)] pb-3">
+                    <h4 id="product-area-{{ $area['id'] }}" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $area['name'] }}</h4>
+                </div>
+
+                @foreach ($area['categories'] as $category)
+                    <div class="space-y-3">
+                        <h5 class="text-sm font-semibold text-[var(--color-ink)]">{{ $category['name'] }}</h5>
+                        <div class="grid gap-3 sm:grid-cols-2">
+                            @foreach ($category['product_types'] as $productType)
+                                <a
+                                    href="{{ route('recipes.create', ['family' => $entryData['family'], 'type' => $productType['slug']]) }}"
+                                    wire:navigate
+                                    class="group rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-4 transition-colors hover:border-[var(--color-accent)] hover:bg-[var(--color-accent-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+                                >
+                                    <span class="flex items-start justify-between gap-4">
+                                        <span>
+                                            <span class="block font-semibold text-[var(--color-ink-strong)]">{{ $productType['name'] }}</span>
+                                            <span class="mt-1.5 block text-sm leading-6 text-[var(--color-ink-soft)]">
+                                                {{ $productType['description'] ?: __('products.creation.selector.fallback_description') }}
+                                            </span>
+                                        </span>
+                                        <span class="mt-0.5 text-[var(--color-ink-soft)] transition-transform group-hover:translate-x-1" aria-hidden="true">→</span>
+                                    </span>
+                                </a>
+                            @endforeach
                         </div>
-                        <span class="sk-badge sk-badge-neutral">Start</span>
                     </div>
-
-                    @if ($productType->description)
-                        <p class="mt-4 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $productType->description }}</p>
-                    @else
-                        <p class="mt-4 text-sm leading-6 text-[var(--color-ink-soft)]">Open a blank cosmetic formula with Phase A ready for ingredients.</p>
-                    @endif
-                </a>
-            @endforeach
-        </section>
+                @endforeach
+            </section>
+        @endforeach
     </div>
 @endsection

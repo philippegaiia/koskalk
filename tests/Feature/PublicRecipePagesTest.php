@@ -6,6 +6,7 @@ use App\Enums\Visibility;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -26,15 +27,16 @@ it('renders the recipes page for signed-in users', function () {
     $this->actingAs(User::factory()->create())
         ->get(route('recipes.index'))
         ->assertSuccessful()
-        ->assertSee('New soap product');
+        ->assertSee('New product');
 });
 
 it('renders the soap workbench with filtered catalog data for signed-in users', function () {
-    ProductFamily::factory()->create([
+    $soapFamily = ProductFamily::factory()->create([
         'name' => 'Soap',
         'slug' => 'soap',
         'calculation_basis' => 'initial_oils',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
 
     $carrierOil = Ingredient::factory()->create([
         'category' => IngredientCategory::Lipids,
@@ -58,7 +60,7 @@ it('renders the soap workbench with filtered catalog data for signed-in users', 
     ]);
 
     $this->actingAs(User::factory()->create())
-        ->get(route('recipes.create'))
+        ->get(route('recipes.create', ['family' => 'soap', 'type' => $productType->slug]))
         ->assertSuccessful()
         ->assertSee('Saponification')
         ->assertSee('Formula additions')
@@ -71,11 +73,12 @@ it('renders the soap workbench with filtered catalog data for signed-in users', 
 });
 
 it('shows private user ingredients in the workbench only for their owner', function () {
-    ProductFamily::factory()->create([
+    $soapFamily = ProductFamily::factory()->create([
         'name' => 'Soap',
         'slug' => 'soap',
         'calculation_basis' => 'initial_oils',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
 
     $owner = User::factory()->create();
     $otherUser = User::factory()->create();
@@ -91,12 +94,12 @@ it('shows private user ingredients in the workbench only for their owner', funct
     ]);
 
     $this->actingAs($owner)
-        ->get(route('recipes.create'))
+        ->get(route('recipes.create', ['family' => 'soap', 'type' => $productType->slug]))
         ->assertSuccessful()
         ->assertSee('Private Sodium Lactate');
 
     $this->actingAs($otherUser)
-        ->get(route('recipes.create'))
+        ->get(route('recipes.create', ['family' => 'soap', 'type' => $productType->slug]))
         ->assertSuccessful()
         ->assertDontSee('Private Sodium Lactate');
 });

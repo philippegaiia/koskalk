@@ -352,6 +352,16 @@
         background: white;
     }
 
+    .sk-decimal-aligned {
+        --sk-decimal-offset: 1ch;
+
+        width: 100%;
+        justify-content: flex-start;
+        padding-inline-start: max(0.75rem, calc(50% - var(--sk-decimal-offset)));
+        padding-inline-end: 0.75rem;
+        text-align: start;
+    }
+
     .sk-formula-table-handle-cell {
         display: flex;
         align-items: center;

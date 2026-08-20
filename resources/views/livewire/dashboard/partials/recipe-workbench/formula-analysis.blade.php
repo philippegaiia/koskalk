@@ -31,13 +31,17 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-4 sm:justify-end">
-                <div x-show="soapQualitiesExpanded" x-cloak role="tablist" aria-label="Quality metrics view" class="inline-flex items-center gap-2">
+                <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="soapQualitiesExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+                    <div class="overflow-hidden">
+                        <div role="tablist" aria-label="Quality metrics view" class="inline-flex items-center gap-2">
                     <button id="tab-bar-cure" type="button" role="tab" :aria-selected="soapQualityPanel === 'bar_cure'" aria-controls="panel-bar-cure" @click="soapQualityPanel = 'bar_cure'" :class="soapQualityPanel === 'bar_cure' ? 'border-b-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-panel)]/70">
                         Bar &amp; cure
                     </button>
                     <button id="tab-lather-feel" type="button" role="tab" :aria-selected="soapQualityPanel === 'lather_feel'" aria-controls="panel-lather-feel" @click="soapQualityPanel = 'lather_feel'" :class="soapQualityPanel === 'lather_feel' ? 'border-b-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-b-[var(--color-line)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]'" class="rounded-lg border border-b-2 border-[var(--color-line)] bg-[var(--color-panel)]/35 px-3.5 py-2 text-sm font-semibold transition-colors hover:bg-[var(--color-panel)]/70">
                         Lather &amp; feel
                     </button>
+                        </div>
+                    </div>
                 </div>
 
                 <button
@@ -55,7 +59,8 @@
             </div>
         </div>
 
-        <div id="soap-quality-content" x-show="soapQualitiesExpanded" x-cloak>
+        <div id="soap-quality-content" x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="soapQualitiesExpanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+            <div class="overflow-hidden">
             <template x-if="hasQualityMetricsData">
                 <div class="space-y-4 px-5 py-5">
                     <div id="panel-bar-cure" x-show="soapQualityPanel === 'bar_cure'" role="tabpanel" aria-labelledby="tab-bar-cure" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -121,6 +126,7 @@
                     </div>
                 </div>
             </template>
+            </div>
         </div>
     </div>
 </div>

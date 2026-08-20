@@ -14,6 +14,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Forms/** | .ai/rules/forms.md |
 | app/Http/** | .ai/rules/http.md |
 | app/Services/IngredientEnrichment/**, app/Services/IngredientIntake/**, app/Actions/IngredientIntake/** | .ai/rules/ingredient-enrichment.md |
+| resources/js/recipe-workbench/** | .ai/rules/js-recipe-workbench.md |
 | lang/**/*.php | .ai/rules/lang.md |
 | app/Livewire/** | .ai/rules/livewire.md |
 | database/migrations/** | .ai/rules/migrations.md |
@@ -21,6 +22,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Models/** | .ai/rules/models.md |
 | app/Policies/** | .ai/rules/policies.md |
 | app/Providers/*.php | .ai/rules/providers.md |
+| resources/**/recipe-workbench/** | .ai/rules/recipe-workbench.md |
 | routes/*.php | .ai/rules/routes.md |
 | app/Filament/Resources/Ingredients/Schemas/IngredientForm.php | .ai/rules/schemas.md |
 | app/Services/**, app/Services/IngredientIdentitySynchronizer.php, app/Services/{IngredientDeclarationNameResolver,InciGenerationService}.php | .ai/rules/services.md |

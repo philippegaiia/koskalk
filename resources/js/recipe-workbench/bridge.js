@@ -40,7 +40,6 @@ export async function refreshCalculationPreview(workbench) {
  * apply an optional returned snapshot, and follow an optional redirect.
  */
 export async function persistWorkbench(workbench, method) {
-    const recipeWasUnsaved = !workbench.recipeId;
     workbench.isSaving = true;
     workbench.saveStatus = null;
     workbench.saveMessage = '';
@@ -63,10 +62,7 @@ export async function persistWorkbench(workbench, method) {
         }
 
         workbench.refreshDirtyBaseline();
-
-        if (recipeWasUnsaved) {
-            workbench.dirtyStateRegistry.set('recipe-content', 'saved');
-        }
+        workbench.dirtyStateRegistry.set('recipe-content', 'saved');
 
         if (response.redirect) {
             const hash = workbench.activeWorkbenchTab ? `#${workbench.activeWorkbenchTab}` : '';

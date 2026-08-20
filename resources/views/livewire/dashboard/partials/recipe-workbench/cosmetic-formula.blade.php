@@ -126,19 +126,19 @@
 	 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
  <span class="sk-eyebrow lg:hidden">{{ __('workbench.common.formula_percent') }}</span>
  <template x-if="editMode === 'percentage'">
- <input x-model="row.percentage" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('cosmetic.percentage_for', { ingredient: row.name })" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('cosmetic.percentage_for', { ingredient: row.name })" :style="decimalAlignmentStyle(row.percentage)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'percentage'">
- <span class="numeric inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}%`"></span>
+ <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
 	 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
  <span class="sk-eyebrow lg:hidden" x-text="t('cosmetic.weight_with_unit', { unit: oilUnit })"></span>
  <template x-if="editMode === 'weight'">
- <input x-effect="if (document.activeElement !== $el) { $el.value = format(rowWeight(row), 3) }" @input="updateCosmeticPercentagesFromWeights(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="text" inputmode="decimal" :aria-label="t('cosmetic.weight_for', { ingredient: row.name })" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-effect="syncFormattedInput($el, rowWeight(row), 3)" @input="updateCosmeticPercentagesFromWeights(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="text" inputmode="decimal" :aria-label="t('cosmetic.weight_for', { ingredient: row.name })" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'weight'">
- <span class="numeric inline-flex min-h-10 items-center" x-text="`${format(rowWeight(row), 3)}`"></span>
+ <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), 3)}`"></span>
  </template>
  </div>
 	 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
@@ -172,8 +172,8 @@
 	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0">
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.cosmetic.formula_total') }}</div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="numeric px-4 py-2.5 sk-formula-table-y font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="numeric px-4 py-2.5 sk-formula-table-y font-medium" x-text="`${format(cosmeticFormulaWeightTotal(), 3)} ${oilUnit}`"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(cosmeticFormulaWeightTotal())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${format(cosmeticFormulaWeightTotal(), 3)} ${oilUnit}`"></div>
 		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>
 	 </div>
 	 </div>

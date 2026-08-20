@@ -21,10 +21,12 @@
 @endphp
 
 <section class="sk-card px-5 py-4" aria-labelledby="formula-setup-heading">
-	<div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+	<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 		<div class="min-w-0">
 			<p id="formula-setup-heading" class="sk-eyebrow">{{ __('workbench.settings.title') }}</p>
-			<div x-show="! isFormulaSettingsOpen" x-cloak x-transition.opacity.duration.150ms class="mt-2 flex flex-wrap gap-2">
+			<div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="! isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+				<div class="overflow-hidden">
+					<div class="mt-2 flex flex-wrap gap-2">
 			<template x-for="card in formulaSetupSummaryCards" :key="`setup-${card.id}`">
 				<span
 					:class="{
@@ -38,9 +40,11 @@
 					<span x-text="card.label"></span>
 					<span class="numeric font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></span>
 				</span>
-			</template>
+				</template>
+					</div>
+				</div>
+				</div>
 			</div>
-		</div>
 		<button
 			type="button"
 			@click="toggleFormulaSettings()"
@@ -51,7 +55,9 @@
 			<span x-text="isFormulaSettingsOpen ? t('settings.hide') : t('settings.edit')"></span>
 	</button>
 	</div>
-	<div id="formula-settings-panel" x-show="isFormulaSettingsOpen" x-cloak class="mt-4">
+	<div id="formula-settings-panel" x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+		<div class="overflow-hidden">
+			<div class="mt-4">
 @unless ($isPublicCalculator)
     @include('livewire.dashboard.partials.recipe-workbench.formula-output-type')
 @endunless
@@ -102,9 +108,11 @@
 	 <span class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</span>
 	 <span class="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></span>
 	 </span>
-	 <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? t('cosmetic.hide') : t('cosmetic.show')"></span>
-	 </button>
-	 <div x-show="isComplianceSettingsOpen" x-cloak class="mt-4 space-y-4">
+		 <span class="rounded-full bg-white px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? t('cosmetic.hide') : t('cosmetic.show')"></span>
+		 </button>
+		 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+		 <div class="overflow-hidden">
+		 <div class="mt-4 space-y-4">
 	 <div>
 	 <p id="setting-regime" class="sk-eyebrow">{{ __('workbench.settings.regulatory_framework') }}</p>
 	 <select aria-labelledby="setting-regime" x-model="regulatoryRegime" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
@@ -123,8 +131,10 @@
 	 </template>
 	 <template x-if="selectedIfraProductCategory">
 	 <span class="mt-2 inline-block rounded-full border border-[var(--color-active)] bg-[var(--color-active-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-strong)]" x-text="`Cat ${selectedIfraProductCategory.code}`"></span>
-	 </template>
-	 </div>
+		 </template>
+		 </div>
+		 </div>
+		 </div>
 	 </div>
 	 </div>
 	 </div>
@@ -202,9 +212,11 @@
 	 <span class="sk-eyebrow">{{ __('workbench.common.label_compliance') }}</span>
 	 <span class="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]" x-text="regulatoryRegimeCoverageLabel"></span>
 	 </span>
-	 <span class="rounded-full bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? t('cosmetic.hide') : t('cosmetic.show')"></span>
-	 </button>
-	 <div x-show="isComplianceSettingsOpen" x-cloak class="mt-4 space-y-4">
+		 <span class="rounded-full bg-[var(--color-field-muted)] px-3 py-1 text-xs font-medium text-[var(--color-ink-soft)]" x-text="isComplianceSettingsOpen ? t('cosmetic.hide') : t('cosmetic.show')"></span>
+		 </button>
+		 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+		 <div class="overflow-hidden">
+		 <div class="mt-4 space-y-4">
 	 <div>
 	 <p id="setting-regime-soap" class="sk-eyebrow">{{ __('workbench.settings.regulatory_framework') }}</p>
 	 <select aria-labelledby="setting-regime-soap" x-model="regulatoryRegime" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
@@ -223,8 +235,10 @@
 	 </template>
 	 <template x-if="selectedIfraProductCategory">
 	 <span class="mt-2 inline-block rounded-full border border-[var(--color-active)] bg-[var(--color-active-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-strong)]" x-text="`Cat ${selectedIfraProductCategory.code}`"></span>
-	 </template>
-	 </div>
+		 </template>
+		 </div>
+		 </div>
+		 </div>
 	 </div>
 	 </div>
 	 </div>
@@ -243,7 +257,9 @@
 	 </span>
 	 </button>
 	 </div>
-	 <div x-show="isLyeLiquidCompositionOpen" x-cloak class="mt-4 space-y-4 border-t border-[var(--color-line)] pt-4">
+	 <div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isLyeLiquidCompositionOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+	 <div class="overflow-hidden">
+	 <div class="mt-4 space-y-4 border-t border-[var(--color-line)] pt-4">
 	 <x-search-combobox
 	 id="lye-liquid-ingredient-search"
 	 :label="__('workbench.settings.lye_liquid_add')"
@@ -280,6 +296,11 @@
 	 </div>
 	 </div>
 	 </div>
-	@endif
+	 </div>
+	 </div>
+	 </div>
+@endif
+</div>
+</div>
 </div>
 	</section>

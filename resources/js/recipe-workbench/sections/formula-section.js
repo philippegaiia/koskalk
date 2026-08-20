@@ -21,6 +21,11 @@ import {
     parseDecimalInput as parseDecimal,
     roundTo as roundNumberTo,
 } from '../utils';
+import { massDisplayDecimals as chooseMassDisplayDecimals } from '../mass';
+
+const formulaMassDisplayDecimals = typeof chooseMassDisplayDecimals === 'function'
+    ? chooseMassDisplayDecimals
+    : (() => 2);
 
 /**
  * Formula math and normalized numeric helpers stay together so the editor-side
@@ -733,6 +738,26 @@ export function createFormulaSection() {
             if (!window.confirm(this.t('status.negative_superfat_warning'))) {
                 this.superfat = 0;
             }
+        },
+
+        decimalAlignmentStyle(value) {
+            const numericValue = this.number(value);
+            const signCharacters = numericValue < 0 ? 1 : 0;
+            const integerCharacters = Math.trunc(Math.abs(numericValue)).toString().length + signCharacters;
+
+            return `--sk-decimal-offset: ${integerCharacters}ch`;
+        },
+
+        syncFormattedInput(element, value, decimals) {
+            if (document.activeElement === element) {
+                return;
+            }
+
+            element.value = this.format(value, decimals);
+        },
+
+        oilWeightDecimals(value) {
+            return formulaMassDisplayDecimals(value, this.oilUnit);
         },
 
         format(value, decimals = 2) {

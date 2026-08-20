@@ -54,3 +54,29 @@ export function preferredMassUnit(grams, displaySystem) {
 
     return quantity >= GRAMS_PER_UNIT.kg ? 'kg' : 'g';
 }
+
+export function massDisplayDecimals(value, unit = 'g') {
+    const quantity = Math.abs(Number(value) || 0);
+
+    if (unit === 'g') {
+        if (quantity >= 1000) {
+            return 1;
+        }
+
+        return quantity >= 1 ? 2 : 3;
+    }
+
+    if (unit === 'oz') {
+        if (quantity >= 10) {
+            return 2;
+        }
+
+        return quantity >= 1 ? 3 : 4;
+    }
+
+    if (unit === 'kg' || unit === 'lb') {
+        return quantity >= 1 ? 3 : 4;
+    }
+
+    return 2;
+}

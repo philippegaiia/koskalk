@@ -2116,7 +2116,7 @@ JS;
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
 });
 
-it('clears recipe content blocking only for a successful first-save redirect', function () {
+it('clears recipe content blocking after every successful workbench save', function () {
     $script = <<<'JS'
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -2180,7 +2180,7 @@ assert.equal(navigations[0], '/recipes/first#instructions');
 const existingSave = makeWorkbench(42, 'output', '/recipes/existing');
 await globalThis.persistWorkbench(existingSave, 'save');
 
-assert.deepEqual(existingSave.registryWrites, []);
+    assert.deepEqual(existingSave.registryWrites, [['recipe-content', 'saved']]);
 assert.equal(existingSave.isSaving, false);
 assert.equal(navigations[1], '/recipes/existing#output');
 JS;
@@ -4090,13 +4090,14 @@ it('keeps formula table controls stepped and visually aligned', function () {
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
         ->toContain('format(totalOilPercentage(), 2)')
         ->toContain("oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]'")
-        ->toContain('document.activeElement !== $el')
+        ->toContain('syncFormattedInput($el, row.percentage, 2)')
+        ->toContain('oilWeightDecimals(rowWeight(row))')
         ->not->toContain(':value="format(rowWeight(row), 1)"')
         ->and($postReaction)
         ->toContain('grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem]')
         ->toContain('type="text" inputmode="decimal"')
         ->toContain('row.percentage = format(clampPercentage($event.target.value), 2)')
-        ->toContain('document.activeElement !== $el')
+        ->toContain('syncFormattedInput($el, row.percentage, 2)')
         ->not->toContain(':value="format(rowWeight(row), 3)"');
 });
 
@@ -4311,8 +4312,9 @@ it('keeps fatty acid chemistry compact with grouped profile first and collapsed 
         ->not->toContain('Live blend feedback.')
         ->toContain('fattyAcidChemistrySummaryRows()')
         ->toContain('grid grid-cols-3 gap-2')
-        ->toContain('<details class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]"', false)
-        ->toContain('<summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 marker:hidden"', false)
+        ->toContain('class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]"', false)
+        ->toContain(':aria-expanded="isFattyAcidDetailsOpen.toString()"', false)
+        ->toContain(":class=\"isFattyAcidDetailsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"", false)
         ->toContain('x-text="`${fattyAcidProfileRows.length} acids`"')
         ->toContain('grid-cols-[minmax(0,5.5rem)_minmax(3rem,1fr)_4.25rem]')
         ->toContain('group/fatty-row relative')

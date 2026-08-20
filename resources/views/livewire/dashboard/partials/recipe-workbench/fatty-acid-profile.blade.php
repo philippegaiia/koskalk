@@ -43,11 +43,13 @@
  </div>
  </template>
 
- <details class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]">
- <summary class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3 marker:hidden">
+ <div class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]">
+ <button type="button" @click="isFattyAcidDetailsOpen = ! isFattyAcidDetailsOpen" :aria-expanded="isFattyAcidDetailsOpen.toString()" aria-controls="fatty-acid-details-panel" class="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left">
  <span class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-strong)]">{{ __('workbench.fatty_acids.details') }}</span>
  <span class="numeric shrink-0 text-xs text-[var(--color-ink-soft)]" x-text="`${fattyAcidProfileRows.length} acids`"></span>
- </summary>
+ </button>
+ <div id="fatty-acid-details-panel" x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isFattyAcidDetailsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
+ <div class="overflow-hidden">
  <div class="grid gap-1.5 border-t border-[var(--color-line)] px-3 py-3">
  <template x-for="row in fattyAcidProfileRows" :key="row.key">
  <div class="grid grid-cols-[minmax(0,5.5rem)_minmax(3rem,1fr)_4.25rem] items-center gap-3 rounded-md bg-white/70 px-3 py-2 text-xs">
@@ -59,7 +61,9 @@
  </div>
  </template>
  </div>
- </details>
+ </div>
+ </div>
+ </div>
  </div>
  </template>
 

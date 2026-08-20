@@ -592,6 +592,7 @@ function entitlementSoapDraftPayload(Ingredient $ingredient): array
 {
     return [
         'name' => 'Limit Test Soap',
+        'product_type_id' => testProductTypeIdForFamily('soap'),
         'oil_unit' => 'g',
         'oil_weight' => 1000,
         'manufacturing_mode' => 'saponify_in_formula',

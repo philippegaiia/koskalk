@@ -5,6 +5,8 @@ use App\Enums\PackagingCategory;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
@@ -118,4 +120,31 @@ function rememberIngredientPriceForWorkspace(
         sourceId: null,
         actor: $user,
     );
+}
+
+function testProductTypeIdForFamily(string $familySlug): int
+{
+    $family = ProductFamily::query()
+        ->where('slug', $familySlug)
+        ->latest('id')
+        ->first()
+        ?? ProductFamily::query()->latest('id')->first()
+        ?? ProductFamily::factory()->create([
+            'name' => str($familySlug)->headline()->toString(),
+            'slug' => $familySlug,
+        ]);
+    $existingProductTypeId = ProductType::query()
+        ->whereHas('productFamilies', fn ($query) => $query->whereKey($family->id))
+        ->where('is_active', true)
+        ->value('id');
+
+    if ($existingProductTypeId !== null) {
+        return (int) $existingProductTypeId;
+    }
+
+    return ProductType::factory()->create([
+        'product_family_id' => $family->id,
+        'name' => "Test {$family->name} Product Type",
+        'slug' => "test-{$familySlug}-product-type-{$family->id}",
+    ])->id;
 }

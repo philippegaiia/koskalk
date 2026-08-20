@@ -942,6 +942,7 @@ function soapDraftPayload(
 ): array {
     return [
         'name' => $name,
+        'product_type_id' => testProductTypeIdForFamily('soap'),
         'oil_unit' => 'g',
         'oil_weight' => 1000,
         'manufacturing_mode' => 'saponify_in_formula',

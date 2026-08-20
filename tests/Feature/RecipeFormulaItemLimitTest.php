@@ -336,7 +336,7 @@ function formulaLimitCosmeticPayload(Collection $ingredients): array
 
     return [
         'name' => 'Formula limit test',
-        'product_type_id' => null,
+        'product_type_id' => testProductTypeIdForFamily('cosmetic'),
         'oil_unit' => 'g',
         'oil_weight' => 500,
         'manufacturing_mode' => 'blend_only',

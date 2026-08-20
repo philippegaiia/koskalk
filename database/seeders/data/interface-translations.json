@@ -4536,6 +4536,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.compliance.ifra.invalid_amendment",
+      "text": {
+        "de": "Wähle eine bekannte IFRA-Änderung.",
+        "es": "Elige una enmienda IFRA conocida.",
+        "fr": "Choisissez un amendement IFRA connu.",
+        "it": "Scegli un emendamento IFRA noto.",
+        "nl": "Kies een bekend IFRA-amendement.",
+        "pt_BR": "Escolha uma emenda IFRA conhecida."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.compliance.ifra.invalid_category",
       "text": {
         "de": "Wähle IFRA-Kategorien aus dem Katalog.",
@@ -4628,6 +4640,30 @@
         "it": "Riferimenti IFRA",
         "nl": "IFRA-gegevens",
         "pt_BR": "Orientação IFRA"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.ifra.source_amendment",
+      "text": {
+        "de": "Bezeichnung der Quelländerung",
+        "es": "Etiqueta de la enmienda de origen",
+        "fr": "Libellé de l’amendement source",
+        "it": "Etichetta dell’emendamento di origine",
+        "nl": "Label van het bronamendement",
+        "pt_BR": "Rótulo da emenda de origem"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.compliance.ifra.source_amendment_help",
+      "text": {
+        "de": "Ursprüngliche Lieferantenangabe, zur Rückverfolgbarkeit aufbewahrt.",
+        "es": "Redacción original del proveedor, conservada para la trazabilidad.",
+        "fr": "Libellé d’origine du fournisseur, conservé pour la traçabilité.",
+        "it": "Diciture originale del fornitore, conservata per la tracciabilità.",
+        "nl": "Oorspronkelijke leveranciersvermelding, bewaard voor traceerbaarheid.",
+        "pt_BR": "Redação original do fornecedor, mantida para rastreabilidade."
       }
     },
     {
@@ -25212,6 +25248,18 @@
     },
     {
       "group": "products",
+      "key": "actions.new_product",
+      "text": {
+        "de": "Neues Produkt",
+        "es": "Nuevo producto",
+        "fr": "Nouveau produit",
+        "it": "Nuovo prodotto",
+        "nl": "Nieuw product",
+        "pt_BR": "Novo produto"
+      }
+    },
+    {
+      "group": "products",
       "key": "actions.new_soap",
       "text": {
         "de": "Neue Seife",
@@ -25344,18 +25392,6 @@
     },
     {
       "group": "products",
-      "key": "card.default_category",
-      "text": {
-        "de": "Produkt",
-        "es": "Producto",
-        "fr": "Produit",
-        "it": "Prodotto",
-        "nl": "Product",
-        "pt_BR": "Produto"
-      }
-    },
-    {
-      "group": "products",
       "key": "card.just_now",
       "text": {
         "de": "gerade eben",
@@ -25392,6 +25428,18 @@
     },
     {
       "group": "products",
+      "key": "card.unclassified",
+      "text": {
+        "de": "Nicht klassifiziertes Produkt",
+        "es": "Producto sin clasificar",
+        "fr": "Produit non classé",
+        "it": "Prodotto non classificato",
+        "nl": "Niet-geclassificeerd product",
+        "pt_BR": "Produto não classificado"
+      }
+    },
+    {
+      "group": "products",
       "key": "card.updated",
       "text": {
         "de": "Aktualisiert :time",
@@ -25424,6 +25472,198 @@
         "it": "{0} 0 prodotti corrispondenti|{1} :count prodotto corrispondente|[2,*] :count prodotti corrispondenti",
         "nl": "{0} 0 overeenkomende producten|{1} :count overeenkomend product|[2,*] :count overeenkomende producten",
         "pt_BR": "{0} 0 produtos correspondentes|{1} :count produto correspondente|[2,*] :count produtos correspondentes"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.entries.cosmetics.description",
+      "text": {
+        "de": "Haut, Haar, Melt-and-pour und Syndets",
+        "es": "Piel, cabello, bases melt-and-pour y syndets",
+        "fr": "Peau, cheveux, melt-and-pour et syndets",
+        "it": "Pelle, capelli, melt-and-pour e syndet",
+        "nl": "Huid, haar, melt-and-pour en syndets",
+        "pt_BR": "Pele, cabelo, melt-and-pour e syndets"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.entries.cosmetics.name",
+      "text": {
+        "de": "Kosmetik",
+        "es": "Cosméticos",
+        "fr": "Cosmétiques",
+        "it": "Cosmetici",
+        "nl": "Cosmetica",
+        "pt_BR": "Cosméticos"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.entries.home.description",
+      "text": {
+        "de": "Kerzen, Reinigung und Wäsche",
+        "es": "Velas, limpieza y lavandería",
+        "fr": "Bougies, nettoyage et lessive",
+        "it": "Candele, pulizia e bucato",
+        "nl": "Kaarsen, reiniging en was",
+        "pt_BR": "Velas, limpeza e lavanderia"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.entries.home.name",
+      "text": {
+        "de": "Haushalt",
+        "es": "Hogar",
+        "fr": "Maison",
+        "it": "Casa",
+        "nl": "Huis",
+        "pt_BR": "Casa"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.entries.soap.description",
+      "text": {
+        "de": "Öle + Lauge",
+        "es": "Aceites + álcali",
+        "fr": "Huiles + soude",
+        "it": "Oli + alcali",
+        "nl": "Oliën + loog",
+        "pt_BR": "Óleos + álcali"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.entries.soap.name",
+      "text": {
+        "de": "Seife",
+        "es": "Jabón",
+        "fr": "Savon",
+        "it": "Sapone",
+        "nl": "Zeep",
+        "pt_BR": "Sabonete"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.selector.back",
+      "text": {
+        "de": "Zurück zu den Produktarten",
+        "es": "Volver a las clases de producto",
+        "fr": "Retour aux familles de produits",
+        "it": "Torna alle tipologie di prodotto",
+        "nl": "Terug naar productsoorten",
+        "pt_BR": "Voltar aos tipos de produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.selector.choose",
+      "text": {
+        "de": "Produkttyp auswählen",
+        "es": "Elige un tipo de producto",
+        "fr": "Choisissez un type de produit",
+        "it": "Scegli un tipo di prodotto",
+        "nl": "Kies een producttype",
+        "pt_BR": "Escolha um tipo de produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.selector.description",
+      "text": {
+        "de": "Name und Rezeptur kannst du im Arbeitsbereich vervollständigen.",
+        "es": "Puedes completar el nombre y la fórmula en el área de trabajo.",
+        "fr": "Vous pourrez compléter le nom et la formule dans l’atelier.",
+        "it": "Puoi completare il nome e la formula nell’area di lavoro.",
+        "nl": "Je kunt de naam en formule in de werkbank aanvullen.",
+        "pt_BR": "Você pode completar o nome e a fórmula na bancada."
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.selector.fallback_description",
+      "text": {
+        "de": "Eine leere Rezeptur für diesen Produkttyp öffnen.",
+        "es": "Abre una fórmula vacía para este tipo de producto.",
+        "fr": "Ouvrez une formule vierge pour ce type de produit.",
+        "it": "Apri una formula vuota per questo tipo di prodotto.",
+        "nl": "Open een lege formule voor dit producttype.",
+        "pt_BR": "Abra uma fórmula em branco para este tipo de produto."
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.selector.heading",
+      "text": {
+        "de": "Neues :entry-Produkt",
+        "es": "Nuevo producto de :entry",
+        "fr": "Nouveau produit :entry",
+        "it": "Nuovo prodotto :entry",
+        "nl": "Nieuw :entry-product",
+        "pt_BR": "Novo produto de :entry"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.selector.title",
+      "text": {
+        "de": "Neues :entry-Produkt",
+        "es": "Nuevo producto de :entry",
+        "fr": "Nouveau produit :entry",
+        "it": "Nuovo prodotto :entry",
+        "nl": "Nieuw :entry-product",
+        "pt_BR": "Novo produto de :entry"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.start.aria_label",
+      "text": {
+        "de": "Optionen zur Produkterstellung",
+        "es": "Opciones de creación de productos",
+        "fr": "Options de création de produit",
+        "it": "Opzioni di creazione del prodotto",
+        "nl": "Opties voor productaanmaak",
+        "pt_BR": "Opções de criação de produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.start.description",
+      "text": {
+        "de": "Wähle die Art des Produkts, das du formulieren möchtest.",
+        "es": "Elige la clase de producto que quieres formular.",
+        "fr": "Choisissez le type de produit que vous souhaitez formuler.",
+        "it": "Scegli il tipo di prodotto che vuoi formulare.",
+        "nl": "Kies het soort product dat je wilt formuleren.",
+        "pt_BR": "Escolha o tipo de produto que deseja formular."
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.start.heading",
+      "text": {
+        "de": "Produkt erstellen",
+        "es": "Crear un producto",
+        "fr": "Créer un produit",
+        "it": "Crea un prodotto",
+        "nl": "Product maken",
+        "pt_BR": "Criar um produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.start.title",
+      "text": {
+        "de": "Neues Produkt",
+        "es": "Nuevo producto",
+        "fr": "Nouveau produit",
+        "it": "Nuovo prodotto",
+        "nl": "Nieuw product",
+        "pt_BR": "Novo produto"
       }
     },
     {
@@ -25520,6 +25760,30 @@
         "it": "Prova con un altro nome, un’altra categoria o un altro tipo di prodotto.",
         "nl": "Probeer een andere productnaam, categorie of type.",
         "pt_BR": "Tente outro nome, categoria ou tipo de produto."
+      }
+    },
+    {
+      "group": "products",
+      "key": "filters.area.all",
+      "text": {
+        "de": "Alle Bereiche",
+        "es": "Todas las áreas",
+        "fr": "Tous les univers",
+        "it": "Tutte le aree",
+        "nl": "Alle gebieden",
+        "pt_BR": "Todas as áreas"
+      }
+    },
+    {
+      "group": "products",
+      "key": "filters.area.label",
+      "text": {
+        "de": "Bereich",
+        "es": "Área",
+        "fr": "Univers",
+        "it": "Area",
+        "nl": "Gebied",
+        "pt_BR": "Área"
       }
     },
     {
@@ -28392,6 +28656,246 @@
     },
     {
       "group": "workbench",
+      "key": "ifra.all_categories",
+      "text": {
+        "de": "Alle IFRA-Kategorien",
+        "es": "Todas las categorías IFRA",
+        "fr": "Toutes les catégories IFRA",
+        "it": "Tutte le categorie IFRA",
+        "nl": "Alle IFRA-categorieën",
+        "pt_BR": "Todas as categorias IFRA"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.amendment",
+      "text": {
+        "de": "IFRA-Änderung :amendment",
+        "es": "Enmienda IFRA :amendment",
+        "fr": "Amendement IFRA :amendment",
+        "it": "Emendamento IFRA :amendment",
+        "nl": "IFRA-amendement :amendment",
+        "pt_BR": "Emenda IFRA :amendment"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.choose_another",
+      "text": {
+        "de": "Andere IFRA-Kategorie auswählen",
+        "es": "Elegir otra categoría IFRA",
+        "fr": "Choisir une autre catégorie IFRA",
+        "it": "Scegli un’altra categoria IFRA",
+        "nl": "Een andere IFRA-categorie kiezen",
+        "pt_BR": "Escolher outra categoria IFRA"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.close",
+      "text": {
+        "de": "Schließen",
+        "es": "Cerrar",
+        "fr": "Fermer",
+        "it": "Chiudi",
+        "nl": "Sluiten",
+        "pt_BR": "Fechar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.disclaimer",
+      "text": {
+        "de": "Optionale Orientierung. Wenn du ein Produkt für mehrere Anwendungen vermarktest, prüfe jede zutreffende IFRA-Kategorie; Koskalk wählt keine allgemeingültige ‚strengste‘ Kategorie.",
+        "es": "Orientación opcional. Si comercializas un producto para varios usos, revisa cada categoría IFRA aplicable; Koskalk no elige una categoría «más estricta» universal.",
+        "fr": "Conseil facultatif. Si vous commercialisez un produit pour plusieurs usages, vérifiez chaque catégorie IFRA applicable ; Koskalk ne choisit pas de catégorie « la plus stricte » universelle.",
+        "it": "Indicazione facoltativa. Se commercializzi un prodotto per più usi, verifica ogni categoria IFRA applicabile; Koskalk non sceglie una categoria universalmente «più restrittiva».",
+        "nl": "Optionele richtlijn. Breng je één product voor meerdere toepassingen op de markt, controleer dan elke toepasselijke IFRA-categorie; Koskalk kiest geen universele ‘strengste’ categorie.",
+        "pt_BR": "Orientação opcional. Se você comercializa um produto para vários usos, analise cada categoria IFRA aplicável; o Koskalk não escolhe uma categoria universal ‘mais restritiva’."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.done",
+      "text": {
+        "de": "Fertig",
+        "es": "Listo",
+        "fr": "Terminé",
+        "it": "Fatto",
+        "nl": "Gereed",
+        "pt_BR": "Concluído"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.existing_creations",
+      "text": {
+        "de": "Bestehende Duftkreationen",
+        "es": "Creaciones de fragancias existentes",
+        "fr": "Créations parfumées existantes",
+        "it": "Creazioni di fragranze esistenti",
+        "nl": "Bestaande geurcreaties",
+        "pt_BR": "Criações de fragrâncias existentes"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.eyebrow",
+      "text": {
+        "de": "Optionale Orientierung",
+        "es": "Orientación opcional",
+        "fr": "Conseil facultatif",
+        "it": "Indicazione facoltativa",
+        "nl": "Optionele richtlijn",
+        "pt_BR": "Orientação opcional"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.modal_title",
+      "text": {
+        "de": "IFRA-Kategorie prüfen",
+        "es": "Revisar la categoría IFRA",
+        "fr": "Vérifier la catégorie IFRA",
+        "it": "Verifica la categoria IFRA",
+        "nl": "IFRA-categorie controleren",
+        "pt_BR": "Revisar categoria IFRA"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.new_creations",
+      "text": {
+        "de": "Neue Duftkreationen",
+        "es": "Nuevas creaciones de fragancias",
+        "fr": "Nouvelles créations parfumées",
+        "it": "Nuove creazioni di fragranze",
+        "nl": "Nieuwe geurcreaties",
+        "pt_BR": "Novas criações de fragrâncias"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.no_category",
+      "text": {
+        "de": "Keine IFRA-Kategorie",
+        "es": "Sin categoría IFRA",
+        "fr": "Aucune catégorie IFRA",
+        "it": "Nessuna categoria IFRA",
+        "nl": "Geen IFRA-categorie",
+        "pt_BR": "Sem categoria IFRA"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.no_suggestion",
+      "text": {
+        "de": "Für diesen Produkttyp ist kein IFRA-Kategorievorschlag verfügbar.",
+        "es": "No hay ninguna sugerencia de categoría IFRA para este tipo de producto.",
+        "fr": "Aucune catégorie IFRA n’est suggérée pour ce type de produit.",
+        "it": "Non è disponibile alcun suggerimento di categoria IFRA per questo tipo di prodotto.",
+        "nl": "Voor dit producttype is geen IFRA-categoriesuggestie beschikbaar.",
+        "pt_BR": "Não há sugestão de categoria IFRA para este tipo de produto."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.review",
+      "text": {
+        "de": "Prüfen",
+        "es": "Revisar",
+        "fr": "Vérifier",
+        "it": "Verifica",
+        "nl": "Controleren",
+        "pt_BR": "Revisar"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.suggested",
+      "text": {
+        "de": "Vorgeschlagen",
+        "es": "Sugerida",
+        "fr": "Suggérée",
+        "it": "Suggerita",
+        "nl": "Voorgesteld",
+        "pt_BR": "Sugerida"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.suggested_from_product_type",
+      "text": {
+        "de": "Aus dem Produkttyp vorgeschlagen",
+        "es": "Sugerida según el tipo de producto",
+        "fr": "Suggérée selon le type de produit",
+        "it": "Suggerita in base al tipo di prodotto",
+        "nl": "Voorgesteld op basis van het producttype",
+        "pt_BR": "Sugerida pelo tipo de produto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.suggested_options",
+      "text": {
+        "de": "Für diesen Produkttyp vorgeschlagen",
+        "es": "Sugerencias para este tipo de producto",
+        "fr": "Suggestions pour ce type de produit",
+        "it": "Suggerimenti per questo tipo di prodotto",
+        "nl": "Voorgesteld voor dit producttype",
+        "pt_BR": "Sugestões para este tipo de produto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.timing_help",
+      "text": {
+        "de": "Diese Daten gelten für Duftmischungen, die ein Dufthaus verlassen. Koskalk kann nicht erkennen, ob der Duft deines Lieferanten eine neue oder bestehende Kreation ist.",
+        "es": "Estas fechas se aplican a las mezclas de fragancias que salen de una casa de perfumería. Koskalk no puede determinar si la fragancia de tu proveedor es una creación nueva o existente.",
+        "fr": "Ces dates s’appliquent aux mélanges parfumants quittant une maison de composition. Koskalk ne peut pas déterminer si le parfum de votre fournisseur est une création nouvelle ou existante.",
+        "it": "Queste date si applicano alle miscele di fragranze in uscita da una casa essenziera. Koskalk non può stabilire se la fragranza del fornitore sia una creazione nuova o esistente.",
+        "nl": "Deze datums gelden voor geurmengsels die een geurhuis verlaten. Koskalk kan niet bepalen of de geur van je leverancier een nieuwe of bestaande creatie is.",
+        "pt_BR": "Estas datas se aplicam às misturas de fragrâncias que saem de uma casa de fragrâncias. O Koskalk não pode inferir se a fragrância do fornecedor é uma criação nova ou existente."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.timing_title",
+      "text": {
+        "de": "Zeitplan der IFRA-Änderung",
+        "es": "Calendario de la enmienda IFRA",
+        "fr": "Calendrier de l’amendement IFRA",
+        "it": "Tempistiche dell’emendamento IFRA",
+        "nl": "Tijdlijn van het IFRA-amendement",
+        "pt_BR": "Cronograma da emenda IFRA"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.title",
+      "text": {
+        "de": "IFRA-Kategorie",
+        "es": "Categoría IFRA",
+        "fr": "Catégorie IFRA",
+        "it": "Categoria IFRA",
+        "nl": "IFRA-categorie",
+        "pt_BR": "Categoria IFRA"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "ifra.use_suggested",
+      "text": {
+        "de": "Vorgeschlagene Kategorie verwenden",
+        "es": "Usar la categoría sugerida",
+        "fr": "Utiliser la catégorie suggérée",
+        "it": "Usa la categoria suggerita",
+        "nl": "Voorgestelde categorie gebruiken",
+        "pt_BR": "Usar categoria sugerida"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "ingredients.count_plural",
       "text": {
         "de": ":count Zutaten",
@@ -29780,6 +30284,18 @@
         "it": "Questo riferimento prodotto è già utilizzato nello spazio di lavoro.",
         "nl": "Deze productreferentie wordt al gebruikt in je werkruimte.",
         "pt_BR": "Esta referência de produto já é usada no seu espaço de trabalho."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_type_locked",
+      "text": {
+        "de": "Der Produkttyp ist nach der ersten gespeicherten Rezeptur festgelegt. Dupliziere das Produkt, um eine andere Endanwendung zu klassifizieren.",
+        "es": "El tipo de producto queda fijado después de la primera fórmula guardada. Duplica el producto para clasificar otro uso final.",
+        "fr": "Le type de produit est fixé après la première formule enregistrée. Dupliquez le produit pour classer un autre usage fini.",
+        "it": "Il tipo di prodotto è fissato dopo la prima formula salvata. Duplica il prodotto per classificare un altro uso finale.",
+        "nl": "Het producttype ligt vast na de eerste opgeslagen formule. Dupliceer het product om een ander eindgebruik te classificeren.",
+        "pt_BR": "O tipo de produto fica definido após a primeira fórmula salva. Duplique o produto para classificar outro uso final."
       }
     },
     {

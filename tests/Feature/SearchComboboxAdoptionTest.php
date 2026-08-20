@@ -6,6 +6,7 @@ it('uses the shared search combobox for large user-facing catalogs', function ()
     $packaging = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/packaging-tab.blade.php'));
     $costing = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php'));
     $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $ifraCategoryModal = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ifra-category-modal.blade.php'));
     $settings = file_get_contents(resource_path('views/livewire/dashboard/settings-index.blade.php'));
 
     expect($packaging)
@@ -15,8 +16,11 @@ it('uses the shared search combobox for large user-facing catalogs', function ()
         ->and($costing)
         ->toContain('id="costing-currency-search"')
         ->and($formulaSettings)
-        ->toContain('id="cosmetic-ifra-context-search"')
-        ->toContain('id="soap-ifra-context-search"')
+        ->not->toContain('id="cosmetic-ifra-context-search"')
+        ->not->toContain('id="soap-ifra-context-search"')
+        ->and($ifraCategoryModal)
+        ->toContain('ifra-category-modal-heading')
+        ->not->toContain('<x-search-combobox')
         ->and($settings)
         ->toContain('id="workspace-currency-search"');
 });

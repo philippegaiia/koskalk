@@ -745,6 +745,7 @@ function recipeWorkbenchLifecyclePayload(Ingredient $oil, array $overrides = [])
 
     $payload = array_merge([
         'name' => 'Recipe',
+        'product_type_id' => testProductTypeIdForFamily('soap'),
         'oil_unit' => 'g',
         'oil_weight' => $oilWeight,
         'manufacturing_mode' => 'saponify_in_formula',

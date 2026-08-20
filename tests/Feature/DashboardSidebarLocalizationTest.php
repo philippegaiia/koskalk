@@ -53,9 +53,14 @@ it('renders the dashboard with contextual translations', function (
     array $translations,
 ) {
     foreach ($translations as $key => $translation) {
+        $group = str_starts_with($key, 'products.') ? 'products' : 'dashboard';
+        $translationKey = str_starts_with($key, 'products.')
+            ? substr($key, strlen('products.'))
+            : $key;
+
         InterfaceTranslation::query()->create([
-            'group' => 'dashboard',
-            'key' => $key,
+            'group' => $group,
+            'key' => $translationKey,
             'text' => [$locale => $translation],
         ]);
     }
@@ -73,8 +78,7 @@ it('renders the dashboard with contextual translations', function (
     'French' => ['fr', [
         'title' => 'Aperçu',
         'create.heading' => 'Créer un produit',
-        'create.soap' => 'Nouveau savon',
-        'create.cosmetic' => 'Nouveau produit cosmétique',
+        'products.actions.new_product' => 'Nouveau produit',
         'library.heading' => 'Vos produits',
         'library.products' => 'Produits',
         'library.ingredients' => 'Ingrédients',
@@ -83,8 +87,7 @@ it('renders the dashboard with contextual translations', function (
     'Spanish' => ['es', [
         'title' => 'Resumen',
         'create.heading' => 'Crear un producto',
-        'create.soap' => 'Nuevo jabón',
-        'create.cosmetic' => 'Nuevo producto cosmético',
+        'products.actions.new_product' => 'Nuevo producto',
         'library.heading' => 'Tus productos',
         'library.products' => 'Productos',
         'library.ingredients' => 'Ingredientes',
@@ -93,8 +96,7 @@ it('renders the dashboard with contextual translations', function (
     'German' => ['de', [
         'title' => 'Übersicht',
         'create.heading' => 'Produkt erstellen',
-        'create.soap' => 'Neue Seife',
-        'create.cosmetic' => 'Neues Kosmetikprodukt',
+        'products.actions.new_product' => 'Neues Produkt',
         'library.heading' => 'Ihre Produkte',
         'library.products' => 'Produkte',
         'library.ingredients' => 'Inhaltsstoffe',
@@ -103,8 +105,7 @@ it('renders the dashboard with contextual translations', function (
     'Italian' => ['it', [
         'title' => 'Panoramica',
         'create.heading' => 'Crea un prodotto',
-        'create.soap' => 'Nuovo sapone',
-        'create.cosmetic' => 'Nuovo prodotto cosmetico',
+        'products.actions.new_product' => 'Nuovo prodotto',
         'library.heading' => 'I tuoi prodotti',
         'library.products' => 'Prodotti',
         'library.ingredients' => 'Ingredienti',
@@ -113,8 +114,7 @@ it('renders the dashboard with contextual translations', function (
     'Dutch' => ['nl', [
         'title' => 'Overzicht',
         'create.heading' => 'Product maken',
-        'create.soap' => 'Nieuwe zeep',
-        'create.cosmetic' => 'Nieuw cosmeticaproduct',
+        'products.actions.new_product' => 'Nieuw product',
         'library.heading' => 'Je producten',
         'library.products' => 'Producten',
         'library.ingredients' => 'Ingrediënten',

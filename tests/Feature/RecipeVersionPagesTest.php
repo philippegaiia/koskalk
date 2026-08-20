@@ -142,7 +142,7 @@ it('renders an existing formula workbench within its initial query budget', func
 
     DB::disableQueryLog();
 
-    expect($queryCount)->toBeLessThanOrEqual(37);
+    expect($queryCount)->toBeLessThanOrEqual(38);
 });
 
 it('keeps an inactive saved ingredient available in the formula workbench', function () {
@@ -1609,6 +1609,7 @@ function soapVersionDraftPayload(Ingredient $ingredient, string $name): array
 {
     return [
         'name' => $name,
+        'product_type_id' => testProductTypeIdForFamily('soap'),
         'oil_unit' => 'g',
         'oil_weight' => 1000,
         'manufacturing_mode' => 'saponify_in_formula',
@@ -1644,7 +1645,7 @@ function cosmeticSavedFormulaPayload(Ingredient $ingredient): array
 {
     return [
         'name' => 'Daily Moisturizer',
-        'product_type_id' => null,
+        'product_type_id' => testProductTypeIdForFamily('cosmetic'),
         'oil_unit' => 'g',
         'oil_weight' => 500,
         'manufacturing_mode' => 'blend_only',

@@ -151,6 +151,7 @@ function costingContentDraftPayload(Ingredient $ingredient): array
 {
     return [
         'name' => 'Packaging Copy Check',
+        'product_type_id' => testProductTypeIdForFamily('soap'),
         'oil_unit' => 'g',
         'oil_weight' => 1000,
         'manufacturing_mode' => 'saponify_in_formula',

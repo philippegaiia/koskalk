@@ -53,7 +53,8 @@ class RecipeVersionRecordService
             $recipe->created_by ??= $user->id;
         }
 
-        if ($recipe->product_type_id !== ($normalizedPayload['product_type_id'] ?? null)) {
+        if ($recipe->product_type_id !== ($normalizedPayload['product_type_id'] ?? null)
+            && ! $recipe->hasSavedFormula()) {
             $recipe->product_type_id = $normalizedPayload['product_type_id'] ?? null;
         }
 

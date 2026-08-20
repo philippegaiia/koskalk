@@ -6,6 +6,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 class RecipeWorkbenchContextResolver
 {
@@ -37,8 +38,12 @@ class RecipeWorkbenchContextResolver
         }
 
         return ProductType::query()
-            ->whereBelongsTo($productFamily)
+            ->whereHas(
+                'productFamilies',
+                fn (Builder $query): Builder => $query->whereKey($productFamily->id),
+            )
             ->where('slug', $slug)
+            ->where('is_active', true)
             ->firstOrFail();
     }
 

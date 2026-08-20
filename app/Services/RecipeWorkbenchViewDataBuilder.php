@@ -196,7 +196,10 @@ class RecipeWorkbenchViewDataBuilder
     private function productTypes(ProductFamily $productFamily, ?ProductType $selectedProductType): array
     {
         $productTypes = ProductType::query()
-            ->whereBelongsTo($productFamily)
+            ->whereHas(
+                'productFamilies',
+                fn (Builder $query): Builder => $query->whereKey($productFamily->id),
+            )
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->orderBy('name')

@@ -8,6 +8,7 @@ use App\Enums\ProductionOutputType;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
+use App\Models\Recipe;
 use App\Models\RegulatoryRegime;
 use App\Support\NumberLocale;
 use Illuminate\Support\Str;
@@ -23,6 +24,7 @@ class RecipeWorkbenchPayloadNormalizer
         private readonly SoapCalculationService $soapCalculationService,
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
         private readonly LyeLiquidIngredientValidator $lyeLiquidIngredientValidator,
+        private readonly ProductClassificationService $productClassificationService,
     ) {}
 
     /**
@@ -50,10 +52,24 @@ class RecipeWorkbenchPayloadNormalizer
      *     nominal_content_unit: string|null
      * }
      */
-    public function normalize(array $payload, ?ProductFamily $productFamily = null, bool $requireComplete = true): array
-    {
+    public function normalize(
+        array $payload,
+        ?ProductFamily $productFamily = null,
+        bool $requireComplete = true,
+        ?Recipe $product = null,
+    ): array {
+        $productType = $productFamily instanceof ProductFamily
+            ? $this->productClassificationService->resolveForSave(
+                $productFamily,
+                isset($payload['product_type_id']) && is_numeric($payload['product_type_id'])
+                    ? (int) $payload['product_type_id']
+                    : null,
+                $product,
+            )
+            : null;
+
         if ($this->recipeWorkbenchPhaseBlueprints->isCosmeticFamily($productFamily)) {
-            return $this->normalizeCosmetic($payload, $productFamily, $requireComplete);
+            return $this->normalizeCosmetic($payload, $productType, $requireComplete);
         }
 
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
@@ -110,7 +126,7 @@ class RecipeWorkbenchPayloadNormalizer
 
         return [
             'name' => $name !== '' ? $name : 'Untitled Soap Formula',
-            'product_type_id' => null,
+            'product_type_id' => $productType?->id,
             'oil_weight' => $normalizedRecipe['oil_weight'],
             'oil_unit' => $massUnit->value,
             'mass_grams' => $this->massConverter->toGrams($normalizedRecipe['oil_weight'], $massUnit),
@@ -191,7 +207,7 @@ class RecipeWorkbenchPayloadNormalizer
      *     nominal_content_unit: string|null
      * }
      */
-    private function normalizeCosmetic(array $payload, ?ProductFamily $productFamily, bool $requireComplete): array
+    private function normalizeCosmetic(array $payload, ?ProductType $productType, bool $requireComplete): array
     {
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
         $totalBatchWeight = $this->positiveWeight($payload['oil_weight'] ?? 0, 'total batch weight');
@@ -271,7 +287,7 @@ class RecipeWorkbenchPayloadNormalizer
 
         return [
             'name' => $name !== '' ? $name : 'Untitled Cosmetic Formula',
-            'product_type_id' => $this->productTypeId($payload, $productFamily),
+            'product_type_id' => $productType?->id,
             'oil_weight' => round($totalBatchWeight, 4),
             'oil_unit' => $massUnit->value,
             'mass_grams' => $this->massConverter->toGrams($totalBatchWeight, $massUnit),
@@ -589,25 +605,6 @@ class RecipeWorkbenchPayloadNormalizer
         $key = str((string) $value)->slug('_')->toString();
 
         return $key !== '' ? $key : 'phase_'.chr(97 + $index);
-    }
-
-    private function productTypeId(array $payload, ?ProductFamily $productFamily): ?int
-    {
-        if (! isset($payload['product_type_id']) || ! is_numeric($payload['product_type_id'])) {
-            return null;
-        }
-
-        $productType = ProductType::query()->find((int) $payload['product_type_id']);
-
-        if (! $productType instanceof ProductType) {
-            return null;
-        }
-
-        if ($productFamily instanceof ProductFamily && $productType->product_family_id !== $productFamily->id) {
-            return null;
-        }
-
-        return $productType->id;
     }
 
     private function positiveWeight(mixed $value, string $label): float

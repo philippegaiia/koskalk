@@ -31,7 +31,8 @@ it('accepts kilograms and persists canonical total formula mass', function (): v
         'calculation_basis' => 'total_formula',
     ]);
     $ingredient = cosmeticIngredient('Water', 'AQUA');
-    $payload = cosmeticDraftPayload(null, [
+    $productType = ProductType::factory()->create(['product_family_id' => $cosmeticFamily->id]);
+    $payload = cosmeticDraftPayload($productType, [
         'phase_a' => [cosmeticPayloadRow($ingredient, 100, 1)],
     ]);
     $payload['oil_unit'] = 'kg';

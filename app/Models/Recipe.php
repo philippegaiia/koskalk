@@ -200,6 +200,14 @@ class Recipe extends Model implements HasRichContent
             });
     }
 
+    public function hasSavedFormula(): bool
+    {
+        return RecipeVersion::withoutGlobalScopes()
+            ->where('recipe_id', $this->id)
+            ->where('is_current', false)
+            ->exists();
+    }
+
     public function currentVersion(): HasOne
     {
         return $this->hasOne(RecipeVersion::class)->where('is_current', true);

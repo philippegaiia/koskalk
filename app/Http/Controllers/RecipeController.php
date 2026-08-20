@@ -44,7 +44,10 @@ class RecipeController extends Controller
 
         $productType = $productTypeSlug !== ''
             ? ProductType::query()
-                ->whereBelongsTo($productFamily)
+                ->whereHas(
+                    'productFamilies',
+                    fn (Builder $query): Builder => $query->whereKey($productFamily->id),
+                )
                 ->where('slug', $productTypeSlug)
                 ->where('is_active', true)
                 ->firstOrFail()

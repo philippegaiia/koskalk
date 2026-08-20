@@ -16,6 +16,7 @@ use App\Models\MediaAsset;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductFamilyIfraCategory;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -32,6 +33,7 @@ use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
 use App\Support\RichContentAttachmentPaths;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -4938,8 +4940,19 @@ function workbenchSoapDraftPayload(
     float $oilWeight = 1000,
     string $exposureMode = 'rinse_off',
 ): array {
+    $soapFamily = ProductFamily::query()->where('slug', 'soap')->latest('id')->first();
+    $productType = $soapFamily instanceof ProductFamily
+        ? ProductType::query()
+            ->whereHas('productFamilies', fn (Builder $query): Builder => $query->whereKey($soapFamily->id))
+            ->first()
+        : null;
+    $productType ??= $soapFamily instanceof ProductFamily
+        ? ProductType::factory()->create(['product_family_id' => $soapFamily->id])
+        : null;
+
     return [
         'name' => $name,
+        'product_type_id' => $productType?->id,
         'oil_unit' => 'g',
         'oil_weight' => $oilWeight,
         'manufacturing_mode' => 'saponify_in_formula',

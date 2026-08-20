@@ -1,13 +1,6 @@
 @php
     $isCosmeticWorkbench = $isCosmeticWorkbench ?? false;
     $isPublicCalculator = $isPublicCalculator ?? false;
-    $ifraSearchOptions = collect($workbench['ifraProductCategories'] ?? [])->map(fn (array $category): array => [
-        'id' => $category['id'],
-        'label' => filled($category['short_name'] ?? null)
-            ? "Cat {$category['code']} — {$category['short_name']}"
-            : "Cat {$category['code']}",
-        'searchText' => implode(' ', array_filter([$category['code'], $category['short_name'] ?? null])),
-    ])->values()->all();
     $lyeLiquidSearchOptions = collect($workbench['ingredients'] ?? [])
         ->reject(fn (array $ingredient): bool => ($ingredient['category'] ?? null) === 'soapmaking_alkalis')
         ->map(fn (array $ingredient): array => [
@@ -67,13 +60,14 @@
 	 <div class="sk-inset p-4">
 	 <p id="setting-product-type" class="sk-eyebrow">{{ __('workbench.common.product_category') }}</p>
 	 <template x-if="productTypes.length">
-	 <select aria-labelledby="setting-product-type" x-model="productTypeId" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition">
+	 <select aria-labelledby="setting-product-type" x-model="productTypeId" :disabled="hasSavedFormula" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:opacity-60">
 	 <option value="">{{ __('workbench.common.choose_later') }}</option>
 	 <template x-for="productType in productTypes" :key="productType.id">
 	 <option :value="String(productType.id)" x-text="productType.name"></option>
 	 </template>
 	 </select>
 	 </template>
+	 <p x-cloak x-show="hasSavedFormula" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.settings.product_type_locked') }}</p>
 	 <template x-if="! productTypes.length">
 	 <p class="mt-3 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.common.cosmetic_categories_unavailable') }}</p>
 	 </template>
@@ -121,18 +115,7 @@
 	 </template>
 	 </select>
 	 </div>
-	 <div>
-	 <p id="setting-ifra" class="sk-eyebrow">{{ __('workbench.settings.ifra_category') }}</p>
-	 <template x-if="$data.ifraProductCategories?.length">
-	 <x-search-combobox id="cosmetic-ifra-context-search" :label="__('workbench.settings.ifra_category')" :options="$ifraSearchOptions" :placeholder="__('workbench.settings.no_ifra_category')" class="mt-3" x-effect="syncSelection(selectedIfraProductCategoryId)" x-on:search-combobox-selected="selectedIfraProductCategoryId = String($event.detail.id)" x-on:search-combobox-cleared="selectedIfraProductCategoryId = ''" />
-	 </template>
-	 <template x-if="! $data.ifraProductCategories?.length">
-	 <p class="mt-3 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.settings.ifra_unavailable') }}</p>
-	 </template>
-	 <template x-if="selectedIfraProductCategory">
-	 <span class="mt-2 inline-block rounded-full border border-[var(--color-active)] bg-[var(--color-active-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-strong)]" x-text="`Cat ${selectedIfraProductCategory.code}`"></span>
-		 </template>
-		 </div>
+	 @include('livewire.dashboard.partials.recipe-workbench.ifra-category-modal')
 		 </div>
 		 </div>
 	 </div>
@@ -225,18 +208,7 @@
 	 </template>
 	 </select>
 	 </div>
-	 <div>
-	 <p id="setting-ifra-soap" class="sk-eyebrow">{{ __('workbench.settings.ifra_category') }}</p>
-	 <template x-if="$data.ifraProductCategories?.length">
-	 <x-search-combobox id="soap-ifra-context-search" :label="__('workbench.settings.ifra_category')" :options="$ifraSearchOptions" :placeholder="__('workbench.settings.no_ifra_category')" class="mt-3" x-effect="syncSelection(selectedIfraProductCategoryId)" x-on:search-combobox-selected="selectedIfraProductCategoryId = String($event.detail.id)" x-on:search-combobox-cleared="selectedIfraProductCategoryId = ''" />
-	 </template>
-	 <template x-if="! $data.ifraProductCategories?.length">
-	 <p class="mt-3 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.settings.ifra_unavailable') }}</p>
-	 </template>
-	 <template x-if="selectedIfraProductCategory">
-	 <span class="mt-2 inline-block rounded-full border border-[var(--color-active)] bg-[var(--color-active-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-strong)]" x-text="`Cat ${selectedIfraProductCategory.code}`"></span>
-		 </template>
-		 </div>
+	 @include('livewire.dashboard.partials.recipe-workbench.ifra-category-modal')
 		 </div>
 		 </div>
 	 </div>

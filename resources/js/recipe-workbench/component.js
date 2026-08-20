@@ -180,6 +180,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         productTypes: payload.productTypes ?? [],
         initialProductType: payload.productType ?? null,
         productTypeId: payload.productType?.id === null || payload.productType?.id === undefined ? '' : String(payload.productType.id),
+        hasSavedFormula: Boolean(payload.recipe?.has_saved_formula ?? false),
         currentVersionId: payload.recipe?.current_version_id ?? null,
         currentVersionNumber: payload.recipe?.version_number ?? null,
         currentVersionIsDraft: payload.recipe?.is_current ?? true,
@@ -204,10 +205,14 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         isComplianceSettingsOpen: false,
         isFattyAcidDetailsOpen: false,
         isFormulaSettingsOpen: initialDraft === null,
+        isIfraCategoryModalOpen: false,
+        showAllIfraCategories: false,
         isLyeLiquidCompositionOpen: false,
         formulaDiagnosticsPreferenceKey: FORMULA_DIAGNOSTICS_PREFERENCE_KEY,
         isFormulaDiagnosticsOpen: preferredFormulaDiagnosticsOpen(),
         ifraProductCategories: payload.ifraProductCategories ?? [],
+        ifraGuidance: payload.ifraGuidance ?? { amendment: null, default_category_id: null, options: [], all_categories: [], milestones: [] },
+        ifraCategorySelectionMode: initialDraft?.ifraCategorySelectionMode ?? 'automatic',
         regulatoryRegimes: payload.regulatoryRegimes?.length ? payload.regulatoryRegimes : [{ code: 'eu', name: 'EU regime', version_label: null, status: 'active', allergen_rule_count: 0, substance_rule_count: 0 }],
         selectedIfraProductCategoryId: payload.defaultIfraProductCategoryId === null || payload.defaultIfraProductCategoryId === undefined ? '' : String(payload.defaultIfraProductCategoryId),
         finalIngredientList: '',
@@ -325,7 +330,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
                 }
             }
 
-            ['oilWeight', 'manufacturingMode', 'exposureMode', 'regulatoryRegime', 'lyeType', 'kohPurity', 'dualKohPercentage', 'waterMode', 'waterValue', 'superfat', 'selectedIfraProductCategoryId'].forEach((key) => {
+            ['oilWeight', 'manufacturingMode', 'exposureMode', 'regulatoryRegime', 'lyeType', 'kohPurity', 'dualKohPercentage', 'waterMode', 'waterValue', 'superfat', 'selectedIfraProductCategoryId', 'ifraCategorySelectionMode'].forEach((key) => {
                 this.$watch(key, () => this.scheduleCalculationPreview());
             });
 
@@ -355,6 +360,38 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
 
         toggleFormulaSettings() {
             this.isFormulaSettingsOpen = !this.isFormulaSettingsOpen;
+        },
+
+        openIfraCategoryModal() {
+            this.showAllIfraCategories = false;
+            this.isIfraCategoryModalOpen = true;
+            this.$nextTick(() => this.$refs.ifraCategoryModalClose?.focus());
+        },
+
+        closeIfraCategoryModal() {
+            this.isIfraCategoryModalOpen = false;
+            this.$nextTick(() => this.$refs.ifraCategoryTrigger?.focus());
+        },
+
+        useSuggestedIfraCategory() {
+            this.ifraCategorySelectionMode = 'automatic';
+            this.selectedIfraProductCategoryId = this.ifraGuidance.default_category_id === null
+                || this.ifraGuidance.default_category_id === undefined
+                ? ''
+                : String(this.ifraGuidance.default_category_id);
+            this.closeIfraCategoryModal();
+        },
+
+        selectIfraCategory(categoryId) {
+            this.ifraCategorySelectionMode = 'manual';
+            this.selectedIfraProductCategoryId = String(categoryId);
+            this.closeIfraCategoryModal();
+        },
+
+        clearIfraCategory() {
+            this.ifraCategorySelectionMode = 'manual';
+            this.selectedIfraProductCategoryId = '';
+            this.closeIfraCategoryModal();
         },
 
         async createManufacturedIngredient() {
@@ -444,6 +481,17 @@ function createCatalogSection() {
 
         get selectedIfraProductCategory() {
             return findSelectedIfraProductCategory(this.ifraProductCategories, this.selectedIfraProductCategoryId);
+        },
+
+        get futureIfraMilestones() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            return (this.ifraGuidance?.milestones ?? []).filter((milestone) => {
+                const effectiveOn = new Date(`${milestone.effective_on}T00:00:00`);
+
+                return !Number.isNaN(effectiveOn.getTime()) && effectiveOn > today;
+            });
         },
 
         get selectedProductType() {

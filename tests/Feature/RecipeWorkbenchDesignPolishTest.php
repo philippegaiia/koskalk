@@ -47,11 +47,22 @@ it('keeps formula-start compliance controls available but collapsed by default',
         ->and($soapSettings)
         ->toContain('Label &amp; compliance')
         ->toContain(":class=\"isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
-        ->toContain('IFRA category')
+        ->toContain('Suggested from product type')
+        ->toContain('Choose another IFRA category')
+        ->toContain('No IFRA category')
+        ->toContain('Use suggested category')
+        ->toContain('role="dialog"')
+        ->toContain('aria-modal="true"')
+        ->toContain('x-trap.inert.noscroll="isIfraCategoryModalOpen"')
+        ->toContain('Optional guidance. If you market one product for several uses, review every applicable IFRA category; Koskalk does not choose a universal “strictest” category.')
+        ->toContain('IFRA amendment timing')
+        ->toContain('These dates apply to fragrance mixtures leaving a fragrance house.')
         ->and($cosmeticSettings)
         ->toContain('Label &amp; compliance')
         ->toContain(":class=\"isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
-        ->toContain('IFRA category');
+        ->toContain('Suggested from product type')
+        ->toContain(':disabled="hasSavedFormula"')
+        ->toContain('Product type is fixed after the first Saved Formula.');
 
     expect(strpos($soapSettings, 'setting-exposure-soap'))
         ->toBeLessThan(strpos($soapSettings, 'Label &amp; compliance'));
@@ -168,6 +179,7 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         ->toContain('mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between')
         ->toContain('sk-formula-title-control min-w-0 flex-1')
         ->toContain('sk-formula-actions')
+        ->not->toContain('IFRA')
         ->toContain('flex shrink-0 flex-wrap items-center gap-2')
         ->not->toContain('lg:grid-cols-[minmax(0,1fr)_auto]')
         ->not->toContain('lg:contents')

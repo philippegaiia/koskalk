@@ -2356,6 +2356,64 @@ JS;
     ]);
 });
 
+it('serializes and restores the IFRA category selection mode in the browser draft', function () {
+    $script = <<<'JS'
+import fs from 'node:fs';
+
+const payloadSource = fs
+  .readFileSync('resources/js/recipe-workbench/payload.js', 'utf8')
+  .replace(/^import[^;]+;\n/gm, '')
+  .replace(/export function /g, 'function ');
+const snapshotSource = fs
+  .readFileSync('resources/js/recipe-workbench/snapshot.js', 'utf8')
+  .replace(/^import[^;]+;\n/gm, '')
+  .replace(/export function /g, 'function ');
+
+const normalizedIfraProductCategoryId = (value) => value;
+const rowWeight = () => 0;
+const number = (value) => Number.isFinite(Number(value)) ? Number(value) : 0;
+const nonNegativeNumber = (value) => Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : 0;
+
+eval(`${payloadSource}\n${snapshotSource}\nglobalThis.serializeDraft = serializeDraft; globalThis.draftStateFromDraft = draftStateFromDraft;`);
+
+const serialized = globalThis.serializeDraft({
+  formulaName: 'Manual IFRA choice',
+  oilUnit: 'g',
+  oilWeight: 100,
+  phaseOrder: [],
+  phaseItems: {},
+  packagingPlanRows: [],
+  selectedIfraProductCategoryId: 9,
+  ifraCategorySelectionMode: 'manual',
+});
+
+const restored = globalThis.draftStateFromDraft({
+  selectedIfraProductCategoryId: 9,
+  ifraCategorySelectionMode: 'manual',
+}, {
+  phaseOrder: [],
+  packagingPlanRows: [],
+  ifraCategorySelectionMode: 'automatic',
+});
+
+console.log(JSON.stringify({ serialized, restored }));
+JS;
+
+    $process = Process::fromShellCommandline(
+        'node --input-type=module -e '.escapeshellarg($script),
+        base_path(),
+    );
+
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+
+    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
+
+    expect($payload['serialized']['ifra_category_selection_mode'])->toBe('manual')
+        ->and($payload['restored']['ifraCategorySelectionMode'])->toBe('manual');
+});
+
 it('hydrates saved draft packaging rows into the workbench state', function () {
     $script = <<<'JS'
 import fs from 'node:fs';

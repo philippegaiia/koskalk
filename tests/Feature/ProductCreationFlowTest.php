@@ -19,7 +19,8 @@ it('starts new Products with exactly Soap, Cosmetics, and Home', function (): vo
         ->assertSeeTextInOrder(['Soap', 'Oils + lye', 'Cosmetics', 'Skin, hair, melt-and-pour and syndets', 'Home', 'Candles, cleaning and laundry'])
         ->assertSee(route('recipes.choose-type', ['entry' => 'soap']))
         ->assertSee(route('recipes.choose-type', ['entry' => 'cosmetics']))
-        ->assertSee(route('recipes.choose-type', ['entry' => 'home']));
+        ->assertSee(route('recipes.choose-type', ['entry' => 'home']))
+        ->assertDontSee('IFRA');
 
     expect(app(ProductCreationCatalog::class)->entries())->toHaveCount(3);
 });
@@ -34,7 +35,8 @@ it('groups compatible Product Types by area and category for each entry', functi
         ->assertSeeTextInOrder(['Personal care', 'Body cleansing', 'Bar soap / cleansing bar'])
         ->assertSeeTextInOrder(['Home & household', 'Laundry care', 'Hand-wash laundry soap'])
         ->assertDontSee('Face cream')
-        ->assertDontSee('Candle / wax melt');
+        ->assertDontSee('Candle / wax melt')
+        ->assertDontSee('IFRA');
 
     $this->actingAs($user)
         ->get(route('recipes.choose-type', ['entry' => 'cosmetics']))

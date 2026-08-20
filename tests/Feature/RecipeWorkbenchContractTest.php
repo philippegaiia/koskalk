@@ -5,6 +5,7 @@ use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
+use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
@@ -81,7 +82,6 @@ it('keeps the workbench draft payload intact when building a snapshot', function
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
-
     $ingredient = recipeWorkbenchCarrierOil();
     IngredientSapProfile::factory()->create([
         'ingredient_id' => $ingredient->id,
@@ -120,6 +120,7 @@ it('returns the saved version through the workbench payload and snapshot contrac
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
     $oil = recipeWorkbenchCarrierOil([
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
@@ -144,6 +145,7 @@ it('returns the saved version through the workbench payload and snapshot contrac
     $service = app(RecipeWorkbenchService::class);
     $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'Contract Draft',
+        'product_type_id' => $productType->id,
         'oil_unit' => 'oz',
         'oil_weight' => 16,
         'exposure_mode' => 'leave_on',
@@ -153,6 +155,7 @@ it('returns the saved version through the workbench payload and snapshot contrac
         'water_value' => 2.2,
         'superfat' => 7,
         'ifra_product_category_id' => $ifraCategory->id,
+        'ifra_category_selection_mode' => 'manual',
         'phase_items' => [
             'additives' => [
                 [
@@ -169,6 +172,7 @@ it('returns the saved version through the workbench payload and snapshot contrac
 
     $service->saveAsNewVersion($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'Published Contract',
+        'product_type_id' => $productType->id,
         'oil_unit' => 'oz',
         'oil_weight' => 16,
         'exposure_mode' => 'leave_on',
@@ -178,6 +182,7 @@ it('returns the saved version through the workbench payload and snapshot contrac
         'water_value' => 2.2,
         'superfat' => 7,
         'ifra_product_category_id' => $ifraCategory->id,
+        'ifra_category_selection_mode' => 'manual',
         'phase_items' => [
             'additives' => [
                 [
@@ -221,6 +226,7 @@ it('returns the saved version through the workbench payload and snapshot contrac
         ->and($payload['waterValue'])->toBe(2.2)
         ->and($payload['superfat'])->toBe(7.0)
         ->and($payload['selectedIfraProductCategoryId'])->toBe($ifraCategory->id)
+        ->and($payload['ifraCategorySelectionMode'])->toBe('manual')
         ->and($payload['catalogReview']['needs_review'])->toBeFalse()
         ->and($payload['phaseItems']['saponified_oils'][0]['ingredient_id'])->toBe($oil->id)
         ->and($payload['phaseItems']['additives'][0]['ingredient_id'])->toBe($additive->id)
@@ -236,6 +242,7 @@ it('persists canonical soap mass and restores the selected display unit from it'
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
     $oil = recipeWorkbenchCarrierOil();
 
     IngredientSapProfile::factory()->create([
@@ -246,6 +253,7 @@ it('persists canonical soap mass and restores the selected display unit from it'
     $service = app(RecipeWorkbenchService::class);
     $version = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'One kilogram soap',
+        'product_type_id' => $productType->id,
         'oil_unit' => 'kg',
         'oil_weight' => 1,
     ]));
@@ -274,6 +282,7 @@ it('restores legacy formula display mass when canonical grams are unavailable', 
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
     $oil = recipeWorkbenchCarrierOil();
 
     IngredientSapProfile::factory()->create([
@@ -282,7 +291,9 @@ it('restores legacy formula display mass when canonical grams are unavailable', 
     ]);
 
     $service = app(RecipeWorkbenchService::class);
-    $version = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil));
+    $version = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
+        'product_type_id' => $productType->id,
+    ]));
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
 
     $version->update([
@@ -308,6 +319,7 @@ it('persists editable final ingredient lists and reports when their formula basi
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
     $oil = recipeWorkbenchCarrierOil([
         'display_name' => 'Olive Oil',
         'inci_name' => 'OLEA EUROPAEA FRUIT OIL',
@@ -323,6 +335,7 @@ it('persists editable final ingredient lists and reports when their formula basi
     $service = app(RecipeWorkbenchService::class);
     $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'Custom Ingredient Lists',
+        'product_type_id' => $productType->id,
         'final_ingredient_list' => 'SODIUM OLIVATE, AQUA, GLYCERIN',
         'final_ingredient_list_basis_hash' => 'old-legal-basis',
         'final_plain_ingredient_list' => 'Saponified oils of olive oil, water, glycerin',
@@ -352,6 +365,7 @@ it('falls back to the latest saved version when no working draft exists', functi
         'slug' => 'soap',
         'name' => 'Soap',
     ]);
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
     $oil = recipeWorkbenchCarrierOil();
 
     IngredientSapProfile::factory()->create([
@@ -362,12 +376,14 @@ it('falls back to the latest saved version when no working draft exists', functi
     $service = app(RecipeWorkbenchService::class);
     $draftVersion = $service->save($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'Fallback Draft',
+        'product_type_id' => $productType->id,
     ]));
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
 
     $service->saveAsNewVersion($user, $soapFamily, recipeWorkbenchPersistencePayload($oil, [
         'name' => 'Fallback Published',
+        'product_type_id' => $productType->id,
     ]), $recipe);
 
     RecipeVersion::withoutGlobalScopes()

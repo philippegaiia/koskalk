@@ -37,6 +37,7 @@ export function serializeDraft(state) {
         water_mode: state.waterMode,
         water_value: nonNegativeNumber(state.waterValue),
         superfat: number(state.superfat),
+        ifra_category_selection_mode: state.ifraCategorySelectionMode ?? 'automatic',
         ifra_product_category_id: normalizedIfraProductCategoryId(state.selectedIfraProductCategoryId),
         final_ingredient_list: state.finalIngredientList ?? null,
         final_ingredient_list_basis_hash: state.finalIngredientListBasisHash ?? null,

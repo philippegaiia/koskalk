@@ -112,6 +112,22 @@ it('requires a supplier on the global listing form', function (): void {
     expect(SupplierListing::query()->count())->toBe(0);
 });
 
+it('keeps the correct listing navigation scope across live updates', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class)
+        ->assertSet('navigationSection', 'listings')
+        ->set('data.material_type', 'packaging')
+        ->assertSet('navigationSection', 'listings');
+
+    Livewire::test(SupplierListingCreate::class, ['supplier' => $supplier->public_id])
+        ->assertSet('navigationSection', 'suppliers')
+        ->set('data.material_type', 'packaging')
+        ->assertSet('navigationSection', 'suppliers');
+});
+
 it('reports all required listing fields together', function (): void {
     [$owner, $workspace] = listingCreateWorkspace();
     $supplier = Supplier::factory()->for($workspace)->create();

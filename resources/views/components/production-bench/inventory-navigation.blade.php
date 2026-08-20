@@ -1,10 +1,18 @@
+@props(['current' => null])
+
 <nav aria-label="{{ __('production_bench.navigation.inventory') }} sections" class="flex flex-wrap gap-2">
     @foreach ([
         'production-bench.inventory' => __('production_bench.inventory.overview'),
         'production-bench.inventory.stock' => __('production_bench.inventory.stock'),
         'production-bench.inventory.requirements' => __('production_bench.inventory.requirements'),
     ] as $routeName => $label)
-        @php($isCurrent = request()->routeIs($routeName))
+        @php($isCurrent = $current !== null
+            ? $current === match ($routeName) {
+                'production-bench.inventory' => 'overview',
+                'production-bench.inventory.stock' => 'stock',
+                'production-bench.inventory.requirements' => 'requirements',
+            }
+            : request()->routeIs($routeName))
         <a
             href="{{ route($routeName) }}"
             wire:navigate

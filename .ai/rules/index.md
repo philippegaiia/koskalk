@@ -21,6 +21,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/{Models,Services}/** | .ai/rules/models-services.md |
 | app/Models/** | .ai/rules/models.md |
 | app/Policies/** | .ai/rules/policies.md |
+| resources/views/components/production-bench/** | .ai/rules/production-bench.md |
 | app/Providers/*.php | .ai/rules/providers.md |
 | resources/**/recipe-workbench/** | .ai/rules/recipe-workbench.md |
 | routes/*.php | .ai/rules/routes.md |

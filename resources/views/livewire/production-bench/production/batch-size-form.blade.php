@@ -1,4 +1,4 @@
-<x-production-bench.page productionSetup>
+<x-production-bench.page active="production-setup" subnavigation="presets">
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
             <p class="sk-eyebrow">{{ __('production_bench.navigation.production') }}</p>

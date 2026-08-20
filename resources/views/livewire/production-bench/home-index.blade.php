@@ -1,4 +1,4 @@
-<x-production-bench.page>
+<x-production-bench.page active="home">
     <header class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-end">
         <div>
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.title') }}</h1>

@@ -1,1 +1,1 @@
-<x-production-bench.page purchasing />
+<x-production-bench.page active="purchasing" />

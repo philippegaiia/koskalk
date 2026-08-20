@@ -59,6 +59,9 @@ class SupplierListingCreate extends Component implements HasForms
     #[Locked]
     public ?string $editingListingPublicId = null;
 
+    #[Locked]
+    public string $navigationSection = 'listings';
+
     /** @var array<int, string> */
     #[Locked]
     public array $supplierOptionLabels = [];
@@ -88,6 +91,7 @@ class SupplierListingCreate extends Component implements HasForms
         string|Supplier|null $supplier = null,
         string|SupplierListing|null $listing = null,
     ): void {
+        $this->navigationSection = $supplier === null ? 'listings' : 'suppliers';
         $this->assertPageIsWritable($access);
         $workspace = $this->workspace();
         $editingListing = $this->resolveEditingListing($listing);

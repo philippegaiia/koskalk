@@ -1,4 +1,4 @@
-<x-production-bench.page productionSetup>
+<x-production-bench.page active="production-setup" subnavigation="numbering">
     <header>
         <p class="sk-eyebrow">{{ __('production_bench.navigation.production') }}</p>
         <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.settings.numbering') }}</h1>

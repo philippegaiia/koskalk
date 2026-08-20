@@ -356,14 +356,38 @@ it('seeds official ingredient functions and ifra product categories', function (
     ]);
 
     $emollient = IngredientFunction::query()->where('key', 'emollient')->firstOrFail();
+    $category7A = IfraProductCategory::query()->where('code', '7A')->firstOrFail();
     $category9 = IfraProductCategory::query()->where('code', '9')->firstOrFail();
 
     expect(IngredientFunction::query()->count())->toBeGreaterThan(20)
         ->and($emollient->name)->toBe('Emollient')
         ->and($emollient->description)->toContain('Softens')
         ->and(IfraProductCategory::query()->count())->toBe(18)
+        ->and($category7A->short_name)->toBe('Rinse-off hair chemical treatments')
+        ->and($category7A->description)->toBe('Rinse-off hair permanent or other chemical treatments, including rinse-off hair dyes.')
         ->and($category9->short_name)->toBe('Soap / shower gel / rinse-off')
         ->and($category9->description)->toContain('primarily rinse-off');
+});
+
+it('corrects the existing ifra category 7A catalog text and remains reversible', function () {
+    $category7A = IfraProductCategory::factory()->create([
+        'code' => '7A',
+        'name' => 'Rinse-off products applied to the hair with some hand contact',
+        'short_name' => 'Hair rinse-off',
+        'description' => 'Rinse-off products applied to the hair with some hand contact, such as shampoos and rinse-off conditioners.',
+    ]);
+    $migrationPath = collect(glob(database_path('migrations/*_correct_ifra_category_7a_description.php')))->sole();
+    $migration = require $migrationPath;
+
+    $migration->up();
+
+    expect($category7A->refresh()->short_name)->toBe('Rinse-off hair chemical treatments')
+        ->and($category7A->description)->toBe('Rinse-off hair permanent or other chemical treatments, including rinse-off hair dyes.');
+
+    $migration->down();
+
+    expect($category7A->refresh()->short_name)->toBe('Hair rinse-off')
+        ->and($category7A->description)->toBe('Rinse-off products applied to the hair with some hand contact, such as shampoos and rinse-off conditioners.');
 });
 
 it('seeds the platform allergen label regimes with conservative mappings', function () {

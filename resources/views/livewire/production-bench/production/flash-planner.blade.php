@@ -1,4 +1,4 @@
-<x-production-bench.page>
+<x-production-bench.page active="flash">
     <div
         x-data="{ celebrating: false, timer: null }"
         x-on:flash-productions-generated.window="celebrating = true; clearTimeout(timer); timer = setTimeout(() => celebrating = false, 5200)"

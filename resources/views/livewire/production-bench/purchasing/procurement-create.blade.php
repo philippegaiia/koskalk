@@ -1,4 +1,4 @@
-<x-production-bench.page purchasing>
+<x-production-bench.page active="purchasing" :subnavigation="$isQuotation ? 'quotations' : 'orders'">
     <header><h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $isQuotation ? __('production_bench.procurement.new_quotation') : __('production_bench.procurement.new_order') }}</h1></header>
 
     <form wire:submit="save" class="space-y-4 pb-24">

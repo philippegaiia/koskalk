@@ -1,3 +1,5 @@
+@props(['current' => null])
+
 <nav aria-label="{{ __('production_bench.navigation.production') }} sections" class="flex flex-wrap gap-2">
     @foreach ([
         'production-bench.production.settings.numbering' => __('production_bench.settings.numbering'),
@@ -8,7 +10,16 @@
         'production-bench.production.settings.task-sets' => __('production_bench.settings.task_sets'),
         'production-bench.production.settings.calendar' => __('production_bench.settings.working_calendar'),
     ] as $routeName => $label)
-        @php($isCurrent = request()->routeIs($routeName.'*'))
+        @php($navigationKey = match ($routeName) {
+            'production-bench.production.settings.numbering' => 'numbering',
+            'production-bench.production.settings.presets' => 'presets',
+            'production-bench.production.settings.departments' => 'departments',
+            'production-bench.production.settings.employees' => 'employees',
+            'production-bench.production.settings.task-types' => 'task-types',
+            'production-bench.production.settings.task-sets' => 'task-sets',
+            'production-bench.production.settings.calendar' => 'calendar',
+        })
+        @php($isCurrent = $current !== null ? $current === $navigationKey : request()->routeIs($routeName.'*'))
         <a
             href="{{ route($routeName) }}"
             wire:navigate

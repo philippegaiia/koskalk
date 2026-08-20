@@ -1,4 +1,4 @@
-<x-production-bench.page productionSetup>
+<x-production-bench.page active="production-setup" :subnavigation="$section === 'all' ? null : $section">
     @php($numberLocale = auth()->user()?->number_locale)
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>

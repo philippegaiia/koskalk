@@ -1,4 +1,4 @@
-<x-production-bench.page purchasing>
+<x-production-bench.page active="purchasing" :subnavigation="$navigationSection">
     <header>
         <div>
             @if ($lockedSupplier)

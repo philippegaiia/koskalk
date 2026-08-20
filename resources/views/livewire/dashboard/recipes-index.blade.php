@@ -14,7 +14,7 @@
     </section>
 
     @php
-        $hasFilters = $searchTerm !== '' || $selectedProductFamily !== '' || $selectedProductType !== '';
+        $hasFilters = $searchTerm !== '' || $selectedProductArea !== '' || $selectedProductCategory !== '' || $selectedProductType !== '';
     @endphp
 
     @if ($currentUser)
@@ -31,11 +31,20 @@
                     />
                 </label>
                 <label class="sk-field">
+                    <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.area.label') }}</span>
+                    <select wire:model.live="productAreaFilter" class="sk-select-control">
+                        <option value="">{{ __('products.filters.area.all') }}</option>
+                        @foreach ($productAreaOptions as $productAreaSlug => $productAreaName)
+                            <option value="{{ $productAreaSlug }}">{{ $productAreaName }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="sk-field">
                     <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('products.filters.category.label') }}</span>
-                    <select wire:model.live="productFamilyFilter" class="sk-select-control">
+                    <select wire:model.live="productCategoryFilter" class="sk-select-control">
                         <option value="">{{ __('products.filters.category.all') }}</option>
-                        @foreach ($productFamilyOptions as $productFamilySlug => $productFamilyName)
-                            <option value="{{ $productFamilySlug }}">{{ $productFamilyName }}</option>
+                        @foreach ($productCategoryOptions as $productCategorySlug => $productCategoryName)
+                            <option value="{{ $productCategorySlug }}">{{ $productCategoryName }}</option>
                         @endforeach
                     </select>
                 </label>
@@ -89,10 +98,8 @@
         <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
             @foreach ($recipes as $recipe)
                 @php
-                    $productFamilyName = $recipe->productFamily?->name ?? __('products.card.default_category');
                     $productFamilySlug = $recipe->productFamily?->slug ?? 'product';
-                    $productTypeName = $recipe->productType?->name;
-                    $categoryLabel = $productTypeName ?? $productFamilyName;
+                    $categoryLabel = $recipe->productType?->name ?? __('products.card.unclassified');
                     $thumbnailUrl = $recipe->indexImageUrl() ?? $recipe->productType?->fallbackImageUrl();
                     $isLocked = $recipe->isLocked();
                     $hasProductionHistory = $recipe->production_runs_count > 0;

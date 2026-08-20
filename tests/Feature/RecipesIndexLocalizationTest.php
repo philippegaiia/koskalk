@@ -51,9 +51,10 @@ it('uses product-first terminology throughout the recipes index', function () {
         ->assertSuccessful()
         ->assertSeeText('Products')
         ->assertSeeText('Manage your products.')
-        ->assertSeeText('Create and manage soap and cosmetic products, including their formulas, packaging, and saved versions.')
+        ->assertSeeText('Create and manage finished products, including their formulas, packaging, and saved versions.')
         ->assertSeeText('New product')
-        ->assertSee('placeholder="Product name, category, or type"', false)
+        ->assertSee('placeholder="Product name, area, category, or type"', false)
+        ->assertSeeText('All areas')
         ->assertSeeText('All categories')
         ->assertSeeText('All types')
         ->assertSeeText('1 product')
@@ -95,6 +96,8 @@ it('loads product index interface copy from the database', function () {
         'actions.open_workbench' => 'Ouvrir l’atelier',
         'filters.search.label' => 'Rechercher',
         'filters.search.placeholder' => 'Nom, catégorie ou type de produit',
+        'filters.area.label' => 'Zone',
+        'filters.area.all' => 'Toutes les zones',
         'filters.category.label' => 'Catégorie',
         'filters.category.all' => 'Toutes les catégories',
         'filters.type.all' => 'Tous les types',
@@ -116,6 +119,7 @@ it('loads product index interface copy from the database', function () {
         ->assertSeeText('Créez et gérez vos savons et produits cosmétiques, avec leurs formules, emballages et versions enregistrées.')
         ->assertSeeText('Nouveau produit')
         ->assertSee('placeholder="Nom, catégorie ou type de produit"', false)
+        ->assertSeeText('Toutes les zones')
         ->assertSeeText('Toutes les catégories')
         ->assertSeeText('Tous les types')
         ->assertSeeText('1 produit')
@@ -169,6 +173,7 @@ it('keeps every product index string in the products translation group', functio
         'actions.lock',
         'actions.unlock',
         'filters.search.placeholder',
+        'filters.area.all',
         'filters.category.all',
         'filters.type.all',
         'count.all',
@@ -176,6 +181,7 @@ it('keeps every product index string in the products translation group', functio
         'empty.no_matches',
         'empty.no_items',
         'card.updated',
+        'card.unclassified',
         'card.production_count',
         'accessibility.actions',
         'deletion.heading',

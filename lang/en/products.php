@@ -4,7 +4,7 @@ return [
     'page' => [
         'title' => 'Products',
         'heading' => 'Manage your products.',
-        'intro' => 'Create and manage soap and cosmetic products, including their formulas, packaging, and saved versions.',
+        'intro' => 'Create and manage finished products, including their formulas, packaging, and saved versions.',
         'aria_label' => 'Products overview',
     ],
     'auth' => [
@@ -63,8 +63,12 @@ return [
         'aria_label' => 'Product filters',
         'search' => [
             'label' => 'Search',
-            'placeholder' => 'Product name, category, or type',
+            'placeholder' => 'Product name, area, category, or type',
             'aria_label' => 'Search products',
+        ],
+        'area' => [
+            'label' => 'Area',
+            'all' => 'All areas',
         ],
         'category' => [
             'label' => 'Category',
@@ -87,12 +91,12 @@ return [
     ],
     'empty' => [
         'no_matches' => 'No products match these filters',
-        'try_again' => 'Try another product name, category, or type.',
+        'try_again' => 'Try another product name, area, category, or type.',
         'no_items' => 'No products yet',
         'description' => 'Create your first soap, cosmetic, or home product, then build its formula and packaging in the workbench.',
     ],
     'card' => [
-        'default_category' => 'Product',
+        'unclassified' => 'Unclassified product',
         'locked' => 'Locked',
         'updated' => 'Updated :time',
         'just_now' => 'just now',

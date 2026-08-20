@@ -2,6 +2,9 @@
 
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
+use App\Livewire\Dashboard\RecipesIndex;
+use App\Models\ProductArea;
+use App\Models\ProductCategory;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
@@ -13,6 +16,7 @@ use App\Services\MediaStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
 
@@ -182,108 +186,66 @@ it('only resolves owned workspace ids once while rendering the recipes index', f
     expect($workspaceQueries)->toHaveCount(1);
 });
 
-it('can search recipes by product type name', function () {
-    $user = User::factory()->create();
-    $cosmeticFamily = ProductFamily::factory()->create([
-        'slug' => 'cosmetic',
-        'name' => 'Cosmetic',
-    ]);
-    $lotionType = ProductType::factory()->create([
-        'product_family_id' => $cosmeticFamily->id,
-        'name' => 'Cream / lotion',
-        'slug' => 'cream-lotion',
-    ]);
-    $balmType = ProductType::factory()->create([
-        'product_family_id' => $cosmeticFamily->id,
-        'name' => 'Balm / salve',
-        'slug' => 'balm-salve',
-    ]);
+it('searches Products by finished-product area category and type names', function (string $searchTerm): void {
+    $fixture = recipesIndexTaxonomyFixture();
 
-    Recipe::factory()->create([
-        'product_family_id' => $cosmeticFamily->id,
-        'product_type_id' => $lotionType->id,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
-        'name' => 'Daily Moisturizer',
-        'slug' => 'daily-moisturizer',
-    ]);
-    Recipe::factory()->create([
-        'product_family_id' => $cosmeticFamily->id,
-        'product_type_id' => $balmType->id,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
-        'name' => 'Winter Skin Rescue',
-        'slug' => 'winter-skin-rescue',
-    ]);
-
-    $this->actingAs($user)
-        ->get(route('recipes.index', ['q' => 'lotion']))
+    $this->actingAs($fixture['user'])
+        ->get(route('recipes.index', ['q' => $searchTerm]))
         ->assertSuccessful()
         ->assertSee('Daily Moisturizer')
-        ->assertSee('Cream / lotion')
-        ->assertDontSee('Winter Skin Rescue');
+        ->assertDontSee('Winter Candle');
+})->with(['Personal care', 'Skin care', 'Face cream']);
+
+it('cascades finished-product taxonomy options and clears child filters', function (): void {
+    $fixture = recipesIndexTaxonomyFixture();
+    $this->actingAs($fixture['user']);
+
+    Livewire::test(RecipesIndex::class)
+        ->set('productAreaFilter', 'personal-care')
+        ->assertViewHas('productCategoryOptions', fn ($options): bool => $options->keys()->all() === ['hair-care', 'skin-care'])
+        ->set('productCategoryFilter', 'skin-care')
+        ->assertViewHas('productTypeOptions', fn ($options): bool => $options->keys()->all() === ['face-cream'])
+        ->set('productTypeFilter', 'face-cream')
+        ->set('productAreaFilter', 'home-household')
+        ->assertSet('productCategoryFilter', '')
+        ->assertSet('productTypeFilter', '')
+        ->assertViewHas('productCategoryOptions', fn ($options): bool => $options->keys()->all() === ['home-fragrance']);
 });
 
-it('filters recipes by product family and product type', function () {
-    $user = User::factory()->create();
-    $soapFamily = ProductFamily::factory()->create([
-        'slug' => 'soap',
-        'name' => 'Soap',
-    ]);
-    $cosmeticFamily = ProductFamily::factory()->create([
-        'slug' => 'cosmetic',
-        'name' => 'Cosmetic',
-    ]);
-    $lotionType = ProductType::factory()->create([
-        'product_family_id' => $cosmeticFamily->id,
-        'name' => 'Cream / lotion',
-        'slug' => 'cream-lotion',
-    ]);
-    $balmType = ProductType::factory()->create([
-        'product_family_id' => $cosmeticFamily->id,
-        'name' => 'Balm / salve',
-        'slug' => 'balm-salve',
-    ]);
+it('filters Products by area category and type URL state', function (): void {
+    $fixture = recipesIndexTaxonomyFixture();
 
-    Recipe::factory()->create([
-        'product_family_id' => $soapFamily->id,
-        'product_type_id' => null,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
-        'name' => 'Olive Bar',
-        'slug' => 'olive-bar',
-    ]);
-    Recipe::factory()->create([
-        'product_family_id' => $cosmeticFamily->id,
-        'product_type_id' => $lotionType->id,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
-        'name' => 'Daily Moisturizer',
-        'slug' => 'daily-moisturizer',
-    ]);
-    Recipe::factory()->create([
-        'product_family_id' => $cosmeticFamily->id,
-        'product_type_id' => $balmType->id,
-        'owner_type' => OwnerType::User,
-        'owner_id' => $user->id,
-        'visibility' => Visibility::Private,
-        'name' => 'Winter Skin Rescue',
-        'slug' => 'winter-skin-rescue',
-    ]);
-
-    $this->actingAs($user)
+    $this->actingAs($fixture['user'])
         ->get(route('recipes.index', [
-            'family' => 'cosmetic',
-            'type' => 'cream-lotion',
+            'area' => 'personal-care',
+            'category' => 'skin-care',
+            'type' => 'face-cream',
         ]))
         ->assertSuccessful()
         ->assertSee('Daily Moisturizer')
-        ->assertDontSee('Olive Bar')
-        ->assertDontSee('Winter Skin Rescue');
+        ->assertDontSee('Clarifying Shampoo')
+        ->assertDontSee('Winter Candle');
+});
+
+it('uses Product Type as the card label and a concise legacy fallback', function (): void {
+    $fixture = recipesIndexTaxonomyFixture();
+
+    Recipe::factory()->create([
+        'product_family_id' => $fixture['cosmeticFamily']->id,
+        'product_type_id' => null,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $fixture['user']->id,
+        'visibility' => Visibility::Private,
+        'name' => 'Legacy Product',
+        'slug' => 'legacy-product',
+    ]);
+
+    $this->actingAs($fixture['user'])
+        ->get(route('recipes.index'))
+        ->assertSuccessful()
+        ->assertSee('<span class="sk-badge sk-badge-neutral">Face cream</span>', false)
+        ->assertSee('<span class="sk-badge sk-badge-neutral">Unclassified product</span>', false)
+        ->assertDontSee('<span class="sk-badge sk-badge-neutral">Cosmetic</span>', false);
 });
 
 it('uses the product type fallback image when the recipe has no uploaded image', function () {
@@ -319,3 +281,81 @@ it('uses the product type fallback image when the recipe has no uploaded image',
         ->assertSee('product-types/fallback-images/cream-lotion.webp', false)
         ->assertSee('Cream / lotion');
 });
+
+/**
+ * @return array{user: User, cosmeticFamily: ProductFamily}
+ */
+function recipesIndexTaxonomyFixture(): array
+{
+    $user = User::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create([
+        'slug' => 'cosmetic',
+        'name' => 'Cosmetic',
+    ]);
+    $personalArea = ProductArea::factory()->create([
+        'name' => 'Personal care',
+        'slug' => 'personal-care',
+        'sort_order' => 10,
+    ]);
+    $homeArea = ProductArea::factory()->create([
+        'name' => 'Home & household',
+        'slug' => 'home-household',
+        'sort_order' => 20,
+    ]);
+    $skinCategory = ProductCategory::factory()->create([
+        'product_area_id' => $personalArea->id,
+        'name' => 'Skin care',
+        'slug' => 'skin-care',
+        'sort_order' => 20,
+    ]);
+    $hairCategory = ProductCategory::factory()->create([
+        'product_area_id' => $personalArea->id,
+        'name' => 'Hair care',
+        'slug' => 'hair-care',
+        'sort_order' => 10,
+    ]);
+    $homeFragranceCategory = ProductCategory::factory()->create([
+        'product_area_id' => $homeArea->id,
+        'name' => 'Home fragrance',
+        'slug' => 'home-fragrance',
+    ]);
+    $faceCreamType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_category_id' => $skinCategory->id,
+        'name' => 'Face cream',
+        'slug' => 'face-cream',
+    ]);
+    $shampooType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_category_id' => $hairCategory->id,
+        'name' => 'Shampoo',
+        'slug' => 'shampoo',
+    ]);
+    $candleType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_category_id' => $homeFragranceCategory->id,
+        'name' => 'Candle / wax melt',
+        'slug' => 'candle-wax-melt',
+    ]);
+
+    foreach ([
+        [$faceCreamType, 'Daily Moisturizer', 'daily-moisturizer'],
+        [$shampooType, 'Clarifying Shampoo', 'clarifying-shampoo'],
+        [$candleType, 'Winter Candle', 'winter-candle'],
+    ] as [$productType, $name, $slug]) {
+        Recipe::factory()->create([
+            'product_family_id' => $cosmeticFamily->id,
+            'product_type_id' => $productType->id,
+            'owner_type' => OwnerType::User,
+            'owner_id' => $user->id,
+            'visibility' => Visibility::Private,
+            'name' => $name,
+            'slug' => $slug,
+        ]);
+    }
+
+    return [
+        'user' => $user,
+        'cosmeticFamily' => $cosmeticFamily,
+    ];
+}

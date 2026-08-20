@@ -29,3 +29,6 @@ Prefer ->updateOrCreate([...], [...]) or ->firstOrCreate([...], [...]) for idemp
 
 ## Treat compliance output as live guidance
 Saved formulas stabilize formula composition only; linked platform or private ingredient facts and regulatory reference data remain live. Any linked ingredient change requires the formula's INCI and regulatory guidance to be reviewed again. Koskalk output is point-in-time, non-authoritative guidance and must not be presented or persisted as a compliance certification or toxicological assessment.
+
+## Keep IFRA classification optional and evidence-based
+IFRA classification is optional, non-blocking guidance. Suggest from amendment-scoped Product Type mappings, persist automatic/manual selection evidence on the Saved Formula, and never infer IFRA new/existing fragrance-creation status from a finished Product.

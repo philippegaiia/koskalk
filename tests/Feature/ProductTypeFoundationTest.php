@@ -24,7 +24,7 @@ it('creates the product types schema with recipe linkage', function () {
         ->and(Schema::hasColumn('recipes', 'product_type_id'))->toBeTrue();
 });
 
-it('seeds the cosmetic product family and starter product types', function () {
+it('seeds the cosmetic product family and canonical product types', function () {
     $this->seed([
         ProductFamilySeeder::class,
         ProductTypeSeeder::class,
@@ -34,19 +34,14 @@ it('seeds the cosmetic product family and starter product types', function () {
 
     expect($cosmeticFamily)->not->toBeNull()
         ->and($cosmeticFamily->calculation_basis)->toBe('total_formula')
-        ->and(ProductType::query()->whereBelongsTo($cosmeticFamily)->pluck('slug')->sort()->values()->all())
-        ->toBe([
-            'balm-salve',
-            'bath-salts-soaks',
-            'cleansing-non-saponified',
-            'cream-lotion',
-            'deodorant',
-            'hair-care',
-            'lip-product',
-            'mask',
-            'oil-blend-serum',
-            'other',
-        ]);
+        ->and(ProductType::query()->where('is_active', true)->count())->toBe(45)
+        ->and($cosmeticFamily->productTypes()->whereIn('slug', [
+            'bar-soap-cleansing-bar',
+            'shampoo',
+            'candle-wax-melt',
+            'other-cosmetics',
+            'other-home-product',
+        ])->count())->toBe(5);
 });
 
 it('keeps product types attached to a product family and optional IFRA default', function () {

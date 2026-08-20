@@ -14,6 +14,11 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\ProductTypeIfraCategory;
 use App\Models\RecipeVersion;
+use Database\Seeders\IfraAmendmentSeeder;
+use Database\Seeders\IfraProductCategorySeeder;
+use Database\Seeders\ProductFamilySeeder;
+use Database\Seeders\ProductTaxonomySeeder;
+use Database\Seeders\ProductTypeIfraCategorySeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -198,6 +203,144 @@ it('navigates taxonomy, compatibility, amendment, and formula relationships', fu
         ->and($recipeVersion->ifra_category_selection_mode)->toBe(IfraCategorySelectionMode::Automatic);
 });
 
+it('seeds the exact canonical finished-product catalog', function (): void {
+    seedProductTaxonomy();
+
+    expect(ProductArea::query()->orderBy('sort_order')->pluck('slug')->all())
+        ->toBe(['personal-care', 'home-household'])
+        ->and(ProductType::query()->where('is_active', true)->count())->toBe(45)
+        ->and(ProductType::query()->where('slug', 'bar-soap-cleansing-bar')->firstOrFail()
+            ->productFamilies()->pluck('product_families.slug')->sort()->values()->all())
+        ->toBe(['cosmetic', 'soap'])
+        ->and(ProductType::query()->where('slug', 'candle-wax-melt')->firstOrFail()
+            ->productFamilies()->pluck('product_families.slug')->all())
+        ->toBe(['cosmetic']);
+});
+
+it('seeds Amendment 51 milestones and load-bearing product mappings', function (): void {
+    seedProductTaxonomy();
+
+    $amendment = IfraAmendment::query()->where('code', '51')->firstOrFail();
+    $mappingCodes = function (string $slug) use ($amendment): array {
+        return ProductType::query()
+            ->where('slug', $slug)
+            ->firstOrFail()
+            ->ifraCategoryMappings()
+            ->where('ifra_amendment_id', $amendment->id)
+            ->with('ifraProductCategory:id,code')
+            ->orderByDesc('is_default')
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (ProductTypeIfraCategory $mapping): array => [
+                'code' => $mapping->ifraProductCategory->code,
+                'is_default' => $mapping->is_default,
+                'guidance' => $mapping->guidance,
+            ])
+            ->all();
+    };
+
+    expect($amendment->status)->toBe(IfraAmendmentStatus::Notified)
+        ->and($amendment->notification_date->toDateString())->toBe('2023-06-30')
+        ->and(IfraAmendment::query()->where('code', '52')->exists())->toBeFalse()
+        ->and($amendment->milestones()->orderBy('effective_on')->get()
+            ->map(fn (IfraAmendmentMilestone $milestone): string => implode('|', [
+                $milestone->standard_kind->value,
+                $milestone->creation_track->value,
+                $milestone->effective_on->toDateString(),
+            ]))->all())
+        ->toBe([
+            'prohibition|new|2023-08-30',
+            'restriction_specification|new|2024-03-30',
+            'prohibition|existing|2024-07-30',
+            'restriction_specification|existing|2025-10-30',
+        ])
+        ->and($mappingCodes('shampoo')[0]['code'])->toBe('9')
+        ->and($mappingCodes('rinse-off-conditioner')[0]['code'])->toBe('9')
+        ->and($mappingCodes('rinse-off-hair-chemical-treatment')[0]['code'])->toBe('7A')
+        ->and(collect($mappingCodes('body-mist-spray'))->pluck('code')->all())->toBe(['2', '4'])
+        ->and($mappingCodes('body-mist-spray')[0]['is_default'])->toBeTrue()
+        ->and($mappingCodes('candle-wax-melt')[0]['code'])->toBe('12')
+        ->and($mappingCodes('skin-contact-massage-candle')[0]['code'])->toBe('5A')
+        ->and($mappingCodes('hand-dishwashing-product')[0]['code'])->toBe('10A')
+        ->and($mappingCodes('hand-wash-laundry-product')[0]['code'])->toBe('10A')
+        ->and($mappingCodes('automatic-dishwasher-product')[0]['code'])->toBe('12');
+});
+
+it('keeps exactly one IFRA default per mapped type and preserves interpretive guidance', function (): void {
+    seedProductTaxonomy();
+
+    $amendment = IfraAmendment::query()->where('code', '51')->firstOrFail();
+    $mappingGroups = ProductTypeIfraCategory::query()
+        ->where('ifra_amendment_id', $amendment->id)
+        ->get()
+        ->groupBy('product_type_id');
+
+    expect($mappingGroups)->toHaveCount(43);
+
+    $mappingGroups->each(function ($mappings): void {
+        expect($mappings->where('is_default', true))->toHaveCount(1);
+    });
+
+    $bodyMistAlternative = ProductTypeIfraCategory::query()
+        ->whereBelongsTo(ProductType::query()->where('slug', 'body-mist-spray')->firstOrFail())
+        ->whereBelongsTo(IfraProductCategory::query()->where('code', '4')->firstOrFail())
+        ->firstOrFail();
+    $massageCandle = ProductTypeIfraCategory::query()
+        ->whereBelongsTo(ProductType::query()->where('slug', 'skin-contact-massage-candle')->firstOrFail())
+        ->firstOrFail();
+    $aftershaveBalm = ProductTypeIfraCategory::query()
+        ->whereBelongsTo(ProductType::query()->where('slug', 'aftershave-cream-balm')->firstOrFail())
+        ->firstOrFail();
+
+    expect(ProductType::query()->whereIn('slug', ['other-cosmetics', 'other-home-product'])
+        ->whereHas('ifraCategoryMappings', fn ($query) => $query->where('is_active', true))->exists())->toBeFalse()
+        ->and($bodyMistAlternative->guidance)
+        ->toBe('Use Category 4 only when the product is clearly labelled not for axillary use and not as a deodorant; otherwise foreseeable axillary use keeps it in Category 2.')
+        ->and($massageCandle->guidance)
+        ->toBe('Use this mapping only when the melted product is intended to be applied to the body as a leave-on massage or body oil. An ordinary burned candle or wax melt is Category 12.')
+        ->and($aftershaveBalm->guidance)
+        ->toBe('Use this mapping when the product is presented and used as a leave-on face moisturizer. Aftershaves other than creams and balms are Category 4.');
+});
+
+it('reuses the historical lip type, deactivates superseded starters, and seeds idempotently', function (): void {
+    $this->seed(ProductFamilySeeder::class);
+    $cosmeticFamily = ProductFamily::query()->where('slug', 'cosmetic')->firstOrFail();
+    $historicalLipType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_category_id' => null,
+        'slug' => 'lip-product',
+        'is_active' => false,
+    ]);
+    $supersededType = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_category_id' => null,
+        'slug' => 'cream-lotion',
+        'is_active' => true,
+    ]);
+
+    seedProductTaxonomy();
+    $firstCounts = [
+        ProductArea::query()->count(),
+        ProductCategory::query()->count(),
+        ProductType::query()->count(),
+        ProductTypeIfraCategory::query()->count(),
+        IfraAmendmentMilestone::query()->count(),
+    ];
+
+    seedProductTaxonomy();
+
+    expect(ProductType::query()->where('slug', 'lip-product')->where('is_active', true)->value('id'))
+        ->toBe($historicalLipType->id)
+        ->and($supersededType->fresh()->is_active)->toBeFalse()
+        ->and([
+            ProductArea::query()->count(),
+            ProductCategory::query()->count(),
+            ProductType::query()->count(),
+            ProductTypeIfraCategory::query()->count(),
+            IfraAmendmentMilestone::query()->count(),
+        ])->toBe($firstCounts);
+});
+
 function productFamilyId(string $slug): int
 {
     return DB::table('product_families')->insertGetId([
@@ -213,5 +356,16 @@ function productTypeId(int $productFamilyId, string $slug): int
         'product_family_id' => $productFamilyId,
         'name' => str($slug)->headline()->toString(),
         'slug' => $slug,
+    ]);
+}
+
+function seedProductTaxonomy(): void
+{
+    test()->seed([
+        ProductFamilySeeder::class,
+        IfraProductCategorySeeder::class,
+        IfraAmendmentSeeder::class,
+        ProductTaxonomySeeder::class,
+        ProductTypeIfraCategorySeeder::class,
     ]);
 }

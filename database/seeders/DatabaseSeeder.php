@@ -14,13 +14,15 @@ class DatabaseSeeder extends Seeder
         $this->call([
             SupportedLocaleSeeder::class,
             ProductFamilySeeder::class,
-            ProductTypeSeeder::class,
+            IfraProductCategorySeeder::class,
+            IfraAmendmentSeeder::class,
+            ProductTaxonomySeeder::class,
+            ProductTypeIfraCategorySeeder::class,
             FattyAcidSeeder::class,
             AllergenCatalogSeeder::class,
             RegulatoryRegimeSeeder::class,
             SubstanceSeeder::class,
             IngredientFunctionSeeder::class,
-            IfraProductCategorySeeder::class,
             PlanSeeder::class,
         ]);
     }

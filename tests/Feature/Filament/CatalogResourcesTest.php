@@ -7,6 +7,8 @@ use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Filament\Resources\Allergens\AllergenResource;
 use App\Filament\Resources\IfraCertificates\IfraCertificateResource;
+use App\Filament\Resources\IfraCertificates\Pages\CreateIfraCertificate;
+use App\Filament\Resources\IfraCertificates\Pages\EditIfraCertificate;
 use App\Filament\Resources\IfraProductCategories\IfraProductCategoryResource;
 use App\Filament\Resources\IngredientAllergenEntries\IngredientAllergenEntryResource;
 use App\Filament\Resources\Ingredients\IngredientResource;
@@ -30,6 +32,7 @@ use App\Filament\Resources\Users\Pages\CreateUser;
 use App\Filament\Resources\Users\Pages\EditUser;
 use App\Filament\Resources\Users\UserResource;
 use App\Models\Allergen;
+use App\Models\IfraAmendment;
 use App\Models\IfraCertificate;
 use App\Models\IfraCertificateLimit;
 use App\Models\IfraProductCategory;
@@ -296,6 +299,7 @@ it('organizes the complete ingredient editor into persistent top-level tabs with
 
 it('saves current IFRA guidance from the ingredient specialist tab', function (): void {
     $admin = User::factory()->admin()->create();
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
     $category = IfraProductCategory::factory()->create([
         'code' => '5A',
         'name' => 'Body lotion',
@@ -311,7 +315,7 @@ it('saves current IFRA guidance from the ingredient specialist tab', function ()
 
     Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id])
         ->set('data.ifra.reference_label', 'Supplier IFRA certificate')
-        ->set('data.ifra.ifra_amendment', '51')
+        ->set('data.ifra.ifra_amendment_id', $amendment->id)
         ->set('data.ifra.peroxide_value', '2.5')
         ->set('data.ifra.source_notes', 'Reviewed supplier certificate.')
         ->set('data.ifra.limits', [[
@@ -329,11 +333,76 @@ it('saves current IFRA guidance from the ingredient specialist tab', function ()
         ->firstOrFail();
 
     expect($certificate->certificate_name)->toBe('Supplier IFRA certificate')
-        ->and($certificate->ifra_amendment)->toBe('51')
+        ->and($certificate->ifra_amendment_id)->toBe($amendment->id)
         ->and((float) $certificate->peroxide_value)->toBe(2.5)
         ->and($certificate->limits)->toHaveCount(1)
         ->and((float) $certificate->limits->first()->max_percentage)->toBe(4.2)
         ->and($certificate->limits->first()->restriction_note)->toBe('Finished product maximum.');
+});
+
+it('links IFRA certificates to a known amendment and active category limits', function (): void {
+    $admin = User::factory()->admin()->create();
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
+    $activeCategory = IfraProductCategory::factory()->create([
+        'code' => '9',
+        'is_active' => true,
+    ]);
+    $inactiveCategory = IfraProductCategory::factory()->create([
+        'code' => '12',
+        'is_active' => false,
+    ]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(CreateIfraCertificate::class)
+        ->fillForm([
+            'ingredient_id' => $ingredient->id,
+            'certificate_name' => 'Supplier IFRA 51',
+            'ifra_amendment_id' => $amendment->id,
+            'is_current' => true,
+            'limits' => [[
+                'ifra_product_category_id' => $activeCategory->id,
+                'max_percentage' => '4.2',
+            ]],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $certificate = IfraCertificate::query()->where('certificate_name', 'Supplier IFRA 51')->firstOrFail();
+
+    expect($certificate->ifraAmendment->is($amendment))->toBeTrue()
+        ->and($certificate->limits)->toHaveCount(1)
+        ->and($certificate->limits->first()->ifra_product_category_id)->toBe($activeCategory->id);
+
+    $categoryField = Livewire::test(CreateIfraCertificate::class)
+        ->instance()
+        ->form
+        ->getComponent('limits')
+        ->getChildSchema()
+        ->getComponent('ifra_product_category_id');
+
+    expect($categoryField->getOptions())->toHaveKey($activeCategory->id)
+        ->not->toHaveKey($inactiveCategory->id);
+});
+
+it('shows a mismatched source amendment label without making it editable', function (): void {
+    $admin = User::factory()->admin()->create();
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
+    $certificate = IfraCertificate::factory()->create([
+        'ifra_amendment_id' => $amendment->id,
+        'source_amendment_label' => 'Supplier marked this as 50th',
+    ]);
+    $this->actingAs($admin);
+
+    $component = Livewire::test(EditIfraCertificate::class, ['record' => $certificate->id]);
+    $sourceLabel = $component->instance()->form->getComponent('source_amendment_label');
+
+    $component->assertSee('Supplier marked this as 50th');
+    expect($sourceLabel->isVisible())->toBeTrue()
+        ->and($sourceLabel->getContent())->toBe('Source amendment label: Supplier marked this as 50th');
 });
 
 it('generates an ingredient classification prompt from unsaved admin edit state', function (): void {

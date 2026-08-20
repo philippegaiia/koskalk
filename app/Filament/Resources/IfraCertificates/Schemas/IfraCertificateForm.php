@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\IfraCertificates\Schemas;
 
+use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -10,6 +11,8 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,10 +41,24 @@ class IfraCertificateForm
                             ->helperText('Use a short human label for the current IFRA set, such as the supplier name or material reference.')
                             ->required()
                             ->maxLength(255),
-                        TextInput::make('ifra_amendment')
+                        Select::make('ifra_amendment_id')
                             ->label('IFRA amendment')
-                            ->helperText('Keep the current amendment reference here, for example 51.')
-                            ->maxLength(255),
+                            ->relationship(name: 'ifraAmendment', titleAttribute: 'code')
+                            ->searchable()
+                            ->preload()
+                            ->live()
+                            ->nullable()
+                            ->helperText('Optional when the source document does not identify an amendment.'),
+                        Text::make(fn (Get $get): string => 'Source amendment label: '.$get('source_amendment_label'))
+                            ->key('source_amendment_label')
+                            ->visible(function (Get $get): bool {
+                                $sourceLabel = $get('source_amendment_label');
+                                $linkedAmendmentCode = IfraAmendment::query()
+                                    ->whereKey($get('ifra_amendment_id'))
+                                    ->value('code');
+
+                                return filled($sourceLabel) && $sourceLabel !== $linkedAmendmentCode;
+                            }),
                         DatePicker::make('published_at'),
                         DatePicker::make('valid_from'),
                         TextInput::make('peroxide_value')

@@ -1,8 +1,10 @@
 <?php
 
+use App\Filament\Resources\ProductTypes\Pages\CreateProductType;
 use App\Filament\Resources\ProductTypes\Pages\EditProductType;
 use App\Filament\Resources\ProductTypes\ProductTypeResource;
-use App\Models\IfraProductCategory;
+use App\Models\ProductArea;
+use App\Models\ProductCategory;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
@@ -44,31 +46,65 @@ it('seeds the cosmetic product family and canonical product types', function () 
         ])->count())->toBe(5);
 });
 
-it('keeps product types attached to a product family and optional IFRA default', function () {
-    $family = ProductFamily::factory()->create([
+it('classifies product types by category and compatible calculation families', function () {
+    $soapFamily = ProductFamily::factory()->create([
+        'name' => 'Soap',
+        'slug' => 'soap',
+    ]);
+    $cosmeticFamily = ProductFamily::factory()->create([
         'name' => 'Cosmetic',
         'slug' => 'cosmetic',
         'calculation_basis' => 'total_formula',
     ]);
-    $ifraCategory = IfraProductCategory::factory()->create([
-        'code' => '5A',
-        'name' => 'Body lotion',
+    $area = ProductArea::factory()->create(['name' => 'Personal care']);
+    $category = ProductCategory::factory()->create([
+        'product_area_id' => $area->id,
+        'name' => 'Body cleansing',
     ]);
 
-    $type = ProductType::factory()
-        ->for($family, 'productFamily')
-        ->for($ifraCategory, 'defaultIfraProductCategory')
-        ->create([
-            'name' => 'Cream / lotion',
-            'slug' => 'cream-lotion',
-            'fallback_image_path' => 'product-types/cream-lotion.webp',
+    $type = ProductType::factory()->create([
+        'product_family_id' => $cosmeticFamily->id,
+        'product_category_id' => $category->id,
+        'name' => 'Cleansing bar',
+        'slug' => 'cleansing-bar',
+        'fallback_image_path' => 'product-types/cleansing-bar.webp',
+        'sort_order' => 10,
+        'is_active' => true,
+    ]);
+    $type->productFamilies()->sync([$soapFamily->id, $cosmeticFamily->id]);
+
+    expect($type->productCategory->is($category))->toBeTrue()
+        ->and($type->productCategory->productArea->is($area))->toBeTrue()
+        ->and($type->productFamilies->pluck('id')->all())->toEqualCanonicalizing([$soapFamily->id, $cosmeticFamily->id])
+        ->and($type->fallback_image_path)->toBe('product-types/cleansing-bar.webp');
+});
+
+it('creates a product type with a category and multiple compatible families from admin', function (): void {
+    $admin = User::factory()->admin()->create();
+    $area = ProductArea::factory()->create(['name' => 'Personal care']);
+    $category = ProductCategory::factory()->create([
+        'product_area_id' => $area->id,
+        'name' => 'Body cleansing',
+    ]);
+    $families = ProductFamily::factory()->count(2)->create();
+    $this->actingAs($admin);
+
+    Livewire::test(CreateProductType::class)
+        ->fillForm([
+            'product_category_id' => $category->id,
+            'productFamilies' => $families->modelKeys(),
+            'name' => 'Cleansing bar',
+            'slug' => 'cleansing-bar',
             'sort_order' => 10,
             'is_active' => true,
-        ]);
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
 
-    expect($type->productFamily->is($family))->toBeTrue()
-        ->and($type->defaultIfraProductCategory->is($ifraCategory))->toBeTrue()
-        ->and($type->fallback_image_path)->toBe('product-types/cream-lotion.webp');
+    $productType = ProductType::query()->where('slug', 'cleansing-bar')->firstOrFail();
+
+    expect($productType->product_category_id)->toBe($category->id)
+        ->and($productType->productFamilies->modelKeys())->toEqualCanonicalizing($families->modelKeys());
 });
 
 it('can attach a product type to a recipe', function () {
@@ -99,7 +135,9 @@ it('renders the product type admin resource', function () {
     $this->get(ProductTypeResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()
         ->assertSee('Product type identity')
-        ->assertSee('Default IFRA category')
+        ->assertSee('Product category')
+        ->assertSee('Compatible families')
+        ->assertDontSee('Default IFRA category')
         ->assertSee('Fallback image');
 
     $this->get(ProductTypeResource::getUrl('edit', ['record' => $productType], panel: 'admin'))

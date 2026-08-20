@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\IfraCertificates\Tables;
 
+use App\Models\IfraCertificate;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -14,7 +15,7 @@ class IfraCertificatesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('ingredient')->withCount('limits'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with(['ingredient', 'ifraAmendment'])->withCount('limits'))
             ->columns([
                 TextColumn::make('certificate_name')
                     ->label('Current IFRA set')
@@ -25,9 +26,13 @@ class IfraCertificatesTable
                     ->label('Ingredient')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('ifra_amendment')
+                TextColumn::make('ifra_amendment_display')
                     ->label('Amendment')
-                    ->sortable(),
+                    ->state(fn (IfraCertificate $record): ?string => $record->ifraAmendment?->code ?? $record->source_amendment_label ?? $record->ifra_amendment)
+                    ->description(fn (IfraCertificate $record): ?string => filled($record->source_amendment_label)
+                        && $record->source_amendment_label !== $record->ifraAmendment?->code
+                            ? 'Source: '.$record->source_amendment_label
+                            : null),
                 TextColumn::make('peroxide_value')
                     ->label('Peroxide')
                     ->numeric(decimalPlaces: 3)

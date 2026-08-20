@@ -6,6 +6,7 @@ use App\Enums\Visibility;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
+use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
@@ -510,6 +511,7 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         'name' => 'Soap products',
         'is_active' => true,
     ]);
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
 
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::AromaticMaterials,
@@ -540,7 +542,7 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
             ],
         ])
         ->set('data.ifra.reference_label', 'Current supplier IFRA')
-        ->set('data.ifra.ifra_amendment', '51')
+        ->set('data.ifra.ifra_amendment_id', $amendment->id)
         ->set('data.ifra.peroxide_value', '2,5')
         ->set('data.ifra.source_notes', 'Indicative only')
         ->set('data.ifra.limits', [
@@ -559,7 +561,7 @@ it('persists optional allergen and current ifra data for aromatic user ingredien
         ->and($freshIngredient?->functions)->toHaveCount(2)
         ->and($freshIngredient?->functions->pluck('id')->all())->toEqual([$perfuming->id, $skinConditioning->id])
         ->and($freshIngredient?->allergenEntries->pluck('allergen_id')->all())->toEqualCanonicalizing([$linalool->id, $limonene->id])
-        ->and($currentIfra?->ifra_amendment)->toBe('51')
+        ->and($currentIfra?->ifra_amendment_id)->toBe($amendment->id)
         ->and((float) $currentIfra?->peroxide_value)->toBe(2.5)
         ->and($currentIfra?->limits)->toHaveCount(1)
         ->and((float) $currentIfra?->limits->first()->max_percentage)->toBe(0.8);

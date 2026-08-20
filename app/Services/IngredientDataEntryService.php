@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\IngredientFunctionSource;
+use App\Models\IfraAmendment;
 use App\Models\IfraCertificate;
 use App\Models\IfraCertificateLimit;
 use App\Models\IfraProductCategory;
@@ -233,6 +234,7 @@ class IngredientDataEntryService
             'identifiers',
             'aliases',
             'substanceEntries.substance',
+            'ifraCertificates.ifraAmendment',
             'ifraCertificates.limits.ifraProductCategory',
         ]);
     }
@@ -241,14 +243,18 @@ class IngredientDataEntryService
     private function ifraForForm(Ingredient $ingredient): array
     {
         $certificate = $ingredient->ifraCertificates()
-            ->with('limits')
+            ->with(['ifraAmendment', 'limits'])
             ->where('is_current', true)
             ->latest('id')
             ->first();
 
         return [
             'reference_label' => $certificate?->certificate_name,
-            'ifra_amendment' => $certificate?->ifra_amendment,
+            'ifra_amendment_id' => $certificate?->ifra_amendment_id,
+            'source_amendment_label' => filled($certificate?->source_amendment_label)
+                && $certificate?->source_amendment_label !== $certificate?->ifraAmendment?->code
+                    ? $certificate->source_amendment_label
+                    : null,
             'peroxide_value' => $certificate?->peroxide_value === null ? null : (float) $certificate->peroxide_value,
             'source_notes' => $certificate?->source_notes,
             'limits' => $certificate?->limits
@@ -294,7 +300,7 @@ class IngredientDataEntryService
         }
 
         $categoryIds = $limits->pluck('ifra_product_category_id')->all();
-        if (IfraProductCategory::query()->whereIn('id', $categoryIds)->count() !== count($categoryIds)) {
+        if (IfraProductCategory::query()->where('is_active', true)->whereIn('id', $categoryIds)->count() !== count($categoryIds)) {
             throw ValidationException::withMessages([
                 'ifra.limits' => __('ingredients.editor.compliance.ifra.invalid_category'),
             ]);
@@ -304,8 +310,18 @@ class IngredientDataEntryService
             ->where('is_current', true)
             ->latest('id')
             ->first();
+        $ifraAmendmentId = filled($state['ifra_amendment_id'] ?? null)
+            ? (int) $state['ifra_amendment_id']
+            : null;
+        if ($ifraAmendmentId !== null && ! IfraAmendment::query()->whereKey($ifraAmendmentId)->exists()) {
+            throw ValidationException::withMessages([
+                'ifra.ifra_amendment_id' => __('ingredients.editor.compliance.ifra.invalid_amendment'),
+            ]);
+        }
+
         $hasMeaningfulData = filled($state['reference_label'] ?? null)
-            || filled($state['ifra_amendment'] ?? null)
+            || $ifraAmendmentId !== null
+            || filled($state['source_amendment_label'] ?? null)
             || $peroxideValue !== null
             || filled($state['source_notes'] ?? null)
             || $limits->isNotEmpty();
@@ -322,7 +338,10 @@ class IngredientDataEntryService
             'certificate_name' => filled($state['reference_label'] ?? null)
                 ? trim((string) $state['reference_label'])
                 : __('ingredients.editor.compliance.ifra.default_reference', ['ingredient' => $ingredient->display_name]),
-            'ifra_amendment' => filled($state['ifra_amendment'] ?? null) ? trim((string) $state['ifra_amendment']) : null,
+            'ifra_amendment_id' => $ifraAmendmentId,
+            'source_amendment_label' => filled($state['source_amendment_label'] ?? null)
+                ? trim((string) $state['source_amendment_label'])
+                : $certificate->source_amendment_label,
             'peroxide_value' => $peroxideValue,
             'source_notes' => filled($state['source_notes'] ?? null) ? trim((string) $state['source_notes']) : null,
             'is_current' => true,

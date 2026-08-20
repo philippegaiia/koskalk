@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\ProductTypes\Schemas;
 
-use App\Models\IfraProductCategory;
 use App\Services\MediaStorage;
 use App\Support\FilamentUploadMetadata;
 use Filament\Forms\Components\BaseFileUpload;
@@ -26,12 +25,20 @@ class ProductTypeForm
                     ->description('Platform-managed categories used for recipe cards, filters, defaults, and future translations.')
                     ->icon(Heroicon::Squares2x2)
                     ->schema([
-                        Select::make('product_family_id')
-                            ->label('Product family')
-                            ->relationship(name: 'productFamily', titleAttribute: 'name')
+                        Select::make('product_category_id')
+                            ->label('Product category')
+                            ->relationship(name: 'productCategory', titleAttribute: 'name')
                             ->searchable()
                             ->preload()
                             ->required(),
+                        Select::make('productFamilies')
+                            ->label('Compatible families')
+                            ->relationship(name: 'productFamilies', titleAttribute: 'name')
+                            ->multiple()
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->helperText('Calculation engines this finished Product Type can use.'),
                         TextInput::make('name')
                             ->required()
                             ->maxLength(255),
@@ -46,14 +53,6 @@ class ProductTypeForm
                         Toggle::make('is_active')
                             ->label('Active')
                             ->default(true),
-                        Select::make('default_ifra_product_category_id')
-                            ->label('Default IFRA category')
-                            ->relationship(name: 'defaultIfraProductCategory', titleAttribute: 'name')
-                            ->getOptionLabelFromRecordUsing(fn (IfraProductCategory $record): string => $record->optionLabel())
-                            ->searchable(['code', 'name', 'short_name'])
-                            ->preload()
-                            ->nullable()
-                            ->helperText('Suggestion only. The formula keeps its own editable IFRA category.'),
                         Textarea::make('description')
                             ->rows(3)
                             ->columnSpanFull(),

@@ -13,6 +13,7 @@ use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithMediaAssetPickerUploads;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
+use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFunction;
@@ -649,9 +650,22 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         TextInput::make('ifra.reference_label')
                                             ->label(__('ingredients.editor.compliance.ifra.reference'))
                                             ->maxLength(255),
-                                        TextInput::make('ifra.ifra_amendment')
+                                        Select::make('ifra.ifra_amendment_id')
                                             ->label(__('ingredients.editor.compliance.ifra.amendment'))
-                                            ->maxLength(255),
+                                            ->options(fn (): array => IfraAmendment::query()
+                                                ->orderByDesc('notification_date')
+                                                ->orderByDesc('id')
+                                                ->pluck('code', 'id')
+                                                ->all())
+                                            ->searchable()
+                                            ->preload()
+                                            ->nullable(),
+                                        TextInput::make('ifra.source_amendment_label')
+                                            ->label(__('ingredients.editor.compliance.ifra.source_amendment'))
+                                            ->helperText(__('ingredients.editor.compliance.ifra.source_amendment_help'))
+                                            ->disabled()
+                                            ->dehydrated(false)
+                                            ->visible(fn (Get $get): bool => filled($get('ifra.source_amendment_label'))),
                                         LocalizedDecimalInput::make('ifra.peroxide_value')
                                             ->label(__('ingredients.editor.compliance.ifra.peroxide'))
                                             ->minValue(0)

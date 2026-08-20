@@ -3,6 +3,7 @@
 use App\Enums\IngredientCategory;
 use App\Models\Allergen;
 use App\Models\FattyAcid;
+use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
@@ -122,12 +123,14 @@ it('round trips current IFRA guidance and category limits from the ingredient en
         'requires_aromatic_compliance' => true,
     ]);
     $category = IfraProductCategory::factory()->create();
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
 
     $savedIngredient = app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
         'current_version' => ['display_name' => 'Lavender essential oil'],
         'ifra' => [
             'reference_label' => 'Supplier IFRA certificate',
-            'ifra_amendment' => '51',
+            'ifra_amendment_id' => $amendment->id,
+            'source_amendment_label' => '51st Amendment supplier PDF',
             'peroxide_value' => '2.5',
             'source_notes' => 'Supplier document dated 2026-08-01.',
             'limits' => [[
@@ -143,12 +146,15 @@ it('round trips current IFRA guidance and category limits from the ingredient en
 
     expect($certificate)->not->toBeNull()
         ->and($certificate?->certificate_name)->toBe('Supplier IFRA certificate')
-        ->and($certificate?->ifra_amendment)->toBe('51')
+        ->and($certificate?->ifra_amendment_id)->toBe($amendment->id)
+        ->and($certificate?->source_amendment_label)->toBe('51st Amendment supplier PDF')
         ->and((float) $certificate?->peroxide_value)->toBe(2.5)
         ->and($certificate?->limits)->toHaveCount(1)
         ->and((float) $certificate?->limits->first()->max_percentage)->toBe(4.2)
         ->and($certificate?->limits->first()->restriction_note)->toBe('Finished product maximum.')
         ->and(data_get($state, 'ifra.reference_label'))->toBe('Supplier IFRA certificate')
+        ->and(data_get($state, 'ifra.ifra_amendment_id'))->toBe($amendment->id)
+        ->and(data_get($state, 'ifra.source_amendment_label'))->toBe('51st Amendment supplier PDF')
         ->and(data_get($state, 'ifra.limits.0.ifra_product_category_id'))->toBe($category->id);
 });
 

@@ -6,7 +6,6 @@ use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
-use App\Models\IfraCertificateLimit;
 use App\Models\Ingredient;
 use App\Models\User;
 use App\Models\Workspace;
@@ -67,7 +66,8 @@ class UserIngredientAuthoringService
             'fatty_acid_entries' => [],
             'ifra' => [
                 'reference_label' => null,
-                'ifra_amendment' => null,
+                'ifra_amendment_id' => null,
+                'source_amendment_label' => null,
                 'peroxide_value' => null,
                 'source_notes' => null,
                 'limits' => [],
@@ -82,11 +82,6 @@ class UserIngredientAuthoringService
     {
         $entryData = $this->ingredientDataEntryService->formData($ingredient);
         $isPlatformIngredient = $ingredient->owner_type === null;
-        $currentIfra = $ingredient->ifraCertificates()
-            ->with('limits')
-            ->where('is_current', true)
-            ->latest('id')
-            ->first();
 
         return [
             'ingredient_structure' => $ingredient->components()->exists() ? 'blend' : 'ingredient',
@@ -134,21 +129,7 @@ class UserIngredientAuthoringService
                     ];
                 })
                 ->all(),
-            'ifra' => [
-                'reference_label' => $currentIfra?->certificate_name,
-                'ifra_amendment' => $currentIfra?->ifra_amendment,
-                'peroxide_value' => $currentIfra?->peroxide_value === null ? null : (float) $currentIfra->peroxide_value,
-                'source_notes' => $currentIfra?->source_notes,
-                'limits' => $currentIfra?->limits
-                    ->sortBy('ifra_product_category_id')
-                    ->map(fn (IfraCertificateLimit $limit): array => [
-                        'ifra_product_category_id' => $limit->ifra_product_category_id,
-                        'max_percentage' => $limit->max_percentage === null ? null : (float) $limit->max_percentage,
-                        'restriction_note' => $limit->restriction_note,
-                    ])
-                    ->values()
-                    ->all() ?? [],
-            ],
+            'ifra' => $entryData['ifra'] ?? $this->blankState()['ifra'],
         ];
     }
 
@@ -354,7 +335,8 @@ class UserIngredientAuthoringService
             'components' => [],
             'ifra' => [
                 'reference_label' => null,
-                'ifra_amendment' => null,
+                'ifra_amendment_id' => null,
+                'source_amendment_label' => null,
                 'peroxide_value' => null,
                 'source_notes' => null,
                 'limits' => [],
@@ -457,11 +439,8 @@ class UserIngredientAuthoringService
                 && Arr::get($state, 'ingredient_structure') !== 'blend'
                     ? []
                     : Arr::get($state, 'components', []),
+            'ifra' => Arr::get($state, 'ifra', []),
         ]);
-
-        if ($ingredient->requiresAromaticCompliance()) {
-            $this->syncIfraState($ingredient, Arr::get($state, 'ifra', []));
-        }
 
         return $ingredient->fresh([
             'sapProfile',
@@ -469,6 +448,7 @@ class UserIngredientAuthoringService
             'components.componentIngredient',
             'allergenEntries.allergen',
             'functions',
+            'ifraCertificates.ifraAmendment',
             'ifraCertificates.limits.ifraProductCategory',
         ]);
     }
@@ -530,56 +510,6 @@ class UserIngredientAuthoringService
                 return $entry;
             })
             ->all();
-    }
-
-    /**
-     * @param  array<string, mixed>  $state
-     */
-    private function syncIfraState(Ingredient $ingredient, array $state): void
-    {
-        $limitsState = collect(Arr::get($state, 'limits', []))
-            ->filter(fn (mixed $row): bool => is_array($row))
-            ->filter(fn (array $row): bool => filled($row['ifra_product_category_id'] ?? null))
-            ->map(fn (array $row): array => [
-                'ifra_product_category_id' => (int) $row['ifra_product_category_id'],
-                'max_percentage' => filled($row['max_percentage'] ?? null) ? (float) $row['max_percentage'] : null,
-                'restriction_note' => filled($row['restriction_note'] ?? null) ? trim((string) $row['restriction_note']) : null,
-            ])
-            ->unique('ifra_product_category_id')
-            ->values();
-
-        $hasMeaningfulIfra = filled($state['reference_label'] ?? null)
-            || filled($state['ifra_amendment'] ?? null)
-            || filled($state['peroxide_value'] ?? null)
-            || filled($state['source_notes'] ?? null)
-            || $limitsState->isNotEmpty();
-
-        $ingredient->ifraCertificates()->delete();
-
-        if (! $hasMeaningfulIfra) {
-            return;
-        }
-
-        $certificate = $ingredient->ifraCertificates()->make([
-            'certificate_name' => ($state['reference_label'] ?? null) ?: __('ingredients.editor.compliance.ifra.default_reference', [
-                'ingredient' => $ingredient->display_name,
-            ]),
-            'ifra_amendment' => $state['ifra_amendment'] ?? null,
-            'peroxide_value' => filled($state['peroxide_value'] ?? null) ? (float) $state['peroxide_value'] : null,
-            'source_notes' => $state['source_notes'] ?? null,
-            'document_name' => null,
-            'document_path' => null,
-            'issuer' => null,
-            'reference_code' => null,
-            'published_at' => null,
-            'valid_from' => null,
-            'is_current' => true,
-        ]);
-        $certificate->save();
-
-        $limitsState->each(function (array $limitState) use ($certificate): void {
-            $certificate->limits()->create($limitState);
-        });
     }
 
     /**

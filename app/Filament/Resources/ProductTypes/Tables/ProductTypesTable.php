@@ -20,7 +20,8 @@ class ProductTypesTable
         return $table
             ->modifyQueryUsing(fn (Builder $query): Builder => $query
                 ->withCount(['recipes as recipes_count' => fn (Builder $query): Builder => $query->withoutGlobalScopes()])
-                ->with(['productFamily', 'defaultIfraProductCategory']))
+                ->withCount(['ifraCategoryMappings as active_ifra_mappings_count' => fn (Builder $query): Builder => $query->where('is_active', true)])
+                ->with(['productCategory.productArea', 'productFamilies']))
             ->columns([
                 ImageColumn::make('fallback_image_path')
                     ->label('Image')
@@ -33,13 +34,18 @@ class ProductTypesTable
                     ->searchable()
                     ->sortable()
                     ->description(fn (ProductType $record): string => $record->slug),
-                TextColumn::make('productFamily.name')
-                    ->label('Family')
+                TextColumn::make('productCategory.productArea.name')
+                    ->label('Area')
                     ->badge()
                     ->sortable(),
-                TextColumn::make('defaultIfraProductCategory.code')
-                    ->label('Default IFRA')
-                    ->placeholder('None')
+                TextColumn::make('productCategory.name')
+                    ->label('Category')
+                    ->sortable(),
+                TextColumn::make('productFamilies.name')
+                    ->label('Families')
+                    ->badge(),
+                TextColumn::make('active_ifra_mappings_count')
+                    ->label('IFRA mappings')
                     ->sortable(),
                 TextColumn::make('sort_order')
                     ->label('Sort')
@@ -48,13 +54,13 @@ class ProductTypesTable
                     ->label('Active')
                     ->boolean(),
                 TextColumn::make('recipes_count')
-                    ->label('Recipes')
+                    ->label('Products')
                     ->sortable(),
             ])
             ->filters([
-                SelectFilter::make('product_family_id')
-                    ->label('Product family')
-                    ->relationship(name: 'productFamily', titleAttribute: 'name')
+                SelectFilter::make('product_category_id')
+                    ->label('Product category')
+                    ->relationship(name: 'productCategory', titleAttribute: 'name')
                     ->searchable()
                     ->preload(),
                 TernaryFilter::make('is_active')

@@ -18,6 +18,8 @@ class IfraCertificateFactory extends Factory
      */
     public function definition(): array
     {
+        $amendment = (string) fake()->numberBetween(48, 51);
+
         return [
             'ingredient_id' => Ingredient::factory(),
             'certificate_name' => fake()->words(3, true).' IFRA Certificate',
@@ -25,7 +27,9 @@ class IfraCertificateFactory extends Factory
             'document_path' => null,
             'issuer' => fake()->company(),
             'reference_code' => strtoupper(fake()->bothify('IFRA-###??')),
-            'ifra_amendment' => (string) fake()->numberBetween(48, 51),
+            'ifra_amendment' => $amendment,
+            'ifra_amendment_id' => null,
+            'source_amendment_label' => $amendment,
             'published_at' => fake()->date(),
             'valid_from' => fake()->date(),
             'is_current' => true,

@@ -4,6 +4,16 @@ use App\Enums\IfraAmendmentStatus;
 use App\Enums\IfraCategorySelectionMode;
 use App\Enums\IfraCreationTrack;
 use App\Enums\IfraStandardKind;
+use App\Models\IfraAmendment;
+use App\Models\IfraAmendmentMilestone;
+use App\Models\IfraCertificate;
+use App\Models\IfraProductCategory;
+use App\Models\ProductArea;
+use App\Models\ProductCategory;
+use App\Models\ProductFamily;
+use App\Models\ProductType;
+use App\Models\ProductTypeIfraCategory;
+use App\Models\RecipeVersion;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -129,6 +139,63 @@ it('allows several IFRA candidates but only one default per type and amendment',
             'ifra_product_category_id' => $categoryIds[3],
             'is_default' => true,
         ]))->toThrow(QueryException::class);
+});
+
+it('navigates taxonomy, compatibility, amendment, and formula relationships', function (): void {
+    $area = ProductArea::factory()->create();
+    $category = ProductCategory::factory()->create(['product_area_id' => $area->id]);
+    $soapFamily = ProductFamily::factory()->create();
+    $cosmeticFamily = ProductFamily::factory()->create();
+    $productType = ProductType::factory()->create([
+        'product_category_id' => $category->id,
+        'product_family_id' => $soapFamily->id,
+    ]);
+    $productType->productFamilies()->syncWithoutDetaching([$cosmeticFamily->id]);
+
+    $amendment = IfraAmendment::factory()->create();
+    $newCreationMilestone = IfraAmendmentMilestone::factory()->create([
+        'ifra_amendment_id' => $amendment->id,
+        'standard_kind' => IfraStandardKind::Prohibition,
+        'creation_track' => IfraCreationTrack::New,
+    ]);
+    $existingCreationMilestone = IfraAmendmentMilestone::factory()->create([
+        'ifra_amendment_id' => $amendment->id,
+        'standard_kind' => IfraStandardKind::Prohibition,
+        'creation_track' => IfraCreationTrack::Existing,
+    ]);
+    $ifraCategory = IfraProductCategory::factory()->create();
+    $mapping = ProductTypeIfraCategory::factory()->create([
+        'product_type_id' => $productType->id,
+        'ifra_amendment_id' => $amendment->id,
+        'ifra_product_category_id' => $ifraCategory->id,
+        'is_default' => true,
+    ]);
+    $certificate = IfraCertificate::factory()->create(['ifra_amendment_id' => $amendment->id]);
+    $recipeVersion = RecipeVersion::factory()->create([
+        'ifra_amendment_id' => $amendment->id,
+        'product_type_ifra_category_id' => $mapping->id,
+        'ifra_category_selection_mode' => IfraCategorySelectionMode::Automatic,
+    ]);
+
+    expect($area->productCategories()->firstOrFail()->is($category))->toBeTrue()
+        ->and($category->productArea->is($area))->toBeTrue()
+        ->and($category->productTypes()->firstOrFail()->is($productType))->toBeTrue()
+        ->and($productType->productCategory->is($category))->toBeTrue()
+        ->and($productType->productFamilies()->pluck('product_families.id')->sort()->values()->all())
+        ->toBe(collect([$soapFamily->id, $cosmeticFamily->id])->sort()->values()->all())
+        ->and($soapFamily->productTypes()->firstOrFail()->is($productType))->toBeTrue()
+        ->and($amendment->milestones()->pluck('id')->sort()->values()->all())
+        ->toBe(collect([$newCreationMilestone->id, $existingCreationMilestone->id])->sort()->values()->all())
+        ->and($amendment->productTypeMappings()->firstOrFail()->is($mapping))->toBeTrue()
+        ->and($mapping->productType->is($productType))->toBeTrue()
+        ->and($mapping->ifraAmendment->is($amendment))->toBeTrue()
+        ->and($mapping->ifraProductCategory->is($ifraCategory))->toBeTrue()
+        ->and($ifraCategory->productTypeMappings()->firstOrFail()->is($mapping))->toBeTrue()
+        ->and($newCreationMilestone->ifraAmendment->is($amendment))->toBeTrue()
+        ->and($certificate->ifraAmendment->is($amendment))->toBeTrue()
+        ->and($recipeVersion->ifraAmendment->is($amendment))->toBeTrue()
+        ->and($recipeVersion->productTypeIfraCategory->is($mapping))->toBeTrue()
+        ->and($recipeVersion->ifra_category_selection_mode)->toBe(IfraCategorySelectionMode::Automatic);
 });
 
 function productFamilyId(string $slug): int

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\IfraCategorySelectionMode;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Models\Concerns\HasMediaAssetUsages;
@@ -33,6 +34,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'regulatory_regime',
     'regulatory_regime_id',
     'ifra_product_category_id',
+    'ifra_amendment_id',
+    'product_type_ifra_category_id',
+    'ifra_category_selection_mode',
     'notes',
     'final_ingredient_list',
     'final_ingredient_list_basis_hash',
@@ -66,6 +70,16 @@ class RecipeVersion extends Model
     public function ifraProductCategory(): BelongsTo
     {
         return $this->belongsTo(IfraProductCategory::class);
+    }
+
+    public function ifraAmendment(): BelongsTo
+    {
+        return $this->belongsTo(IfraAmendment::class);
+    }
+
+    public function productTypeIfraCategory(): BelongsTo
+    {
+        return $this->belongsTo(ProductTypeIfraCategory::class);
     }
 
     public function regulatoryRegime(): BelongsTo
@@ -110,6 +124,7 @@ class RecipeVersion extends Model
         return [
             'owner_type' => OwnerType::class,
             'visibility' => Visibility::class,
+            'ifra_category_selection_mode' => IfraCategorySelectionMode::class,
             'is_current' => 'bool',
             'batch_size' => 'decimal:3',
             'batch_mass_grams' => 'decimal:9',

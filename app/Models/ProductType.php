@@ -9,10 +9,12 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'product_family_id',
+    'product_category_id',
     'default_ifra_product_category_id',
     'name',
     'slug',
@@ -35,6 +37,21 @@ class ProductType extends Model
     public function defaultIfraProductCategory(): BelongsTo
     {
         return $this->belongsTo(IfraProductCategory::class, 'default_ifra_product_category_id');
+    }
+
+    public function productCategory(): BelongsTo
+    {
+        return $this->belongsTo(ProductCategory::class);
+    }
+
+    public function productFamilies(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductFamily::class)->withTimestamps();
+    }
+
+    public function ifraCategoryMappings(): HasMany
+    {
+        return $this->hasMany(ProductTypeIfraCategory::class);
     }
 
     public function recipes(): HasMany

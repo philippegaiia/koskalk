@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'issuer',
     'reference_code',
     'ifra_amendment',
+    'ifra_amendment_id',
+    'source_amendment_label',
     'published_at',
     'valid_from',
     'peroxide_value',
@@ -37,6 +39,11 @@ class IfraCertificate extends Model
     public function limits(): HasMany
     {
         return $this->hasMany(IfraCertificateLimit::class);
+    }
+
+    public function ifraAmendment(): BelongsTo
+    {
+        return $this->belongsTo(IfraAmendment::class);
     }
 
     protected function casts(): array

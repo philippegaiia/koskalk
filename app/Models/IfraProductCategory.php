@@ -31,6 +31,11 @@ class IfraProductCategory extends Model
         return $this->hasMany(ProductFamilyIfraCategory::class);
     }
 
+    public function productTypeMappings(): HasMany
+    {
+        return $this->hasMany(ProductTypeIfraCategory::class);
+    }
+
     public function productFamilies(): BelongsToMany
     {
         return $this->belongsToMany(

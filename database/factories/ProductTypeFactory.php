@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\ProductCategory;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -12,6 +13,15 @@ use Illuminate\Support\Str;
  */
 class ProductTypeFactory extends Factory
 {
+    public function configure(): static
+    {
+        return $this->afterCreating(function (ProductType $productType): void {
+            if ($productType->product_family_id !== null) {
+                $productType->productFamilies()->syncWithoutDetaching([$productType->product_family_id]);
+            }
+        });
+    }
+
     /**
      * Define the model's default state.
      *
@@ -22,6 +32,7 @@ class ProductTypeFactory extends Factory
         $name = fake()->unique()->words(2, true);
 
         return [
+            'product_category_id' => ProductCategory::factory(),
             'product_family_id' => ProductFamily::factory(),
             'default_ifra_product_category_id' => null,
             'name' => Str::title($name),

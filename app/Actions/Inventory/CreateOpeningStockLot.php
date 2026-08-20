@@ -58,7 +58,7 @@ class CreateOpeningStockLot
             'quantity' => ['required', 'numeric', 'gt:0'],
             'idempotency_key' => ['required', 'string', 'max:120'],
             'stocked_at' => ['nullable', 'date'],
-            'expires_at' => ['nullable', 'date'],
+            'expires_at' => ['nullable', 'date', 'after_or_equal:stocked_at'],
             'price' => ['required', 'numeric', 'min:0'],
             'currency' => ['required', 'string', 'size:3'],
         ])->validate();

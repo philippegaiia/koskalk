@@ -7,6 +7,7 @@ use App\Actions\Inventory\QuarantineStockLot;
 use App\Actions\Inventory\ReleaseStockLot;
 use App\Enums\ProductionRunStatus;
 use App\Enums\StockReservationStatus;
+use App\Enums\StockUnitKind;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
@@ -15,97 +16,179 @@ use App\Models\StockLot;
 use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
 use App\Services\ProductionBenchAccess;
 use App\Services\StockPositionService;
+use App\Support\LocalizedDecimalInput;
+use App\Support\NumberLocale;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 
-class InventoryIndex extends Component
+class InventoryIndex extends Component implements HasActions, HasForms
 {
+    use InteractsWithActions;
     use InteractsWithAppNotifications;
+    use InteractsWithForms;
+
+    private const int OPTION_LIMIT = 30;
+
+    private CreateOpeningStockLot $createOpeningStockLot;
+
+    private CurrencyCatalog $currencyCatalog;
+
+    private MassConverter $massConverter;
+
+    private ProductionBenchAccess $productionBenchAccess;
 
     public string $mode = 'overview';
-
-    public ?int $supplierListingId = null;
-
-    public string $quantity = '';
-
-    public string $unit = 'kg';
-
-    public string $pricePerUnit = '';
-
-    public string $currency = '';
-
-    public string $supplierBatchNumber = '';
-
-    public string $stockedAt = '';
-
-    public string $expiresAt = '';
-
-    public string $notes = '';
 
     public ?string $statusMessage = null;
 
     public string $statusType = 'idle';
 
-    public function mount(): void
-    {
-        $workspace = $this->workspace();
-        $this->unit = $workspace->mass_display_system->priceUnit()->value;
-        $this->currency = $workspace->default_currency;
+    public function boot(
+        CreateOpeningStockLot $createOpeningStockLot,
+        CurrencyCatalog $currencyCatalog,
+        MassConverter $massConverter,
+        ProductionBenchAccess $productionBenchAccess,
+    ): void {
+        $this->createOpeningStockLot = $createOpeningStockLot;
+        $this->currencyCatalog = $currencyCatalog;
+        $this->massConverter = $massConverter;
+        $this->productionBenchAccess = $productionBenchAccess;
     }
 
-    public function updatedSupplierListingId(): void
+    public function addStockAction(): Action
     {
-        $listing = $this->selectedListing();
+        return Action::make('addStock')
+            ->label(__('production_bench.inventory.add_stock_manually'))
+            ->modalHeading(__('production_bench.inventory.add_stock_manually'))
+            ->modalDescription(__('production_bench.inventory.add_stock_description'))
+            ->modalSubmitActionLabel(__('production_bench.inventory.add_stock'))
+            ->modalCancelActionLabel(__('production_bench.common.cancel'))
+            ->modalWidth(Width::FourExtraLarge)
+            ->visible(fn (): bool => $this->mode === 'stock' && $this->canAddStock())
+            ->fillForm(fn (): array => [
+                'currency' => $this->workspace()->default_currency,
+                'stocked_at' => today()->toDateString(),
+                'unit' => $this->workspace()->mass_display_system->priceUnit()->value,
+            ])
+            ->schema([
+                Select::make('supplier_listing_id')
+                    ->label(__('production_bench.inventory.supplier_listing'))
+                    ->placeholder(__('production_bench.inventory.search_supplier_listing'))
+                    ->searchable()
+                    ->getSearchResultsUsing(fn (string $search): array => $this->supplierListingSearchResults($search))
+                    ->getOptionLabelUsing(fn (mixed $value): ?string => $this->supplierListingOptionLabel(is_numeric($value) ? (int) $value : null))
+                    ->rules([
+                        Rule::exists(SupplierListing::class, 'id')->where(fn (QueryBuilder $query): QueryBuilder => $query
+                            ->where('workspace_id', $this->workspace()->id)
+                            ->where('is_active', true)),
+                    ])
+                    ->required()
+                    ->live()
+                    ->afterStateUpdated(function (mixed $state, Set $set): void {
+                        $listing = $this->activeSupplierListing(is_numeric($state) ? (int) $state : null);
 
-        if (! $listing instanceof SupplierListing) {
-            return;
-        }
+                        if (! $listing instanceof SupplierListing) {
+                            $set('price_per_unit', null);
 
-        $this->currency = $listing->currency;
+                            return;
+                        }
 
-        if ($listing->packaging_item_id !== null) {
-            $this->unit = 'count';
-            $this->pricePerUnit = bcdiv($listing->total_price, $listing->canonical_quantity_per_purchase_format, 9);
-
-            return;
-        }
-
-        $this->unit = $this->workspace()->mass_display_system->priceUnit()->value;
-        $pricePerGram = bcdiv($listing->total_price, $listing->canonical_quantity_per_purchase_format, 12);
-        $gramsPerDisplayUnit = app(MassConverter::class)->toGrams('1', $this->unit);
-        $this->pricePerUnit = bcmul($pricePerGram, $gramsPerDisplayUnit, 9);
-    }
-
-    public function createOpeningStock(CreateOpeningStockLot $action): void
-    {
-        $workspace = $this->workspace();
-        $listing = $this->selectedListing() ?? abort(404);
-        $pricePerCanonicalUnit = $listing->ingredient_id !== null
-            ? bcdiv($this->pricePerUnit, app(MassConverter::class)->toGrams('1', $this->unit), 12)
-            : $this->pricePerUnit;
-
-        $lot = $action->handle(
-            actor: $this->user(),
-            workspace: $workspace,
-            listing: $listing,
-            quantity: $this->quantity,
-            unit: $this->unit,
-            pricePerCanonicalUnit: $pricePerCanonicalUnit,
-            currency: $this->currency,
-            idempotencyKey: (string) Str::uuid(),
-            supplierBatchNumber: filled($this->supplierBatchNumber) ? $this->supplierBatchNumber : null,
-            stockedAt: filled($this->stockedAt) ? $this->stockedAt : null,
-            expiresAt: filled($this->expiresAt) ? $this->expiresAt : null,
-            notes: filled($this->notes) ? $this->notes : null,
-        );
-
-        $this->showAppNotification(__('production_bench.inventory.lot_created', ['code' => $lot->internal_lot_code]));
-        $this->reset('supplierListingId', 'quantity', 'pricePerUnit', 'supplierBatchNumber', 'expiresAt', 'notes');
+                        $unit = $listing->unit_kind === StockUnitKind::Count
+                            ? 'count'
+                            : $listing->net_unit;
+                        $set('unit', $unit);
+                        $set('currency', $listing->currency);
+                        $set('price_per_unit', $this->listingPricePerUnit($listing, $unit));
+                    })
+                    ->columnSpanFull(),
+                Grid::make(2)
+                    ->schema([
+                        LocalizedDecimalInput::make('quantity')
+                            ->label(__('production_bench.inventory.quantity'))
+                            ->required()
+                            ->minValue('0.000000001'),
+                        Select::make('unit')
+                            ->label(__('production_bench.inventory.unit'))
+                            ->options(fn (Get $get): array => $this->unitOptions($get('supplier_listing_id')))
+                            ->required()
+                            ->disabled(fn (Get $get): bool => filled($get('supplier_listing_id')))
+                            ->dehydrated(),
+                        LocalizedDecimalInput::make('price_per_unit')
+                            ->label(fn (Get $get): string => __('production_bench.inventory.cost_per', [
+                                'unit' => $get('unit') === 'count' ? __('production_bench.inventory.item') : ($get('unit') ?: __('production_bench.inventory.unit')),
+                            ]))
+                            ->helperText(__('production_bench.inventory.cost_help'))
+                            ->required()
+                            ->minValue(0),
+                        Select::make('currency')
+                            ->label(__('production_bench.common.currency'))
+                            ->options($this->currencyOptions())
+                            ->searchable()
+                            ->rules([Rule::in(array_keys($this->currencyOptions()))])
+                            ->required()
+                            ->disabled(fn (Get $get): bool => filled($get('supplier_listing_id')))
+                            ->dehydrated(),
+                    ])
+                    ->columnSpanFull(),
+                Grid::make(2)
+                    ->schema([
+                        DatePicker::make('stocked_at')
+                            ->label(__('production_bench.inventory.stocked_on'))
+                            ->native(false)
+                            ->closeOnDateSelection()
+                            ->weekStartsOnMonday()
+                            ->maxDate(today()->toDateString())
+                            ->validationMessages([
+                                'before_or_equal' => __('production_bench.inventory.stocked_on_future'),
+                            ])
+                            ->required(),
+                        DatePicker::make('expires_at')
+                            ->label(__('production_bench.inventory.expires_on'))
+                            ->native(false)
+                            ->closeOnDateSelection()
+                            ->weekStartsOnMonday()
+                            ->afterOrEqual('stocked_at'),
+                    ])
+                    ->columnSpanFull(),
+                Grid::make(2)
+                    ->schema([
+                        TextEntry::make('internal_batch_number')
+                            ->label(__('production_bench.inventory.internal_batch'))
+                            ->state(__('production_bench.inventory.internal_batch_generated')),
+                        TextInput::make('supplier_batch_number')
+                            ->label(__('production_bench.inventory.supplier_batch'))
+                            ->maxLength(255),
+                    ])
+                    ->columnSpanFull(),
+                Textarea::make('notes')
+                    ->label(__('production_bench.common.notes'))
+                    ->rows(3)
+                    ->maxLength(2000)
+                    ->columnSpanFull(),
+            ])
+            ->action(fn (array $data) => $this->createManualStock($data));
     }
 
     public function release(int $lotId, ReleaseStockLot $action): void
@@ -225,21 +308,10 @@ class InventoryIndex extends Component
             })
             ->values();
 
-        $supplierListings = $this->mode === 'requirements'
-            ? collect()
-            : SupplierListing::query()
-                ->where('workspace_id', $workspace->id)
-                ->where('is_active', true)
-                ->with(['supplier', 'ingredient.translations', 'packagingItem'])
-                ->orderBy('supplier_id')
-                ->orderBy('purchase_format')
-                ->get();
-
         return view('livewire.production-bench.inventory-index', [
             'workspace' => $workspace,
             'isActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
-            'supplierListings' => $supplierListings,
             'lots' => $lots,
             'forecast' => $forecast,
             'displayUnit' => $displayUnit,
@@ -253,16 +325,156 @@ class InventoryIndex extends Component
             ->findOrFail($lotId);
     }
 
-    private function selectedListing(): ?SupplierListing
+    /** @return array<int, string> */
+    public function supplierListingSearchResults(string $search): array
     {
-        if ($this->supplierListingId === null) {
+        $search = Str::lower(trim($search));
+        $searchTerm = "%{$search}%";
+        $translationLocales = Ingredient::translationLocaleCandidates();
+
+        return SupplierListing::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->where('is_active', true)
+            ->with(['supplier', 'ingredient.translations', 'packagingItem'])
+            ->when($search !== '', function (Builder $query) use ($searchTerm, $translationLocales): void {
+                $query->where(function (Builder $searchQuery) use ($searchTerm, $translationLocales): void {
+                    $searchQuery
+                        ->whereRaw('LOWER(supplier_sku) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(supplier_item_name) LIKE ?', [$searchTerm])
+                        ->orWhereRaw('LOWER(purchase_format) LIKE ?', [$searchTerm])
+                        ->orWhereHas('supplier', fn (Builder $supplierQuery): Builder => $supplierQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]))
+                        ->orWhereHas('ingredient', function (Builder $ingredientQuery) use ($searchTerm, $translationLocales): void {
+                            $ingredientQuery->where(function (Builder $ingredientNameQuery) use ($searchTerm, $translationLocales): void {
+                                $ingredientNameQuery->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+
+                                if ($translationLocales !== []) {
+                                    $ingredientNameQuery->orWhereHas('translations', function (Builder $translationQuery) use ($searchTerm, $translationLocales): void {
+                                        $translationQuery
+                                            ->whereIn('locale', $translationLocales)
+                                            ->whereRaw('LOWER(display_name) LIKE ?', [$searchTerm]);
+                                    });
+                                }
+                            });
+                        })
+                        ->orWhereHas('packagingItem', fn (Builder $packagingQuery): Builder => $packagingQuery->whereRaw('LOWER(name) LIKE ?', [$searchTerm]));
+                });
+            })
+            ->latest('id')
+            ->limit(self::OPTION_LIMIT)
+            ->get()
+            ->mapWithKeys(fn (SupplierListing $listing): array => [$listing->id => $this->supplierListingLabel($listing)])
+            ->all();
+    }
+
+    public function supplierListingOptionLabel(?int $listingId): ?string
+    {
+        $listing = $this->activeSupplierListing($listingId);
+
+        return $listing instanceof SupplierListing ? $this->supplierListingLabel($listing) : null;
+    }
+
+    /** @param array<string, mixed> $data */
+    private function createManualStock(array $data): void
+    {
+        $workspace = $this->workspace();
+        $listing = $this->activeSupplierListing((int) $data['supplier_listing_id']) ?? abort(404);
+        $unit = (string) $data['unit'];
+        $pricePerUnit = (string) $data['price_per_unit'];
+        $pricePerCanonicalUnit = $listing->ingredient_id !== null
+            ? bcdiv($pricePerUnit, $this->massConverter->toGrams('1', $unit), 12)
+            : $pricePerUnit;
+
+        $lot = $this->createOpeningStockLot->handle(
+            actor: $this->user(),
+            workspace: $workspace,
+            listing: $listing,
+            quantity: (string) $data['quantity'],
+            unit: $unit,
+            pricePerCanonicalUnit: $pricePerCanonicalUnit,
+            currency: $listing->currency,
+            idempotencyKey: (string) Str::uuid(),
+            supplierBatchNumber: filled($data['supplier_batch_number'] ?? null) ? (string) $data['supplier_batch_number'] : null,
+            stockedAt: (string) $data['stocked_at'],
+            expiresAt: filled($data['expires_at'] ?? null) ? (string) $data['expires_at'] : null,
+            notes: filled($data['notes'] ?? null) ? (string) $data['notes'] : null,
+        );
+
+        $this->showAppNotification(__('production_bench.inventory.lot_created', ['code' => $lot->internal_lot_code]));
+    }
+
+    private function activeSupplierListing(mixed $listingId): ?SupplierListing
+    {
+        if (! is_numeric($listingId)) {
             return null;
         }
 
         return SupplierListing::query()
             ->where('workspace_id', $this->workspace()->id)
             ->where('is_active', true)
-            ->find($this->supplierListingId);
+            ->with(['supplier', 'ingredient.translations', 'packagingItem'])
+            ->find((int) $listingId);
+    }
+
+    private function canAddStock(): bool
+    {
+        $workspace = $this->workspace();
+
+        return $this->productionBenchAccess->isActive($workspace)
+            && ! $this->productionBenchAccess->isReadOnly($workspace);
+    }
+
+    /** @return array<string, string> */
+    private function currencyOptions(): array
+    {
+        return collect($this->currencyCatalog->options(app()->getLocale(), [$this->workspace()->default_currency]))
+            ->mapWithKeys(fn (string $name, string $code): array => [$code => $code.' · '.$name])
+            ->all();
+    }
+
+    private function listingPricePerUnit(SupplierListing $listing, string $unit): string
+    {
+        if ($listing->unit_kind === StockUnitKind::Count) {
+            $pricePerUnit = bcdiv($listing->total_price, $listing->canonical_quantity_per_purchase_format, 9);
+        } else {
+            $pricePerGram = bcdiv($listing->total_price, $listing->canonical_quantity_per_purchase_format, 12);
+            $pricePerUnit = bcmul($pricePerGram, $this->massConverter->toGrams('1', $unit), 9);
+        }
+
+        return NumberLocale::formatAdaptiveDecimal(
+            $pricePerUnit,
+            minimumDecimals: 2,
+            maximumDecimals: 4,
+            locale: $this->user()->number_locale,
+        );
+    }
+
+    private function selectedListingIsPackaging(mixed $listingId): bool
+    {
+        return $this->activeSupplierListing($listingId)?->unit_kind === StockUnitKind::Count;
+    }
+
+    private function supplierListingLabel(SupplierListing $listing): string
+    {
+        $subjectName = $listing->ingredient?->localizedDisplayName()
+            ?? $listing->packagingItem?->name
+            ?? __('production_bench.inventory.unknown_item');
+
+        return collect([
+            $subjectName,
+            $listing->supplier->name,
+            $listing->supplier_sku,
+            $listing->purchase_format,
+        ])->filter()->join(' · ');
+    }
+
+    /** @return array<string, string> */
+    private function unitOptions(mixed $listingId): array
+    {
+        if ($this->selectedListingIsPackaging($listingId)) {
+            return ['count' => __('production_bench.inventory.units')];
+        }
+
+        return ['g' => 'g', 'kg' => 'kg', 'oz' => 'oz', 'lb' => 'lb'];
     }
 
     private function user(): User

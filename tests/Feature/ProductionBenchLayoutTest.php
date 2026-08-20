@@ -2,7 +2,6 @@
 
 use App\Livewire\ProductionBench\InventoryIndex;
 use App\Models\Supplier;
-use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ProductionBenchAccess;
@@ -46,8 +45,6 @@ it('keeps the inventory overview navigation visibly selected across live updates
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
-    $supplier = Supplier::factory()->for($workspace)->create();
-    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->create();
     $this->actingAs($user);
 
     $assertInventoryNavigationIsActive = function (string $html): void {
@@ -60,7 +57,7 @@ it('keeps the inventory overview navigation visibly selected across live updates
 
     $assertInventoryNavigationIsActive($component->html());
 
-    $component->set('supplierListingId', $listing->id);
+    $component->refresh();
 
     $assertInventoryNavigationIsActive($component->html());
 });

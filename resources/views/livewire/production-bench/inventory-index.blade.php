@@ -14,73 +14,6 @@
             <p class="mt-3 max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{{ $mode === 'stock' ? __('production_bench.inventory.stock_help') : ($mode === 'requirements' ? __('production_bench.inventory.requirements_help') : __('production_bench.inventory.help')) }}</p>
         </header>
 
-        @if ($mode !== 'requirements')
-        <section class="sk-card overflow-hidden">
-            <div class="border-b border-[var(--color-line)] p-6">
-                <h2 class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.inventory.opening_stock') }}</h2>
-            </div>
-
-            <form wire:submit="createOpeningStock" class="grid gap-5 p-6 md:grid-cols-2 xl:grid-cols-4">
-                <label class="space-y-2 md:col-span-2 xl:col-span-4">
-                    <span class="text-sm font-medium">{{ __('production_bench.inventory.supplier_listing') }}</span>
-                    <select wire:model.live="supplierListingId" required @disabled($isReadOnly) class="sk-input w-full">
-                        <option value="">{{ __('production_bench.inventory.choose') }}</option>
-                        @foreach ($supplierListings as $listing)
-                            <option value="{{ $listing->id }}">{{ $listing->supplier->name }} · {{ $listing->ingredient?->localizedDisplayName() ?? $listing->packagingItem?->name }} · {{ $listing->purchase_format }}</option>
-                        @endforeach
-                    </select>
-                </label>
-
-                <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.inventory.quantity') }}</span>
-                    <div class="flex gap-2">
-                        <input wire:model="quantity" inputmode="decimal" required @disabled($isReadOnly) class="sk-input min-w-0 flex-1 font-mono">
-                        <select wire:model="unit" @disabled($isReadOnly) class="sk-input w-24">
-                            @if ($unit !== 'count')
-                                <option>g</option><option>kg</option><option>oz</option><option>lb</option>
-                            @else
-                                <option value="count">{{ __('production_bench.inventory.units') }}</option>
-                            @endif
-                        </select>
-                    </div>
-                    @error('quantity') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
-                </label>
-
-                <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.inventory.price_per', ['unit' => $unit === 'count' ? __('production_bench.inventory.item') : $unit]) }}</span>
-                    <div class="flex gap-2">
-                        <input wire:model="pricePerUnit" inputmode="decimal" required @disabled($isReadOnly) class="sk-input min-w-0 flex-1 font-mono">
-                        <input wire:model="currency" required maxlength="3" @disabled($isReadOnly) class="sk-input w-20 uppercase">
-                    </div>
-                </label>
-
-                <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.inventory.supplier_batch') }} <span class="font-normal text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.optional') }}</span></span>
-                    <input wire:model="supplierBatchNumber" @disabled($isReadOnly) class="sk-input w-full">
-                </label>
-
-                <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.inventory.stocked_on') }}</span>
-                    <input wire:model="stockedAt" type="date" @disabled($isReadOnly) class="sk-input w-full">
-                </label>
-
-                <label class="space-y-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.inventory.expires_on') }}</span>
-                    <input wire:model="expiresAt" type="date" @disabled($isReadOnly) class="sk-input w-full">
-                </label>
-
-                <label class="space-y-2 md:col-span-2">
-                    <span class="text-sm font-medium">{{ __('production_bench.common.notes') }}</span>
-                    <input wire:model="notes" @disabled($isReadOnly) class="sk-input w-full">
-                </label>
-
-                <div class="md:col-span-2 xl:col-span-4">
-                    <button type="submit" @disabled($isReadOnly) class="sk-btn sk-btn-primary">{{ __('production_bench.inventory.add_lot') }}</button>
-                </div>
-            </form>
-        </section>
-        @endif
-
         @if ($mode !== 'stock')
         <section aria-labelledby="production-forecast-heading" class="sk-card overflow-hidden">
             <div class="border-b border-[var(--color-line)] p-6">
@@ -130,7 +63,12 @@
         <section aria-labelledby="inventory-positions-heading" class="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]">
             <div class="flex items-end justify-between gap-4 border-b border-[var(--color-line)] p-6">
                 <h2 id="inventory-positions-heading" class="text-xl font-semibold">{{ __('production_bench.inventory.stock_positions') }}</h2>
-                <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
+                <div class="flex flex-wrap items-center justify-end gap-3">
+                    <p class="text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.inventory.mass_shown', ['unit' => $displayUnit]) }}</p>
+                    @if ($mode === 'stock' && ! $isReadOnly)
+                        {{ $this->addStockAction }}
+                    @endif
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full min-w-[980px] text-left text-sm">
@@ -174,5 +112,7 @@
             </div>
         </section>
         @endif
+
+        <x-filament-actions::modals />
     @endif
 </x-production-bench.page>

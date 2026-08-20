@@ -108,6 +108,24 @@ it('requires positive whole counts for packaging opening stock', function (): vo
     ))->toThrow(ValidationException::class);
 });
 
+it('rejects an opening stock expiry date before its stock date', function (): void {
+    [$owner, $workspace] = activeProductionWorkspace();
+    $listing = openingStockListing($workspace, Ingredient::factory()->create());
+
+    expect(fn () => app(CreateOpeningStockLot::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        listing: $listing,
+        quantity: '1',
+        unit: 'kg',
+        pricePerCanonicalUnit: '0.01',
+        currency: 'EUR',
+        idempotencyKey: 'opening-invalid-expiry',
+        stockedAt: '2026-08-20',
+        expiresAt: '2026-08-19',
+    ))->toThrow(ValidationException::class);
+});
+
 it('changes release state without rewriting stock history', function (): void {
     [$owner, $workspace] = activeProductionWorkspace();
     $ingredient = Ingredient::factory()->create();

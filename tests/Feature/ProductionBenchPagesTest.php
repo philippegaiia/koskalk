@@ -95,7 +95,7 @@ it('activates and later preserves a read only bench', function (): void {
     expect(app(ProductionBenchAccess::class)->isReadOnly($workspace))->toBeTrue();
 });
 
-it('renders opening stock and purchasing workspaces', function (): void {
+it('keeps manual stock entry out of the inventory overview', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
@@ -104,7 +104,8 @@ it('renders opening stock and purchasing workspaces', function (): void {
     $this->actingAs($user)
         ->get(route('production-bench.inventory'))
         ->assertOk()
-        ->assertSee('Opening stock')
+        ->assertDontSee('Opening stock')
+        ->assertDontSee('Add stock manually')
         ->assertSee('Stock positions')
         ->assertSee('Physical')
         ->assertSee('Available')
@@ -137,7 +138,8 @@ it('offers clear inventory sections for stock and material requirements', functi
         ->get(route('production-bench.inventory.stock'))
         ->assertOk()
         ->assertSee('Stock')
-        ->assertSee('Opening stock')
+        ->assertDontSee('Opening stock')
+        ->assertSee('Add stock manually')
         ->assertSee('Stock positions')
         ->assertSee('Requirements');
 

@@ -166,6 +166,17 @@
         border-radius: 0.5rem;
     }
 
+    [data-user-shell] .fi-btn.fi-color-primary:not(.fi-outlined) {
+        --color-500: var(--color-accent);
+
+        background: var(--color-accent) !important;
+        color: var(--color-on-accent) !important;
+    }
+
+    [data-user-shell] .fi-btn.fi-color-primary:not(.fi-outlined):hover {
+        background: var(--color-accent-hover) !important;
+    }
+
     .fi-btn:not(.fi-color):not(.fi-outlined),
     .fi-btn.fi-outlined:not(.fi-color) {
         background: var(--color-panel);

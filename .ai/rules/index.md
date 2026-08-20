@@ -10,12 +10,14 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Console/Commands/** | .ai/rules/commands.md |
 | app/{Models/Ingredient.php,Enums/IngredientIdentifierScheme.php,Services/IngredientIdentitySynchronizer.php,Forms/Components/IngredientIdentityFields.php} | .ai/rules/components.md |
 | app/Http/Controllers/** | .ai/rules/controllers.md |
+| resources/css/**/*.css | .ai/rules/css.md |
 | app/Livewire/Dashboard/IngredientEditor.php | .ai/rules/dashboard.md |
 | app/Forms/** | .ai/rules/forms.md |
 | app/Http/** | .ai/rules/http.md |
 | app/Services/IngredientEnrichment/**, app/Services/IngredientIntake/**, app/Actions/IngredientIntake/** | .ai/rules/ingredient-enrichment.md |
 | resources/js/recipe-workbench/** | .ai/rules/js-recipe-workbench.md |
 | lang/**/*.php | .ai/rules/lang.md |
+| app/Livewire/ProductionBench/** | .ai/rules/livewire-production-bench.md |
 | app/Livewire/** | .ai/rules/livewire.md |
 | database/migrations/** | .ai/rules/migrations.md |
 | app/{Models,Services}/** | .ai/rules/models-services.md |

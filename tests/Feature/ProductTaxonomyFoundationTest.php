@@ -22,6 +22,7 @@ use Database\Seeders\ProductTypeIfraCategorySeeder;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
@@ -46,6 +47,80 @@ it('stores amendment milestones without putting a creation track on formulas', f
         ->and(Schema::hasIndex('recipe_versions', ['product_type_ifra_category_id']))->toBeTrue()
         ->and(Schema::hasIndex('ifra_certificates', ['ifra_amendment_id']))->toBeTrue()
         ->and(Schema::hasColumn('recipe_versions', 'ifra_creation_track'))->toBeFalse();
+});
+
+it('conservatively backfills legacy IFRA resolution data', function (): void {
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
+    $category = IfraProductCategory::factory()->create();
+    $legacyVersion = RecipeVersion::factory()->create([
+        'ifra_product_category_id' => $category->id,
+    ]);
+    $unclassifiedVersion = RecipeVersion::factory()->create([
+        'ifra_product_category_id' => null,
+    ]);
+    $certificate = IfraCertificate::factory()->create([
+        'ifra_amendment' => ' 51 ',
+        'ifra_amendment_id' => null,
+        'source_amendment_label' => ' 51 ',
+    ]);
+    $migration = require database_path('migrations/2026_08_20_094700_add_ifra_resolution_to_recipe_versions_and_certificates.php');
+
+    $migration->down();
+    $migration->up();
+
+    expect(DB::table('recipe_versions')->where('id', $legacyVersion->id)->value('ifra_category_selection_mode'))
+        ->toBe(IfraCategorySelectionMode::Legacy->value)
+        ->and(DB::table('recipe_versions')->where('id', $unclassifiedVersion->id)->value('ifra_category_selection_mode'))
+        ->toBe(IfraCategorySelectionMode::Automatic->value)
+        ->and(DB::table('ifra_certificates')->where('id', $certificate->id)->value('ifra_amendment_id'))
+        ->toBe($amendment->id)
+        ->and(DB::table('ifra_certificates')->where('id', $certificate->id)->value('source_amendment_label'))
+        ->toBe(' 51 ');
+});
+
+it('links exact legacy certificate labels when the amendment catalog is seeded', function (): void {
+    $matchingCertificate = IfraCertificate::factory()->create([
+        'ifra_amendment' => ' 51 ',
+        'ifra_amendment_id' => null,
+        'source_amendment_label' => null,
+    ]);
+    $unknownCertificate = IfraCertificate::factory()->create([
+        'ifra_amendment' => '51st supplier format',
+        'ifra_amendment_id' => null,
+        'source_amendment_label' => null,
+    ]);
+
+    $this->seed(IfraAmendmentSeeder::class);
+    $amendment = IfraAmendment::query()->where('code', '51')->firstOrFail();
+
+    expect($matchingCertificate->fresh()->ifra_amendment_id)->toBe($amendment->id)
+        ->and($matchingCertificate->fresh()->source_amendment_label)->toBe(' 51 ')
+        ->and($unknownCertificate->fresh()->ifra_amendment_id)->toBeNull()
+        ->and($unknownCertificate->fresh()->source_amendment_label)->toBe('51st supplier format');
+});
+
+it('keeps retired family-level IFRA classification out of runtime code', function (): void {
+    expect(method_exists(ProductFamily::class, 'ifraCategoryMappings'))->toBeFalse()
+        ->and(method_exists(ProductFamily::class, 'ifraProductCategories'))->toBeFalse()
+        ->and(method_exists(ProductType::class, 'productFamily'))->toBeFalse()
+        ->and(method_exists(ProductType::class, 'defaultIfraProductCategory'))->toBeFalse()
+        ->and(method_exists(IfraProductCategory::class, 'productFamilyMappings'))->toBeFalse()
+        ->and(method_exists(IfraProductCategory::class, 'productFamilies'))->toBeFalse();
+
+    $runtimeFiles = collect([
+        ...File::allFiles(app_path('Services')),
+        ...File::allFiles(app_path('Livewire')),
+    ]);
+
+    expect($runtimeFiles->contains(
+        fn (SplFileInfo $file): bool => str_contains($file->getContents(), 'ProductFamilyIfraCategory'),
+    ))->toBeFalse()
+        ->and($runtimeFiles->contains(
+            fn (SplFileInfo $file): bool => str_contains($file->getContents(), 'product_family_ifra_categories'),
+        ))->toBeFalse()
+        ->and($runtimeFiles->contains(
+            fn (SplFileInfo $file): bool => str_contains($file->getContents(), 'default_ifra_product_category_id'),
+        ))->toBeFalse();
 });
 
 it('defines the amendment classification enums as stable string values', function (): void {

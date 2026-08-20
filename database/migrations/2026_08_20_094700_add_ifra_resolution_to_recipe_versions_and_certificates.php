@@ -30,10 +30,22 @@ return new class extends Migration
             ->whereNotNull('ifra_amendment')
             ->orderBy('id')
             ->eachById(function (object $certificate): void {
+                $sourceAmendmentLabel = (string) $certificate->ifra_amendment;
+                $ifraAmendmentId = DB::table('ifra_amendments')
+                    ->where('code', trim($sourceAmendmentLabel))
+                    ->value('id');
+
                 DB::table('ifra_certificates')
                     ->where('id', $certificate->id)
-                    ->update(['source_amendment_label' => $certificate->ifra_amendment]);
+                    ->update([
+                        'ifra_amendment_id' => $ifraAmendmentId,
+                        'source_amendment_label' => $sourceAmendmentLabel,
+                    ]);
             });
+
+        DB::table('recipe_versions')
+            ->whereNotNull('ifra_product_category_id')
+            ->update(['ifra_category_selection_mode' => 'legacy']);
     }
 
     /**

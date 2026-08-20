@@ -190,7 +190,6 @@ class RecipeWorkbenchViewDataBuilder
             'id' => $productType->id,
             'name' => $productType->name,
             'slug' => $productType->slug,
-            'default_ifra_product_category_id' => $productType->default_ifra_product_category_id,
         ];
     }
 
@@ -207,7 +206,7 @@ class RecipeWorkbenchViewDataBuilder
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->get(['id', 'name', 'slug', 'default_ifra_product_category_id']);
+            ->get(['id', 'name', 'slug']);
 
         if (
             $selectedProductType instanceof ProductType

@@ -14,7 +14,7 @@ class IfraProductCategoriesTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withCount('productFamilies'))
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withCount('productTypeMappings'))
             ->columns([
                 TextColumn::make('code')
                     ->searchable()
@@ -28,9 +28,9 @@ class IfraProductCategoriesTable
                 IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
-                TextColumn::make('product_families_count')
-                    ->label('Product families')
-                    ->counts('productFamilies')
+                TextColumn::make('product_type_mappings_count')
+                    ->label('Product type mappings')
+                    ->counts('productTypeMappings')
                     ->sortable(),
             ])
             ->filters([

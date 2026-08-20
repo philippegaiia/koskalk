@@ -13,9 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'product_family_id',
     'product_category_id',
-    'default_ifra_product_category_id',
     'name',
     'slug',
     'fallback_image_path',
@@ -28,16 +26,6 @@ class ProductType extends Model
 {
     /** @use HasFactory<ProductTypeFactory> */
     use HasFactory;
-
-    public function productFamily(): BelongsTo
-    {
-        return $this->belongsTo(ProductFamily::class);
-    }
-
-    public function defaultIfraProductCategory(): BelongsTo
-    {
-        return $this->belongsTo(IfraProductCategory::class, 'default_ifra_product_category_id');
-    }
 
     public function productCategory(): BelongsTo
     {

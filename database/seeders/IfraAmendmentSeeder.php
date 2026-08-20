@@ -34,6 +34,32 @@ class IfraAmendmentSeeder extends Seeder
                     ['effective_on' => $milestone['effective_on']],
                 );
             }
+
+            DB::table('ifra_certificates')
+                ->whereNotNull('ifra_amendment')
+                ->select(['id', 'ifra_amendment', 'ifra_amendment_id', 'source_amendment_label'])
+                ->orderBy('id')
+                ->eachById(function (object $certificate) use ($amendment): void {
+                    $sourceAmendmentLabel = (string) $certificate->ifra_amendment;
+                    $updates = [];
+
+                    if (blank($certificate->source_amendment_label)) {
+                        $updates['source_amendment_label'] = $sourceAmendmentLabel;
+                    }
+
+                    if (
+                        $certificate->ifra_amendment_id === null
+                        && trim($sourceAmendmentLabel) === $amendment->code
+                    ) {
+                        $updates['ifra_amendment_id'] = $amendment->id;
+                    }
+
+                    if ($updates !== []) {
+                        DB::table('ifra_certificates')
+                            ->where('id', $certificate->id)
+                            ->update($updates);
+                    }
+                });
         }, attempts: 5);
     }
 

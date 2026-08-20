@@ -1283,17 +1283,6 @@ it('renders the compliance resources in the admin panel', function () {
         'name' => 'Category 9',
     ]);
 
-    $productFamily = ProductFamily::factory()->create([
-        'name' => 'Soap',
-        'slug' => 'soap',
-    ]);
-
-    $ifraProductCategory->productFamilyMappings()->create([
-        'product_family_id' => $productFamily->id,
-        'is_default' => true,
-        'sort_order' => 1,
-    ]);
-
     $ifraCertificate = IfraCertificate::factory()
         ->for($ingredient, 'ingredient')
         ->create([
@@ -1413,7 +1402,7 @@ it('renders the compliance create forms in the admin panel', function () {
         ->assertSee('Category Identity')
         ->assertSee('Short label')
         ->assertSee('Full description')
-        ->assertSee('Product Family Mapping');
+        ->assertDontSee('Product Family Mapping');
 
     $this->get(IfraCertificateResource::getUrl('create', panel: 'admin'))
         ->assertSuccessful()

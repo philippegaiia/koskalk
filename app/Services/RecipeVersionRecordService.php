@@ -93,6 +93,9 @@ class RecipeVersionRecordService
         $recipeVersion->regulatory_regime_id = RegulatoryRegime::query()
             ->where('code', $normalizedPayload['regulatory_regime'])
             ->value('id');
+        $recipeVersion->ifra_category_selection_mode = $normalizedPayload['ifra_category_selection_mode'];
+        $recipeVersion->ifra_amendment_id = $normalizedPayload['ifra_amendment_id'];
+        $recipeVersion->product_type_ifra_category_id = $normalizedPayload['product_type_ifra_category_id'];
         $recipeVersion->ifra_product_category_id = $normalizedPayload['ifra_product_category_id'];
         $recipeVersion->final_ingredient_list = $normalizedPayload['final_ingredient_list'];
         $recipeVersion->final_ingredient_list_basis_hash = $normalizedPayload['final_ingredient_list_basis_hash'];

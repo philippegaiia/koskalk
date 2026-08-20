@@ -101,6 +101,8 @@ class RecipeWorkbenchVersionPayloadMapper
                 : 'percent_of_oils',
             'waterValue' => (float) ($waterSettings['value'] ?? 38),
             'superfat' => (float) ($calculationContext['superfat'] ?? 5),
+            'ifraCategorySelectionMode' => $version->ifra_category_selection_mode?->value ?? 'automatic',
+            'ifraAmendmentId' => $version->ifra_amendment_id,
             'selectedIfraProductCategoryId' => $version->ifra_product_category_id,
             'finalIngredientList' => $version->final_ingredient_list,
             'finalIngredientListBasisHash' => $version->final_ingredient_list_basis_hash,

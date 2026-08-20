@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Enums\IfraCategorySelectionMode;
 use App\Enums\MassUnit;
 use App\Enums\NominalContentUnit;
 use App\Enums\ProductionOutputType;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
@@ -25,6 +27,7 @@ class RecipeWorkbenchPayloadNormalizer
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
         private readonly LyeLiquidIngredientValidator $lyeLiquidIngredientValidator,
         private readonly ProductClassificationService $productClassificationService,
+        private readonly ProductTypeIfraOptionsBuilder $productTypeIfraOptionsBuilder,
     ) {}
 
     /**
@@ -38,6 +41,9 @@ class RecipeWorkbenchPayloadNormalizer
      *     exposure_mode: string,
      *     regulatory_regime: string,
      *     editing_mode: string,
+     *     ifra_category_selection_mode: IfraCategorySelectionMode,
+     *     ifra_amendment_id: int|null,
+     *     product_type_ifra_category_id: int|null,
      *     ifra_product_category_id: int|null,
      *     manufacturing_instructions: string|null,
      *     water_settings: array{mode: string, value: float},
@@ -67,9 +73,10 @@ class RecipeWorkbenchPayloadNormalizer
                 $product,
             )
             : null;
+        $ifraSelection = $this->resolveIfraSelection($payload, $productType);
 
         if ($this->recipeWorkbenchPhaseBlueprints->isCosmeticFamily($productFamily)) {
-            return $this->normalizeCosmetic($payload, $productType, $requireComplete);
+            return $this->normalizeCosmetic($payload, $productType, $ifraSelection, $requireComplete);
         }
 
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
@@ -134,9 +141,7 @@ class RecipeWorkbenchPayloadNormalizer
             'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'rinse_off'),
             'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu'),
             'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
-            'ifra_product_category_id' => isset($payload['ifra_product_category_id']) && is_numeric($payload['ifra_product_category_id'])
-                ? (int) $payload['ifra_product_category_id']
-                : null,
+            ...$ifraSelection,
             'manufacturing_instructions' => $this->nullableTrimmedText($payload['manufacturing_instructions'] ?? null),
             'final_ingredient_list' => $this->nullableTrimmedText($payload['final_ingredient_list'] ?? null),
             'final_ingredient_list_basis_hash' => $this->nullableTrimmedText($payload['final_ingredient_list_basis_hash'] ?? null),
@@ -193,6 +198,9 @@ class RecipeWorkbenchPayloadNormalizer
      *     exposure_mode: string,
      *     regulatory_regime: string,
      *     editing_mode: string,
+     *     ifra_category_selection_mode: IfraCategorySelectionMode,
+     *     ifra_amendment_id: int|null,
+     *     product_type_ifra_category_id: int|null,
      *     ifra_product_category_id: int|null,
      *     manufacturing_instructions: string|null,
      *     water_settings: array<string, mixed>,
@@ -207,8 +215,12 @@ class RecipeWorkbenchPayloadNormalizer
      *     nominal_content_unit: string|null
      * }
      */
-    private function normalizeCosmetic(array $payload, ?ProductType $productType, bool $requireComplete): array
-    {
+    private function normalizeCosmetic(
+        array $payload,
+        ?ProductType $productType,
+        array $ifraSelection,
+        bool $requireComplete,
+    ): array {
         $editingMode = ($payload['editing_mode'] ?? 'percentage') === 'weight' ? 'weight' : 'percent';
         $totalBatchWeight = $this->positiveWeight($payload['oil_weight'] ?? 0, 'total batch weight');
         $massUnit = $this->normalizeMassUnit($payload['oil_unit'] ?? 'g');
@@ -295,9 +307,7 @@ class RecipeWorkbenchPayloadNormalizer
             'exposure_mode' => $this->normalizeExposureMode($payload['exposure_mode'] ?? 'leave_on'),
             'regulatory_regime' => RegulatoryRegime::normalizeCode($payload['regulatory_regime'] ?? 'eu'),
             'editing_mode' => $editingMode === 'weight' ? 'weight' : 'percentage',
-            'ifra_product_category_id' => isset($payload['ifra_product_category_id']) && is_numeric($payload['ifra_product_category_id'])
-                ? (int) $payload['ifra_product_category_id']
-                : null,
+            ...$ifraSelection,
             'manufacturing_instructions' => $this->nullableTrimmedText($payload['manufacturing_instructions'] ?? null),
             'final_ingredient_list' => $this->nullableTrimmedText($payload['final_ingredient_list'] ?? null),
             'final_ingredient_list_basis_hash' => $this->nullableTrimmedText($payload['final_ingredient_list_basis_hash'] ?? null),
@@ -316,6 +326,50 @@ class RecipeWorkbenchPayloadNormalizer
             'phases' => $normalizedPhases,
             'packaging_items' => $this->normalizePackagingItems($payload['packaging_items'] ?? []),
             ...$this->normalizeOutputConfiguration($payload),
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array{ifra_category_selection_mode: IfraCategorySelectionMode, ifra_amendment_id: int|null, product_type_ifra_category_id: int|null, ifra_product_category_id: int|null}
+     */
+    private function resolveIfraSelection(array $payload, ?ProductType $productType): array
+    {
+        $selectionMode = IfraCategorySelectionMode::tryFrom(
+            (string) ($payload['ifra_category_selection_mode'] ?? IfraCategorySelectionMode::Automatic->value),
+        ) ?? IfraCategorySelectionMode::Automatic;
+        $submittedCategoryId = isset($payload['ifra_product_category_id'])
+            && is_numeric($payload['ifra_product_category_id'])
+                ? (int) $payload['ifra_product_category_id']
+                : null;
+        $submittedCategory = $submittedCategoryId === null
+            ? null
+            : IfraProductCategory::query()
+                ->whereKey($submittedCategoryId)
+                ->where('is_active', true)
+                ->first();
+        $guidance = $this->productTypeIfraOptionsBuilder->build($productType, $submittedCategory);
+
+        if ($selectionMode === IfraCategorySelectionMode::Automatic) {
+            return [
+                'ifra_category_selection_mode' => $selectionMode,
+                'ifra_amendment_id' => $guidance['amendment']['id'] ?? null,
+                'product_type_ifra_category_id' => $guidance['default_mapping_id'],
+                'ifra_product_category_id' => $guidance['default_category_id'],
+            ];
+        }
+
+        $selectedMapping = $submittedCategory instanceof IfraProductCategory
+            ? collect($guidance['options'])->firstWhere('id', $submittedCategory->id)
+            : null;
+
+        return [
+            'ifra_category_selection_mode' => $selectionMode,
+            'ifra_amendment_id' => $guidance['amendment']['id'] ?? null,
+            'product_type_ifra_category_id' => is_array($selectedMapping)
+                ? $selectedMapping['mapping_id']
+                : null,
+            'ifra_product_category_id' => $submittedCategory?->id,
         ];
     }
 

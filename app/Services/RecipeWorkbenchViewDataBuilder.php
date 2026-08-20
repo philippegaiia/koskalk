@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\MassDisplaySystem;
 use App\Enums\OwnerType;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
@@ -20,7 +21,7 @@ class RecipeWorkbenchViewDataBuilder
     public function __construct(
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly RecipeWorkbenchIngredientCatalogBuilder $recipeWorkbenchIngredientCatalogBuilder,
-        private readonly RecipeWorkbenchIfraOptionsBuilder $recipeWorkbenchIfraOptionsBuilder,
+        private readonly ProductTypeIfraOptionsBuilder $productTypeIfraOptionsBuilder,
         private readonly RecipeFormulaItemLimitService $recipeFormulaItemLimitService,
         private readonly CurrencyCatalog $currencyCatalog,
         private readonly Translator $translator,
@@ -35,6 +36,11 @@ class RecipeWorkbenchViewDataBuilder
         $savedDraft = $this->recipeWorkbenchService->currentVersionPayloadUsingCatalog($recipe, $ingredients);
         $defaultCurrency = $user?->defaultCurrency() ?? 'EUR';
         $productType ??= $recipe?->productType;
+        $selectedIfraCategoryId = $savedDraft['selectedIfraProductCategoryId'] ?? null;
+        $selectedIfraCategory = is_numeric($selectedIfraCategoryId)
+            ? IfraProductCategory::query()->find((int) $selectedIfraCategoryId)
+            : null;
+        $ifraOptions = $this->productTypeIfraOptionsBuilder->build($productType, $selectedIfraCategory);
         $defaultMassGrams = $productFamily->calculation_basis === 'total_formula' ? '100' : '1000';
         $massDisplaySystem = $user?->company()?->mass_display_system ?? MassDisplaySystem::Metric;
 
@@ -52,12 +58,10 @@ class RecipeWorkbenchViewDataBuilder
             'phases' => $this->recipeWorkbenchService->phaseBlueprints($productFamily),
             'ingredients' => $ingredients,
             'manufacturedIngredients' => $this->manufacturedIngredients($user),
-            'ifraProductCategories' => $this->recipeWorkbenchIfraOptionsBuilder->categories($productFamily),
+            'ifraGuidance' => $ifraOptions,
+            'ifraProductCategories' => $ifraOptions['all_categories'],
             'regulatoryRegimes' => $this->regulatoryRegimes(),
-            'defaultIfraProductCategoryId' => $productFamily->slug === 'cosmetic'
-                ? null
-                : ($productType?->default_ifra_product_category_id
-                    ?? $this->recipeWorkbenchIfraOptionsBuilder->defaultCategoryId($productFamily)),
+            'defaultIfraProductCategoryId' => $ifraOptions['default_category_id'],
             'costing' => null,
             'costingLoaded' => false,
             'packagingCatalog' => $this->recipeWorkbenchService->packagingCatalogPayload($user),

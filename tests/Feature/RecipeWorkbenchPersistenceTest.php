@@ -8,6 +8,7 @@ use App\Enums\ProductionOutputType;
 use App\Enums\Visibility;
 use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\FattyAcid;
+use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
@@ -15,8 +16,8 @@ use App\Models\IngredientSapProfile;
 use App\Models\MediaAsset;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
-use App\Models\ProductFamilyIfraCategory;
 use App\Models\ProductType;
+use App\Models\ProductTypeIfraCategory;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -4031,7 +4032,7 @@ it('exposes workbench phase options for saponifiable oils, additive-only oils, a
         ->and($ingredients[$fragranceIngredient->id]['needs_compliance'])->toBeTrue();
 });
 
-it('orders ifra categories naturally and exposes cat 9 as the default soap context', function () {
+it('orders IFRA categories naturally and exposes the Product Type suggestion', function () {
     $soapFamily = ProductFamily::factory()->create([
         'slug' => 'soap',
         'name' => 'Soap',
@@ -4052,34 +4053,27 @@ it('orders ifra categories naturally and exposes cat 9 as the default soap conte
         'short_name' => 'Deodorants / axillae',
         'is_active' => true,
     ]);
-
-    ProductFamilyIfraCategory::factory()->create([
-        'product_family_id' => $soapFamily->id,
-        'ifra_product_category_id' => $category10A->id,
-        'is_default' => false,
-        'sort_order' => 3,
+    $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
+    $amendment = IfraAmendment::factory()->create([
+        'code' => '51',
+        'notification_date' => '2023-06-30',
     ]);
-    ProductFamilyIfraCategory::factory()->create([
-        'product_family_id' => $soapFamily->id,
+    ProductTypeIfraCategory::factory()->create([
+        'product_type_id' => $productType->id,
+        'ifra_amendment_id' => $amendment->id,
         'ifra_product_category_id' => $category9->id,
         'is_default' => true,
-        'sort_order' => 2,
-    ]);
-    ProductFamilyIfraCategory::factory()->create([
-        'product_family_id' => $soapFamily->id,
-        'ifra_product_category_id' => $category2->id,
-        'is_default' => false,
-        'sort_order' => 1,
     ]);
 
     $component = app(RecipeWorkbench::class);
-    $component->mount();
+    $component->mount(productFamilySlug: $soapFamily->slug, productTypeSlug: $productType->slug);
 
     $workbench = $component->render(app(RecipeWorkbenchService::class))->getData()['workbench'];
 
     expect(collect($workbench['ifraProductCategories'])->pluck('code')->all())
         ->toBe(['2', '9', '10A'])
-        ->and($workbench['defaultIfraProductCategoryId'])->toBe($category9->id);
+        ->and($workbench['defaultIfraProductCategoryId'])->toBe($category9->id)
+        ->and($workbench['ifraGuidance']['amendment']['code'])->toBe('51');
 });
 
 it('keeps formula table controls stepped and visually aligned', function () {

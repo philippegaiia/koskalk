@@ -10,7 +10,6 @@ use App\Models\RegulatoryRegimeSubstanceRule;
 use App\Models\Substance;
 use App\Models\User;
 use App\Models\Workspace;
-use App\Services\RecipeWorkbenchIfraOptionsBuilder;
 use App\Services\RecipeWorkbenchIngredientCatalogBuilder;
 use App\Services\RecipeWorkbenchService;
 use App\Services\RecipeWorkbenchViewDataBuilder;
@@ -43,10 +42,6 @@ it('uses the workspace mass system to choose the initial formula unit', function
         $mock->shouldReceive('phaseBlueprints')->andReturn([]);
     });
     mock(RecipeWorkbenchIngredientCatalogBuilder::class, fn ($mock) => $mock->shouldReceive('build')->andReturn([]));
-    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
-        $mock->shouldReceive('categories')->andReturn([]);
-        $mock->shouldReceive('defaultCategoryId')->andReturn(null);
-    });
 
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, $user);
 
@@ -92,11 +87,6 @@ it('includes active allergen and substance rule counts for each regime', functio
 
     mock(RecipeWorkbenchIngredientCatalogBuilder::class, function ($mock): void {
         $mock->shouldReceive('build')->once()->andReturn([]);
-    });
-
-    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
-        $mock->shouldReceive('categories')->once()->andReturn([]);
-        $mock->shouldReceive('defaultCategoryId')->once()->andReturn(null);
     });
 
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, null);
@@ -166,15 +156,6 @@ it('builds the initial workbench payload without eager preview or costing data',
             ->andReturn([]);
     });
 
-    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
-        $mock->shouldReceive('categories')
-            ->once()
-            ->andReturn([]);
-        $mock->shouldReceive('defaultCategoryId')
-            ->once()
-            ->andReturn(null);
-    });
-
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, null);
 
     expect($payload['savedDraft'])->toBe($currentVersionPayload)
@@ -223,15 +204,6 @@ it('includes the user packaging catalog in the initial workbench payload', funct
             ->andReturn([]);
     });
 
-    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
-        $mock->shouldReceive('categories')
-            ->once()
-            ->andReturn([]);
-        $mock->shouldReceive('defaultCategoryId')
-            ->once()
-            ->andReturn(null);
-    });
-
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, $user);
 
     expect($payload['packagingCatalog'])->toHaveCount(1)
@@ -257,10 +229,6 @@ it('uses localized maintained currency choices and preserves the stored currency
         $mock->shouldReceive('phaseBlueprints')->andReturn([]);
     });
     mock(RecipeWorkbenchIngredientCatalogBuilder::class, fn ($mock) => $mock->shouldReceive('build')->andReturn([]));
-    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
-        $mock->shouldReceive('categories')->andReturn([]);
-        $mock->shouldReceive('defaultCategoryId')->andReturn(null);
-    });
 
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, $user);
 
@@ -287,10 +255,6 @@ it('overlays partial localized workbench translations on the English payload', f
         $mock->shouldReceive('phaseBlueprints')->andReturn([]);
     });
     mock(RecipeWorkbenchIngredientCatalogBuilder::class, fn ($mock) => $mock->shouldReceive('build')->andReturn([]));
-    mock(RecipeWorkbenchIfraOptionsBuilder::class, function ($mock): void {
-        $mock->shouldReceive('categories')->andReturn([]);
-        $mock->shouldReceive('defaultCategoryId')->andReturn(null);
-    });
 
     $payload = app(RecipeWorkbenchViewDataBuilder::class)->build($productFamily, null, null);
 

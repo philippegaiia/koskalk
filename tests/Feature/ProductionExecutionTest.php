@@ -29,6 +29,7 @@ use App\Enums\StockReservationStatus;
 use App\Enums\StockUnitKind;
 use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
+use App\Livewire\Dashboard\MediaLibraryIndex;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
 use App\Livewire\ProductionBench\Production\ProductionIndex;
 use App\Models\FattyAcid;
@@ -36,6 +37,7 @@ use App\Models\Ingredient;
 use App\Models\IngredientFattyAcid;
 use App\Models\IngredientSapProfile;
 use App\Models\InterfaceTranslation;
+use App\Models\MediaAsset;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
@@ -1671,6 +1673,42 @@ it('attaches a private journal document to the production', function (): void {
     expect($document->note)->toBe('Mould filled at 09:15')
         ->and($document->mediaAsset->workspace_id)->toBe($fixture['workspace']->id)
         ->and($document->mediaAsset->original_filename)->toBe('batch-photo.jpg');
+});
+
+it('detaches a journal document and frees the asset for library removal', function (): void {
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    config()->set('media.asset_disk', 'local');
+    $fixture = productionExecutionFixture();
+    $production = productionExecutionRun($fixture, 'journal-doc-2');
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->set('journalDocumentUpload', UploadedFile::fake()->image('batch-photo.jpg'))
+        ->call('attachJournalDocument')
+        ->assertHasNoErrors();
+
+    $document = $production->documents()->where('type', ProductionDocumentType::Journal)->sole();
+    $assetId = $document->media_asset_id;
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(ProductionDetail::class, ['productionId' => (string) $production->id])
+        ->call('detachJournalDocument', $document->id)
+        ->assertDispatched('app-notification', function (string $event, array $payload): bool {
+            return $event === 'app-notification'
+                && str_starts_with($payload['message'], __('production_bench.production.journal_document_detached'))
+                && $payload['type'] === 'success';
+        });
+
+    expect($production->documents()->count())->toBe(0)
+        ->and(MediaAsset::query()->find($assetId))->not->toBeNull();
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(MediaLibraryIndex::class)
+        ->call('remove', $assetId)
+        ->assertSet('statusType', 'success');
+
+    expect(MediaAsset::query()->find($assetId))->toBeNull();
 });
 
 it('sets family and task based ready dates on output lots', function (): void {

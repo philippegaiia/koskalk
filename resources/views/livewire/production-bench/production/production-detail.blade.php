@@ -331,6 +331,35 @@
                         <p class="p-8 text-center text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.journal_empty') }}</p>
                     @endforelse
                 </div>
+                @if ($production->documents->isNotEmpty())
+                    <ul class="divide-y divide-[var(--color-line)] border-t border-[var(--color-line)]">
+                        @foreach ($production->documents as $document)
+                            <li class="flex flex-col gap-2 px-5 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                                <div class="min-w-0">
+                                    <a href="{{ route('media.download', $document->mediaAsset) }}" class="break-all font-medium text-[var(--color-accent-strong)] hover:underline">{{ $document->mediaAsset->original_filename }}</a>
+                                    @if ($document->note)<p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">{{ $document->note }}</p>@endif
+                                </div>
+                                @if ($canMutate)
+                                    <button type="button" wire:click="detachJournalDocument({{ $document->id }})" wire:confirm="{{ __('production_bench.production.journal_document_detach_confirm') }}" wire:loading.attr="disabled" wire:target="detachJournalDocument" class="shrink-0 self-start text-xs font-medium text-[var(--color-danger-strong)] hover:underline">{{ __('production_bench.production.journal_document_detach') }}</button>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                @endif
+                @if ($canMutate && ! in_array($production->status->value, ['completed', 'aborted', 'cancelled'], true))
+                    <form wire:submit="attachJournalDocument" class="space-y-3 border-t border-[var(--color-line)] p-5 sm:p-6">
+                        <label class="block text-sm">
+                            <span class="font-medium">{{ __('production_bench.production.journal_document') }}</span>
+                            <input type="file" wire:model="journalDocumentUpload" accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" class="sk-input mt-1 w-full" />
+                            @error('journalDocumentUpload')<span class="mt-1 block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
+                        </label>
+                        <label class="block text-sm">
+                            <span class="font-medium">{{ __('production_bench.production.journal_document_note') }}</span>
+                            <textarea wire:model="journalDocumentNote" rows="2" maxlength="1000" class="sk-input mt-1 w-full"></textarea>
+                        </label>
+                        <div class="flex justify-end"><button type="submit" wire:loading.attr="disabled" wire:target="attachJournalDocument" class="sk-btn sk-btn-primary">{{ __('production_bench.production.journal_document_attach') }}</button></div>
+                    </form>
+                @endif
                 @if (! $mutationLocked && ! in_array($production->status->value, ['completed', 'aborted', 'cancelled'], true))
                     <div class="space-y-3 border-t border-[var(--color-line)] p-5 sm:p-6">
                         <textarea wire:model="journalBody" rows="3" maxlength="20000" @disabled($mutationLocked) class="sk-input mt-1 w-full" placeholder="{{ __('production_bench.production.journal_placeholder') }}"></textarea>

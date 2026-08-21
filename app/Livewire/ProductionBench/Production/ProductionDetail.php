@@ -3,6 +3,7 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Inventory\AttachProductionDocument;
+use App\Actions\Inventory\DetachProductionDocument;
 use App\Actions\Production\AbortProduction;
 use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\AssignProductionTask;
@@ -714,6 +715,20 @@ class ProductionDetail extends Component
 
         $this->reset('journalDocumentUpload', 'journalDocumentNote');
         $this->showAppNotification(__('production_bench.production.journal_document_attached'));
+        $this->dispatch('production-journal-updated');
+    }
+
+    public function detachJournalDocument(int $documentId): void
+    {
+        $document = $this->production()->documents()
+            ->whereKey($documentId)
+            ->first();
+
+        abort_unless($document !== null, 404);
+
+        app(DetachProductionDocument::class)->handle($this->user(), $document);
+
+        $this->showAppNotification(__('production_bench.production.journal_document_detached'));
         $this->dispatch('production-journal-updated');
     }
 

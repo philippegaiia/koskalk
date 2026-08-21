@@ -27,6 +27,8 @@ MEDIA_DISK=r2_public
 MEDIA_VISIBILITY=public
 RECIPE_MEDIA_DISK=r2_private
 USER_MEDIA_DISK=r2_private
+MEDIA_ASSET_DISK=r2_private
+MEDIA_ASSET_PENDING_DISK=local
 
 R2_REGION=auto
 R2_ENDPOINT=https://<cloudflare-account-id>.r2.cloudflarestorage.com
@@ -93,6 +95,18 @@ Livewire temporary uploads use the default `local` disk and the `livewire-tmp/` 
 5. The model stores only the resulting object path.
 
 Do not set Livewire's temporary upload disk to `r2_private` without redesigning the browser preview and CORS flow. Direct private-R2 previews previously produced `403` and CORS failures. Local temporary uploads are cleaned up by Livewire automatically.
+
+### Media Asset pipeline
+
+The Media Library, receipt documents, lot quality documents, and production journal documents use the `media_assets` pipeline instead of path columns:
+
+1. The Livewire upload parks the untouched file on the pending disk (`MEDIA_ASSET_PENDING_DISK`, local) under `media-assets/pending/{workspace-public-id}/{uuid}.{ext}` and creates a `processing` row guarded by a `processing_token`.
+2. `NormalizeMediaAssetJob` runs on the dedicated `media` queue (Forge worker: `--queue=media --tries=1 --timeout=300`).
+3. Processing re-encodes images to an 800 px WebP master plus catalog/thumbnail/icon focal crops, validates PDFs (50-page limit) with a rendered preview, then stores everything through spatie/laravel-medialibrary on `MEDIA_ASSET_DISK` (the private R2 bucket in production).
+4. Success deletes the pending file and marks the asset `ready`. Failures keep the pending file so uploads can be retried; `media:fail-stale-assets` (every 5 minutes) releases workspace upload quota for jobs stuck in `processing` beyond 15 minutes.
+5. References are recorded in `media_asset_usages` (recipes, ingredients, packaging items) and `production_documents` (receipts, stock lots, production runs). Media Library deletion is blocked while production documents reference an asset — detach from the receipt or production run first, then delete.
+
+Spatie stores each asset's master and conversions under its own `media/{id}/…` prefix on the media asset disk. These objects are only served through authenticated routes (`/dashboard/media/...`) with workspace authorization; they are never linked directly from the browser to R2.
 
 ### Object paths
 
@@ -226,11 +240,11 @@ php artisan tinker --execute 'dump([
     "platform" => config("media.disk"),
     "recipes" => config("media.recipe_disk"),
     "user_media" => config("media.user_disk"),
+    "asset_disk" => config("media.asset_disk"),
+    "asset_pending_disk" => config("media.asset_pending_disk"),
     "backup" => config("database_backup.disk"),
     "public_url" => config("filesystems.disks.r2_public.url"),
 ]);'
-
-curl -I https://media.soapkraft.com/healthchecks/r2-public.txt
 ```
 
-Expected disks are `r2_public`, `r2_private`, `r2_private`, and `r2_backups`. Never dump complete filesystem configuration in production because it contains credentials.
+Expected disks are `r2_public`, `r2_private`, `r2_private`, `r2_private`, `local`, and `r2_backups`. Never dump complete filesystem configuration in production because it contains credentials.

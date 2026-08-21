@@ -337,8 +337,8 @@ it('scales saved lye liquid quantities in non gram batches without presenting th
         ->and($rows['lye_water']['unit'])->toBe('kg')
         ->and($rows['lye_water']['percentage'])->toBe(70.0)
         ->and($rows['lye_water']['percentage_basis'])->toBe('lye_liquid')
-        ->and($rows['lye_water']['percentage_label'])->toBe('% lye liquid')
-        ->and($rows['lye_water']['phase_name'])->toBe('Lye liquid');
+        ->and($rows['lye_water']['percentage_label'])->toBe('% dilution liquid')
+        ->and($rows['lye_water']['phase_name'])->toBe('Dilution liquids');
 });
 
 it('defaults a production preview from canonical formula mass', function (): void {

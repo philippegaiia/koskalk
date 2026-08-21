@@ -114,9 +114,27 @@ English remains version-controlled in `lang/en/<group>.php`. Add each help group
 
 Non-English help uses the existing DB-backed `language_lines` workflow and the Filament Interface Translations resource. Do not create parallel `lang/<locale>/` help files.
 
+`translations:sync` remains additive. It creates missing help keys without translating them, clearing existing locale values, or treating an English wording change as a new key. A minor English edit that preserves meaning keeps the same key and requires review of the existing translations. A change to the meaning, instruction, warning, or consequence uses a new key or deliberately clears every affected locale value before retranslation.
+
+Draft translations for every configured catalogue locale only after the English topic is approved. Save drafts only into blank locale values, review them in the rendered panel, export the reviewed catalogue, and commit it with the English source. The translation catalogue import follows the existing deployment mode: authoritative during the current pre-launch phase and preserve-existing after production edits become authoritative.
+
 The current application locale resolves the panel content. Missing values use the existing English fallback. An untranslated topic never produces an empty or broken panel.
 
 The topic's WordPress URL is locale-specific. It may be translated alongside the topic so each locale can target its published article permalink. The guide link remains absent until that URL exists.
+
+Ordinary help text continues to use the catalogue's complete-locale rule. `article_url` is the only partial-locale exception: its catalogue row may contain only the locales whose WordPress articles are published. Every URL that is present must pass the same Soapkraft HTTPS validation. An empty or missing locale value does not fall back to English.
+
+### Translation style
+
+- Translate the intended meaning and action rather than the English sentence structure.
+- Maintain a reviewed glossary for soapmaking, cosmetic formulation, compliance, inventory, purchasing, and production terminology.
+- Keep the same domain term across interface copy, contextual help, and WordPress documentation in each locale.
+- Preserve placeholders, quantities, negations, warning severity, and regulatory meaning.
+- Keep INCI names, CAS and EC identifiers, SAP values, formulas, stable topic keys, and controlled nomenclature unchanged.
+- Do not invent scientific, safety, production, or regulatory claims.
+- Review every locale in the actual panel and task state rather than as an isolated translation list.
+
+The Humanizer skill may be used as a final editorial pass on approved English help and English WordPress drafts. It may remove robotic structure, repetition, or promotional language, but it must preserve controlled vocabulary, scientific meaning, safety warnings, and production consequences. Do not apply the English-focused skill mechanically to non-English translations.
 
 ## WordPress Linking
 
@@ -134,7 +152,7 @@ lye concentration
 
 Several help topics may link to different anchors in the same article. The link opens in a new tab so unsaved application work remains in place. Its label and external-link treatment must make that behavior clear.
 
-If the localized article is unpublished, omit the guide link. The concise app topic still renders.
+Resolve a guide URL only for the active locale, without Laravel's English fallback. If the localized article is unpublished, omit the guide link rather than sending the user to the English article. The concise app topic may still fall back to English and remains available.
 
 ## Delivery Architecture
 

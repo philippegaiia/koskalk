@@ -49,7 +49,7 @@
 	</button>
 	</div>
 	<div id="formula-settings-panel" x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
-		<div :class="isFormulaSettingsOpen ? 'overflow-visible' : 'overflow-hidden'">
+		<div :class="formulaSettingsOverflow ? 'overflow-visible' : 'overflow-hidden'">
 			<div class="mt-4">
 @if ($isCosmeticWorkbench)
 	 <div class="space-y-4">

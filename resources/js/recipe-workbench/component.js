@@ -205,6 +205,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         isComplianceSettingsOpen: false,
         isFattyAcidDetailsOpen: false,
         isFormulaSettingsOpen: initialDraft === null,
+        formulaSettingsOverflow: initialDraft === null,
         isIfraCategoryModalOpen: false,
         showAllIfraCategories: false,
         isLyeLiquidCompositionOpen: false,
@@ -360,6 +361,23 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
 
         toggleFormulaSettings() {
             this.isFormulaSettingsOpen = !this.isFormulaSettingsOpen;
+
+            if (this.formulaSettingsOverflowTimer) {
+                clearTimeout(this.formulaSettingsOverflowTimer);
+            }
+
+            if (! this.isFormulaSettingsOpen) {
+                this.formulaSettingsOverflow = false;
+
+                return;
+            }
+
+            this.formulaSettingsOverflow = false;
+            this.formulaSettingsOverflowTimer = setTimeout(() => {
+                if (this.isFormulaSettingsOpen) {
+                    this.formulaSettingsOverflow = true;
+                }
+            }, 320);
         },
 
         openIfraCategoryModal() {

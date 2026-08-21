@@ -25,6 +25,21 @@ Do not run the full `DatabaseSeeder` for this release, and do not use `translati
 
 When production editorial translation changes become authoritative, replace the final command with the preserve-existing mode documented in [localization.md](./localization.md). Do not activate a locale until its required interface and platform content are complete.
 
+## Standing Forge deploy script
+
+Since the 2026-08-21 release (IFRA amendments and product taxonomy rollout), the Forge deploy script keeps only the locale seeder and translation commands active. The reference-data seeders below shipped that release's taxonomy data once; IFRA categories, product families/areas/categories/types, and their mappings are now settled production data and must not re-run on every deploy — each run overwrites any admin-panel edits to those tables. They stay commented in the Forge script for reuse before launch: uncomment them only for a deploy that ships taxonomy or IFRA changes, keep the exact order below (dependencies), then re-comment afterwards.
+
+```shell
+# Reference-data seeders (one-time payload of the 2026-08-21 release; settled since)
+$FORGE_PHP artisan db:seed --class='Database\Seeders\ProductFamilySeeder' --force --no-interaction
+$FORGE_PHP artisan db:seed --class='Database\Seeders\IfraProductCategorySeeder' --force --no-interaction
+$FORGE_PHP artisan db:seed --class='Database\Seeders\IfraAmendmentSeeder' --force --no-interaction
+$FORGE_PHP artisan db:seed --class='Database\Seeders\ProductTaxonomySeeder' --force --no-interaction
+$FORGE_PHP artisan db:seed --class='Database\Seeders\ProductTypeIfraCategorySeeder' --force --no-interaction
+```
+
+`ProductTaxonomySeeder` requires both product families to exist first, and `ProductTypeIfraCategorySeeder` requires the IFRA categories, amendments, and product types — hence the order above. All five are idempotent (`updateOrCreate`/`upsert`), so a one-off re-run is safe, but it is a deliberate act, never part of routine deploys.
+
 ## Release checks
 
 - Confirm the database backup completed and is recoverable according to the backup runbook.

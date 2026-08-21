@@ -7,7 +7,6 @@ use App\Enums\MediaAssetType;
 use App\Enums\WorkspaceMemberRole;
 use App\Jobs\NormalizeMediaAssetJob;
 use App\Models\MediaAsset;
-use App\Models\ProductionDocument;
 use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -155,7 +154,7 @@ class MediaAssetUploadService
 
             if (
                 $lockedAsset->usages()->exists()
-                || ProductionDocument::query()->where('media_asset_id', $lockedAsset->id)->exists()
+                || $lockedAsset->isReferencedExternally()
             ) {
                 throw ValidationException::withMessages([
                     'asset' => 'A referenced media asset cannot be rolled back.',

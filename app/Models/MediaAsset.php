@@ -61,6 +61,16 @@ class MediaAsset extends Model implements HasMedia
         return $this->hasMany(MediaAssetUsage::class);
     }
 
+    public function productionDocuments(): HasMany
+    {
+        return $this->hasMany(ProductionDocument::class);
+    }
+
+    public function isReferencedExternally(): bool
+    {
+        return ProductionDocument::query()->where('media_asset_id', $this->id)->exists();
+    }
+
     public function labels(): BelongsToMany
     {
         return $this->belongsToMany(MediaLabel::class, 'media_asset_label')->withTimestamps();

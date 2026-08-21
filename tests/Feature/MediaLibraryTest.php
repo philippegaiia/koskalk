@@ -12,6 +12,7 @@ use App\Models\MediaAssetUsage;
 use App\Models\MediaLabel;
 use App\Models\PackagingItem;
 use App\Models\Plan;
+use App\Models\ProductionDocument;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
@@ -259,6 +260,60 @@ it('shows rename validation errors beside the asset display name input', functio
         ->assertSee('Enter a display name.');
 
     expect($asset->refresh()->display_name)->toBe('Current library name');
+});
+
+it('blocks removing an asset referenced by production documents', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+    ]);
+    ProductionDocument::factory()->create([
+        'workspace_id' => $workspace->id,
+        'media_asset_id' => $asset->id,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->call('remove', $asset->id)
+        ->assertSet('statusType', 'error')
+        ->assertSet(
+            'statusMessage',
+            __('media_library.validation.asset_in_use_by_documents'),
+        );
+
+    expect(MediaAsset::query()->find($asset->id))->not->toBeNull();
+});
+
+it('rejects deleting a document-referenced asset through the picker endpoint', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+    ]);
+    ProductionDocument::factory()->create([
+        'workspace_id' => $workspace->id,
+        'media_asset_id' => $asset->id,
+    ]);
+
+    $this->actingAs($user)
+        ->delete("/dashboard/media/{$asset->public_id}", headers: ['Accept' => 'application/json'])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('media_asset');
+
+    expect(MediaAsset::query()->find($asset->id))->not->toBeNull();
+});
+
+it('removes assets that no production document references', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->call('remove', $asset->id)
+        ->assertSet('statusType', 'success');
+
+    expect(MediaAsset::query()->find($asset->id))->toBeNull();
 });
 
 it('hides rename controls and forbids rename actions for workspace viewers', function () {

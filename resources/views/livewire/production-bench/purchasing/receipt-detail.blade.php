@@ -76,7 +76,14 @@
                             <a href="{{ route('media.download', $document->mediaAsset) }}" class="break-all font-medium text-[var(--color-accent-strong)] hover:underline">{{ $document->mediaAsset->original_filename }}</a>
                             @if($document->note)<p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $document->note }}</p>@endif
                         </div>
-                        <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.document_types.'.$document->type->value) }} · {{ __('production_bench.receipt.document_receipt_target') }}</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.document_types.'.$document->type->value) }} · {{ __('production_bench.receipt.document_receipt_target') }}</span>
+                            @if ($canAttachDocuments)
+                                <button type="button" wire:click="detachDocument({{ $document->id }})" wire:confirm="{{ __('production_bench.receipt.document_detach_confirm') }}" wire:loading.attr="disabled" wire:target="detachDocument" class="text-xs font-medium text-[var(--color-danger-strong)] hover:underline">
+                                    {{ __('production_bench.receipt.document_detach') }}
+                                </button>
+                            @endif
+                        </div>
                     </li>
                 @endforeach
                 @foreach($receipt->lines as $line)
@@ -86,7 +93,14 @@
                                 <a href="{{ route('media.download', $document->mediaAsset) }}" class="break-all font-medium text-[var(--color-accent-strong)] hover:underline">{{ $document->mediaAsset->original_filename }}</a>
                                 @if($document->note)<p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $document->note }}</p>@endif
                             </div>
-                            <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.document_types.'.$document->type->value) }} · {{ $line->stockLot->internal_lot_code }} · {{ $line->stockLot->subjectName() }}</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.receipt.document_types.'.$document->type->value) }} · {{ $line->stockLot->internal_lot_code }} · {{ $line->stockLot->subjectName() }}</span>
+                                @if ($canAttachDocuments)
+                                    <button type="button" wire:click="detachDocument({{ $document->id }})" wire:confirm="{{ __('production_bench.receipt.document_detach_confirm') }}" wire:loading.attr="disabled" wire:target="detachDocument" class="text-xs font-medium text-[var(--color-danger-strong)] hover:underline">
+                                        {{ __('production_bench.receipt.document_detach') }}
+                                    </button>
+                                @endif
+                            </div>
                         </li>
                     @endforeach
                 @endforeach

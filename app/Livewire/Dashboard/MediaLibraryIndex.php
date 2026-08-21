@@ -6,13 +6,17 @@ use App\Enums\MediaAssetStatus;
 use App\Enums\MediaAssetType;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
+use App\Models\GoodsReceipt;
 use App\Models\Ingredient;
 use App\Models\MediaAsset;
 use App\Models\MediaAssetUsage;
 use App\Models\MediaLabel;
 use App\Models\PackagingItem;
+use App\Models\ProductionDocument;
+use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -354,7 +358,14 @@ class MediaLibraryIndex extends Component
         }
 
         $filename = $asset->original_filename;
-        $library->remove($user, $asset);
+
+        try {
+            $library->remove($user, $asset);
+        } catch (ValidationException $exception) {
+            $this->showAppNotification($exception->getMessage(), 'error');
+
+            return;
+        }
 
         if ($this->selectedAssetId === $assetId) {
             $this->closeAssetPanel();
@@ -430,7 +441,7 @@ class MediaLibraryIndex extends Component
             'hasProcessingAssets' => $hasProcessingAssets,
             'selectedAsset' => $selectedAsset,
             'selectedLogicalUsageCount' => $selectedAsset instanceof MediaAsset
-                ? $this->logicalUsages($selectedAsset->usages)->count()
+                ? $this->logicalUsages($selectedAsset->usages)->count() + $selectedAsset->productionDocuments->count()
                 : 0,
             'selectedDeletionImpact' => $selectedDeletionImpact,
             'selectedDeletionImpactLabel' => $this->deletionImpactLabel($selectedDeletionImpact),
@@ -447,6 +458,7 @@ class MediaLibraryIndex extends Component
                 'labels',
                 'media',
                 'usages:id,media_asset_id,usable_type,usable_id,role',
+                'productionDocuments:id,media_asset_id,documentable_type,documentable_id,type',
             ])
             ->when(
                 filled($this->search),
@@ -464,8 +476,12 @@ class MediaLibraryIndex extends Component
                 in_array($this->statusFilter, array_column(MediaAssetStatus::cases(), 'value'), true),
                 fn ($query) => $query->where('status', $this->statusFilter),
             )
-            ->when($this->usageFilter === 'used', fn ($query) => $query->has('usages'))
-            ->when($this->usageFilter === 'unused', fn ($query) => $query->doesntHave('usages'))
+            ->when($this->usageFilter === 'used', fn ($query) => $query->where(
+                fn ($query) => $query->has('usages')->orHas('productionDocuments'),
+            ))
+            ->when($this->usageFilter === 'unused', fn ($query) => $query->where(
+                fn ($query) => $query->doesntHave('usages')->doesntHave('productionDocuments'),
+            ))
             ->when(
                 in_array($this->typeFilter, array_column(MediaAssetType::cases(), 'value'), true),
                 fn ($query) => $query->where('type', $this->typeFilter),
@@ -500,6 +516,11 @@ class MediaLibraryIndex extends Component
                 'usages.usable' => function (MorphTo $morphTo): void {
                     $morphTo->morphWith([
                         RecipeVersion::class => ['recipe'],
+                    ]);
+                },
+                'productionDocuments.documentable' => function (MorphTo $morphTo): void {
+                    $morphTo->morphWith([
+                        GoodsReceipt::class => ['supplier'],
                     ]);
                 },
             ])
@@ -548,7 +569,7 @@ class MediaLibraryIndex extends Component
 
         $search = Str::lower(trim($this->usageSearch));
 
-        return $this->logicalUsages($asset->usages)
+        $groups = $this->logicalUsages($asset->usages)
             ->filter(function (MediaAssetUsage $usage) use ($search): bool {
                 if ($search === '') {
                     return true;
@@ -565,6 +586,57 @@ class MediaLibraryIndex extends Component
                 $usage->usable instanceof PackagingItem => 'packaging',
                 default => 'other',
             });
+
+        $documents = $asset->productionDocuments
+            ->map(fn (ProductionDocument $document): array => $this->productionDocumentReference($document))
+            ->filter(function (array $reference) use ($search): bool {
+                if ($search === '') {
+                    return true;
+                }
+
+                return Str::contains(
+                    Str::lower($reference['label'].' '.$reference['type_label']),
+                    $search,
+                );
+            })
+            ->values();
+
+        if ($documents->isNotEmpty()) {
+            $groups['documents'] = $documents;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * @return array{label: string, url: ?string, type_label: string}
+     */
+    private function productionDocumentReference(ProductionDocument $document): array
+    {
+        $target = $document->documentable;
+
+        $resolved = match (true) {
+            $target instanceof GoodsReceipt => [
+                'label' => trim(($target->supplier?->name ?? '').' · '.optional($target->received_at)->format('Y-m-d'), ' ·'),
+                'url' => route('production-bench.purchasing.receipts.show', $target),
+            ],
+            $target instanceof StockLot => [
+                'label' => trim($target->internal_lot_code.' · '.$target->subjectName()),
+                'url' => route('production-bench.inventory.stock').'#lot-'.$target->public_id,
+            ],
+            $target instanceof ProductionRun => [
+                'label' => '#'.$target->getKey(),
+                'url' => null,
+            ],
+            default => [
+                'label' => __('media_library.missing_target'),
+                'url' => null,
+            ],
+        };
+
+        $resolved['type_label'] = __('production_bench.receipt.document_types.'.$document->type->value);
+
+        return $resolved;
     }
 
     /**
@@ -643,6 +715,8 @@ class MediaLibraryIndex extends Component
                 ->unique()
                 ->count();
 
+            $count += $asset->productionDocuments->count();
+
             $asset->setAttribute('logical_usages_count', $count);
         });
     }
@@ -683,7 +757,11 @@ class MediaLibraryIndex extends Component
         $recipeCount = $targets->filter(
             fn (Recipe|Ingredient|PackagingItem $target): bool => $target instanceof Recipe,
         )->count();
-        $otherCount = $targets->count() - $recipeCount;
+        $otherCount = $targets->count() - $recipeCount
+            + $asset->productionDocuments
+                ->map(fn (ProductionDocument $document): string => $document->documentable_type.':'.$document->documentable_id)
+                ->unique()
+                ->count();
 
         return [
             'recipes' => $recipeCount,

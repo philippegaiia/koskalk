@@ -2,12 +2,15 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
+use App\Actions\Inventory\DetachProductionDocument;
 use App\Actions\Purchasing\AttachGoodsReceiptDocuments;
 use App\Actions\Purchasing\ReverseGoodsReceipt;
 use App\Enums\GoodsReceiptStatus;
 use App\Enums\MediaAssetType;
 use App\Enums\ProductionDocumentType;
 use App\Models\GoodsReceipt;
+use App\Models\ProductionDocument;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MediaAssetUploadService;
@@ -137,6 +140,34 @@ class ReceiptDetail extends Component
         $this->reset('documentUpload', 'documentLotIds', 'documentNote');
         $this->documentType = ProductionDocumentType::Invoice->value;
         session()->flash('documentStatus', __('production_bench.receipt.document_attached'));
+    }
+
+    public function detachDocument(DetachProductionDocument $action, int $documentId): void
+    {
+        $receipt = $this->receipt()->load(['lines.stockLot']);
+        $lotIds = $receipt->lines->map(fn ($line) => $line->stockLot?->id)->filter()->values();
+
+        $document = ProductionDocument::query()
+            ->where('workspace_id', $this->workspace()->id)
+            ->whereKey($documentId)
+            ->where(function ($query) use ($receipt, $lotIds) {
+                $query->where(function ($inner) use ($receipt) {
+                    $inner
+                        ->where('documentable_type', $receipt->getMorphClass())
+                        ->where('documentable_id', $receipt->id);
+                })->orWhere(function ($inner) use ($lotIds) {
+                    $inner
+                        ->where('documentable_type', (new StockLot)->getMorphClass())
+                        ->whereIn('documentable_id', $lotIds);
+                });
+            })
+            ->first();
+
+        abort_unless($document instanceof ProductionDocument, 404);
+
+        $action->handle($this->user(), $document);
+
+        session()->flash('documentStatus', __('production_bench.receipt.document_detached'));
     }
 
     public function render(ProductionBenchAccess $access): View

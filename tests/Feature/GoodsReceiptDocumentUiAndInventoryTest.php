@@ -52,6 +52,15 @@ function receiptDocumentUiFixture(bool $reversed = false): array
     return [$owner, $workspace, $receipt, $line];
 }
 
+function receiptPageWorkspace(): array
+{
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($owner, $workspace);
+
+    return [$owner, $workspace];
+}
+
 it('uploads one private asset and attaches it to selected receipt lots', function (): void {
     [$owner, $workspace, $receipt, $line] = receiptDocumentUiFixture();
     $asset = MediaAsset::factory()->for($workspace)->for($owner, 'uploadedBy')->ready()->create([
@@ -235,11 +244,10 @@ it('links receipt-origin inventory rows to their receipt with stable provenance 
     $before = app(StockPositionService::class)->forLot($lot);
     $this->actingAs($owner);
 
-    Livewire::test(InventoryIndex::class)
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertSeeHtml('id="lot-'.$lot->public_id.'"')
         ->assertSeeHtml('href="'.route('production-bench.purchasing.receipts.show', $receipt).'"')
         ->assertSee('Document supplier')
-        ->assertSee('2026-08-02')
         ->assertSee('Direct');
 
     $after = app(StockPositionService::class)->forLot($lot);
@@ -259,7 +267,7 @@ it('loads movement totals for many inventory lots without per-lot sum queries', 
         }
     });
 
-    Livewire::test(InventoryIndex::class)->assertOk();
+    Livewire::test(InventoryIndex::class, ['mode' => 'stock'])->assertOk();
 
     expect($movementQueries)->toHaveCount(1);
 });

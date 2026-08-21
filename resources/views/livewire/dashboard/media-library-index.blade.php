@@ -650,9 +650,16 @@
                                         </div>
                                         <ul class="mt-2 overflow-hidden rounded-lg border border-[var(--color-line)]">
                                             @foreach ($usages as $usage)
-                                                @php($usable = $usage->usable)
+                                                @php($usable = $usage->usable ?? null)
                                                 <li class="border-b border-[var(--color-line)] px-3 py-2.5 last:border-b-0">
-                                                    @if ($usable instanceof \App\Models\Recipe && $usable->workspace_id === $selectedAsset->workspace_id)
+                                                    @if (is_array($usage))
+                                                        @if ($usage['url'] !== null)
+                                                            <a href="{{ $usage['url'] }}" class="text-xs font-medium text-[var(--color-accent-strong)] underline underline-offset-2">{{ $usage['label'] }}</a>
+                                                        @else
+                                                            <span class="text-xs font-medium">{{ $usage['label'] }}</span>
+                                                        @endif
+                                                        <p class="mt-0.5 text-[11px] text-[var(--color-ink-soft)]">{{ $usage['type_label'] }}</p>
+                                                    @elseif ($usable instanceof \App\Models\Recipe && $usable->workspace_id === $selectedAsset->workspace_id)
                                                         <a href="{{ route('recipes.edit', $usable) }}" class="text-xs font-medium text-[var(--color-accent-strong)] underline underline-offset-2">{{ $usable->name }}</a>
                                                     @elseif ($usable instanceof \App\Models\Ingredient && $usable->workspace_id === $selectedAsset->workspace_id)
                                                         <a href="{{ route('ingredients.edit', $usable) }}" class="text-xs font-medium text-[var(--color-accent-strong)] underline underline-offset-2">{{ $usable->display_name }}</a>
@@ -661,7 +668,9 @@
                                                     @else
                                                         <span class="text-xs text-[var(--color-ink-soft)]">{{ __('media_library.missing_target') }}</span>
                                                     @endif
-                                                    <p class="mt-0.5 text-[11px] text-[var(--color-ink-soft)]">{{ __('media_library.roles.'.$usage->role->value) }}</p>
+                                                    @if (! is_array($usage))
+                                                        <p class="mt-0.5 text-[11px] text-[var(--color-ink-soft)]">{{ __('media_library.roles.'.$usage->role->value) }}</p>
+                                                    @endif
                                                 </li>
                                             @endforeach
                                         </ul>

@@ -52,6 +52,12 @@ class MediaAssetLibraryService
 
             Gate::forUser($user)->authorize('delete', $lockedAsset);
 
+            if ($lockedAsset->isReferencedExternally()) {
+                throw ValidationException::withMessages([
+                    'media_asset' => __('media_library.validation.asset_in_use_by_documents'),
+                ]);
+            }
+
             $this->referencePurger->purge($lockedAsset);
 
             if (filled($lockedAsset->pending_disk) && filled($lockedAsset->pending_path)) {

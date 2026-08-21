@@ -101,7 +101,7 @@ return [
         'search_usage' => 'Search these usages',
         'no_usages' => 'This image is not used yet.',
         'no_matching_usages' => 'No usages match this search.',
-        'groups' => ['recipes' => 'Recipes', 'ingredients' => 'Ingredients', 'packaging' => 'Packaging', 'other' => 'Other'],
+        'groups' => ['recipes' => 'Recipes', 'ingredients' => 'Ingredients', 'packaging' => 'Packaging', 'documents' => 'Production documents', 'other' => 'Other'],
         'delete' => 'Delete',
         'deleting' => 'Deleting…',
         'delete_confirm' => 'Delete “:name”? This cannot be undone.',
@@ -185,6 +185,7 @@ return [
         'labels_updated' => 'Labels updated.',
     ],
     'validation' => [
+        'asset_in_use_by_documents' => 'This file is attached to production or receipt documents and cannot be removed.',
         'display_name_required' => 'Enter a display name.',
         'display_name_max' => 'The display name must not be longer than 255 characters.',
         'focal_point' => 'Choose a focal point within the image.',

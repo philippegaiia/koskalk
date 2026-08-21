@@ -11,7 +11,7 @@ use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
-use Filament\Support\Assets\Js;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Contracts\View\View;
@@ -38,12 +38,10 @@ class AdminPanelProvider extends PanelProvider
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('images/app/brand/soapkraftlogo-beige.png'))
             ->defaultThemeMode(ThemeMode::Light)
-            ->assets([
-                Js::make(
-                    'ingredient-classification-prompt',
-                    Vite::asset('resources/js/filament/admin/classification-prompt.js'),
-                )->module(),
-            ])
+            ->renderHook(
+                PanelsRenderHook::SCRIPTS_AFTER,
+                fn (): string => '<script type="module" src="'.Vite::asset('resources/js/filament/admin/classification-prompt.js').'"></script>',
+            )
             ->login()
             ->colors([
                 'danger' => [

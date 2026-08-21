@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 
-const devServerHost = 'localhost';
+const devServerHost = 'koskalk.test';
 
 export default defineConfig({
     plugins: [

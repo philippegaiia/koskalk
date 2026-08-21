@@ -306,7 +306,7 @@ class MediaAssetProcessingService
     private function createMaster(string $sourcePath, MediaAsset $asset): string
     {
         try {
-            $maxEdge = (int) config('media.asset_uploads.master_max_edge', 680);
+            $maxEdge = (int) config('media.asset_uploads.master_max_edge', 800);
             $masterPath = tempnam(sys_get_temp_dir(), 'soapkraft-master-');
 
             if ($masterPath === false) {

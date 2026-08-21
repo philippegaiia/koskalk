@@ -10,7 +10,7 @@ use Filament\Forms\Components\RichEditor\FileAttachmentProviders\Contracts\FileA
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
-use RuntimeException;
+use Illuminate\Validation\ValidationException;
 
 class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
 {
@@ -129,19 +129,16 @@ class RecipeRichContentAttachmentProvider implements FileAttachmentProvider
 
     public function saveUploadedFileAttachment(UploadedFile $file): mixed
     {
-        $recipe = $this->recipe();
+        throw ValidationException::withMessages([
+            $this->attribute?->getName() ?? 'manufacturing_instructions' => $this->rejectionMessage(),
+        ]);
+    }
 
-        if (! $recipe instanceof Recipe) {
-            throw new RuntimeException('Save the formula before adding recipe attachments.');
-        }
-
-        return MediaStorage::storeRecipeResizedWebp(
-            $file,
-            MediaStorage::recipeDirectory($recipe, 'rich-content'),
-            MediaStorage::recipeRichContentImagesWidth(),
-            MediaStorage::recipeRichContentImagesHeight(),
-            MediaStorage::recipeRichContentImagesQuality(),
-        );
+    private function rejectionMessage(): string
+    {
+        return $this->attribute?->getName() === 'description'
+            ? __('media_library.validation.description_text_only')
+            : __('media_library.validation.procedure_use_library');
     }
 
     public function getDefaultFileAttachmentVisibility(): ?string

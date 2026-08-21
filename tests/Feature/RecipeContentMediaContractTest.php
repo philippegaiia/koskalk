@@ -18,6 +18,7 @@ use App\Support\RichContentAttachmentPaths;
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -194,6 +195,29 @@ it('resolves stable Media Library identities only within the recipe workspace', 
     expect($rendered)
         ->toContain(route('media.show', [$ready, 'master']))
         ->not->toContain('https://example.com/tampered.jpg');
+});
+
+it('refuses new rich editor uploads instead of storing doomed attachments', function () {
+    Storage::fake('local');
+    config()->set('media.recipe_disk', 'local');
+    [$user, $workspace] = recipeMediaContractWorkspace();
+    $recipe = recipeMediaContractRecipe($user, $workspace);
+
+    $expectedMessages = [
+        'description' => __('media_library.validation.description_text_only'),
+        'manufacturing_instructions' => __('media_library.validation.procedure_use_library'),
+    ];
+
+    foreach ($expectedMessages as $attribute => $message) {
+        $provider = $recipe
+            ->getRichContentAttribute($attribute)
+            ->getFileAttachmentProvider();
+
+        expect(fn () => $provider->saveUploadedFileAttachment(UploadedFile::fake()->image('paste.jpg')))
+            ->toThrow(ValidationException::class, $message);
+    }
+
+    expect(Storage::disk(config('media.recipe_disk'))->allFiles())->toBeEmpty();
 });
 
 it('resolves eight inline Media Library assets with one provider query and no cross-recipe leakage', function () {

@@ -37,12 +37,25 @@ class RecipeController extends Controller
 
     public function start(ProductCreationCatalog $productCreationCatalog): View
     {
-        return view('recipes.create-start', [
+        if (! config('products.quick_creation_enabled')) {
+            return $this->guidedStart($productCreationCatalog);
+        }
+
+        return view('recipes.quick-create', [
             'entries' => $productCreationCatalog->entries(),
+            'productTypes' => $productCreationCatalog->types(),
         ]);
     }
 
-    public function chooseProductType(string $entry, ProductCreationCatalog $productCreationCatalog): View
+    public function guidedStart(ProductCreationCatalog $productCreationCatalog): View
+    {
+        return view('recipes.create-start', [
+            'entries' => $productCreationCatalog->entries(),
+            'guided' => true,
+        ]);
+    }
+
+    public function chooseProductType(Request $request, string $entry, ProductCreationCatalog $productCreationCatalog): View
     {
         $entryData = $productCreationCatalog->entries()[$entry] ?? null;
         abort_if($entryData === null, 404);
@@ -51,6 +64,7 @@ class RecipeController extends Controller
             'entry' => $entry,
             'entryData' => $entryData,
             'groupedProductTypes' => $productCreationCatalog->groupedTypes($entry),
+            'guided' => $request->boolean('guided'),
         ]);
     }
 

@@ -1,6 +1,6 @@
 # Translation Work Handoff
 
-Last updated: 2026-07-26
+Last updated: 2026-08-20
 
 ## Goal
 
@@ -77,7 +77,7 @@ The longer Soapkraft-quality explanations should not become a large set of ordin
 
 ## WordPress context
 
-The CMS will be WordPress, but that work is intentionally deferred while the application interface is reviewed and translated. When WordPress work begins, reproduce the existing Laravel homepage before redesigning it. The source of truth is:
+WordPress owns the public `soapkraft.com` site, while Laravel remains the application at `app.soapkraft.com`. The WordPress domain is configured and the homepage design is complete, but that design has not yet been implemented in WordPress. Until implementation is complete, use the existing Laravel homepage as the reference for the approved content and visual direction:
 
 - `resources/views/welcome.blade.php`
 - `resources/views/layouts/public.blade.php`
@@ -85,7 +85,7 @@ The CMS will be WordPress, but that work is intentionally deferred while the app
 - `lang/en/public.php`
 - `public/images/public/soapkraft-hero-benches.webp`
 
-WordPress can become the marketing, editorial, and long-form documentation layer. After reproducing the homepage, explicitly decide whether WordPress replaces `/` or begins as a separate site.
+WordPress owns the marketing, editorial, and long-form documentation layer. The application retains concise task-focused copy and contextual help, linking to WordPress when users need complete methods, examples, or editorial material.
 
 ## Reference documents
 

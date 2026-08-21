@@ -267,7 +267,7 @@ export function createFormulaSection() {
                 id: 'lye-water',
                 label: this.t('status.lye_water'),
                 value: hasResolvedWeights
-                    ? `${this.format(lyeWeight, 1)} / ${this.format(waterWeight, 1)} ${this.oilUnit}`
+                    ? `${this.format(lyeWeight, this.calculatedMassDecimals(lyeWeight))} / ${this.format(waterWeight, this.calculatedMassDecimals(waterWeight))} ${this.oilUnit}`
                     : this.t('status.pending'),
                 detail: hasResolvedWeights && this.oilPercentageIsBalanced
                     ? this.t('status.amounts_calculated')
@@ -452,15 +452,8 @@ export function createFormulaSection() {
 
         formatLyeSummaryCardValue(card) {
             const value = this.number(card?.value ?? 0);
-            const isLiquid = card?.kind === 'liquid' || card?.id === 'water';
-            const shouldFloorLye = this.oilUnit === 'g' && !isLiquid && this.totalLyeToWeigh() > 300;
-            const shouldFloorWater = this.oilUnit === 'g' && isLiquid && value > 300;
 
-            if (shouldFloorLye || shouldFloorWater) {
-                return this.format(Math.floor(value), 0);
-            }
-
-            return this.format(value, 2);
+            return this.format(value, this.calculatedMassDecimals(value));
         },
 
         nonNegativeNumber(value) {
@@ -756,8 +749,20 @@ export function createFormulaSection() {
             element.value = this.format(value, decimals);
         },
 
+        massDecimals(value, profile = 'standard') {
+            return formulaMassDisplayDecimals(value, this.oilUnit, profile);
+        },
+
         oilWeightDecimals(value) {
-            return formulaMassDisplayDecimals(value, this.oilUnit);
+            return this.massDecimals(value);
+        },
+
+        additionWeightDecimals(value) {
+            return this.massDecimals(value, 'addition');
+        },
+
+        calculatedMassDecimals(value) {
+            return this.massDecimals(value, 'calculated');
         },
 
         format(value, decimals = 2) {

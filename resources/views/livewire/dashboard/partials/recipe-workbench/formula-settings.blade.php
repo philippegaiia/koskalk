@@ -49,29 +49,39 @@
 	</button>
 	</div>
 	<div id="formula-settings-panel" x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
-		<div class="overflow-hidden">
+		<div :class="isFormulaSettingsOpen ? 'overflow-visible' : 'overflow-hidden'">
 			<div class="mt-4">
-@unless ($isPublicCalculator)
-    @include('livewire.dashboard.partials.recipe-workbench.formula-output-type')
-@endunless
 @if ($isCosmeticWorkbench)
-	 <div>
-	 <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-5">
-	 <div class="sk-inset p-4">
+	 <div class="space-y-4">
+	 <div data-cosmetic-primary-settings class="grid gap-4 lg:grid-cols-2">
+@unless ($isPublicCalculator)
+    @include('livewire.dashboard.partials.recipe-workbench.formula-output-type', ['inlineFormulaOutputType' => true])
+@endunless
+	 <div data-product-category-setting class="sk-inset p-4">
 	 <p id="setting-product-type" class="sk-eyebrow">{{ __('workbench.common.product_category') }}</p>
-	 <template x-if="productTypes.length">
-	 <select aria-labelledby="setting-product-type" x-model="productTypeId" :disabled="hasSavedFormula" class="mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition disabled:cursor-not-allowed disabled:opacity-60">
-	 <option value="">{{ __('workbench.common.choose_later') }}</option>
-	 <template x-for="productType in productTypes" :key="productType.id">
-	 <option :value="String(productType.id)" x-text="productType.name"></option>
-	 </template>
-	 </select>
-	 </template>
+	 <div x-show="productTypes.length && ! hasSavedFormula" class="mt-3 max-w-3xl">
+	 <x-search-combobox
+	     id="product-type-search"
+	     :label="__('workbench.common.product_category')"
+	     :options="collect($workbench['productTypes'] ?? [])->map(fn (array $productType): array => ['id' => (string) $productType['id'], 'label' => $productType['name']])->all()"
+	     :placeholder="__('workbench.settings.product_type_search')"
+	     :action-label="__('workbench.settings.product_type_select')"
+	     :empty-message="__('workbench.settings.product_type_no_matches')"
+	     :selected-id="isset($workbench['productType']['id']) ? (string) $workbench['productType']['id'] : null"
+	     :selected-label="$workbench['productType']['name'] ?? null"
+	     :allow-empty="true"
+	     x-on:search-combobox-selected="changeProductType($event.detail.id)"
+	     x-on:search-combobox-cleared="changeProductType('')"
+	 />
+	 </div>
+	 <p x-cloak x-show="hasSavedFormula" class="mt-3 rounded-lg bg-[var(--color-field-muted)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)]" x-text="productTypeName"></p>
 	 <p x-cloak x-show="hasSavedFormula" class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.settings.product_type_locked') }}</p>
 	 <template x-if="! productTypes.length">
 	 <p class="mt-3 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.common.cosmetic_categories_unavailable') }}</p>
 	 </template>
 	 </div>
+	 </div>
+	 <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
 	 <div class="sk-inset p-4">
 	 <p id="setting-batch-weight" class="sk-eyebrow">{{ __('workbench.common.total_batch') }}</p>
 	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.weight_unit') }}" class="mt-3 flex gap-2">
@@ -123,6 +133,9 @@
 	 </div>
 	 </div>
 @else
+@unless ($isPublicCalculator)
+    @include('livewire.dashboard.partials.recipe-workbench.formula-output-type')
+@endunless
 	 <div>
 	 <div class="grid gap-4 xl:grid-cols-5">
 	 <div class="sk-inset sk-tone-chemistry p-4">
@@ -252,9 +265,9 @@
 	 <div><p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p><p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.inci_name"></p></div>
 	 <label class="flex items-center gap-2"><span class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_percentage_short') }}</span><input x-model="row.percentage" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('settings.lye_liquid_percentage_for', { ingredient: row.name })" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm" /></label>
 	 <span class="flex items-center gap-2 text-sm text-[var(--color-ink-soft)]">
-	 <span class="sr-only" x-text="t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: format(lyeLiquidWeight(row), 3), unit: oilUnit })"></span>
+	 <span class="sr-only" x-text="t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row))), unit: oilUnit })"></span>
 	 <span aria-hidden="true" class="sk-eyebrow sm:hidden">{{ __('workbench.settings.lye_liquid_fresh_weight_mobile') }}</span>
-	 <span aria-hidden="true" class="numeric" x-text="format(lyeLiquidWeight(row), 3)"></span>
+	 <span aria-hidden="true" class="numeric" x-text="format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row)))"></span>
 	 <span aria-hidden="true" class="sm:hidden" x-text="oilUnit"></span>
 	 </span>
 	 <button type="button" @click="removeIngredient('lye_water', row.id)" class="grid size-10 place-items-center rounded-md text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" :aria-label="t('settings.lye_liquid_remove', { ingredient: row.name })">×</button>
@@ -263,7 +276,7 @@
 	 </div>
 	 <div class="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--color-line)] bg-[var(--color-field-muted)] px-3 py-2.5 text-xs">
 	 <span :class="lyeLiquidCompositionIsValid ? 'text-[var(--color-ink-soft)]' : 'text-[var(--color-danger-strong)]'" x-text="lyeLiquidCompositionIsValid ? t('settings.lye_liquid_replaced', { percentage: format(lyeLiquidPercentageTotal(), 2) }) : t('settings.lye_liquid_exceeds')"></span>
-	 <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="t('settings.lye_liquid_water_summary', { percentage: format(lyeLiquidWaterPercentage(), 2), weight: format(lyeLiquidWaterWeight(), 3), unit: oilUnit })"></span>
+	 <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="t('settings.lye_liquid_water_summary', { percentage: format(lyeLiquidWaterPercentage(), 2), weight: format(lyeLiquidWaterWeight(), calculatedMassDecimals(lyeLiquidWaterWeight())), unit: oilUnit })"></span>
 	 </div>
 	 </div>
 	 </div>

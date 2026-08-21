@@ -7,22 +7,76 @@ use App\Models\ProductType;
 use App\Models\User;
 use App\Services\ProductCreationCatalog;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 
 uses(RefreshDatabase::class);
 
-it('starts new Products with exactly Soap, Cosmetics, and Home', function (): void {
+it('starts new Products with a searchable Product Type decision', function (): void {
+    $fixture = productCreationFixture();
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.start'))
+        ->assertSuccessful()
+        ->assertSeeTextInOrder(['All', 'Soap', 'Cosmetics', 'Home'])
+        ->assertSee('data-product-type-search', false)
+        ->assertSee('data-product-family-filter="soap"', false)
+        ->assertSee('Bar soap / cleansing bar')
+        ->assertSee('Face cream')
+        ->assertSee('Candle / wax melt')
+        ->assertSee(route('recipes.create', [
+            'family' => 'cosmetic',
+            'type' => $fixture['faceCream']->slug,
+        ]))
+        ->assertSee(route('recipes.start.guided'))
+        ->assertDontSee('IFRA');
+
+    expect(app(ProductCreationCatalog::class)->entries())->toHaveCount(3);
+});
+
+it('keeps the existing guided Product creation flow available', function (): void {
     productCreationFixture();
+
+    $this->actingAs(User::factory()->create())
+        ->get(route('recipes.start.guided'))
+        ->assertSuccessful()
+        ->assertSeeTextInOrder(['Soap', 'Oils + lye', 'Cosmetics', 'Skin, hair, melt-and-pour and syndets', 'Home', 'Candles, cleaning and laundry'])
+        ->assertSee(route('recipes.choose-type', ['entry' => 'soap', 'guided' => 1]))
+        ->assertSee(route('recipes.choose-type', ['entry' => 'cosmetics', 'guided' => 1]))
+        ->assertSee(route('recipes.choose-type', ['entry' => 'home', 'guided' => 1]));
+});
+
+it('can restore guided Product creation as the global default', function (): void {
+    productCreationFixture();
+    config()->set('products.quick_creation_enabled', false);
 
     $this->actingAs(User::factory()->create())
         ->get(route('recipes.start'))
         ->assertSuccessful()
         ->assertSeeTextInOrder(['Soap', 'Oils + lye', 'Cosmetics', 'Skin, hair, melt-and-pour and syndets', 'Home', 'Candles, cleaning and laundry'])
-        ->assertSee(route('recipes.choose-type', ['entry' => 'soap']))
-        ->assertSee(route('recipes.choose-type', ['entry' => 'cosmetics']))
-        ->assertSee(route('recipes.choose-type', ['entry' => 'home']))
-        ->assertDontSee('IFRA');
+        ->assertDontSee('data-product-type-search', false);
+});
 
-    expect(app(ProductCreationCatalog::class)->entries())->toHaveCount(3);
+it('commits every quick Product creation label in each catalogue locale', function (): void {
+    $catalogue = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'products')
+        ->where(fn (array $row): bool => str_starts_with($row['key'], 'creation.quick.'))
+        ->keyBy('key');
+    $expectedLocales = ['de', 'es', 'fr', 'it', 'nl', 'pt_BR'];
+
+    expect($catalogue->keys()->sort()->values()->all())
+        ->toBe(collect(array_keys(__('products.creation.quick')))
+            ->map(fn (string $key): string => "creation.quick.{$key}")
+            ->sort()
+            ->values()
+            ->all());
+
+    foreach ($catalogue as $row) {
+        expect(array_keys($row['text']))->toBe($expectedLocales);
+
+        foreach ($row['text'] as $translation) {
+            expect($translation)->toBeString()->not->toBe('');
+        }
+    }
 });
 
 it('groups compatible Product Types by area and category for each entry', function (): void {

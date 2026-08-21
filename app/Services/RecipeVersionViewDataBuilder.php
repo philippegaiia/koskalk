@@ -58,7 +58,7 @@ class RecipeVersionViewDataBuilder
         $formulaDocument = $this->formulaDocumentBuilder->build($snapshot, [
             'name' => $recipe->name,
             'product_family' => $recipe->productFamily?->name,
-            'product_type' => $recipe->productType?->name,
+            'product_type' => $recipe->productType?->localizedName(),
             'calculation_basis' => $recipe->productFamily?->calculation_basis,
             'state' => $version->saved_at === null ? 'current' : 'saved',
             'saved_at' => $version->saved_at?->format('Y-m-d H:i'),

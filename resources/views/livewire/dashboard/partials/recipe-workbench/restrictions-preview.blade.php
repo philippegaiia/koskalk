@@ -1,7 +1,7 @@
 <section class="overflow-hidden sk-card">
  <div class="flex flex-col gap-3 border-b border-[var(--color-line)] px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
  <div>
- <p class="sk-eyebrow">Restrictions</p>
+ <p class="sk-eyebrow">{{ __('workbench.output.restrictions.title') }}</p>
  <p class="mt-1 text-sm text-[var(--color-ink-soft)]" x-text="`${restrictionRegimeLabel} · ${restrictionBasisLabel}`"></p>
  </div>
  <span class="inline-flex w-fit rounded-full border px-3 py-1.5 text-xs font-semibold" :class="restrictionSummaryStyle(restrictionSummary.status)" x-text="restrictionSummaryLabel"></span>
@@ -12,12 +12,12 @@
  <table class="min-w-full divide-y divide-[var(--color-line)] text-sm">
  <thead class="bg-[var(--color-panel)] text-left text-xs font-semibold tracking-[0.14em] text-[var(--color-ink-soft)] uppercase">
  <tr>
- <th class="px-5 py-3">Substance</th>
- <th class="px-5 py-3">Rule</th>
- <th class="px-5 py-3">Formula %</th>
- <th class="px-5 py-3">Limit</th>
- <th class="px-5 py-3">Status</th>
- <th class="px-5 py-3">Sources</th>
+ <th class="px-5 py-3">{{ __('workbench.output.restrictions.substance') }}</th>
+ <th class="px-5 py-3">{{ __('workbench.output.restrictions.rule') }}</th>
+ <th class="px-5 py-3">{{ __('workbench.output.declarations.formula_percent') }}</th>
+ <th class="px-5 py-3">{{ __('workbench.output.restrictions.limit') }}</th>
+ <th class="px-5 py-3">{{ __('workbench.output.common.status') }}</th>
+ <th class="px-5 py-3">{{ __('workbench.output.common.sources') }}</th>
  </tr>
  </thead>
  <tbody class="divide-y divide-[var(--color-line)] bg-[var(--color-panel)]">
@@ -28,14 +28,14 @@
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.entity_type"></p>
  </td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="row.rule_type"></td>
- <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]" x-text="`${format(row.percent_of_formula, 5)}%`"></td>
- <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="row.max_percent === null || row.max_percent === undefined ? '—' : `${format(row.max_percent, 5)}%`"></td>
+ <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_formula)" x-text="`${format(row.percent_of_formula, 5)}%`"></span></td>
+ <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.max_percent)" x-text="row.max_percent === null || row.max_percent === undefined ? '—' : `${format(row.max_percent, 5)}%`"></span></td>
  <td class="px-5 py-4 align-top">
  <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold" :class="restrictionStatusStyle(row.status)" x-text="row.status_label"></span>
  </td>
  <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">
  <template x-for="(source, idx) in row.source_ingredients" :key="`${source}-${idx}`">
- <span class="mr-2 inline-flex items-center gap-1"><span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="User-created or user-modified ingredient"></span><span x-text="source"></span></span>
+ <span class="mr-2 inline-flex items-center gap-1"><span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.output.common.user_owned') }}"></span><span x-text="source"></span></span>
  </template>
  </td>
  </tr>
@@ -47,7 +47,7 @@
 
  <template x-if="restrictionRows.length === 0">
  <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
- No restricted or prohibited substance rules matched the current formula.
+ {{ __('workbench.output.restrictions.empty') }}
  </div>
  </template>
 

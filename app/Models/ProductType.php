@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Casts\OriginalFilename;
+use App\Models\Concerns\HasLocalizedCatalogContent;
 use App\Services\MediaStorage;
 use Database\Factories\ProductTypeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -21,11 +22,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'sort_order',
     'is_active',
     'description',
+    'translations',
 ])]
 class ProductType extends Model
 {
     /** @use HasFactory<ProductTypeFactory> */
     use HasFactory;
+
+    use HasLocalizedCatalogContent;
 
     public function productCategory(): BelongsTo
     {
@@ -57,6 +61,7 @@ class ProductType extends Model
         return [
             'is_active' => 'bool',
             'fallback_image_original_name' => OriginalFilename::class,
+            'translations' => 'array',
         ];
     }
 }

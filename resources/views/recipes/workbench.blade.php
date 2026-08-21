@@ -10,12 +10,6 @@
 @section('page_heading', 'Recipe workbench')
 
 @section('content')
-    @if (isset($productType) && $productType)
-        <div class="mx-auto mb-4 max-w-app">
-            <span class="sk-badge sk-badge-neutral">{{ $productType->name }}</span>
-        </div>
-    @endif
-
     <livewire:dashboard.recipe-workbench
         :recipe="$recipe ?? null"
         :product-family-slug="$workbenchFamilySlug"

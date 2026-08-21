@@ -25548,6 +25548,186 @@
     },
     {
       "group": "products",
+      "key": "creation.quick.all_families",
+      "text": {
+        "de": "Alle",
+        "es": "Todos",
+        "fr": "Tous",
+        "it": "Tutti",
+        "nl": "Alle",
+        "pt_BR": "Todos"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.description",
+      "text": {
+        "de": "Wähle hier den Produkttyp und öffne direkt den Arbeitsbereich. Die allgemeine Produktfamilie filtert nur die verfügbaren Typen.",
+        "es": "Elige aquí el tipo de producto y accede directamente al área de trabajo. La familia general solo filtra los tipos disponibles.",
+        "fr": "Choisissez ici le type de produit et accédez directement à l’atelier. La famille générale sert uniquement à filtrer les types disponibles.",
+        "it": "Scegli qui il tipo di prodotto e accedi direttamente all’area di lavoro. La famiglia generale serve solo a filtrare i tipi disponibili.",
+        "nl": "Kies hier het producttype en ga direct naar de werkbank. De algemene productfamilie filtert alleen de beschikbare typen.",
+        "pt_BR": "Escolha aqui o tipo de produto e acesse diretamente a bancada. A família geral serve apenas para filtrar os tipos disponíveis."
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.empty_description",
+      "text": {
+        "de": "Probiere eine andere Produktfamilie oder einen anderen Suchbegriff.",
+        "es": "Prueba otra familia o término de búsqueda.",
+        "fr": "Essayez une autre famille ou un autre terme de recherche.",
+        "it": "Prova un’altra famiglia o un altro termine di ricerca.",
+        "nl": "Probeer een andere productfamilie of zoekterm.",
+        "pt_BR": "Tente outra família ou outro termo de pesquisa."
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.empty_title",
+      "text": {
+        "de": "Kein Produkttyp gefunden",
+        "es": "No se encontró ningún tipo de producto",
+        "fr": "Aucun type de produit trouvé",
+        "it": "Nessun tipo di prodotto trovato",
+        "nl": "Geen producttype gevonden",
+        "pt_BR": "Nenhum tipo de produto encontrado"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.eyebrow",
+      "text": {
+        "de": "Neues Produkt",
+        "es": "Nuevo producto",
+        "fr": "Nouveau produit",
+        "it": "Nuovo prodotto",
+        "nl": "Nieuw product",
+        "pt_BR": "Novo produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.fallback_description",
+      "text": {
+        "de": "Eine leere Rezeptur für diesen Produkttyp öffnen.",
+        "es": "Abre una fórmula vacía para este tipo de producto.",
+        "fr": "Ouvrez une formule vierge pour ce type de produit.",
+        "it": "Apri una formula vuota per questo tipo di prodotto.",
+        "nl": "Open een lege formule voor dit producttype.",
+        "pt_BR": "Abra uma fórmula em branco para este tipo de produto."
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.families_label",
+      "text": {
+        "de": "Produkttypen nach Produktfamilie filtern",
+        "es": "Filtrar los tipos de producto por familia",
+        "fr": "Filtrer les types de produits par famille",
+        "it": "Filtra i tipi di prodotto per famiglia",
+        "nl": "Producttypen filteren op productfamilie",
+        "pt_BR": "Filtrar os tipos de produto por família"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.guided",
+      "text": {
+        "de": "Geführte Erstellung verwenden",
+        "es": "Usar la creación guiada",
+        "fr": "Utiliser la création guidée",
+        "it": "Usa la creazione guidata",
+        "nl": "Begeleide aanmaak gebruiken",
+        "pt_BR": "Usar a criação guiada"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.guided_help",
+      "text": {
+        "de": "Möchtest du lieber Schritt für Schritt auswählen?",
+        "es": "¿Prefieres elegir paso a paso?",
+        "fr": "Vous préférez choisir étape par étape ?",
+        "it": "Preferisci scegliere passo dopo passo?",
+        "nl": "Kies je liever stap voor stap?",
+        "pt_BR": "Prefere escolher passo a passo?"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.result_count",
+      "text": {
+        "de": "{0} Keine Produkttypen|{1} :count Produkttyp|[2,*] :count Produkttypen",
+        "es": "{0} Ningún tipo de producto|{1} :count tipo de producto|[2,*] :count tipos de producto",
+        "fr": "{0} Aucun type de produit|{1} :count type de produit|[2,*] :count types de produits",
+        "it": "{0} Nessun tipo di prodotto|{1} :count tipo di prodotto|[2,*] :count tipi di prodotto",
+        "nl": "{0} Geen producttypen|{1} :count producttype|[2,*] :count producttypen",
+        "pt_BR": "{0} Nenhum tipo de produto|{1} :count tipo de produto|[2,*] :count tipos de produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.results_label",
+      "text": {
+        "de": "Verfügbare Produkttypen",
+        "es": "Tipos de producto disponibles",
+        "fr": "Types de produits disponibles",
+        "it": "Tipi di prodotto disponibili",
+        "nl": "Beschikbare producttypen",
+        "pt_BR": "Tipos de produto disponíveis"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.search_help",
+      "text": {
+        "de": "Suche nach Name, Bereich oder Kategorie.",
+        "es": "Busca por nombre, área o categoría.",
+        "fr": "Recherchez par nom, domaine ou catégorie.",
+        "it": "Cerca per nome, area o categoria.",
+        "nl": "Zoek op naam, gebied of categorie.",
+        "pt_BR": "Pesquise por nome, área ou categoria."
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.search_label",
+      "text": {
+        "de": "Produkttyp",
+        "es": "Tipo de producto",
+        "fr": "Type de produit",
+        "it": "Tipo di prodotto",
+        "nl": "Producttype",
+        "pt_BR": "Tipo de produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.search_placeholder",
+      "text": {
+        "de": "Produkttypen suchen",
+        "es": "Buscar tipos de producto",
+        "fr": "Rechercher des types de produits",
+        "it": "Cerca tipi di prodotto",
+        "nl": "Producttypen zoeken",
+        "pt_BR": "Pesquisar tipos de produto"
+      }
+    },
+    {
+      "group": "products",
+      "key": "creation.quick.title",
+      "text": {
+        "de": "Produkttyp auswählen",
+        "es": "Elige un tipo de producto",
+        "fr": "Choisissez un type de produit",
+        "it": "Scegli un tipo di prodotto",
+        "nl": "Kies een producttype",
+        "pt_BR": "Escolha um tipo de produto"
+      }
+    },
+    {
+      "group": "products",
       "key": "creation.selector.back",
       "text": {
         "de": "Zurück zu den Produktarten",
@@ -27698,12 +27878,12 @@
       "group": "workbench",
       "key": "costing.ingredients.lye_liquid_percentage",
       "text": {
-        "de": "% Laugenflüssigkeit",
-        "es": "% líquido de lejía",
-        "fr": "% liquide de lessive",
-        "it": "% liquido alcalino",
-        "nl": "% loogvloeistof",
-        "pt_BR": "% líquido alcalino"
+        "de": "% Gesamtflüssigkeit",
+        "es": "% líquido de dilución",
+        "fr": "% liquide de dilution",
+        "it": "% liquido di diluizione",
+        "nl": "% totale vloeistof",
+        "pt_BR": "% líquido de diluição"
       }
     },
     {
@@ -27962,12 +28142,12 @@
       "group": "workbench",
       "key": "costing.phases.lye_liquid",
       "text": {
-        "de": "Laugenflüssigkeit",
-        "es": "Líquido de lejía",
-        "fr": "Liquide de lessive",
-        "it": "Liquido alcalino",
-        "nl": "Loogvloeistof",
-        "pt_BR": "Líquido alcalino"
+        "de": "Flüssigkeiten für die Laugenlösung",
+        "es": "Líquidos de dilución",
+        "fr": "Liquides de dilution",
+        "it": "Liquidi di diluizione",
+        "nl": "Vloeistoffen voor de loogoplossing",
+        "pt_BR": "Líquidos de diluição"
       }
     },
     {
@@ -28004,6 +28184,18 @@
         "it": "Quantità totale della formula",
         "nl": "Totale formulehoeveelheid",
         "pt_BR": "Quantidade total do lote"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.settings.change_currency",
+      "text": {
+        "de": "Change it in Settings.",
+        "es": "Change it in Settings.",
+        "fr": "La modifier dans les paramètres.",
+        "it": "Change it in Settings.",
+        "nl": "Change it in Settings.",
+        "pt_BR": "Change it in Settings."
       }
     },
     {
@@ -29256,6 +29448,810 @@
     },
     {
       "group": "workbench",
+      "key": "output.allergens.allergen",
+      "text": {
+        "de": "Allergen",
+        "es": "Allergen",
+        "fr": "Allergène",
+        "it": "Allergen",
+        "nl": "Allergen",
+        "pt_BR": "Allergen"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.allergens.empty",
+      "text": {
+        "de": "No declared allergens are currently appended to the generated list.",
+        "es": "No declared allergens are currently appended to the generated list.",
+        "fr": "Aucun allergène déclaré n’est actuellement ajouté à la liste générée.",
+        "it": "No declared allergens are currently appended to the generated list.",
+        "nl": "No declared allergens are currently appended to the generated list.",
+        "pt_BR": "No declared allergens are currently appended to the generated list."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.allergens.help",
+      "text": {
+        "de": "These are listed on the same cured basis for reference, but they are not counted inside the 100% ingredient total because they are already part of aromatic ingredients.",
+        "es": "These are listed on the same cured basis for reference, but they are not counted inside the 100% ingredient total because they are already part of aromatic ingredients.",
+        "fr": "Ils sont présentés sur la même base après cure à titre indicatif, sans être comptés dans le total de 100 %.",
+        "it": "These are listed on the same cured basis for reference, but they are not counted inside the 100% ingredient total because they are already part of aromatic ingredients.",
+        "nl": "These are listed on the same cured basis for reference, but they are not counted inside the 100% ingredient total because they are already part of aromatic ingredients.",
+        "pt_BR": "These are listed on the same cured basis for reference, but they are not counted inside the 100% ingredient total because they are already part of aromatic ingredients."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.allergens.title",
+      "text": {
+        "de": "Declared allergens",
+        "es": "Declared allergens",
+        "fr": "Allergènes déclarés",
+        "it": "Declared allergens",
+        "nl": "Declared allergens",
+        "pt_BR": "Declared allergens"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.formula_percent",
+      "text": {
+        "de": "% formula",
+        "es": "% formula",
+        "fr": "% de la formule",
+        "it": "% formula",
+        "nl": "% formula",
+        "pt_BR": "% formula"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.ingredient",
+      "text": {
+        "de": "Ingredient",
+        "es": "Ingredient",
+        "fr": "Ingrédient",
+        "it": "Ingredient",
+        "nl": "Ingredient",
+        "pt_BR": "Ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.label",
+      "text": {
+        "de": "Label",
+        "es": "Label",
+        "fr": "Étiquette",
+        "it": "Label",
+        "nl": "Label",
+        "pt_BR": "Label"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.phase",
+      "text": {
+        "de": "Phase",
+        "es": "Phase",
+        "fr": "Phase",
+        "it": "Phase",
+        "nl": "Phase",
+        "pt_BR": "Phase"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.role",
+      "text": {
+        "de": "Role",
+        "es": "Role",
+        "fr": "Rôle",
+        "it": "Role",
+        "nl": "Role",
+        "pt_BR": "Role"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.soap_percent",
+      "text": {
+        "de": "% soap",
+        "es": "% soap",
+        "fr": "% du savon",
+        "it": "% soap",
+        "nl": "% soap",
+        "pt_BR": "% soap"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.sources",
+      "text": {
+        "de": "Sources",
+        "es": "Sources",
+        "fr": "Sources",
+        "it": "Sources",
+        "nl": "Sources",
+        "pt_BR": "Sources"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.status",
+      "text": {
+        "de": "Status",
+        "es": "Status",
+        "fr": "Statut",
+        "it": "Status",
+        "nl": "Status",
+        "pt_BR": "Status"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.total",
+      "text": {
+        "de": "Total",
+        "es": "Total",
+        "fr": "Total",
+        "it": "Total",
+        "nl": "Total",
+        "pt_BR": "Total"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.user_owned",
+      "text": {
+        "de": "User-created or user-modified ingredient",
+        "es": "User-created or user-modified ingredient",
+        "fr": "Ingrédient créé ou modifié par l’utilisateur",
+        "it": "User-created or user-modified ingredient",
+        "nl": "User-created or user-modified ingredient",
+        "pt_BR": "User-created or user-modified ingredient"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.user_owned_help",
+      "text": {
+        "de": "User-created or user-modified ingredient. Data has not been verified by Soapkraft.",
+        "es": "User-created or user-modified ingredient. Data has not been verified by Soapkraft.",
+        "fr": "Ingrédient créé ou modifié par l’utilisateur. Les données n’ont pas été vérifiées par Soapkraft.",
+        "it": "User-created or user-modified ingredient. Data has not been verified by Soapkraft.",
+        "nl": "User-created or user-modified ingredient. Data has not been verified by Soapkraft.",
+        "pt_BR": "User-created or user-modified ingredient. Data has not been verified by Soapkraft."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.common.weight",
+      "text": {
+        "de": "Weight (:unit)",
+        "es": "Weight (:unit)",
+        "fr": "Poids (:unit)",
+        "it": "Weight (:unit)",
+        "nl": "Weight (:unit)",
+        "pt_BR": "Weight (:unit)"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.basis",
+      "text": {
+        "de": "Full formula basis",
+        "es": "Full formula basis",
+        "fr": "Base de la formule complète",
+        "it": "Full formula basis",
+        "nl": "Full formula basis",
+        "pt_BR": "Full formula basis"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.batch_quantity",
+      "text": {
+        "de": "Total batch quantity",
+        "es": "Total batch quantity",
+        "fr": "Quantité totale du lot",
+        "it": "Total batch quantity",
+        "nl": "Total batch quantity",
+        "pt_BR": "Total batch quantity"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.descending",
+      "text": {
+        "de": "Descending",
+        "es": "Descending",
+        "fr": "Ordre décroissant",
+        "it": "Descending",
+        "nl": "Descending",
+        "pt_BR": "Descending"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.empty",
+      "text": {
+        "de": "Add ingredients to build the cosmetic output list.",
+        "es": "Add ingredients to build the cosmetic output list.",
+        "fr": "Ajoutez des ingrédients pour constituer la liste de sortie cosmétique.",
+        "it": "Add ingredients to build the cosmetic output list.",
+        "nl": "Add ingredients to build the cosmetic output list.",
+        "pt_BR": "Add ingredients to build the cosmetic output list."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.formula_total",
+      "text": {
+        "de": "Formula total",
+        "es": "Formula total",
+        "fr": "Total de la formule",
+        "it": "Formula total",
+        "nl": "Formula total",
+        "pt_BR": "Formula total"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.full_formula",
+      "text": {
+        "de": "Full formula",
+        "es": "Full formula",
+        "fr": "Formule complète",
+        "it": "Full formula",
+        "nl": "Full formula",
+        "pt_BR": "Full formula"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.help",
+      "text": {
+        "de": "This view reads the full cosmetic formula basis.",
+        "es": "This view reads the full cosmetic formula basis.",
+        "fr": "Cette vue utilise la base complète de la formule cosmétique.",
+        "it": "This view reads the full cosmetic formula basis.",
+        "nl": "This view reads the full cosmetic formula basis.",
+        "pt_BR": "This view reads the full cosmetic formula basis."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.ingredient_rows",
+      "text": {
+        "de": "Ingredient rows",
+        "es": "Ingredient rows",
+        "fr": "Lignes d’ingrédients",
+        "it": "Ingredient rows",
+        "nl": "Ingredient rows",
+        "pt_BR": "Ingredient rows"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.ingredients_help",
+      "text": {
+        "de": "Ingredients sorted from highest to lowest formula share.",
+        "es": "Ingredients sorted from highest to lowest formula share.",
+        "fr": "Ingrédients classés de la proportion la plus élevée à la plus faible.",
+        "it": "Ingredients sorted from highest to lowest formula share.",
+        "nl": "Ingredients sorted from highest to lowest formula share.",
+        "pt_BR": "Ingredients sorted from highest to lowest formula share."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.ingredients_title",
+      "text": {
+        "de": "Ingredient output",
+        "es": "Ingredient output",
+        "fr": "Sortie des ingrédients",
+        "it": "Ingredient output",
+        "nl": "Ingredient output",
+        "pt_BR": "Ingredient output"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.cosmetic.title",
+      "text": {
+        "de": "Formula output",
+        "es": "Formula output",
+        "fr": "Sortie de la formule",
+        "it": "Formula output",
+        "nl": "Formula output",
+        "pt_BR": "Formula output"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.declarations.cosmetic_help",
+      "text": {
+        "de": "Recorded fragrance declarations are listed with their estimated contribution to the formula basis.",
+        "es": "Recorded fragrance declarations are listed with their estimated contribution to the formula basis.",
+        "fr": "Les déclarations de parfum enregistrées sont présentées avec leur contribution estimée à la formule.",
+        "it": "Recorded fragrance declarations are listed with their estimated contribution to the formula basis.",
+        "nl": "Recorded fragrance declarations are listed with their estimated contribution to the formula basis.",
+        "pt_BR": "Recorded fragrance declarations are listed with their estimated contribution to the formula basis."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.declarations.empty",
+      "text": {
+        "de": "No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here.",
+        "es": "No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here.",
+        "fr": "Aucune déclaration n’est encore disponible. Ajoutez des ingrédients aromatiques comportant des données de déclaration.",
+        "it": "No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here.",
+        "nl": "No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here.",
+        "pt_BR": "No declaration rows are available yet. Add aromatic ingredients with recorded declaration data to see the threshold breakdown here."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.declarations.formula_percent",
+      "text": {
+        "de": "Formula %",
+        "es": "Formula %",
+        "fr": "% de la formule",
+        "it": "Formula %",
+        "nl": "Formula %",
+        "pt_BR": "Formula %"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.declarations.notes",
+      "text": {
+        "de": "Notes",
+        "es": "Notes",
+        "fr": "Notes",
+        "it": "Notes",
+        "nl": "Notes",
+        "pt_BR": "Notes"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.declarations.soap_help",
+      "text": {
+        "de": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.",
+        "es": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.",
+        "fr": "Toutes les déclarations de parfum sont présentées avec leur contribution estimée au savon après cure et leur présence dans la liste sélectionnée.",
+        "it": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.",
+        "nl": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list.",
+        "pt_BR": "All recorded fragrance declarations are listed here with their estimated contribution to the cured-bar basis and whether they are appended to the selected ingredient list."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.declarations.threshold",
+      "text": {
+        "de": "Threshold",
+        "es": "Threshold",
+        "fr": "Seuil",
+        "it": "Threshold",
+        "nl": "Threshold",
+        "pt_BR": "Threshold"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.declarations.title",
+      "text": {
+        "de": "Declaration details",
+        "es": "Declaration details",
+        "fr": "Détails des déclarations",
+        "it": "Declaration details",
+        "nl": "Declaration details",
+        "pt_BR": "Declaration details"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.as_added",
+      "text": {
+        "de": "Ingredients as added",
+        "es": "Ingredients as added",
+        "fr": "Ingrédients tels qu’ajoutés",
+        "it": "Ingredients as added",
+        "nl": "Ingredients as added",
+        "pt_BR": "Ingredients as added"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.clear",
+      "text": {
+        "de": "Clear",
+        "es": "Clear",
+        "fr": "Effacer",
+        "it": "Clear",
+        "nl": "Clear",
+        "pt_BR": "Clear"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.copy",
+      "text": {
+        "de": "Copy list",
+        "es": "Copy list",
+        "fr": "Copier la liste",
+        "it": "Copy list",
+        "nl": "Copy list",
+        "pt_BR": "Copy list"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.final_inci",
+      "text": {
+        "de": "Final INCI list",
+        "es": "Final INCI list",
+        "fr": "Liste INCI finale",
+        "it": "Final INCI list",
+        "nl": "Final INCI list",
+        "pt_BR": "Final INCI list"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.final_plain",
+      "text": {
+        "de": "Final plain-language list",
+        "es": "Final plain-language list",
+        "fr": "Liste finale en langage courant",
+        "it": "Final plain-language list",
+        "nl": "Final plain-language list",
+        "pt_BR": "Final plain-language list"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.format",
+      "text": {
+        "de": "Ingredient list format",
+        "es": "Ingredient list format",
+        "fr": "Format de la liste d’ingrédients",
+        "it": "Ingredient list format",
+        "nl": "Ingredient list format",
+        "pt_BR": "Ingredient list format"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.generated_empty",
+      "text": {
+        "de": "The generated ingredient list will appear when the formula has enough data.",
+        "es": "The generated ingredient list will appear when the formula has enough data.",
+        "fr": "La liste générée apparaîtra lorsque la formule contiendra suffisamment de données.",
+        "it": "The generated ingredient list will appear when the formula has enough data.",
+        "nl": "The generated ingredient list will appear when the formula has enough data.",
+        "pt_BR": "The generated ingredient list will appear when the formula has enough data."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.help",
+      "text": {
+        "de": "Choose a list, then copy it or edit a final version.",
+        "es": "Choose a list, then copy it or edit a final version.",
+        "fr": "Choisissez une liste, puis copiez-la ou modifiez une version finale.",
+        "it": "Choose a list, then copy it or edit a final version.",
+        "nl": "Choose a list, then copy it or edit a final version.",
+        "pt_BR": "Choose a list, then copy it or edit a final version."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.inci",
+      "text": {
+        "de": "INCI ingredient list",
+        "es": "INCI ingredient list",
+        "fr": "Liste d’ingrédients INCI",
+        "it": "INCI ingredient list",
+        "nl": "INCI ingredient list",
+        "pt_BR": "INCI ingredient list"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.outdated",
+      "text": {
+        "de": "Formula changed after this list was saved.",
+        "es": "Formula changed after this list was saved.",
+        "fr": "La formule a changé depuis l’enregistrement de cette liste.",
+        "it": "Formula changed after this list was saved.",
+        "nl": "Formula changed after this list was saved.",
+        "pt_BR": "Formula changed after this list was saved."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.plain",
+      "text": {
+        "de": "Plain-language ingredient list",
+        "es": "Plain-language ingredient list",
+        "fr": "Liste d’ingrédients en langage courant",
+        "it": "Plain-language ingredient list",
+        "nl": "Plain-language ingredient list",
+        "pt_BR": "Plain-language ingredient list"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.plain_empty",
+      "text": {
+        "de": "No plain-language list is available yet.",
+        "es": "No plain-language list is available yet.",
+        "fr": "Aucune liste en langage courant n’est encore disponible.",
+        "it": "No plain-language list is available yet.",
+        "nl": "No plain-language list is available yet.",
+        "pt_BR": "No plain-language list is available yet."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.plain_help",
+      "text": {
+        "de": "Common names, highest amount first.",
+        "es": "Common names, highest amount first.",
+        "fr": "Noms courants, de la quantité la plus élevée à la plus faible.",
+        "it": "Common names, highest amount first.",
+        "nl": "Common names, highest amount first.",
+        "pt_BR": "Common names, highest amount first."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.saponified",
+      "text": {
+        "de": "Saponified oils + superfat",
+        "es": "Saponified oils + superfat",
+        "fr": "Huiles saponifiées + surgraissage",
+        "it": "Saponified oils + superfat",
+        "nl": "Saponified oils + superfat",
+        "pt_BR": "Saponified oils + superfat"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.title",
+      "text": {
+        "de": "Ingredient lists",
+        "es": "Ingredient lists",
+        "fr": "Listes d’ingrédients",
+        "it": "Ingredient lists",
+        "nl": "Ingredient lists",
+        "pt_BR": "Ingredient lists"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.lists.use_generated",
+      "text": {
+        "de": "Use generated",
+        "es": "Use generated",
+        "fr": "Utiliser la liste générée",
+        "it": "Use generated",
+        "nl": "Use generated",
+        "pt_BR": "Use generated"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.empty",
+      "text": {
+        "de": "No restricted or prohibited substance rules matched the current formula.",
+        "es": "No restricted or prohibited substance rules matched the current formula.",
+        "fr": "Aucune règle relative à une substance restreinte ou interdite ne correspond à la formule actuelle.",
+        "it": "No restricted or prohibited substance rules matched the current formula.",
+        "nl": "No restricted or prohibited substance rules matched the current formula.",
+        "pt_BR": "No restricted or prohibited substance rules matched the current formula."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.limit",
+      "text": {
+        "de": "Limit",
+        "es": "Limit",
+        "fr": "Limite",
+        "it": "Limit",
+        "nl": "Limit",
+        "pt_BR": "Limit"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.rule",
+      "text": {
+        "de": "Rule",
+        "es": "Rule",
+        "fr": "Règle",
+        "it": "Rule",
+        "nl": "Rule",
+        "pt_BR": "Rule"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.substance",
+      "text": {
+        "de": "Substance",
+        "es": "Substance",
+        "fr": "Substance",
+        "it": "Substance",
+        "nl": "Substance",
+        "pt_BR": "Substance"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.restrictions.title",
+      "text": {
+        "de": "Restrictions",
+        "es": "Restrictions",
+        "fr": "Restrictions",
+        "it": "Restrictions",
+        "nl": "Restrictions",
+        "pt_BR": "Restrictions"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.basis",
+      "text": {
+        "de": "Cured basis",
+        "es": "Cured basis",
+        "fr": "Base après cure",
+        "it": "Cured basis",
+        "nl": "Cured basis",
+        "pt_BR": "Cured basis"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.composition",
+      "text": {
+        "de": "Cured soap composition",
+        "es": "Cured soap composition",
+        "fr": "Composition du savon après cure",
+        "it": "Cured soap composition",
+        "nl": "Cured soap composition",
+        "pt_BR": "Cured soap composition"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.composition_help",
+      "text": {
+        "de": "Main ingredient rows normalized on the cured soap basis.",
+        "es": "Main ingredient rows normalized on the cured soap basis.",
+        "fr": "Principales lignes d’ingrédients normalisées sur la base du savon après cure.",
+        "it": "Main ingredient rows normalized on the cured soap basis.",
+        "nl": "Main ingredient rows normalized on the cured soap basis.",
+        "pt_BR": "Main ingredient rows normalized on the cured soap basis."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.cured_bar_basis",
+      "text": {
+        "de": "Cured bar basis",
+        "es": "Cured bar basis",
+        "fr": "Base du savon après cure",
+        "it": "Cured bar basis",
+        "nl": "Cured bar basis",
+        "pt_BR": "Cured bar basis"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.cured_basis",
+      "text": {
+        "de": "Cured soap basis",
+        "es": "Cured soap basis",
+        "fr": "Base du savon après cure",
+        "it": "Cured soap basis",
+        "nl": "Cured soap basis",
+        "pt_BR": "Cured soap basis"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.cured_total",
+      "text": {
+        "de": "Cured soap total",
+        "es": "Cured soap total",
+        "fr": "Total du savon après cure",
+        "it": "Cured soap total",
+        "nl": "Cured soap total",
+        "pt_BR": "Cured soap total"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.empty",
+      "text": {
+        "de": "Add enough formula data to resolve the cured-soap ingredient output.",
+        "es": "Add enough formula data to resolve the cured-soap ingredient output.",
+        "fr": "Complétez la formule pour obtenir la composition du savon après cure.",
+        "it": "Add enough formula data to resolve the cured-soap ingredient output.",
+        "nl": "Add enough formula data to resolve the cured-soap ingredient output.",
+        "pt_BR": "Add enough formula data to resolve the cured-soap ingredient output."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.help",
+      "text": {
+        "de": "The cured-bar ingredient output used to prepare labels and review declared fragrance components.",
+        "es": "The cured-bar ingredient output used to prepare labels and review declared fragrance components.",
+        "fr": "La composition du savon après cure utilisée pour préparer les étiquettes et examiner les composants parfumants déclarés.",
+        "it": "The cured-bar ingredient output used to prepare labels and review declared fragrance components.",
+        "nl": "The cured-bar ingredient output used to prepare labels and review declared fragrance components.",
+        "pt_BR": "The cured-bar ingredient output used to prepare labels and review declared fragrance components."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.label_basis",
+      "text": {
+        "de": "Label output basis",
+        "es": "Label output basis",
+        "fr": "Base de calcul de l’étiquette",
+        "it": "Label output basis",
+        "nl": "Label output basis",
+        "pt_BR": "Label output basis"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.label_basis_help",
+      "text": {
+        "de": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
+        "es": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
+        "fr": "Les pourcentages utilisent le poids du savon après cure, dont 11 % d’eau résiduelle. Les allergènes sont présentés séparément.",
+        "it": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
+        "nl": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils.",
+        "pt_BR": "Label percentages use the cured soap weight, including 11% residual water. Allergens are shown separately but are already included in their source oils."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.residual_water",
+      "text": {
+        "de": "Residual water",
+        "es": "Residual water",
+        "fr": "Eau résiduelle",
+        "it": "Residual water",
+        "nl": "Residual water",
+        "pt_BR": "Residual water"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.title",
+      "text": {
+        "de": "Cured soap output",
+        "es": "Cured soap output",
+        "fr": "Sortie du savon après cure",
+        "it": "Cured soap output",
+        "nl": "Cured soap output",
+        "pt_BR": "Cured soap output"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "packaging.accessibility.notes_for",
       "text": {
         "de": "Notizen zu :item",
@@ -29834,24 +30830,24 @@
       "group": "workbench",
       "key": "settings.lye_liquid",
       "text": {
-        "de": "Laugenflüssigkeit",
-        "es": "Líquido de lejía",
-        "fr": "Liquide de soude",
-        "it": "Liquido alcalino",
-        "nl": "Loogvloeistof",
-        "pt_BR": "Líquido de soda cáustica"
+        "de": "Laugenlösung",
+        "es": "Solución alcalina",
+        "fr": "Solution alcaline",
+        "it": "Soluzione alcalina",
+        "nl": "Loogoplossing",
+        "pt_BR": "Solução alcalina"
       }
     },
     {
       "group": "workbench",
       "key": "settings.lye_liquid_add",
       "text": {
-        "de": "Laugenflüssigkeit hinzufügen",
-        "es": "Añadir un líquido de lejía",
-        "fr": "Ajouter un liquide de soude",
-        "it": "Aggiungi un liquido alcalino",
-        "nl": "Loogvloeistof toevoegen",
-        "pt_BR": "Adicionar um líquido de soda cáustica"
+        "de": "Flüssigkeit für die Laugenlösung hinzufügen",
+        "es": "Añadir un líquido de dilución",
+        "fr": "Ajouter un liquide de dilution",
+        "it": "Aggiungi un liquido di diluizione",
+        "nl": "Vloeistof voor de loogoplossing toevoegen",
+        "pt_BR": "Adicionar um líquido de diluição"
       }
     },
     {
@@ -29918,24 +30914,24 @@
       "group": "workbench",
       "key": "settings.lye_liquid_percentage",
       "text": {
-        "de": "% der gesamten Laugenflüssigkeit",
-        "es": "% del líquido de lejía total",
-        "fr": "% du liquide de soude total",
-        "it": "% del liquido alcalino totale",
-        "nl": "% van totale loogvloeistof",
-        "pt_BR": "% do líquido de soda cáustica total"
+        "de": "% der Gesamtflüssigkeit",
+        "es": "% del líquido de dilución total",
+        "fr": "% du liquide de dilution total",
+        "it": "% del liquido di diluizione totale",
+        "nl": "% van de totale vloeistof",
+        "pt_BR": "% do líquido de diluição total"
       }
     },
     {
       "group": "workbench",
       "key": "settings.lye_liquid_percentage_for",
       "text": {
-        "de": "Prozent der gesamten Laugenflüssigkeit für :ingredient",
-        "es": "Porcentaje del líquido de lejía total para :ingredient",
-        "fr": "Pourcentage du liquide de soude total pour :ingredient",
-        "it": "Percentuale del liquido alcalino totale per :ingredient",
-        "nl": "Percentage van totale loogvloeistof voor :ingredient",
-        "pt_BR": "Percentual do líquido de soda cáustica total para :ingredient"
+        "de": "Prozent der Gesamtflüssigkeit für :ingredient",
+        "es": "Porcentaje del líquido de dilución total para :ingredient",
+        "fr": "Pourcentage du liquide de dilution total pour :ingredient",
+        "it": "Percentuale del liquido di diluizione totale per :ingredient",
+        "nl": "Percentage van de totale vloeistof voor :ingredient",
+        "pt_BR": "Percentual do líquido de diluição total para :ingredient"
       }
     },
     {
@@ -29966,12 +30962,12 @@
       "group": "workbench",
       "key": "settings.lye_liquid_remove_confirm",
       "text": {
-        "de": "Ausgewählte Laugenflüssigkeiten entfernen und wieder nur Wasser verwenden?",
-        "es": "¿Eliminar los líquidos de lejía seleccionados y volver a usar solo agua?",
-        "fr": "Supprimer les liquides de lessive sélectionnés et revenir à l’eau uniquement ?",
-        "it": "Rimuovere i liquidi alcalini selezionati e tornare a usare solo acqua?",
-        "nl": "De geselecteerde loogvloeistoffen verwijderen en teruggaan naar alleen water?",
-        "pt_BR": "Remover os líquidos alcalinos selecionados e voltar a usar somente água?"
+        "de": "Ausgewählte Flüssigkeiten für die Laugenlösung entfernen und wieder nur Wasser verwenden?",
+        "es": "¿Eliminar los líquidos de dilución seleccionados y volver a usar solo agua?",
+        "fr": "Supprimer les liquides de dilution sélectionnés et revenir à l’eau uniquement ?",
+        "it": "Rimuovere i liquidi di diluizione selezionati e tornare a usare solo acqua?",
+        "nl": "De geselecteerde vloeistoffen voor de loogoplossing verwijderen en teruggaan naar alleen water?",
+        "pt_BR": "Remover os líquidos de diluição selecionados e voltar a usar somente água?"
       }
     },
     {
@@ -30026,12 +31022,12 @@
       "group": "workbench",
       "key": "settings.lye_liquid_toggle",
       "text": {
-        "de": "Andere Laugenflüssigkeit verwenden",
-        "es": "Usar otro líquido de lejía",
-        "fr": "Utiliser un autre liquide de soude",
-        "it": "Usa un altro liquido alcalino",
-        "nl": "Andere loogvloeistof gebruiken",
-        "pt_BR": "Usar outro líquido de soda cáustica"
+        "de": "Andere Flüssigkeit für die Laugenlösung verwenden",
+        "es": "Usar otro líquido de dilución",
+        "fr": "Utiliser un autre liquide de dilution",
+        "it": "Usa un altro liquido di diluizione",
+        "nl": "Een andere vloeistof voor de loogoplossing gebruiken",
+        "pt_BR": "Usar outro líquido de diluição"
       }
     },
     {
@@ -30062,12 +31058,12 @@
       "group": "workbench",
       "key": "settings.lye_liquid_water_only",
       "text": {
-        "de": "Laugenflüssigkeit: nur Wasser",
-        "es": "Líquido de lejía: solo agua",
-        "fr": "Liquide de soude : eau uniquement",
-        "it": "Liquido alcalino: solo acqua",
-        "nl": "Loogvloeistof: alleen water",
-        "pt_BR": "Líquido de soda cáustica: somente água"
+        "de": "Flüssigkeit für die Laugenlösung: nur Wasser",
+        "es": "Líquido de dilución: solo agua",
+        "fr": "Liquide de dilution : eau uniquement",
+        "it": "Liquido di diluizione: solo acqua",
+        "nl": "Vloeistof voor de loogoplossing: alleen water",
+        "pt_BR": "Líquido de diluição: somente água"
       }
     },
     {
@@ -30296,6 +31292,54 @@
         "it": "Il tipo di prodotto è fissato dopo la prima formula salvata. Duplica il prodotto per classificare un altro uso finale.",
         "nl": "Het producttype ligt vast na de eerste opgeslagen formule. Dupliceer het product om een ander eindgebruik te classificeren.",
         "pt_BR": "O tipo de produto fica definido após a primeira fórmula salva. Duplique o produto para classificar outro uso final."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_type_no_matches",
+      "text": {
+        "de": "No matching Product Types",
+        "es": "No matching Product Types",
+        "fr": "Aucun Type de produit correspondant",
+        "it": "No matching Product Types",
+        "nl": "No matching Product Types",
+        "pt_BR": "No matching Product Types"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_type_search",
+      "text": {
+        "de": "Search Product Types",
+        "es": "Search Product Types",
+        "fr": "Rechercher un Type de produit",
+        "it": "Search Product Types",
+        "nl": "Search Product Types",
+        "pt_BR": "Search Product Types"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_type_select",
+      "text": {
+        "de": "Select",
+        "es": "Select",
+        "fr": "Sélectionner",
+        "it": "Select",
+        "nl": "Select",
+        "pt_BR": "Select"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.product_type_unavailable",
+      "text": {
+        "de": "This Product Type is not available for the current formula family.",
+        "es": "This Product Type is not available for the current formula family.",
+        "fr": "Ce Type de produit n’est pas disponible pour la famille de formule actuelle.",
+        "it": "This Product Type is not available for the current formula family.",
+        "nl": "This Product Type is not available for the current formula family.",
+        "pt_BR": "This Product Type is not available for the current formula family."
       }
     },
     {
@@ -30782,24 +31826,24 @@
       "group": "workbench",
       "key": "validation.lye_liquid_alkali",
       "text": {
-        "de": "Alkalien für die Seifenherstellung können nicht als Ersatz für die Laugenflüssigkeit verwendet werden.",
-        "es": "Los álcalis para jabonería no pueden utilizarse como sustitutos del líquido de lejía.",
-        "fr": "Les alcalis de savonnerie ne peuvent pas être utilisés comme substituts du liquide de soude.",
-        "it": "Gli alcali per la saponificazione non possono essere usati come sostituti del liquido alcalino.",
-        "nl": "Alkaliën voor zeepbereiding kunnen niet als vervanging voor de loogvloeistof worden gebruikt.",
-        "pt_BR": "Álcalis para saboaria não podem ser usados como substitutos do líquido de soda cáustica."
+        "de": "Alkalien für die Seifenherstellung können nicht als Ersatz für die Flüssigkeit der Laugenlösung verwendet werden.",
+        "es": "Los álcalis para jabonería no pueden utilizarse como sustitutos del líquido de dilución.",
+        "fr": "Les alcalis de savonnerie ne peuvent pas remplacer le liquide de dilution.",
+        "it": "Gli alcali per la saponificazione non possono sostituire il liquido di diluizione.",
+        "nl": "Alkaliën voor zeepbereiding kunnen niet worden gebruikt als vloeistof voor de loogoplossing.",
+        "pt_BR": "Álcalis para saboaria não podem substituir o líquido de diluição."
       }
     },
     {
       "group": "workbench",
       "key": "validation.lye_liquid_ingredient",
       "text": {
-        "de": "Wählen Sie für jeden Ersatz der Laugenflüssigkeit eine aktive, zugängliche Zutat aus.",
-        "es": "Seleccione un ingrediente activo y accesible para cada sustitución del líquido de lejía.",
-        "fr": "Sélectionnez un ingrédient actif et accessible pour chaque substitut du liquide de soude.",
-        "it": "Seleziona un ingrediente attivo e accessibile per ogni sostituzione del liquido alcalino.",
-        "nl": "Selecteer voor elke vervanging van de loogvloeistof een actief, toegankelijk ingrediënt.",
-        "pt_BR": "Selecione um ingrediente ativo e acessível para cada substituição do líquido de soda cáustica."
+        "de": "Wählen Sie für jede Ersatzflüssigkeit der Laugenlösung eine aktive, zugängliche Zutat aus.",
+        "es": "Seleccione un ingrediente activo y accesible para cada sustitución del líquido de dilución.",
+        "fr": "Sélectionnez un ingrédient actif et accessible pour chaque liquide de dilution de remplacement.",
+        "it": "Seleziona un ingrediente attivo e accessibile per ogni liquido di diluizione sostitutivo.",
+        "nl": "Selecteer voor elke vervangende vloeistof voor de loogoplossing een actief, toegankelijk ingrediënt.",
+        "pt_BR": "Selecione um ingrediente ativo e acessível para cada líquido de diluição substituto."
       }
     },
     {
@@ -30830,24 +31874,24 @@
       "group": "workbench",
       "key": "validation.lye_liquid_percentage_range",
       "text": {
-        "de": "Jeder Prozentsatz der Laugenflüssigkeit muss zwischen 0 und 100 liegen.",
-        "es": "Cada porcentaje de líquido de lejía debe estar entre 0 y 100.",
-        "fr": "Chaque pourcentage de liquide de soude doit être compris entre 0 et 100.",
-        "it": "Ogni percentuale di liquido alcalino deve essere compresa tra 0 e 100.",
-        "nl": "Elk percentage loogvloeistof moet tussen 0 en 100 liggen.",
-        "pt_BR": "Cada percentual de líquido de soda cáustica deve estar entre 0 e 100."
+        "de": "Jeder Prozentsatz der Flüssigkeit für die Laugenlösung muss zwischen 0 und 100 liegen.",
+        "es": "Cada porcentaje de líquido de dilución debe estar entre 0 y 100.",
+        "fr": "Chaque pourcentage de liquide de dilution doit être compris entre 0 et 100.",
+        "it": "Ogni percentuale di liquido di diluizione deve essere compresa tra 0 e 100.",
+        "nl": "Elk percentage vloeistof voor de loogoplossing moet tussen 0 en 100 liggen.",
+        "pt_BR": "Cada percentual de líquido de diluição deve estar entre 0 e 100."
       }
     },
     {
       "group": "workbench",
       "key": "validation.lye_liquid_percentage_total",
       "text": {
-        "de": "Die Ersetzungen der Laugenflüssigkeit dürfen insgesamt 100 % nicht überschreiten.",
-        "es": "Las sustituciones del líquido de lejía no pueden superar el 100 %.",
-        "fr": "Les substitutions du liquide de soude ne peuvent pas dépasser 100 %.",
-        "it": "Le sostituzioni del liquido alcalino non possono superare il 100%.",
-        "nl": "Vervangingen van loogvloeistof mogen samen niet meer dan 100% zijn.",
-        "pt_BR": "As substituições do líquido de soda cáustica não podem exceder 100%."
+        "de": "Die Ersatzflüssigkeiten für die Laugenlösung dürfen insgesamt 100 % nicht überschreiten.",
+        "es": "Las sustituciones del líquido de dilución no pueden superar el 100 %.",
+        "fr": "Les substitutions du liquide de dilution ne peuvent pas dépasser 100 %.",
+        "it": "Le sostituzioni del liquido di diluizione non possono superare il 100%.",
+        "nl": "Vervangende vloeistoffen voor de loogoplossing mogen samen niet meer dan 100% zijn.",
+        "pt_BR": "As substituições do líquido de diluição não podem exceder 100%."
       }
     }
   ]

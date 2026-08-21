@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLocalizedCatalogContent;
 use Database\Factories\IfraProductCategoryFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,11 +15,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'short_name',
     'description',
     'is_active',
+    'translations',
 ])]
 class IfraProductCategory extends Model
 {
     /** @use HasFactory<IfraProductCategoryFactory> */
     use HasFactory;
+
+    use HasLocalizedCatalogContent;
 
     public function certificateLimits(): HasMany
     {
@@ -32,7 +36,7 @@ class IfraProductCategory extends Model
 
     public function optionLabel(): string
     {
-        $label = $this->short_name ?: $this->name;
+        $label = $this->localizedShortName() ?: $this->localizedName();
 
         return sprintf('%s - %s', $this->code, $label);
     }
@@ -41,6 +45,7 @@ class IfraProductCategory extends Model
     {
         return [
             'is_active' => 'bool',
+            'translations' => 'array',
         ];
     }
 }

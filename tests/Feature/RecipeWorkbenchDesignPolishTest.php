@@ -61,7 +61,8 @@ it('keeps formula-start compliance controls available but collapsed by default',
         ->toContain('Label &amp; compliance')
         ->toContain(":class=\"isComplianceSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
         ->toContain('Suggested from product type')
-        ->toContain(':disabled="hasSavedFormula"')
+        ->toContain('x-show="productTypes.length && ! hasSavedFormula"')
+        ->toContain('x-show="hasSavedFormula"')
         ->toContain('Product type is fixed after the first Saved Formula.');
 
     expect(strpos($soapSettings, 'setting-exposure-soap'))
@@ -164,7 +165,8 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         ->not->toContain('max-w-[90rem]')
         ->not->toContain('max-w-[104rem]')
         ->and($recipeWorkbenchPageSource)
-        ->toContain('mx-auto mb-4 max-w-app')
+        ->not->toContain('$productType->localizedName()')
+        ->not->toContain('mx-auto mb-4 max-w-app')
         ->toContain("@section('page_heading', 'Recipe workbench')")
         ->not->toContain('max-w-[90rem]')
         ->not->toContain('max-w-[104rem]')
@@ -179,6 +181,7 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         ->toContain('mt-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between')
         ->toContain('sk-formula-title-control min-w-0 flex-1')
         ->toContain('sk-formula-actions')
+        ->toContain('<span x-show="productTypeName" class="sk-badge sk-badge-neutral" x-text="productTypeName"></span>')
         ->not->toContain('IFRA')
         ->toContain('flex shrink-0 flex-wrap items-center gap-2')
         ->not->toContain('lg:grid-cols-[minmax(0,1fr)_auto]')
@@ -415,9 +418,11 @@ it('centers costing table row contents beside price inputs', function () {
 
     expect($costingTab)
         ->toContain('flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"')
-        ->toContain('numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"')
+        ->toContain('numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned"')
+        ->toContain('x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"')
         ->toContain('flex items-center bg-white px-3 py-3')
-        ->toContain('numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"')
+        ->toContain('numeric flex items-center gap-1 bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span x-text="costingCurrency"></span>')
+        ->toContain('x-text="format(lineCostForRow(row), 2)"')
         ->not->toContain('numeric bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"');
 });
 
@@ -691,7 +696,7 @@ it('keeps compact ingredient names readable and moves inci into the inspector', 
 it('keeps ingredient browser filters visible and pill shaped while focused', function () {
     $ingredientBrowser = view('livewire.dashboard.partials.recipe-workbench.ingredient-browser')->render();
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
-    $genericWorkbenchFocusPosition = strpos($appStylesSource, '.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control), select, textarea, a, summary):focus-visible');
+    $genericWorkbenchFocusPosition = strpos($appStylesSource, '.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control), select, textarea, a, summary):focus-visible');
     $ingredientFilterFocusPosition = strrpos($appStylesSource, '.sk-workbench .sk-ingredient-filter-control:focus-visible');
 
     expect($ingredientBrowser)
@@ -714,7 +719,7 @@ it('uses a slim radius respecting inset ring for focused workbench controls exce
     $appStylesSource = file_get_contents(resource_path('css/app.css'));
 
     preg_match(
-        '/\\.sk-workbench :is\\(button:not\\(\\[role="tab"\\]\\), input:not\\(\\[type="range"\\]\\):not\\(\\.sk-formula-title-control\\), select, textarea, a, summary\\):focus-visible \\{(?<rule>.*?)\\n\\}/s',
+        '/\\.sk-workbench :is\\(button:not\\(\\[role="tab"\\]\\), input:not\\(\\[type="range"\\]\\):not\\(\\.sk-formula-title-control\\):not\\(\\.sk-field-control\\), select, textarea, a, summary\\):focus-visible \\{(?<rule>.*?)\\n\\}/s',
         $appStylesSource,
         $matches,
     );
@@ -757,7 +762,7 @@ it('uses an underline active state and keyboard-only focus treatment for workben
         ->toContain('color: var(--color-accent-strong) !important')
         ->toContain('background-color: var(--color-active);')
         ->toContain('height: 0.125rem')
-        ->toContain('.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control), select, textarea, a, summary):focus-visible')
+        ->toContain('.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control), select, textarea, a, summary):focus-visible')
         ->toContain('.sk-workbench [role="tab"]:focus-visible')
         ->toContain('outline: 1px solid var(--color-active);')
         ->toContain('outline-offset: 2px;')
@@ -958,7 +963,7 @@ it('shows cured soap output beside restrictions and gives cosmetics one descendi
         ->toContain('Cured soap composition')
         ->toContain('curedSoapIngredientRows')
         ->toContain('Formula %')
-        ->toContain('% SOAP')
+        ->toContain('% soap')
         ->toContain('align-middle')
         ->not->toContain('Integrated ingredients')
         ->not->toContain('Mise en oeuvre')
@@ -993,23 +998,22 @@ it('uses the cured soap basis for soap output percentages', function () {
     $presentationSection = file_get_contents(resource_path('js/recipe-workbench/sections/presentation-section.js'));
 
     expect($outputTab)
-        ->toContain('Cured soap output')
-        ->toContain('Cured soap basis')
-        ->toContain('% SOAP')
+        ->toContain("__('workbench.output.soap.title')")
+        ->toContain("__('workbench.output.soap.cured_basis')")
+        ->toContain("__('workbench.output.common.soap_percent')")
         ->and(substr_count($outputTab, 'numeric mt-3 text-xl'))
         ->toBe(3)
         ->and($outputTab)
-        ->toContain('Label percentages use the cured soap weight, including 11% residual water.')
-        ->toContain('Allergens are shown separately but are already included in their source oils.')
+        ->toContain("__('workbench.output.soap.label_basis_help')")
         ->not->toContain('This view normalizes the selected acceptable ingredient list')
         ->not->toContain('11% residual water</span>')
         ->not->toContain('Dry soap output')
         ->not->toContain('Dry soap %')
         ->and($ingredientListPreview)
-        ->toContain('Ingredient lists')
-        ->toContain('Copy list')
-        ->toContain('% SOAP')
-        ->not->toContain('Cured soap basis')
+        ->toContain("__('workbench.output.lists.title')")
+        ->toContain("__('workbench.output.lists.copy')")
+        ->toContain("__('workbench.output.common.soap_percent')")
+        ->not->toContain("__('workbench.output.soap.cured_basis')")
         ->and($presentationSection)
         ->toContain('get curedSoapIngredientRows()')
         ->toContain('percent_of_cured_basis')
@@ -1021,18 +1025,18 @@ it('organizes ingredient lists around generated and editable final outputs', fun
     $source = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-list-preview.blade.php'));
 
     expect($source)
-        ->toContain('Ingredient lists')
-        ->toContain('Choose a list, then copy it or edit a final version.')
-        ->toContain('INCI ingredient list')
-        ->toContain('Plain-language ingredient list')
-        ->toContain('Final INCI list')
-        ->toContain('Final plain-language list')
-        ->toContain('Ingredients as added')
-        ->toContain('Use generated')
+        ->toContain("__('workbench.output.lists.title')")
+        ->toContain("__('workbench.output.lists.help')")
+        ->toContain("__('workbench.output.lists.inci')")
+        ->toContain("__('workbench.output.lists.plain')")
+        ->toContain("__('workbench.output.lists.final_inci')")
+        ->toContain("__('workbench.output.lists.final_plain')")
+        ->toContain("t('output.lists.as_added')")
+        ->toContain("__('workbench.output.lists.use_generated')")
         ->not->toContain('Use as final')
         ->not->toContain('Generated from the selected ingredient-list variant')
         ->not->toContain('Cured soap basis')
-        ->and(substr_count($source, 'Copy list'))
+        ->and(substr_count($source, 'workbench.output.lists.copy'))
         ->toBe(4);
 });
 
@@ -1158,7 +1162,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->not->toContain(".sk-card {\n        border: 1px solid transparent")
         ->toContain('.sk-inset')
         ->toContain('border: 1px solid color-mix(in oklab, var(--color-line) 88%, var(--color-ink) 4%)')
-        ->toContain('.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control), select, textarea, a, summary):focus-visible')
+        ->toContain('.sk-workbench :is(button:not([role="tab"]), input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control), select, textarea, a, summary):focus-visible')
         ->toContain('box-shadow: inset 0 0 0 1px')
         ->toContain('outline: none !important')
         ->not->toContain('outline-style: solid !important')

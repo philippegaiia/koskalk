@@ -1,6 +1,6 @@
 # Localization
 
-Last updated: 2026-07-26
+Last updated: 2026-08-20
 
 ## Scope
 
@@ -132,9 +132,9 @@ Platform data needs a separate translation model because it has different identi
 
 ## Public and marketing pages
 
-`homepage.*` is excluded from Laravel database synchronization. The public marketing site and long-form documentation will move to WordPress later; that work is outside the current application-localization slice. When it starts, WordPress must first reproduce the current Laravel homepage, then the project must explicitly decide whether it replaces `/` or launches separately.
+`homepage.*` is excluded from Laravel database synchronization. WordPress owns the public `soapkraft.com` site and long-form documentation, while Laravel remains the application at `app.soapkraft.com`. The WordPress domain is configured and its homepage design is complete, but the design has not yet been implemented in WordPress. Until it is, the current Laravel homepage remains the implementation reference.
 
-WordPress can own marketing and long-form end-user documentation. The application should retain concise task-focused interface copy and link to the relevant documentation only when deeper explanation is useful.
+WordPress owns marketing and long-form end-user documentation. The application retains concise task-focused interface copy and links to the relevant documentation only when deeper explanation is useful.
 
 The content hierarchy is: concise interface copy first, contextual help when the current task needs a short explanation, and WordPress documentation for complete methods, examples, and editorial material. Contextual translations are reviewed in the rendered interface before production promotion; source-level correctness alone is not sufficient.
 

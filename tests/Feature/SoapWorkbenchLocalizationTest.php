@@ -116,6 +116,35 @@ it('uses approved instructions and media terminology', function () {
         ->and(__('workbench.instructions.leave_warning'))->toBe('You have unsaved changes. Leave without saving?');
 });
 
+it('localizes composition and labeling copy and explains workspace currency settings', function () {
+    $output = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-tab.blade.php'));
+    $costing = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php'));
+
+    expect($output)
+        ->toContain("__('workbench.output.cosmetic.title')")
+        ->toContain("__('workbench.output.soap.title')")
+        ->toContain("__('workbench.output.allergens.title')")
+        ->not->toContain('>Formula output<')
+        ->not->toContain('>Cured soap output<')
+        ->not->toContain('>Declared allergens<')
+        ->and($costing)
+        ->toContain("route('settings')")
+        ->toContain("__('workbench.costing.settings.change_currency')");
+
+    $catalogue = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'workbench')
+        ->keyBy('key');
+
+    expect($catalogue)->toHaveKeys([
+        'costing.settings.change_currency',
+        'output.cosmetic.title',
+        'output.soap.title',
+        'output.allergens.title',
+        'settings.product_type_search',
+    ])->and($catalogue['output.cosmetic.title']['text']['fr'])->toBe('Sortie de la formule')
+        ->and(array_keys($catalogue['output.cosmetic.title']['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR']);
+});
+
 it('loads reviewed soap workbench translations from the database for every supported locale', function () {
     expect(config('interface-translations.sources.workbench'))->toBe(['*']);
 
@@ -467,4 +496,38 @@ it('commits composition and product identity copy for every supported locale', f
             ->and(array_keys($rows[$key]['text']))->toBe(['de', 'es', 'fr', 'it', 'nl', 'pt_BR'])
             ->and($rows[$key]['text']['fr'])->toBe($translation);
     }
+});
+
+it('distinguishes the alkali solution from its dilution liquids in every locale', function (): void {
+    expect(__('workbench.settings.lye_liquid'))->toBe('Alkali solution')
+        ->and(__('workbench.settings.lye_liquid_add'))->toBe('Add a dilution liquid')
+        ->and(__('workbench.settings.lye_liquid_percentage'))->toBe('% of total dilution liquid')
+        ->and(__('workbench.settings.lye_liquid_toggle'))->toBe('Use an alternative dilution liquid')
+        ->and(__('workbench.settings.lye_liquid_water_only'))->toBe('Dilution liquid: Water only')
+        ->and(__('workbench.costing.phases.lye_liquid'))->toBe('Dilution liquids');
+
+    $catalogue = collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'workbench')
+        ->whereIn('key', [
+            'settings.lye_liquid',
+            'settings.lye_liquid_add',
+            'settings.lye_liquid_percentage',
+            'settings.lye_liquid_toggle',
+            'settings.lye_liquid_water_only',
+            'costing.phases.lye_liquid',
+        ])
+        ->keyBy('key');
+
+    expect($catalogue['settings.lye_liquid']['text'])->toBe([
+        'de' => 'Laugenlösung',
+        'es' => 'Solución alcalina',
+        'fr' => 'Solution alcaline',
+        'it' => 'Soluzione alcalina',
+        'nl' => 'Loogoplossing',
+        'pt_BR' => 'Solução alcalina',
+    ])->and($catalogue['settings.lye_liquid_add']['text']['fr'])->toBe('Ajouter un liquide de dilution')
+        ->and($catalogue['settings.lye_liquid_percentage']['text']['fr'])->toBe('% du liquide de dilution total')
+        ->and($catalogue['settings.lye_liquid_toggle']['text']['fr'])->toBe('Utiliser un autre liquide de dilution')
+        ->and($catalogue['settings.lye_liquid_water_only']['text']['fr'])->toBe('Liquide de dilution : eau uniquement')
+        ->and($catalogue['costing.phases.lye_liquid']['text']['fr'])->toBe('Liquides de dilution');
 });

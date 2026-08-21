@@ -99,7 +99,7 @@
             @foreach ($recipes as $recipe)
                 @php
                     $productFamilySlug = $recipe->productFamily?->slug ?? 'product';
-                    $categoryLabel = $recipe->productType?->name ?? __('products.card.unclassified');
+                    $categoryLabel = $recipe->productType?->localizedName() ?? __('products.card.unclassified');
                     $thumbnailUrl = $recipe->indexImageUrl() ?? $recipe->productType?->fallbackImageUrl();
                     $isLocked = $recipe->isLocked();
                     $hasProductionHistory = $recipe->production_runs_count > 0;

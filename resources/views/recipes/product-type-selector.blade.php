@@ -11,7 +11,7 @@
                 <h3 class="mt-3 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ __('products.creation.selector.choose') }}</h3>
                 <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('products.creation.selector.description') }}</p>
             </div>
-            <a href="{{ route('recipes.start') }}" wire:navigate class="sk-action-link">{{ __('products.creation.selector.back') }}</a>
+            <a href="{{ $guided ? route('recipes.start.guided') : route('recipes.start') }}" wire:navigate class="sk-action-link">{{ __('products.creation.selector.back') }}</a>
         </header>
 
         @foreach ($groupedProductTypes as $area)

@@ -8,6 +8,7 @@ import { createRecipeContentAutosave } from './recipe-content-autosave';
 import { createRecipeWorkbench } from './recipe-workbench/component';
 import { createSearchCombobox } from './search-combobox';
 import { createProductionCalendar, createProductionCalendarComponent } from './production-calendar';
+import { initializeProductCreationSelectors } from './product-creation-selector';
 
 window.appNotification = createAppNotification;
 window.classificationPrompt = createClassificationPrompt;
@@ -83,6 +84,7 @@ function setSidebarState(open, persist = true) {
 
 function initializeSidebar() {
     setSidebarState(sidebarIsDesktop() ? sidebarStoredState() : false, false);
+    initializeProductCreationSelectors();
 }
 
 document.addEventListener('click', (event) => {

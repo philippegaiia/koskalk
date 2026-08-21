@@ -13,7 +13,7 @@
         <nav class="sk-card overflow-hidden" aria-label="{{ __('products.creation.start.aria_label') }}">
             @foreach ($entries as $entry => $details)
                 <a
-                    href="{{ route('recipes.choose-type', ['entry' => $entry]) }}"
+                    href="{{ route('recipes.choose-type', ['entry' => $entry, 'guided' => $guided ? 1 : null]) }}"
                     wire:navigate
                     class="group grid min-h-28 grid-cols-[3rem_1fr_auto] items-center gap-4 border-b border-[var(--color-line)] px-5 py-5 transition-colors last:border-b-0 hover:bg-[var(--color-accent-soft)] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[var(--color-accent)] sm:grid-cols-[4rem_1fr_auto] sm:px-7"
                 >

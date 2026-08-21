@@ -166,8 +166,8 @@ class RecipesIndex extends Component
             ->map(fn (Recipe $recipe): ?ProductArea => $recipe->productType?->productCategory?->productArea)
             ->filter()
             ->unique('slug')
-            ->sortBy(fn (ProductArea $productArea): array => [$productArea->sort_order, $productArea->name])
-            ->mapWithKeys(fn (ProductArea $productArea): array => [$productArea->slug => $productArea->name]);
+            ->sortBy(fn (ProductArea $productArea): array => [$productArea->sort_order, $productArea->localizedName()])
+            ->mapWithKeys(fn (ProductArea $productArea): array => [$productArea->slug => $productArea->localizedName()]);
     }
 
     /**
@@ -181,8 +181,8 @@ class RecipesIndex extends Component
             ->map(fn (Recipe $recipe): ?ProductCategory => $recipe->productType?->productCategory)
             ->filter()
             ->unique('slug')
-            ->sortBy(fn (ProductCategory $productCategory): array => [$productCategory->sort_order, $productCategory->name])
-            ->mapWithKeys(fn (ProductCategory $productCategory): array => [$productCategory->slug => $productCategory->name]);
+            ->sortBy(fn (ProductCategory $productCategory): array => [$productCategory->sort_order, $productCategory->localizedName()])
+            ->mapWithKeys(fn (ProductCategory $productCategory): array => [$productCategory->slug => $productCategory->localizedName()]);
     }
 
     /**
@@ -198,6 +198,6 @@ class RecipesIndex extends Component
             ->filter()
             ->unique('slug')
             ->sortBy('sort_order')
-            ->mapWithKeys(fn (ProductType $productType): array => [$productType->slug => $productType->name]);
+            ->mapWithKeys(fn (ProductType $productType): array => [$productType->slug => $productType->localizedName()]);
     }
 }

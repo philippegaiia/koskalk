@@ -317,6 +317,11 @@ export function createPresentationSection() {
                 ];
             }
 
+            const producedGlycerineWeight = this.backendCalculation?.lye?.selected?.glycerine_weight
+                ?? this.lyeBreakdown().glycerine_weight;
+            const wetWeight = this.finalBatchWeight();
+            const curedWeight = this.curedBatchWeight();
+
             return [
                 {
                     id: 'additives-total',
@@ -326,17 +331,17 @@ export function createPresentationSection() {
                 {
                     id: 'produced-glycerine',
                     label: 'Produced glycerine',
-                    value: `${this.format(this.backendCalculation?.lye?.selected?.glycerine_weight ?? this.lyeBreakdown().glycerine_weight, 0)} ${this.oilUnit}`,
+                    value: `${this.format(producedGlycerineWeight, this.calculatedMassDecimals(producedGlycerineWeight))} ${this.oilUnit}`,
                 },
                 {
                     id: 'wet-weight',
                     label: 'Wet weight',
-                    value: `${this.format(this.finalBatchWeight(), 0)} ${this.oilUnit}`,
+                    value: `${this.format(wetWeight, this.calculatedMassDecimals(wetWeight))} ${this.oilUnit}`,
                 },
                 {
                     id: 'cured-weight',
                     label: 'Weight after cure',
-                    value: `${this.format(this.curedBatchWeight(), 0)} ${this.oilUnit}`,
+                    value: `${this.format(curedWeight, this.calculatedMassDecimals(curedWeight))} ${this.oilUnit}`,
                 },
             ];
         },

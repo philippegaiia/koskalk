@@ -16,6 +16,10 @@ it('uses the shared search combobox for large user-facing catalogs', function ()
         ->and($costing)
         ->toContain('id="costing-currency-search"')
         ->and($formulaSettings)
+        ->toContain('<x-search-combobox')
+        ->toContain('id="product-type-search"')
+        ->toContain('x-on:search-combobox-selected="changeProductType($event.detail.id)"')
+        ->not->toContain('x-model="productTypeId"')
         ->not->toContain('id="cosmetic-ifra-context-search"')
         ->not->toContain('id="soap-ifra-context-search"')
         ->and($ifraCategoryModal)
@@ -23,6 +27,22 @@ it('uses the shared search combobox for large user-facing catalogs', function ()
         ->not->toContain('<x-search-combobox')
         ->and($settings)
         ->toContain('id="workspace-currency-search"');
+});
+
+it('gives the product category combobox room without clipping or a nested focus line', function () {
+    $formulaSettings = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-settings.blade.php'));
+    $styles = file_get_contents(resource_path('css/app.css'));
+
+    expect($formulaSettings)
+        ->toContain('data-product-category-setting')
+        ->toContain('class="mt-3 max-w-3xl"')
+        ->toContain("isFormulaSettingsOpen ? 'overflow-visible' : 'overflow-hidden'")
+        ->toContain('lg:grid-cols-2 xl:grid-cols-4')
+        ->not->toContain('lg:grid-cols-2 xl:grid-cols-5')
+        ->and($styles)
+        ->toContain('input:not([type="range"]):not(.sk-formula-title-control):not(.sk-field-control)')
+        ->toContain('.sk-combobox-control:focus-within')
+        ->toContain('border-color: var(--color-active);');
 });
 
 it('keeps the main formula ingredient browser unchanged', function () {

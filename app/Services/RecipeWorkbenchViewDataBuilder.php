@@ -188,7 +188,7 @@ class RecipeWorkbenchViewDataBuilder
 
         return [
             'id' => $productType->id,
-            'name' => $productType->name,
+            'name' => $productType->localizedName(),
             'slug' => $productType->slug,
         ];
     }
@@ -206,7 +206,7 @@ class RecipeWorkbenchViewDataBuilder
             ->where('is_active', true)
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->get(['id', 'name', 'slug']);
+            ->get(['id', 'name', 'slug', 'translations']);
 
         if (
             $selectedProductType instanceof ProductType

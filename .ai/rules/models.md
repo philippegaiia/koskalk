@@ -1,6 +1,7 @@
 ---
 paths:
   - 'app/Models/**'
+  - 'app/Models/{ProductArea,ProductCategory,ProductType,IfraProductCategory}.php'
 ---
 
 # Models
@@ -22,3 +23,6 @@ Compose models from the shared concerns traits: HasPublicId for uuid route keys,
 
 ## Eager-load explicitly per query
 Eager-load relationships explicitly per query with ->with(...) (or ->loadMissing(...) for already-loaded relations). A model-level $with default is acceptable when a relation is always needed, but explicit per-query loading is the app standard.
+
+## Curated catalog content localizes from translations JSON
+Product taxonomy and IFRA rows keep canonical English columns and locale-specific name/short_name/description values in the translations JSON attribute. User-facing builders must call localizedName(), localizedShortName(), or localizedDescription() and fall back to canonical English.

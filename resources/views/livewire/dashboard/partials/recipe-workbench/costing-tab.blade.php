@@ -58,7 +58,10 @@
      <span class="text-sm text-[var(--color-ink-soft)]">{{ __('workbench.costing.settings.currency_label') }}</span>
      <span class="numeric font-semibold text-[var(--color-ink-strong)]">{{ $workbench['defaultCurrency'] ?? 'EUR' }}</span>
  </div>
- <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('workbench.costing.settings.price_help') }}</p>
+ <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
+     {{ __('workbench.costing.settings.price_help') }}
+     <a href="{{ route('settings') }}" class="font-medium text-[var(--color-accent-strong)] underline decoration-[var(--color-line-strong)] underline-offset-2 hover:decoration-current">{{ __('workbench.costing.settings.change_currency') }}</a>
+ </p>
  </div>
  </div>
  </section>
@@ -90,8 +93,8 @@
  <div class="flex items-center bg-white px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"></div>
- <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="`${format(row.weight, 2)}`"></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"></span></div>
+ <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.weight)" x-text="format(row.weight, 2)"></span></div>
  <div class="flex items-center bg-white px-3 py-3">
  <input
  :value="costingPriceForRow(row) === null ? '' : format(costingPriceForRow(row), 2)"
@@ -100,10 +103,11 @@
  type="text"
  inputmode="decimal"
  :aria-label="t('costing.accessibility.price_for', { item: row.name, unit: costingPriceUnit })"
- class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition"
+ :style="decimalAlignmentStyle(costingPriceForRow(row))"
+ class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition"
  />
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(lineCostForRow(row), 2)}`"></div>
+ <div class="numeric flex items-center gap-1 bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(lineCostForRow(row))" x-text="format(lineCostForRow(row), 2)"></span></div>
  </div>
  </template>
 
@@ -113,7 +117,7 @@
  <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
  <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
  <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
- <div class="numeric flex items-center bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></div>
+ <div class="numeric flex items-center gap-1 bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(ingredientCostTotal)" x-text="format(ingredientCostTotal, 2)"></span></div>
  </div>
  </div>
  </div>
@@ -160,13 +164,16 @@
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
  </div>
  <div class="numeric flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]">
- <span x-text="format(row.quantity, 3)"></span>
+ <span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.quantity)" x-text="format(row.quantity, 3)"></span>
  </div>
  <div class="flex items-center bg-white px-3 py-3">
- <input x-model="row.unit_cost" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" :aria-label="t('costing.accessibility.unit_price_for', { item: row.name })" class="numeric w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-model="row.unit_cost" @blur="normalizeDecimalBlur($event); scheduleCostingSave()" type="text" inputmode="decimal" :aria-label="t('costing.accessibility.unit_price_for', { item: row.name })" :style="decimalAlignmentStyle(row.unit_cost)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </div>
- <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(packagingCostPerFinishedUnitForRow(row), 2)}`"></div>
- <div class="numeric flex items-center bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="costingUnitsProducedValue > 0 ? `${costingCurrency} ${format(packagingBatchCostForRow(row), 2)}` : t('costing.summary.enter_finished_units')"></div>
+ <div class="numeric flex items-center gap-1 bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingCostPerFinishedUnitForRow(row))" x-text="format(packagingCostPerFinishedUnitForRow(row), 2)"></span></div>
+ <div class="numeric flex items-center gap-1 bg-white px-4 py-3 font-medium text-[var(--color-ink-strong)]">
+     <template x-if="costingUnitsProducedValue > 0"><span class="inline-flex items-center gap-1"><span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(packagingBatchCostForRow(row))" x-text="format(packagingBatchCostForRow(row), 2)"></span></span></template>
+     <template x-if="costingUnitsProducedValue <= 0"><span x-text="t('costing.summary.enter_finished_units')"></span></template>
+ </div>
  </div>
  </template>
  </div>
@@ -184,7 +191,7 @@
  <div class="mt-4 grid gap-2 lg:grid-cols-2 xl:grid-cols-4 xl:gap-3 text-sm">
  <div class="flex items-center justify-between rounded-lg bg-[var(--color-field)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-soft)]">{{ __('workbench.costing.summary.ingredients') }}</span>
- <span class="numeric font-medium text-[var(--color-ink-strong)]" x-text="`${costingCurrency} ${format(ingredientCostTotal, 2)}`"></span>
+ <span class="numeric inline-flex items-center gap-1 font-medium text-[var(--color-ink-strong)]"><span x-text="costingCurrency"></span><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(ingredientCostTotal)" x-text="format(ingredientCostTotal, 2)"></span></span>
  </div>
  <div class="flex items-center justify-between rounded-lg bg-[var(--color-field)] px-4 py-3 xl:flex-col xl:items-start xl:justify-start xl:gap-2">
  <span class="text-[var(--color-ink-soft)]">{{ __('workbench.costing.summary.packaging') }}</span>

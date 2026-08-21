@@ -8,6 +8,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 
 class ProductCreationCatalog
@@ -30,6 +31,47 @@ class ProductCreationCatalog
                 'name' => __("products.creation.entries.{$entry}.name"),
                 'description' => __("products.creation.entries.{$entry}.description"),
             ])
+            ->all();
+    }
+
+    /**
+     * @return array<int, array{entry: string, family: string, entry_name: string, area_name: string, category_name: string, id: int, name: string, slug: string, description: string|null, search_text: string}>
+     */
+    public function types(): array
+    {
+        return collect($this->entries())
+            ->flatMap(function (array $entryData, string $entry): array {
+                return collect($this->groupedTypes($entry))
+                    ->flatMap(function (array $area) use ($entry, $entryData): array {
+                        return collect($area['categories'])
+                            ->flatMap(function (array $category) use ($area, $entry, $entryData): array {
+                                return collect($category['product_types'])
+                                    ->map(function (array $productType) use ($area, $category, $entry, $entryData): array {
+                                        $searchableValues = [
+                                            $productType['name'],
+                                            $entryData['name'],
+                                            $area['name'],
+                                            $category['name'],
+                                            $productType['description'],
+                                        ];
+
+                                        return [
+                                            'entry' => $entry,
+                                            'family' => $entryData['family'],
+                                            'entry_name' => $entryData['name'],
+                                            'area_name' => $area['name'],
+                                            'category_name' => $category['name'],
+                                            ...$productType,
+                                            'search_text' => Str::lower(implode(' ', array_filter($searchableValues))),
+                                        ];
+                                    })
+                                    ->all();
+                            })
+                            ->all();
+                    })
+                    ->all();
+            })
+            ->values()
             ->all();
     }
 
@@ -94,19 +136,19 @@ class ProductCreationCatalog
             ->get()
             ->map(fn (ProductArea $area): array => [
                 'id' => $area->id,
-                'name' => $area->name,
+                'name' => $area->localizedName(),
                 'slug' => $area->slug,
                 'categories' => $area->productCategories
                     ->map(fn (ProductCategory $category): array => [
                         'id' => $category->id,
-                        'name' => $category->name,
+                        'name' => $category->localizedName(),
                         'slug' => $category->slug,
                         'product_types' => $category->productTypes
                             ->map(fn (ProductType $productType): array => [
                                 'id' => $productType->id,
-                                'name' => $productType->name,
+                                'name' => $productType->localizedName(),
                                 'slug' => $productType->slug,
-                                'description' => $productType->description,
+                                'description' => $productType->localizedDescription(),
                             ])
                             ->all(),
                     ])

@@ -28,6 +28,7 @@ use App\Models\Workspace;
 use App\Services\EntitlementService;
 use App\Services\MediaAssetUsageService;
 use App\Services\MediaStorage;
+use App\Services\ProductTypeIfraOptionsBuilder;
 use App\Services\RecipeContentUpdater;
 use App\Services\RecipeVersionStructureSynchronizer;
 use App\Services\RecipeVersionViewDataBuilder;
@@ -122,7 +123,7 @@ it('rejects soapmaking alkalis as lye liquid replacements in preview and persist
         'percentage' => 25,
         'weight' => 0,
     ]];
-    $message = 'Soapmaking alkalis cannot be used as lye liquid replacements.';
+    $message = 'Soapmaking alkalis cannot be used as dilution-liquid replacements.';
 
     expect(fn () => app(RecipeWorkbenchService::class)->previewSoapCalculation($payload, $user))
         ->toThrow(ValidationException::class, $message)
@@ -140,7 +141,7 @@ it('rejects positive lye liquid replacements without an active accessible ingred
         'visibility' => Visibility::Private,
         'is_active' => true,
     ]);
-    $message = 'Select an active, accessible ingredient for each lye liquid replacement.';
+    $message = 'Select an active, accessible ingredient for each dilution-liquid replacement.';
 
     foreach ([null, 999999, $inaccessibleIngredient->id] as $ingredientId) {
         $payload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
@@ -192,7 +193,7 @@ it('limits null user lye liquid previews to public ingredients', function () {
         'visibility' => Visibility::Public,
         'is_active' => true,
     ]);
-    $message = 'Select an active, accessible ingredient for each lye liquid replacement.';
+    $message = 'Select an active, accessible ingredient for each dilution-liquid replacement.';
 
     $privatePayload = workbenchSoapDraftPayload(makeCarrierOilIngredient());
     $privatePayload['phase_items']['lye_water'] = [[
@@ -4113,6 +4114,8 @@ it('orders IFRA categories naturally and exposes the Product Type suggestion', f
         'is_active' => true,
     ]);
     $productType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
+    $alternateProductType = ProductType::factory()->create(['product_family_id' => $soapFamily->id]);
+    $alternateProductType->productFamilies()->sync([$soapFamily->id]);
     $amendment = IfraAmendment::factory()->create([
         'code' => '51',
         'notification_date' => '2023-06-30',
@@ -4123,16 +4126,30 @@ it('orders IFRA categories naturally and exposes the Product Type suggestion', f
         'ifra_product_category_id' => $category9->id,
         'is_default' => true,
     ]);
+    ProductTypeIfraCategory::factory()->create([
+        'product_type_id' => $alternateProductType->id,
+        'ifra_amendment_id' => $amendment->id,
+        'ifra_product_category_id' => $category2->id,
+        'is_default' => true,
+    ]);
 
     $component = app(RecipeWorkbench::class);
     $component->mount(productFamilySlug: $soapFamily->slug, productTypeSlug: $productType->slug);
 
     $workbench = $component->render(app(RecipeWorkbenchService::class))->getData()['workbench'];
 
+    $alternateGuidance = $component->productTypeIfraGuidance(
+        $alternateProductType->id,
+        app(ProductTypeIfraOptionsBuilder::class),
+    );
+
     expect(collect($workbench['ifraProductCategories'])->pluck('code')->all())
         ->toBe(['2', '9', '10A'])
         ->and($workbench['defaultIfraProductCategoryId'])->toBe($category9->id)
-        ->and($workbench['ifraGuidance']['amendment']['code'])->toBe('51');
+        ->and($workbench['ifraGuidance']['amendment']['code'])->toBe('51')
+        ->and($alternateGuidance['ok'])->toBeTrue()
+        ->and($alternateGuidance['guidance']['default_category_id'])
+        ->toBe($category2->id);
 });
 
 it('keeps formula table controls stepped and visually aligned', function () {

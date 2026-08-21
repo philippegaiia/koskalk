@@ -12,23 +12,24 @@
  </div>
  </div>
 
- <div class="space-y-5 p-5">
+ <div class="space-y-5 bg-[var(--color-surface)] py-5">
  <template x-for="phase in phaseOrder" :key="phase.key">
- <div :id="`cosmetic-phase-${phase.key}`" :data-cosmetic-phase-key="phase.key" class="transition-shadow duration-300">
- <div class="border-b border-[var(--color-line)] px-4 py-3">
+ <div :id="`cosmetic-phase-${phase.key}`" :data-cosmetic-phase-key="phase.key" class="overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-panel)] transition-shadow duration-300">
+ <div class="border-b border-[var(--color-line)] bg-[var(--color-panel)] px-4 py-3">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div class="min-w-0 flex-1">
- <p class="sk-eyebrow">{{ __('workbench.cosmetic.phase') }}</p>
- <input x-model="phase.name" type="text" aria-label="{{ __('workbench.cosmetic.phase_name') }}" class="mt-1 w-full rounded-lg bg-[var(--color-field)] px-3 py-2 text-sm font-semibold text-[var(--color-ink-strong)] transition" />
+ <input x-model="phase.name" type="text" aria-label="{{ __('workbench.cosmetic.phase_name') }}" placeholder="{{ __('workbench.cosmetic.phase_name') }}" class="w-full max-w-md rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2 text-base font-semibold text-[var(--color-ink-strong)] transition" />
  </div>
  <div class="flex flex-wrap items-center gap-2">
- <button type="button" @click="moveCosmeticPhase(phase.key, 'up')" :disabled="cosmeticPhaseIsFirst(phase.key)" :class="cosmeticPhaseIsFirst(phase.key) ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)] hover:bg-white'" class="rounded-full border px-3 py-1.5 text-xs font-medium transition">
- {{ __('workbench.cosmetic.move_up') }}
+ <button type="button" @click="moveCosmeticPhase(phase.key, 'up')" :disabled="cosmeticPhaseIsFirst(phase.key)" :class="cosmeticPhaseIsFirst(phase.key) ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)] opacity-45' : 'border-[var(--color-line)] text-[var(--color-ink-strong)] hover:bg-[var(--color-field-muted)]'" class="grid size-10 place-items-center rounded-lg border bg-[var(--color-panel)] text-base font-medium transition" title="{{ __('workbench.cosmetic.move_up') }}">
+ <span aria-hidden="true">↑</span>
+ <span class="sr-only">{{ __('workbench.cosmetic.move_up') }}</span>
  </button>
- <button type="button" @click="moveCosmeticPhase(phase.key, 'down')" :disabled="cosmeticPhaseIsLast(phase.key)" :class="cosmeticPhaseIsLast(phase.key) ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)] hover:bg-white'" class="rounded-full border px-3 py-1.5 text-xs font-medium transition">
- {{ __('workbench.cosmetic.move_down') }}
+ <button type="button" @click="moveCosmeticPhase(phase.key, 'down')" :disabled="cosmeticPhaseIsLast(phase.key)" :class="cosmeticPhaseIsLast(phase.key) ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)] opacity-45' : 'border-[var(--color-line)] text-[var(--color-ink-strong)] hover:bg-[var(--color-field-muted)]'" class="grid size-10 place-items-center rounded-lg border bg-[var(--color-panel)] text-base font-medium transition" title="{{ __('workbench.cosmetic.move_down') }}">
+ <span aria-hidden="true">↓</span>
+ <span class="sr-only">{{ __('workbench.cosmetic.move_down') }}</span>
  </button>
- <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="t('cosmetic.percent_of_formula', { percentage: format(cosmeticPhasePercentageTotal(phase.key), 2) })"></span>
+ <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="t('cosmetic.percent_of_formula', { percentage: format(cosmeticPhasePercentageTotal(phase.key), 2) })"></span>
  <button type="button" x-show="phaseOrder.length > 1" @click="confirmRemoveCosmeticPhase(phase.key)" class="rounded-full border border-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] transition hover:bg-[var(--color-danger-soft)]">
  {{ __('workbench.cosmetic.remove_phase') }}
  </button>
@@ -44,7 +45,7 @@
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y"></div>
  </div>
 
- <div class="divide-y divide-[var(--color-line)] bg-white">
+ <div class="divide-y divide-[var(--color-line)] bg-[var(--color-panel)]">
  <template x-for="row in phaseItems[phase.key] ?? []" :key="row.id">
  <div @dragover="allowPhaseDrop(phase.key, $event, row.id)"
  @drop="dropDraggedRow(phase.key, $event, row.id)"
@@ -54,8 +55,8 @@
  }"
  :data-workbench-row-id="row.id"
  x-effect="animateAddedIngredientRow($el, row.id)"
- class="grid grid-cols-1 gap-3 bg-white px-2.5 py-2.5 text-sm sk-formula-table-row transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
-	 <div class="flex items-center justify-start bg-white py-2.5 sk-formula-table-handle-cell lg:justify-center lg:px-2">
+ class="grid grid-cols-1 gap-3 bg-[var(--color-panel)] px-2.5 py-2.5 text-sm sk-formula-table-row transition motion-safe:will-change-transform lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:bg-[var(--color-line)] lg:p-0">
+	 <div class="flex items-center justify-start bg-[var(--color-panel)] py-2.5 sk-formula-table-handle-cell lg:justify-center lg:px-2">
  <button type="button"
  draggable="true"
  @dragstart="beginRowDrag(phase.key, row.id, $event)"
@@ -65,7 +66,7 @@
  <span class="text-sm leading-none">⋮⋮</span>
  </button>
  </div>
-	 <div class="flex items-center bg-white py-2.5 sk-formula-table-cell lg:px-4">
+	 <div class="flex items-center bg-[var(--color-panel)] py-2.5 sk-formula-table-cell lg:px-4">
  <div class="flex w-full items-center justify-between gap-3">
  <div class="min-w-0 flex-1">
  <p class="flex items-center gap-1.5 font-medium text-[var(--color-ink-strong)]"><span x-text="row.name"></span><span x-show="row.is_user_owned" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.accessibility.user_owned') }}"></span></p>
@@ -94,7 +95,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="{{ __('workbench.cosmetic.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
+	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="{{ __('workbench.cosmetic.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
  i
  </button>
  </template>
@@ -108,7 +109,7 @@
 	 @scroll.window="if (open) { reposition(); }"
  @resize.window="if (open) { reposition(); }"
  :style="panelStyle"
- class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-white p-3">
+ class="z-[80] rounded-[1.25rem] border border-[var(--color-line)] bg-[var(--color-panel)] p-3">
  <p class="sk-eyebrow">{{ __('workbench.ingredients.properties') }}</p>
  <div class="mt-2.5 space-y-1.5 text-xs text-[var(--color-ink-soft)]">
  <template x-for="detail in ingredientInspectorRows(row)" :key="detail.label">
@@ -123,7 +124,7 @@
  </div>
  </div>
  </div>
-	 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
+	 <div class="flex flex-col gap-2 bg-[var(--color-panel)] py-2.5 sk-formula-table-cell lg:flex-row lg:items-center lg:px-3">
  <span class="sk-eyebrow lg:hidden">{{ __('workbench.common.formula_percent') }}</span>
  <template x-if="editMode === 'percentage'">
  <input x-model="row.percentage" x-effect="syncFormattedInput($el, row.percentage, 2)" @blur="normalizeDecimalBlur($event); row.percentage = format(clampPercentage($event.target.value), 2)" type="text" inputmode="decimal" :aria-label="t('cosmetic.percentage_for', { ingredient: row.name })" :style="decimalAlignmentStyle(row.percentage)" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
@@ -132,7 +133,7 @@
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center text-sm text-[var(--color-ink-soft)]" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}%`"></span>
  </template>
  </div>
-	 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
+	 <div class="flex flex-col gap-2 bg-[var(--color-panel)] py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
  <span class="sk-eyebrow lg:hidden" x-text="t('cosmetic.weight_with_unit', { unit: oilUnit })"></span>
  <template x-if="editMode === 'weight'">
  <input x-effect="syncFormattedInput($el, rowWeight(row), 3)" @input="updateCosmeticPercentagesFromWeights(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="text" inputmode="decimal" :aria-label="t('cosmetic.weight_for', { ingredient: row.name })" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
@@ -141,7 +142,7 @@
  <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), 3)}`"></span>
  </template>
  </div>
-	 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
+	 <div class="flex items-center justify-end bg-[var(--color-panel)] py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
 	 <button type="button" @click="removeIngredient(phase.key, row.id)" class="grid size-10 place-items-center rounded-md text-base text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]" aria-label="{{ __('workbench.cosmetic.remove_ingredient') }}">×</button>
  </div>
  </div>
@@ -159,7 +160,7 @@
  <template x-if="(phaseItems[phase.key] ?? []).length > 0">
  <div @dragover="allowPhaseDrop(phase.key, $event)"
  @drop="dropDraggedRow(phase.key, $event)"
- :class="isDropTarget(phase.key) ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'bg-white text-[var(--color-ink-soft)]'"
+ :class="isDropTarget(phase.key) ? 'bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'bg-[var(--color-panel)] text-[var(--color-ink-soft)]'"
  class="border-t border-[var(--color-line)] px-4 py-1.5 text-xs font-medium transition">
  {{ __('workbench.cosmetic.drop_here') }}
  </div>
@@ -168,17 +169,17 @@
  </div>
  </template>
 
-	 <div>
-	 <div class="grid grid-cols-1 gap-2 bg-[var(--color-line)] p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:gap-px lg:p-0">
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.cosmetic.formula_total') }}</div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(cosmeticFormulaWeightTotal())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${format(cosmeticFormulaWeightTotal(), 3)} ${oilUnit}`"></div>
-		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-field-muted)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>
+	 <div data-formula-total class="border-y border-[var(--color-line)] bg-[var(--color-panel-strong)]">
+	 <div data-formula-total-grid class="grid grid-cols-1 gap-2 p-3 text-sm lg:grid-cols-[2.75rem_minmax(0,1.8fr)_8.5rem_8.5rem_2.5rem] lg:p-0">
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-3 py-2.5 sk-formula-table-y lg:block"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" class="px-4 py-2.5 sk-formula-table-y font-medium">{{ __('workbench.cosmetic.formula_total') }}</div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(totalOilPercentage())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${format(totalOilPercentage(), 2)}%`"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)] text-[var(--color-ink-strong)]' : 'bg-[var(--color-warning-soft)] text-[var(--color-warning-strong)]'" :style="decimalAlignmentStyle(cosmeticFormulaWeightTotal())" class="numeric sk-decimal-aligned flex items-center py-2.5 sk-formula-table-y font-medium" x-text="`${format(cosmeticFormulaWeightTotal(), 3)} ${oilUnit}`"></div>
+		 <div :class="oilPercentageIsBalanced ? 'bg-[var(--color-panel-strong)]' : 'bg-[var(--color-warning-soft)]'" class="hidden px-4 py-2.5 sk-formula-table-y lg:block"></div>
 	 </div>
 	 </div>
 
-	 <div class="flex flex-wrap items-center gap-3">
+	 <div class="flex flex-wrap items-center gap-3 px-5">
 	 <button type="button" @click="addCosmeticPhase()" class="rounded-full border border-[var(--color-line-strong)] bg-[var(--color-panel)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel-strong)]">
 	 {{ __('workbench.cosmetic.add_phase') }}
 	 </button>

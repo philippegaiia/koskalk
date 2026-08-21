@@ -12,6 +12,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Services\MediaAssetUsageService;
+use App\Services\ProductTypeIfraOptionsBuilder;
 use App\Services\RecipeContentPersistenceService;
 use App\Services\RecipeContentUpdater;
 use App\Services\RecipeSopSnapshotService;
@@ -28,6 +29,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -389,6 +391,38 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
             'ok' => true,
             'message' => __('workbench.costing.messages.saved'),
             'costing' => $recipeWorkbenchService->saveCosting($user, $recipe, $costing),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    #[Renderless]
+    public function productTypeIfraGuidance(
+        int $productTypeId,
+        ProductTypeIfraOptionsBuilder $productTypeIfraOptionsBuilder,
+    ): array {
+        $productType = ProductType::query()
+            ->whereKey($productTypeId)
+            ->where('is_active', true)
+            ->whereHas(
+                'productFamilies',
+                fn (Builder $query): Builder => $query
+                    ->where('slug', $this->productFamilySlug)
+                    ->where('is_active', true),
+            )
+            ->first();
+
+        if (! $productType instanceof ProductType) {
+            return [
+                'ok' => false,
+                'message' => __('workbench.settings.product_type_unavailable'),
+            ];
+        }
+
+        return [
+            'ok' => true,
+            'guidance' => $productTypeIfraOptionsBuilder->build($productType),
         ];
     }
 

@@ -144,9 +144,9 @@ final class ProductTypeIfraOptionsBuilder
         return [
             'id' => $category->id,
             'code' => $category->code,
-            'name' => $category->name,
-            'short_name' => $category->short_name,
-            'description' => $category->description,
+            'name' => $category->localizedName(),
+            'short_name' => $category->localizedShortName(),
+            'description' => $category->localizedDescription(),
         ];
     }
 

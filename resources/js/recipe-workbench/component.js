@@ -382,6 +382,38 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
             this.closeIfraCategoryModal();
         },
 
+        async changeProductType(productTypeId) {
+            if (this.hasSavedFormula) {
+                return;
+            }
+
+            this.productTypeId = productTypeId === null || productTypeId === undefined
+                ? ''
+                : String(productTypeId);
+
+            if (this.productTypeId === '') {
+                return;
+            }
+
+            const response = await this.$wire.productTypeIfraGuidance(Number(this.productTypeId));
+
+            if (!response?.ok || !response.guidance) {
+                return;
+            }
+
+            this.ifraGuidance = response.guidance;
+            this.ifraProductCategories = response.guidance.all_categories ?? [];
+
+            if (this.ifraCategorySelectionMode === 'automatic') {
+                this.selectedIfraProductCategoryId = response.guidance.default_category_id === null
+                    || response.guidance.default_category_id === undefined
+                    ? ''
+                    : String(response.guidance.default_category_id);
+            }
+
+            this.scheduleCalculationPreview();
+        },
+
         selectIfraCategory(categoryId) {
             this.ifraCategorySelectionMode = 'manual';
             this.selectedIfraProductCategoryId = String(categoryId);

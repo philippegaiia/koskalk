@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasLocalizedCatalogContent;
 use Database\Factories\ProductAreaFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,11 +15,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'sort_order',
     'is_active',
     'description',
+    'translations',
 ])]
 class ProductArea extends Model
 {
     /** @use HasFactory<ProductAreaFactory> */
     use HasFactory;
+
+    use HasLocalizedCatalogContent;
 
     public function productCategories(): HasMany
     {
@@ -30,6 +34,7 @@ class ProductArea extends Model
         return [
             'sort_order' => 'integer',
             'is_active' => 'bool',
+            'translations' => 'array',
         ];
     }
 }

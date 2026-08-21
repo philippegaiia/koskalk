@@ -61,10 +61,10 @@
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
- <input x-effect="syncFormattedInput($el, rowWeight(row), 3)" @input="updatePercentageFromWeight(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="text" inputmode="decimal" :aria-label="'Weight for ' + row.name" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-effect="syncFormattedInput($el, rowWeight(row), additionWeightDecimals(rowWeight(row)))" @input="updatePercentageFromWeight(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), additionWeightDecimals(rowWeight(row)))" type="text" inputmode="decimal" :aria-label="'Weight for ' + row.name" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'weight'">
- <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), 3)}`"></span>
+ <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), additionWeightDecimals(rowWeight(row)))}`"></span>
  </template>
  </div>
 		 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">
@@ -136,10 +136,10 @@
 		 <div class="flex flex-col gap-2 bg-white py-2.5 sk-formula-table-cell text-sm text-[var(--color-ink-soft)] lg:flex-row lg:items-center lg:px-3">
 	 <span class="sk-eyebrow lg:hidden" x-text="`Weight (${oilUnit})`"></span>
  <template x-if="editMode === 'weight'">
- <input x-effect="syncFormattedInput($el, rowWeight(row), 3)" @input="updatePercentageFromWeight(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), 3)" type="text" inputmode="decimal" :aria-label="'Weight for ' + row.name" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
+ <input x-effect="syncFormattedInput($el, rowWeight(row), additionWeightDecimals(rowWeight(row)))" @input="updatePercentageFromWeight(row, $event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(rowWeight(row), additionWeightDecimals(rowWeight(row)))" type="text" inputmode="decimal" :aria-label="'Weight for ' + row.name" :style="decimalAlignmentStyle(rowWeight(row))" class="numeric sk-decimal-aligned w-full rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] py-2 text-sm text-[var(--color-ink-strong)] transition" />
  </template>
  <template x-if="editMode !== 'weight'">
- <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), 3)}`"></span>
+ <span class="numeric sk-decimal-aligned inline-flex min-h-10 items-center" :style="decimalAlignmentStyle(rowWeight(row))" x-text="`${format(rowWeight(row), additionWeightDecimals(rowWeight(row)))}`"></span>
  </template>
  </div>
 		 <div class="flex items-center justify-end bg-white py-2.5 sk-formula-table-cell lg:justify-center lg:px-2">

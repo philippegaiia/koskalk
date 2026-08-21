@@ -21,7 +21,7 @@ it('keeps alternative lye liquids behind an opt-in progressive disclosure contro
     expect($settings)
         ->toContain("__('workbench.settings.lye_liquid_toggle')")
         ->toContain("t('settings.lye_liquid_remove', { ingredient: row.name })")
-        ->toContain("t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: format(lyeLiquidWeight(row), 3), unit: oilUnit })")
+        ->toContain("t('settings.lye_liquid_fresh_weight_for', { ingredient: row.name, weight: format(lyeLiquidWeight(row), calculatedMassDecimals(lyeLiquidWeight(row))), unit: oilUnit })")
         ->toContain("__('workbench.settings.lye_liquid_fresh_weight_mobile')")
         ->toContain('class="sr-only"')
         ->toContain('sm:hidden')

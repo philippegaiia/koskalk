@@ -1,6 +1,6 @@
 # First Content Audit
 
-Last updated: 2026-07-21
+Last updated: 2026-08-20
 
 ## Scope
 
@@ -15,7 +15,7 @@ It does not yet cover the landing page, account settings, recipe index, producti
 
 The localization program is not limited to the workbench. This file starts there because it is the densest product surface; login and registration, account and settings, indexes, production, email, and other customer-facing workflows still need the same English review before translation.
 
-The homepage was reviewed separately on 2026-07-11. WordPress will later own marketing, editorial content, and complete end-user documentation. That work has not started: WordPress must first reproduce the current Laravel homepage, after which the project will explicitly decide whether it replaces `/` or launches separately. Homepage marketing blocks are therefore excluded from Laravel interface synchronization.
+The homepage was reviewed separately on 2026-07-11. WordPress owns the public `soapkraft.com` site, including marketing, editorial content, and complete end-user documentation; Laravel remains the application at `app.soapkraft.com`. The WordPress domain is configured and the homepage design is complete, but that design has not yet been implemented in WordPress. Until it is, the current Laravel homepage remains the implementation reference. Homepage marketing blocks are therefore excluded from Laravel interface synchronization.
 
 The detailed review is stored in `.impeccable/critique/2026-07-11T08-25-41Z__resources-views-welcome-blade-php.md`. Its main conclusion is to preserve the visual identity and calculation preview while making the product category literal, correcting account-path promises, adding real workspace proof, and substantially reducing repeated persuasion.
 

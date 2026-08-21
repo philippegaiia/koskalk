@@ -76,19 +76,19 @@
 
  <template x-if="costingFormulaRows.length > 0">
  <div class="overflow-x-auto">
- <div class="min-w-[52rem]">
- <div class="grid grid-cols-[8rem_minmax(0,1.8fr)_5rem_7rem_8rem_8rem] gap-px bg-[var(--color-line)] text-sm">
+ <div class="min-w-[56rem]">
+ <div class="grid grid-cols-[8rem_minmax(0,1.6fr)_8rem_8rem_8rem_9rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.phase') }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.ingredient') }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.percentage') }}</div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="t('costing.ingredients.weight', { unit: costingBaseOilUnit })"></div>
  <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="t('costing.ingredients.price', { unit: costingPriceUnit })">{{ __('workbench.costing.ingredients.price', ['unit' => 'kg']) }}</div>
- <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.line_cost') }}</div>
+ <div class="bg-[var(--color-field-muted)] px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="t('costing.ingredients.line_cost', { currency: costingCurrency })"></div>
  </div>
 
  <div class="divide-y divide-[var(--color-line)] bg-white">
  <template x-for="row in costingFormulaRows" :key="`${row.phaseKey}-${row.rowId}`">
- <div class="grid grid-cols-[8rem_minmax(0,1.8fr)_5rem_7rem_8rem_8rem] gap-px bg-[var(--color-line)] text-sm">
+ <div class="grid grid-cols-[8rem_minmax(0,1.6fr)_8rem_8rem_8rem_9rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="flex items-center bg-white px-4 py-3 text-[var(--color-ink-soft)]" x-text="row.phaseLabel"></div>
  <div class="flex items-center bg-white px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
@@ -111,7 +111,7 @@
  </div>
  </template>
 
- <div class="grid grid-cols-[8rem_minmax(0,1.8fr)_5rem_7rem_8rem_8rem] gap-px bg-[var(--color-line)] text-sm">
+ <div class="grid grid-cols-[8rem_minmax(0,1.6fr)_8rem_8rem_8rem_9rem] gap-px bg-[var(--color-line)] text-sm">
  <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>
  <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.costing.ingredients.subtotal') }}</div>
  <div class="flex items-center bg-[var(--color-field-muted)] px-4 py-3"></div>

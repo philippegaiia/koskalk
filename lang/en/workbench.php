@@ -295,7 +295,7 @@ return [
             'lye_liquid_percentage' => '% dilution liquid',
             'weight' => 'Weight (:unit)',
             'price' => 'Your price / :unit',
-            'line_cost' => 'Line cost',
+            'line_cost' => 'Cost - :currency',
             'subtotal' => 'Ingredient subtotal',
             'empty' => 'Add ingredients on the Formula tab to start costing them here.',
         ],

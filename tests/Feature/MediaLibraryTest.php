@@ -25,7 +25,9 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 uses(RefreshDatabase::class);
 
@@ -1156,6 +1158,46 @@ it('paginates and searches picker assets without disclosing other workspaces', f
 /**
  * @return array{User, Workspace}
  */
+it('renders library pagination once assets exceed one page', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    MediaAsset::factory()->ready()->count(25)->create([
+        'workspace_id' => $workspace->id,
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->assertSeeHtml('wire:click="gotoPage');
+});
+
+it('lazy-loads card thumbnails in the library grid', function () {
+    [$user, $workspace] = mediaLibraryWorkspace();
+    $asset = MediaAsset::factory()->ready()->create([
+        'workspace_id' => $workspace->id,
+    ]);
+
+    Media::query()->create([
+        'model_type' => $asset->getMorphClass(),
+        'model_id' => $asset->id,
+        'uuid' => Str::uuid()->toString(),
+        'collection_name' => 'master',
+        'name' => 'master',
+        'file_name' => 'master.webp',
+        'mime_type' => 'image/webp',
+        'disk' => config('media.asset_disk'),
+        'conversions_disk' => config('media.asset_disk'),
+        'size' => 128,
+        'manipulations' => [],
+        'custom_properties' => [],
+        'generated_conversions' => [],
+        'responsive_images' => [],
+    ]);
+
+    Livewire::actingAs($user)
+        ->test(MediaLibraryIndex::class)
+        ->assertSeeHtml('loading="lazy"')
+        ->assertSeeHtml('src="'.route('media.show', [$asset, 'thumbnail']).'"');
+});
+
 function mediaLibraryWorkspace(?int $limit = null): array
 {
     $user = User::factory()->create(['email_verified_at' => now()]);

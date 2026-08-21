@@ -239,7 +239,7 @@
                     <article data-media-card wire:key="media-asset-{{ $asset->id }}" class="sk-card overflow-hidden">
                         <div data-media-card-preview class="relative grid w-full aspect-square place-items-center overflow-hidden bg-[var(--color-panel-strong)]">
                             @if ($asset->status === \App\Enums\MediaAssetStatus::Ready && $asset->getFirstMedia('master'))
-                                <img src="{{ route('media.show', [$asset, 'thumbnail']) }}" alt="" class="size-full object-cover" />
+                                <img src="{{ route('media.show', [$asset, 'thumbnail']) }}" alt="" loading="lazy" decoding="async" class="size-full object-cover" />
                             @elseif ($asset->status === \App\Enums\MediaAssetStatus::Ready && $asset->type === \App\Enums\MediaAssetType::Pdf)
                                 <div data-media-pdf-placeholder class="grid size-full place-items-center p-6 text-center text-[var(--color-ink-soft)]">
                                     <div>

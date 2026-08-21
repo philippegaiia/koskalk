@@ -135,12 +135,9 @@
         background: transparent;
         color: var(--color-ink-strong);
         font-size: 0.875rem;
+        border: 0;
         outline: none;
-    }
-
-    .sk-field-control:focus-visible,
-    .sk-select-control:focus-visible {
-        outline: none;
+        box-shadow: none;
     }
 
     .sk-input {

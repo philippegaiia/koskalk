@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Soapkraft Workbench UX Prototype</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=instrument-sans:400,500,600,700|instrument-serif:400" rel="stylesheet">
+    <style>
+        :root {
+            --surface: oklch(97.2% 0.01 128);
+            --panel: oklch(98.8% 0.006 85);
+            --panel-strong: oklch(93.4% 0.02 84);
+            --field: oklch(99.4% 0.003 91);
+            --line: oklch(89.5% 0.018 80);
+            --line-strong: oklch(82% 0.025 78);
+            --ink: oklch(30% 0.012 75);
+            --ink-strong: oklch(20.5% 0.008 70);
+            --ink-soft: oklch(46.5% 0.014 75);
+            --accent: oklch(53% 0.09 55);
+            --accent-hover: oklch(45.5% 0.095 53);
+            --accent-soft: oklch(95% 0.024 65);
+            --accent-strong: oklch(40.5% 0.09 50);
+            --active: oklch(43% 0.066 146);
+            --active-soft: oklch(93.2% 0.03 145);
+            --success-soft: oklch(95.8% 0.024 166);
+            --success-strong: oklch(33.5% 0.074 166);
+            --danger-soft: oklch(95% 0.05 25);
+            --danger-strong: oklch(45% 0.18 25);
+            --shadow: 0 1px 2px rgb(60 50 30 / .04), 0 12px 24px rgb(60 50 30 / .07);
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: var(--surface);
+            color: var(--ink-strong);
+            font-family: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+        }
+        button, input, select { font: inherit; }
+        button { cursor: pointer; }
+        .shell { max-width: 1240px; margin: 0 auto; padding: 38px 28px 80px; }
+        .eyebrow { color: var(--accent-strong); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+        h1, h2, h3 { margin: 0; font-family: "Instrument Serif", ui-serif, Georgia, serif; font-weight: 400; }
+        h1 { margin-top: 9px; font-size: clamp(40px, 6vw, 66px); line-height: .98; letter-spacing: -.035em; }
+        h2 { font-size: 30px; line-height: 1.1; }
+        h3 { font-size: 23px; line-height: 1.15; }
+        p { margin: 0; color: var(--ink-soft); line-height: 1.55; }
+
+        .prototype-note { display: inline-flex; margin-top: 22px; padding: 9px 13px; border-radius: 10px; background: var(--accent-soft); color: var(--accent-strong); font-size: 13px; font-weight: 600; }
+        .question { max-width: 850px; margin-top: 20px; font-size: 18px; }
+        .tabs { display: flex; gap: 8px; margin-top: 38px; padding-bottom: 14px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+        .tab { border: 0; border-radius: 10px; padding: 10px 15px; background: transparent; color: var(--ink-soft); white-space: nowrap; }
+        .tab:hover { background: var(--panel-strong); color: var(--ink-strong); }
+        .tab.active { background: var(--active-soft); color: var(--active); font-weight: 700; }
+
+        .workspace { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(300px, .8fr); gap: 22px; margin-top: 24px; align-items: start; }
+        .card { border: 1px solid var(--line); border-radius: 16px; background: var(--panel); box-shadow: var(--shadow); }
+        .main-card { min-height: 590px; overflow: hidden; }
+        .card-head { padding: 26px 28px 20px; border-bottom: 1px solid var(--line); }
+        .card-body { padding: 28px; }
+        .state-card { position: sticky; top: 22px; }
+        .state-list { display: grid; gap: 0; margin-top: 20px; }
+        .state-row { display: grid; grid-template-columns: 1fr auto; gap: 18px; padding: 12px 0; border-top: 1px solid var(--line); font-size: 14px; }
+        .state-row dt { color: var(--ink-soft); }
+        .state-row dd { margin: 0; max-width: 170px; text-align: right; font-weight: 600; }
+        .change { margin-top: 18px; padding: 13px 14px; border-radius: 10px; background: var(--active-soft); color: var(--active); font-size: 13px; line-height: 1.45; }
+
+        .section { display: none; }
+        .section.active { display: block; }
+        .section-intro { margin-top: 9px; max-width: 680px; }
+        .field { display: grid; gap: 8px; margin-top: 24px; }
+        .field label { font-size: 14px; font-weight: 650; }
+        .control { width: 100%; min-height: 48px; border: 1px solid var(--line-strong); border-radius: 12px; padding: 11px 14px; background: var(--field); color: var(--ink-strong); }
+        .control:focus { outline: 2px solid color-mix(in oklab, var(--accent) 45%, transparent); border-color: var(--accent); }
+        .helper { font-size: 13px; }
+        .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 15px; }
+        .chip { border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; background: var(--panel); color: var(--ink-soft); font-size: 13px; }
+        .chip.active { border-color: var(--active); background: var(--active-soft); color: var(--active); font-weight: 650; }
+        .results { margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+        .result { display: block; width: 100%; border: 0; border-top: 1px solid var(--line); padding: 13px 14px; background: var(--field); text-align: left; }
+        .result:first-child { border-top: 0; }
+        .result:hover { background: var(--accent-soft); }
+        .result strong, .result span { display: block; }
+        .result span { margin-top: 3px; color: var(--ink-soft); font-size: 12px; }
+
+        .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+        .btn { min-height: 42px; border: 1px solid var(--line-strong); border-radius: 10px; padding: 9px 14px; background: var(--panel); color: var(--ink-strong); font-weight: 650; }
+        .btn:hover { border-color: var(--accent); }
+        .btn.primary { border-color: var(--accent); background: var(--accent); color: white; }
+        .btn.primary:hover { background: var(--accent-hover); }
+        .btn.active { border-color: var(--active); background: var(--active-soft); color: var(--active); }
+        .btn:disabled { cursor: not-allowed; opacity: .45; }
+
+        .notice { margin-top: 22px; border-radius: 12px; padding: 16px; background: var(--panel-strong); }
+        .notice.success { background: var(--success-soft); color: var(--success-strong); }
+        .notice.danger { background: var(--danger-soft); color: var(--danger-strong); }
+        .notice strong { display: block; margin-bottom: 4px; }
+        .comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 22px; }
+        .option { border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+        .option.recommended { border-color: var(--active); background: var(--active-soft); }
+        .option small { display: block; margin-bottom: 7px; color: var(--ink-soft); }
+
+        .currency-box { display: flex; justify-content: space-between; gap: 18px; align-items: center; margin-top: 24px; padding: 17px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); }
+        .currency-box b { font-size: 18px; }
+        .lock { padding: 6px 9px; border-radius: 999px; background: var(--panel-strong); color: var(--ink-soft); font-size: 12px; font-weight: 700; }
+
+        .table-wrap { margin-top: 23px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th { padding: 11px 12px; border-bottom: 1px solid var(--line-strong); color: var(--ink-soft); text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+        td { padding: 13px 12px; border-bottom: 1px solid var(--line); }
+        .numeric { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-variant-numeric: tabular-nums; }
+        .decimal { display: grid; grid-template-columns: minmax(2ch, 1fr) auto 3ch; justify-content: end; width: 100%; }
+        .decimal .whole { text-align: right; }
+        .decimal .fraction { text-align: left; }
+
+        .translation-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 22px; }
+        .translation-layer { border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+        .translation-layer b { display: block; margin-bottom: 8px; }
+        .translation-layer span { color: var(--ink-soft); font-size: 13px; line-height: 1.45; }
+
+        .walkthroughs { margin-top: 24px; padding: 22px; }
+        .walkthrough-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+        .scenario { border: 1px solid var(--line); border-radius: 12px; padding: 16px; background: var(--field); }
+        .scenario p { margin-top: 7px; font-size: 13px; }
+        .scenario .btn { width: 100%; margin-top: 13px; }
+        .footer-note { margin-top: 18px; color: var(--ink-soft); font-size: 12px; text-align: center; }
+
+        @media (max-width: 900px) {
+            .workspace { grid-template-columns: 1fr; }
+            .state-card { position: static; }
+            .comparison, .translation-grid, .walkthrough-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<main class="shell">
+    <div class="eyebrow">Product Workbench · UX rationalization</div>
+    <h1>Fewer steps.<br>Clearer decisions.</h1>
+    <p class="question">Can users move from Product Type to IFRA, costing, and labeling without making inconsistent choices—or having to understand internal application rules?</p>
+    <div class="prototype-note">Prototype only · in-memory state · nothing is saved</div>
+
+    <nav class="tabs" aria-label="Prototype areas">
+        <button class="tab active" data-tab="entry">Product entry</button>
+        <button class="tab" data-tab="ifra">Product Type + IFRA</button>
+        <button class="tab" data-tab="currency">Currency</button>
+        <button class="tab" data-tab="numbers">Numeric tables</button>
+        <button class="tab" data-tab="translations">Translations</button>
+    </nav>
+
+    <div class="workspace">
+        <section class="card main-card">
+            <div class="card-head">
+                <div class="eyebrow" id="areaEyebrow">Recommended default</div>
+                <h2 id="areaTitle">Enter through one searchable decision</h2>
+            </div>
+            <div class="card-body">
+                <div class="section active" data-section="entry">
+                    <h3>New product</h3>
+                    <p class="section-intro">Choose the Product Type here and go directly to the workbench. The broad family is a filter, not a separate commitment.</p>
+                    <div class="chips" aria-label="Product families">
+                        <button class="chip active" data-family="All">All</button>
+                        <button class="chip" data-family="Soap">Soap</button>
+                        <button class="chip" data-family="Cosmetics">Cosmetics</button>
+                        <button class="chip" data-family="Home">Home</button>
+                    </div>
+                    <div class="field">
+                        <label for="productSearch">Product Type</label>
+                        <input id="productSearch" class="control" value="Incense" autocomplete="off" placeholder="Search Product Types">
+                        <p class="helper">Search by name or browse within a family.</p>
+                    </div>
+                    <div class="results" id="productResults"></div>
+                    <div class="actions"><button class="btn primary" id="openWorkbench">Open workbench</button></div>
+                </div>
+
+                <div class="section" data-section="ifra">
+                    <h3>Classification stays coherent</h3>
+                    <p class="section-intro">Product Type is searchable. In automatic mode it owns the suggested IFRA category. Manual mode is possible, but a mismatch is always explicit.</p>
+                    <div class="field">
+                        <label for="workbenchType">Product Type</label>
+                        <select id="workbenchType" class="control">
+                            <option value="Incense / passive air fragrance">Home fragrance / Incense / passive air fragrance</option>
+                            <option value="Face cream">Cosmetics / Face / Face cream</option>
+                            <option value="Rinse-off soap">Soap / Cleansing / Rinse-off soap</option>
+                        </select>
+                    </div>
+                    <div class="actions">
+                        <button class="btn active" data-mode="automatic">Automatic IFRA</button>
+                        <button class="btn" data-mode="manual">Manual IFRA</button>
+                    </div>
+                    <div id="ifraNotice"></div>
+                    <div class="comparison">
+                        <div class="option"><small>Current category</small><strong id="currentIfra">Category 12</strong></div>
+                        <div class="option recommended"><small>Suggested by Product Type</small><strong id="suggestedIfra">Category 12</strong></div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn" id="chooseCategory2">Choose Category 2 manually</button>
+                        <button class="btn primary" id="useSuggested">Use suggested category</button>
+                        <button class="btn" id="lockFormula">Create first Saved Formula</button>
+                    </div>
+                </div>
+
+                <div class="section" data-section="currency">
+                    <h3>One workspace currency</h3>
+                    <p class="section-intro">Costing and Production Bench use the same workspace currency. Supplier-listing currencies remain supplier data and are converted when stock enters the workspace.</p>
+                    <div class="currency-box">
+                        <div><b>EUR · Euro</b><p>Workspace currency</p></div>
+                        <span class="lock">Read-only here</span>
+                    </div>
+                    <div class="notice success"><strong>Clear scope</strong>Used for formula costing, production costing, inventory valuation, and bench totals.</div>
+                    <div class="notice"><strong>Settings owns the change</strong>“Change in Settings” should open the workspace configuration. A currency change needs an explicit conversion policy for existing amounts before it is enabled.</div>
+                    <div class="actions"><button class="btn" disabled>Change in Settings</button></div>
+                </div>
+
+                <div class="section" data-section="numbers">
+                    <h3>One numeric grammar everywhere</h3>
+                    <p class="section-intro">Costing and Composition & labeling reuse the workbench’s tabular font, centered numeric cells, localized separator, and shared decimal anchor.</p>
+                    <div class="table-wrap">
+                        <table>
+                            <thead><tr><th>Ingredient</th><th>Weight (g)</th><th>Cost / kg</th><th>Total</th></tr></thead>
+                            <tbody id="numberRows"></tbody>
+                        </table>
+                    </div>
+                    <div class="actions"><button class="btn active" data-locale="fr-FR">French separators</button><button class="btn" data-locale="en-GB">English separators</button></div>
+                </div>
+
+                <div class="section" data-section="translations">
+                    <h3>Translate three layers, not only labels</h3>
+                    <p class="section-intro">Interface keys, Product Type taxonomy, and IFRA category content need separate translation sources. Importing the existing catalogue closes today’s missing-key gap.</p>
+                    <div class="translation-grid">
+                        <div class="translation-layer"><b>Interface</b><span>Workbench labels, helpers, actions, notices, and accessibility text.</span></div>
+                        <div class="translation-layer"><b>Taxonomy</b><span>Product family, Product Type name, path, and search aliases per locale.</span></div>
+                        <div class="translation-layer"><b>Regulatory</b><span>IFRA category label and description, with the category number remaining canonical.</span></div>
+                    </div>
+                    <div class="notice danger"><strong>Current gap found</strong>84 interface rows are missing from the configured database even though the repository catalogue already contains all six locales.</div>
+                    <div class="notice success"><strong>Recommended sequence</strong>Import the catalogue first, then add translatable taxonomy and IFRA content. Do not duplicate the category number in translated text.</div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="card state-card">
+            <div class="card-head"><div class="eyebrow">Live state</div><h3>What the user knows</h3></div>
+            <div class="card-body">
+                <p>Every action updates this summary. The model should remain understandable without knowing database fields.</p>
+                <dl class="state-list" id="stateList"></dl>
+                <div class="change" id="lastChange">Start by choosing a Product Type or guided scenario.</div>
+                <div class="actions"><button class="btn" id="resetState">Reset prototype</button></div>
+            </div>
+        </aside>
+    </div>
+
+    <section class="card walkthroughs">
+        <div class="eyebrow">Guided walkthroughs</div>
+        <h2>Push the awkward cases</h2>
+        <div class="walkthrough-grid">
+            <article class="scenario"><strong>Happy path</strong><p>Select an incense Product Type and let the application keep IFRA coherent.</p><button class="btn" data-scenario="happy">Run scenario</button></article>
+            <article class="scenario"><strong>Manual mismatch</strong><p>Keep a deliberate IFRA override while making the recommended category impossible to miss.</p><button class="btn" data-scenario="mismatch">Run scenario</button></article>
+            <article class="scenario"><strong>Saved formula lock</strong><p>Confirm that classification cannot silently change after the first Saved Formula.</p><button class="btn" data-scenario="locked">Run scenario</button></article>
+        </div>
+    </section>
+    <div class="footer-note">PROTOTYPE — throw away after the product decisions are implemented.</div>
+</main>
+
+<script>
+    const productTypes = [
+        { name: 'Incense / passive air fragrance', family: 'Home', path: 'Home fragrance / Incense', ifra: 'Category 12' },
+        { name: 'Face cream', family: 'Cosmetics', path: 'Cosmetics / Face', ifra: 'Category 5B' },
+        { name: 'Rinse-off soap', family: 'Soap', path: 'Soap / Cleansing', ifra: 'Category 9' },
+    ];
+
+    const initialState = Object.freeze({
+        area: 'entry', family: 'All', productType: 'Incense / passive air fragrance', productFamily: 'Home',
+        ifraMode: 'automatic', currentIfra: 'Category 12', suggestedIfra: 'Category 12', formulaLocked: false,
+        workspaceCurrency: 'EUR', numberLocale: 'fr-FR', lastChange: 'Start by choosing a Product Type or guided scenario.'
+    });
+
+    function workbenchReducer(state, action) {
+        if (action.type === 'RESET') return { ...initialState };
+        if (action.type === 'OPEN_AREA') return { ...state, area: action.area, lastChange: `Opened ${action.area}.` };
+        if (action.type === 'SET_FAMILY') return { ...state, family: action.family, lastChange: `Filtered Product Types by ${action.family}.` };
+        if (action.type === 'SELECT_PRODUCT_TYPE') {
+            if (state.formulaLocked) return { ...state, lastChange: 'Product Type is locked because a Saved Formula exists.' };
+            const next = productTypes.find(item => item.name === action.name);
+            if (!next) return state;
+            return {
+                ...state, productType: next.name, productFamily: next.family, suggestedIfra: next.ifra,
+                currentIfra: state.ifraMode === 'automatic' ? next.ifra : state.currentIfra,
+                lastChange: state.ifraMode === 'automatic'
+                    ? `Product Type changed; IFRA updated automatically to ${next.ifra}.`
+                    : `Product Type changed; manual IFRA kept and ${next.ifra} shown as the recommendation.`
+            };
+        }
+        if (action.type === 'SET_IFRA_MODE') {
+            return {
+                ...state, ifraMode: action.mode,
+                currentIfra: action.mode === 'automatic' ? state.suggestedIfra : state.currentIfra,
+                lastChange: action.mode === 'automatic' ? 'Automatic IFRA restored; the suggested category is applied.' : 'Manual IFRA enabled; mismatches will remain visible.'
+            };
+        }
+        if (action.type === 'SET_MANUAL_IFRA') return { ...state, ifraMode: 'manual', currentIfra: action.category, lastChange: `${action.category} selected manually.` };
+        if (action.type === 'USE_SUGGESTED') return { ...state, currentIfra: state.suggestedIfra, lastChange: `Applied ${state.suggestedIfra}.` };
+        if (action.type === 'LOCK_FORMULA') return { ...state, formulaLocked: true, lastChange: 'First Saved Formula created; Product Type is now locked.' };
+        if (action.type === 'SET_LOCALE') return { ...state, numberLocale: action.locale, lastChange: `Numeric separators changed to ${action.locale}.` };
+        return state;
+    }
+
+    let state = { ...initialState };
+    const headings = {
+        entry: ['Recommended default', 'Enter through one searchable decision'],
+        ifra: ['Coherent classification', 'Make automatic behavior visible'],
+        currency: ['Shared financial context', 'Explain workspace currency at the point of use'],
+        numbers: ['Consistent presentation', 'Align values on the decimal separator'],
+        translations: ['Three translation layers', 'Localize UI, taxonomy, and regulatory content'],
+    };
+
+    function dispatch(action) { state = workbenchReducer(state, action); render(); }
+    function decimalParts(value, digits) {
+        const formatted = new Intl.NumberFormat(state.numberLocale, { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+        const separator = state.numberLocale === 'fr-FR' ? ',' : '.';
+        const [whole, fraction] = formatted.split(separator);
+        return `<span class="decimal numeric"><span class="whole">${whole}</span><span>${separator}</span><span class="fraction">${fraction}</span></span>`;
+    }
+    function renderNumbers() {
+        const rows = [
+            ['Coconut oil', 134.99, 4, 0.54], ['Lavender essential oil', 8.5, 32.75, 0.28], ['Sodium hydroxide', 18.125, 2.4, 0.04]
+        ];
+        document.getElementById('numberRows').innerHTML = rows.map(row => `<tr><td>${row[0]}</td><td>${decimalParts(row[1], 3)}</td><td>${decimalParts(row[2], 2)}</td><td>${decimalParts(row[3], 2)}</td></tr>`).join('');
+    }
+    function renderResults() {
+        const term = document.getElementById('productSearch').value.trim().toLowerCase();
+        const filtered = productTypes.filter(item => (state.family === 'All' || item.family === state.family) && (!term || `${item.name} ${item.path}`.toLowerCase().includes(term)));
+        document.getElementById('productResults').innerHTML = filtered.map(item => `<button class="result" data-product="${item.name}"><strong>${item.name}</strong><span>${item.path} · suggested ${item.ifra}</span></button>`).join('') || '<div class="result"><strong>No Product Type found</strong><span>Try another family or search term.</span></div>';
+        document.querySelectorAll('[data-product]').forEach(button => button.addEventListener('click', () => dispatch({ type: 'SELECT_PRODUCT_TYPE', name: button.dataset.product })));
+    }
+    function render() {
+        document.querySelectorAll('.tab').forEach(tab => tab.classList.toggle('active', tab.dataset.tab === state.area));
+        document.querySelectorAll('.section').forEach(section => section.classList.toggle('active', section.dataset.section === state.area));
+        document.getElementById('areaEyebrow').textContent = headings[state.area][0];
+        document.getElementById('areaTitle').textContent = headings[state.area][1];
+        document.querySelectorAll('.chip').forEach(chip => chip.classList.toggle('active', chip.dataset.family === state.family));
+        document.querySelectorAll('[data-mode]').forEach(button => button.classList.toggle('active', button.dataset.mode === state.ifraMode));
+        document.querySelectorAll('[data-locale]').forEach(button => button.classList.toggle('active', button.dataset.locale === state.numberLocale));
+        document.getElementById('workbenchType').value = state.productType;
+        document.getElementById('currentIfra').textContent = state.currentIfra;
+        document.getElementById('suggestedIfra').textContent = state.suggestedIfra;
+        const mismatch = state.currentIfra !== state.suggestedIfra;
+        document.getElementById('ifraNotice').innerHTML = state.ifraMode === 'automatic'
+            ? '<div class="notice success"><strong>Automatic IFRA</strong>The Product Type recommendation is applied and will refresh when Product Type changes.</div>'
+            : mismatch
+                ? `<div class="notice danger"><strong>Manual category differs</strong>Current ${state.currentIfra}; Product Type recommends ${state.suggestedIfra}. Keep the override or use the recommendation.</div>`
+                : '<div class="notice"><strong>Manual IFRA</strong>The current category matches the recommendation, but future Product Type changes will not overwrite it.</div>';
+        document.getElementById('useSuggested').disabled = !mismatch;
+        document.getElementById('workbenchType').disabled = state.formulaLocked;
+        document.getElementById('lockFormula').disabled = state.formulaLocked;
+        document.getElementById('stateList').innerHTML = [
+            ['Product family', state.productFamily], ['Product Type', state.productType], ['IFRA mode', state.ifraMode], ['Current IFRA', state.currentIfra],
+            ['Suggested IFRA', state.suggestedIfra], ['Formula status', state.formulaLocked ? 'Saved Formula exists' : 'Editable'],
+            ['Workspace currency', state.workspaceCurrency], ['Number locale', state.numberLocale]
+        ].map(([key, value]) => `<div class="state-row"><dt>${key}</dt><dd>${value}</dd></div>`).join('');
+        document.getElementById('lastChange').textContent = state.lastChange;
+        renderResults(); renderNumbers();
+    }
+
+    document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => dispatch({ type: 'OPEN_AREA', area: tab.dataset.tab })));
+    document.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => dispatch({ type: 'SET_FAMILY', family: chip.dataset.family })));
+    document.querySelectorAll('[data-mode]').forEach(button => button.addEventListener('click', () => dispatch({ type: 'SET_IFRA_MODE', mode: button.dataset.mode })));
+    document.querySelectorAll('[data-locale]').forEach(button => button.addEventListener('click', () => dispatch({ type: 'SET_LOCALE', locale: button.dataset.locale })));
+    document.getElementById('productSearch').addEventListener('input', renderResults);
+    document.getElementById('openWorkbench').addEventListener('click', () => dispatch({ type: 'OPEN_AREA', area: 'ifra' }));
+    document.getElementById('workbenchType').addEventListener('change', event => dispatch({ type: 'SELECT_PRODUCT_TYPE', name: event.target.value }));
+    document.getElementById('chooseCategory2').addEventListener('click', () => dispatch({ type: 'SET_MANUAL_IFRA', category: 'Category 2' }));
+    document.getElementById('useSuggested').addEventListener('click', () => dispatch({ type: 'USE_SUGGESTED' }));
+    document.getElementById('lockFormula').addEventListener('click', () => dispatch({ type: 'LOCK_FORMULA' }));
+    document.getElementById('resetState').addEventListener('click', () => dispatch({ type: 'RESET' }));
+    document.querySelectorAll('[data-scenario]').forEach(button => button.addEventListener('click', () => {
+        state = { ...initialState };
+        if (button.dataset.scenario === 'happy') {
+            state = workbenchReducer(state, { type: 'SELECT_PRODUCT_TYPE', name: 'Incense / passive air fragrance' });
+            state = workbenchReducer(state, { type: 'OPEN_AREA', area: 'ifra' });
+        }
+        if (button.dataset.scenario === 'mismatch') {
+            state = workbenchReducer(state, { type: 'SET_MANUAL_IFRA', category: 'Category 2' });
+            state = workbenchReducer(state, { type: 'OPEN_AREA', area: 'ifra' });
+        }
+        if (button.dataset.scenario === 'locked') {
+            state = workbenchReducer(state, { type: 'LOCK_FORMULA' });
+            state = workbenchReducer(state, { type: 'OPEN_AREA', area: 'ifra' });
+        }
+        render();
+    }));
+    render();
+</script>
+</body>
+</html>
